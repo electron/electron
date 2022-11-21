@@ -715,7 +715,7 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..0c2838ea3b8b8a2e35cb0037fee14caddf3e59b1 100644
+index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8b83df8c3 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
 @@ -109,7 +109,7 @@ const der = Buffer.from(
@@ -744,7 +744,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..0c2838ea3b8b8a2e35cb0037fee14cad
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: Object.assign(Object.create(null), {
-@@ -219,16 +229,7 @@ const der = Buffer.from(
+@@ -219,16 +229,8 @@ const der = Buffer.from(
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -757,12 +757,12 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..0c2838ea3b8b8a2e35cb0037fee14cad
 -              'C574197693E959CEA1362FFAE1BBA10C8C0D88840ABFEF103631B2E8F5C3' +
 -              '9B5548A7EA57E8A39F89291813F45A76C448033A2B7ED8403F4BAA147CF3' +
 -              '5E2D2554AA65CE49695797095BF4DC6B',
--    bits: 2048,
+     bits: 2048,
 +    modulusPattern: new RegExp(modulusOSSL, 'i'),
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
      valid_to: 'Jun 17 21:40:37 2296 GMT',
-@@ -240,7 +241,7 @@ const der = Buffer.from(
+@@ -240,7 +242,7 @@ const der = Buffer.from(
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
        '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
@@ -771,7 +771,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..0c2838ea3b8b8a2e35cb0037fee14cad
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -249,7 +250,7 @@ const der = Buffer.from(
+@@ -249,7 +251,7 @@ const der = Buffer.from(
    assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -780,7 +780,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..0c2838ea3b8b8a2e35cb0037fee14cad
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -258,7 +259,7 @@ const der = Buffer.from(
+@@ -258,7 +260,7 @@ const der = Buffer.from(
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
