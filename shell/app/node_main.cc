@@ -141,6 +141,9 @@ int NodeMain(int argc, char* argv[]) {
     if (flags_exit_code != 0)
       exit(flags_exit_code);
 
+    // Hack around with the argv pointer. Used for process.title = "blah".
+    argv = uv_setup_args(argc, argv);
+
     std::vector<std::string> args(argv, argv + argc);
     std::unique_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
