@@ -2,6 +2,7 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "buildtools",
 	"onCreateCommand": ".devcontainer/on-create-command.sh",
+	"updateContentCommand": ".devcontainer/update-content-command.sh",
 	"workspaceFolder": "/workspaces/gclient/src/electron",
 	"extensions": [
 		"joeleinbinder.mojom-language",
@@ -39,5 +40,12 @@
 		"storage": "32gb",
 		"cpus": 8
 	},
-	"remoteUser": "builduser"
+	"remoteUser": "builduser",
+	"customizations": {
+		"codespaces": {
+			"openFiles": [
+				".devcontainer/README.md"
+			]
+		}
+	}
 }
