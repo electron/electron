@@ -48,7 +48,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
   this._browserViews = [];
 
   this.on('close', () => {
-    this._browserViews.forEach(b => b.webContents.close({ waitForBeforeUnload: true }));
+    this._browserViews.forEach(b => b.webContents?.close({ waitForBeforeUnload: true }));
   });
 
   const warn = deprecate.warnOnceMessage('\'scroll-touch-{begin,end,edge}\' are deprecated and will be removed. Please use the WebContents \'input-event\' event instead.');

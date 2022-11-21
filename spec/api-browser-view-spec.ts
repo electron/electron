@@ -394,6 +394,16 @@ describe('BrowserView module', () => {
       w2.close();
       w2.destroy();
     });
+
+    it('does not cause a crash when used for view with destroyed web contents', async () => {
+      const w2 = new BrowserWindow({ show: false });
+      const view = new BrowserView();
+      view.webContents.close();
+      w2.addBrowserView(view);
+      w2.webContents.loadURL('about:blank');
+      await emittedOnce(w2.webContents, 'did-finish-load');
+      w2.close();
+    });
   });
 
   describe('BrowserWindow.removeBrowserView()', () => {
