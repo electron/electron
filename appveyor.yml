@@ -42,6 +42,8 @@ environment:
     - job_name: Build
     - job_name: Test
       job_depends_on: Build
+      APPVEYOR_BUILD_WORKER_IMAGE: Windows
+      APPVEYOR_BUILD_WORKER_CLOUD: WOA
 
 clone_folder: C:\projects\src\electron
 
@@ -185,8 +187,6 @@ for:
               Write-Output "Uploading Electron release distribution to github releases"
               & python3 script\release\uploaders\upload.py --verbose
             }
-          } elseif (Test-Path Env:\TEST_WOA) {
-            node script/release/ci-release-build.js --job=electron-woa-testing --ci=GHA --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
           }
     on_finish:
       # Uncomment this lines to enable RDP
