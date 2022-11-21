@@ -333,11 +333,8 @@ void UsbChooserContext::OnDeviceRemoved(
       !device_info->serial_number.value().empty()) {
     return;
   }
-
-  std::vector<url::Origin> revoked_urls;
   for (auto& map_entry : ephemeral_devices_) {
-    if (map_entry.second.erase(device_info->guid) > 0)
-      revoked_urls.push_back(map_entry.first);
+    map_entry.second.erase(device_info->guid);
   }
 }
 
@@ -347,10 +344,6 @@ void UsbChooserContext::OnDeviceManagerConnectionError() {
   devices_.clear();
   is_initialized_ = false;
 
-  // Store the revoked URLs to notify observers of the revoked permissions.
-  std::vector<url::Origin> revoked_origins;
-  for (auto& map_entry : ephemeral_devices_)
-    revoked_origins.push_back(map_entry.first);
   ephemeral_devices_.clear();
 
   // Notify all device observers.
