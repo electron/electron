@@ -141,12 +141,22 @@ int NodeMain(int argc, char* argv[]) {
     if (flags_exit_code != 0)
       exit(flags_exit_code);
 
-    node::InitializationSettingsFlags flags = node::kRunPlatformInit;
-    node::InitializationResult result =
-        node::InitializeOncePerProcess(argc, argv, flags);
+    // Hack around with the argv pointer. Used for process.title = "blah".
+    argv = uv_setup_args(argc, argv);
 
-    if (result.early_return)
-      exit(result.exit_code);
+    std::vector<std::string> args(argv, argv + argc);
+    std::unique_ptr<node::InitializationResult> result =
+        node::InitializeOncePerProcess(
+            args,
+            {node::ProcessInitializationFlags::kNoInitializeV8,
+             node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
+
+    for (const std::string& error : result->errors())
+      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+
+    if (result->early_return() != 0) {
+      return result->exit_code();
+    }
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8SnapshotFileType::kWithAdditionalContext);
@@ -176,7 +186,7 @@ int NodeMain(int argc, char* argv[]) {
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
       env = node::CreateEnvironment(
-          isolate_data, gin_env.context(), result.args, result.exec_args,
+          isolate_data, gin_env.context(), result->args(), result->exec_args(),
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
