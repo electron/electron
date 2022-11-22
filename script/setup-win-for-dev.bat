@@ -67,3 +67,6 @@ SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH
 REM Setup Depot Tools
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools
 SET PATH=%PATH%;C:\depot_tools\
+
+REM Add symstore to PATH permanently
+setx path "%%path%%;C:\Program Files (x86)\Windows Kits\10\Debuggers\x64"
