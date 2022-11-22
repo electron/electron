@@ -10,3 +10,8 @@ export PATH="$PATH:$buildtools/src"
 if [ ! -z "$CODESPACES_PREBUILD_TOKEN" ]; then
   e d gclient sync --with_branch_heads --with_tags
 fi
+
+env | while IFS= read -r line; do
+  name=${line%%=*}
+  echo "Env: $name"
+done
