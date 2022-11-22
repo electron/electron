@@ -11,10 +11,10 @@ enlarge window above dimensions set during creation of the
 BrowserWindow.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index f7731b4c2951dc2536592f481b9395f65094d49a..6a7c6a508c57d2fa6f628f4522af76f021bebbb3 100644
+index 145335df236b9c6a433d8704780c3d9d93064fb3..33466817edd5677957514d7a008d5ffaa3cebb9a 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3713,6 +3713,21 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
+@@ -3712,6 +3712,21 @@ void HWNDMessageHandler::SizeWindowToAspectRatio(UINT param,
    delegate_->GetMinMaxSize(&min_window_size, &max_window_size);
    min_window_size = delegate_->DIPToScreenSize(min_window_size);
    max_window_size = delegate_->DIPToScreenSize(max_window_size);

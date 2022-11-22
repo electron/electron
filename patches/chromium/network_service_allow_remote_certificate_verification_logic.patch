@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 19799eb797cb0a551322298bdcd40ac81cd229b5..5f9aa9dfe6b6b78fc62af9c7baad9c85636ede92 100644
+index cdb55788ba62add1dd5525e52e4968b69fb73f5b..4a30886a5825798326d3a8a8b62aa0027a2bebd0 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -134,6 +134,11 @@

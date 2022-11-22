@@ -114,7 +114,7 @@ index 28f44e5df4a3591c8563564a9aba7cec1b023a29..befc5a556a7fd6719d8a1c2eb8e92784
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index bd9f162f5053f0e7e505e2af1a2e16d6e23b9ec4..df67fc2caa0f4dc8bd11a0ac6045915b7fc2a6ff 100644
+index d8f25c1435d4b83031d18b6367041a18a23454fb..7233299c32ba4600f7708ca2fd0deadbc19b29fb 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -508,7 +508,7 @@ index aedc4d24d3fb3624b27eadb9b234b77291bb47b5..c5108b0d6bce4e268979f5541929c687
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 78fd50e3cacf17eaf7c30bf6fb0c269045cb87b4..5a64e440770a2ce958d5c5576010d084c8764244 100644
+index 4fabf6628f41dd06adffbf652edc9ddfb6ff07c6..1e80c8a8ef7072ca2b4751f7a5b9d48302227c5a 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -85,7 +85,8 @@ RootCompositorFrameSinkImpl::Create(

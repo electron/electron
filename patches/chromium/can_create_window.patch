@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 092c64051605de0de71364a8fcafbf4fce509519..a7c591f701cd086cf2d1eed9b0c5d596faa69e49 100644
+index b0ea916c8f484126c583cdfa6336c7fb5ccc9fe5..55d535db041db2614ab9086f05d067d34d01d17f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7205,6 +7205,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7206,6 +7206,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 092c64051605de0de71364a8fcafbf4fce509519..a7c591f701cd086cf2d1eed9b0c5d596
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0893457fe29a3102b8b40198897703f2e995ccd8..5403298d26bdeca3dbb4b2d0ed697e0e866c8448 100644
+index 696c9dd6ef479e9a50300cfcbdb1b04c28512f9c..207a68a01828df02ce698998678962ddfe9b8fab 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4011,6 +4011,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4010,6 +4010,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 0893457fe29a3102b8b40198897703f2e995ccd8..5403298d26bdeca3dbb4b2d0ed697e0e
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -4055,12 +4063,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4054,12 +4062,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -212,10 +212,10 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index a2b401db35a12bd0c68c835a1d4ba91e307b7888..b4d256025dca722d4bed2f05a3f0487783f194f0 100644
+index 873db356a210860b39153061d139abd51593ef7d..8431ffd838c5c9c0cc47dd3b1c98cbf5f393ddaf 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2202,6 +2202,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2204,6 +2204,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window, completed_url);
  

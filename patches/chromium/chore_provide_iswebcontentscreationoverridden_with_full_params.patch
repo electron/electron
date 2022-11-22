@@ -7,7 +7,7 @@ Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index bdbef88069219e65b8e556ff60ce23d45eca2f0b..e13371976cb3c19f1181f18dd04b9e58cedf85e0 100644
+index 5d7675b25b9180405e1ca7c3fe88e34af8806591..a0edfe2efc4e5f4f3a21fb4e8d8e06ab66a99be7 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
 @@ -285,8 +285,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
@@ -80,10 +80,10 @@ index 0e9e41382300d6bb5fc6fa47cd5ed2ed4181ce46..e65a9bb5b9909e16f5a7dd2e73defa85
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 2df6b0f9e0b7a0778f1a517d039dbc65ab7876d0..bb8e6526f8efd059fee5b8adc4061ec533b92ee8 100644
+index 7cbabbcd79728669d9b0a80dbea607d9c3466cfa..47fd81561b622425a61a1b5d09be7f20ea5e6f07 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1802,12 +1802,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1800,12 +1800,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a37d26d1f3f45ff8c17e09e3e299f38f39e11a54..dc8f39215035676b14c6724948632c3106ed8f6f 100644
+index 64a87fe4a646f758d25ea4dd667d7c5122ad8815..e3a9cf0d0012334f35eafd6299c12444cf526f53 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3938,8 +3938,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3937,8 +3937,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -316,7 +316,7 @@ index 06d3ed32b65708d91b220cdd4991fd377d84217c..bc942580c1bfb16bc5a8e9168f55626d
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index b4c2bdf3607eb7cea5ae3128884a054b10f1e5a0..11de044d55f5f1acc7233a6e51a3a62e6279998a 100644
+index 4e0a30932581feebd8877eca025961704fa10267..299a64bd0f7a493d1698c71641bf94197d016269 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -527,8 +527,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(

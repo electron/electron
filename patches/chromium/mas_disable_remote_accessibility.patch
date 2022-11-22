@@ -44,7 +44,7 @@ index 89b9323c08cfed0d3ea3a0ec1beaa0bdfabe343e..69ae95eb8537bab751d27749d6cf392a
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 70bc4eb5485c7acd6e9a7bc7d6772fd2086b8df3..32c807f68469ea955238de6e29283e7f94f91211 100644
+index 7fcbaf1f8165197847326025f1c01f07dad52ea4..92162dc6c7b9ebfd65be9c5d6ee2a9e0b0b93db3 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -566,10 +566,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -162,7 +162,7 @@ index c1f2725cf74fe8845843461518a849f2cbf2c024..c9f489a8603a63dc2641fbd435c4ab1d
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index f9761f6697db70b22ff7eb55b7d5d07fc63cc9ad..4cf5dd287de82cfcb87840376d539604adad22f8 100644
+index e27191c89a3be5fd21be4403a5e183e5dd12d383..07dcac920740a029dfc69c123506bafd142eb4ef 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -260,8 +260,10 @@

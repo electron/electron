@@ -81,7 +81,7 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 0b2bd5d95561180ac4dfb261ded9aee2bcd57445..62e1f9976bf007d91d2e1d65bb58cd0645743186 100644
+index a05a647930521ff72219ba4b7977ab36775d658f..59f12dc5f0f1c1f3c5bdd6f71451e01b38a9accb 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -230,6 +230,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,10 +93,10 @@ index 0b2bd5d95561180ac4dfb261ded9aee2bcd57445..62e1f9976bf007d91d2e1d65bb58cd06
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 166a10e4200bd2e95e886101fa8325bac7f934cf..d7cef65e5863ed74e4f355ae4d73e5e33b236753 100644
+index 9feea79c606f33d80cd34d218878a4fb2f8eea19..2314600b9c4af6801af3638f169ac08143ea9c02 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -202,6 +202,7 @@
+@@ -201,6 +201,7 @@
  #include "ui/accessibility/accessibility_switches.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
