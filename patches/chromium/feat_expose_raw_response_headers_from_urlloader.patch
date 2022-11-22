@@ -17,7 +17,7 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 65921550e62db..c45a2a8c5adf3 100644
+index 65921550e62dbcd79f77192951b95991c3e904a1..c45a2a8c5adf3df78b4e4c4c0d4d945ade2a6826 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
 @@ -234,6 +234,7 @@ bool ResourceRequest::EqualsForTesting(const ResourceRequest& request) const {
@@ -29,7 +29,7 @@ index 65921550e62db..c45a2a8c5adf3 100644
           upgrade_if_insecure == request.upgrade_if_insecure &&
           is_revalidating == request.is_revalidating &&
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index b3ff3cc494d5d..9bd521e085401 100644
+index b3ff3cc494d5d63ed0af9745131cfd52da12cd43..9bd521e08540102e992423cb0a6eacbfc514f03b 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -160,6 +160,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -41,7 +41,7 @@ index b3ff3cc494d5d..9bd521e085401 100644
    bool upgrade_if_insecure = false;
    bool is_revalidating = false;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 1702f66d2ec08..9b4370d6c0e08 100644
+index 1702f66d2ec0871f15e475ae3901b48637140d59..9b4370d6c0e08662fac1892217e28f142c983576 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -210,6 +210,7 @@ bool StructTraits<
@@ -53,7 +53,7 @@ index 1702f66d2ec08..9b4370d6c0e08 100644
    out->upgrade_if_insecure = data.upgrade_if_insecure();
    out->is_revalidating = data.is_revalidating();
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index af527034303f0..65e0719fef13f 100644
+index af527034303f0660934d50a441fa178ddaeca475..65e0719fef13fbf730d74f9982d1b54d741a60fd 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -272,6 +272,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -67,7 +67,7 @@ index af527034303f0..65e0719fef13f 100644
      return request.previews_state;
    }
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index bf3c8e3dc4d15..733bb2b2b2009 100644
+index bf3c8e3dc4d15d33118144f801b661fed667a5ba..733bb2b2b20094520c3e944288dfa01dad01ebc5 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -317,6 +317,9 @@ struct URLRequest {
@@ -81,7 +81,7 @@ index bf3c8e3dc4d15..733bb2b2b2009 100644
    // browser decide.
    // Note: this is an enum of type PreviewsState.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index f4cbafde0cfa9..73a7a02a224a4 100644
+index f4cbafde0cfa92e3e93f5480242025b3d5c822c4..73a7a02a224a4737c4f7a97a98a73e7f67ce3250 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -9,6 +9,7 @@ import "mojo/public/mojom/base/unguessable_token.mojom";
@@ -103,7 +103,7 @@ index f4cbafde0cfa9..73a7a02a224a4 100644
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index f31aec82afd41..5de0dab48c63f 100644
+index f31aec82afd4130fd7602971ace0b269c72cb14d..5de0dab48c63f142dbfe1eab1dd32f6af3f50406 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -481,6 +481,7 @@ URLLoader::URLLoader(
@@ -144,7 +144,7 @@ index f31aec82afd41..5de0dab48c63f 100644
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index ca904ebe9235a..4c693c5e9ad72 100644
+index ca904ebe9235a0160eb1cca7314a16627d49b86b..4c693c5e9ad7284c9a8fe8f05e23ca67e295d0cc 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -528,6 +528,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c5a340b64e36daf7f0b488cdefe9179116ade95c..8f891afc636eeece8bac36d4ae5e1142d905aa02 100644
+index 19799eb797cb0a551322298bdcd40ac81cd229b5..5f9aa9dfe6b6b78fc62af9c7baad9c85636ede92 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -134,6 +134,11 @@
@@ -169,7 +169,7 @@ index 5aa32ad99718c7c3259801a429e1a484a97849ad..7facbaf42e2538f8f7a78a2f7e87c3ac
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index d57c6f1e7f41ec0cc9be934006b332666f21ecf5..d75efeccf532f1d36d35cd38f8d8d5039dc4267c 100644
+index fe9319b456f6349191f082ec4b149da5c9e57197..edd53c604375d12ea590375216b542fbce0c5ea0 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -284,6 +284,17 @@ struct NetworkContextFilePaths {

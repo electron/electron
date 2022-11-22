@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 7d91ecafdfc2b..e7c1795151244 100644
+index 7d91ecafdfc2b977aeb73c764cee6bb65f80b5a3..e7c1795151244be863d12193fc4eff8a20eae019 100644
 --- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
 @@ -14,9 +14,11 @@
@@ -34,7 +34,7 @@ index 7d91ecafdfc2b..e7c1795151244 100644
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 3f73e730bdb53..76b1517676161 100644
+index 3f73e730bdb53749f10160bc4555f59a6ef048ba..76b15176761614e5ac40b71316ed911431f77c1e 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -15,9 +15,11 @@

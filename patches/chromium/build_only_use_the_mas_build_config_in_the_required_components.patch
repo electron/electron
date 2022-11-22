@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 304a8d1891a9896fa770c1b90503aeb7fe972dd0..62955fe886911005b7ed8afde051971afea0c3eb 100644
+index 6a97745f9dc659046e2bdba4185c9212089ae504..068ffe6d1e8c0ac945d95c60304f520ec9eb39ea 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1491,6 +1491,7 @@ mixed_component("base") {
+@@ -1488,6 +1488,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -55,10 +55,10 @@ index 43713a7eef20efc7bdf2a78f8d126d43ff09ffff..44e7ec5c621ab17851dffe6ad42f7b56
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index b2a72ebfd07052113cd70b14d66f6e62cdff68d3..34c2d12ef886dcff95f00223faea972b98744653 100644
+index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5f238ecec 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -304,6 +304,8 @@ viz_component("service") {
+@@ -306,6 +306,8 @@ viz_component("service") {
  
      deps += [ "//ui/accelerated_widget_mac" ]
      frameworks = [ "IOSurface.framework" ]
@@ -68,7 +68,7 @@ index b2a72ebfd07052113cd70b14d66f6e62cdff68d3..34c2d12ef886dcff95f00223faea972b
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0f1bb45091a2d25d0fcbc59afeb402f2865d38c1..5ba65b8dbe7f1d51e21ac27deb08e01ed00b0ab5 100644
+index 8eac3b0301f7c71a7be64f5e24e1cca771c517fe..58c19d834cc8106648f526e977a6684d64111088 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -80,7 +80,7 @@ index 0f1bb45091a2d25d0fcbc59afeb402f2865d38c1..5ba65b8dbe7f1d51e21ac27deb08e01e
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 32594910ef32e64dbd5d9fda1fe00b5da912a279..57f9720c98ca178dabac2dd953a19b6066d938c2 100644
+index ff6b2e9248d7a03923ac57e44e31b5fb8320e456..33396b3fa3258b97d5baef4ef064887f81c43503 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -180,6 +180,7 @@ source_set("common") {
@@ -92,7 +92,7 @@ index 32594910ef32e64dbd5d9fda1fe00b5da912a279..57f9720c98ca178dabac2dd953a19b60
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index ac506972529bec0f2c02dd1d1f7e25cb6709959a..1815ee6dd219c9f90ea052464e73427ae9a68fb7 100644
+index 4dca38c0284b5e4689a53c0dbf44ada35a3a89ca..7f1d207f6bc8ec5ca578bf4f3a298d8b8bbaf862 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -214,6 +214,7 @@ target(link_target_type, "renderer") {
@@ -104,10 +104,10 @@ index ac506972529bec0f2c02dd1d1f7e25cb6709959a..1815ee6dd219c9f90ea052464e73427a
  
    public_deps = [
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 65317e87ec90e35e94d731ee3ae683e27210558c..f2b156adbe8707746acb93a641333b5dd21ba474 100644
+index 0b526044dcc7cbc21cc25cfdd7be8e4cdd8f06eb..c5c61601a684ea08e2279b4fc6b77d81ff2f03e1 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -251,6 +251,7 @@ component("bluetooth") {
+@@ -249,6 +249,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
@@ -128,7 +128,7 @@ index c342a9c95b1787c49b88ba62457c6f27151cbb87..6181018d4940569e1feb323587fcbc96
    if (is_android) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 0493d14fd9bd6047fc3ef2ec0f8504fb1790a8e3..a44ad2e88809265e750e32eda043fd8bc073e73a 100644
+index 8d4037772564159083d303e04936fca010f489fd..f22644b7d4f1db1249c2b72275f8992879abc6f1 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -190,6 +190,7 @@ source_set("audio") {
@@ -181,7 +181,7 @@ index 06b7f0310f1bca118cc2c89a9c21d3ebd661ec1e..b5b7432e1d998db003dd33622c750e81
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 5010d186f6b0d3d7eb0db089d3391f4ccc3b94cd..7a7e35f99be9a4144dc230978b73baafe53f709a 100644
+index 42f8f26744ecb64903f43232971b95d088084df3..a3588357c97d6c3f2abb41674ee1622ed32434df 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -283,6 +283,7 @@ component("core") {

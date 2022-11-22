@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 15e67fe72dbd2a216cc4cfff2f2443457a678fcb..48448825daedb6fbd1483f04d11285a40956768f 100644
+index ee05a7bd1b8e840f0914c82bb70aa5d070d0437a..0d950de95a3bb8e3c2f25ec407f1578f6e91d9dd 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -985,7 +985,6 @@ if (is_win) {
+@@ -986,7 +986,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 15e67fe72dbd2a216cc4cfff2f2443457a678fcb..48448825daedb6fbd1483f04d11285a4
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -994,6 +993,10 @@ if (is_win) {
+@@ -995,6 +994,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -78,7 +78,7 @@ index a1372cc90fc84b159e9952fa747e36360ae1a170..429b93910457675347b3b80e232e71aa
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index d6b338aa2f5f94dacecb06a17685c040939d2f29..a74da0a46d15338ee015054625570f2492678483 100644
+index ec5d3a5c54b774f8cc651fa59fc808633d988968..04733d3cb8d84f3cec1f23db5a395d8dc5d5cc2e 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -20,7 +20,6 @@
@@ -562,7 +562,7 @@ index 42d9af1e278f6c3e09bb7e54a7c4de0f17d064bf..96112222530e63f911d866884eca03cc
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 27fd7293ee0f1712e83a1adc94d113b1094cebb2..a20e86444dd8221b1ed537d0134803fdefc2cea8 100644
+index c4ed9b0809a10d09a87309f64422cd496328e51d..3329b02568ae3eb41c92430c60057ea4641255cc 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -44,6 +44,7 @@
@@ -667,7 +667,7 @@ index 27fd7293ee0f1712e83a1adc94d113b1094cebb2..a20e86444dd8221b1ed537d0134803fd
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2410,36 +2425,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2405,36 +2420,52 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -732,7 +732,7 @@ index 27fd7293ee0f1712e83a1adc94d113b1094cebb2..a20e86444dd8221b1ed537d0134803fd
      notify_browser_of_print_failure_ = false;
      GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
      return false;
-@@ -2566,7 +2597,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
+@@ -2561,7 +2592,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
        std::move(params),
        base::BindOnce(
            [](base::OnceClosure quit_closure, mojom::PrintPagesParamsPtr* output,
@@ -783,10 +783,10 @@ index 97151dfd451fc847472fa82d418ab1f5abd8d853..e8e963aca6c1ab0360c55da0ad0845b9
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d18f0829cc06355f75d2943bf5912079cd056efa..0f1bb45091a2d25d0fcbc59afeb402f2865d38c1 100644
+index 3f65744c20ee88d7f4d62289d0c4229a4017eb90..8eac3b0301f7c71a7be64f5e24e1cca771c517fe 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2784,8 +2784,9 @@ source_set("browser") {
+@@ -2783,8 +2783,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
