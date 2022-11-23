@@ -171,7 +171,8 @@ int NodeMain(int argc, char* argv[]) {
         node::InitializeOncePerProcess(
             args,
             {node::ProcessInitializationFlags::kNoInitializeV8,
-             node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
+             node::ProcessInitializationFlags::kNoInitializeNodeV8Platform,
+             node::ProcessInitializationFlags::kNoDefaultSignalHandling});
 
     for (const std::string& error : result->errors())
       fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
