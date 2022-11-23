@@ -148,5 +148,8 @@
   },
   "resolutions": {
     "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac"
+  },
+  "dependencies": {
+    "babel-plugin-transform-async-to-generator": "^6.24.1"
   }
 }

@@ -218,6 +218,8 @@ Destroys the tray icon immediately.
 
 Sets the `image` associated with this tray icon.
 
+Note: setImage is known to cause segfaults, and should not be used on Linux.
+
 #### `tray.setPressedImage(image)` _macOS_
 
 * `image` ([NativeImage](native-image.md) | string)
