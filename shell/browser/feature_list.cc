@@ -17,6 +17,10 @@
 #include "net/base/features.h"
 #include "services/network/public/cpp/features.h"
 
+#if BUILDFLAG(IS_MAC)
+#include "device/base/features.h"  // nogncheck
+#endif
+
 namespace electron {
 
 void InitializeFeatureList() {
@@ -31,6 +35,11 @@ void InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
+
+#if BUILDFLAG(IS_MAC)
+  // Needed for WebUSB implementation
+  enable_features += std::string(",") + device::kNewUsbBackend.name;
+#endif
 
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;

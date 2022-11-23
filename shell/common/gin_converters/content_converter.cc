@@ -209,6 +209,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "serial");
     case PermissionType::HID:
       return StringToV8(isolate, "hid");
+    case PermissionType::USB:
+      return StringToV8(isolate, "usb");
     default:
       return StringToV8(isolate, "unknown");
   }
