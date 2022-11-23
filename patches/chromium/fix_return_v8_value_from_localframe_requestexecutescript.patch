@@ -64,10 +64,10 @@ index acc31345b556a4daf8a189cf7a9f302926e7cfdb..1f57875bb31f0e92829a0380e6f0f357
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index e332d77cf93a4bf0a4425074297834da793c121b..51462a8ed5922ead9671d6e4533003f2c3245560 100644
+index c2a088a9db9dbb857eec66b6c4ff29b8b230e3f5..bad389ad4962213c99f3183bdc1d0190e8096c4b 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -2579,6 +2579,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -2577,6 +2577,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -75,7 +75,7 @@ index e332d77cf93a4bf0a4425074297834da793c121b..51462a8ed5922ead9671d6e4533003f2
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -2609,7 +2610,8 @@ void LocalFrame::RequestExecuteScript(
+@@ -2607,7 +2608,8 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        ToScriptState(DomWindow(), *world), std::move(script_sources),
        execute_script_policy, user_gesture, evaluation_timing, blocking_option,
@@ -205,7 +205,7 @@ index 1e4d9e098463d61dcab787afcc46fea63b27e012..3f1ebf493ddd7d1c209acee2fb1255a0
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index e08827e61a0f1ab3ed859cc0a926260bdf8efb96..30cbcaa6a7df361f7efe7dcd7f173fdac6decd9f 100644
+index 2724ac04abb3fbe9492d44c85291dcf3cefa1371..53e8b2dc0e5abc14c3f75e94410abfae517af03e 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1110,14 +1110,15 @@ void WebLocalFrameImpl::RequestExecuteScript(

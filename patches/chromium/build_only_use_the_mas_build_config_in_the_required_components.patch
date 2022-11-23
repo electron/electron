@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1ad64d9af8c1aa2d342b37e75d1493e79c400866..9f65435755498124516d18fc0df0bed92388b086 100644
+index dac294b4e51a0f35b2dd2bc08f265a3c1a839b4f..3dc92bac461f8fb9a5f63ebc47116a8631a28aab 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1488,6 +1488,7 @@ component("base") {
@@ -18,7 +18,7 @@ index 1ad64d9af8c1aa2d342b37e75d1493e79c400866..9f65435755498124516d18fc0df0bed9
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index e54d716ee7b046527c09727c0646d7235447cfd6..315a1503f92ca3ac98f366544a7b52838b7720b1 100644
+index d965004901d3858a5de6d0978e3bbd4eb1d54e35..6e0cb485e38bc1dd91fce7c9e89e5e93f2fbd849 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6e6c172a5b6cd9b2c2196bffd411e55f953ba9ff..585097e2eee40e55033f2af98801ca6073b32df3 100644
+index 4b3a33ad15933c7ba3d305a8051a2edbcdea53bb..40d855d0feba595b90d14c62599c812c40573e24 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -181,7 +181,7 @@ index 06b7f0310f1bca118cc2c89a9c21d3ebd661ec1e..b5b7432e1d998db003dd33622c750e81
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 42f8f26744ecb64903f43232971b95d088084df3..a3588357c97d6c3f2abb41674ee1622ed32434df 100644
+index 2a958f9b10eb2d611b3e0278aec61d1ac9fa1913..41638fdd394e4a0c8ee7708e5da8c1a536e387f0 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -283,6 +283,7 @@ component("core") {
