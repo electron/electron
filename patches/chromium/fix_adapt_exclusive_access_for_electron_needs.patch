@@ -63,14 +63,17 @@ index 6f80da0d702ac7af4b10c3138e52a376a63bbb58..2abb15197e7d028a36fc8503cdb997b4
  
    if (MaybeToggleFullscreenWithinTab(web_contents, false)) {
      // During tab capture of fullscreen-within-tab views, the browser window
-@@ -294,9 +302,11 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
+@@ -294,12 +294,14 @@ void FullscreenController::ExitFullscreenModeForTab(WebContents* web_contents) {
  void FullscreenController::FullscreenTabOpeningPopup(
      content::WebContents* opener,
      content::WebContents* popup) {
 +#if 0
-   DCHECK_EQ(exclusive_access_tab(), opener);
-   DCHECK(popunder_preventer_);
-   popunder_preventer_->AddPotentialPopunder(popup);
+   if (popunder_preventer_) {
+     DCHECK_EQ(exclusive_access_tab(), opener);
+     popunder_preventer_->AddPotentialPopunder(popup);
+   } else {
+     DCHECK(IsFullscreenWithinTab(opener));
+   }
 +#endif
  }
  
