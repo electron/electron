@@ -42,4 +42,3 @@ index eb3b554f37cdaa1b8ef532cecc210f093554704d..d761e4b193e3eb44bf0e46deb67fc26f
    std::wstring app_user_model_id;
    Browser* browser =
        chrome::FindBrowserWithWebContents(controller->GetWebContents());
-

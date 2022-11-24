@@ -59,10 +59,10 @@ index 7fcc9735c0780ce13e18b628220737de58cc54a8..fc7981eb775ca8816086a2e7bccccf03
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 1c1cf151ffdca652628beb199b6f83278ab90258..fc15bf375febefa907ad0a3fdddb010f867d8e39 100644
+index b8e2033e58d38da62ba880f0d90d86cff8bd83ab..8642dba36bfb68c475f0c66198ad60e739c1a5b8 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -970,6 +970,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -969,6 +969,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
