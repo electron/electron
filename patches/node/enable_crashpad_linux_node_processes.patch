@@ -10,7 +10,7 @@ If this patch is merged in its current state, something has gone
 horribly wrong.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index f448bde2a570480a4390daf5392dc9d9b0f52df3..e920624f7ff5e4e3dc6fcaef003492928e4760d5 100644
+index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..54207d5e72cc64025321aaaa7a13bf849389cdca 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -159,7 +159,6 @@ function fork(modulePath, args = [], options) {

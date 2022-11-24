@@ -52,15 +52,9 @@ app.whenReady().then(() => {
     w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
-
-    console.log('About to fork child process...');
-    const fd = process.getFD();
-    const pid = process.getPID();
-    console.log('FD: ', process.getFD(), 'PID: ', process.getPID());
     const child = childProcess.fork(crashPath,
-      [`--crashpadfd=${fd}`, `--crashpad-handler-pid=${pid}`],
-      { silent: true, stdio: ['inherit', 'inherit', 'inherit', 'ipc', fd] }
-      // { silent: true }
+      [`--crashpadfd=${process.getFD()}`, `--crashpad-handler-pid=${process.getPID()}`],
+      { silent: true }
     );
 
     child.on('exit', () => {

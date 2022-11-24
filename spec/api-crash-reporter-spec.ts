@@ -112,7 +112,7 @@ function runCrashApp (crashType: string, port: number, extraArgs: Array<string> 
   return runApp(appPath, [
     `--crash-type=${crashType}`,
     `--crash-reporter-url=http://127.0.0.1:${port}`,
-    `--enable-logging`,
+    '--enable-logging',
     ...extraArgs
   ]);
 }
@@ -282,7 +282,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127 + (process.platform === 'linux' ? 159 : 0), 'crash should have truncated longParam');
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {

@@ -129,6 +129,18 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
   self->pending_next_ticks_.clear();
 }
 
+// Fetch a handler process file descriptor
+int ElectronBindings::GetFD() {
+  int fd;
+  return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
+}
+
+// Fetch a handler process pid
+int ElectronBindings::GetPID() {
+  pid_t pid;
+  return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
+}
+
 // static
 void ElectronBindings::Crash() {
   volatile int* zero = nullptr;
@@ -169,18 +181,6 @@ v8::Local<v8::Value> ElectronBindings::GetHeapStatistics(v8::Isolate* isolate) {
            static_cast<bool>(v8_heap_stats.does_zap_garbage()));
 
   return dict.GetHandle();
-}
-
-// TODO: Remove this, function for testing
-int ElectronBindings::GetFD() {
-  int fd;
-  return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
-}
-
-// TODO: Testing function for getting PID
-int ElectronBindings::GetPID() {
-  pid_t pid;
-  return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
 }
 
 // static
