@@ -21,25 +21,23 @@ index bba11fe850dd39cb4e91c36a3b11302850f40cb2..5534632ac1e3aaa1c44f3b8cb027c507
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 6d5e3767964475fc6dd9c783f81998ce0104e517..7fcc9735c0780ce13e18b628220737de58cc54a8 100644
+index 716fb5293e3251592e47b870ae3ececa1d54db0f..0bdd28302a4490bb3677570f309ca77e6a81f618 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4005,6 +4005,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
-   }
+@@ -4033,6 +4033,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+ 
    auto* new_contents_impl = new_contents.get();
  
-+  // Call this earlier than Chrome to associate the web preferences with the
-+  // WebContents before the view gets created.
 +  if (delegate_) {
-+    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
-+                                                opener->GetRoutingID(),
-+                                                params, new_contents_impl);
++    delegate_->WebContentsCreated(this, render_process_id,
++                                  opener->GetRoutingID(), params.frame_name,
++                                  params.target_url, new_contents_impl);
 +  }
 +
-   new_contents_impl->GetController().SetSessionStorageNamespace(
-       partition_config, session_storage_namespace);
- 
-@@ -4049,12 +4057,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+   // If the new frame has a name, make sure any SiteInstances that can find
+   // this named frame have proxies for it.  Must be called after
+   // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
+@@ -4074,12 +4080,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -52,6 +50,7 @@ index 6d5e3767964475fc6dd9c783f81998ce0104e517..7fcc9735c0780ce13e18b628220737de
    observers_.NotifyObservers(&WebContentsObserver::DidOpenRequestedURL,
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
+
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index e6aa7c3e1e7eef9a574b3b07c11614ec89148cb3..f7b4c0a165ca479ab63cd34be0cb692c9d71a802 100644
 --- a/content/common/frame.mojom
