@@ -65,8 +65,10 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
+#if BUILDFLAG(IS_LINUX)
   process->SetMethod("getFD", &GetFD);
   process->SetMethod("getPID", &GetPID);
+#endif
 
 #if IS_MAS_BUILD()
   process->SetReadOnly("mas", true);
@@ -129,6 +131,7 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
   self->pending_next_ticks_.clear();
 }
 
+#if BUILDFLAG(IS_LINUX)
 // Fetch a handler process file descriptor
 int ElectronBindings::GetFD() {
   int fd;
@@ -140,6 +143,7 @@ int ElectronBindings::GetPID() {
   pid_t pid;
   return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
 }
+#endif
 
 // static
 void ElectronBindings::Crash() {

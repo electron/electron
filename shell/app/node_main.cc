@@ -42,6 +42,7 @@
 
 #if BUILDFLAG(IS_POSIX)
 #include "base/posix/global_descriptors.h"
+#include "base/strings/string_number_conversions.h"
 #include "components/crash/core/app/crash_switches.h"
 #include "content/public/common/content_descriptors.h"
 #include "shell/common/options_switches.h"
