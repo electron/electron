@@ -1,7 +1,7 @@
-From 6b4af5d8208398839e90c7adc2da22c0288d6b47 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Peng Huang <penghuang@chromium.org>
 Date: Wed, 23 Nov 2022 00:16:49 +0000
-Subject: [PATCH] Fix potential OOB problem with validating command decoder
+Subject: Fix potential OOB problem with validating command decoder
 
 Bug: 1392715
 Change-Id: If51b10cc08e5b3ca4b6012b97261347a5e4c134e
@@ -10,13 +10,12 @@ Auto-Submit: Peng Huang <penghuang@chromium.org>
 Commit-Queue: Peng Huang <penghuang@chromium.org>
 Reviewed-by: Geoff Lang <geofflang@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1074966}
----
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder.cc b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-index 7ac1fc8..036abc5f 100644
+index a36b9901b50cd99ac641d70d2f316362006e45e7..73148877e2b8b28374ffd32aa10361d21e4911e4 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder.cc
-@@ -8558,10 +8558,18 @@
+@@ -8595,10 +8595,18 @@ void GLES2DecoderImpl::DoFramebufferTexture2DCommon(
      service_id = texture_ref->service_id();
    }
  
@@ -36,7 +35,7 @@ index 7ac1fc8..036abc5f 100644
      LOCAL_SET_GL_ERROR(
          GL_INVALID_VALUE,
          name, "level out of range");
-@@ -8633,8 +8641,8 @@
+@@ -8670,8 +8678,8 @@ void GLES2DecoderImpl::DoFramebufferTextureLayer(
              "texture is neither TEXTURE_3D nor TEXTURE_2D_ARRAY");
          return;
      }
@@ -47,7 +46,7 @@ index 7ac1fc8..036abc5f 100644
        LOCAL_SET_GL_ERROR(
            GL_INVALID_VALUE, function_name, "invalid level or layer");
        return;
-@@ -14686,11 +14694,6 @@
+@@ -14757,11 +14765,6 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
      LOCAL_SET_GL_ERROR(GL_INVALID_VALUE, func_name, "imageSize < 0");
      return error::kNoError;
    }
@@ -59,7 +58,7 @@ index 7ac1fc8..036abc5f 100644
    TextureRef* texture_ref = texture_manager()->GetTextureInfoForTarget(
        &state_, target);
    if (!texture_ref) {
-@@ -14699,6 +14702,12 @@
+@@ -14770,6 +14773,12 @@ error::Error GLES2DecoderImpl::DoCompressedTexImage(
      return error::kNoError;
    }
    Texture* texture = texture_ref->texture();
@@ -72,7 +71,7 @@ index 7ac1fc8..036abc5f 100644
    if (texture->IsImmutable()) {
      LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, func_name, "texture is immutable");
      return error::kNoError;
-@@ -15068,10 +15077,6 @@
+@@ -15139,10 +15148,6 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
      LOCAL_SET_GL_ERROR(GL_INVALID_VALUE, func_name, "imageSize < 0");
      return error::kNoError;
    }
@@ -83,7 +82,7 @@ index 7ac1fc8..036abc5f 100644
    TextureRef* texture_ref = texture_manager()->GetTextureInfoForTarget(
        &state_, target);
    if (!texture_ref) {
-@@ -15079,7 +15084,14 @@
+@@ -15150,7 +15155,14 @@ error::Error GLES2DecoderImpl::DoCompressedTexSubImage(
          GL_INVALID_OPERATION, func_name, "no texture bound at target");
      return error::kNoError;
    }
@@ -98,7 +97,7 @@ index 7ac1fc8..036abc5f 100644
    GLenum type = 0;
    GLenum internal_format = 0;
    if (!texture->GetLevelType(target, level, &type, &internal_format)) {
-@@ -15204,7 +15216,8 @@
+@@ -15275,7 +15287,8 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
          GL_INVALID_OPERATION, func_name, "texture is immutable");
      return;
    }
@@ -108,7 +107,7 @@ index 7ac1fc8..036abc5f 100644
        border != 0) {
      LOCAL_SET_GL_ERROR(
          GL_INVALID_VALUE, func_name, "dimensions out of range");
-@@ -17778,8 +17791,8 @@
+@@ -17848,8 +17861,8 @@ void GLES2DecoderImpl::DoCopyTextureCHROMIUM(
      }
  
      // Check that this type of texture is allowed.
@@ -119,7 +118,7 @@ index 7ac1fc8..036abc5f 100644
        LOCAL_SET_GL_ERROR(GL_INVALID_VALUE, kFunctionName, "Bad dimensions");
        return;
      }
-@@ -17946,8 +17959,8 @@
+@@ -18016,8 +18029,8 @@ void GLES2DecoderImpl::CopySubTextureHelper(const char* function_name,
      }
  
      // Check that this type of texture is allowed.
@@ -130,7 +129,7 @@ index 7ac1fc8..036abc5f 100644
        LOCAL_SET_GL_ERROR(GL_INVALID_VALUE, function_name,
                           "source texture bad dimensions");
        return;
-@@ -18187,11 +18200,20 @@
+@@ -18257,11 +18270,20 @@ void GLES2DecoderImpl::TexStorageImpl(GLenum target,
        return;
      }
    }
@@ -153,7 +152,7 @@ index 7ac1fc8..036abc5f 100644
        is_invalid_texstorage_size) {
      LOCAL_SET_GL_ERROR(
          GL_INVALID_VALUE, function_name, "dimensions out of range");
-@@ -18204,14 +18226,6 @@
+@@ -18274,14 +18296,6 @@ void GLES2DecoderImpl::TexStorageImpl(GLenum target,
      LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, function_name, "too many levels");
      return;
    }
@@ -169,10 +168,10 @@ index 7ac1fc8..036abc5f 100644
      framebuffer_state_.clear_state_dirty = true;
    }
 diff --git a/gpu/command_buffer/service/texture_manager.cc b/gpu/command_buffer/service/texture_manager.cc
-index 48325b8..ba0ebe2 100644
+index b20b875b6b37c36623b41e648e393ded96bae93b..f5df8270a8192d36b95e619248c128167455ef46 100644
 --- a/gpu/command_buffer/service/texture_manager.cc
 +++ b/gpu/command_buffer/service/texture_manager.cc
-@@ -1642,7 +1642,7 @@
+@@ -1641,7 +1641,7 @@ void Texture::Update() {
      return;
  
    if (face_infos_.empty() ||
@@ -181,7 +180,7 @@ index 48325b8..ba0ebe2 100644
      texture_complete_ = false;
      cube_complete_ = false;
      return;
-@@ -2025,8 +2025,7 @@
+@@ -2028,8 +2028,7 @@ bool Texture::CanRenderTo(const FeatureInfo* feature_info, GLint level) const {
    // the time.
    if (face_infos_.size() == 6 && !cube_complete())
      return false;
@@ -191,7 +190,7 @@ index 48325b8..ba0ebe2 100644
    if (level > base_level_ && !texture_complete()) {
      return false;
    }
-@@ -2061,7 +2060,7 @@
+@@ -2064,7 +2063,7 @@ void Texture::SetCompatibilitySwizzle(const CompatibilitySwizzle* swizzle) {
  
  void Texture::ApplyFormatWorkarounds(const FeatureInfo* feature_info) {
    if (feature_info->gl_version_info().NeedsLuminanceAlphaEmulation()) {
@@ -200,7 +199,7 @@ index 48325b8..ba0ebe2 100644
        return;
      const Texture::LevelInfo& info = face_infos_[0].level_infos[base_level_];
      SetCompatibilitySwizzle(GetCompatibilitySwizzleInternal(info.format));
-@@ -2296,8 +2295,11 @@
+@@ -2298,8 +2297,11 @@ scoped_refptr<TextureRef>
    return default_texture;
  }
  
@@ -214,7 +213,7 @@ index 48325b8..ba0ebe2 100644
    if (level < 0 || level >= MaxLevelsForTarget(target))
      return false;
    GLsizei max_size = MaxSizeForTarget(target) >> level;
-@@ -2317,6 +2319,18 @@
+@@ -2319,6 +2321,18 @@ bool TextureManager::ValidForTarget(
           (target != GL_TEXTURE_2D || (depth == 1));
  }
  
@@ -233,7 +232,7 @@ index 48325b8..ba0ebe2 100644
  void TextureManager::SetTarget(TextureRef* ref, GLenum target) {
    DCHECK(ref);
    ref->texture()->SetTarget(target, MaxLevelsForTarget(target));
-@@ -2800,14 +2814,6 @@
+@@ -2802,14 +2816,6 @@ bool TextureManager::ValidateTexImage(ContextState* state,
        args.internal_format, args.level)) {
      return false;
    }
@@ -248,7 +247,7 @@ index 48325b8..ba0ebe2 100644
    if ((GLES2Util::GetChannelsForFormat(args.format) &
         (GLES2Util::kDepth | GLES2Util::kStencil)) != 0 && args.pixels
        && !feature_info_->IsWebGL2OrES3Context()) {
-@@ -2830,7 +2836,13 @@
+@@ -2832,7 +2838,13 @@ bool TextureManager::ValidateTexImage(ContextState* state,
          "texture is immutable");
      return false;
    }
@@ -264,10 +263,10 @@ index 48325b8..ba0ebe2 100644
    if (buffer) {
      if (buffer->GetMappedRange()) {
 diff --git a/gpu/command_buffer/service/texture_manager.h b/gpu/command_buffer/service/texture_manager.h
-index 341adcd..bf92c1b 100644
+index c78c914cbad58abb17439354eeb9f77a9891f21d..8f68e70e6d1c9a4b75f6bec0df7179320bc167c0 100644
 --- a/gpu/command_buffer/service/texture_manager.h
 +++ b/gpu/command_buffer/service/texture_manager.h
-@@ -470,6 +470,11 @@
+@@ -470,6 +470,11 @@ class GPU_GLES2_EXPORT Texture final : public TextureBase {
             sampler_state_.min_filter != GL_LINEAR;
    }
  
@@ -279,7 +278,7 @@ index 341adcd..bf92c1b 100644
   private:
    friend class MailboxManagerTest;
    friend class TextureManager;
-@@ -932,6 +937,11 @@
+@@ -932,6 +937,11 @@ class GPU_GLES2_EXPORT TextureManager
    bool ValidForTarget(
        GLenum target, GLint level,
        GLsizei width, GLsizei height, GLsizei depth);
