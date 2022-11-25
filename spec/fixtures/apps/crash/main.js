@@ -52,15 +52,16 @@ app.whenReady().then(() => {
     w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
-    const child = childProcess.fork(crashPath,
-      [`--crashpadfd=${process.getFD()}`, `--crashpad-handler-pid=${process.getPID()}`],
-      { silent: true }
-    );
-
-    child.on('exit', () => {
-      console.log('Process exiting...');
-      process.exit(0);
-    });
+    let child;
+    if (process.platform === 'linux') {
+      child = childProcess.fork(crashPath,
+        [`--crashpadfd=${process.getFD()}`, `--crashpad-handler-pid=${process.getPID()}`],
+        { silent: true }
+      );
+    } else {
+      child = childProcess.fork(crashPath, { silent: true });
+    };
+    child.on('exit', () => process.exit(0));
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
     process.exit(1);
