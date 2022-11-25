@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@webrtc.org>
+Date: Wed, 13 Jul 2022 11:10:14 +0200
+Subject: Disallow invalid arguments in RestoreEncodingLayers.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Changing DCHECK into CHECK for good measure.
+
+(cherry picked from commit 2b1f509f3a05035a17917061a71b16114e8c72dc)
+
+No-Try: True
+Bug: chromium:1343889
+Change-Id: I2cede85dc2d2a4238739f73afe25275047f4aa50
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/268460
+Reviewed-by: Ilya Nikolaevskiy <ilnik@webrtc.org>
+Commit-Queue: Henrik Boström <hbos@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#37511}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/269242
+Cr-Commit-Position: refs/branch-heads/5112@{#8}
+Cr-Branched-From: a976a871159f85f975fbd6f170d0a8f00a4aee49-refs/heads/main@{#37168}
+
+diff --git a/pc/rtp_sender.cc b/pc/rtp_sender.cc
+index 58fef4041ecfcef3a76fcfb296c923355f68625c..3604d198e8fabf8a689746f073b6783fc827e7c5 100644
+--- a/pc/rtp_sender.cc
++++ b/pc/rtp_sender.cc
+@@ -75,8 +75,8 @@ RtpParameters RestoreEncodingLayers(
+     const RtpParameters& parameters,
+     const std::vector<std::string>& removed_rids,
+     const std::vector<RtpEncodingParameters>& all_layers) {
+-  RTC_DCHECK_EQ(parameters.encodings.size() + removed_rids.size(),
+-                all_layers.size());
++  RTC_CHECK_EQ(parameters.encodings.size() + removed_rids.size(),
++               all_layers.size());
+   RtpParameters result(parameters);
+   result.encodings.clear();
+   size_t index = 0;

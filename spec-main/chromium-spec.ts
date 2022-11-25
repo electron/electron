@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, delay, defer } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay } from './spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 
@@ -1461,6 +1461,34 @@ describe('chromium features', () => {
         expect((w.webContents as any).length()).to.equal(2);
       });
     });
+
+    describe('window.history.back', () => {
+      it('should not allow sandboxed iframe to modify main frame state', async () => {
+        const w = new BrowserWindow({ show: false });
+        w.loadURL('data:text/html,<iframe sandbox="allow-scripts"></iframe>');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-frame-navigate'),
+          emittedOnce(w.webContents, 'did-navigate')
+        ]);
+
+        w.webContents.executeJavaScript('window.history.pushState(1, "")');
+        await Promise.all([
+          emittedOnce(w.webContents, 'navigation-entry-committed'),
+          emittedOnce(w.webContents, 'did-navigate-in-page')
+        ]);
+
+        (w.webContents as any).once('navigation-entry-committed', () => {
+          expect.fail('Unexpected navigation-entry-committed');
+        });
+        w.webContents.once('did-navigate-in-page', () => {
+          expect.fail('Unexpected did-navigate-in-page');
+        });
+        await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
+        expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
+        expect((w.webContents as any).getActiveIndex()).to.equal(1);
+      });
+    });
   });
 
   describe('chrome://media-internals', () => {
@@ -1653,7 +1681,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     server.close();
   });
 
-  it('can fullscreen from out-of-process iframes (OOPIFs)', async () => {
+  ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
       '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
@@ -1677,8 +1705,37 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     expect(width).to.equal(0);
   });
 
+  ifit(process.platform === 'darwin')('can fullscreen from out-of-process iframes (macOS)', async () => {
+    await emittedOnce(w, 'enter-full-screen');
+    const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
+    const html =
+      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+    w.loadURL(`data:text/html,${html}`);
+    await fullscreenChange;
+
+    const fullscreenWidth = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(fullscreenWidth > 0).to.be.true();
+
+    await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
+    );
+    await emittedOnce(w.webContents, 'leave-html-full-screen');
+
+    const width = await w.webContents.executeJavaScript(
+      "document.querySelector('iframe').offsetWidth"
+    );
+    expect(width).to.equal(0);
+
+    w.setFullScreen(false);
+    await emittedOnce(w, 'leave-full-screen');
+  });
+
   // TODO(jkleinsc) fix this flaky test on WOA
   ifit(process.platform !== 'win32' || process.arch !== 'arm64')('can fullscreen from in-process iframes', async () => {
+    if (process.platform === 'darwin') await emittedOnce(w, 'enter-full-screen');
+
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     w.loadFile(path.join(fixturesPath, 'pages', 'fullscreen-ipif.html'));
     await fullscreenChange;
@@ -2035,9 +2092,7 @@ describe('navigator.hid', () => {
     } else {
       expect(device).to.equal('');
     }
-    if (process.arch === 'arm64' || process.arch === 'arm') {
-      // arm CI returns HID devices - this block may need to change if CI hardware changes.
-      expect(haveDevices).to.be.true();
+    if (haveDevices) {
       // Verify that navigation will clear device permissions
       const grantedDevices = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
       expect(grantedDevices).to.not.be.empty();

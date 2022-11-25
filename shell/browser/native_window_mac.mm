@@ -300,7 +300,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   bool rounded_corner = true;
   options.Get(options::kRoundedCorners, &rounded_corner);
   if (!rounded_corner && !has_frame())
-    styleMask = 0;
+    styleMask = NSWindowStyleMaskBorderless;
 
   if (minimizable)
     styleMask |= NSMiniaturizableWindowMask;
@@ -588,11 +588,6 @@ bool NativeWindowMac::IsVisible() {
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
-void NativeWindowMac::SetFullScreenTransitionState(
-    FullScreenTransitionState state) {
-  fullscreen_transition_state_ = state;
-}
-
 bool NativeWindowMac::IsEnabled() {
   return [window_ attachedSheet] == nil;
 }
@@ -685,15 +680,6 @@ bool NativeWindowMac::IsMinimized() {
   return [window_ isMiniaturized];
 }
 
-void NativeWindowMac::HandlePendingFullscreenTransitions() {
-  if (pending_transitions_.empty())
-    return;
-
-  bool next_transition = pending_transitions_.front();
-  pending_transitions_.pop();
-  SetFullScreen(next_transition);
-}
-
 bool NativeWindowMac::HandleDeferredClose() {
   if (has_deferred_window_close_) {
     SetHasDeferredWindowClose(false);
@@ -704,6 +690,9 @@ bool NativeWindowMac::HandleDeferredClose() {
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
+  if (!has_frame() && !HasStyleMask(NSWindowStyleMaskTitled))
+    return;
+
   // [NSWindow -toggleFullScreen] is an asynchronous operation, which means
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),

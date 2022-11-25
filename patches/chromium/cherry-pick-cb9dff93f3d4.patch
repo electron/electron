@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@chromium.org>
+Date: Mon, 10 Oct 2022 08:37:15 +0000
+Subject: Use HeapMojoReceiver rather than mojo::Receiver for
+ PeerConnectionTracker
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+HeapMojoReceiver is recommended for garbage collected objects, avoiding
+problems with conflicting lifetimes.
+
+(cherry picked from commit e3437317c4cd8401f0f0d599b61751bbe0e1ec70)
+
+Bug: chromium:1369882
+Change-Id: Ic38e761cf4275e6d7b30a6d7e2daa5d1596e67a4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3936144
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Commit-Queue: Harald Alvestrand <hta@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1055630}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3934344
+Commit-Queue: Henrik Boström <hbos@chromium.org>
+Auto-Submit: Harald Alvestrand <hta@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5249@{#790}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.cc b/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.cc
+index 7789929aafbb596d22c0af46e67bc4a1c9970fe9..1b068312ef9bea8f54dfbabee1a3bafc0c34801b 100644
+--- a/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.cc
++++ b/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.cc
+@@ -648,16 +648,20 @@ PeerConnectionTracker::PeerConnectionTracker(
+     scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner,
+     base::PassKey<PeerConnectionTracker>)
+     : Supplement<LocalDOMWindow>(window),
++      receiver_(this, &window),
+       main_thread_task_runner_(std::move(main_thread_task_runner)) {
+   window.GetBrowserInterfaceBroker().GetInterface(
+       peer_connection_tracker_host_.BindNewPipeAndPassReceiver());
+ }
+ 
++// Constructor used for testing. Note that receiver_ doesn't have a context
++// notifier in this case.
+ PeerConnectionTracker::PeerConnectionTracker(
+     mojo::Remote<blink::mojom::blink::PeerConnectionTrackerHost> host,
+     scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner)
+     : Supplement(nullptr),
+       peer_connection_tracker_host_(std::move(host)),
++      receiver_(this, nullptr),
+       main_thread_task_runner_(std::move(main_thread_task_runner)) {}
+ 
+ PeerConnectionTracker::~PeerConnectionTracker() {}
+diff --git a/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.h b/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.h
+index 101670d8a31154047762a060fcd13ce342dd758c..fc8ee4bc429d4abb637b121b6969880cb07f186d 100644
+--- a/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.h
++++ b/third_party/blink/renderer/modules/peerconnection/peer_connection_tracker.h
+@@ -15,6 +15,7 @@
+ #include "third_party/blink/renderer/core/frame/local_dom_window.h"
+ #include "third_party/blink/renderer/modules/mediastream/media_stream.h"
+ #include "third_party/blink/renderer/modules/modules_export.h"
++#include "third_party/blink/renderer/platform/mojo/heap_mojo_receiver.h"
+ #include "third_party/blink/renderer/platform/peerconnection/rtc_peer_connection_handler_client.h"
+ #include "third_party/blink/renderer/platform/peerconnection/rtc_rtp_transceiver_platform.h"
+ #include "third_party/blink/renderer/platform/peerconnection/rtc_session_description_platform.h"
+@@ -257,6 +258,11 @@ class MODULES_EXPORT PeerConnectionTracker
+   virtual void TrackRtcEventLogWrite(RTCPeerConnectionHandler* pc_handler,
+                                      const WTF::Vector<uint8_t>& output);
+ 
++  void Trace(Visitor* visitor) const override {
++    visitor->Trace(receiver_);
++    Supplement<LocalDOMWindow>::Trace(visitor);
++  }
++
+  private:
+   FRIEND_TEST_ALL_PREFIXES(PeerConnectionTrackerTest, OnSuspend);
+   FRIEND_TEST_ALL_PREFIXES(PeerConnectionTrackerTest, OnThermalStateChange);
+@@ -325,7 +331,9 @@ class MODULES_EXPORT PeerConnectionTracker
+   THREAD_CHECKER(main_thread_);
+   mojo::Remote<blink::mojom::blink::PeerConnectionTrackerHost>
+       peer_connection_tracker_host_;
+-  mojo::Receiver<blink::mojom::blink::PeerConnectionManager> receiver_{this};
++  HeapMojoReceiver<blink::mojom::blink::PeerConnectionManager,
++                   PeerConnectionTracker>
++      receiver_;
+ 
+   scoped_refptr<base::SingleThreadTaskRunner> main_thread_task_runner_;
+ };

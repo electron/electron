@@ -36,6 +36,7 @@ class ElectronDesktopWindowTreeHostWin
   bool GetDwmFrameInsetsInPixels(gfx::Insets* insets) const override;
   bool GetClientAreaInsets(gfx::Insets* insets,
                            HMONITOR monitor) const override;
+  bool HandleMouseEventForCaption(UINT message) const override;
 
  private:
   NativeWindowViews* native_window_view_;  // weak ref

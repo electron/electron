@@ -10,6 +10,7 @@
 
 #include "base/i18n/rtl.h"
 #include "base/numerics/safe_conversions.h"
+#include "base/win/windows_version.h"
 #include "chrome/grit/theme_resources.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/common/color_util.h"
@@ -28,11 +29,21 @@ WinCaptionButton::WinCaptionButton(PressedCallback callback,
                                    const std::u16string& accessible_name)
     : views::Button(std::move(callback)),
       frame_view_(frame_view),
+      icon_painter_(CreateIconPainter()),
       button_type_(button_type) {
   SetAnimateOnStateChange(true);
   // Not focusable by default, only for accessibility.
   SetFocusBehavior(FocusBehavior::ACCESSIBLE_ONLY);
   SetAccessibleName(accessible_name);
+}
+
+WinCaptionButton::~WinCaptionButton() = default;
+
+std::unique_ptr<WinIconPainter> WinCaptionButton::CreateIconPainter() {
+  if (base::win::GetVersion() >= base::win::Version::WIN11) {
+    return std::make_unique<Win11IconPainter>();
+  }
+  return std::make_unique<WinIconPainter>();
 }
 
 gfx::Size WinCaptionButton::CalculatePreferredSize() const {
@@ -50,9 +61,10 @@ void WinCaptionButton::OnPaintBackground(gfx::Canvas* canvas) {
   const SkAlpha theme_alpha = SkColorGetA(bg_color);
 
   gfx::Rect bounds = GetContentsBounds();
-  bounds.Inset(gfx::Insets::TLBR(0, 0, 0, 0));
+  bounds.Inset(gfx::Insets::TLBR(0, GetBetweenButtonSpacing(), 0, 0));
 
-  canvas->FillRect(bounds, SkColorSetA(bg_color, theme_alpha));
+  if (theme_alpha > 0)
+    canvas->FillRect(bounds, SkColorSetA(bg_color, theme_alpha));
 
   SkColor base_color;
   SkAlpha hovered_alpha, pressed_alpha;
@@ -136,21 +148,6 @@ int WinCaptionButton::GetButtonDisplayOrderIndex() const {
   return button_display_order;
 }
 
-namespace {
-
-// Canvas::DrawRect's stroke can bleed out of |rect|'s bounds, so this draws a
-// rectangle inset such that the result is constrained to |rect|'s size.
-void DrawRect(gfx::Canvas* canvas,
-              const gfx::Rect& rect,
-              const cc::PaintFlags& flags) {
-  gfx::RectF rect_f(rect);
-  float stroke_half_width = flags.getStrokeWidth() / 2;
-  rect_f.Inset(gfx::InsetsF::VH(stroke_half_width, stroke_half_width));
-  canvas->DrawRect(rect_f, flags);
-}
-
-}  // namespace
-
 void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
   SkColor symbol_color = frame_view_->window()->overlay_symbol_color();
 
@@ -183,32 +180,21 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
 
   switch (button_type_) {
     case VIEW_ID_MINIMIZE_BUTTON: {
-      const int y = symbol_rect.CenterPoint().y();
-      const gfx::Point p1 = gfx::Point(symbol_rect.x(), y);
-      const gfx::Point p2 = gfx::Point(symbol_rect.right(), y);
-      canvas->DrawLine(p1, p2, flags);
+      icon_painter_->PaintMinimizeIcon(canvas, symbol_rect, flags);
       return;
     }
 
-    case VIEW_ID_MAXIMIZE_BUTTON:
-      DrawRect(canvas, symbol_rect, flags);
+    case VIEW_ID_MAXIMIZE_BUTTON: {
+      icon_painter_->PaintMaximizeIcon(canvas, symbol_rect, flags);
       return;
+    }
 
     case VIEW_ID_RESTORE_BUTTON: {
-      // Bottom left ("in front") square.
-      const int separation = std::floor(2 * scale);
-      symbol_rect.Inset(gfx::Insets::TLBR(0, separation, separation, 0));
-      DrawRect(canvas, symbol_rect, flags);
-
-      // Top right ("behind") square.
-      canvas->ClipRect(symbol_rect, SkClipOp::kDifference);
-      symbol_rect.Offset(separation, -separation);
-      DrawRect(canvas, symbol_rect, flags);
+      icon_painter_->PaintRestoreIcon(canvas, symbol_rect, flags);
       return;
     }
 
     case VIEW_ID_CLOSE_BUTTON: {
-      flags.setAntiAlias(true);
       // The close button's X is surrounded by a "halo" of transparent pixels.
       // When the X is white, the transparent pixels need to be a bit brighter
       // to be visible.
@@ -216,15 +202,7 @@ void WinCaptionButton::PaintSymbol(gfx::Canvas* canvas) {
           stroke_width * (symbol_color == SK_ColorWHITE ? 0.1f : 0.05f);
       flags.setStrokeWidth(stroke_width + stroke_halo);
 
-      // TODO(bsep): This sometimes draws misaligned at fractional device scales
-      // because the button's origin isn't necessarily aligned to pixels.
-      canvas->ClipRect(symbol_rect);
-      SkPath path;
-      path.moveTo(symbol_rect.x(), symbol_rect.y());
-      path.lineTo(symbol_rect.right(), symbol_rect.bottom());
-      path.moveTo(symbol_rect.right(), symbol_rect.y());
-      path.lineTo(symbol_rect.x(), symbol_rect.bottom());
-      canvas->DrawPath(path, flags);
+      icon_painter_->PaintCloseIcon(canvas, symbol_rect, flags);
       return;
     }
 

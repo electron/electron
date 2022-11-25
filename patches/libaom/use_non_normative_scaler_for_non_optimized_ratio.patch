@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jerome Jiang <jianj@google.com>
+Date: Tue, 30 Aug 2022 14:45:28 -0400
+Subject: Use non normative scaler for non optimized ratio
+
+There are only optimized scalers for 1/4, 1/2 and 3/4 scaling ratio.
+SSSE3 also has 2x upscaling optimization.
+Use non normative scalers for all other scaling ratios.
+
+Bug: chromium:1346938
+Bug: chromium:1338114
+Change-Id: I2a01717b56c53c42906440d5a3f95ca2c00dc571
+(cherry picked from commit ff7b753a63a536423a91b64a066bd385c52ceacc)
+
+diff --git a/av1/common/resize.c b/av1/common/resize.c
+index a3c3c0e5160940974fbbbc84d7011fb4bd26f67e..322363fa1e136ce3b77498b9c20b63d27d339471 100644
+--- a/av1/common/resize.c
++++ b/av1/common/resize.c
+@@ -1366,15 +1366,20 @@ YV12_BUFFER_CONFIG *av1_realloc_and_scale_if_required(
+       aom_internal_error(cm->error, AOM_CODEC_MEM_ERROR,
+                          "Failed to allocate scaled buffer");
+ 
++    const bool has_optimized_scaler = av1_has_optimized_scaler(
++        unscaled->y_crop_width, unscaled->y_crop_height, scaled_width,
++        scaled_height);
++
+ #if CONFIG_AV1_HIGHBITDEPTH
+-    if (use_optimized_scaler && cm->seq_params->bit_depth == AOM_BITS_8) {
++    if (use_optimized_scaler && has_optimized_scaler &&
++        cm->seq_params->bit_depth == AOM_BITS_8) {
+       av1_resize_and_extend_frame(unscaled, scaled, filter, phase, num_planes);
+     } else {
+       av1_resize_and_extend_frame_nonnormative(
+           unscaled, scaled, (int)cm->seq_params->bit_depth, num_planes);
+     }
+ #else
+-    if (use_optimized_scaler) {
++    if (use_optimized_scaler && has_optimized_scaler) {
+       av1_resize_and_extend_frame(unscaled, scaled, filter, phase, num_planes);
+     } else {
+       av1_resize_and_extend_frame_nonnormative(
+diff --git a/av1/common/resize.h b/av1/common/resize.h
+index 75abe6274ee73a202bddd14962f1a4ae8083ce94..9bc23b3ffacd4121bf32dd96bae82ba5c799b1ea 100644
+--- a/av1/common/resize.h
++++ b/av1/common/resize.h
+@@ -105,6 +105,24 @@ static INLINE int av1_superres_scaled(const AV1_COMMON *cm) {
+   return !(cm->width == cm->superres_upscaled_width);
+ }
+ 
++// There's SIMD optimizations for 1/4, 1/2 and 3/4 downscaling.
++// SSSE3 also has optimizations for 2x upscaling.
++// Use non normative scalers for other scaling ratios.
++static INLINE bool av1_has_optimized_scaler(const int src_width,
++                                            const int src_height,
++                                            const int dst_width,
++                                            const int dst_height) {
++  const bool has_optimized_scaler =
++      (dst_width * 4 == src_width && dst_height * 4 == src_height) ||
++      (dst_width * 2 == src_width && dst_height * 2 == src_height) ||
++      (dst_width * 4 == src_width * 3 && dst_height * 4 == src_height * 3);
++#if HAVE_SSSE3
++  return has_optimized_scaler ||
++         (dst_width == src_width * 2 && dst_height == src_height * 2);
++#endif
++  return has_optimized_scaler;
++}
++
+ #define UPSCALE_NORMATIVE_TAPS 8
+ extern const int16_t av1_resize_filter_normative[1 << RS_SUBPEL_BITS]
+                                                 [UPSCALE_NORMATIVE_TAPS];
+diff --git a/av1/encoder/encoder_utils.c b/av1/encoder/encoder_utils.c
+index fd8be7bf18e6a138bf20c25370c635cf3b302e10..cebea60eee37777b175f75d863f8cb94410a065a 100644
+--- a/av1/encoder/encoder_utils.c
++++ b/av1/encoder/encoder_utils.c
+@@ -733,15 +733,19 @@ void av1_scale_references(AV1_COMP *cpi, const InterpFilter filter,
+             aom_internal_error(cm->error, AOM_CODEC_MEM_ERROR,
+                                "Failed to allocate frame buffer");
+           }
++          const bool has_optimized_scaler = av1_has_optimized_scaler(
++              cm->width, cm->height, new_fb->buf.y_crop_width,
++              new_fb->buf.y_crop_height);
+ #if CONFIG_AV1_HIGHBITDEPTH
+-          if (use_optimized_scaler && cm->seq_params->bit_depth == AOM_BITS_8)
++          if (use_optimized_scaler && has_optimized_scaler &&
++              cm->seq_params->bit_depth == AOM_BITS_8)
+             av1_resize_and_extend_frame(ref, &new_fb->buf, filter, phase,
+                                         num_planes);
+           else
+             av1_resize_and_extend_frame_nonnormative(
+                 ref, &new_fb->buf, (int)cm->seq_params->bit_depth, num_planes);
+ #else
+-          if (use_optimized_scaler)
++          if (use_optimized_scaler && has_optimized_scaler)
+             av1_resize_and_extend_frame(ref, &new_fb->buf, filter, phase,
+                                         num_planes);
+           else

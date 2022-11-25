@@ -106,10 +106,22 @@
     esutils "^2.0.2"
     js-tokens "^4.0.0"
 
-"@electron/docs-parser@^0.12.4":
-  version "0.12.4"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-0.12.4.tgz#cca403c8c2200181339c3115cdd25f3fbfc7dea3"
-  integrity sha512-vdkjcvkI7zTd2v1A8qsl5+HY+9AQCrW5Eh60I9rhPtUPoxo2V1pQwogTW6kzc3XZ54crTa7R3KxwkZpSbcGCug==
+"@electron/asar@^3.2.1":
+  version "3.2.1"
+  resolved "https://registry.yarnpkg.com/@electron/asar/-/asar-3.2.1.tgz#c4143896f3dd43b59a80a9c9068d76f77efb62ea"
+  integrity sha512-hE2cQMZ5+4o7+6T2lUaVbxIzrOjZZfX7dB02xuapyYFJZEAiWTelq6J3mMoxzd0iONDvYLPVKecB5tyjIoVDVA==
+  dependencies:
+    chromium-pickle-js "^0.2.0"
+    commander "^5.0.0"
+    glob "^7.1.6"
+    minimatch "^3.0.4"
+  optionalDependencies:
+    "@types/glob" "^7.1.1"
+
+"@electron/docs-parser@^1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.0.0.tgz#1844ed2e18528ea56aaef0ace1cfa0633a6fa1b1"
+  integrity sha512-nIqEO8Ga6LavdaY2aJMPfq2vSOPVlgOvNv7jpiyaoqsAz5vYnWNUnxeCyaalCaDyFiKhVeHbKwP8Kt2TENwneg==
   dependencies:
     "@types/markdown-it" "^10.0.0"
     chai "^4.2.0"
@@ -121,10 +133,10 @@
     ora "^4.0.3"
     pretty-ms "^5.1.0"
 
-"@electron/typescript-definitions@^8.9.5":
-  version "8.9.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.9.5.tgz#e6cb08e0e7c9656e178b892eab50866a8a80bf7a"
-  integrity sha512-xDLFl6joGpA8c9cGSPWC3DFHyIGf9+OWZmDrPbGJW1URt6C1ukdQWKSmjb1Rttb94QQxBrGuUlSyz27IQgLFsw==
+"@electron/typescript-definitions@^8.10.0":
+  version "8.10.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.10.0.tgz#e9cf2b329ec4b0b76947ef751725383a6cf8994d"
+  integrity sha512-FVc2y0GUfxFZDoma0scYiMxkoalle19Fq332fNFGWoCJ9rCj5OUvriewSjPtGBsRuHv2xaMS5MhBuy2/pRuFuQ==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
@@ -1161,18 +1173,6 @@ arrify@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/arrify/-/arrify-1.0.1.tgz#898508da2226f380df904728456849c1501a4b0d"
   integrity sha1-iYUI2iIm84DfkEcoRWhJwVAaSw0=
-
-asar@^3.1.0:
-  version "3.1.0"
-  resolved "https://registry.yarnpkg.com/asar/-/asar-3.1.0.tgz#70b0509449fe3daccc63beb4d3c7d2e24d3c6473"
-  integrity sha512-vyxPxP5arcAqN4F/ebHd/HhwnAiZtwhglvdmc7BR2f0ywbVNTOpSeyhLDbGXtE/y58hv1oC75TaNIXutnsOZsQ==
-  dependencies:
-    chromium-pickle-js "^0.2.0"
-    commander "^5.0.0"
-    glob "^7.1.6"
-    minimatch "^3.0.4"
-  optionalDependencies:
-    "@types/glob" "^7.1.1"
 
 asn1.js@^4.0.0:
   version "4.10.1"
@@ -5050,7 +5050,7 @@ mute-stream@0.0.8:
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
 
-nan@^2.12.1, nan@nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac:
+nan@^2.12.1:
   version "2.15.0"
   resolved "https://codeload.github.com/nodejs/nan/tar.gz/16fa32231e2ccd89d2804b3f765319128b20c4ac"
 

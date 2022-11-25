@@ -134,7 +134,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (!item) {
     CGFloat windowBottom = CGRectGetMinY([view window].frame);
     CGFloat lowestMenuPoint = windowBottom + position.y - [menu size].height;
-    CGFloat screenBottom = CGRectGetMinY([view window].screen.frame);
+    CGFloat screenBottom = CGRectGetMinY([view window].screen.visibleFrame);
     CGFloat distanceFromBottom = lowestMenuPoint - screenBottom;
     if (distanceFromBottom < 0)
       position.y = position.y - distanceFromBottom + 4;
@@ -143,7 +143,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   // Place the menu left of cursor if it is overflowing off right of screen.
   CGFloat windowLeft = CGRectGetMinX([view window].frame);
   CGFloat rightmostMenuPoint = windowLeft + position.x + [menu size].width;
-  CGFloat screenRight = CGRectGetMaxX([view window].screen.frame);
+  CGFloat screenRight = CGRectGetMaxX([view window].screen.visibleFrame);
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 

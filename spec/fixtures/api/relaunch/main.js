@@ -11,11 +11,15 @@ app.whenReady().then(() => {
   const lastArg = process.argv[process.argv.length - 1];
   const client = net.connect(socketPath);
   client.once('connect', () => {
-    client.end(String(lastArg === '--second'));
+    client.end(lastArg);
   });
   client.once('end', () => {
-    if (lastArg !== '--second') {
-      app.relaunch({ args: process.argv.slice(1).concat('--second') });
+    if (lastArg === '--first') {
+      // Once without execPath specified
+      app.relaunch({ args: process.argv.slice(1, -1).concat('--second') });
+    } else if (lastArg === '--second') {
+      // And once with execPath specified
+      app.relaunch({ execPath: process.argv[0], args: process.argv.slice(1, -1).concat('--third') });
     }
     app.exit(0);
   });

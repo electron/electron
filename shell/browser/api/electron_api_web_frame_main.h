@@ -108,6 +108,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   int ProcessID() const;
   int RoutingID() const;
   GURL URL() const;
+  std::string Origin() const;
   blink::mojom::PageVisibilityState VisibilityState() const;
 
   content::RenderFrameHost* Top() const;

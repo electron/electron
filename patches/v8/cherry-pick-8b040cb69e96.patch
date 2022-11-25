@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Kummerow <jkummerow@chromium.org>
+Date: Fri, 23 Sep 2022 13:13:37 +0200
+Subject: Fix a register reuse corner case
+
+Fixed: chromium:1366399
+(cherry picked from commit 6c214db445827707d65be08d177c9a4257a03a7b)
+
+Change-Id: I72cf30cbd31a21acb44b524a194acfb89d8fecbc
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3925795
+Reviewed-by: Matthias Liedtke <mliedtke@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#29}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+
+diff --git a/src/wasm/baseline/liftoff-compiler.cc b/src/wasm/baseline/liftoff-compiler.cc
+index 34b51e37c650274ec89a1930c4a9d9443f9838a2..508a91ecb8aa068b942fe445e186267832378cef 100644
+--- a/src/wasm/baseline/liftoff-compiler.cc
++++ b/src/wasm/baseline/liftoff-compiler.cc
+@@ -1417,9 +1417,11 @@ class LiftoffCompiler {
+         __ MergeFullStackWith(c->label_state, *__ cache_state());
+         __ emit_jump(c->label.get());
+       }
+-      // Merge the else state into the end state.
++      // Merge the else state into the end state. Set this state as the current
++      // state first so helper functions know which registers are in use.
+       __ bind(c->else_state->label.get());
+-      __ MergeFullStackWith(c->label_state, c->else_state->state);
++      __ cache_state()->Steal(c->else_state->state);
++      __ MergeFullStackWith(c->label_state, *__ cache_state());
+       __ cache_state()->Steal(c->label_state);
+     } else if (c->reachable()) {
+       // No merge yet at the end of the if, but we need to create a merge for
+@@ -1431,9 +1433,11 @@ class LiftoffCompiler {
+                                c->stack_depth + c->num_exceptions);
+       __ MergeFullStackWith(c->label_state, *__ cache_state());
+       __ emit_jump(c->label.get());
+-      // Merge the else state into the end state.
++      // Merge the else state into the end state. Set this state as the current
++      // state first so helper functions know which registers are in use.
+       __ bind(c->else_state->label.get());
+-      __ MergeFullStackWith(c->label_state, c->else_state->state);
++      __ cache_state()->Steal(c->else_state->state);
++      __ MergeFullStackWith(c->label_state, *__ cache_state());
+       __ cache_state()->Steal(c->label_state);
+     } else {
+       // No merge needed, just continue with the else state.

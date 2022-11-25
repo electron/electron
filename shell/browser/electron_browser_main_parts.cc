@@ -17,6 +17,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/icon_manager.h"
+#include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/key_storage_config_linux.h"
@@ -89,6 +90,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "components/os_crypt/keychain_password_mac.h"
 #include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
@@ -218,8 +220,12 @@ int ElectronBrowserMainParts::PreEarlyInitialization() {
   HandleSIGCHLD();
 #endif
 #if BUILDFLAG(IS_LINUX)
+  DetectOzonePlatform();
   ui::OzonePlatform::PreEarlyInitialization();
 #endif
+
+  ui::ColorProviderManager::Get().AppendColorProviderInitializer(
+      base::BindRepeating(AddChromeColorMixers));
 
   return GetExitCode();
 }
@@ -476,6 +482,9 @@ void ElectronBrowserMainParts::WillRunMainMessageLoop(
 }
 
 void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_MAC)
+  std::string app_name = electron::Browser::Get()->GetName();
+#endif
 #if BUILDFLAG(IS_LINUX)
   auto shutdown_cb =
       base::BindOnce(base::RunLoop::QuitCurrentWhenIdleClosureDeprecated());
@@ -486,7 +495,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   // Set up crypt config. This needs to be done before anything starts the
   // network service, as the raw encryption key needs to be shared with the
   // network service for encrypted cookie storage.
-  std::string app_name = electron::Browser::Get()->GetName();
   const base::CommandLine& command_line =
       *base::CommandLine::ForCurrentProcess();
   std::unique_ptr<os_crypt::Config> config =
@@ -502,6 +510,10 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
       command_line.HasSwitch(::switches::kEnableEncryptionSelection);
   base::PathService::Get(chrome::DIR_USER_DATA, &config->user_data_path);
   OSCrypt::SetConfig(std::move(config));
+#endif
+#if BUILDFLAG(IS_MAC)
+  KeychainPassword::GetServiceName() = app_name + " Safe Storage";
+  KeychainPassword::GetAccountName() = app_name;
 #endif
 #if BUILDFLAG(IS_POSIX)
   // Exit in response to SIGINT, SIGTERM, etc.

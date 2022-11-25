@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Wed, 26 Oct 2022 11:19:59 +0200
+Subject: Merged: [turbofan] do not optimize any stores for field type None
+
+Fixed: chromium:1378239
+(cherry picked from commit db83e72034c0d431ff2f73e3c4ae3130c0f3e4e1)
+
+Change-Id: I061d5dfe6e4ee24e6d0e7df56e15fbe37752d51e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3982254
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.6@{#45}
+Cr-Branched-From: 41bc7435693fbce8ef86753cd9239e30550a3e2d-refs/heads/10.6.194@{#1}
+Cr-Branched-From: d5f29b929ce7746409201d77f44048f3e9529b40-refs/heads/main@{#82548}
+
+diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
+index 53cab92b8e72bbfcead07b94f68f0872b9379b53..6ad6a68092efc36591204f9aacde97a49b13812d 100644
+--- a/src/compiler/access-info.cc
++++ b/src/compiler/access-info.cc
+@@ -454,9 +454,15 @@ PropertyAccessInfo AccessInfoFactory::ComputeDataFieldAccessInfo(
+             map, descriptor, details_representation));
+   } else if (details_representation.IsHeapObject()) {
+     if (descriptors_field_type->IsNone()) {
+-      // Store is not safe if the field type was cleared.
+-      if (access_mode == AccessMode::kStore) {
+-        return Invalid();
++      switch (access_mode) {
++        case AccessMode::kStore:
++        case AccessMode::kStoreInLiteral:
++        case AccessMode::kDefine:
++          // Store is not safe if the field type was cleared.
++          return Invalid();
++        case AccessMode::kLoad:
++        case AccessMode::kHas:
++          break;
+       }
+ 
+       // The field type was cleared by the GC, so we don't know anything

@@ -1,0 +1,184 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Anders Hartvoll Ruud <andruud@chromium.org>
+Date: Tue, 20 Sep 2022 17:43:47 +0000
+Subject: Add CSSTokenizer-created strings to CSSVariableData's backing strings
+
+When computing the value of a registered custom property, we create
+a CSSVariableData object equivalent to the computed CSSValue by
+serializing that CSSValue to a String, then tokenizing that value.
+
+The problem is that CSSTokenizer can create *new* string objects
+during the tokenization process (see calls to CSSTokenizer::
+RegisterString), without communicating that fact to the call-site.
+
+Therefore, this CL adds a way to access those strings so they can
+be added to the backing strings of the CSSVariableData.
+
+Also added a DCHECK to verify that we don't have any tokens with
+non-backed string pointers.
+
+Fixed: 1358907
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3892782
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1046868}
+Change-Id: Ifb6d194508e99030a5a3ed5fbad5496b7263bdc1
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3905727
+Auto-Submit: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5249@{#518}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/blink/renderer/core/css/css_variable_data.cc b/third_party/blink/renderer/core/css/css_variable_data.cc
+index a2294cc70c59ac0357dddf0f7719cc3c09d23554..b3a61b312eb5f0360e8aa4cb706c60f0085fead9 100644
+--- a/third_party/blink/renderer/core/css/css_variable_data.cc
++++ b/third_party/blink/renderer/core/css/css_variable_data.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "third_party/blink/renderer/core/css/css_variable_data.h"
+ 
++#include "base/containers/span.h"
+ #include "third_party/blink/renderer/core/css/css_syntax_definition.h"
+ #include "third_party/blink/renderer/core/css/parser/css_parser_context.h"
+ #include "third_party/blink/renderer/platform/wtf/text/character_names.h"
+@@ -109,6 +110,51 @@ void CSSVariableData::ConsumeAndUpdateTokens(const CSSParserTokenRange& range) {
+     UpdateTokens<UChar>(range, backing_string, tokens_);
+ }
+ 
++#if EXPENSIVE_DCHECKS_ARE_ON()
++
++namespace {
++
++template <typename CharacterType>
++bool IsSubspan(base::span<const CharacterType> inner,
++               base::span<const CharacterType> outer) {
++  // Note that base::span uses CheckedContiguousIterator, which restricts
++  // which comparisons are allowed. Therefore we must avoid begin()/end() here.
++  return inner.data() >= outer.data() &&
++         (inner.data() + inner.size()) <= (outer.data() + outer.size());
++}
++
++bool TokenValueIsBacked(const CSSParserToken& token,
++                        const String& backing_string) {
++  StringView value = token.Value();
++  if (value.Is8Bit() != backing_string.Is8Bit())
++    return false;
++  return value.Is8Bit() ? IsSubspan(value.Span8(), backing_string.Span8())
++                        : IsSubspan(value.Span16(), backing_string.Span16());
++}
++
++bool TokenValueIsBacked(const CSSParserToken& token,
++                        const Vector<String>& backing_strings) {
++  DCHECK(token.HasStringBacking());
++  for (const String& backing_string : backing_strings) {
++    if (TokenValueIsBacked(token, backing_string)) {
++      return true;
++    }
++  }
++  return false;
++}
++
++}  // namespace
++
++void CSSVariableData::VerifyStringBacking() const {
++  for (const CSSParserToken& token : tokens_) {
++    DCHECK(!token.HasStringBacking() ||
++           TokenValueIsBacked(token, backing_strings_))
++        << "Token value is not backed: " << token.Value().ToString();
++  }
++}
++
++#endif  // EXPENSIVE_DCHECKS_ARE_ON()
++
+ CSSVariableData::CSSVariableData(const CSSTokenizedValue& tokenized_value,
+                                  bool is_animation_tainted,
+                                  bool needs_variable_resolution,
+@@ -120,6 +166,9 @@ CSSVariableData::CSSVariableData(const CSSTokenizedValue& tokenized_value,
+       base_url_(base_url.IsValid() ? base_url.GetString() : String()),
+       charset_(charset) {
+   ConsumeAndUpdateTokens(tokenized_value.range);
++#if EXPENSIVE_DCHECKS_ARE_ON()
++  VerifyStringBacking();
++#endif  // EXPENSIVE_DCHECKS_ARE_ON()
+ }
+ 
+ const CSSValue* CSSVariableData::ParseForSyntax(
+diff --git a/third_party/blink/renderer/core/css/css_variable_data.h b/third_party/blink/renderer/core/css/css_variable_data.h
+index f042f85736c2c49f8337c29cb742976c5e97a14b..7be7d201313ec3e591e2c45c9fd5bda327856645 100644
+--- a/third_party/blink/renderer/core/css/css_variable_data.h
++++ b/third_party/blink/renderer/core/css/css_variable_data.h
+@@ -100,11 +100,18 @@ class CORE_EXPORT CSSVariableData : public RefCounted<CSSVariableData> {
+         has_font_units_(has_font_units),
+         has_root_font_units_(has_root_font_units),
+         base_url_(base_url),
+-        charset_(charset) {}
++        charset_(charset) {
++#if EXPENSIVE_DCHECKS_ARE_ON()
++    VerifyStringBacking();
++#endif  // EXPENSIVE_DCHECKS_ARE_ON()
++  }
+   CSSVariableData(const CSSVariableData&) = delete;
+   CSSVariableData& operator=(const CSSVariableData&) = delete;
+ 
+   void ConsumeAndUpdateTokens(const CSSParserTokenRange&);
++#if EXPENSIVE_DCHECKS_ARE_ON()
++  void VerifyStringBacking() const;
++#endif  // EXPENSIVE_DCHECKS_ARE_ON()
+ 
+   // tokens_ may have raw pointers to string data, we store the String objects
+   // owning that data in backing_strings_ to keep it alive alongside the
+diff --git a/third_party/blink/renderer/core/css/parser/css_tokenizer.h b/third_party/blink/renderer/core/css/parser/css_tokenizer.h
+index 817bcbd4b6b9a9a5519bb92d6870c5b16a19278f..682a44a478bcd0ee3aa1638601650fd420033625 100644
+--- a/third_party/blink/renderer/core/css/parser/css_tokenizer.h
++++ b/third_party/blink/renderer/core/css/parser/css_tokenizer.h
+@@ -33,6 +33,7 @@ class CORE_EXPORT CSSTokenizer {
+   wtf_size_t Offset() const { return input_.Offset(); }
+   wtf_size_t PreviousOffset() const { return prev_offset_; }
+   StringView StringRangeAt(wtf_size_t start, wtf_size_t length) const;
++  const Vector<String>& StringPool() const { return string_pool_; }
+ 
+  private:
+   CSSParserToken TokenizeSingle();
+diff --git a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
+index ae863c8df923f55b116ed1c70557e5d5916794d3..dbc654e9079f4f79fe6883a6ea34e8fa00e1a26f 100644
+--- a/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
++++ b/third_party/blink/renderer/core/css/resolver/style_builder_converter.cc
+@@ -2170,6 +2170,10 @@ StyleBuilderConverter::ConvertRegisteredPropertyVariableData(
+ 
+   Vector<String> backing_strings;
+   backing_strings.push_back(text);
++  // CSSTokenizer may allocate new strings for some tokens (e.g. for escapes)
++  // and produce tokens that point to those strings. We need to retain those
++  // strings (if any) as well.
++  backing_strings.AppendVector(tokenizer.StringPool());
+ 
+   const bool has_font_units = false;
+   const bool has_root_font_units = false;
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
+index 3823a752b99f506d11c50aee36474c6c51c849cd..eeed0dfc0def17b1ba636f7f6a076caf770e1327 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
++++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation-expected.txt
+@@ -1,5 +1,5 @@
+ This is a testharness.js-based test.
+-Found 60 tests; 59 PASS, 1 FAIL, 0 TIMEOUT, 0 NOTRUN.
++Found 61 tests; 60 PASS, 1 FAIL, 0 TIMEOUT, 0 NOTRUN.
+ PASS <length> values computed are correctly via var()-reference
+ PASS <length> values computed are correctly via var()-reference when font-size is inherited
+ PASS <length> values are computed correctly when font-size is inherited [14em]
+@@ -60,5 +60,6 @@ PASS * values are computed correctly [50dpi]
+ PASS <resolution> values are computed correctly [1dppx]
+ PASS <resolution> values are computed correctly [96dpi]
+ FAIL <resolution> values are computed correctly [calc(1dppx + 96dpi)] assert_equals: expected "2dppx" but got "0dppx"
++PASS * values are computed correctly [url(why)]
+ Harness: the test ran to completion.
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
+index f03b257246e520bd93055203a5cb27188babc8ca..168495247a3b16a2203fb361f662b6db83044d09 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-properties-values-api/registered-property-computation.html
+@@ -167,4 +167,6 @@ test_computed_value('<resolution>', '1dppx', '1dppx');
+ test_computed_value('<resolution>', '96dpi', '1dppx');
+ test_computed_value('<resolution>', 'calc(1dppx + 96dpi)', '2dppx');
+ 
++test_computed_value('*', 'url(why)', 'url(why)');
++
+ </script>

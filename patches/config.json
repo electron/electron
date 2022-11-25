@@ -19,5 +19,17 @@
 
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",
 
-  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC"
+  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
+
+  "src/electron/patches/angle": "src/third_party/angle",
+
+  "src/electron/patches/sqlite": "src/third_party/sqlite/src",
+
+  "src/electron/patches/pdfium": "src/third_party/pdfium",
+
+  "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
+
+  "src/electron/patches/libaom": "src/third_party/libaom/source/libaom",
+
+  "src/electron/patches/skia": "src/third_party/skia"
 }

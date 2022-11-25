@@ -4,7 +4,7 @@ import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { emittedOnce } from './events-helpers';
 import { ifdescribe } from './spec-helpers';
-import * as fs from 'fs';
+import * as fs from 'fs-extra';
 
 /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
 * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
@@ -36,8 +36,8 @@ describe('safeStorage module', () => {
 ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   after(async () => {
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
-    if (fs.existsSync(pathToEncryptedString)) {
-      await fs.unlinkSync(pathToEncryptedString);
+    if (await fs.pathExists(pathToEncryptedString)) {
+      await fs.remove(pathToEncryptedString);
     }
   });
 

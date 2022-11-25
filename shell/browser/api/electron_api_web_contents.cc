@@ -144,6 +144,10 @@
 #include "shell/browser/osr/osr_web_contents_view.h"
 #endif
 
+#if BUILDFLAG(IS_WIN)
+#include "shell/browser/native_window_views.h"
+#endif
+
 #if !BUILDFLAG(IS_MAC)
 #include "ui/aura/window.h"
 #else
@@ -175,7 +179,7 @@
 #if BUILDFLAG(IS_WIN)
 #include "printing/backend/win_helper.h"
 #endif
-#endif
+#endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 #include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
@@ -676,10 +680,8 @@ WebContents::WebContents(v8::Isolate* isolate,
   auto session = Session::CreateFrom(isolate, GetBrowserContext());
   session_.Reset(isolate, session.ToV8());
 
-  absl::optional<std::string> user_agent_override =
-      GetBrowserContext()->GetUserAgentOverride();
-  if (user_agent_override)
-    SetUserAgent(*user_agent_override);
+  SetUserAgent(GetBrowserContext()->GetUserAgent());
+
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
   InitZoomController(web_contents, gin::Dictionary::CreateEmpty(isolate));
@@ -885,10 +887,7 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  absl::optional<std::string> user_agent_override =
-      GetBrowserContext()->GetUserAgentOverride();
-  if (user_agent_override)
-    SetUserAgent(*user_agent_override);
+  SetUserAgent(GetBrowserContext()->GetUserAgent());
 
   if (IsGuest()) {
     NativeWindow* owner_window = nullptr;
@@ -1329,7 +1328,7 @@ void WebContents::EnterFullscreenModeForTab(
   auto callback =
       base::BindRepeating(&WebContents::OnEnterFullscreenModeForTab,
                           base::Unretained(this), requesting_frame, options);
-  permission_helper->RequestFullscreenPermission(callback);
+  permission_helper->RequestFullscreenPermission(requesting_frame, callback);
 }
 
 void WebContents::OnEnterFullscreenModeForTab(
@@ -1345,6 +1344,8 @@ void WebContents::OnEnterFullscreenModeForTab(
     return;
   }
 
+  owner_window()->set_fullscreen_transition_type(
+      NativeWindow::FullScreenTransitionType::HTML);
   exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
       requesting_frame, options.display_id);
 
@@ -1394,11 +1395,6 @@ bool WebContents::HandleContextMenu(content::RenderFrameHost& render_frame_host,
   Emit("context-menu", std::make_pair(params, &render_frame_host));
 
   return true;
-}
-
-bool WebContents::OnGoToEntryOffset(int offset) {
-  GoToOffset(offset);
-  return false;
 }
 
 void WebContents::FindReply(content::WebContents* web_contents,
@@ -2432,6 +2428,15 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
       !owner_window()) {
     state = "detach";
   }
+
+#if BUILDFLAG(IS_WIN)
+  auto* win = static_cast<NativeWindowViews*>(owner_window());
+  // Force a detached state when WCO is enabled to match Chrome
+  // behavior and prevent occlusion of DevTools.
+  if (win && win->IsWindowControlsOverlayEnabled())
+    state = "detach";
+#endif
+
   bool activate = true;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
@@ -3524,7 +3529,15 @@ void WebContents::EnumerateDirectory(
 
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
-  return html_fullscreen_;
+  if (!owner_window())
+    return html_fullscreen_;
+
+  bool in_transition = owner_window()->fullscreen_transition_state() !=
+                       NativeWindow::FullScreenTransitionState::NONE;
+  bool is_html_transition = owner_window()->fullscreen_transition_type() ==
+                            NativeWindow::FullScreenTransitionType::HTML;
+
+  return html_fullscreen_ || (in_transition && is_html_transition);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
@@ -3846,9 +3859,8 @@ void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
           ? !web_preferences->ShouldDisableHtmlFullscreenWindowResize()
           : true;
 
-  if (html_fullscreenable) {
+  if (html_fullscreenable)
     owner_window_->SetFullScreen(enter_fullscreen);
-  }
 
   UpdateHtmlApiFullscreen(enter_fullscreen);
   native_fullscreen_ = false;

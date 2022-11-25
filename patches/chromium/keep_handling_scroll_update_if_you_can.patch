@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Mehdi Kazemi <mehdika@chromium.org>
+Date: Tue, 7 Jun 2022 17:32:20 +0000
+Subject: Keep handling scroll update if you can!
+
+If scroll_gesture_handling_node_ doesn't have a layout object, but you can still handle GSU, do that!
+
+Change-Id: Ib82dad96d319b186a5cc2f2eb07495ca5ae994a3
+Bug: 1330045
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3681882
+Reviewed-by: Steve Kobes <skobes@chromium.org>
+Commit-Queue: Mehdi Kazemi <mehdika@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1011539}
+
+diff --git a/third_party/blink/renderer/core/input/scroll_manager.cc b/third_party/blink/renderer/core/input/scroll_manager.cc
+index 28b6092d264219802f718bfaf58f2da4c6054e43..604cad242a9e5626c7d6bac305cb2e323e1f1fca 100644
+--- a/third_party/blink/renderer/core/input/scroll_manager.cc
++++ b/third_party/blink/renderer/core/input/scroll_manager.cc
+@@ -589,12 +589,6 @@ WebInputEventResult ScrollManager::HandleGestureScrollUpdate(
+     return WebInputEventResult::kNotHandled;
+   }
+ 
+-  Node* node = scroll_gesture_handling_node_.Get();
+-  if (!node || !node->GetLayoutObject()) {
+-    TRACE_EVENT_INSTANT0("input", "Lost scroll_gesture_handling_node",
+-                         TRACE_EVENT_SCOPE_THREAD);
+-    return WebInputEventResult::kNotHandled;
+-  }
+   if (snap_fling_controller_) {
+     if (snap_fling_controller_->HandleGestureScrollUpdate(
+             GetGestureScrollUpdateInfo(gesture_event))) {
+@@ -615,7 +609,10 @@ WebInputEventResult ScrollManager::HandleGestureScrollUpdate(
+   if (delta.IsZero())
+     return WebInputEventResult::kNotHandled;
+ 
+-  LayoutObject* layout_object = node->GetLayoutObject();
++  LayoutObject* layout_object =
++      scroll_gesture_handling_node_
++          ? scroll_gesture_handling_node_->GetLayoutObject()
++          : nullptr;
+ 
+   // Try to send the event to the correct view.
+   WebInputEventResult result =
+diff --git a/third_party/blink/web_tests/fast/events/touch/touch-latched-scroll-node-removed.html b/third_party/blink/web_tests/fast/events/touch/touch-latched-scroll-node-removed.html
+index 90265f908ad0ce93d7bd401df2aa6657cf25e6fb..b9b34c24496868355c6eff06f738a95832956481 100644
+--- a/third_party/blink/web_tests/fast/events/touch/touch-latched-scroll-node-removed.html
++++ b/third_party/blink/web_tests/fast/events/touch/touch-latched-scroll-node-removed.html
+@@ -62,6 +62,7 @@ childDiv.addEventListener('scroll', () => {
+ 
+ promise_test( async () => {
+   setUpForTest();
++  await waitForCompositorCommit();
+   // Start scrolling on the child div and remove the div in the middle of
+   // scrolling, then check that parentDiv have not scrolled.
+   var x = (rect.left + rect.right) / 2;
+@@ -69,6 +70,7 @@ promise_test( async () => {
+   // Slow scrolling gives enough time to switch from cc to main.
+   var pixels_per_sec = 100;
+   await smoothScroll(400, x, y, GestureSourceType.TOUCH_INPUT, 'down', pixels_per_sec);
+-  await waitFor( () => {return parentDiv.scrollTop === 0});
+-}, "New node must start wheel scrolling when the latched node is removed.");
++  await conditionHolds( () => { return parentDiv.scrollTop === 0; },
++    "parentDiv has scrolled, which should not have!" );
++}, "New node must NOT start wheel scrolling when the latched node is removed.");
+ </script>
+diff --git a/third_party/blink/web_tests/fast/events/wheel/wheel-latched-scroll-node-removed.html b/third_party/blink/web_tests/fast/events/wheel/wheel-latched-scroll-node-removed.html
+index 966a887b2129fa26cd990b367a7df1fc9135a207..493f13d9c519422b00fe0e11874032fdf25130db 100644
+--- a/third_party/blink/web_tests/fast/events/wheel/wheel-latched-scroll-node-removed.html
++++ b/third_party/blink/web_tests/fast/events/wheel/wheel-latched-scroll-node-removed.html
+@@ -62,6 +62,7 @@ childDiv.addEventListener('scroll', () => {
+ 
+ promise_test( async () => {
+   setUpForTest();
++  await waitForCompositorCommit();
+   // Start scrolling on the child div and remove the div in the middle of
+   // scrolling, then check that parentDiv have not scrolled.
+   var x = (rect.left + rect.right) / 2;
+@@ -69,6 +70,7 @@ promise_test( async () => {
+   // Slow scrolling gives enough time to switch from cc to main.
+   var pixels_per_sec = 100;
+   await smoothScroll(400, x, y, GestureSourceType.MOUSE_INPUT, 'down', pixels_per_sec);
+-  await waitFor( () => {return parentDiv.scrollTop === 0});
+-}, "New node must start wheel scrolling when the latched node is removed.");
++  await conditionHolds( () => { return parentDiv.scrollTop === 0; },
++    "parentDiv has scrolled, which should not have!" );
++}, "New node must NOT start wheel scrolling when the latched node is removed.");
+ </script>
+diff --git a/third_party/blink/web_tests/fast/scrolling/inertial-scrolling-with-pointer-events-none-overlay.html b/third_party/blink/web_tests/fast/scrolling/inertial-scrolling-with-pointer-events-none-overlay.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..47291b70316beaac16adaa6ddd0035ebeb9ec84f
+--- /dev/null
++++ b/third_party/blink/web_tests/fast/scrolling/inertial-scrolling-with-pointer-events-none-overlay.html
+@@ -0,0 +1,71 @@
++<!DOCTYPE HTML>
++<script src="../../resources/testharness.js"></script>
++<script src="../../resources/testharnessreport.js"></script>
++<script src="../../resources/testdriver.js"></script>
++<script src="../../resources/testdriver-actions.js"></script>
++<script src="../../resources/testdriver-vendor.js"></script>
++<script src="../../resources/gesture-util.js"></script>
++
++<style>
++#container {
++  width: 400px;
++  height: 400px;
++  overflow: auto;
++}
++
++#inner {
++  height: 3000px;
++  background-color: #eee;
++}
++
++#overlay {
++  position: absolute;
++  left: 0;
++  top: 0;
++  width: 100%;
++  height: 100%;
++  pointer-events: none;
++}
++
++p {
++ margin: 0;
++ padding: 1000px 0;
++}
++</style>
++
++<body style="margin:0" onload=runTest()>
++  <div id="container">
++    <div id="inner"></div>
++  </div>
++  <div id="overlay"></div>
++</body>
++
++<script>
++const container = document.getElementById('container');
++const inner = document.getElementById('inner');
++
++const update = () => inner.innerHTML = '<p>Content</p>';
++setInterval(update, 200);
++
++function runTest() {
++  promise_test (async (t) => {
++    const pixels_to_scroll = 100;
++    const start_x = 200;
++    const start_y = 200;
++    const speed_in_pixels_s = 900;
++
++    await waitForCompositorCommit();
++    await swipe(pixels_to_scroll, start_x, start_y, 'up', speed_in_pixels_s);
++    await waitForAnimationEndTimeBased(() => { return container.scrollTop; });
++    assert_greater_than(container.scrollTop, pixels_to_scroll,
++      "container should scroll at least 100 pixels, which is the length of the swipe.");
++
++    const scroll_top_previous_value = container.scrollTop;
++
++    await waitForCompositorCommit();
++    await swipe(pixels_to_scroll, start_x, start_y, 'up', speed_in_pixels_s);
++    await waitForAnimationEndTimeBased(() => { return container.scrollTop; });
++    assert_greater_than(container.scrollTop, scroll_top_previous_value + pixels_to_scroll);
++  }, "Make sure inertial scrolling is not broken with pointer-events:none overlay.");
++}
++</script>

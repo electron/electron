@@ -1,0 +1,276 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Aaron Leventhal <aleventhal@google.com>
+Date: Tue, 26 Jul 2022 17:36:04 +0000
+Subject: Merge 104: Speculative fix for IsValidCodePointInIndex() range crash
+
+(cherry picked from commit b4d1ce62d7783a9b31a0a2bec1b886a9a6519a40)
+
+Bug: 1333970
+Change-Id: I5a4c78e708357074fdec1f7a18fa928e39f9c51a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3757922
+Auto-Submit: Aaron Leventhal <aleventhal@chromium.org>
+Reviewed-by: Nektarios Paisios <nektar@chromium.org>
+Commit-Queue: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1025405}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3788215
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5112@{#1206}
+Cr-Branched-From: b13d3fe7b3c47a56354ef54b221008afa754412e-refs/heads/main@{#1012729}
+
+diff --git a/content/browser/accessibility/browser_accessibility_manager.cc b/content/browser/accessibility/browser_accessibility_manager.cc
+index 65213c9e3569d6a9f8d74eb655d48c1df5c9356b..d33fb5d5a3e6f741b03270f63aa34e5d58cac850 100644
+--- a/content/browser/accessibility/browser_accessibility_manager.cc
++++ b/content/browser/accessibility/browser_accessibility_manager.cc
+@@ -394,6 +394,10 @@ const ui::AXTreeData& BrowserAccessibilityManager::GetTreeData() const {
+   return ax_tree()->data();
+ }
+ 
++std::string BrowserAccessibilityManager::ToString() const {
++  return GetTreeData().ToString();
++}
++
+ void BrowserAccessibilityManager::OnWindowFocused() {
+   if (IsRootTree())
+     FireFocusEventsIfNeeded();
+diff --git a/content/browser/accessibility/browser_accessibility_manager.h b/content/browser/accessibility/browser_accessibility_manager.h
+index 92d62b5832d4fc87830b1c2bad7c7b972f1de74e..ca696fd855dcfe45e80e6c070546b19b19d42f69 100644
+--- a/content/browser/accessibility/browser_accessibility_manager.h
++++ b/content/browser/accessibility/browser_accessibility_manager.h
+@@ -225,6 +225,8 @@ class CONTENT_EXPORT BrowserAccessibilityManager
+   // Get the AXTreeData for this frame.
+   const ui::AXTreeData& GetTreeData() const;
+ 
++  std::string ToString() const override;
++
+   // Called to notify the accessibility manager that its associated native
+   // view got focused.
+   virtual void OnWindowFocused();
+diff --git a/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc b/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc
+index 93f59054158d089fd2754a8b99c0dc5407716e58..c50d65a55b4cadf8a5579ae7aca79f671088796f 100644
+--- a/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc
++++ b/extensions/renderer/api/automation/automation_ax_tree_wrapper.cc
+@@ -4,6 +4,7 @@
+ 
+ #include "extensions/renderer/api/automation/automation_ax_tree_wrapper.h"
+ 
++#include "automation_ax_tree_wrapper.h"
+ #include "base/containers/contains.h"
+ #include "base/containers/cxx20_erase.h"
+ #include "base/no_destructor.h"
+@@ -573,4 +574,8 @@ ui::AXNode* AutomationAXTreeWrapper::GetParentNodeFromParentTreeAsAXNode()
+   return owner_->GetParent(tree_.root(), &wrapper);
+ }
+ 
++std::string AutomationAXTreeWrapper::ToString() const {
++  return "<AutomationAXTreeWrapper>";
++}
++
+ }  // namespace extensions
+diff --git a/extensions/renderer/api/automation/automation_ax_tree_wrapper.h b/extensions/renderer/api/automation/automation_ax_tree_wrapper.h
+index afb92e41edb824bf7c642fd2bb542daac653abf8..2c64b5eaac8d2521b0c9ff754b36c057f73f9e90 100644
+--- a/extensions/renderer/api/automation/automation_ax_tree_wrapper.h
++++ b/extensions/renderer/api/automation/automation_ax_tree_wrapper.h
+@@ -116,6 +116,7 @@ class AutomationAXTreeWrapper : public ui::AXTreeObserver,
+   ui::AXTreeID GetParentTreeID() const override;
+   ui::AXNode* GetRootAsAXNode() const override;
+   ui::AXNode* GetParentNodeFromParentTreeAsAXNode() const override;
++  std::string ToString() const override;
+ 
+  private:
+   // AXTreeObserver overrides.
+diff --git a/ui/accessibility/ax_node_position_unittest.cc b/ui/accessibility/ax_node_position_unittest.cc
+index b0f06a0912447e5fa9bad9e62b2523817490ea02..3081258496dacc4f26976dfd99ea005a70bcd210 100644
+--- a/ui/accessibility/ax_node_position_unittest.cc
++++ b/ui/accessibility/ax_node_position_unittest.cc
+@@ -9105,8 +9105,12 @@ TEST_F(AXPositionTest,
+   EXPECT_TRUE(test_position->IsNullPosition());
+ }
+ 
++// TODO(crbug.com/1333970) It is not legal to call
++// AsLeafTextPositionBeforeCharacter or AsLeafTextPositionAfterCharacter with
++// a text position using out-of-range offsets. It's necessary to call
++// AsValidPosition() first. Therefore, this test currently triggers a DCHECK.
+ TEST_F(AXPositionTest,
+-       AsLeafTextPositionBeforeAndAfterCharacterWithInvalidPosition) {
++       DISABLED_AsLeafTextPositionBeforeAndAfterCharacterWithInvalidPosition) {
+   AXNodeData root_data;
+   root_data.id = 1;
+   root_data.role = ax::mojom::Role::kRootWebArea;
+diff --git a/ui/accessibility/ax_position.h b/ui/accessibility/ax_position.h
+index 9eaf0df84b04e88d9f78e95523732d90ecd0fe22..d23bb61a0713a44e864e6b940c78433d81490776 100644
+--- a/ui/accessibility/ax_position.h
++++ b/ui/accessibility/ax_position.h
+@@ -26,6 +26,7 @@
+ #include "base/strings/string_util.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
++#include "ui/accessibility/ax_common.h"
+ #include "ui/accessibility/ax_enum_util.h"
+ #include "ui/accessibility/ax_enums.mojom.h"
+ #include "ui/accessibility/ax_node.h"
+@@ -383,16 +384,33 @@ class AXPosition {
+     return str + " annotated_text=" + base::UTF16ToUTF8(annotated_text);
+   }
+ 
++  // Helper for logging the position, the AXTreeManager and the anchor node.
++  std::string ToDebugString() const {
++    if (IsNullPosition()) {
++      return "* Position: null";
++    }
++    DCHECK(GetAnchor());
++    DCHECK(GetManager());
++    std::ostringstream str;
++    str << "* Position: " << ToString()
++        << "\n* Manager: " << GetManager()->ToString()
++        << "\n* Anchor node: " << *GetAnchor();
++    return str.str();
++  }
++
+   AXPositionKind kind() const { return kind_; }
+   AXTreeID tree_id() const { return tree_id_; }
+   AXNodeID anchor_id() const { return anchor_id_; }
+ 
++  AXTreeManager* GetManager() const {
++    return AXTreeManagerMap::GetInstance().GetManager(tree_id());
++  }
++
+   AXNode* GetAnchor() const {
+     if (tree_id_ == AXTreeIDUnknown() || anchor_id_ == kInvalidAXNodeID)
+       return nullptr;
+ 
+-    const AXTreeManager* manager =
+-        AXTreeManagerMap::GetInstance().GetManager(tree_id());
++    const AXTreeManager* manager = GetManager();
+     if (manager)
+       return manager->GetNodeFromTree(anchor_id());
+ 
+@@ -2569,13 +2587,6 @@ class AXPosition {
+       return Clone();
+ 
+     AXPositionInstance text_position = AsTextPosition();
+-    // The following situation should not be possible but there are existing
+-    // crashes in the field.
+-    //
+-    // TODO(nektar): Remove this workaround as soon as the source of the bug
+-    // is identified.
+-    if (text_position->text_offset_ > text_position->MaxTextOffset())
+-      return CreateNullPosition();
+ 
+     // In case the input affinity is upstream, reset it to downstream.
+     //
+@@ -2593,6 +2604,16 @@ class AXPosition {
+     if (!text_position->IsIgnored() && !text_position->AtEndOfAnchor()) {
+       std::unique_ptr<base::i18n::BreakIterator> grapheme_iterator =
+           text_position->GetGraphemeIterator();
++      // The following situation should not be possible but there are existing
++      // crashes in the field.
++      //
++      // TODO(nektar): Remove this workaround as soon as the source of the bug
++      // is identified.
++      if (text_position->text_offset_ < 0 ||
++          text_position->text_offset_ > text_position->MaxTextOffset()) {
++        SANITIZER_NOTREACHED() << "Offset range error:\n" << ToDebugString();
++        return CreateNullPosition();
++      }
+       DCHECK_GE(text_position->text_offset_, 0);
+       DCHECK_LE(text_position->text_offset_, text_position->MaxTextOffset());
+       while (!text_position->AtStartOfAnchor() &&
+@@ -2645,9 +2666,11 @@ class AXPosition {
+       //
+       // TODO(nektar): Remove this workaround as soon as the source of the bug
+       // is identified.
+-      if (text_position->text_offset_ > text_position->MaxTextOffset())
++      if (text_position->text_offset_ < 0 ||
++          text_position->text_offset_ > text_position->MaxTextOffset()) {
++        SANITIZER_NOTREACHED() << "Offset range error:\n" << ToDebugString();
+         return CreateNullPosition();
+-
++      }
+       DCHECK_GE(text_position->text_offset_, 0);
+       DCHECK_LE(text_position->text_offset_, text_position->MaxTextOffset());
+       while (!text_position->AtEndOfAnchor() &&
+diff --git a/ui/accessibility/ax_tree_manager.h b/ui/accessibility/ax_tree_manager.h
+index 1081ed8fc3388ae7b6f535f2cd7437ac2e3db184..52f892c1acf3a50a24716bb361dd1ca231bd57a1 100644
+--- a/ui/accessibility/ax_tree_manager.h
++++ b/ui/accessibility/ax_tree_manager.h
+@@ -51,6 +51,11 @@ class AX_EXPORT AXTreeManager {
+   // Called when the tree manager is about to be removed from the tree map,
+   // `AXTreeManagerMap`.
+   virtual void WillBeRemovedFromMap() {}
++
++  // For debugging.
++  // TODO(benjamin.beaudry) Instead of this, implement GetTreeData() on all
++  // AXTreeManager subclasses, and have callers use GetTreeData().ToString();
++  virtual std::string ToString() const = 0;
+ };
+ 
+ }  // namespace ui
+diff --git a/ui/accessibility/test_ax_tree_manager.cc b/ui/accessibility/test_ax_tree_manager.cc
+index 15627a472481b46c66c3d40efa3895ab14cb89ef..5ee1750a265db3e9291c5f5a9beb1a4228278af2 100644
+--- a/ui/accessibility/test_ax_tree_manager.cc
++++ b/ui/accessibility/test_ax_tree_manager.cc
+@@ -116,4 +116,8 @@ AXNode* TestAXTreeManager::GetParentNodeFromParentTreeAsAXNode() const {
+   return nullptr;
+ }
+ 
++std::string TestAXTreeManager::ToString() const {
++  return "<TestAXTreeManager>";
++}
++
+ }  // namespace ui
+diff --git a/ui/accessibility/test_ax_tree_manager.h b/ui/accessibility/test_ax_tree_manager.h
+index c155aeb4f164129a3b484386f0e4802a361df80a..dabc5650132d01f121f8a9763afc499800bfbd9c 100644
+--- a/ui/accessibility/test_ax_tree_manager.h
++++ b/ui/accessibility/test_ax_tree_manager.h
+@@ -53,6 +53,7 @@ class AX_EXPORT TestAXTreeManager : public AXTreeManager {
+   AXTreeID GetParentTreeID() const override;
+   AXNode* GetRootAsAXNode() const override;
+   AXNode* GetParentNodeFromParentTreeAsAXNode() const override;
++  std::string ToString() const override;
+ 
+  private:
+   std::unique_ptr<AXTree> tree_;
+diff --git a/ui/views/accessibility/views_ax_tree_manager.cc b/ui/views/accessibility/views_ax_tree_manager.cc
+index 9ddd02d0e05d56247cbeb48d97b26227090a40d3..269002feff50b3c95f7216ba3e5c339bc7e641a4 100644
+--- a/ui/views/accessibility/views_ax_tree_manager.cc
++++ b/ui/views/accessibility/views_ax_tree_manager.cc
+@@ -4,8 +4,6 @@
+ 
+ #include "ui/views/accessibility/views_ax_tree_manager.h"
+ 
+-#include <string>
+-
+ #include "base/bind.h"
+ #include "base/callback.h"
+ #include "base/check.h"
+@@ -105,6 +103,10 @@ ui::AXNode* ViewsAXTreeManager::GetParentNodeFromParentTreeAsAXNode() const {
+   return nullptr;
+ }
+ 
++std::string ViewsAXTreeManager::ToString() const {
++  return "<ViewsAXTreeManager>";
++}
++
+ void ViewsAXTreeManager::OnViewEvent(View* view, ax::mojom::Event event) {
+   DCHECK(view);
+   AXAuraObjWrapper* wrapper = cache_.GetOrCreate(view);
+diff --git a/ui/views/accessibility/views_ax_tree_manager.h b/ui/views/accessibility/views_ax_tree_manager.h
+index 3c28a84ddcbddccc8e9d4ae6fd2a30cd4c29bc65..6a6a769f5280ac901df551a85c4de69fa4e8eeed 100644
+--- a/ui/views/accessibility/views_ax_tree_manager.h
++++ b/ui/views/accessibility/views_ax_tree_manager.h
+@@ -7,6 +7,7 @@
+ 
+ #include <memory>
+ #include <set>
++#include <string>
+ #include <vector>
+ 
+ #include "base/callback_forward.h"
+@@ -89,6 +90,7 @@ class VIEWS_EXPORT ViewsAXTreeManager : public ui::AXTreeManager,
+   ui::AXTreeID GetParentTreeID() const override;
+   ui::AXNode* GetRootAsAXNode() const override;
+   ui::AXNode* GetParentNodeFromParentTreeAsAXNode() const override;
++  std::string ToString() const override;
+ 
+   // AXActionHandlerBase implementation.
+   void PerformAction(const ui::AXActionData& data) override;

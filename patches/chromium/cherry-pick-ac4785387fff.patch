@@ -1,0 +1,285 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Thu, 3 Nov 2022 23:16:16 +0000
+Subject: Fix PauseOrFreezeOnWorkerThread with nested Worklets.
+
+Worklets can use the same backing thread which means we can have
+nested WorkerThreads paused. If a parent WorkerThread gets deallocated
+make sure we don't access anything after it is deallocated once the
+nested event queue is released.
+
+BUG=1372695
+
+(cherry picked from commit ff5696ba4bc0f8782e3de40e04685507d9f17fd2)
+
+Change-Id: I176b8f750da5a41d19d1b3a623944d9a2ed4a441
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3953152
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1059485}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4004562
+Cr-Commit-Position: refs/branch-heads/5249@{#906}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/blink/renderer/core/workers/threaded_worklet_test.cc b/third_party/blink/renderer/core/workers/threaded_worklet_test.cc
+index 80fc6e758afbfebedfbb0303854366d2c13d6bc0..5cc0138609f1944f03500b75d40634d1a7e946fa 100644
+--- a/third_party/blink/renderer/core/workers/threaded_worklet_test.cc
++++ b/third_party/blink/renderer/core/workers/threaded_worklet_test.cc
+@@ -235,6 +235,7 @@ class ThreadedWorkletMessagingProxyForTest
+ 
+  private:
+   friend class ThreadedWorkletTest;
++  FRIEND_TEST_ALL_PREFIXES(ThreadedWorkletTest, NestedRunLoopTermination);
+ 
+   std::unique_ptr<WorkerThread> CreateWorkerThread() final {
+     return std::make_unique<ThreadedWorkletThreadForTest>(WorkletObjectProxy());
+@@ -281,6 +282,16 @@ class ThreadedWorkletTest : public testing::Test {
+   }
+   Document& GetDocument() { return page_->GetDocument(); }
+ 
++  void WaitForReady(WorkerThread* worker_thread) {
++    base::WaitableEvent child_waitable;
++    PostCrossThreadTask(
++        *worker_thread->GetTaskRunner(TaskType::kInternalTest), FROM_HERE,
++        CrossThreadBindOnce(&base::WaitableEvent::Signal,
++                            CrossThreadUnretained(&child_waitable)));
++
++    child_waitable.Wait();
++  }
++
+  private:
+   std::unique_ptr<DummyPageHolder> page_;
+   Persistent<ThreadedWorkletMessagingProxyForTest> messaging_proxy_;
+@@ -404,4 +415,40 @@ TEST_F(ThreadedWorkletTest, TaskRunner) {
+   test::EnterRunLoop();
+ }
+ 
++TEST_F(ThreadedWorkletTest, NestedRunLoopTermination) {
++  MessagingProxy()->Start();
++
++  ThreadedWorkletMessagingProxyForTest* second_messaging_proxy =
++      MakeGarbageCollected<ThreadedWorkletMessagingProxyForTest>(
++          GetExecutionContext());
++
++  // Get a nested event loop where the first one is on the stack
++  // and the second is still alive.
++  second_messaging_proxy->Start();
++
++  // Wait until the workers are setup and ready to accept work before we
++  // pause them.
++  WaitForReady(GetWorkerThread());
++  WaitForReady(second_messaging_proxy->GetWorkerThread());
++
++  // Pause the second worker, then the first.
++  second_messaging_proxy->GetWorkerThread()->Pause();
++  GetWorkerThread()->Pause();
++
++  // Resume then terminate the second worker.
++  second_messaging_proxy->GetWorkerThread()->Resume();
++  second_messaging_proxy->GetWorkerThread()->Terminate();
++  second_messaging_proxy = nullptr;
++
++  // Now resume the first worker.
++  GetWorkerThread()->Resume();
++
++  // Make sure execution still works without crashing.
++  PostCrossThreadTask(
++      *GetWorkerThread()->GetTaskRunner(TaskType::kInternalTest), FROM_HERE,
++      CrossThreadBindOnce(&ThreadedWorkletThreadForTest::TestTaskRunner,
++                          CrossThreadUnretained(GetWorkerThread())));
++  test::EnterRunLoop();
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
+index 892b3e58443f1a82a6a41c6d52df7d2d701b377d..3a98c2d192e1e47d1586d1dab1fc9e9dc9daf83b 100644
+--- a/third_party/blink/renderer/core/workers/worker_thread.cc
++++ b/third_party/blink/renderer/core/workers/worker_thread.cc
+@@ -30,7 +30,6 @@
+ #include <memory>
+ #include <utility>
+ 
+-#include "base/auto_reset.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/synchronization/waitable_event.h"
+ #include "base/threading/thread_restrictions.h"
+@@ -593,6 +592,7 @@ void WorkerThread::InitializeOnWorkerThread(
+     const absl::optional<WorkerBackingThreadStartupData>& thread_startup_data,
+     std::unique_ptr<WorkerDevToolsParams> devtools_params) {
+   DCHECK(IsCurrentThread());
++  backing_thread_weak_factory_.emplace(this);
+   worker_reporting_proxy_.WillInitializeWorkerContext();
+   {
+     TRACE_EVENT0("blink.worker", "WorkerThread::InitializeWorkerContext");
+@@ -728,11 +728,13 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+     SetThreadState(ThreadState::kReadyToShutdown);
+   }
+ 
++  backing_thread_weak_factory_ = absl::nullopt;
+   if (pause_or_freeze_count_ > 0) {
+     DCHECK(nested_runner_);
+     pause_or_freeze_count_ = 0;
+     nested_runner_->QuitNow();
+   }
++  pause_handle_.reset();
+ 
+   {
+     v8::HandleScope handle_scope(GetIsolate());
+@@ -883,8 +885,7 @@ void WorkerThread::PauseOrFreezeOnWorkerThread(
+   if (pause_or_freeze_count_ > 1)
+     return;
+ 
+-  std::unique_ptr<scheduler::WorkerScheduler::PauseHandle> pause_handle =
+-      GetScheduler()->Pause();
++  pause_handle_ = GetScheduler()->Pause();
+   {
+     // Since the nested message loop runner needs to be created and destroyed on
+     // the same thread we allocate and destroy a new message loop runner each
+@@ -892,13 +893,20 @@ void WorkerThread::PauseOrFreezeOnWorkerThread(
+     // the worker thread such that the resume/terminate can quit this runner.
+     std::unique_ptr<Platform::NestedMessageLoopRunner> nested_runner =
+         Platform::Current()->CreateNestedMessageLoopRunner();
+-    base::AutoReset<Platform::NestedMessageLoopRunner*> nested_runner_autoreset(
+-        &nested_runner_, nested_runner.get());
++    auto weak_this = backing_thread_weak_factory_->GetWeakPtr();
++    nested_runner_ = nested_runner.get();
+     nested_runner->Run();
++
++    // Careful `this` may be destroyed.
++    if (!weak_this) {
++      return;
++    }
++    nested_runner_ = nullptr;
+   }
+   GlobalScope()->SetDefersLoadingForResourceFetchers(LoaderFreezeMode::kNone);
+   GlobalScope()->SetIsInBackForwardCache(false);
+   GlobalScope()->SetLifecycleState(mojom::blink::FrameLifecycleState::kRunning);
++  pause_handle_.reset();
+ }
+ 
+ void WorkerThread::ResumeOnWorkerThread() {
+diff --git a/third_party/blink/renderer/core/workers/worker_thread.h b/third_party/blink/renderer/core/workers/worker_thread.h
+index 89f75cbfba55c2760a018e99c4746c2e09b83c1b..b8b93f827d1892886fde662bf660d43f7bd646e3 100644
+--- a/third_party/blink/renderer/core/workers/worker_thread.h
++++ b/third_party/blink/renderer/core/workers/worker_thread.h
+@@ -31,6 +31,7 @@
+ 
+ #include "base/gtest_prod_util.h"
+ #include "base/memory/scoped_refptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/synchronization/waitable_event.h"
+ #include "base/task/single_thread_task_runner.h"
+ #include "base/thread_annotations.h"
+@@ -78,7 +79,7 @@ struct WorkerMainScriptLoadParameters;
+ // abstract class. Multiple WorkerThreads may share one WorkerBackingThread for
+ // worklets.
+ //
+-// WorkerThread start and termination must be initiated on the main thread and
++// WorkerThread start and termination must be initiated on the parent thread and
+ // an actual task is executed on the worker thread.
+ //
+ // When termination starts, (debugger) tasks on WorkerThread are handled as
+@@ -101,7 +102,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   ~WorkerThread() override;
+ 
+   // Starts the underlying thread and creates the global scope. Called on the
+-  // main thread.
++  // parent thread.
+   // Startup data for WorkerBackingThread is absl::nullopt if |this| doesn't own
+   // the underlying WorkerBackingThread.
+   // TODO(nhiroki): We could separate WorkerBackingThread initialization from
+@@ -113,14 +114,14 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+              std::unique_ptr<WorkerDevToolsParams>);
+ 
+   // Posts a task to evaluate a top-level classic script on the worker thread.
+-  // Called on the main thread after Start().
++  // Called on the parent thread after Start().
+   void EvaluateClassicScript(const KURL& script_url,
+                              const String& source_code,
+                              std::unique_ptr<Vector<uint8_t>> cached_meta_data,
+                              const v8_inspector::V8StackTraceId& stack_id);
+ 
+   // Posts a task to fetch and run a top-level classic script on the worker
+-  // thread. Called on the main thread after Start().
++  // thread. Called on the parent thread after Start().
+   void FetchAndRunClassicScript(
+       const KURL& script_url,
+       std::unique_ptr<WorkerMainScriptLoadParameters>
+@@ -131,7 +132,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+       const v8_inspector::V8StackTraceId& stack_id);
+ 
+   // Posts a task to fetch and run a top-level module script on the worker
+-  // thread. Called on the main thread after Start().
++  // thread. Called on the parent thread after Start().
+   void FetchAndRunModuleScript(
+       const KURL& script_url,
+       std::unique_ptr<WorkerMainScriptLoadParameters>
+@@ -152,7 +153,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   // Terminates the worker thread. Subclasses of WorkerThread can override this
+   // to do cleanup. The default behavior is to call Terminate() and
+   // synchronously call EnsureScriptExecutionTerminates() to ensure the thread
+-  // is quickly terminated. Called on the main thread.
++  // is quickly terminated. Called on the parent thread.
+   virtual void TerminateForTesting();
+ 
+   // Thread::TaskObserver.
+@@ -179,7 +180,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   void DebuggerTaskStarted();
+   void DebuggerTaskFinished();
+ 
+-  // Callable on both the main thread and the worker thread.
++  // Callable on both the parent thread and the worker thread.
+   const base::UnguessableToken& GetDevToolsWorkerToken() const {
+     return devtools_worker_token_;
+   }
+@@ -323,7 +324,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   // already shutting down. Does not terminate if a debugger task is running,
+   // because the debugger task is guaranteed to finish and it heavily uses V8
+   // API calls which would crash after forcible script termination. Called on
+-  // the main thread.
++  // the parent thread.
+   void EnsureScriptExecutionTerminates(ExitCode) LOCKS_EXCLUDED(mutex_);
+ 
+   // These are called in this order during worker thread startup.
+@@ -408,7 +409,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   // A unique identifier among all WorkerThreads.
+   const int worker_thread_id_;
+ 
+-  // Set on the main thread.
++  // Set on the parent thread.
+   bool requested_to_terminate_ GUARDED_BY(mutex_) = false;
+ 
+   ThreadState thread_state_ GUARDED_BY(mutex_) = ThreadState::kNotStarted;
+@@ -442,7 +443,7 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+                                     TaskTypeTraits>;
+   TaskRunnerHashMap worker_task_runners_;
+ 
+-  // This lock protects shared states between the main thread and the worker
++  // This lock protects shared states between the parent thread and the worker
+   // thread. See thread-safety annotations (e.g., GUARDED_BY) in this header
+   // file.
+   Mutex mutex_;
+@@ -451,6 +452,10 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   // only on the worker thread.
+   int pause_or_freeze_count_ = 0;
+ 
++  // The `PauseHandle` needs to be destroyed before the scheduler is destroyed
++  // otherwise we will hit a DCHECK.
++  std::unique_ptr<scheduler::WorkerScheduler::PauseHandle> pause_handle_;
++
+   // A nested message loop for handling pausing. Pointer is not owned. Used only
+   // on the worker thread.
+   Platform::NestedMessageLoopRunner* nested_runner_ = nullptr;
+@@ -477,6 +482,12 @@ class CORE_EXPORT WorkerThread : public Thread::TaskObserver {
+   HashSet<std::unique_ptr<InterruptData>> pending_interrupts_
+       GUARDED_BY(mutex_);
+ 
++  // Since the WorkerThread is allocated and deallocated on the parent thread,
++  // we need a WeakPtrFactory that is allocated and cleared on the backing
++  // thread.
++  absl::optional<base::WeakPtrFactory<WorkerThread>>
++      backing_thread_weak_factory_;
++
+   THREAD_CHECKER(parent_thread_checker_);
+ };
+ 

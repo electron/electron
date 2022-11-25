@@ -350,7 +350,7 @@ app.whenReady().then(() => {
 
 ## Optional: Debugging from VS Code
 
-If you want to debug your application using VS Code, you have need attach VS Code to
+If you want to debug your application using VS Code, you need to attach VS Code to
 both the main and renderer processes. Here is a sample configuration for you to
 run. Create a launch.json configuration in a new `.vscode` folder in your project:
 

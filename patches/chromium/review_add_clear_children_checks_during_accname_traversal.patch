@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jacobo=20Aragunde=20P=C3=A9rez?= <jaragunde@igalia.com>
+Date: Fri, 27 May 2022 14:42:10 +0000
+Subject: Review add/clear children checks during accname traversal.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+We want to make sure there are no new children added to a node while
+we traverse them for accname computation. There is a check for
+(!is_adding_children_) in TextFromDescendants(), but it's not really
+serving that purpose: the AddChildren() operation will start and end,
+resetting is_adding_children_, before execution flows back to
+TextFromDescendants().
+
+We reverse the condition, checking for the flag
+is_computing_text_from_descendants_ in AddChildren(), which should
+detect the situation explained above.
+
+We replace the DCHECK for a check, because we want these to be caught
+not only in debug builds.
+
+Bug: none.
+Change-Id: I88039838bd5b50257871c223633c4eb69d5c3878
+Cq-Include-Trybots: luci.chromium.try:linux-blink-web-tests-force-accessibility-rel
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3657488
+Commit-Queue: Jacobo Aragunde Pérez <jaragunde@igalia.com>
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1008248}
+
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+index ddfeeb3f32a8a0448ecae3ee54ba8b3c3e0f68c5..7476ecdd4904e6b62e16da7aef2a9e15b8a84967 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_node_object.cc
+@@ -3433,9 +3433,6 @@ String AXNodeObject::TextFromDescendants(
+     AXObjectSet& visited,
+     const AXObject* aria_label_or_description_root,
+     bool recursive) const {
+-#if defined(AX_FAIL_FAST_BUILD)
+-  DCHECK(!is_adding_children_);
+-#endif
+   if (!CanHaveChildren())
+     return recursive ? String() : GetElement()->GetInnerTextWithoutUpdate();
+ 
+@@ -3448,11 +3445,12 @@ String AXNodeObject::TextFromDescendants(
+   // included in tree status change), that we do it now, rather than while
+   // traversing the children.
+   UpdateCachedAttributeValuesIfNeeded();
++
++  const AXObjectVector& children = ChildrenIncludingIgnored();
+ #if defined(AX_FAIL_FAST_BUILD)
+   base::AutoReset<bool> auto_reset(&is_computing_text_from_descendants_, true);
+ #endif
+-
+-  for (AXObject* child : ChildrenIncludingIgnored()) {
++  for (AXObject* child : children) {
+     constexpr size_t kMaxDescendantsForTextAlternativeComputation = 100;
+     if (visited.size() > kMaxDescendantsForTextAlternativeComputation)
+       break;
+@@ -4123,6 +4121,10 @@ void AXNodeObject::AddChildren() {
+ #endif
+ 
+ #if defined(AX_FAIL_FAST_BUILD)
++  SANITIZER_CHECK(!is_computing_text_from_descendants_)
++      << "Should not attempt to simultaneously compute text from descendants "
++         "and add children on: "
++      << ToString(true, true);
+   SANITIZER_CHECK(!is_adding_children_)
+       << " Reentering method on " << GetNode();
+   base::AutoReset<bool> reentrancy_protector(&is_adding_children_, true);
+diff --git a/third_party/blink/renderer/modules/accessibility/ax_object.cc b/third_party/blink/renderer/modules/accessibility/ax_object.cc
+index 06fd95c7c457c20cde3a53bbafcac23dba8fb21c..de987935346051c4f9e1cfdd7c9290376c4c0e2a 100644
+--- a/third_party/blink/renderer/modules/accessibility/ax_object.cc
++++ b/third_party/blink/renderer/modules/accessibility/ax_object.cc
+@@ -4923,11 +4923,12 @@ void AXObject::ClearChildren() const {
+   // AccessibilityExposeIgnoredNodes().
+ 
+   // Loop through AXObject children.
++
+ #if defined(AX_FAIL_FAST_BUILD)
+-  CHECK(!is_adding_children_)
++  SANITIZER_CHECK(!is_adding_children_)
+       << "Should not attempt to simultaneously add and clear children on: "
+       << ToString(true, true);
+-  CHECK(!is_computing_text_from_descendants_)
++  SANITIZER_CHECK(!is_computing_text_from_descendants_)
+       << "Should not attempt to simultaneously compute text from descendants "
+          "and clear children on: "
+       << ToString(true, true);

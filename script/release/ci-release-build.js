@@ -2,11 +2,10 @@ if (!process.env.CI) require('dotenv-safe').load();
 
 const assert = require('assert');
 const got = require('got');
+const { Octokit } = require('@octokit/rest');
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
 const CIRCLECI_PIPELINE_URL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline';
-const VSTS_URL = 'https://github.visualstudio.com/electron/_apis/build';
-const DEVOPS_URL = 'https://dev.azure.com/electron-ci/electron/_apis/build';
 const CIRCLECI_WAIT_TIME = process.env.CIRCLECI_WAIT_TIME || 30000;
 
 const appVeyorJobs = {
@@ -25,13 +24,7 @@ const circleCIPublishIndividualArches = {
   'linux-publish': ['arm', 'arm64', 'x64']
 };
 
-const vstsArmJobs = [
-  'electron-arm-testing',
-  'electron-osx-arm64-testing',
-  'electron-mas-arm64-testing',
-  'electron-arm64-testing',
-  'electron-woa-testing'
-];
+const GHAJobs = ['electron-woa-testing'];
 
 let jobRequestedCount = 0;
 
@@ -247,75 +240,28 @@ function buildCircleCI (targetBranch, options) {
   }
 }
 
-async function buildVSTS (targetBranch, options) {
-  assert(options.armTest, `${options.ci} only works with the --armTest option.`);
-  assert(vstsArmJobs.includes(options.job), `Unknown VSTS CI arm test job name: ${options.job}. Valid values are: ${vstsArmJobs}.`);
+async function buildGHA (targetBranch, options) {
+  const { GHA_TOKEN } = process.env;
+  assert(GHA_TOKEN, `${options.ci} requires the $GHA_TOKEN environment variable to be provided`);
 
-  console.log(`Triggering VSTS to run build on branch: ${targetBranch}.`);
-  const environmentVariables = {};
+  const octokit = new Octokit({ auth: GHA_TOKEN });
 
-  if (options.circleBuildNum) {
-    environmentVariables.CIRCLE_BUILD_NUM = options.circleBuildNum;
-  } else if (options.appveyorJobId) {
-    environmentVariables.APPVEYOR_JOB_ID = options.appveyorJobId;
-  }
+  assert(GHAJobs.includes(options.job), `Unknown GitHub Actions arm test job name: ${options.job}. Valid values are: ${GHAJobs}.`);
+  assert(options.commit !== null, 'commit is a required option for GitHub Actions');
 
-  let vstsURL = VSTS_URL;
-  let vstsToken = process.env.VSTS_TOKEN;
-  assert(vstsToken, `${options.ci} requires the $VSTS_TOKEN environment variable to be provided`);
-  if (options.ci === 'DevOps') {
-    vstsURL = DEVOPS_URL;
-    vstsToken = process.env.DEVOPS_TOKEN;
-  }
-  const requestOpts = {
-    url: `${vstsURL}/definitions?api-version=4.1`,
-    auth: {
-      user: '',
-      password: vstsToken
-    },
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  };
+  console.log(`Triggering GitHub Actions to run build on branch: ${targetBranch}.`);
 
   jobRequestedCount++;
 
   try {
-    const vstsResponse = await makeRequest(requestOpts, true);
-    const buildToRun = vstsResponse.value.find(build => build.name === options.job);
-    callVSTSBuild(buildToRun, targetBranch, environmentVariables, vstsURL, vstsToken);
+    const response = await octokit.request('POST /repos/electron/electron/actions/workflows/electron_woa_testing.yml/dispatches', {
+      ref: targetBranch,
+      inputs: {
+        appveyor_job_id: `${options.appveyorJobId}`
+      }
+    });
   } catch (err) {
-    console.log('Problem calling VSTS to get build definitions: ', err);
-  }
-}
-
-async function callVSTSBuild (build, targetBranch, environmentVariables, vstsURL, vstsToken) {
-  const buildBody = {
-    definition: build,
-    sourceBranch: targetBranch,
-    priority: 'high'
-  };
-  if (Object.keys(environmentVariables).length !== 0) {
-    buildBody.parameters = JSON.stringify(environmentVariables);
-  }
-  const requestOpts = {
-    url: `${vstsURL}/builds?api-version=4.1`,
-    auth: {
-      user: '',
-      password: vstsToken
-    },
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(buildBody),
-    method: 'POST'
-  };
-
-  try {
-    const { _links } = await makeRequest(requestOpts, true);
-    console.log(`VSTS release build request for ${build.name} successful. Check ${_links.web.href} for status.`);
-  } catch (err) {
-    console.log(`Could not call VSTS for job ${build.name}: `, err);
+    console.log('Problem calling GitHub Actions to get build definitions: ', err);
   }
 }
 
@@ -330,9 +276,8 @@ function runRelease (targetBranch, options) {
         buildAppVeyor(targetBranch, options);
         break;
       }
-      case 'DevOps':
-      case 'VSTS': {
-        buildVSTS(targetBranch, options);
+      case 'GHA': {
+        buildGHA(targetBranch, options);
         break;
       }
       default: {
@@ -351,13 +296,13 @@ module.exports = runRelease;
 
 if (require.main === module) {
   const args = require('minimist')(process.argv.slice(2), {
-    boolean: ['ghRelease', 'armTest']
+    boolean: ['ghRelease']
   });
   const targetBranch = args._[0];
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
-    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=CircleCI|AppVeyor|VSTS|DevOps]
-    [--ghRelease] [--armTest] [--circleBuildNum=xxx] [--appveyorJobId=xxx] [--commit=sha] TARGET_BRANCH
+    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=CircleCI|AppVeyor|GHA]
+    [--ghRelease] [--circleBuildNum=xxx] [--appveyorJobId=xxx] [--commit=sha] TARGET_BRANCH
     `);
     process.exit(0);
   }

@@ -85,7 +85,6 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
-  absl::optional<std::string> GetUserAgentOverride() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
   ResolveProxyHelper* GetResolveProxyHelper();

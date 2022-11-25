@@ -1,0 +1,153 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Fri, 14 Oct 2022 09:52:34 +0000
+Subject: Avoid layout roots in subtrees skipped for style recalc
+
+Layout roots are laid out from inner to outer in LocalFrameView. DOM
+mutations may have added layout roots inside size container subtrees
+before style recalc. If we decide to postpone style recalc until layout
+of the size container, it means we may try to layout a root inside a
+subtree skipped for style recalc. That causes a DCHECK and possibly
+other issues.
+
+This also fixes the use-after-poison issue 1365330.
+
+(cherry picked from commit 0f0f1e99201fadb3c68518350e1cd6af1b665346)
+
+Bug: 1371820, 1365330
+Change-Id: Ia48890c08aacfe7b9a3e660817702abce0570564
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3934847
+Reviewed-by: Ian Kilpatrick <ikilpatrick@chromium.org>
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1055853}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3953455
+Auto-Submit: Rune Lillesveen <futhark@chromium.org>
+Commit-Queue: Anders Hartvoll Ruud <andruud@chromium.org>
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5249@{#836}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/blink/renderer/core/css/style_engine.cc b/third_party/blink/renderer/core/css/style_engine.cc
+index 80a400738536e80683ec6e7eba78f891966d4e9c..c06274949131f17253c614984402fe13eee66809 100644
+--- a/third_party/blink/renderer/core/css/style_engine.cc
++++ b/third_party/blink/renderer/core/css/style_engine.cc
+@@ -2643,6 +2643,7 @@ void StyleEngine::RecalcStyle(StyleRecalcChange change,
+   DCHECK(GetDocument().documentElement());
+   ScriptForbiddenScope forbid_script;
+   HasMatchedCacheScope has_matched_cache_scope(&GetDocument());
++  SkipStyleRecalcScope skip_scope(*this);
+   Element& root_element = style_recalc_root_.RootElement();
+   Element* parent = FlatTreeTraversal::ParentElement(root_element);
+ 
+@@ -3231,4 +3232,17 @@ void StyleEngine::MarkForLayoutTreeChangesAfterDetach() {
+   parent_for_detached_subtree_ = nullptr;
+ }
+ 
++bool StyleEngine::AllowSkipStyleRecalcForScope() const {
++  if (InContainerQueryStyleRecalc())
++    return true;
++  if (LocalFrameView* view = GetDocument().View()) {
++    // Existing layout roots before starting style recalc may end up being
++    // inside skipped subtrees if we allowed skipping. If we start out with an
++    // empty list, any added ones will be a result of an element style recalc,
++    // which means the will not be inside a skipped subtree.
++    return !view->IsSubtreeLayout();
++  }
++  return true;
++}
++
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/core/css/style_engine.h b/third_party/blink/renderer/core/css/style_engine.h
+index cb18cdff2e2b782a486dcebdda75761a68428a2b..512010d021ae8e726efb02206af6f739fa610346 100644
+--- a/third_party/blink/renderer/core/css/style_engine.h
++++ b/third_party/blink/renderer/core/css/style_engine.h
+@@ -177,6 +177,20 @@ class CORE_EXPORT StyleEngine final : public GarbageCollected<StyleEngine>,
+     base::AutoReset<bool> allow_marking_;
+   };
+ 
++  // Set up the condition for allowing to skip style recalc before starting
++  // RecalcStyle().
++  class SkipStyleRecalcScope {
++    STACK_ALLOCATED();
++
++   public:
++    explicit SkipStyleRecalcScope(StyleEngine& engine)
++        : allow_skip_(&engine.allow_skip_style_recalc_,
++                      engine.AllowSkipStyleRecalcForScope()) {}
++
++   private:
++    base::AutoReset<bool> allow_skip_;
++  };
++
+   explicit StyleEngine(Document&);
+   ~StyleEngine() override;
+ 
+@@ -337,6 +351,10 @@ class CORE_EXPORT StyleEngine final : public GarbageCollected<StyleEngine>,
+   void UpdateStyleRecalcRoot(ContainerNode* ancestor, Node* dirty_node);
+   void UpdateLayoutTreeRebuildRoot(ContainerNode* ancestor, Node* dirty_node);
+ 
++  // Returns true if we can skip style recalc for a size container subtree and
++  // resume it during layout.
++  bool SkipStyleRecalcAllowed() const { return allow_skip_style_recalc_; }
++
+   CSSFontSelector* GetFontSelector() { return font_selector_; }
+ 
+   void RemoveFontFaceRules(const HeapVector<Member<const StyleRuleFontFace>>&);
+@@ -719,6 +737,9 @@ class CORE_EXPORT StyleEngine final : public GarbageCollected<StyleEngine>,
+       Element* parent,
+       Element* previous_sibling);
+ 
++  // Initialization value for SkipStyleRecalcScope.
++  bool AllowSkipStyleRecalcForScope() const;
++
+   Member<Document> document_;
+ 
+   // Tracks the number of currently loading top-level stylesheets. Sheets loaded
+@@ -788,6 +809,9 @@ class CORE_EXPORT StyleEngine final : public GarbageCollected<StyleEngine>,
+   // AllowMarkStyleDirtyFromRecalcScope.
+   bool allow_mark_for_reattach_from_rebuild_layout_tree_{false};
+ 
++  // Set to true if we are allowed to skip recalc for a size container subtree.
++  bool allow_skip_style_recalc_{false};
++
+   // See enum ViewportUnitFlag.
+   unsigned viewport_unit_dirty_flags_{0};
+ 
+diff --git a/third_party/blink/renderer/core/dom/element.cc b/third_party/blink/renderer/core/dom/element.cc
+index 8f60e1e6e2c929e5f58682c924478a62725f73b3..bfbf6b3c103f0b5d79570c9372bfc0f81166a2d7 100644
+--- a/third_party/blink/renderer/core/dom/element.cc
++++ b/third_party/blink/renderer/core/dom/element.cc
+@@ -3334,6 +3334,10 @@ bool Element::SkipStyleRecalcForContainer(
+     const ComputedStyle& style,
+     const StyleRecalcChange& child_change) {
+   DCHECK(RuntimeEnabledFeatures::CSSContainerSkipStyleRecalcEnabled());
++
++  if (!GetDocument().GetStyleEngine().SkipStyleRecalcAllowed())
++    return false;
++
+   if (!child_change.TraversePseudoElements(*this)) {
+     // If none of the children or pseudo elements need to be traversed for style
+     // recalc, there is no point in marking the subtree as skipped.
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-contain/container-queries/crashtests/chrome-layout-root-crash.html b/third_party/blink/web_tests/external/wpt/css/css-contain/container-queries/crashtests/chrome-layout-root-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e3e709a240bd870250b2747c94fe96880bdf52e3
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/css-contain/container-queries/crashtests/chrome-layout-root-crash.html
+@@ -0,0 +1,17 @@
++<!doctype html>
++<html class="reftest-wait">
++<link rel="help" href="https://crbug.com/1371820">
++<style>
++  body, div, img { container-type: size; }
++</style>
++<p>Pass if no crash.</p>
++<div id="div"><img id="img" alt="a"></div>
++<script>
++  requestAnimationFrame(() => requestAnimationFrame(() => {
++    // Adds a layout root inside the div size container.
++    img.alt = img.src = "b";
++    // Marks div size container for layout which skips style recalc for the sub-tree.
++    div.style.width = "500px";
++    document.documentElement.classList.remove("reftest-wait");
++  }));
++</script>

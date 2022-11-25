@@ -1,0 +1,3 @@
+m104_vulkan_fix_garbage_collection_vs_outside-rp-only_flush.patch
+m104_vulkan_fix_xfb_buffer_redefine_to_smaller_size.patch
+cherry-pick-b8636b57b8f2.patch

@@ -19,6 +19,7 @@
 #include "ui/display/win/dpi.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/dip_util.h"
+#include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"
 
@@ -58,6 +59,8 @@ void WinFrameView::InvalidateCaptionButtons() {
   if (!caption_button_container_)
     return;
 
+  caption_button_container_->SetBackground(
+      views::CreateSolidBackground(window()->overlay_button_color()));
   caption_button_container_->InvalidateLayout();
   caption_button_container_->SchedulePaint();
 }

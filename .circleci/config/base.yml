@@ -216,6 +216,7 @@ step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
         rm -rf ~/Library/Application\ Support/electron*
         security delete-generic-password -l "Chromium Safe Storage" || echo "✓ Keychain does not contain password from tests"
         security delete-generic-password -l "Electron Test Main Safe Storage" || echo "✓ Keychain does not contain password from tests"
+        security delete-generic-password -a "electron-safe-storage" || echo "✓ Keychain does not contain password from tests"
       elif [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
         XVFB=/usr/bin/Xvfb
         /sbin/start-stop-daemon --stop --exec $XVFB || echo "Xvfb not running"
@@ -454,7 +455,7 @@ step-delete-git-directories: &step-delete-git-directories
     command: |
       if [ "`uname`" == "Darwin" ]; then
         cd src
-        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" ) | xargs rm -rf
+        ( find . -type d -name ".git" -not -path "./third_party/angle/*" -not -path "./third_party/dawn/*" -not -path "./electron/*" ) | xargs rm -rf
       fi
 
 # On macOS the yarn install command during gclient sync was run on a linux
@@ -825,7 +826,7 @@ step-maybe-zip-symbols: &step-maybe-zip-symbols
       cd src
       export BUILD_PATH="$PWD/out/Default"
       ninja -C out/Default electron:licenses
-      ninja -C out/Default electron:electron_version
+      ninja -C out/Default electron:electron_version_file
       DELETE_DSYMS_AFTER_ZIP=1 electron/script/zip-symbols.py -b $BUILD_PATH
 
 step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
@@ -885,12 +886,12 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v14-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v16-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v14-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v16-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -904,14 +905,6 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
-
-step-restore-out-cache: &step-restore-out-cache
-  restore_cache:
-    paths:
-      - ./src/out/Default
-    keys:
-      - v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
-    name: Restoring out cache
 
 step-set-git-cache-path: &step-set-git-cache-path
   run:
@@ -929,13 +922,6 @@ step-save-git-cache: &step-save-git-cache
       - git-cache
     key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
-
-step-save-out-cache: &step-save-out-cache
-  save_cache:
-    paths:
-      - ./src/out/Default
-    key: v10-out-cache-{{ checksum "src/electron/.depshash" }}-{{ checksum "src/electron/.depshash-target" }}
-    name: Persisting out cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -966,13 +952,16 @@ step-minimize-workspace-size-from-checkout: &step-minimize-workspace-size-from-c
       rm -rf third_party/electron_node/deps/openssl
       rm -rf third_party/electron_node/deps/v8
       rm -rf chrome/test/data/xr/webvr_info
+      rm -rf src/third_party/angle/third_party/VK-GL-CTS/src
+      rm -rf src/third_party/swift-toolchain
+      rm -rf src/third_party/swiftshader/tests/regres/testlists
 
 # Save the src cache based on the deps hash
 step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v14-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v16-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -982,7 +971,7 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v14-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v16-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -1353,9 +1342,6 @@ commands:
       build:
         type: boolean
         default: true
-      use-out-cache:
-        type: boolean
-        default: true
       restore-src-cache:
         type: boolean
         default: true
@@ -1478,10 +1464,6 @@ commands:
             - *step-delete-git-directories
 
             # Electron app
-            - when:
-                condition: << parameters.use-out-cache >>
-                steps:
-                  - *step-restore-out-cache
             - *step-gn-gen-default
             - *step-electron-build
             - *step-maybe-electron-dist-strip
@@ -1524,22 +1506,6 @@ commands:
           condition: << parameters.build >>
           steps:
             - move_and_store_all_artifacts
-            - run:
-                name: Remove the big things on macOS, this seems to be better on average
-                command: |
-                  if [ "`uname`" == "Darwin" ]; then
-                    mkdir -p src/out/Default
-                    cd src/out/Default
-                    find . -type f -size +50M -delete
-                    mkdir -p gen/electron
-                    cd gen/electron
-                    # These files do not seem to like being in a cache, let us remove them
-                    find . -type f -name '*_pkg_info' -delete
-                  fi
-            - when:
-                condition: << parameters.use-out-cache >>
-                steps:
-                  - *step-save-out-cache
 
             - *step-maybe-notify-slack-failure
 
@@ -1693,7 +1659,6 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
 
   linux-x64-testing-asan:
     executor:
@@ -1710,7 +1675,6 @@ jobs:
       - electron-build:
           persist: true
           checkout: true
-          use-out-cache: false
           build-nonproprietary-ffmpeg: false
 
   linux-x64-testing-no-run-as-node:
@@ -1727,7 +1691,6 @@ jobs:
       - electron-build:
           persist: false
           checkout: true
-          use-out-cache: false
 
   linux-x64-testing-gn-check:
     executor:
@@ -1778,7 +1741,6 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
 
   linux-arm-publish:
     executor:
@@ -1821,7 +1783,6 @@ jobs:
           persist: true
           checkout: false
           checkout-and-assume-cache: true
-          use-out-cache: false
 
   linux-arm64-testing-gn-check:
     executor:

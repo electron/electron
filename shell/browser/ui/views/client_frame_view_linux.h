@@ -69,6 +69,9 @@ class ClientFrameViewLinux : public FramelessView,
   void OnPaint(gfx::Canvas* canvas) override;
   const char* GetClassName() const override;
 
+  // Overriden from views::ViewTargeterDelegate
+  views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
+
  private:
   static constexpr int kNavButtonCount = 4;
 

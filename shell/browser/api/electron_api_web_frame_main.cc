@@ -291,6 +291,12 @@ GURL WebFrameMain::URL() const {
   return render_frame_->GetLastCommittedURL();
 }
 
+std::string WebFrameMain::Origin() const {
+  if (!CheckRenderFrame())
+    return std::string();
+  return render_frame_->GetLastCommittedOrigin().Serialize();
+}
+
 blink::mojom::PageVisibilityState WebFrameMain::VisibilityState() const {
   if (!CheckRenderFrame())
     return blink::mojom::PageVisibilityState::kHidden;
@@ -380,6 +386,7 @@ v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
       .SetProperty("processId", &WebFrameMain::ProcessID)
       .SetProperty("routingId", &WebFrameMain::RoutingID)
       .SetProperty("url", &WebFrameMain::URL)
+      .SetProperty("origin", &WebFrameMain::Origin)
       .SetProperty("visibilityState", &WebFrameMain::VisibilityState)
       .SetProperty("top", &WebFrameMain::Top)
       .SetProperty("parent", &WebFrameMain::Parent)

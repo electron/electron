@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Zhenyao Mo <zmo@chromium.org>
+Date: Mon, 23 May 2022 21:43:16 +0000
+Subject: Disable GPU acceleration on VMware on Linux
+
+TEST=manual
+R=sunnyps@chromium.org
+
+Bug: 1327939
+Change-Id: Ib09b6623665ffecf0af1f9f8bc3ebef1ac042b2f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3661941
+Auto-Submit: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Zhenyao Mo <zmo@chromium.org>
+Commit-Queue: Maggie Chen <magchen@chromium.org>
+Reviewed-by: Maggie Chen <magchen@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1006613}
+
+diff --git a/gpu/config/software_rendering_list.json b/gpu/config/software_rendering_list.json
+index 8ed8faf0a0733568a81d955a5546d864d24f78b5..73b6e998f753cee5d77e6bd5983ed46702f13580 100644
+--- a/gpu/config/software_rendering_list.json
++++ b/gpu/config/software_rendering_list.json
+@@ -1699,6 +1699,18 @@
+       "features": [
+         "accelerated_video_encode"
+       ]
++    },
++    {
++      "id": 176,
++      "description": "VMware is buggy on Linux",
++      "cr_bugs": [1327939],
++      "os": {
++        "type": "linux"
++      },
++      "vendor_id": "0x15ad",
++      "features": [
++        "all"
++      ]
+     }
+   ]
+ }

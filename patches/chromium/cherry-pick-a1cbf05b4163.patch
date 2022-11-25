@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Wolenetz <wolenetz@chromium.org>
+Date: Fri, 4 Nov 2022 22:06:47 +0000
+Subject: webcodecs: Fix race in VE.isConfigSupported() promise resolution
+
+If the context is destroyed before VideoEncoder calls `done_callback`, bad
+things can happen. That's why we extract a callback runner before doing
+anything asynchronous. Since we hold a ref-counted pointer to the
+runner it should be safe now.
+
+(cherry picked from commit 2acf28478008315f302fd52b571623e784be707b)
+
+Bug: 1375059
+Change-Id: I984ab27e03e50bd5ae4bf0eb13431834b14f89b7
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3965544
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1061737}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4005574
+Reviewed-by: Matthew Wolenetz <wolenetz@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5249@{#911}
+Cr-Branched-From: 4f7bea5de862aaa52e6bde5920755a9ef9db120b-refs/heads/main@{#1036826}
+
+diff --git a/third_party/blink/renderer/modules/webcodecs/video_encoder.cc b/third_party/blink/renderer/modules/webcodecs/video_encoder.cc
+index 291c18fc9b8f4fbb869e580843403818b44f2d43..ed7b3551fc9ddb5768fec46833363806129bd505 100644
+--- a/third_party/blink/renderer/modules/webcodecs/video_encoder.cc
++++ b/third_party/blink/renderer/modules/webcodecs/video_encoder.cc
+@@ -68,6 +68,7 @@
+ #include "third_party/blink/renderer/platform/instrumentation/use_counter.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/post_cross_thread_task.h"
+ #include "third_party/blink/renderer/platform/scheduler/public/thread.h"
++#include "third_party/blink/renderer/platform/wtf/cross_thread_copier_base.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_copier_std.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+ 
+@@ -100,16 +101,6 @@ namespace {
+ constexpr const char kCategory[] = "media";
+ constexpr int kMaxActiveEncodes = 5;
+ 
+-// Use this function in cases when we can't immediately delete |ptr| because
+-// there might be its methods on the call stack.
+-template <typename T>
+-void DeleteLater(ScriptState* state, std::unique_ptr<T> ptr) {
+-  DCHECK(state->ContextIsValid());
+-  auto* context = ExecutionContext::From(state);
+-  auto runner = context->GetTaskRunner(TaskType::kInternalDefault);
+-  runner->DeleteSoon(FROM_HERE, std::move(ptr));
+-}
+-
+ bool IsAcceleratedConfigurationSupported(
+     media::VideoCodecProfile profile,
+     const media::VideoEncoder::Options& options,
+@@ -988,6 +979,7 @@ void VideoEncoder::ResetInternal() {
+ }
+ 
+ static void isConfigSupportedWithSoftwareOnly(
++    ScriptState* script_state,
+     ScriptPromiseResolver* resolver,
+     VideoEncoderSupport* support,
+     VideoEncoderTraits::ParsedConfig* config) {
+@@ -1012,22 +1004,25 @@ static void isConfigSupportedWithSoftwareOnly(
+     return;
+   }
+ 
+-  auto done_callback = [](std::unique_ptr<media::VideoEncoder> sw_encoder,
++  auto done_callback = [](std::unique_ptr<media::VideoEncoder> encoder,
+                           ScriptPromiseResolver* resolver,
++                          scoped_refptr<base::SingleThreadTaskRunner> runner,
+                           VideoEncoderSupport* support,
+                           media::EncoderStatus status) {
+     support->setSupported(status.is_ok());
+     resolver->Resolve(support);
+-    DeleteLater(resolver->GetScriptState(), std::move(sw_encoder));
++    runner->DeleteSoon(FROM_HERE, std::move(encoder));
+   };
+ 
++  auto* context = ExecutionContext::From(script_state);
++  auto runner = context->GetTaskRunner(TaskType::kInternalDefault);
+   auto* software_encoder_raw = software_encoder.get();
+   software_encoder_raw->Initialize(
+       config->profile, config->options, base::DoNothing(),
+-      ConvertToBaseOnceCallback(
+-          CrossThreadBindOnce(done_callback, std::move(software_encoder),
+-                              WrapCrossThreadPersistent(resolver),
+-                              WrapCrossThreadPersistent(support))));
++      ConvertToBaseOnceCallback(CrossThreadBindOnce(
++          done_callback, std::move(software_encoder),
++          WrapCrossThreadPersistent(resolver), std::move(runner),
++          WrapCrossThreadPersistent(support))));
+ }
+ 
+ static void isConfigSupportedWithHardwareOnly(
+@@ -1114,7 +1109,8 @@ ScriptPromise VideoEncoder::isConfigSupported(ScriptState* script_state,
+     promises.push_back(resolver->Promise());
+     auto* support = VideoEncoderSupport::Create();
+     support->setConfig(config_copy);
+-    isConfigSupportedWithSoftwareOnly(resolver, support, parsed_config);
++    isConfigSupportedWithSoftwareOnly(script_state, resolver, support,
++                                      parsed_config);
+   }
+ 
+   // Wait for all |promises| to resolve and check if any of them have
