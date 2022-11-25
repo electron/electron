@@ -45,10 +45,10 @@ index e07874dc5a2fab83dff0a07d35aeb0cad7a1a67c..9f635870282f0f2a9b8bfaaa59e34f91
  
    // TODO(stevenjb): Move WIN and MACOSX specific code to appropriate Parts.
 diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
-index 3943c32ab29e785f401c2a5b31f1f6ed832514f0..939c28a029418bc353795aa1a007508680f42e57 100644
+index a81f3123eda3cc75d9121f96d5fc7fc6d1666d34..f757cbddb4eb37521f1127edbddb06fbf514ef13 100644
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -6462,6 +6462,12 @@ bool ChromeContentBrowserClient::IsFirstPartySetsEnabled() {
+@@ -6470,6 +6470,12 @@ bool ChromeContentBrowserClient::IsFirstPartySetsEnabled() {
    return local_state->GetBoolean(first_party_sets::kFirstPartySetsEnabled);
  }
  

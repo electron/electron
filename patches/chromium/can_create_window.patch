@@ -21,10 +21,10 @@ index ec886101b6e5347bdd832684a5c3b2cc3179c657..0287e414f4020147ddee297f7c1447c3
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 335e70179a03ee379082525bb4c7d596983bd633..faa795be3a6cbc7ae13d9a42a1bdbd01ac0406a9 100644
+index 27d6e13b9a31d1ed0a902281d9ce560d8011ed6f..13c2953aaccd340c3683c1dff20649df593dbe5b 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3947,6 +3947,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -3959,6 +3959,14 @@ FrameTree* WebContentsImpl::CreateNewWindow(
    }
    auto* new_contents_impl = new_contents.get();
  
@@ -39,7 +39,7 @@ index 335e70179a03ee379082525bb4c7d596983bd633..faa795be3a6cbc7ae13d9a42a1bdbd01
    new_contents_impl->GetController().SetSessionStorageNamespace(
        partition_config, session_storage_namespace);
  
-@@ -3991,12 +3999,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4003,12 +4011,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  

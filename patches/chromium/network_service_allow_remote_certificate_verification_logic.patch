@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index ecc38d1584570c46826084054f0a3249f9e2eb92..f06a04983571623b542dba11933c4c95c3dcf398 100644
+index f25735b9e94b4dabde21f0657c0de899201014be..a87e26097309cf3dfeaf333e99bc5dabb7e968d9 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -128,6 +128,11 @@
@@ -128,7 +128,7 @@ index ecc38d1584570c46826084054f0a3249f9e2eb92..f06a04983571623b542dba11933c4c95
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2301,6 +2398,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2307,6 +2404,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_);
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -139,7 +139,7 @@ index ecc38d1584570c46826084054f0a3249f9e2eb92..f06a04983571623b542dba11933c4c95
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 994712b56fb25fbfa7559ac034cfd7e1c76597de..2cd8707b120deb41683e13def5d446fd3bf93afe 100644
+index 7452ddfa7278678e7130c6ffcb4378ebaaa19804..27cc5242e1ac9c82d0768fa558785dd4d79b2b3d 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -109,6 +109,7 @@ class URLMatcher;
@@ -159,7 +159,7 @@ index 994712b56fb25fbfa7559ac034cfd7e1c76597de..2cd8707b120deb41683e13def5d446fd
    void ResetURLLoaderFactories() override;
    void GetCookieManager(
        mojo::PendingReceiver<mojom::CookieManager> receiver) override;
-@@ -827,6 +830,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -828,6 +831,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -169,7 +169,7 @@ index 994712b56fb25fbfa7559ac034cfd7e1c76597de..2cd8707b120deb41683e13def5d446fd
    // CertNetFetcher is not used by the current platform, or if the actual
    // net::CertVerifier is instantiated outside of the network service.
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index b2beaa762bfe88b56ac24d35646b6e6cbc630816..b52e5a2230e96d55d7886bde331a505c58dd093a 100644
+index 467af3615f2594e79d21a9a46adcef475575e7ef..b3e4c81edfe254898005c1e9f97de198714a5d0e 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -281,6 +281,17 @@ struct NetworkContextFilePaths {

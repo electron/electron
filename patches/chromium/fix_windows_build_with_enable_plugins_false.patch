@@ -15,10 +15,10 @@ Commit-Queue: Lei Zhang <thestig@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1017281}
 
 diff --git a/chrome/browser/chrome_content_browser_client.cc b/chrome/browser/chrome_content_browser_client.cc
-index 939c28a029418bc353795aa1a007508680f42e57..2db6a0d23d72c3d77db6eec4de7c9d0f0500fbe2 100644
+index f757cbddb4eb37521f1127edbddb06fbf514ef13..0d7c93a6ba90036db4345894df1c5026563cf9d8 100644
 --- a/chrome/browser/chrome_content_browser_client.cc
 +++ b/chrome/browser/chrome_content_browser_client.cc
-@@ -3951,7 +3951,9 @@ std::wstring ChromeContentBrowserClient::GetAppContainerSidForSandboxType(
+@@ -3952,7 +3952,9 @@ std::wstring ChromeContentBrowserClient::GetAppContainerSidForSandboxType(
        return std::wstring();
      case sandbox::mojom::Sandbox::kGpu:
        return std::wstring();
@@ -28,7 +28,7 @@ index 939c28a029418bc353795aa1a007508680f42e57..2db6a0d23d72c3d77db6eec4de7c9d0f
      case sandbox::mojom::Sandbox::kNoSandbox:
      case sandbox::mojom::Sandbox::kNoSandboxAndElevatedPrivileges:
      case sandbox::mojom::Sandbox::kXrCompositing:
-@@ -4023,7 +4025,9 @@ bool ChromeContentBrowserClient::PreSpawnChild(
+@@ -4024,7 +4026,9 @@ bool ChromeContentBrowserClient::PreSpawnChild(
        break;
      case sandbox::mojom::Sandbox::kUtility:
      case sandbox::mojom::Sandbox::kGpu:

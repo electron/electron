@@ -130,15 +130,10 @@ cherry-pick-94a8bdafc8c6.patch
 fix_mac_build_with_enable_plugins_false.patch
 fix_windows_build_with_enable_plugins_false.patch
 cherry-pick-54e32332750c.patch
-cherry-pick-60d8559e150a.patch
 cherry-pick-54a7927b19f9.patch
-cherry-pick-bd9724c9fe63.patch
 cherry-pick-c643d18a078d.patch
 feat_add_set_can_resize_mutator.patch
 cherry-pick-2083e894852c.patch
-cherry-pick-079105b7ebba.patch
-cherry-pick-51daffbf5cd8.patch
-cherry-pick-9b5207569882.patch
 dpwa_enable_window_controls_overlay_by_default.patch
 cherry-pick-eb4d31309df7.patch
 add_electron_deps_to_license_credits_file.patch
@@ -146,7 +141,6 @@ cherry-pick-fefd6198da31.patch
 cherry-pick-1eb1e18ad41d.patch
 cherry-pick-9bebe8549a36.patch
 cherry-pick-05a0d99c9715.patch
-cherry-pick-cb9dff93f3d4.patch
 build_allow_electron_to_use_exec_script.patch
 cherry-pick-933cc81c6bad.patch
 cherry-pick-67c9cbc784d6.patch
@@ -155,7 +149,6 @@ cherry-pick-06c87f9f42ff.patch
 refresh_cached_attributes_before_name_computation_traversal.patch
 review_add_clear_children_checks_during_accname_traversal.patch
 cherry-pick-1894458e04a2.patch
-cherry-pick-a1cbf05b4163.patch
 cherry-pick-ac4785387fff.patch
 cherry-pick-81cb17c24788.patch
 fix_crash-on-close_for_mac_udp_sockets.patch
