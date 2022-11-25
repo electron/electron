@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1484cc604c4fd38e84f160294b721d172acdc59b..b9cdf2896e07d48a73139db6e0cff365946d1e50 100644
+index 9b65cff44fa37e617f241fdb712d5550d225392e..0450190daa5827e79453e13e412de06fda0387e8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1488,6 +1488,7 @@ component("base") {
@@ -18,7 +18,7 @@ index 1484cc604c4fd38e84f160294b721d172acdc59b..b9cdf2896e07d48a73139db6e0cff365
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 8f7944ce0776ff3cdd9f3aa970822fccd8d0190d..82a0b556983d80d3af965a88549af3b83c36e23e 100644
+index 54ef20a4a8983eb176428d4074882582166a41f6..b511b46d4c263e216d1a4d0ed158785511e867ec 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 439b795811cd5544ae44da4207f0477461cbc999..8ed653e7090cd8a77374a495a21670fd8fc01a9a 100644
+index d0f2a2627f55a6ef242088185e9a87e852b155a9..e7f1c0b3399ffeeeefda50361b2f59afe6d8c940 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {

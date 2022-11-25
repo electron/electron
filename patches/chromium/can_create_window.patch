@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index bba11fe850dd39cb4e91c36a3b11302850f40cb2..5534632ac1e3aaa1c44f3b8cb027c507dfe547b8 100644
+index d27e145d838ae5e79a0ab8f14ffb0f0c4fd03e50..b92b15094e4059105a80b3cd28685662f9b17373 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7221,6 +7221,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -50,7 +50,6 @@ index 716fb5293e3251592e47b870ae3ececa1d54db0f..0bdd28302a4490bb3677570f309ca77e
    observers_.NotifyObservers(&WebContentsObserver::DidOpenRequestedURL,
                               new_contents_impl, opener, params.target_url,
                               params.referrer.To<Referrer>(), params.disposition,
-
 diff --git a/content/common/frame.mojom b/content/common/frame.mojom
 index e6aa7c3e1e7eef9a574b3b07c11614ec89148cb3..f7b4c0a165ca479ab63cd34be0cb692c9d71a802 100644
 --- a/content/common/frame.mojom
