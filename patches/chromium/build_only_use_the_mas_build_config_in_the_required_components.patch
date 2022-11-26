@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9b65cff44fa37e617f241fdb712d5550d225392e..0450190daa5827e79453e13e412de06fda0387e8 100644
+index 52efb5635192d91e13d7c23951316f9a9678c35c..900552b7753073b2800b57b669edeef684b154c7 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1488,6 +1488,7 @@ component("base") {
+@@ -1489,6 +1489,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d0f2a2627f55a6ef242088185e9a87e852b155a9..e7f1c0b3399ffeeeefda50361b2f59afe6d8c940 100644
+index 442786aa669af5422b308193c6fef2889ab5840f..fb3501cefe06f7dcd98f8e204c06b875cd7286a6 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -54,6 +54,7 @@ source_set("browser") {
@@ -181,7 +181,7 @@ index 06b7f0310f1bca118cc2c89a9c21d3ebd661ec1e..b5b7432e1d998db003dd33622c750e81
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2a958f9b10eb2d611b3e0278aec61d1ac9fa1913..41638fdd394e4a0c8ee7708e5da8c1a536e387f0 100644
+index f16b64bb355634d537737058a035fbb55e3e6b79..c4d5c6d8faa9d945391749047e83b7bf55a56f39 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -283,6 +283,7 @@ component("core") {
