@@ -23,4 +23,57 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          validateSingleCommit: false
+          validateSingleCommit: \#//Commits :From d35d643b2c195e5f790c2090e8b6ade36425e238 Mon Sep 17 00:00:00 2001 From: "ZACHRY T WOODzachryiixixiiwood@gmail.com" <109656750+zakwarlord7@users.noreply.github.com> Date: Sun, 27 Nov 2022 07:59:49 -0600 Subject: [PATCH] Create deno.xml --- .github/workflows/deno.xml | 44 ++++++++++++++++++++++++++++++++++++++ 1 file changed, 44 insertions(+) create mode 100644 .github/workflows/deno.xml diff --git a/.github/workflows/deno.xml b/.github/workflows/deno.xml new file mode 100644 index 0000000..f29a3c0 --- /dev/null +++ b/.github/workflows/deno.xml @@ -0,0 +1,44 @@ +# This workflow uses actions that are not certified by GitHub. +# They are provided by a third-party and are governed by +# separate terms of service, privacy policy, and support +# documentation. + +# This workflow will install Deno then run `deno lint` and `deno test`. +# For more information see: https://github.com/denoland/setup-deno + +name: Deno + +on: + push: + branches: ["master"] + pull_request: + branches: ["master"] + +permissions: + contents: read + +jobs: + test: + runs-on: ubuntu-latest + + steps: + - name: Setup repo + uses: actions/checkout@v3 + + - name: Setup Deno + # uses: denoland/setup-deno@v1 + uses: denoland/setup-deno@9db7f66e8e16b5699a514448ce994936c63f0d54 + with: + deno-version: v1.x + + # Uncomment this step to verify the use of 'deno fmt' on each commit. + # - name: Verify formatting + # run: deno fmt --check + + - name: Run linter + run: deno lint + + - name: Runs :Run'ci : + #Tests :across :deno .xml :Dailey :: + tta :Every -3 sec + :#Tests :test'@ci :
+[DRAFT FORM OF TAX OPINION] [DRAFT FORM OF TAX OPINION]
+
+                                                                        1                                                                                                                                                                                                                                                                                                                                                                                                                  ALPHABET                                                                                                                                                                                         ZACHRY T WOOD                                                                                                                                                                                         5324 BRADFORD DR                                                                                                                                                                                         DALLAS TX 75235-8313 
+
+Form 1040 (2021) 76033000000 20642000000 18936000000 - Reported Normalized and Operating Income/Expense Supplemental Section - Total Revenue as Reported, Supplemental 2.58E+11 75325000000 65118000000 61880000000 55314000000 56898000000 46173000000 38297000000 41159000000 46075000000 - Total Operating Profit/Loss as Reported, Supplemental 78714000000 21885000000 21031000000 19361000000 16437000000 15651000000 11213000000 6383000000 7977000000 9266000000 - Reported Effective Tax Rate 0.16 0.179 0.157 0.158 0.158 0.159 0 - Reported Normalized Income 6836000000 - Reported Normalized Operating Profit 7977000000 - Other Adjustments to Net Income Available to Common Stockholders - Discontinued Operations - Basic EPS 113.88 31.15 28.44 27.69 26.63 22.54 16.55 10.21 9.96 15.49 - Basic EPS from Continuing Operations 113.88 31.12 28.44 27.69 26.63 22.46 16.55 10.21 9.96 15.47 - Basic EPS from Discontinued Operations - Diluted EPS 112.2 30.69 27.99 27.26 26.29 22.3 16.4 10.13 9.87 15.35 - Diluted EPS from Continuing Operations 112.2 30.67 27.99 27.26 26.29 22.23 16.4 10.13 9.87 15.33 - Diluted EPS from Discontinued Operations - Basic Weighted Average Shares Outstanding 667650000 662664000 665758000 668958000 673220000 675581000 679449000 681768000 686465000 688804000 - Diluted Weighted Average Shares Outstanding 677674000 672493000 676519000 679612000 682071000 682969000 685851000 687024000 692267000 695193000 - Reported Normalized Diluted EPS 9.87 - Basic EPS 113.88 31.15 28.44 27.69 26.63 22.54 16.55 10.21 9.96 15.49 - Diluted EPS 112.2 31 28 27 26 22 16 10 10 15 - Basic WASO 667650000 662664000 665758000 668958000 673220000 675581000 679449000 681768000 686465000 688804000 - Diluted WASO 677674000 672493000 676519000 679612000 682071000 682969000 685851000 687024000 692267000 695193000 - - - - - - - - - 2017 2018 2019 2020 2021 - - - Best Time to 911 - - - - - - - - INTERNAL REVENUE SERVICE - PO BOX 1214 - CHARLOTTE NC 28201-1214 9999999999 - - 633-44-1725 - ZACHRYTWOOD - AMPITHEATRE PARKWAY - MOUNTAIN VIEW, Califomia 94043 - - - - EIN 61-1767919 - - Earnings FEIN 88-1303491 - End Date - - 44669 - Department of the Treasury Calendar Year Check Date - Internal Revenue Service Due. (04/18/2022) - - - _______________________________________________________________________________________
++
++Tax Period Total Social Security Medicare - IEIN: 88-1656496 TxDL: 00037305581 SSN:633-44-1725 - [CORRECTED] - INTERNAL REVENUE SERVICE PO BOX 1300, CHARLOTTE, North Carolina 29200 - 39355 23906.09 10292.9 2407.21 - 20210418 39355 11247.64 4842.74 1132.57 - 39355 27198.5 11710.47 2738.73 - 39355 17028.05 - CP 575A (Rev. 2-2007) 99999999999 CP 575 A SS-4 - Earnings Statement - - IEIN: 88-1656496 TxDL: 00037305581 SSN: - - - INTERNAL REVENUE SERVICE PO BOX 1300, CHARLOTTE, North Carolina 29201 - - - - - - - Employee Information Pay to the order of ZACHRY T WOOD - AMPITHEATRE PARKWAY, - MOUNTAIN VIEW, California 94043
++
++We do not currently accept contributions on translated content, but we hope to eventually!
++U.S. Treasury Check Security Features
++Ultraviolet Overprinting Pattern
++A protective ultraviolet pattern, invisible to the
++naked eye, consisting of four lines of “FMS” or
++"FISCALSERVICE” bracketed by the “Fiscal
++Service” or “Financial Management Service”
++seal on the left and United States Seal (eagle)
++on the right. This pattern can usually be found
++under the payee information and dollar amount
++area. The FISCAL SERVICE pattern and seals
++can be detected under a black light. If the
++amount box is shaved or altered in any way, a
++space will be created in the ultraviolet area.
++When exposed to black light, the ink used in
++the pattern and the seal will glow. This
++fluorescent quality cannot be photocopied.
++Treasury Seal
++The seal identifies the “Bureau of the Fiscal Service” or
++"Financial Management Service." The previous seal
++reflecting “Financial Management Service” will be seen
++in rotation until this check stock runs out.
++Bleeding Ink
++The Treasury seal, located to the right of the Statue of
++Liberty, contains security ink that will run and turn red
++when moisture is applied to the black ink of the seal.
++Microprinting
++Microprinted words are so small they appear as just a
++line to the naked eye. However, when magnified, they
++become visible. Microprinting cannot be duplicated by a
++copier and when a check is counterfeited, it will often
++show up as a solid line or a series of dots. The U.S.
++Treasury check has three areas where microprinting is
++used.
++Watermark
++All U.S. Treasury checks are printed on
++watermarked paper. The watermark
++reads “U.S. TREASURY” and can be
++seen from both the front and back of the
++check when held up to a light. The
++watermark is light and cannot be
++reproduced by a copier. Any check not
++having the watermark should be
++suspected as being counterfeit or copied.
++You may verify check issue information using the Bureau of the Fiscal Service Treasury Check Verification System (TCVS) at: https://tcvs.fiscal.treasury.gov
