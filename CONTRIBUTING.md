@@ -10,15 +10,15 @@ The following is a set of guidelines for contributing to Electron.
 These are just guidelines, not rules, use your best judgment and feel free to
 propose changes to this document in a pull request.
 
-## [Issues](https://electronjs.org/docs/development/issues)
+## [Issues](https://electronjs.org/docs/latest/development/issues)
 
 Issues are created [here](https://github.com/electron/electron/issues/new).
 
-* [How to Contribute in Issues](https://electronjs.org/docs/development/issues#how-to-contribute-in-issues)
-* [Asking for General Help](https://electronjs.org/docs/development/issues#asking-for-general-help)
-* [Submitting a Bug Report](https://electronjs.org/docs/development/issues#submitting-a-bug-report)
-* [Triaging a Bug Report](https://electronjs.org/docs/development/issues#triaging-a-bug-report)
-* [Resolving a Bug Report](https://electronjs.org/docs/development/issues#resolving-a-bug-report)
+* [How to Contribute in Issues](https://www.electronjs.org/docs/latest/development/issues#how-to-contribute-to-issues)
+* [Asking for General Help](https://www.electronjs.org/docs/latest/development/issues#asking-for-general-help)
+* [Submitting a Bug Report](https://www.electronjs.org/docs/latest/development/issues#submitting-a-bug-report)
+* [Triaging a Bug Report](https://www.electronjs.org/docs/latest/development/issues#triaging-a-bug-report)
+* [Resolving a Bug Report](https://www.electronjs.org/docs/latest/development/issues#resolving-a-bug-report)
 
 ### Issue Closure
 
@@ -38,33 +38,33 @@ Responses to posted issues may or may not be in the original language.
 
 **Please note** that using non-English as an attempt to circumvent our [Code of Conduct](https://github.com/electron/electron/blob/main/CODE_OF_CONDUCT.md) will be an immediate, and possibly indefinite, ban from the project.
 
-## [Pull Requests](https://electronjs.org/docs/development/pull-requests)
+## [Pull Requests](https://electronjs.org/docs/latest/development/pull-requests)
 
 Pull Requests are the way concrete changes are made to the code, documentation,
 dependencies, and tools contained in the `electron/electron` repository.
 
-* [Setting up your local environment](https://electronjs.org/docs/development/pull-requests#setting-up-your-local-environment)
-  * [Step 1: Fork](https://electronjs.org/docs/development/pull-requests#step-1-fork)
-  * [Step 2: Build](https://electronjs.org/docs/development/pull-requests#step-2-build)
-  * [Step 3: Branch](https://electronjs.org/docs/development/pull-requests#step-3-branch)
-* [Making Changes](https://electronjs.org/docs/development/pull-requests#making-changes)
-  * [Step 4: Code](https://electronjs.org/docs/development/pull-requests#step-4-code)
-  * [Step 5: Commit](https://electronjs.org/docs/development/pull-requests#step-5-commit)
-    * [Commit message guidelines](https://electronjs.org/docs/development/pull-requests#commit-message-guidelines)
-  * [Step 6: Rebase](https://electronjs.org/docs/development/pull-requests#step-6-rebase)
-  * [Step 7: Test](https://electronjs.org/docs/development/pull-requests#step-7-test)
-  * [Step 8: Push](https://electronjs.org/docs/development/pull-requests#step-8-push)
-  * [Step 9: Opening the Pull Request](https://electronjs.org/docs/development/pull-requests#step-9-opening-the-pull-request)
-  * [Step 10: Discuss and Update](https://electronjs.org/docs/development/pull-requests#step-10-discuss-and-update)
-    * [Approval and Request Changes Workflow](https://electronjs.org/docs/development/pull-requests#approval-and-request-changes-workflow)
-  * [Step 11: Landing](https://electronjs.org/docs/development/pull-requests#step-11-landing)
-  * [Continuous Integration Testing](https://electronjs.org/docs/development/pull-requests#continuous-integration-testing)
+* [Setting up your local environment](https://electronjs.org/docs/latest/development/pull-requests#setting-up-your-local-environment)
+  * [Step 1: Fork](https://electronjs.org/docs/latest/development/pull-requests#step-1-fork)
+  * [Step 2: Build](https://electronjs.org/docs/latest/development/pull-requests#step-2-build)
+  * [Step 3: Branch](https://electronjs.org/docs/latest/development/pull-requests#step-3-branch)
+* [Making Changes](https://electronjs.org/docs/latest/development/pull-requests#making-changes)
+  * [Step 4: Code](https://electronjs.org/docs/latest/development/pull-requests#step-4-code)
+  * [Step 5: Commit](https://electronjs.org/docs/latest/development/pull-requests#step-5-commit)
+    * [Commit message guidelines](https://electronjs.org/docs/latest/development/pull-requests#commit-message-guidelines)
+  * [Step 6: Rebase](https://electronjs.org/docs/latest/development/pull-requests#step-6-rebase)
+  * [Step 7: Test](https://electronjs.org/docs/latest/development/pull-requests#step-7-test)
+  * [Step 8: Push](https://electronjs.org/docs/latest/development/pull-requests#step-8-push)
+  * [Step 9: Opening the Pull Request](https://electronjs.org/docs/latest/development/pull-requests#step-9-opening-the-pull-request)
+  * [Step 10: Discuss and Update](https://electronjs.org/docs/latest/development/pull-requests#step-10-discuss-and-update)
+    * [Approval and Request Changes Workflow](https://electronjs.org/docs/latest/development/pull-requests#approval-and-request-changes-workflow)
+  * [Step 11: Landing](https://electronjs.org/docs/latest/development/pull-requests#step-11-landing)
+  * [Continuous Integration Testing](https://electronjs.org/docs/latest/development/pull-requests#continuous-integration-testing)
 
 ## Style Guides
 
-See [Coding Style](https://electronjs.org/docs/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.
+See [Coding Style](https://electronjs.org/docs/latest/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.
 
 ## Further Reading
 
 For more in-depth guides on developing Electron, see
-[/docs/development](/docs/development/README.md)
+[/docs/latest/development](/docs/latest/development/README.md)
