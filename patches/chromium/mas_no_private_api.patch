@@ -7,14 +7,14 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/base/process/process_info_mac.cc b/base/process/process_info_mac.cc
-index 6840358c3187522c63dff66b5a85567aaadc5c12..ef94524eab52719c84e176fde2afd88f85223888 100644
+index 6840358c3187522c63dff66b5a85567aaadc5c12..72c57fbc5fbb267f96ff9e21915fb801ed5bf24e 100644
 --- a/base/process/process_info_mac.cc
 +++ b/base/process/process_info_mac.cc
 @@ -9,18 +9,22 @@
  #include <stdlib.h>
  #include <unistd.h>
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  extern "C" {
  pid_t responsibility_get_pid_responsible_for_pid(pid_t)
      API_AVAILABLE(macosx(10.12));
@@ -24,7 +24,7 @@ index 6840358c3187522c63dff66b5a85567aaadc5c12..ef94524eab52719c84e176fde2afd88f
  namespace base {
  
  bool IsProcessSelfResponsible() {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    if (__builtin_available(macOS 10.14, *)) {
      const pid_t pid = getpid();
      return responsibility_get_pid_responsible_for_pid(pid) == pid;
@@ -34,14 +34,14 @@ index 6840358c3187522c63dff66b5a85567aaadc5c12..ef94524eab52719c84e176fde2afd88f
  }
  
 diff --git a/content/common/pseudonymization_salt.cc b/content/common/pseudonymization_salt.cc
-index c7e4ef224e76b4df4fa08bb7fa8dd78605ea8de1..16cb4084ecc5818813022412a00a3b1acc67cc05 100644
+index c7e4ef224e76b4df4fa08bb7fa8dd78605ea8de1..8a15ee3e062e108824c6b2fadc2ffa807ff03ade 100644
 --- a/content/common/pseudonymization_salt.cc
 +++ b/content/common/pseudonymization_salt.cc
 @@ -41,11 +41,13 @@ uint32_t GetPseudonymizationSalt() {
    uint32_t salt = g_salt.load();
  
    if (salt == 0) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  #if DCHECK_IS_ON()
      // Only the Browser process needs to initialize the `salt` on demand.
      // Other processes (identified via the IsProcessSandboxed heuristic) should
@@ -52,14 +52,14 @@ index c7e4ef224e76b4df4fa08bb7fa8dd78605ea8de1..16cb4084ecc5818813022412a00a3b1a
      salt = InitializeSalt();
    }
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index add9345fdd076698fc7ec654d7ef1701699639a4..13e615dbbe0fca71acea1f494944262933843f40 100644
+index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef225b0ca59 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -10,9 +10,11 @@
  #include "sandbox/mac/seatbelt.h"
  #include "sandbox/mac/system_services.h"
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  extern "C" {
  CGError CGSSetDenyWindowServerConnections(bool);
  }
@@ -71,7 +71,7 @@ index add9345fdd076698fc7ec654d7ef1701699639a4..13e615dbbe0fca71acea1f4949442629
  // verifies there are no existing open connections), and then indicates that
  // Chrome should continue execution without access to launchservicesd.
  void DisableSystemServices() {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    // Tell the WindowServer that we don't want to make any future connections.
    // This will return Success as long as there are no open connections, which
    // is what we want.
@@ -84,7 +84,7 @@ index add9345fdd076698fc7ec654d7ef1701699639a4..13e615dbbe0fca71acea1f4949442629
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index f50448237c40710e25644c2f7d44e8d0bc0789c8..fd351c916993a8950b595c103f3f5a4086d5480b 100644
+index f50448237c40710e25644c2f7d44e8d0bc0789c8..752b575cf341546bdcc46e6dfff28fe4c66325b3 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
 @@ -7,11 +7,11 @@
@@ -92,7 +92,7 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..fd351c916993a8950b595c103f3f5a40
  
  #include "base/strings/sys_string_conversions.h"
 -
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
  extern "C" {
  bool CGFontRenderingGetFontSmoothingDisabled(void) API_AVAILABLE(macos(10.14));
  }
@@ -105,7 +105,7 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..fd351c916993a8950b595c103f3f5a40
  bool IsSubpixelAntialiasingAvailable() {
    if (__builtin_available(macOS 10.14, *)) {
      // See https://trac.webkit.org/changeset/239306/webkit for more info.
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
      return !CGFontRenderingGetFontSmoothingDisabled();
 +#else
 +    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
@@ -122,14 +122,14 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..fd351c916993a8950b595c103f3f5a40
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7ca23fcf8f 100644
+index 644990412b4d67789faffc65c4f1114fa96c8f42..7ecbfbff3ac73157a3eac371c673ea80b55c619b 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -43,6 +43,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
@@ -145,7 +145,7 @@ index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7c
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
        power_state_function_(
            base::BindRepeating(IOBluetoothPreferenceSetControllerPowerState)),
 +#endif
@@ -156,7 +156,7 @@ index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7c
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    power_state_function_.Run(base::strict_cast<int>(powered));
    return true;
 +#else
@@ -166,10 +166,10 @@ index 644990412b4d67789faffc65c4f1114fa96c8f42..085ceafcda3f66b27cec2aedde86ac7c
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 04a5bbef30bdd1827f455b8288faf9fbd86f103e..1e6b91961c3e32aa223383b444d075ada9688b0b 100644
+index 7be534e8df96c134d9754ca5f1430333d96044b8..0493d14fd9bd6047fc3ef2ec0f8504fb1790a8e3 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -180,6 +180,12 @@ source_set("audio") {
+@@ -178,6 +178,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]
@@ -183,10 +183,10 @@ index 04a5bbef30bdd1827f455b8288faf9fbd86f103e..1e6b91961c3e32aa223383b444d075ad
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index f2e38845218fe585085ca4ad9dc364ce2fdf3546..516bd4ae829d67e9d53b783671a2f6039800e2df 100644
+index b5ad37cb3e8064d180ff987ab7a96da3886dc7f9..b6da8a68fabaec5ecf71b2c2fcaa1b0e52d2fcbe 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -885,7 +885,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -895,7 +895,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -196,7 +196,7 @@ index f2e38845218fe585085ca4ad9dc364ce2fdf3546..516bd4ae829d67e9d53b783671a2f603
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index a8a223d1d9ea6de51a27f148c008ee8be38af29a..7413277bd91e7a08042fc957f89112fcb53d440c 100644
+index a8a223d1d9ea6de51a27f148c008ee8be38af29a..328200858bd7aa4077bf6824bfc1367bda748920 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -130,8 +130,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
@@ -205,7 +205,7 @@ index a8a223d1d9ea6de51a27f148c008ee8be38af29a..7413277bd91e7a08042fc957f89112fc
      CheckOnCorrectSequence();
 -
      bool success = true;
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
      if (!config_watcher_.Watch(base::BindRepeating(&Watcher::OnConfigChanged,
                                                     base::Unretained(this)))) {
        LOG(ERROR) << "DNS config watch failed to start.";
@@ -218,14 +218,14 @@ index a8a223d1d9ea6de51a27f148c008ee8be38af29a..7413277bd91e7a08042fc957f89112fc
    }
  
 diff --git a/sandbox/mac/sandbox_compiler.cc b/sandbox/mac/sandbox_compiler.cc
-index 5db411212b62b583ae26e9ecd0a87ad5fc5504e8..d5feedb02900a2a323b8a3961b1de21734ad1b65 100644
+index 5db411212b62b583ae26e9ecd0a87ad5fc5504e8..2778852a1573ca5d573018171caeadf1e89f3b9e 100644
 --- a/sandbox/mac/sandbox_compiler.cc
 +++ b/sandbox/mac/sandbox_compiler.cc
 @@ -28,6 +28,7 @@ bool SandboxCompiler::InsertStringParam(const std::string& key,
  }
  
  bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    char* error_internal = nullptr;
    std::vector<const char*> params;
  
@@ -238,14 +238,14 @@ index 5db411212b62b583ae26e9ecd0a87ad5fc5504e8..d5feedb02900a2a323b8a3961b1de217
  }
  
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 1e75790d60789746073828cc22d3863b35ab6f95..68e68bb1bd0b5c897bf385911ab36f5562563974 100644
+index 1e75790d60789746073828cc22d3863b35ab6f95..08fa6b16d09e2ceb73094639fa81570202123178 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
 @@ -64,7 +64,11 @@ void Seatbelt::FreeError(char* errorbuf) {
  
  // static
  bool Seatbelt::IsSandboxed() {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    return ::sandbox_check(getpid(), NULL, 0);
 +#else
 +  return true;
@@ -254,14 +254,14 @@ index 1e75790d60789746073828cc22d3863b35ab6f95..68e68bb1bd0b5c897bf385911ab36f55
  
  }  // namespace sandbox
 diff --git a/sandbox/mac/seatbelt_extension.cc b/sandbox/mac/seatbelt_extension.cc
-index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d312ca61c6 100644
+index 18479382a277cb2b25626ec8d31442bfd1377ee6..7d80d7fa8337523c3a70f317f883f0cc26c6f40b 100644
 --- a/sandbox/mac/seatbelt_extension.cc
 +++ b/sandbox/mac/seatbelt_extension.cc
 @@ -11,6 +11,7 @@
  #include "base/notreached.h"
  #include "sandbox/mac/seatbelt_extension_token.h"
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  // libsandbox private API.
  extern "C" {
  extern const char* APP_SANDBOX_READ;
@@ -277,7 +277,7 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d3
  
  bool SeatbeltExtension::Consume() {
    DCHECK(!token_.empty());
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    handle_ = sandbox_extension_consume(token_.c_str());
 +#else
 +  handle_ = -1;
@@ -289,7 +289,7 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d3
  }
  
  bool SeatbeltExtension::Revoke() {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    int rv = sandbox_extension_release(handle_);
 +#else
 +  int rv = -1;
@@ -301,7 +301,7 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d3
  char* SeatbeltExtension::IssueToken(SeatbeltExtension::Type type,
                                      const std::string& resource) {
    switch (type) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
      case FILE_READ:
        return sandbox_extension_issue_file(APP_SANDBOX_READ, resource.c_str(),
                                            0);
@@ -313,14 +313,14 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..b048bb27eee1001c2bc34092220150d3
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index fe043e6dc2203a9054ae367b70a3854b8560c9c7..8d8ba5065d3c50263650eb2452a0f81449d40a25 100644
+index fe043e6dc2203a9054ae367b70a3854b8560c9c7..6cc51d9df176512f6f296e0eb82bc31b5a9515fa 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
 @@ -88,6 +88,7 @@
      }
    }
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);

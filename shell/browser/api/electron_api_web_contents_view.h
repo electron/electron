@@ -7,6 +7,7 @@
 
 #include "content/public/browser/web_contents_observer.h"
 #include "shell/browser/api/electron_api_view.h"
+#include "shell/browser/draggable_region_provider.h"
 
 namespace gin_helper {
 class Dictionary;
@@ -16,7 +17,9 @@ namespace electron::api {
 
 class WebContents;
 
-class WebContentsView : public View, public content::WebContentsObserver {
+class WebContentsView : public View,
+                        public content::WebContentsObserver,
+                        public DraggableRegionProvider {
  public:
   // Create a new instance of WebContentsView.
   static gin::Handle<WebContentsView> Create(
@@ -32,6 +35,8 @@ class WebContentsView : public View, public content::WebContentsObserver {
 
   // Public APIs.
   gin::Handle<WebContents> GetWebContents(v8::Isolate* isolate);
+
+  int NonClientHitTest(const gfx::Point& point) override;
 
  protected:
   // Takes an existing WebContents.

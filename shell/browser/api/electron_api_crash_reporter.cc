@@ -15,7 +15,6 @@
 #include "base/no_destructor.h"
 #include "base/path_service.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/trace_event/trace_event.h"
 #include "chrome/common/chrome_paths.h"
 #include "components/upload_list/crash_upload_list.h"
@@ -29,8 +28,9 @@
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/thread_restrictions.h"
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "components/crash/core/browser/crash_upload_list_crashpad.h"  // nogncheck
 #include "components/crash/core/common/crash_key.h"
@@ -65,7 +65,7 @@ bool g_crash_reporter_initialized = false;
 
 namespace electron::api::crash_reporter {
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
 namespace {
 
 void NoOp() {}
@@ -91,7 +91,7 @@ bool GetClientIdPath(base::FilePath* path) {
 }
 
 std::string ReadClientId() {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   std::string client_id;
   // "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".length == 36
   base::FilePath client_id_path;
@@ -104,7 +104,7 @@ std::string ReadClientId() {
 
 void WriteClientId(const std::string& client_id) {
   DCHECK_EQ(client_id.size(), 36u);
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath client_id_path;
   if (GetClientIdPath(&client_id_path))
     base::WriteFile(client_id_path, client_id);
@@ -132,7 +132,7 @@ void Start(const std::string& submit_url,
            const std::map<std::string, std::string>& extra,
            bool is_node_process) {
   TRACE_EVENT0("electron", "crash_reporter::Start");
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   if (g_crash_reporter_initialized)
     return;
   g_crash_reporter_initialized = true;
@@ -151,7 +151,7 @@ void Start(const std::string& submit_url,
   for (const auto& pair : extra)
     electron::crash_keys::SetCrashKey(pair.first, pair.second);
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     ::crash_reporter::InitializeCrashpad(process_type.empty(), process_type);
   }
   if (ignore_system_crash_handler) {
@@ -182,7 +182,7 @@ void Start(const std::string& submit_url,
 
 namespace {
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
 void GetUploadedReports(
     v8::Isolate* isolate,
     base::OnceCallback<void(v8::Local<v8::Value>)> callback) {
@@ -218,7 +218,7 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
   // synchronous version of getUploadedReports is deprecated so we can remove
   // our patch.
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     list->LoadSync();
   }
   std::vector<UploadList::UploadInfo> uploads;
@@ -237,13 +237,13 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
 #endif
 
 void SetUploadToServer(bool upload) {
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   ElectronCrashReporterClient::Get()->SetCollectStatsConsent(upload);
 #endif
 }
 
 bool GetUploadToServer() {
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   return false;
 #else
   return ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
@@ -252,7 +252,7 @@ bool GetUploadToServer() {
 
 v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
   std::map<std::string, std::string> keys;
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   electron::crash_keys::GetCrashKeys(&keys);
 #endif
   return gin::ConvertToV8(isolate, keys);
@@ -264,7 +264,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("start", &electron::api::crash_reporter::Start);
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   dict.SetMethod("addExtraParameter", &electron::api::crash_reporter::NoOp);
   dict.SetMethod("removeExtraParameter", &electron::api::crash_reporter::NoOp);
 #else

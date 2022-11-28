@@ -22,6 +22,7 @@
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_converters/hid_device_info_converter.h"
@@ -35,9 +36,6 @@ namespace electron {
 
 const char kHidDeviceNameKey[] = "name";
 const char kHidGuidKey[] = "guid";
-const char kHidVendorIdKey[] = "vendorId";
-const char kHidProductIdKey[] = "productId";
-const char kHidSerialNumberKey[] = "serialNumber";
 
 HidChooserContext::HidChooserContext(ElectronBrowserContext* context)
     : browser_context_(context) {}
@@ -76,12 +74,12 @@ base::Value HidChooserContext::DeviceInfoToValue(
   value.SetStringKey(
       kHidDeviceNameKey,
       base::UTF16ToUTF8(HidChooserContext::DisplayNameFromDeviceInfo(device)));
-  value.SetIntKey(kHidVendorIdKey, device.vendor_id);
-  value.SetIntKey(kHidProductIdKey, device.product_id);
+  value.SetIntKey(kDeviceVendorIdKey, device.vendor_id);
+  value.SetIntKey(kDeviceProductIdKey, device.product_id);
   if (HidChooserContext::CanStorePersistentEntry(device)) {
     // Use the USB serial number as a persistent identifier. If it is
     // unavailable, only ephemeral permissions may be granted.
-    value.SetStringKey(kHidSerialNumberKey, device.serial_number);
+    value.SetStringKey(kDeviceSerialNumberKey, device.serial_number);
   } else {
     // The GUID is a temporary ID created on connection that remains valid until
     // the device is disconnected. Ephemeral permissions are keyed by this ID

@@ -24,7 +24,7 @@ v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
       isolate, std::forward<T>(input));
 }
 
-#if !BUILDFLAG(IS_LINUX) && !defined(OS_FREEBSD)
+#if !BUILDFLAG(IS_LINUX)
 template <>
 struct Converter<unsigned long> {  // NOLINT(runtime/int)
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,

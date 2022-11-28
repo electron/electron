@@ -29,6 +29,7 @@
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <vector>
@@ -218,7 +219,7 @@ void ElectronDownloadManagerDelegate::OnDownloadPathGenerated(
     content::DownloadTargetCallback callback,
     const base::FilePath& default_path) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
 
   auto* item = download_manager_->GetDownload(download_id);
   if (!item)

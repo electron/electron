@@ -7,7 +7,7 @@ Refs https://chromium-review.googlesource.com/c/chromium/src/+/3825237
 Should be upstreamed.
 
 diff --git a/src/node_http2.cc b/src/node_http2.cc
-index 8df924a29028e2cfb31a22e72ee88887f790d777..c466fd8aecd6045841c2b39f707f747ee6f9fc6d 100644
+index cb44e3aec2e8e2a0abbf8ce5d7e536787a9e2fb8..61009d8001920454fcc5f3cca080826f6175a092 100644
 --- a/src/node_http2.cc
 +++ b/src/node_http2.cc
 @@ -644,7 +644,7 @@ void Http2Stream::EmitStatistics() {

@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 813deda1c0ab67ea855c5a85a88dd1797a99bdd6..c918e44036b042bd7dc3562957d990f86b6a4ac4 100644
+index b00b22970d85eaba98eb20b2c1a837f124db4ae8..956fedde606e79638633fa1b085616aeb7917c49 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -250,6 +250,10 @@
+@@ -253,6 +253,10 @@
    E_CPONLY(kColorScrollbarThumbInactive) \
    E_CPONLY(kColorScrollbarThumbPressed) \
    E_CPONLY(kColorScrollbarTrack) \
@@ -22,7 +22,7 @@ index 813deda1c0ab67ea855c5a85a88dd1797a99bdd6..c918e44036b042bd7dc3562957d990f8
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -304,6 +308,7 @@
+@@ -307,6 +311,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,10 +31,10 @@ index 813deda1c0ab67ea855c5a85a88dd1797a99bdd6..c918e44036b042bd7dc3562957d990f8
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 3e7ef724d0b58dc43c5aecaaba2794dccacc31ba..803ab33876467c30bda8aaaf42a4a3d4e443c509 100644
+index 51e008a3a2d6a3683c7c8ce9c5aa04ffe40eaf2a..e92ef14429b7cae0cb2e76f7b074c2093119a9fe 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -178,6 +178,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -181,6 +181,17 @@ void AddUiColorMixer(ColorProvider* provider,
                                              : SkColorSetA(SK_ColorBLACK, 0x80)};
    mixer[kColorScrollbarTrack] = {dark_mode ? SkColorSetRGB(0x42, 0x42, 0x42)
                                             : SkColorSetRGB(0xF1, 0xF1, 0xF1)};
@@ -52,7 +52,7 @@ index 3e7ef724d0b58dc43c5aecaaba2794dccacc31ba..803ab33876467c30bda8aaaf42a4a3d4
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -259,6 +270,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -262,6 +273,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
@@ -61,10 +61,10 @@ index 3e7ef724d0b58dc43c5aecaaba2794dccacc31ba..803ab33876467c30bda8aaaf42a4a3d4
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 9c9e55855dd1231fef05c773502f5d40e4de6f6e..3a052a286bfe34f699a50cb8bb11b2131a7943e1 100644
+index 3ce6c5404cdfeeb0f1c49d9d3b14907422331ac5..9221bded3d2f39122972cd52956392fae6c8d11c 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
-@@ -136,6 +136,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -157,6 +157,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
        SetAlpha(kColorNotificationInputForeground, gfx::kGoogleGreyAlpha700);
    mixer[kColorSliderTrack] = AlphaBlend(
        kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
@@ -75,7 +75,7 @@ index 9c9e55855dd1231fef05c773502f5d40e4de6f6e..3a052a286bfe34f699a50cb8bb11b213
  
    // Window Background
    mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
-@@ -143,11 +147,13 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -164,11 +168,13 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorFrameActive] = {ui::kColorNativeWindow};
    mixer[kColorFrameInactive] = {ui::kColorNativeWindow};
    mixer[kColorTooltipBackground] = {kColorNativeWindow};
@@ -89,7 +89,7 @@ index 9c9e55855dd1231fef05c773502f5d40e4de6f6e..3a052a286bfe34f699a50cb8bb11b213
  
    // Hyperlinks
    mixer[kColorLinkForeground] = {kColorNativeHotlight};
-@@ -181,6 +187,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -202,6 +208,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};

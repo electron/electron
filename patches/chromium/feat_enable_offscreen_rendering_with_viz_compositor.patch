@@ -8,10 +8,10 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index d212998176977946611c009f7d86783675e4b405..f306123451cf3efadac3c91de8397003aa17e8a1 100644
+index 6d905b62e62582e72d5ea7ef74a3992e35c6fe8f..c0af9ee7459d29f18aa2972cd43e3a1a6a52798d 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
-@@ -46,9 +46,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
+@@ -47,9 +47,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
  }
  #endif
  
@@ -22,36 +22,42 @@ index d212998176977946611c009f7d86783675e4b405..f306123451cf3efadac3c91de8397003
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -56,8 +56,12 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -57,7 +57,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
  
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
--}
++
 +#else
 +  CHECK(false) << "Chromium is calling CreateLayeredWindowUpdater for non-OSR "
 +                  "windows on POSIX platforms, something is wrong with "
 +                  "Electron's OSR implementation.";
- #endif
-+}
- 
- // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
- // of lacros-chrome is complete.
++#endif
+ }
++
++#if BUILDFLAG(IS_WIN)
+ void HostDisplayClient::AddChildWindowToBrowser(
+     gpu::SurfaceHandle child_window) {
+   NOTREACHED();
 diff --git a/components/viz/host/host_display_client.h b/components/viz/host/host_display_client.h
-index 640bfb050241df521c67460c9413a806524405e7..6f676dd608b73e24dd6b988a56cd809032b6e510 100644
+index 5eeaadec9773f4890d9f8cccba1d50f645045b74..d7eb61a67c507ff8bd9e60878a9f5bbfc0d667c2 100644
 --- a/components/viz/host/host_display_client.h
 +++ b/components/viz/host/host_display_client.h
-@@ -41,10 +41,9 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
-       const gfx::CALayerParams& ca_layer_params) override;
+@@ -47,11 +47,13 @@ class VIZ_HOST_EXPORT HostDisplayClient : public mojom::DisplayClient {
  #endif
  
--#if BUILDFLAG(IS_WIN)
-+ protected:
-   void CreateLayeredWindowUpdater(
-       mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
--#endif
+ #if BUILDFLAG(IS_WIN)
+-  void CreateLayeredWindowUpdater(
+-      mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
+   void AddChildWindowToBrowser(gpu::SurfaceHandle child_window) override;
+ #endif
  
++ protected:
++  void CreateLayeredWindowUpdater(
++      mojo::PendingReceiver<mojom::LayeredWindowUpdater> receiver) override;
++
  // TODO(crbug.com/1052397): Revisit the macro expression once build flag switch
  // of lacros-chrome is complete.
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
 diff --git a/components/viz/host/layered_window_updater_impl.cc b/components/viz/host/layered_window_updater_impl.cc
 index 271486b45dcc87b52b3fd8a8f248b08a4918c97e..9de13bd8ea5f2efe5d0f23ab045fe0aba226cf5d 100644
 --- a/components/viz/host/layered_window_updater_impl.cc
@@ -81,7 +87,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 3d2fbf9ae3ed9a7621ed54ad7da4e290781b8b60..c2c65f685e760248adf3efcc98e6c7a8f1f7e5fb 100644
+index af5a1b2c61c45887eb18710e598b36e56406ea0b..b2a72ebfd07052113cd70b14d66f6e62cdff68d3 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -108,7 +114,7 @@ index 28f44e5df4a3591c8563564a9aba7cec1b023a29..befc5a556a7fd6719d8a1c2eb8e92784
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index eca31050366217643f6567d3bf9b22e946bdd029..9d778fb267e81ad0d8e4c7275fd17a942e1a4256 100644
+index bd9f162f5053f0e7e505e2af1a2e16d6e23b9ec4..df67fc2caa0f4dc8bd11a0ac6045915b7fc2a6ff 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -502,7 +508,7 @@ index aedc4d24d3fb3624b27eadb9b234b77291bb47b5..c5108b0d6bce4e268979f5541929c687
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index dc270ca19b0b29f863afdadf7b63fe9dad674a87..98843a7102bea4ab106ad4c84ecb1871b98ff841 100644
+index 78fd50e3cacf17eaf7c30bf6fb0c269045cb87b4..5a64e440770a2ce958d5c5576010d084c8764244 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -85,7 +85,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -516,10 +522,10 @@ index dc270ca19b0b29f863afdadf7b63fe9dad674a87..98843a7102bea4ab106ad4c84ecb1871
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 034f957b148ef7d17301b7b75e0258c3a9230812..dd8ff1bd6257a524ff8f5a3a2e6f550f9e5114e2 100644
+index 3b44531f2618f5642c8b1fcd4b96085333185d9d..6893355c693edde1d7d4a80378aeda1053e1dc91 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -388,8 +388,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -399,8 +399,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -537,17 +543,17 @@ index 034f957b148ef7d17301b7b75e0258c3a9230812..dd8ff1bd6257a524ff8f5a3a2e6f550f
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index c837cc126bce8cd5b82c96940fdb7cfd4f51bc27..63990dce7076b995a2fb0b0d1711d1a837718dab 100644
+index 52f44a31de4a8df838622886581052dcd86072e9..65b938d76e43021bbab565a97d0645cb9c35a4ff 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -102,7 +102,6 @@ interface DisplayClient {
+@@ -103,7 +103,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
 -  [EnableIf=is_win]
    CreateLayeredWindowUpdater(pending_receiver<LayeredWindowUpdater> receiver);
  
-   // Notifies that a swap has occurred and provides information about the pixel
+   // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 index 5776b0b65c8471c7d3c82ae37f708c87fa42136f..0eae85007fe5629d15286b22e87866469b6fec31 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
@@ -572,10 +578,10 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index ad691e760c31c3224631e334393a7ad3fdf11705..d624575f33126ae9ae5ffd0b11a843d484837de7 100644
+index eb6bcc2e265a91acaace530b04fc2f820e80baa6..99099716bcfaffc85b6dfed028709950ba061a96 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -86,6 +86,7 @@ class DisplayPrivate;
+@@ -87,6 +87,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -583,7 +589,7 @@ index ad691e760c31c3224631e334393a7ad3fdf11705..d624575f33126ae9ae5ffd0b11a843d4
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -142,6 +143,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -143,6 +144,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -600,7 +606,7 @@ index ad691e760c31c3224631e334393a7ad3fdf11705..d624575f33126ae9ae5ffd0b11a843d4
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -185,6 +196,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -186,6 +197,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -610,7 +616,7 @@ index ad691e760c31c3224631e334393a7ad3fdf11705..d624575f33126ae9ae5ffd0b11a843d4
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -486,6 +500,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -496,6 +510,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

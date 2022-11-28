@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 86010a7553ae78aef6004eee8e1bd371fde37052..98c0fd3a37ce6bc6d4cab0db15f23565aa3b2bd0 100644
+index a2cbdb022b95ba8b9c8da13e6a36865ead0b7e08..8055ab66e08e6dd7d12df596b97597b30364f10c 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6732,10 +6732,11 @@ std::pair<url::Origin, std::string> NavigationRequest::
+@@ -6706,10 +6706,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,12 +37,12 @@ index 86010a7553ae78aef6004eee8e1bd371fde37052..98c0fd3a37ce6bc6d4cab0db15f23565
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index ba7a4595b08c6aa7ca79c38bdc4e37617378c7bb..b919e46ce95819026e43862f3e64e65124402209 100644
+index 86c673ac5cf948ce8ecbd56fc30bccf65bd7262b..53bb47b5741eda7405991d633bea435191cab287 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2675,6 +2675,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-     kIframeNestedWithinFencedFrame
-   };
+@@ -2700,6 +2700,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   RenderFrameHostImplPpapiSupport& GetPpapiSupport();
+ #endif
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
@@ -58,7 +58,7 @@ index ba7a4595b08c6aa7ca79c38bdc4e37617378c7bb..b919e46ce95819026e43862f3e64e651
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3021,17 +3032,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3013,17 +3024,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

@@ -14,14 +14,14 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..a41df69515e421b629aa6dc82e296c3a3bb04f8e 100644
+index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2ee3295d68 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
 @@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
  DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
    static DeviceUserDomainJoinState state = [] {
      DeviceUserDomainJoinState state{false, false};
-+#if defined(MAS_BUILD)
++#if IS_MAS_BUILD()
 +    return state;
 +  }();
 +
@@ -76,14 +76,14 @@ index e38a02b3f0eed139653eaa82b6a09167b8658d81..071e699b23b99abd96a8a1ef2acbdca5
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index f860be6fbb6caf166f4808772a490ebba9cd7f08..20cead8c65f109fd74669bf647486132055e9860 100644
+index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c479b8f03 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -19,14 +19,19 @@
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/base_tracing.h"
-+#if defined(MAS_BUILD)
++#if IS_MAS_BUILD()
 +#include <sys/syscall.h>
 +#endif
  
@@ -92,7 +92,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..20cead8c65f109fd74669bf647486132
  // descriptor. libpthread only exposes a syscall wrapper starting in
  // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
  // the syscall is issued directly.
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
  int pthread_chdir_np(const char* dir) API_AVAILABLE(macosx(10.12));
  int pthread_fchdir_np(int fd) API_AVAILABLE(macosx(10.12));
 +#endif
@@ -103,7 +103,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..20cead8c65f109fd74669bf647486132
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
-+#if defined(MAS_BUILD)
++#if IS_MAS_BUILD()
 +  #pragma clang diagnostic push
 +  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 +  return syscall(SYS___pthread_chdir, path);
@@ -116,7 +116,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..20cead8c65f109fd74669bf647486132
  // The recommended way to unset a per-thread cwd is to set a new value to an
  // invalid file descriptor, per libpthread-218.1.3/private/private.h.
  int ResetCurrentThreadDirectory() {
-+#if defined(MAS_BUILD)
++#if IS_MAS_BUILD()
 +  #pragma clang diagnostic push
 +  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 +  return syscall(SYS___pthread_fchdir, -1);
@@ -142,14 +142,14 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..20cead8c65f109fd74669bf647486132
    std::vector<char*> argv_cstr;
    argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 751b723388f78a314e2af9c0ec0205f3bd4b6d77..248fe5fc47bb94bf18a96700a5aaca0c516c39b8 100644
+index fa83b9cd51c1d3ad1ccee49772424390ef05e46f..604bc712f14283282253bd88580123160483f530 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
-@@ -34,19 +34,23 @@
+@@ -31,19 +31,23 @@
  
  namespace {
  extern "C" {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  // See:
  // https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/PAL/pal/spi/cf/CoreAudioSPI.h?rev=228264
  OSStatus AudioDeviceDuck(AudioDeviceID inDevice,
@@ -160,7 +160,7 @@ index 751b723388f78a314e2af9c0ec0205f3bd4b6d77..248fe5fc47bb94bf18a96700a5aaca0c
  }
  
  void UndoDucking(AudioDeviceID output_device_id) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    if (AudioDeviceDuck != nullptr) {
      // Ramp the volume back up over half a second.
      AudioDeviceDuck(output_device_id, 1.0, nullptr, 0.5);
@@ -170,14 +170,14 @@ index 751b723388f78a314e2af9c0ec0205f3bd4b6d77..248fe5fc47bb94bf18a96700a5aaca0c
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f52f1d1da4d431505b1a55df4764f37a70e0b29d..ebc15064d0d0e97dfab7fc82b99254556b050eb2 100644
+index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
    }
  #endif
  
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
  extern "C" {
  void abort_report_np(const char*, ...);
  }
@@ -189,7 +189,7 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..ebc15064d0d0e97dfab7fc82b9925455
  
    os_log_with_type(log.get(), os_log_type, "%{public}s", message);
  
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
    if (level == Level::FATAL) {
      abort_report_np(message);
    }
@@ -198,14 +198,14 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..ebc15064d0d0e97dfab7fc82b9925455
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b692b89f70a46e36f5d1991383b8..8e5f05bb012b622e27f41b7c6327f70959dd9731 100644
+index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
  
  #include "base/mac/mac_logging.h"
  
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
  extern "C" {
  OSStatus SetApplicationIsDaemon(Boolean isDaemon);
  void _LSSetApplicationLaunchServicesServerConnectionStatus(
@@ -218,7 +218,7 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8e5f05bb012b622e27f41b7c6327f709
  namespace sandbox {
  
  void DisableLaunchServices() {
-+  #if !defined(MAS_BUILD)
++  #if !IS_MAS_BUILD()
    // Allow the process to continue without a LaunchServices ASN. The
    // INIT_Process function in HIServices will abort if it cannot connect to
    // launchservicesd to get an ASN. By setting this flag, HIServices skips
@@ -230,7 +230,7 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8e5f05bb012b622e27f41b7c6327f709
  }
  
  void DisableCoreServicesCheckFix() {
-+#if !defined(MAS_BUILD)
++#if !IS_MAS_BUILD()
    if (__builtin_available(macOS 10.15, *)) {
      _CSCheckFixDisable();
    }

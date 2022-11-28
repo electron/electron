@@ -21,7 +21,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/win/registry.h"
 #include "base/win/win_util.h"
 #include "base/win/windows_version.h"
@@ -39,6 +38,7 @@
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/skia_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "skia/ext/legacy_display_globals.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkFont.h"
@@ -277,7 +277,7 @@ std::unique_ptr<FileVersionInfo> FetchFileVersionInfo() {
   base::FilePath path;
 
   if (base::PathService::Get(base::FILE_EXE, &path)) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     return FileVersionInfo::CreateFileVersionInfo(path);
   }
   return std::unique_ptr<FileVersionInfo>();
@@ -779,7 +779,7 @@ PCWSTR Browser::GetAppUserModelID() {
 std::string Browser::GetExecutableFileVersion() const {
   base::FilePath path;
   if (base::PathService::Get(base::FILE_EXE, &path)) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForElectron allow_blocking;
     std::unique_ptr<FileVersionInfo> version_info = FetchFileVersionInfo();
     return base::UTF16ToUTF8(version_info->product_version());
   }

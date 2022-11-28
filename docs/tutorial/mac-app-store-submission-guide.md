@@ -11,7 +11,7 @@ This guide provides information on:
 To sign Electron apps, the following tools must be installed first:
 
 * Xcode 11 or above.
-* The [electron-osx-sign][electron-osx-sign] npm module.
+* The [@electron/osx-sign] npm module.
 
 You also have to register an Apple Developer account and join the
 [Apple Developer Program][developer-program].
@@ -103,7 +103,7 @@ Apps submitted to the Mac App Store must run under Apple's
 the App Sandbox. The standard darwin build of Electron will fail to launch
 when run under App Sandbox.
 
-When signing the app with `electron-osx-sign`, it will automatically add the
+When signing the app with `@electron/osx-sign`, it will automatically add the
 necessary entitlements to your app's entitlements, but if you are using custom
 entitlements, you must ensure App Sandbox capacity is added:
 
@@ -120,7 +120,7 @@ entitlements, you must ensure App Sandbox capacity is added:
 
 #### Extra steps without `electron-osx-sign`
 
-If you are signing your app without using `electron-osx-sign`, you must ensure
+If you are signing your app without using `@electron/osx-sign`, you must ensure
 the app bundle's entitlements have at least following keys:
 
 ```xml
@@ -170,22 +170,22 @@ your Apple Developer account's Team ID as its value:
 </plist>
 ```
 
-When using `electron-osx-sign` the `ElectronTeamID` key will be added
+When using `@electron/osx-sign` the `ElectronTeamID` key will be added
 automatically by extracting the Team ID from the certificate's name. You may
-need to manually add this key if `electron-osx-sign` could not find the correct
+need to manually add this key if `@electron/osx-sign` could not find the correct
 Team ID.
 
 ### Sign apps for development
 
 To sign an app that can run on your development machine, you must sign it with
 the "Apple Development" certificate and pass the provisioning profile to
-`electron-osx-sign`.
+`@electron/osx-sign`.
 
 ```bash
 electron-osx-sign YourApp.app --identity='Apple Development' --provisioning-profile=/path/to/yourapp.provisionprofile
 ```
 
-If you are signing without `electron-osx-sign`, you must place the provisioning
+If you are signing without `@electron/osx-sign`, you must place the provisioning
 profile to `YourApp.app/Contents/embedded.provisionprofile`.
 
 The signed app can only run on the machines that registered by the provisioning
@@ -213,7 +213,7 @@ use App Sandbox.
 electron-osx-sign YourApp.app --identity='Developer ID Application' --no-gatekeeper-assess
 ```
 
-By passing `--no-gatekeeper-assess`, the `electron-osx-sign` will skip the macOS
+By passing `--no-gatekeeper-assess`, `@electron/osx-sign` will skip the macOS
 GateKeeper check as your app usually has not been notarized yet by this step.
 
 <!-- TODO(zcbenz): Add a chapter about App Notarization -->
@@ -232,7 +232,7 @@ how to meet the Mac App Store requirements.
 
 ### Upload
 
-The Application Loader should be used to upload the signed app to iTunes
+[Apple Transporter][apple-transporter] should be used to upload the signed app to App Store
 Connect for processing, making sure you have [created a record][create-record]
 before uploading.
 
@@ -341,11 +341,12 @@ Electron uses following cryptographic algorithms:
 * RIPEMD - [ISO/IEC 10118-3](https://webstore.ansi.org/RecordDetail.aspx?sku=ISO%2FIEC%2010118-3:2004)
 
 [developer-program]: https://developer.apple.com/support/compare-memberships/
-[electron-osx-sign]: https://github.com/electron/electron-osx-sign
+[@electron/osx-sign]: https://github.com/electron/electron-osx-sign
 [app-sandboxing]: https://developer.apple.com/app-sandboxing/
 [app-notarization]: https://developer.apple.com/documentation/security/notarizing_macos_software_before_distribution
 [submitting-your-app]: https://developer.apple.com/library/mac/documentation/IDEs/Conceptual/AppDistributionGuide/SubmittingYourApp/SubmittingYourApp.html
-[create-record]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/CreatingiTunesConnectRecord.html
+[create-record]: https://help.apple.com/app-store-connect/#/dev2cd126805
+[apple-transporter]: https://help.apple.com/itc/transporteruserguide/en.lproj/static.html
 [submit-for-review]: https://developer.apple.com/library/ios/documentation/LanguagesUtilities/Conceptual/iTunesConnect_Guide/Chapters/SubmittingTheApp.html
 [export-compliance]: https://help.apple.com/app-store-connect/#/devc3f64248f
 [user-selected]: https://developer.apple.com/library/mac/documentation/Miscellaneous/Reference/EntitlementKeyReference/Chapters/EnablingAppSandbox.html#//apple_ref/doc/uid/TP40011195-CH4-SW6

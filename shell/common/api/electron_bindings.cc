@@ -14,7 +14,6 @@
 #include "base/process/process_handle.h"
 #include "base/process/process_metrics_iocounters.h"
 #include "base/system/sys_info.h"
-#include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_version.h"
 #include "electron/electron_version.h"
 #include "services/resource_coordinator/public/cpp/memory_instrumentation/global_memory_dump.h"
@@ -28,6 +27,7 @@
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/thread_restrictions.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 namespace electron {
@@ -61,7 +61,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   process->SetReadOnly("mas", true);
 #endif
 
@@ -325,7 +325,7 @@ v8::Local<v8::Value> ElectronBindings::GetIOCounters(v8::Isolate* isolate) {
 // static
 bool ElectronBindings::TakeHeapSnapshot(v8::Isolate* isolate,
                                         const base::FilePath& file_path) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
 
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);

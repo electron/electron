@@ -24,7 +24,7 @@ index e5d57b61367227762c1e4cab6a3d7c7ffc4c74a5..b1217d282b8c70a3afb2c5af130aed9c
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 467eaa32808b3144ae74876328cfa175ef2693b0..76d5db91b70990c6b8dfe03b4ed00c056851dc69 100644
+index 616aafcb98225776cb6caeea2d5f03dd6fcc9a9f..e79de9fa5b303de0b0c4b6f0535e7e59c691cd37 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -26,8 +26,10 @@
@@ -38,7 +38,7 @@ index 467eaa32808b3144ae74876328cfa175ef2693b0..76d5db91b70990c6b8dfe03b4ed00c05
  #include "content/public/browser/render_widget_host_view.h"
  #include "content/public/common/page_visibility_state.h"
  #include "content/public/common/widget_type.h"
-@@ -68,9 +70,11 @@ class CursorManager;
+@@ -70,9 +72,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -50,7 +50,7 @@ index 467eaa32808b3144ae74876328cfa175ef2693b0..76d5db91b70990c6b8dfe03b4ed00c05
  class WebCursor;
  class WebContentsAccessibility;
  class DelegatedFrameHost;
-@@ -147,6 +151,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -149,6 +153,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
  
@@ -60,7 +60,7 @@ index 467eaa32808b3144ae74876328cfa175ef2693b0..76d5db91b70990c6b8dfe03b4ed00c05
    // This only needs to be overridden by RenderWidgetHostViewBase subclasses
    // that handle content embedded within other RenderWidgetHostViews.
    gfx::PointF TransformPointToRootCoordSpaceF(
-@@ -315,6 +322,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
+@@ -317,6 +324,11 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
    virtual void ProcessGestureEvent(const blink::WebGestureEvent& event,
                                     const ui::LatencyInfo& latency);
  

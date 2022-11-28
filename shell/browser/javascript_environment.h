@@ -32,7 +32,7 @@ class JavascriptEnvironment {
   void CreateMicrotasksRunner();
   void DestroyMicrotasksRunner();
 
-  node::MultiIsolatePlatform* platform() const { return platform_; }
+  node::MultiIsolatePlatform* platform() const { return platform_.get(); }
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
@@ -42,8 +42,7 @@ class JavascriptEnvironment {
 
  private:
   v8::Isolate* Initialize(uv_loop_t* event_loop);
-  // Leaked on exit.
-  node::MultiIsolatePlatform* platform_;
+  std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
   v8::Isolate* isolate_;
   gin::IsolateHolder isolate_holder_;

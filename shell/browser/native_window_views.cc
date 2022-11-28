@@ -1594,17 +1594,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     const gfx::Point& location) {
   // App window should claim mouse events that fall within any BrowserViews'
   // draggable region.
-  for (auto* view : inspectable_views()) {
-    auto* inspectable_view =
-        static_cast<InspectableWebContentsViewViews*>(view);
-    if (inspectable_view->IsContainedInDraggableRegion(content_view(),
-                                                       location))
-      return false;
-  }
-
-  // App window should claim mouse events that fall within the draggable region.
-  if (draggable_region() &&
-      draggable_region()->contains(location.x(), location.y()))
+  if (NonClientHitTest(location) != HTNOWHERE)
     return false;
 
   // And the events on border for dragging resizable frameless window.

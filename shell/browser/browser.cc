@@ -23,6 +23,7 @@
 #include "shell/common/application_info.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_helper/arguments.h"
+#include "shell/common/thread_restrictions.h"
 
 namespace electron {
 
@@ -186,7 +187,7 @@ void Browser::WillFinishLaunching() {
 
 void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   // Make sure the userData directory is created.
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath user_data;
   if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data))
     base::CreateDirectoryAndGetError(user_data, nullptr);

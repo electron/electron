@@ -21,7 +21,6 @@
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
 #include "base/threading/sequenced_task_runner_handle.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
@@ -123,6 +122,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "storage/browser/file_system/isolated_context.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -197,7 +197,7 @@
 #include "content/public/browser/plugin_service.h"
 #endif
 
-#ifndef MAS_BUILD
+#if !IS_MAS_BUILD()
 #include "chrome/browser/hang_monitor/hang_crash_dump.h"  // nogncheck
 #endif
 
@@ -446,7 +446,7 @@ std::pair<std::string, std::u16string> GetDeviceNameToUse(
 #if BUILDFLAG(IS_WIN)
   // Blocking is needed here because Windows printer drivers are oftentimes
   // not thread-safe and have to be accessed on the UI thread.
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
 #endif
 
   if (!device_name.empty()) {
@@ -1875,8 +1875,7 @@ void WebContents::MessageHost(const std::string& channel,
 
 void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
-  for (ExtendedWebContentsObserver& observer : observers_)
-    observer.OnDraggableRegionsUpdated(regions);
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 void WebContents::DidStartNavigation(
@@ -2396,7 +2395,7 @@ void WebContents::ForcefullyCrashRenderer() {
     rph->ForceCrash();
 #else
     // Try to generate a crash report for the hung process.
-#ifndef MAS_BUILD
+#if !IS_MAS_BUILD()
     CrashDumpHungChildProcess(rph->GetProcess().Handle());
 #endif
     rph->Shutdown(content::RESULT_CODE_HUNG);
@@ -3547,7 +3546,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
   if (!file.IsValid()) {

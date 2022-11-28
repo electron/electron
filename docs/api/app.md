@@ -717,6 +717,8 @@ To set the locale, you'll want to use a command line switch at app startup, whic
 
 **Note:** This API must be called after the `ready` event is emitted.
 
+**Note:** To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+
 ### `app.getLocaleCountryCode()`
 
 Returns `string` - User operating system's locale two-letter [ISO 3166](https://www.iso.org/iso-3166-country-codes.html) country code. The value is taken from native OS APIs.
@@ -725,9 +727,41 @@ Returns `string` - User operating system's locale two-letter [ISO 3166](https://
 
 ### `app.getSystemLocale()`
 
-Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, the `NSLocale` object is used instead.
+Returns `string` - The current system locale. On Windows and Linux, it is fetched using Chromium's `i18n` library. On macOS, `[NSLocale currentLocale]` is used instead. To get the user's current system language, which is not always the same as the locale, it is better to use [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+
+Different operating systems also use the regional data differently:
+
+* Windows 11 uses the regional format for numbers, dates, and times.
+* macOS Monterey uses the region for formatting numbers, dates, times, and for selecting the currency symbol to use.
+
+Therefore, this API can be used for purposes such as choosing a format for rendering dates and times in a calendar app, especially when the developer wants the format to be consistent with the OS.
 
 **Note:** This API must be called after the `ready` event is emitted.
+
+**Note:** To see example return values of this API compared to other locale and language APIs, see [`app.getPreferredSystemLanguages()`](#appgetpreferredsystemlanguages).
+
+### `app.getPreferredSystemLanguages()`
+
+Returns `string[]` - The user's preferred system languages from most preferred to least preferred, including the country codes if applicable. A user can modify and add to this list on Windows or macOS through the Language and Region settings.
+
+The API uses `GlobalizationPreferences` (with a fallback to `GetSystemPreferredUILanguages`) on Windows, `\[NSLocale preferredLanguages\]` on macOS, and `g_get_language_names` on Linux.
+
+This API can be used for purposes such as deciding what language to present the application in.
+
+Here are some examples of return values of the various language and locale APIs with different configurations:
+
+* For Windows, where the application locale is German, the regional format is Finnish (Finland), and the preferred system languages from most to least preferred are French (Canada), English (US), Simplified Chinese (China), Finnish, and Spanish (Latin America):
+  * `app.getLocale()` returns `'de'`
+  * `app.getSystemLocale()` returns `'fi-FI'`
+  * `app.getPreferredSystemLanguages()` returns `['fr-CA', 'en-US', 'zh-Hans-CN', 'fi', 'es-419']`
+* On macOS, where the application locale is German, the region is Finland, and the preferred system languages from most to least preferred are French (Canada), English (US), Simplified Chinese, and Spanish (Latin America):
+  * `app.getLocale()` returns `'de'`
+  * `app.getSystemLocale()` returns `'fr-FI'`
+  * `app.getPreferredSystemLanguages()` returns `['fr-CA', 'en-US', 'zh-Hans-FI', 'es-419']`
+
+Both the available languages and regions and the possible return values differ between the two operating systems.
+
+As can be seen with the example above, on Windows, it is possible that a preferred system language has no country code, and that one of the preferred system languages corresponds with the language used for the regional format. On macOS, the region serves more as a default country code: the user doesn't need to have Finnish as a preferred language to use Finland as the region,and the country code `FI` is used as the country code for preferred system languages that do not have associated countries in the language name.
 
 ### `app.addRecentDocument(path)` _macOS_ _Windows_
 
@@ -1203,7 +1237,7 @@ For `infoType` equal to `basic`:
 }
 ```
 
-Using `basic` should be preferred if only basic information like `vendorId` or `driverId` is needed.
+Using `basic` should be preferred if only basic information like `vendorId` or `deviceId` is needed.
 
 ### `app.setBadgeCount([count])` _Linux_ _macOS_
 

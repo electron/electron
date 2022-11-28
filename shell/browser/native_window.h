@@ -17,6 +17,7 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/common/api/api.mojom.h"
@@ -227,6 +228,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void UpdateFrame() = 0;
 #endif
 
+// whether windows should be ignored by mission control
+#if BUILDFLAG(IS_MAC)
+  virtual bool IsHiddenInMissionControl() = 0;
+  virtual void SetHiddenInMissionControl(bool hidden) = 0;
+#endif
+
   // Touchbar API
   virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
@@ -345,11 +352,6 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_type_;
   }
 
-  SkRegion const* draggable_region() const { return draggable_region_.get(); }
-
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
-
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
 
@@ -378,11 +380,11 @@ class NativeWindow : public base::SupportsUserData,
 
   std::list<NativeBrowserView*> browser_views() const { return browser_views_; }
 
-  std::list<InspectableWebContentsView*> inspectable_views() const {
-    return inspectable_views_;
-  }
-
   int32_t window_id() const { return next_id_; }
+
+  int NonClientHitTest(const gfx::Point& point);
+  void AddDraggableRegionProvider(DraggableRegionProvider* provider);
+  void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
 
  protected:
   friend class api::BrowserView;
@@ -402,16 +404,6 @@ class NativeWindow : public base::SupportsUserData,
   void remove_browser_view(NativeBrowserView* browser_view) {
     browser_views_.remove_if(
         [&browser_view](NativeBrowserView* n) { return (n == browser_view); });
-  }
-
-  void add_inspectable_view(InspectableWebContentsView* inspectable_view) {
-    inspectable_views_.push_back(inspectable_view);
-  }
-  void remove_inspectable_view(InspectableWebContentsView* inspectable_view) {
-    inspectable_views_.remove_if(
-        [&inspectable_view](InspectableWebContentsView* n) {
-          return (n == inspectable_view);
-        });
   }
 
   // The boolean parsing of the "titleBarOverlay" option
@@ -477,8 +469,7 @@ class NativeWindow : public base::SupportsUserData,
   // The browser view layer.
   std::list<NativeBrowserView*> browser_views_;
 
-  // The inspectable webContents views.
-  std::list<InspectableWebContentsView*> inspectable_views_;
+  std::list<DraggableRegionProvider*> draggable_region_providers_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
@@ -487,10 +478,6 @@ class NativeWindow : public base::SupportsUserData,
   std::u16string accessible_title_;
 
   gfx::Rect overlay_rect_;
-
-  // For custom drag, the whole window is non-draggable and the draggable region
-  // has to been explicitly provided.
-  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };

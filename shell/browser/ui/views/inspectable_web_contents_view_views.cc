@@ -105,19 +105,6 @@ InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {
         devtools_window_->GetWindowBoundsInScreen());
 }
 
-bool InspectableWebContentsViewViews::IsContainedInDraggableRegion(
-    views::View* root_view,
-    const gfx::Point& location) {
-  if (!draggable_region_.get())
-    return false;
-  // Draggable regions are defined relative to the web contents.
-  gfx::Point point_in_contents_web_view_coords(location);
-  views::View::ConvertPointToTarget(root_view, this,
-                                    &point_in_contents_web_view_coords);
-  return draggable_region_->contains(point_in_contents_web_view_coords.x(),
-                                     point_in_contents_web_view_coords.y());
-}
-
 views::View* InspectableWebContentsViewViews::GetView() {
   return this;
 }
@@ -225,14 +212,6 @@ void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
     title_ = title;
     devtools_window_->UpdateWindowTitle();
   }
-}
-
-void InspectableWebContentsViewViews::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  if (&draggable_regions_ == &regions)
-    return;
-  draggable_regions_ = mojo::Clone(regions);
-  draggable_region_ = DraggableRegionsToSkRegion(draggable_regions_);
 }
 
 void InspectableWebContentsViewViews::Layout() {

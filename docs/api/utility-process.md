@@ -134,3 +134,4 @@ Emitted when the child process sends a message using [`process.parentPort.postMe
 [`child_process.fork`]: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processforkmodulepath-args-options
 [Services API]: https://chromium.googlesource.com/chromium/src/+/master/docs/mojo_and_services.md
 [stdio]: https://nodejs.org/dist/latest/docs/api/child_process.html#optionsstdio
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

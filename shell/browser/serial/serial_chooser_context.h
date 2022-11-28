@@ -29,9 +29,6 @@ class Value;
 
 namespace electron {
 
-extern const char kHidVendorIdKey[];
-extern const char kHidProductIdKey[];
-
 #if BUILDFLAG(IS_WIN)
 extern const char kDeviceInstanceIdKey[];
 #else

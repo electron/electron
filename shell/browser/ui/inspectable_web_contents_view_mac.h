@@ -34,8 +34,6 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions) override;
 
  private:
   base::scoped_nsobject<ElectronInspectableWebContentsView> view_;

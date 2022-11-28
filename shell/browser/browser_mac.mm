@@ -11,6 +11,7 @@
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/mac_util.mm"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
@@ -63,6 +64,24 @@ std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
       [[NSFileManager defaultManager] displayNameAtPath:app_path];
   return base::SysNSStringToUTF16(app_display_name);
 }
+
+#if !IS_MAS_BUILD()
+bool CheckLoginItemStatus(bool* is_hidden) {
+  base::mac::LoginItemsFileList login_items;
+  if (!login_items.Initialize())
+    return false;
+
+  base::ScopedCFTypeRef<LSSharedFileListItemRef> item(
+      login_items.GetLoginItemForMainApp());
+  if (!item.get())
+    return false;
+
+  if (is_hidden)
+    *is_hidden = base::mac::IsHiddenLoginItem(item);
+
+  return true;
+}
+#endif
 
 }  // namespace
 
@@ -309,11 +328,10 @@ bool Browser::UpdateUserActivityState(const std::string& type,
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   settings.open_at_login = platform_util::GetLoginItemEnabled();
 #else
-  settings.open_at_login =
-      base::mac::CheckLoginItemStatus(&settings.open_as_hidden);
+  settings.open_at_login = CheckLoginItemStatus(&settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
   settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
@@ -322,15 +340,16 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
     LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
   }
 #else
   if (settings.open_at_login) {
-    base::mac::AddToLoginItems(settings.open_as_hidden);
+    base::mac::AddToLoginItems(base::mac::MainBundlePath(),
+                               settings.open_as_hidden);
   } else {
-    base::mac::RemoveFromLoginItems();
+    base::mac::RemoveFromLoginItems(base::mac::MainBundlePath());
   }
 #endif
 }
@@ -446,6 +465,13 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
       return;
     image = native_image->image();
   }
+
+  // This is needed when this fn is called before the browser
+  // process is ready, since supported scales are normally set
+  // by ui::ResourceBundle::InitSharedInstance
+  // during browser process startup.
+  if (!is_ready())
+    gfx::ImageSkia::SetSupportedScales({1.0f});
 
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];

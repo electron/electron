@@ -87,6 +87,8 @@ class NodeBindings {
   // Setup V8, libuv.
   void Initialize();
 
+  void SetNodeCliFlags();
+
   // Create the environment and load node.js.
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
                                        node::MultiIsolatePlatform* platform,
