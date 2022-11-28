@@ -13,10 +13,7 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/environment.h"
 #include "base/feature_list.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
@@ -38,7 +35,11 @@
 #endif
 
 #if BUILDFLAG(IS_LINUX)
+#include "base/environment.h"
+#include "base/posix/global_descriptors.h"
+#include "base/strings/string_number_conversions.h"
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
+#include "content/public/common/content_descriptors.h"
 #endif
 
 #if !IS_MAS_BUILD()
@@ -98,19 +99,6 @@ void SetCrashKeyStub(const std::string& key, const std::string& value) {}
 void ClearCrashKeyStub(const std::string& key) {}
 #endif
 
-#if BUILDFLAG(IS_LINUX)
-int crashpad_handler_pid = -1;
-int crashdump_signal_fd = -1;
-
-int GetCrashdumpSignalFD() {
-  return crashdump_signal_fd;
-}
-
-int GetCrashpadHandlerPID() {
-  return crashpad_handler_pid;
-}
-#endif
-
 }  // namespace
 
 namespace electron {
@@ -132,14 +120,27 @@ int NodeMain(int argc, char* argv[]) {
 
 #if BUILDFLAG(IS_LINUX)
   auto os_env = base::Environment::Create();
-  std::string fd_string;
-  if (os_env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string)) {
-    base::StringToInt(fd_string, &crashdump_signal_fd);
+  std::string fd_string, pid_string;
+  if (os_env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string) &&
+      os_env->GetVar("CRASHPAD_HANDLER_PID", &pid_string)) {
+    int fd, pid = -1;
+    DCHECK(base::StringToInt(fd_string, &fd));
+    DCHECK(base::StringToInt(pid_string, &pid));
+    base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
+    auto* command_line = base::CommandLine::ForCurrentProcess();
+    command_line->AppendSwitchASCII(
+        crash_reporter::switches::kCrashpadHandlerPid, pid_string);
     ElectronCrashReporterClient::Create();
     crash_reporter::InitializeCrashpad(false, "node");
     crash_keys::SetCrashKeysFromCommandLine(
         *base::CommandLine::ForCurrentProcess());
     crash_keys::SetPlatformCrashKey();
+    // Ensure the flags and env variable does not propagate to userland.
+    command_line->RemoveSwitch(crash_reporter::switches::kCrashpadHandlerPid);
+    // Following API is unsafe in multi-threaded scenario, but at this point
+    // we are still single threaded.
+    os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
+    os_env->UnSetVar("CRASHPAD_HANDLER_PID");
   }
 #elif BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
   ElectronCrashReporterClient::Create();
@@ -147,33 +148,6 @@ int NodeMain(int argc, char* argv[]) {
   crash_keys::SetCrashKeysFromCommandLine(
       *base::CommandLine::ForCurrentProcess());
   crash_keys::SetPlatformCrashKey();
-#endif
-
-#if BUILDFLAG(IS_LINUX)
-  // Shrink arguments without `--crashpad-handler-pid` to ensure that
-  // process.argv does not carry the flag.
-  int count = 0;
-  const std::string search_str =
-      std::string("--").append(crash_reporter::switches::kCrashpadHandlerPid);
-  for (int i = 0; i < argc; i++) {
-    if (base::StartsWith(argv[i], search_str)) {
-      auto results = base::SplitStringUsingSubstr(
-          argv[i], "=", base::TRIM_WHITESPACE, base::SPLIT_WANT_ALL);
-      base::StringToInt(results[1], &crashpad_handler_pid);
-      argv[i] = nullptr;
-      count += 1;
-    }
-  }
-
-  int new_argc = argc - count;
-  char** new_argv = new char*[new_argc];
-  for (int i = 0, j = 0; i < argc; i++) {
-    if (argv[i] != nullptr) {
-      new_argv[j++] = argv[i];
-    }
-  }
-
-  base::CommandLine::ForCurrentProcess()->InitFromArgv(new_argc, new_argv);
 #endif
 
   int exit_code = 1;
@@ -196,17 +170,10 @@ int NodeMain(int argc, char* argv[]) {
     if (flags_exit_code != 0)
       exit(flags_exit_code);
 
-#if BUILDFLAG(IS_LINUX)
-    // Hack around with the argv pointer. Used for process.title = "blah".
-    new_argv = uv_setup_args(new_argc, new_argv);
-
-    std::vector<std::string> args(new_argv, new_argv + new_argc);
-#else
     // Hack around with the argv pointer. Used for process.title = "blah".
     argv = uv_setup_args(argc, argv);
 
     std::vector<std::string> args(argv, argv + argc);
-#endif
     std::unique_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
             args,
@@ -258,12 +225,6 @@ int NodeMain(int argc, char* argv[]) {
 
       gin_helper::Dictionary process(isolate, env->process_object());
       process.SetMethod("crash", &ElectronBindings::Crash);
-#if BUILDFLAG(IS_LINUX)
-      // These are needed so that process forked from this child process
-      // can connect to the crashpad handler process.
-      process.SetMethod("getCrashdumpSignalFD", &GetCrashdumpSignalFD);
-      process.SetMethod("getCrashpadHandlerPID", &GetCrashpadHandlerPID);
-#endif
 
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);

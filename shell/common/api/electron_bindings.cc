@@ -30,10 +30,6 @@
 #include "shell/common/thread_restrictions.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
-#if BUILDFLAG(IS_LINUX)
-#include "components/crash/core/app/crashpad.h"  // nogncheck
-#endif
-
 namespace electron {
 
 ElectronBindings::ElectronBindings(uv_loop_t* loop) {
@@ -64,10 +60,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCPUUsage",
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
-#if BUILDFLAG(IS_LINUX)
-  process->SetMethod("getCrashdumpSignalFD", &GetCrashdumpSignalFD);
-  process->SetMethod("getCrashpadHandlerPID", &GetCrashpadHandlerPID);
-#endif
 
 #if IS_MAS_BUILD()
   process->SetReadOnly("mas", true);
@@ -129,18 +121,6 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
 
   self->pending_next_ticks_.clear();
 }
-
-#if BUILDFLAG(IS_LINUX)
-int ElectronBindings::GetCrashdumpSignalFD() {
-  int fd;
-  return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
-}
-
-int ElectronBindings::GetCrashpadHandlerPID() {
-  int pid;
-  return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
-}
-#endif
 
 // static
 void ElectronBindings::Crash() {
