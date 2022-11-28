@@ -1,0 +1,251 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Johannes Kron <kron@chromium.org>
+Date: Thu, 17 Nov 2022 19:54:33 +0000
+Subject: Reconfigure stream on window resize when using ScreenCaptureKit
+
+Bug: chromium:1352405
+Change-Id: I315104eb4ee985a2d04ea90f01341129c6307501
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4027202
+Reviewed-by: ccameron chromium <ccameron@chromium.org>
+Reviewed-by: Robert Sesek <rsesek@chromium.org>
+Commit-Queue: Johannes Kron <kron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1072984}
+
+diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+index c17f6f076fc852df85d5deb919434458b886db37..5d640a372f1649e0e2cb7e1828dbb3c66eb1e4d7 100644
+--- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
++++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
+@@ -6,15 +6,18 @@
+ 
+ #import <ScreenCaptureKit/ScreenCaptureKit.h>
+ 
++#include "base/mac/foundation_util.h"
+ #include "base/mac/scoped_nsobject.h"
+ #include "base/task/bind_post_task.h"
+ #include "base/threading/thread_checker.h"
+ #include "base/timer/timer.h"
+ #include "content/browser/media/capture/io_surface_capture_device_base_mac.h"
++#include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "third_party/webrtc/modules/desktop_capture/desktop_capture_types.h"
+ #include "ui/gfx/native_widget_types.h"
+ 
+-using SampleCallback = base::RepeatingCallback<void(gfx::ScopedInUseIOSurface)>;
++using SampleCallback = base::RepeatingCallback<void(gfx::ScopedInUseIOSurface,
++                                                    absl::optional<gfx::Size>)>;
+ using ErrorCallback = base::RepeatingClosure;
+ 
+ API_AVAILABLE(macos(12.3))
+@@ -45,17 +48,64 @@ - (void)stream:(SCStream*)stream
+   CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+   if (!pixelBuffer)
+     return;
++
++  // Read out width, height and scaling from metadata to determine the captured
++  // content size.
++  absl::optional<gfx::Size> contentSize;
++  CFArrayRef attachmentsArray =
++      CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, false);
++  if (attachmentsArray && CFArrayGetCount(attachmentsArray) > 0) {
++    CFDictionaryRef attachment = base::mac::CFCast<CFDictionaryRef>(
++        CFArrayGetValueAtIndex(attachmentsArray, 0));
++    if (attachment) {
++      CFDictionaryRef contentRectValue = base::mac::CFCast<CFDictionaryRef>(
++          CFDictionaryGetValue(attachment, SCStreamFrameInfoContentRect));
++      CFNumberRef contentScaleValue = base::mac::CFCast<CFNumberRef>(
++          CFDictionaryGetValue(attachment, SCStreamFrameInfoContentScale));
++      if (contentRectValue && contentScaleValue) {
++        CGRect contentRect = {};
++        bool succeed = CGRectMakeWithDictionaryRepresentation(contentRectValue,
++                                                              &contentRect);
++        float contentScale = 1.0f;
++        succeed &= CFNumberGetValue(contentScaleValue, kCFNumberFloatType,
++                                    &contentScale);
++        if (succeed) {
++          contentSize.emplace(round(contentRect.size.width / contentScale),
++                              round(contentRect.size.height / contentScale));
++        }
++      }
++    }
++  }
+   IOSurfaceRef ioSurface = CVPixelBufferGetIOSurface(pixelBuffer);
+   if (!ioSurface)
+     return;
+   _sampleCallback.Run(
+-      gfx::ScopedInUseIOSurface(ioSurface, base::scoped_policy::RETAIN));
++      gfx::ScopedInUseIOSurface(ioSurface, base::scoped_policy::RETAIN),
++      contentSize);
+ }
+ 
+ - (void)stream:(SCStream*)stream didStopWithError:(NSError*)error {
+   _errorCallback.Run();
+ }
+ 
+++ (base::scoped_nsobject<SCStreamConfiguration>)
++    createStreamConfigurationWithFrameSize:(gfx::Size)frameSize
++                           destRectInFrame:(gfx::RectF)destRectInFrame
++                                 frameRate:(float)frameRate {
++  base::scoped_nsobject<SCStreamConfiguration> config(
++      [[SCStreamConfiguration alloc] init]);
++  [config setWidth:frameSize.width()];
++  [config setHeight:frameSize.height()];
++  [config setPixelFormat:kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange];
++  [config setDestinationRect:destRectInFrame.ToCGRect()];
++  [config setBackgroundColor:CGColorGetConstantColor(kCGColorBlack)];
++  [config setScalesToFit:YES];
++  [config setShowsCursor:YES];
++  [config setColorSpaceName:kCGColorSpaceSRGB];
++  [config setMinimumFrameInterval:CMTimeMakeWithSeconds(1 / frameRate, 1)];
++  return config;
++}
++
+ @end
+ 
+ namespace content {
+@@ -95,7 +145,6 @@ void OnShareableContentCreated(
+     }
+ 
+     base::scoped_nsobject<SCContentFilter> filter;
+-    gfx::Size content_size;
+     switch (source_.type) {
+       case DesktopMediaID::TYPE_SCREEN:
+         for (SCDisplay* display : [content displays]) {
+@@ -112,7 +161,8 @@ void OnShareableContentCreated(
+             filter.reset([[SCContentFilter alloc]
+                  initWithDisplay:display
+                 excludingWindows:exclude_windows]);
+-            content_size = gfx::Size([display width], [display height]);
++            stream_config_content_size_ =
++                gfx::Size([display width], [display height]);
+             break;
+           }
+         }
+@@ -123,7 +173,7 @@ void OnShareableContentCreated(
+             filter.reset([[SCContentFilter alloc]
+                 initWithDesktopIndependentWindow:window]);
+             CGRect frame = [window frame];
+-            content_size = gfx::Size(frame.size);
++            stream_config_content_size_ = gfx::Size(frame.size);
+             break;
+           }
+         }
+@@ -142,22 +192,16 @@ void OnShareableContentCreated(
+     gfx::RectF dest_rect_in_frame;
+     actual_capture_format_ = capture_params().requested_format;
+     actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
+-    ComputeFrameSizeAndDestRect(content_size, actual_capture_format_.frame_size,
++    ComputeFrameSizeAndDestRect(stream_config_content_size_,
++                                actual_capture_format_.frame_size,
+                                 dest_rect_in_frame);
+-
+-    base::scoped_nsobject<SCStreamConfiguration> config(
+-        [[SCStreamConfiguration alloc] init]);
+-    [config setWidth:actual_capture_format_.frame_size.width()];
+-    [config setHeight:actual_capture_format_.frame_size.height()];
+-    [config setPixelFormat:kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange];
+-    [config setDestinationRect:dest_rect_in_frame.ToCGRect()];
+-    [config setBackgroundColor:CGColorGetConstantColor(kCGColorBlack)];
+-    [config setScalesToFit:YES];
+-    [config setShowsCursor:YES];
+-    [config setColorSpaceName:kCGColorSpaceSRGB];
+-    [config
+-        setMinimumFrameInterval:CMTimeMakeWithSeconds(
+-                                    1 / actual_capture_format_.frame_rate, 1)];
++    base::scoped_nsobject<SCStreamConfiguration> config =
++        [ScreenCaptureKitDeviceHelper
++            createStreamConfigurationWithFrameSize:actual_capture_format_
++                                                       .frame_size
++                                   destRectInFrame:dest_rect_in_frame
++                                         frameRate:actual_capture_format_
++                                                       .frame_rate];
+     stream_.reset([[SCStream alloc] initWithFilter:filter
+                                      configuration:config
+                                           delegate:helper_]);
+@@ -203,9 +247,71 @@ void OnStreamStopped(bool error) {
+       return;
+     }
+   }
+-  void OnStreamSample(gfx::ScopedInUseIOSurface io_surface) {
+-    // TODO(https://crbug.com/1309653): Reconfigure the stream if the IOSurface
+-    // should be resized.
++  void OnStreamSample(gfx::ScopedInUseIOSurface io_surface,
++                      absl::optional<gfx::Size> content_size) {
++    if (requested_capture_format_) {
++      // Does the size of io_surface match the requested format?
++      size_t io_surface_width = IOSurfaceGetWidth(io_surface);
++      size_t io_surface_height = IOSurfaceGetHeight(io_surface);
++      DVLOG(3) << "Waiting for new capture format, "
++               << requested_capture_format_->frame_size.width() << " x "
++               << requested_capture_format_->frame_size.height()
++               << ". IO surface size " << io_surface_width << " x "
++               << io_surface_height;
++      if (static_cast<size_t>(requested_capture_format_->frame_size.width()) ==
++              io_surface_width &&
++          static_cast<size_t>(requested_capture_format_->frame_size.height()) ==
++              io_surface_height) {
++        actual_capture_format_ = requested_capture_format_.value();
++        requested_capture_format_.reset();
++      }
++    } else {
++      // No current request for new capture format. Check to see if content_size
++      // has changed and requires an updated configuration.
++      if (content_size &&
++          (stream_config_content_size_.width() != content_size->width() ||
++           stream_config_content_size_.height() != content_size->height())) {
++        DVLOG(3) << "Content size changed to " << content_size->width() << " x "
++                 << content_size->height() << ". It was "
++                 << stream_config_content_size_.width() << " x "
++                 << stream_config_content_size_.height();
++        stream_config_content_size_ = content_size.value();
++        gfx::RectF dest_rect_in_frame;
++        gfx::Size new_frame_size;
++        ComputeFrameSizeAndDestRect(stream_config_content_size_, new_frame_size,
++                                    dest_rect_in_frame);
++        if (new_frame_size.width() !=
++                actual_capture_format_.frame_size.width() ||
++            new_frame_size.height() !=
++                actual_capture_format_.frame_size.height()) {
++          DVLOG(3) << "Calling updateConfiguration with new frame size: "
++                   << new_frame_size.width() << " x "
++                   << new_frame_size.height();
++          requested_capture_format_ = actual_capture_format_;
++          requested_capture_format_->frame_size = new_frame_size;
++          // Update stream configuration.
++          base::scoped_nsobject<SCStreamConfiguration> config =
++              [ScreenCaptureKitDeviceHelper
++                  createStreamConfigurationWithFrameSize:
++                      requested_capture_format_->frame_size
++                                         destRectInFrame:dest_rect_in_frame
++                                               frameRate:
++                                                   requested_capture_format_->
++                                                   frame_rate];
++          [stream_
++              updateConfiguration:config
++                completionHandler:^(NSError* _Nullable error) {
++                  if (error) {
++                    client()->OnError(
++                        media::VideoCaptureError::kScreenCaptureKitStreamError,
++                        FROM_HERE, "Error on updateConfiguration");
++                  }
++                }];
++        }
++      }
++    }
++    // TODO(https://crbug.com/1352405): Set visible rect to make it possible to
++    // crop the frame when it's rendered/encoded.
+     OnReceivedIOSurfaceFromStream(io_surface, actual_capture_format_);
+   }
+   void OnStreamError() {
+@@ -257,6 +363,13 @@ void OnStop() override {
+   // The actual format of the video frames that are sent to `client`.
+   media::VideoCaptureFormat actual_capture_format_;
+ 
++  // The requested format if a request to update the configuration has been
++  // sent.
++  absl::optional<media::VideoCaptureFormat> requested_capture_format_;
++
++  // The size of the content at the time that we configured the stream.
++  gfx::Size stream_config_content_size_;
++
+   // Helper class that acts as output and delegate for `stream_`.
+   base::scoped_nsobject<ScreenCaptureKitDeviceHelper> helper_;
+ 

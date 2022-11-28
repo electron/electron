@@ -120,3 +120,4 @@ fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
 preconnect_manager.patch
 fix_remove_caption-removing_style_call.patch
 build_allow_electron_to_use_exec_script.patch
+cherry-pick-7196a42b42ce.patch
