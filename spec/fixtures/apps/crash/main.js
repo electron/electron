@@ -54,6 +54,10 @@ app.whenReady().then(() => {
     const crashPath = path.join(__dirname, 'node-crash.js');
     const child = childProcess.fork(crashPath, { silent: true });
     child.on('exit', () => process.exit(0));
+  } else if (crashType === 'node-fork') {
+    const scriptPath = path.join(__dirname, 'fork.js');
+    const child = childProcess.fork(scriptPath, { silent: true });
+    child.on('exit', () => process.exit(0));
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
     process.exit(1);

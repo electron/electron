@@ -30,7 +30,7 @@ index 55ae5145e81a4719f33e052e00f606a577b0cf2e..0e9918602488482bfd07cb6232b5e9a8
    }
  
 diff --git a/components/crash/core/app/crashpad.h b/components/crash/core/app/crashpad.h
-index 813bbb4e3232c3e80a6f346535e3d16008316909..877d4804cc0f21dcf06075d8e31d51ad1c10504e 100644
+index 813bbb4e3232c3e80a6f346535e3d16008316909..239449dac5fca4638973877fada2cbee92e7dc1f 100644
 --- a/components/crash/core/app/crashpad.h
 +++ b/components/crash/core/app/crashpad.h
 @@ -271,7 +271,8 @@ bool PlatformCrashpadInitialization(
@@ -39,38 +39,10 @@ index 813bbb4e3232c3e80a6f346535e3d16008316909..877d4804cc0f21dcf06075d8e31d51ad
      const std::vector<std::string>& initial_arguments,
 -    base::FilePath* database_path);
 +    base::FilePath* database_path,
-+    bool node_process = false);
++    bool node_process);
  
  // Returns the current crash report database object, or null if it has not
  // been initialized yet.
-diff --git a/components/crash/core/app/crashpad_android.cc b/components/crash/core/app/crashpad_android.cc
-index bdd8bf6c027c2feced20f4258c8d229f8f133713..8cb3361aaf6cb958aa4b94d3688ff337c5a7427c 100644
---- a/components/crash/core/app/crashpad_android.cc
-+++ b/components/crash/core/app/crashpad_android.cc
-@@ -674,7 +674,8 @@ bool PlatformCrashpadInitialization(
-     const std::string& user_data_dir,
-     const base::FilePath& exe_path,
-     const std::vector<std::string>& initial_arguments,
--    base::FilePath* database_path) {
-+    base::FilePath* database_path,
-+    bool node_process) {
-   DCHECK_EQ(initial_client, browser_process);
-   DCHECK(initial_arguments.empty());
- 
-diff --git a/components/crash/core/app/crashpad_ios.mm b/components/crash/core/app/crashpad_ios.mm
-index 3401947aaf3b0768add474cba710c7cc634d922f..085b3ce83e7261205cd2561204ef16c84e015e65 100644
---- a/components/crash/core/app/crashpad_ios.mm
-+++ b/components/crash/core/app/crashpad_ios.mm
-@@ -157,7 +157,8 @@ bool PlatformCrashpadInitialization(
-     const std::string& user_data_dir,
-     const base::FilePath& exe_path,
-     const std::vector<std::string>& initial_arguments,
--    base::FilePath* database_path) {
-+    base::FilePath* database_path,
-+    bool node_process = false) {
-   DCHECK(!embedded_handler);     // This is not used on iOS.
-   DCHECK(exe_path.empty());      // This is not used on iOS.
-   DCHECK(initial_arguments.empty());
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
 index e55df93f17560a566e1dd2a63c560054edd772a5..97293a934f6c9a8034639cabbb20b35392c27a75 100644
 --- a/components/crash/core/app/crashpad_linux.cc

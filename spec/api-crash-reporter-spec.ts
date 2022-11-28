@@ -175,6 +175,15 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.rendererSpecific).to.be.undefined();
     });
 
+    ifit(!isLinuxOnArm)('when a node process inside a node process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('node-fork', port);
+      const crash = await waitForCrash();
+      checkCrash('node', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.rendererSpecific).to.be.undefined();
+    });
+
     describe('with guid', () => {
       for (const processType of ['main', 'renderer', 'sandboxed-renderer']) {
         it(`when ${processType} crashes`, async () => {
