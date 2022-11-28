@@ -123,7 +123,7 @@ int NodeMain(int argc, char* argv[]) {
   std::string fd_string, pid_string;
   if (os_env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string) &&
       os_env->GetVar("CRASHPAD_HANDLER_PID", &pid_string)) {
-    int fd, pid = -1;
+    int fd = -1, pid = -1;
     DCHECK(base::StringToInt(fd_string, &fd));
     DCHECK(base::StringToInt(pid_string, &pid));
     base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
@@ -172,7 +172,7 @@ int NodeMain(int argc, char* argv[]) {
     }
 
 #if BUILDFLAG(IS_LINUX)
-    // On Posix, initialize crashpad after Nodejs init phase so that
+    // On Linux, initialize crashpad after Nodejs init phase so that
     // crash and termination signal handlers can be set by the crashpad client.
     if (!pid_string.empty()) {
       auto* command_line = base::CommandLine::ForCurrentProcess();

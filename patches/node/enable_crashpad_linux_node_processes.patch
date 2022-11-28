@@ -8,7 +8,7 @@ to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
 by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..35a096dcff6f7072391bccd7952da7e8ea8980bb 100644
+index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..485f2236f8238e747d4422ad1b81648006a91028 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -59,6 +59,7 @@ let debug = require('internal/util/debuglog').debuglog(
@@ -27,13 +27,14 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..35a096dcff6f7072391bccd7952da7e8
    args = [...execArgv, modulePath, ...args];
  
    if (typeof options.stdio === 'string') {
-@@ -613,6 +613,21 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -613,6 +613,22 @@ function normalizeSpawnArguments(file, args, options) {
                      'options.windowsVerbatimArguments');
    }
  
 +  if (process.platform === 'linux') {
 +    if (ObjectPrototypeHasOwnProperty(options.env || {}, 'ELECTRON_RUN_AS_NODE') &&
 +        (file === process.execPath)) {
++      options.env = Object.create(options.env || process.env);
 +      // On Linux, pass the file descriptor which crashpad handler process
 +      // uses to monitor the child process and PID of the handler process.
 +      // https://source.chromium.org/chromium/chromium/src/+/110.0.5415.0:components/crash/core/app/crashpad_linux.cc;l=199-206
