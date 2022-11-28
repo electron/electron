@@ -27,17 +27,14 @@ app.whenReady().then(() => {
 
 __Platform Considerations__
 
-If you want to keep exact same behaviors on all platforms, you should not
-rely on the `click` event; instead, always attach a context menu to the tray icon.
-
 __Linux__
 
-* On Linux distributions that only have app indicator support, you have to
-  install `libappindicator1` to make the tray icon work.
-* The app indicator will be used if it is supported, otherwise
-  `GtkStatusIcon` will be used instead.
-* App indicator will only be shown when it has a context menu.
-* The `click` event is ignored when using the app indicator.
+* Tray icon requires support of [StatusNotifierItem](https://www.freedesktop.org/wiki/Specifications/StatusNotifierItem/)
+  in user's desktop environment.
+* The `click` event is emitted when the tray icon receives activation from
+  user, however the StatusNotifierItem spec does not specify which action would
+  cause an activation, for some environments it is left mouse click, but for
+  some it might be double left mouse click.
 * In order for changes made to individual `MenuItem`s to take effect,
   you have to call `setContextMenu` again. For example:
 
@@ -91,6 +88,9 @@ Returns:
 * `position` [Point](structures/point.md) - The position of the event.
 
 Emitted when the tray icon is clicked.
+
+Note that on Linux this event is emitted when the tray icon receives an
+activation, which might not necessarily be left mouse click.
 
 #### Event: 'right-click' _macOS_ _Windows_
 
