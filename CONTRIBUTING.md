@@ -14,11 +14,11 @@ propose changes to this document in a pull request.
 
 Issues are created [here](https://github.com/electron/electron/issues/new).
 
-* [How to Contribute in Issues](https://www.electronjs.org/docs/latest/development/issues#how-to-contribute-to-issues)
-* [Asking for General Help](https://www.electronjs.org/docs/latest/development/issues#asking-for-general-help)
-* [Submitting a Bug Report](https://www.electronjs.org/docs/latest/development/issues#submitting-a-bug-report)
-* [Triaging a Bug Report](https://www.electronjs.org/docs/latest/development/issues#triaging-a-bug-report)
-* [Resolving a Bug Report](https://www.electronjs.org/docs/latest/development/issues#resolving-a-bug-report)
+* [How to Contribute in Issues](https://electronjs.org/docs/latest/development/issues#how-to-contribute-to-issues)
+* [Asking for General Help](https://electronjs.org/docs/latest/development/issues#asking-for-general-help)
+* [Submitting a Bug Report](https://electronjs.org/docs/latest/development/issues#submitting-a-bug-report)
+* [Triaging a Bug Report](https://electronjs.org/docs/latest/development/issues#triaging-a-bug-report)
+* [Resolving a Bug Report](https://electronjs.org/docs/latest/development/issues#resolving-a-bug-report)
 
 ### Issue Closure
 
