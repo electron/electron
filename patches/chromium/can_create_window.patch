@@ -21,7 +21,7 @@ index d27e145d838ae5e79a0ab8f14ffb0f0c4fd03e50..b92b15094e4059105a80b3cd28685662
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 716fb5293e3251592e47b870ae3ececa1d54db0f..0bdd28302a4490bb3677570f309ca77e6a81f618 100644
+index 716fb5293e3251592e47b870ae3ececa1d54db0f..cdeb4470794ffe06d990d7bfd306f28715d63d38 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4033,6 +4033,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -29,9 +29,9 @@ index 716fb5293e3251592e47b870ae3ececa1d54db0f..0bdd28302a4490bb3677570f309ca77e
    auto* new_contents_impl = new_contents.get();
  
 +  if (delegate_) {
-+    delegate_->WebContentsCreated(this, render_process_id,
-+                                  opener->GetRoutingID(), params.frame_name,
-+                                  params.target_url, new_contents_impl);
++    delegate_->WebContentsCreatedWithFullParams(this, render_process_id,
++                                                opener->GetRoutingID(),
++                                                params, new_contents_impl);
 +  }
 +
    // If the new frame has a name, make sure any SiteInstances that can find
