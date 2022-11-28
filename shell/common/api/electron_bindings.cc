@@ -31,8 +31,7 @@
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 #if BUILDFLAG(IS_LINUX)
-#include "components/crash/core/app/crash_switches.h"  // nogncheck
-#include "components/crash/core/app/crashpad.h"        // nogncheck
+#include "components/crash/core/app/crashpad.h"  // nogncheck
 #endif
 
 namespace electron {
@@ -66,7 +65,8 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
                      base::BindRepeating(&ElectronBindings::GetCPUUsage,
                                          base::Unretained(metrics)));
 #if BUILDFLAG(IS_LINUX)
-  process->SetMethod("getFD", &GetFD);
+  process->SetMethod("getCrashdumpSignalFD", &GetCrashdumpSignalFD);
+  process->SetMethod("getCrashpadHandlerPID", &GetCrashpadHandlerPID);
 #endif
 
 #if IS_MAS_BUILD()
@@ -131,10 +131,14 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
 }
 
 #if BUILDFLAG(IS_LINUX)
-// Fetch a handler process file descriptor
-int ElectronBindings::GetFD() {
+int ElectronBindings::GetCrashdumpSignalFD() {
   int fd;
   return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
+}
+
+int ElectronBindings::GetCrashpadHandlerPID() {
+  int pid;
+  return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
 }
 #endif
 

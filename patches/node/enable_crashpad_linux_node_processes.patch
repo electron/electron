@@ -3,40 +3,57 @@ From: VerteDinde <keeleymhammond@gmail.com>
 Date: Sun, 20 Nov 2022 21:45:20 -0800
 Subject: fix: enable crashpad for ELECTRON_RUN_AS_NODE linux processes
 
-This patch is currently a WIP for debugging. The end purpose of this
-patch is to enable crashpad for node processes on Linux.
-
-If this patch is merged in its current state, something has gone
-horribly wrong.
+Passes the crashpad handler PID and crashdump signal file descriptor
+to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
+by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..54207d5e72cc64025321aaaa7a13bf849389cdca 100644
+index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..8e7bfecc149e9229ec42c704e48df33ef68d8b12 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
-@@ -159,7 +159,6 @@ function fork(modulePath, args = [], options) {
+@@ -142,6 +142,12 @@ function fork(modulePath, args = [], options) {
+   options.env = Object.create(options.env || process.env)
+   options.env.ELECTRON_RUN_AS_NODE = 1;
+ 
++  // On Linux, pass the file descriptor which crashpad server process
++  // uses to monitor the child process.
++  if (process.platform === 'linux') {
++    options.env.CRASHDUMP_SIGNAL_FD = process.getCrashdumpSignalFD();
++  }
++
+   if (!options.execPath && process.type && process.platform == 'darwin') {
+     options.execPath = process.helperExecPath;
+   }
+@@ -159,9 +165,15 @@ function fork(modulePath, args = [], options) {
        ArrayPrototypeSplice(execArgv, index - 1, 2);
      }
    }
 -
    args = [...execArgv, modulePath, ...args];
  
-   if (typeof options.stdio === 'string') {
-@@ -170,10 +169,17 @@ function fork(modulePath, args = [], options) {
-     options.stdio = stdioStringToArray(
-       options.silent ? 'pipe' : 'inherit',
-       'ipc');
++  // On Linux, pass the PID of the crashpad handler process to the child process
++  // which is needed by the crashpad client running in the child process.
++  // https://source.chromium.org/chromium/chromium/src/+/110.0.5415.0:components/crash/core/app/crashpad_linux.cc;l=199-206
++  if (process.platform === 'linux') {
++    ArrayPrototypePush(args, `--crashpad-handler-pid=${process.getCrashpadHandlerPID()}`);
++  }
 +
-+    // If using Linux, initialize child process with Crashpad
-+    if (process.platform === 'linux') {
-+      const fd = process.getFD();
-+      console.log('fd (in child_process): ', fd);
-+      options.stdio.push(fd);
-+    }
-   } else if (!ArrayPrototypeIncludes(options.stdio, 'ipc')) {
-     throw new ERR_CHILD_PROCESS_IPC_REQUIRED('options.stdio');
+   if (typeof options.stdio === 'string') {
+     options.stdio = stdioStringToArray(options.stdio, 'ipc');
+   } else if (!ArrayIsArray(options.stdio)) {
+diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
+index 6659f03e9aa45c35d355399597f533ad20232575..c1460d9f12607ecb26b602a15a516f013047f57d 100644
+--- a/lib/internal/process/pre_execution.js
++++ b/lib/internal/process/pre_execution.js
+@@ -59,6 +59,11 @@ function prepareMainThreadExecution(expandArgv1 = false,
+       setupCoverageHooks(process.env.NODE_V8_COVERAGE);
    }
--
-+  console.log('options: ', options);
-   return spawn(options.execPath, args, options);
- }
  
++  if (process.env.CRASHDUMP_SIGNAL_FD) {
++    // Make sure it's not accidentally inherited by child processes.
++    delete process.env.CRASHDUMP_SIGNAL_FD;
++  }
++
+   setupDebugEnv();
+ 
+   // Print stack trace on `SIGINT` if option `--trace-sigint` presents.

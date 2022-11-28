@@ -52,15 +52,7 @@ app.whenReady().then(() => {
     w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
     const crashPath = path.join(__dirname, 'node-crash.js');
-    let child;
-    if (process.platform === 'linux') {
-      child = childProcess.fork(crashPath,
-        [`--crashpadfd=${process.getFD()}`],
-        { silent: true }
-      );
-    } else {
-      child = childProcess.fork(crashPath, { silent: true });
-    };
+    const child = childProcess.fork(crashPath, { silent: true });
     child.on('exit', () => process.exit(0));
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);

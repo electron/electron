@@ -1,0 +1,86 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Mon, 28 Nov 2022 20:07:17 +0900
+Subject: chore: fix file decriptor extraction for node processes
+
+For node processes, extract the crashdump signal file decriptor From
+environment variable which is set by
+//electron/patches/node/enable_crashpad_linux_node_processes.patch,
+File decriptor is inherited by default via fork() performed by libuv.
+
+diff --git a/components/crash/core/app/crashpad.cc b/components/crash/core/app/crashpad.cc
+index 55ae5145e81a4719f33e052e00f606a577b0cf2e..0e9918602488482bfd07cb6232b5e9a8085fa65e 100644
+--- a/components/crash/core/app/crashpad.cc
++++ b/components/crash/core/app/crashpad.cc
+@@ -85,6 +85,7 @@ bool InitializeCrashpadImpl(bool initial_client,
+   initialized = true;
+ 
+   const bool browser_process = process_type.empty();
++  const bool node_process = (process_type == "node");
+ 
+   if (initial_client) {
+ #if BUILDFLAG(IS_APPLE)
+@@ -112,7 +113,7 @@ bool InitializeCrashpadImpl(bool initial_client,
+   base::FilePath database_path;
+   if (!internal::PlatformCrashpadInitialization(
+           initial_client, browser_process, embedded_handler, user_data_dir,
+-          exe_path, initial_arguments, &database_path)) {
++          exe_path, initial_arguments, &database_path, node_process)) {
+     return false;
+   }
+ 
+diff --git a/components/crash/core/app/crashpad.h b/components/crash/core/app/crashpad.h
+index 813bbb4e3232c3e80a6f346535e3d16008316909..877d4804cc0f21dcf06075d8e31d51ad1c10504e 100644
+--- a/components/crash/core/app/crashpad.h
++++ b/components/crash/core/app/crashpad.h
+@@ -271,7 +271,8 @@ bool PlatformCrashpadInitialization(
+     const std::string& user_data_dir,
+     const base::FilePath& exe_path,
+     const std::vector<std::string>& initial_arguments,
+-    base::FilePath* database_path);
++    base::FilePath* database_path,
++    bool node_process = false);
+ 
+ // Returns the current crash report database object, or null if it has not
+ // been initialized yet.
+diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
+index e55df93f17560a566e1dd2a63c560054edd772a5..97293a934f6c9a8034639cabbb20b35392c27a75 100644
+--- a/components/crash/core/app/crashpad_linux.cc
++++ b/components/crash/core/app/crashpad_linux.cc
+@@ -11,6 +11,7 @@
+ 
+ #include "base/base_switches.h"
+ #include "base/command_line.h"
++#include "base/environment.h"
+ #include "base/linux_util.h"
+ #include "base/logging.h"
+ #include "base/path_service.h"
+@@ -77,7 +78,8 @@ bool PlatformCrashpadInitialization(
+     const std::string& user_data_dir,
+     const base::FilePath& exe_path,
+     const std::vector<std::string>& initial_arguments,
+-    base::FilePath* database_path) {
++    base::FilePath* database_path,
++    bool node_process) {
+   DCHECK_EQ(initial_client, browser_process);
+   DCHECK(initial_arguments.empty());
+ 
+@@ -202,7 +204,17 @@ bool PlatformCrashpadInitialization(
+     CHECK(client.StartHandler(handler_path, *database_path, metrics_path, url,
+                               annotations, arguments, false, false));
+   } else {
+-    int fd = base::GlobalDescriptors::GetInstance()->Get(kCrashDumpSignal);
++    int fd;
++    if (node_process) {
++      auto env = base::Environment::Create();
++      std::string fd_string;
++      if (env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string)) {
++        bool parsed = base::StringToInt(fd_string, &fd);
++        DCHECK(parsed);
++      }
++    } else {
++      fd = base::GlobalDescriptors::GetInstance()->Get(kCrashDumpSignal);
++    }
+ 
+     pid_t pid = 0;
+     if (!sandbox::NamespaceSandbox::InNewUserNamespace()) {

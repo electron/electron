@@ -51,7 +51,10 @@ class ElectronBindings {
                           base::ProcessMetrics* metrics);
 
   static void Crash();
-  static int GetFD();
+#if BUILDFLAG(IS_LINUX)
+  static int GetCrashdumpSignalFD();
+  static int GetCrashpadHandlerPID();
+#endif
 
   static void DidReceiveMemoryDump(
       v8::Global<v8::Context> context,

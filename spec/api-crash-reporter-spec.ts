@@ -101,7 +101,7 @@ const startServer = async () => {
 };
 
 function runApp (appPath: string, args: Array<string> = []) {
-  const appProcess = childProcess.spawn(process.execPath, [appPath, ...args], { stdio: 'inherit' });
+  const appProcess = childProcess.spawn(process.execPath, [appPath, ...args]);
   return new Promise(resolve => {
     appProcess.once('exit', resolve);
   });
@@ -112,7 +112,6 @@ function runCrashApp (crashType: string, port: number, extraArgs: Array<string> 
   return runApp(appPath, [
     `--crash-type=${crashType}`,
     `--crash-reporter-url=http://127.0.0.1:${port}`,
-    '--enable-logging',
     ...extraArgs
   ]);
 }
@@ -167,8 +166,6 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.mainProcessSpecific).to.equal('mps');
     });
 
-    // TODO(deepak1556): Re-enable this test once
-    // https://github.com/electron/electron/issues/36030 is resolved.
     ifit(!isLinuxOnArm)('when a node process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('node', port);

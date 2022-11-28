@@ -40,14 +40,6 @@
 #include "shell/common/crash_keys.h"
 #endif
 
-#if BUILDFLAG(IS_POSIX)
-#include "base/posix/global_descriptors.h"
-#include "base/strings/string_number_conversions.h"
-#include "components/crash/core/app/crash_switches.h"
-#include "content/public/common/content_descriptors.h"
-#include "shell/common/options_switches.h"
-#endif
-
 namespace {
 
 // Initialize Node.js cli options to pass to Node.js
@@ -118,39 +110,7 @@ int NodeMain(int argc, char* argv[]) {
   v8_crashpad_support::SetUp();
 #endif
 
-#if BUILDFLAG(IS_LINUX)
-  // Map handler file descriptors to child ELECTRON_RUN_AS_NODE processes.
-  int fd_;
-  [[maybe_unused]] base::GlobalDescriptors* g_fds =
-      base::GlobalDescriptors::GetInstance();
-
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  base::StringToInt(
-      command_line->GetSwitchValueASCII(options::kCrashpadProcessFD), &fd_);
-  if (fd_) {
-    g_fds->Set(kCrashDumpSignal, fd_);
-  }
-
-  // Explicitly pass the Crashpad PID to the child process
-  pid_t pid;
-  crash_reporter::GetHandlerSocket(nullptr, &pid);
-  if (pid) {
-    std::string pid_ = base::NumberToString(pid);
-    command_line->AppendSwitchASCII(
-        crash_reporter::switches::kCrashpadHandlerPid, pid_);
-  }
-
-  // Only initialize crashpad if the handler socket is identified
-  if (fd_ && pid) {
-    ElectronCrashReporterClient::Create();
-    crash_reporter::InitializeCrashpad(false, "node");
-    crash_keys::SetCrashKeysFromCommandLine(
-        *base::CommandLine::ForCurrentProcess());
-    crash_keys::SetPlatformCrashKey();
-  }
-#endif  // BUILDFLAG(IS_LINUX)
-
-#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
+#if !IS_MAS_BUILD()
   ElectronCrashReporterClient::Create();
   crash_reporter::InitializeCrashpad(false, "node");
   crash_keys::SetCrashKeysFromCommandLine(
