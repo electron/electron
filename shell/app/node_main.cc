@@ -13,7 +13,6 @@
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
-#include "base/environment.h"
 #include "base/feature_list.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -194,14 +193,6 @@ int NodeMain(int argc, char* argv[]) {
 
       gin_helper::Dictionary process(isolate, env->process_object());
       process.SetMethod("crash", &ElectronBindings::Crash);
-#if BUILDFLAG(IS_LINUX)
-      // we don't want to pass the entire electron_bindings object here;
-      // just expose the methods we need for child processes.
-      process.SetMethod("getCrashdumpSignalFD",
-                        &ElectronBindings::GetCrashdumpSignalFD);
-      process.SetMethod("getCrashpadHandlerPID",
-                        &ElectronBindings::GetCrashpadHandlerPID);
-#endif
 
       // Setup process.crashReporter in child node processes
       gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
