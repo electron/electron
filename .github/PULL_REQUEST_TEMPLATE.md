@@ -1,4 +1,5 @@
 #### Description of Change
+
 <!--
 Thank you for your Pull Request. Please provide a description above and review
 the requirements below.
@@ -12,7 +13,7 @@ Contributors guide: https://github.com/electron/electron/blob/main/CONTRIBUTING.
 - [ ] PR description included and stakeholders cc'd
 - [ ] `npm test` passes
 - [ ] tests are [changed or added](https://github.com/electron/electron/blob/main/docs/development/testing.md)
-- [ ] relevant documentation is changed or added
+- [ ] relevant documentation, tutorials, templates and examples are changed or added
 - [ ] [PR release notes](https://github.com/electron/clerk/blob/master/README.md) describe the change in a way relevant to app developers, and are [capitalized, punctuated, and past tense](https://github.com/electron/clerk/blob/master/README.md#examples).
 
 #### Release Notes
