@@ -1,7 +1,7 @@
-From 7196a42b42ce13857777ccbefe9a53a54b1cf856 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Johannes Kron <kron@chromium.org>
 Date: Thu, 17 Nov 2022 19:54:33 +0000
-Subject: [PATCH] Reconfigure stream on window resize when using ScreenCaptureKit
+Subject: Reconfigure stream on window resize when using ScreenCaptureKit
 
 Bug: chromium:1352405
 Change-Id: I315104eb4ee985a2d04ea90f01341129c6307501
@@ -10,10 +10,9 @@ Reviewed-by: ccameron chromium <ccameron@chromium.org>
 Reviewed-by: Robert Sesek <rsesek@chromium.org>
 Commit-Queue: Johannes Kron <kron@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1072984}
----
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index eeb2d94..a79afc2 100644
+index c17f6f076fc852df85d5deb919434458b886db37..5d640a372f1649e0e2cb7e1828dbb3c66eb1e4d7 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -6,15 +6,18 @@
@@ -36,7 +35,7 @@ index eeb2d94..a79afc2 100644
  using ErrorCallback = base::RepeatingClosure;
  
  API_AVAILABLE(macos(12.3))
-@@ -45,17 +48,64 @@
+@@ -45,17 +48,64 @@ - (void)stream:(SCStream*)stream
    CVPixelBufferRef pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
    if (!pixelBuffer)
      return;
@@ -102,7 +101,7 @@ index eeb2d94..a79afc2 100644
  @end
  
  namespace content {
-@@ -95,7 +145,6 @@
+@@ -95,7 +145,6 @@ void OnShareableContentCreated(
      }
  
      base::scoped_nsobject<SCContentFilter> filter;
@@ -110,7 +109,7 @@ index eeb2d94..a79afc2 100644
      switch (source_.type) {
        case DesktopMediaID::TYPE_SCREEN:
          for (SCDisplay* display : [content displays]) {
-@@ -104,7 +153,8 @@
+@@ -112,7 +161,8 @@ void OnShareableContentCreated(
              filter.reset([[SCContentFilter alloc]
                   initWithDisplay:display
                  excludingWindows:exclude_windows]);
@@ -120,7 +119,7 @@ index eeb2d94..a79afc2 100644
              break;
            }
          }
-@@ -115,7 +165,7 @@
+@@ -123,7 +173,7 @@ void OnShareableContentCreated(
              filter.reset([[SCContentFilter alloc]
                  initWithDesktopIndependentWindow:window]);
              CGRect frame = [window frame];
@@ -129,7 +128,7 @@ index eeb2d94..a79afc2 100644
              break;
            }
          }
-@@ -134,22 +184,16 @@
+@@ -142,22 +192,16 @@ void OnShareableContentCreated(
      gfx::RectF dest_rect_in_frame;
      actual_capture_format_ = capture_params().requested_format;
      actual_capture_format_.pixel_format = media::PIXEL_FORMAT_NV12;
@@ -161,7 +160,7 @@ index eeb2d94..a79afc2 100644
      stream_.reset([[SCStream alloc] initWithFilter:filter
                                       configuration:config
                                            delegate:helper_]);
-@@ -195,9 +239,71 @@
+@@ -203,9 +247,71 @@ void OnStreamStopped(bool error) {
        return;
      }
    }
@@ -236,7 +235,7 @@ index eeb2d94..a79afc2 100644
      OnReceivedIOSurfaceFromStream(io_surface, actual_capture_format_);
    }
    void OnStreamError() {
-@@ -249,6 +355,13 @@
+@@ -257,6 +363,13 @@ void OnStop() override {
    // The actual format of the video frames that are sent to `client`.
    media::VideoCaptureFormat actual_capture_format_;
  
