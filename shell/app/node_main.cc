@@ -127,27 +127,11 @@ int NodeMain(int argc, char* argv[]) {
     DCHECK(base::StringToInt(fd_string, &fd));
     DCHECK(base::StringToInt(pid_string, &pid));
     base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
-    auto* command_line = base::CommandLine::ForCurrentProcess();
-    command_line->AppendSwitchASCII(
-        crash_reporter::switches::kCrashpadHandlerPid, pid_string);
-    ElectronCrashReporterClient::Create();
-    crash_reporter::InitializeCrashpad(false, "node");
-    crash_keys::SetCrashKeysFromCommandLine(
-        *base::CommandLine::ForCurrentProcess());
-    crash_keys::SetPlatformCrashKey();
-    // Ensure the flags and env variable does not propagate to userland.
-    command_line->RemoveSwitch(crash_reporter::switches::kCrashpadHandlerPid);
     // Following API is unsafe in multi-threaded scenario, but at this point
     // we are still single threaded.
     os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
     os_env->UnSetVar("CRASHPAD_HANDLER_PID");
   }
-#elif BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
-  ElectronCrashReporterClient::Create();
-  crash_reporter::InitializeCrashpad(false, "node");
-  crash_keys::SetCrashKeysFromCommandLine(
-      *base::CommandLine::ForCurrentProcess());
-  crash_keys::SetPlatformCrashKey();
 #endif
 
   int exit_code = 1;
@@ -178,7 +162,6 @@ int NodeMain(int argc, char* argv[]) {
         node::InitializeOncePerProcess(
             args,
             {node::ProcessInitializationFlags::kNoInitializeV8,
-             node::ProcessInitializationFlags::kNoDefaultSignalHandling,
              node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
 
     for (const std::string& error : result->errors())
@@ -187,6 +170,29 @@ int NodeMain(int argc, char* argv[]) {
     if (result->early_return() != 0) {
       return result->exit_code();
     }
+
+#if BUILDFLAG(IS_LINUX)
+    // On Posix, initialize crashpad after Nodejs init phase so that
+    // crash and termination signal handlers can be set by the crashpad client.
+    if (!pid_string.empty()) {
+      auto* command_line = base::CommandLine::ForCurrentProcess();
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid, pid_string);
+      ElectronCrashReporterClient::Create();
+      crash_reporter::InitializeCrashpad(false, "node");
+      crash_keys::SetCrashKeysFromCommandLine(
+          *base::CommandLine::ForCurrentProcess());
+      crash_keys::SetPlatformCrashKey();
+      // Ensure the flags and env variable does not propagate to userland.
+      command_line->RemoveSwitch(crash_reporter::switches::kCrashpadHandlerPid);
+    }
+#elif BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
+    ElectronCrashReporterClient::Create();
+    crash_reporter::InitializeCrashpad(false, "node");
+    crash_keys::SetCrashKeysFromCommandLine(
+        *base::CommandLine::ForCurrentProcess());
+    crash_keys::SetPlatformCrashKey();
+#endif
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8SnapshotFileType::kWithAdditionalContext);
