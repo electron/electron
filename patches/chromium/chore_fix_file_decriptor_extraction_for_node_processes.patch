@@ -43,6 +43,34 @@ index 813bbb4e3232c3e80a6f346535e3d16008316909..877d4804cc0f21dcf06075d8e31d51ad
  
  // Returns the current crash report database object, or null if it has not
  // been initialized yet.
+diff --git a/components/crash/core/app/crashpad_android.cc b/components/crash/core/app/crashpad_android.cc
+index bdd8bf6c027c2feced20f4258c8d229f8f133713..8cb3361aaf6cb958aa4b94d3688ff337c5a7427c 100644
+--- a/components/crash/core/app/crashpad_android.cc
++++ b/components/crash/core/app/crashpad_android.cc
+@@ -674,7 +674,8 @@ bool PlatformCrashpadInitialization(
+     const std::string& user_data_dir,
+     const base::FilePath& exe_path,
+     const std::vector<std::string>& initial_arguments,
+-    base::FilePath* database_path) {
++    base::FilePath* database_path,
++    bool node_process) {
+   DCHECK_EQ(initial_client, browser_process);
+   DCHECK(initial_arguments.empty());
+ 
+diff --git a/components/crash/core/app/crashpad_ios.mm b/components/crash/core/app/crashpad_ios.mm
+index 3401947aaf3b0768add474cba710c7cc634d922f..085b3ce83e7261205cd2561204ef16c84e015e65 100644
+--- a/components/crash/core/app/crashpad_ios.mm
++++ b/components/crash/core/app/crashpad_ios.mm
+@@ -157,7 +157,8 @@ bool PlatformCrashpadInitialization(
+     const std::string& user_data_dir,
+     const base::FilePath& exe_path,
+     const std::vector<std::string>& initial_arguments,
+-    base::FilePath* database_path) {
++    base::FilePath* database_path,
++    bool node_process = false) {
+   DCHECK(!embedded_handler);     // This is not used on iOS.
+   DCHECK(exe_path.empty());      // This is not used on iOS.
+   DCHECK(initial_arguments.empty());
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
 index e55df93f17560a566e1dd2a63c560054edd772a5..97293a934f6c9a8034639cabbb20b35392c27a75 100644
 --- a/components/crash/core/app/crashpad_linux.cc
@@ -84,3 +112,31 @@ index e55df93f17560a566e1dd2a63c560054edd772a5..97293a934f6c9a8034639cabbb20b353
  
      pid_t pid = 0;
      if (!sandbox::NamespaceSandbox::InNewUserNamespace()) {
+diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
+index 46935fcbf84cf1472214904cf96b03aa0e57be8f..b62da307431bebcd52d49d5bd720089860085575 100644
+--- a/components/crash/core/app/crashpad_mac.mm
++++ b/components/crash/core/app/crashpad_mac.mm
+@@ -135,7 +135,8 @@ bool PlatformCrashpadInitialization(
+     const std::string& user_data_dir,
+     const base::FilePath& exe_path,
+     const std::vector<std::string>& initial_arguments,
+-    base::FilePath* database_path) {
++    base::FilePath* database_path,
++    bool node_process) {
+   base::FilePath metrics_path;  // Only valid in the browser process.
+   DCHECK(!embedded_handler);  // This is not used on Mac.
+   DCHECK(exe_path.empty());   // This is not used on Mac.
+diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
+index 11ae602ccc58cb2728911b28d6637079d2dcb359..c38d79f44d5eef438d521e6c0528a31a2e38b4e8 100644
+--- a/components/crash/core/app/crashpad_win.cc
++++ b/components/crash/core/app/crashpad_win.cc
+@@ -67,7 +67,8 @@ bool PlatformCrashpadInitialization(
+     const std::string& user_data_dir,
+     const base::FilePath& exe_path,
+     const std::vector<std::string>& initial_arguments,
+-    base::FilePath* database_path) {
++    base::FilePath* database_path,
++    bool node_process) {
+   base::FilePath metrics_path;  // Only valid in the browser process.
+ 
+   const char kPipeNameVar[] = "CHROME_CRASHPAD_PIPE_NAME";
