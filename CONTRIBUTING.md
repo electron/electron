@@ -67,4 +67,4 @@ See [Coding Style](https://electronjs.org/docs/latest/development/coding-style) 
 ## Further Reading
 
 For more in-depth guides on developing Electron, see
-[/docs/latest/development](/docs/latest/development/README.md)
+[/docs/development](/docs/development/README.md)
