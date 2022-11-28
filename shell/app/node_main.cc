@@ -198,7 +198,7 @@ int NodeMain(int argc, char* argv[]) {
 
 #if BUILDFLAG(IS_LINUX)
     // Hack around with the argv pointer. Used for process.title = "blah".
-    argv = uv_setup_args(new_argc, new_argv);
+    new_argv = uv_setup_args(new_argc, new_argv);
 
     std::vector<std::string> args(new_argv, new_argv + new_argc);
 #else
