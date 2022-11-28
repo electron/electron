@@ -55,7 +55,7 @@ app.whenReady().then(() => {
     let child;
     if (process.platform === 'linux') {
       child = childProcess.fork(crashPath,
-        [`--crashpadfd=${process.getFD()}`, `--crashpad-handler-pid=${process.getPID()}`],
+        [`--crashpadfd=${process.getFD()}`],
         { silent: true }
       );
     } else {

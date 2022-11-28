@@ -67,7 +67,6 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
                                          base::Unretained(metrics)));
 #if BUILDFLAG(IS_LINUX)
   process->SetMethod("getFD", &GetFD);
-  process->SetMethod("getPID", &GetPID);
 #endif
 
 #if IS_MAS_BUILD()
@@ -136,12 +135,6 @@ void ElectronBindings::OnCallNextTick(uv_async_t* handle) {
 int ElectronBindings::GetFD() {
   int fd;
   return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
-}
-
-// Fetch a handler process pid
-int ElectronBindings::GetPID() {
-  pid_t pid;
-  return crash_reporter::GetHandlerSocket(nullptr, &pid) ? pid : -1;
 }
 #endif
 

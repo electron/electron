@@ -51,9 +51,7 @@ class ElectronBindings {
                           base::ProcessMetrics* metrics);
 
   static void Crash();
-
   static int GetFD();
-  static int GetPID();
 
   static void DidReceiveMemoryDump(
       v8::Global<v8::Context> context,
