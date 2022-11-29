@@ -10,7 +10,7 @@ The following is a set of guidelines for contributing to Electron.
 These are just guidelines, not rules, use your best judgment and feel free to
 propose changes to this document in a pull request.
 
-## [Issues](https://electronjs.org/docs/latest/latest/development/issues)
+## [Issues](https://electronjs.org/docs/latest/development/issues)
 
 Issues are created [here](https://github.com/electron/electron/issues/new).
 
