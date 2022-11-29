@@ -530,6 +530,7 @@ filenames = {
     "shell/browser/window_list_observer.h",
     "shell/browser/zoom_level_delegate.cc",
     "shell/browser/zoom_level_delegate.h",
+    "shell/common/api/crashpad_support.cc",
     "shell/common/api/electron_api_asar.cc",
     "shell/common/api/electron_api_clipboard.cc",
     "shell/common/api/electron_api_clipboard.h",
