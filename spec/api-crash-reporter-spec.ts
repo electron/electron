@@ -166,15 +166,40 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.mainProcessSpecific).to.equal('mps');
     });
 
-    // TODO(deepak1556): Re-enable this test once
-    // https://github.com/electron/electron/issues/36030 is resolved.
-    ifit(process.platform !== 'linux')('when a node process crashes', async () => {
+    ifit(!isLinuxOnArm)('when a node process crashes', async () => {
       const { port, waitForCrash } = await startServer();
       runCrashApp('node', port);
       const crash = await waitForCrash();
       checkCrash('node', crash);
       expect(crash.mainProcessSpecific).to.be.undefined();
       expect(crash.rendererSpecific).to.be.undefined();
+    });
+
+    ifit(!isLinuxOnArm)('when a node process inside a node process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('node-fork', port);
+      const crash = await waitForCrash();
+      checkCrash('node', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.rendererSpecific).to.be.undefined();
+    });
+
+    // Ensures that passing in crashpadHandlerPID flag for Linx child processes
+    // does not affect child proocess args.
+    ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
+      const { port, waitForCrash } = await startServer();
+      let exitCode: number | null = null;
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+      const crashType = 'node-extra-args';
+      const crashProcess = childProcess.spawn(process.execPath, [appPath,
+        `--crash-type=${crashType}`,
+        `--crash-reporter-url=http://127.0.0.1:${port}`
+      ], { stdio: 'inherit' });
+      crashProcess.once('close', (code) => {
+        exitCode = code;
+      });
+      await waitForCrash();
+      expect(exitCode).to.equal(0);
     });
 
     describe('with guid', () => {
