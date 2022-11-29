@@ -23,7 +23,7 @@ bool StringToAccelerator(const std::string& shortcut,
   if (!base::IsStringASCII(shortcut)) {
     LOG(ERROR) << "The accelerator string can only contain ASCII characters, "
                   "invalid string: "
-               << shortcut;
+               << "\"" << shortcut << "\"";
     return false;
   }
 
