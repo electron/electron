@@ -184,13 +184,22 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.rendererSpecific).to.be.undefined();
     });
 
-    ifit(!isLinuxOnArm)('ensure child process args are not modified', async () => {
+    // Ensures that passing in crashpadHandlerPID flag for Linx child processes
+    // does not affect child proocess args.
+    ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
       const { port, waitForCrash } = await startServer();
-      runCrashApp('node-extra-args', port);
-      const crash = await waitForCrash();
-      checkCrash('node', crash);
-      expect(crash.mainProcessSpecific).to.be.undefined();
-      expect(crash.rendererSpecific).to.be.undefined();
+      let exitCode: number | null = null;
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+      const crashType = 'node-extra-args';
+      const crashProcess = childProcess.spawn(process.execPath, [appPath,
+        `--crash-type=${crashType}`,
+        `--crash-reporter-url=http://127.0.0.1:${port}`
+      ], { stdio: 'inherit' });
+      crashProcess.once('close', (code) => {
+        exitCode = code;
+      });
+      await waitForCrash();
+      expect(exitCode).to.equal(0);
     });
 
     describe('with guid', () => {

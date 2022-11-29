@@ -8,7 +8,7 @@ to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
 by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..a77e75c0893378021c9289185e6dd9facc064e39 100644
+index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624b7d7e2a0 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
 @@ -59,6 +59,7 @@ let debug = require('internal/util/debuglog').debuglog(
@@ -27,23 +27,7 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..a77e75c0893378021c9289185e6dd9fa
    args = [...execArgv, modulePath, ...args];
  
    if (typeof options.stdio === 'string') {
-@@ -561,10 +561,12 @@ function normalizeSpawnArguments(file, args, options) {
-     args = [];
-   }
- 
--  if (options === undefined)
--    options = kEmptyObject;
--  else
-+  if (options === undefined) {
-+    options = Object.create(null);
-+    options.env = Object.create(null);
-+  } else {
-     validateObject(options, 'options');
-+  }
- 
-   let cwd = options.cwd;
- 
-@@ -613,6 +615,21 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -613,6 +613,21 @@ function normalizeSpawnArguments(file, args, options) {
                      'options.windowsVerbatimArguments');
    }
  

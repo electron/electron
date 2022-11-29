@@ -59,9 +59,14 @@ app.whenReady().then(() => {
     const child = childProcess.fork(scriptPath, { silent: true });
     child.on('exit', () => process.exit(0));
   } else if (crashType === 'node-extra-args') {
+    let exitcode = -1;
     const crashPath = path.join(__dirname, 'node-extra-args.js');
     const child = childProcess.fork(crashPath, ['--enable-logging'], { silent: true });
-    child.on('exit', () => process.exit(0));
+    child.send('message');
+    child.on('message', (forkedArgs) => {
+      if (JSON.stringify(forkedArgs) !== JSON.stringify(child.spawnargs)) { exitcode = 1; } else { exitcode = 0; }
+      process.exit(exitcode);
+    });
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
     process.exit(1);

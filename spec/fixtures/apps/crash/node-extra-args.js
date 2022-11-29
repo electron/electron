@@ -1,10 +1,9 @@
 const path = require('path');
 const childProcess = require('child_process');
-const argv = process.argv;
-let exitCode = 0;
-if (argv.length !== 3) {
-  exitCode = 1;
-}
-const crashPath = path.join(__dirname, 'node-crash.js');
-const child = childProcess.fork(crashPath, { silent: true });
-child.on('exit', () => process.exit(exitCode));
+
+process.on('message', function () {
+  process.send(process.argv);
+});
+
+// Allow time to send args, then crash the app.
+setTimeout(() => process.nextTick(() => process.crash()), 10000);
