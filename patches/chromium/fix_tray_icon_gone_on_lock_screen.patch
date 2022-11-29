@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Tue, 15 Nov 2022 09:38:25 +0900
+Subject: Re-register status item when owner of status watcher is changed
+
+https://chromium-review.googlesource.com/c/chromium/src/+/4022621
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index f3c9dfa9ca33496a9c45cd0c780d3d629aeb4663..387b59a1015b51690810b90a4ac65df862b337f3 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -381,6 +381,13 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
+     return;
+   }
+ 
++  watcher_->SetNameOwnerChangedCallback(
++      base::BindRepeating(&StatusIconLinuxDbus::NameOwnerChangedReceived,
++                          weak_factory_.GetWeakPtr()));
++  RegisterStatusNotifierItem();
++}
++
++void StatusIconLinuxDbus::RegisterStatusNotifierItem() {
+   dbus::MethodCall method_call(kInterfaceStatusNotifierWatcher,
+                                kMethodRegisterStatusNotifierItem);
+   dbus::MessageWriter writer(&method_call);
+@@ -396,6 +403,14 @@ void StatusIconLinuxDbus::OnRegistered(dbus::Response* response) {
+     delegate_->OnImplInitializationFailed();
+ }
+ 
++void StatusIconLinuxDbus::NameOwnerChangedReceived(
++    const std::string& old_owner,
++    const std::string& new_owner) {
++  // Re-register the item when the StatusNotifierWatcher has a new owner.
++  if (!new_owner.empty())
++    RegisterStatusNotifierItem();
++}
++
+ void StatusIconLinuxDbus::OnActivate(
+     dbus::MethodCall* method_call,
+     dbus::ExportedObject::ResponseSender sender) {
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+index e7628de42f980fa3535cab9dfffd0deab30f8812..eae1c332a0972aefb8843cac947aeb2f4c48d360 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+@@ -74,10 +74,16 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+                   const std::string& method_name,
+                   bool success);
+   void OnInitialized(bool success);
++  void RegisterStatusNotifierItem();
+ 
+   // Step 5: register the StatusNotifierItem with the StatusNotifierWatcher.
+   void OnRegistered(dbus::Response* response);
+ 
++  // Called when the name owner of StatusNotifierWatcher has changed, which
++  // can happen when lock/unlock screen.
++  void NameOwnerChangedReceived(const std::string& old_owner,
++                                const std::string& new_owner);
++
+   // DBus methods.
+   // Action       -> KDE behavior:
+   // Left-click   -> Activate
