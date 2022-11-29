@@ -11,6 +11,8 @@
 #include "shell/browser/ui/tray_icon.h"
 #include "ui/linux/status_icon_linux.h"
 
+class StatusIconLinuxDbus;
+
 namespace electron {
 
 class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
@@ -34,10 +36,17 @@ class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
   void OnImplInitializationFailed() override;
 
  private:
-  std::unique_ptr<ui::StatusIconLinux> icon_;
+  enum StatusIconType {
+    kTypeDbus,
+    kTypeNone,
+  };
+
+  scoped_refptr<StatusIconLinuxDbus> status_icon_;
+  StatusIconType status_icon_type_;
+
   gfx::ImageSkia image_;
   std::u16string tool_tip_;
-  ui::MenuModel* menu_model_;
+  raw_ptr<ui::MenuModel> menu_model_ = nullptr;
 };
 
 }  // namespace electron
