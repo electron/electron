@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Sun, 20 Nov 2022 21:45:20 -0800
+Subject: fix: enable crashpad for ELECTRON_RUN_AS_NODE linux processes
+
+Passes the crashpad handler PID and crashdump signal file descriptor
+to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
+by the crashpad client to connect with the handler process.
+
+diff --git a/lib/child_process.js b/lib/child_process.js
+index 2a91c4820bebf55068c4d54a2e1133176de77a6d..a9eb36881acb8eba50f05758995ebe327de86a2d 100644
+--- a/lib/child_process.js
++++ b/lib/child_process.js
+@@ -58,6 +58,7 @@ let debug = require('internal/util/debuglog').debuglog(
+ );
+ const { Buffer } = require('buffer');
+ const { Pipe, constants: PipeConstants } = internalBinding('pipe_wrap');
++const { getCrashdumpSignalFD, getCrashpadHandlerPID } = process._linkedBinding('electron_common_crashpad_support');
+ 
+ const {
+   AbortError,
+@@ -146,7 +147,6 @@ function fork(modulePath, args = [], options) {
+       ArrayPrototypeSplice(execArgv, index - 1, 2);
+     }
+   }
+-
+   args = [...execArgv, modulePath, ...args];
+ 
+   if (typeof options.stdio === 'string') {
+@@ -592,6 +592,21 @@ function normalizeSpawnArguments(file, args, options) {
+                     'options.windowsVerbatimArguments');
+   }
+ 
++  if (process.platform === 'linux') {
++    if (ObjectPrototypeHasOwnProperty(options.env || process.env, 'ELECTRON_RUN_AS_NODE') &&
++        (file === process.execPath)) {
++      // On Linux, pass the file descriptor which crashpad handler process
++      // uses to monitor the child process and PID of the handler process.
++      // https://source.chromium.org/chromium/chromium/src/+/110.0.5415.0:components/crash/core/app/crashpad_linux.cc;l=199-206
++      const fd = getCrashdumpSignalFD();
++      const pid = getCrashpadHandlerPID();
++      if (fd !== -1 && pid !== -1) {
++        options.env.CRASHDUMP_SIGNAL_FD = fd;
++        options.env.CRASHPAD_HANDLER_PID = pid;
++      }
++    }
++  }
++
+   if (options.shell) {
+     const command = ArrayPrototypeJoin([file, ...args], ' ');
+     // Set the shell, switches, and commands.
