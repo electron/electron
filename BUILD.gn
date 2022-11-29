@@ -631,16 +631,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/certificate_manager_model.cc",
       "shell/browser/certificate_manager_model.h",
-      "shell/browser/ui/gtk/app_indicator_icon.cc",
-      "shell/browser/ui/gtk/app_indicator_icon.h",
-      "shell/browser/ui/gtk/app_indicator_icon_menu.cc",
-      "shell/browser/ui/gtk/app_indicator_icon_menu.h",
-      "shell/browser/ui/gtk/gtk_status_icon.cc",
-      "shell/browser/ui/gtk/gtk_status_icon.h",
       "shell/browser/ui/gtk/menu_util.cc",
       "shell/browser/ui/gtk/menu_util.h",
-      "shell/browser/ui/gtk/status_icon.cc",
-      "shell/browser/ui/gtk/status_icon.h",
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",
     ]

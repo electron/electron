@@ -121,3 +121,4 @@ preconnect_manager.patch
 fix_remove_caption-removing_style_call.patch
 build_allow_electron_to_use_exec_script.patch
 cherry-pick-7196a42b42ce.patch
+fix_tray_icon_gone_on_lock_screen.patch
