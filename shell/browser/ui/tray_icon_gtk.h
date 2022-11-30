@@ -36,9 +36,9 @@ class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
   void OnImplInitializationFailed() override;
 
  private:
-  enum StatusIconType {
-    kTypeDbus,
-    kTypeNone,
+  enum class StatusIconType {
+    kDbus,
+    kNone,
   };
 
   scoped_refptr<StatusIconLinuxDbus> status_icon_;
