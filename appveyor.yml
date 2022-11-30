@@ -49,6 +49,11 @@ clone_folder: C:\projects\src\electron
 matrix:
   fast_finish: true
 
+# Skip build for docs-only changes
+skip_commits:
+  files:
+    - docs/*
+
 for:
 
   - matrix:
@@ -62,13 +67,7 @@ for:
           }
 
     build_script:
-      - ps: |
-          node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-          if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-          }
-          $global:LASTEXITCODE = 0
+      - ps: node script/yarn.js install --frozen-lockfile
       - cd ..
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
@@ -218,13 +217,7 @@ for:
             Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
           }
     build_script:
-      - ps: |
-          node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
-          if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
-          }
-          $global:LASTEXITCODE = 0
+      - ps: node script/yarn.js install --frozen-lockfile
       - cd ..
       - mkdir out\Default
       - cd ..
