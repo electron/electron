@@ -672,8 +672,6 @@ filenames = {
     "shell/renderer/electron_render_frame_observer.h",
     "shell/renderer/electron_renderer_client.cc",
     "shell/renderer/electron_renderer_client.h",
-    "shell/renderer/electron_renderer_pepper_host_factory.cc",
-    "shell/renderer/electron_renderer_pepper_host_factory.h",
     "shell/renderer/electron_sandboxed_renderer_client.cc",
     "shell/renderer/electron_sandboxed_renderer_client.h",
     "shell/renderer/guest_view_container.cc",

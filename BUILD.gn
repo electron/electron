@@ -658,6 +658,8 @@ source_set("electron_lib") {
       "//ppapi/shared_impl",
     ]
     sources += [
+      "shell/renderer/electron_renderer_pepper_host_factory.cc",
+      "shell/renderer/electron_renderer_pepper_host_factory.h",
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",
     ]
