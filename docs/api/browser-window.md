@@ -1569,7 +1569,7 @@ convey some sort of application status or to passively notify the user.
 
 Invalidates the window shadow so that it is recomputed based on the current window shape.
 
-`BrowserWindows` that are transparent and frameless can sometimes leave behind visual artifacts on macOS.
+`BrowserWindows` that are transparent can sometimes leave behind visual artifacts on macOS.
 This method can be used to clear these artifacts when, for example, performing an animation.
 
 #### `win.setHasShadow(hasShadow)`
