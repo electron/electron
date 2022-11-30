@@ -131,6 +131,7 @@
   "parallel/test-webcrypto-keygen",
   "parallel/test-webcrypto-sign-verify-eddsa",
   "parallel/test-worker-debug",
+  "parallel/test-worker-init-failure",
   "parallel/test-worker-stdio",
   "parallel/test-v8-serialize-leak",
   "parallel/test-zlib-unused-weak",
