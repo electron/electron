@@ -55,8 +55,7 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
       }
       if (!internal.elementAttached) {
         hooks.guestViewInternal.registerEvents(internal.viewInstanceId, {
-          dispatchEvent: internal.dispatchEvent.bind(internal),
-          reset: internal.reset.bind(internal)
+          dispatchEvent: internal.dispatchEvent.bind(internal)
         });
         internal.elementAttached = true;
         (internal.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC) as SrcAttribute).parse();

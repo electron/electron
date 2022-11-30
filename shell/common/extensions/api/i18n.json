@@ -93,7 +93,7 @@
               {
                 "type": "object",
                 "name": "result",
-                "description": "LanguageDetectionResult object that holds detected langugae reliability and array of DetectedLanguage",
+                "description": "LanguageDetectionResult object that holds detected language reliability and array of DetectedLanguage",
                 "properties": {
                   "isReliable": { "type": "boolean", "description": "CLD detected language reliability" },
                   "languages":

@@ -25,13 +25,18 @@ extern const char kValidCertificateDescription[];
 extern const char kSecureProtocol[];
 extern const char kSecureProtocolDescription[];
 
+// Keys for Device APIs
+extern const char kDeviceVendorIdKey[];
+extern const char kDeviceProductIdKey[];
+extern const char kDeviceSerialNumberKey[];
+
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 extern const char kRunAsNode[];
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-// The MIME type used for the PDF plugin.
-extern const char kPdfPluginMimeType[];
+extern const char kPDFExtensionPluginName[];
+extern const char kPDFInternalPluginName[];
 extern const base::FilePath::CharType kPdfPluginPath[];
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 

@@ -18,9 +18,7 @@
 
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -88,8 +86,11 @@ class DataPipeReader {
     if (result == MOJO_RESULT_OK) {  // success
       remaining_size_ -= length;
       head_ += length;
-      if (remaining_size_ == 0)
+      if (remaining_size_ == 0) {
         OnSuccess();
+      } else {
+        handle_watcher_.ArmOrNotify();
+      }
     } else if (result == MOJO_RESULT_SHOULD_WAIT) {  // IO pending
       handle_watcher_.ArmOrNotify();
     } else {  // error
@@ -103,26 +104,18 @@ class DataPipeReader {
   }
 
   void OnSuccess() {
-    // Pass the buffer to JS.
-    //
-    // Note that the lifetime of the native buffer belongs to us, and we will
-    // free memory when JS buffer gets garbage collected.
-    v8::Locker locker(promise_.isolate());
+    // Copy the buffer to JS.
+    // TODO(nornagon): make this zero-copy by allocating the array buffer
+    // inside the sandbox
     v8::HandleScope handle_scope(promise_.isolate());
     v8::Local<v8::Value> buffer =
-        node::Buffer::New(promise_.isolate(), &buffer_.front(), buffer_.size(),
-                          &DataPipeReader::FreeBuffer, this)
+        node::Buffer::Copy(promise_.isolate(), &buffer_.front(), buffer_.size())
             .ToLocalChecked();
     promise_.Resolve(buffer);
 
     // Destroy data pipe.
     handle_watcher_.Cancel();
-    data_pipe_.reset();
-    data_pipe_getter_.reset();
-  }
-
-  static void FreeBuffer(char* data, void* self) {
-    delete static_cast<DataPipeReader*>(self);
+    delete this;
   }
 
   gin_helper::Promise<v8::Local<v8::Value>> promise_;
@@ -189,6 +182,4 @@ gin::Handle<DataPipeHolder> DataPipeHolder::From(v8::Isolate* isolate,
   return gin::Handle<DataPipeHolder>();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

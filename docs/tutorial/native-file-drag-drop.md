@@ -22,7 +22,6 @@ In `preload.js` use the [`contextBridge`] to inject a method `window.electron.st
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
-const path = require('path')
 
 contextBridge.exposeInMainWorld('electron', {
   startDrag: (fileName) => {

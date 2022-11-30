@@ -8,127 +8,125 @@
 
 namespace electron {
 
-GPUInfoEnumerator::GPUInfoEnumerator()
-    : value_stack(), current(std::make_unique<base::DictionaryValue>()) {}
+GPUInfoEnumerator::GPUInfoEnumerator() : value_stack_(), current_{} {}
 
 GPUInfoEnumerator::~GPUInfoEnumerator() = default;
 
 void GPUInfoEnumerator::AddInt64(const char* name, int64_t value) {
-  current->SetInteger(name, value);
+  // NOTE(nornagon): this loses precision. base::Value can't store int64_t.
+  current_.Set(name, static_cast<int>(value));
 }
 
 void GPUInfoEnumerator::AddInt(const char* name, int value) {
-  current->SetInteger(name, value);
+  current_.Set(name, value);
 }
 
 void GPUInfoEnumerator::AddString(const char* name, const std::string& value) {
   if (!value.empty())
-    current->SetString(name, value);
+    current_.Set(name, value);
 }
 
 void GPUInfoEnumerator::AddBool(const char* name, bool value) {
-  current->SetBoolean(name, value);
+  current_.Set(name, value);
 }
 
 void GPUInfoEnumerator::AddTimeDeltaInSecondsF(const char* name,
                                                const base::TimeDelta& value) {
-  current->SetInteger(name, value.InMilliseconds());
+  current_.Set(name, value.InMillisecondsF());
 }
 
 void GPUInfoEnumerator::AddBinary(const char* name,
                                   const base::span<const uint8_t>& value) {
-  current->Set(name, std::make_unique<base::Value>(value));
+  current_.Set(name, base::Value(value));
 }
 
 void GPUInfoEnumerator::BeginGPUDevice() {
-  value_stack.push(std::move(current));
-  current = std::make_unique<base::DictionaryValue>();
+  value_stack_.push(std::move(current_));
+  current_ = {};
 }
 
 void GPUInfoEnumerator::EndGPUDevice() {
-  auto& top_value = value_stack.top();
+  auto& top_value = value_stack_.top();
   // GPUDevice can be more than one. So create a list of all.
   // The first one is the active GPU device.
-  if (top_value->HasKey(kGPUDeviceKey)) {
-    base::ListValue* list;
-    top_value->GetList(kGPUDeviceKey, &list);
-    list->Append(std::move(current));
+  if (base::Value* list_value = top_value.Find(kGPUDeviceKey)) {
+    DCHECK(list_value->is_list());
+    base::Value::List& list = list_value->GetList();
+    list.Append(std::move(current_));
   } else {
-    auto gpus = std::make_unique<base::ListValue>();
-    gpus->Append(std::move(current));
-    top_value->SetList(kGPUDeviceKey, std::move(gpus));
+    base::Value::List gpus;
+    gpus.Append(std::move(current_));
+    top_value.Set(kGPUDeviceKey, std::move(gpus));
   }
-  current = std::move(top_value);
-  value_stack.pop();
+  current_ = std::move(top_value);
+  value_stack_.pop();
 }
 
 void GPUInfoEnumerator::BeginVideoDecodeAcceleratorSupportedProfile() {
-  value_stack.push(std::move(current));
-  current = std::make_unique<base::DictionaryValue>();
+  value_stack_.push(std::move(current_));
+  current_ = {};
 }
 
 void GPUInfoEnumerator::EndVideoDecodeAcceleratorSupportedProfile() {
-  auto& top_value = value_stack.top();
-  top_value->SetKey(kVideoDecodeAcceleratorSupportedProfileKey,
-                    base::Value::FromUniquePtrValue(std::move(current)));
-  current = std::move(top_value);
-  value_stack.pop();
+  auto& top_value = value_stack_.top();
+  top_value.Set(kVideoDecodeAcceleratorSupportedProfileKey,
+                std::move(current_));
+  current_ = std::move(top_value);
+  value_stack_.pop();
 }
 
 void GPUInfoEnumerator::BeginVideoEncodeAcceleratorSupportedProfile() {
-  value_stack.push(std::move(current));
-  current = std::make_unique<base::DictionaryValue>();
+  value_stack_.push(std::move(current_));
+  current_ = {};
 }
 
 void GPUInfoEnumerator::EndVideoEncodeAcceleratorSupportedProfile() {
-  auto& top_value = value_stack.top();
-  top_value->SetKey(kVideoEncodeAcceleratorSupportedProfileKey,
-                    base::Value::FromUniquePtrValue(std::move(current)));
-  current = std::move(top_value);
-  value_stack.pop();
+  auto& top_value = value_stack_.top();
+  top_value.Set(kVideoEncodeAcceleratorSupportedProfileKey,
+                std::move(current_));
+  current_ = std::move(top_value);
+  value_stack_.pop();
 }
 
 void GPUInfoEnumerator::BeginImageDecodeAcceleratorSupportedProfile() {
-  value_stack.push(std::move(current));
-  current = std::make_unique<base::DictionaryValue>();
+  value_stack_.push(std::move(current_));
+  current_ = {};
 }
 
 void GPUInfoEnumerator::EndImageDecodeAcceleratorSupportedProfile() {
-  auto& top_value = value_stack.top();
-  top_value->SetKey(kImageDecodeAcceleratorSupportedProfileKey,
-                    base::Value::FromUniquePtrValue(std::move(current)));
-  current = std::move(top_value);
-  value_stack.pop();
+  auto& top_value = value_stack_.top();
+  top_value.Set(kImageDecodeAcceleratorSupportedProfileKey,
+                std::move(current_));
+  current_ = std::move(top_value);
+  value_stack_.pop();
 }
 
 void GPUInfoEnumerator::BeginAuxAttributes() {
-  value_stack.push(std::move(current));
-  current = std::make_unique<base::DictionaryValue>();
+  value_stack_.push(std::move(current_));
+  current_ = {};
 }
 
 void GPUInfoEnumerator::EndAuxAttributes() {
-  auto& top_value = value_stack.top();
-  top_value->SetKey(kAuxAttributesKey,
-                    base::Value::FromUniquePtrValue(std::move(current)));
-  current = std::move(top_value);
-  value_stack.pop();
+  auto& top_value = value_stack_.top();
+  top_value.Set(kAuxAttributesKey, std::move(current_));
+  current_ = std::move(top_value);
+  value_stack_.pop();
 }
 
 void GPUInfoEnumerator::BeginOverlayInfo() {
-  value_stack.push(std::move(current));
-  current = std::make_unique<base::DictionaryValue>();
+  value_stack_.push(std::move(current_));
+  current_ = {};
 }
 
 void GPUInfoEnumerator::EndOverlayInfo() {
-  auto& top_value = value_stack.top();
-  top_value->SetKey(kOverlayInfo,
-                    base::Value::FromUniquePtrValue(std::move(current)));
-  current = std::move(top_value);
-  value_stack.pop();
+  auto& top_value = value_stack_.top();
+  top_value.Set(kOverlayInfo, std::move(current_));
+  current_ = std::move(top_value);
+  value_stack_.pop();
 }
 
-std::unique_ptr<base::DictionaryValue> GPUInfoEnumerator::GetDictionary() {
-  return std::move(current);
+base::Value::Dict GPUInfoEnumerator::GetDictionary() {
+  return std::move(current_);
 }
 
 }  // namespace electron

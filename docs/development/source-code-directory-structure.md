@@ -72,8 +72,7 @@ Electron
 |       |         message loop into Chromium's message loop.
 |       └── api/ - The implementation of common APIs, and foundations of
 |                  Electron's built-in modules.
-├── spec/ - Components of Electron's test suite run in the renderer process.
-├── spec-main/ - Components of Electron's test suite run in the main process.
+├── spec/ - Components of Electron's test suite run in the main process.
 └── BUILD.gn - Building rules of Electron.
 ```
 

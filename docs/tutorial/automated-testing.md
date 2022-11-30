@@ -22,7 +22,7 @@ There are a few ways that you can set up testing using WebDriver.
 Node.js package for testing with WebDriver. Its ecosystem also includes various plugins
 (e.g. reporter and services) that can help you put together your test setup.
 
-#### Install the testrunner
+#### Install the test runner
 
 First you need to run the WebdriverIO starter toolkit in your project root directory:
 

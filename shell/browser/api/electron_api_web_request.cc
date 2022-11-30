@@ -81,9 +81,7 @@ struct Converter<extensions::WebRequestResourceType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -115,13 +113,12 @@ bool MatchesFilterCondition(extensions::WebRequestInfo* info,
 // to pass the original keys.
 v8::Local<v8::Value> HttpResponseHeadersToV8(
     net::HttpResponseHeaders* headers) {
-  base::DictionaryValue response_headers;
+  base::Value::Dict response_headers;
   if (headers) {
     size_t iter = 0;
     std::string key;
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-      base::Value* values = response_headers.FindListKey(key);
       // Note that Web servers not developed with nodejs allow non-utf8
       // characters in content-disposition's filename field. Use Chromium's
       // HttpContentDisposition class to decode the correct encoding instead of
@@ -138,12 +135,14 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         std::string filename = "\"" + header.filename() + "\"";
         value = decodedFilename + "; filename=" + filename;
       }
+      base::Value::List* values = response_headers.FindList(key);
       if (!values)
-        values = response_headers.SetKey(key, base::ListValue());
-      values->Append(value);
+        values = &response_headers.Set(key, base::Value::List())->GetList();
+      values->Append(base::Value(value));
     }
   }
-  return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
+  return gin::ConvertToV8(v8::Isolate::GetCurrent(),
+                          base::Value(std::move(response_headers)));
 }
 
 // Overloaded by multiple types to fill the |details| object.
@@ -164,8 +163,8 @@ void ToDictionary(gin_helper::Dictionary* details,
                  HttpResponseHeadersToV8(info->response_headers.get()));
   }
 
-  auto* render_frame_host =
-      content::RenderFrameHost::FromID(info->render_process_id, info->frame_id);
+  auto* render_frame_host = content::RenderFrameHost::FromID(
+      info->render_process_id, info->frame_routing_id);
   if (render_frame_host) {
     details->SetGetter("frame", render_frame_host);
     auto* web_contents =
@@ -550,6 +549,4 @@ gin::Handle<WebRequest> WebRequest::From(
   return gin::CreateHandle(isolate, user_data->data);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

@@ -44,9 +44,7 @@ struct Converter<SharingItem> {
 
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -146,7 +144,6 @@ void Menu::OnMenuWillShow(ui::SimpleMenuModel* source) {
 base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
   // return ((callback, ref) => { callback() }).bind(null, callback, this)
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope scope(isolate);
   v8::Local<v8::Object> self;
   if (GetWrapper(isolate).ToLocal(&self)) {
@@ -213,7 +210,7 @@ void Menu::Clear() {
 }
 
 int Menu::GetIndexOfCommandId(int command_id) const {
-  return model_->GetIndexOfCommandId(command_id);
+  return model_->GetIndexOfCommandId(command_id).value_or(-1);
 }
 
 int Menu::GetItemCount() const {
@@ -302,9 +299,7 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

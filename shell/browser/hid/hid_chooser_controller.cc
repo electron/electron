@@ -20,6 +20,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/hid_device_info_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -28,48 +29,64 @@
 
 namespace {
 
-std::string PhysicalDeviceIdFromDeviceInfo(
-    const device::mojom::HidDeviceInfo& device) {
-  // A single physical device may expose multiple HID interfaces, each
-  // represented by a HidDeviceInfo object. When a device exposes multiple
-  // HID interfaces, the HidDeviceInfo objects will share a common
-  // |physical_device_id|. Group these devices so that a single chooser item
-  // is shown for each physical device. If a device's physical device ID is
-  // empty, use its GUID instead.
-  return device.physical_device_id.empty() ? device.guid
-                                           : device.physical_device_id;
+bool FilterMatch(const blink::mojom::HidDeviceFilterPtr& filter,
+                 const device::mojom::HidDeviceInfo& device) {
+  if (filter->device_ids) {
+    if (filter->device_ids->is_vendor()) {
+      if (filter->device_ids->get_vendor() != device.vendor_id)
+        return false;
+    } else if (filter->device_ids->is_vendor_and_product()) {
+      const auto& vendor_and_product =
+          filter->device_ids->get_vendor_and_product();
+      if (vendor_and_product->vendor != device.vendor_id)
+        return false;
+      if (vendor_and_product->product != device.product_id)
+        return false;
+    }
+  }
+
+  if (filter->usage) {
+    if (filter->usage->is_page()) {
+      const uint16_t usage_page = filter->usage->get_page();
+      auto find_it =
+          std::find_if(device.collections.begin(), device.collections.end(),
+                       [=](const device::mojom::HidCollectionInfoPtr& c) {
+                         return usage_page == c->usage->usage_page;
+                       });
+      if (find_it == device.collections.end())
+        return false;
+    } else if (filter->usage->is_usage_and_page()) {
+      const auto& usage_and_page = filter->usage->get_usage_and_page();
+      auto find_it = std::find_if(
+          device.collections.begin(), device.collections.end(),
+          [&usage_and_page](const device::mojom::HidCollectionInfoPtr& c) {
+            return usage_and_page->usage_page == c->usage->usage_page &&
+                   usage_and_page->usage == c->usage->usage;
+          });
+      if (find_it == device.collections.end())
+        return false;
+    }
+  }
+  return true;
 }
 
 }  // namespace
-
-namespace gin {
-
-template <>
-struct Converter<device::mojom::HidDeviceInfoPtr> {
-  static v8::Local<v8::Value> ToV8(
-      v8::Isolate* isolate,
-      const device::mojom::HidDeviceInfoPtr& device) {
-    base::Value value = electron::HidChooserContext::DeviceInfoToValue(*device);
-    value.SetStringKey("deviceId", PhysicalDeviceIdFromDeviceInfo(*device));
-    return gin::ConvertToV8(isolate, value);
-  }
-};
-
-}  // namespace gin
 
 namespace electron {
 
 HidChooserController::HidChooserController(
     content::RenderFrameHost* render_frame_host,
     std::vector<blink::mojom::HidDeviceFilterPtr> filters,
+    std::vector<blink::mojom::HidDeviceFilterPtr> exclusion_filters,
     content::HidChooser::Callback callback,
     content::WebContents* web_contents,
     base::WeakPtr<ElectronHidDelegate> hid_delegate)
     : WebContentsObserver(web_contents),
       filters_(std::move(filters)),
+      exclusion_filters_(std::move(exclusion_filters)),
       callback_(std::move(callback)),
       origin_(content::WebContents::FromRenderFrameHost(render_frame_host)
-                  ->GetMainFrame()
+                  ->GetPrimaryMainFrame()
                   ->GetLastCommittedOrigin()),
       frame_tree_node_id_(render_frame_host->GetFrameTreeNodeId()),
       hid_delegate_(hid_delegate),
@@ -86,6 +103,19 @@ HidChooserController::HidChooserController(
 HidChooserController::~HidChooserController() {
   if (callback_)
     std::move(callback_).Run(std::vector<device::mojom::HidDeviceInfoPtr>());
+}
+
+// static
+std::string HidChooserController::PhysicalDeviceIdFromDeviceInfo(
+    const device::mojom::HidDeviceInfo& device) {
+  // A single physical device may expose multiple HID interfaces, each
+  // represented by a HidDeviceInfo object. When a device exposes multiple
+  // HID interfaces, the HidDeviceInfo objects will share a common
+  // |physical_device_id|. Group these devices so that a single chooser item
+  // is shown for each physical device. If a device's physical device ID is
+  // empty, use its GUID instead.
+  return device.physical_device_id.empty() ? device.guid
+                                           : device.physical_device_id;
 }
 
 api::Session* HidChooserController::GetSession() {
@@ -166,8 +196,7 @@ void HidChooserController::OnDeviceChosen(gin::Arguments* args) {
       std::vector<device::mojom::HidDeviceInfoPtr> devices;
       devices.reserve(device_infos.size());
       for (auto& device : device_infos) {
-        chooser_context_->GrantDevicePermission(origin_, *device,
-                                                web_contents()->GetMainFrame());
+        chooser_context_->GrantDevicePermission(origin_, *device);
         devices.push_back(device->Clone());
       }
       RunCallback(std::move(devices));
@@ -232,7 +261,7 @@ bool HidChooserController::DisplayDevice(
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist)) {
     // Do not pass the device to the chooser if it is excluded by the blocklist.
-    if (device::HidBlocklist::IsDeviceExcluded(device))
+    if (device.is_excluded_by_blocklist)
       return false;
 
     // Do not pass the device to the chooser if it has a top-level collection
@@ -251,7 +280,7 @@ bool HidChooserController::DisplayDevice(
       return false;
   }
 
-  return FilterMatchesAny(device);
+  return FilterMatchesAny(device) && !IsExcluded(device);
 }
 
 bool HidChooserController::FilterMatchesAny(
@@ -260,44 +289,18 @@ bool HidChooserController::FilterMatchesAny(
     return true;
 
   for (const auto& filter : filters_) {
-    if (filter->device_ids) {
-      if (filter->device_ids->is_vendor()) {
-        if (filter->device_ids->get_vendor() != device.vendor_id)
-          continue;
-      } else if (filter->device_ids->is_vendor_and_product()) {
-        const auto& vendor_and_product =
-            filter->device_ids->get_vendor_and_product();
-        if (vendor_and_product->vendor != device.vendor_id)
-          continue;
-        if (vendor_and_product->product != device.product_id)
-          continue;
-      }
-    }
+    if (FilterMatch(filter, device))
+      return true;
+  }
 
-    if (filter->usage) {
-      if (filter->usage->is_page()) {
-        const uint16_t usage_page = filter->usage->get_page();
-        auto find_it =
-            std::find_if(device.collections.begin(), device.collections.end(),
-                         [=](const device::mojom::HidCollectionInfoPtr& c) {
-                           return usage_page == c->usage->usage_page;
-                         });
-        if (find_it == device.collections.end())
-          continue;
-      } else if (filter->usage->is_usage_and_page()) {
-        const auto& usage_and_page = filter->usage->get_usage_and_page();
-        auto find_it = std::find_if(
-            device.collections.begin(), device.collections.end(),
-            [&usage_and_page](const device::mojom::HidCollectionInfoPtr& c) {
-              return usage_and_page->usage_page == c->usage->usage_page &&
-                     usage_and_page->usage == c->usage->usage;
-            });
-        if (find_it == device.collections.end())
-          continue;
-      }
-    }
+  return false;
+}
 
-    return true;
+bool HidChooserController::IsExcluded(
+    const device::mojom::HidDeviceInfo& device) const {
+  for (const auto& exclusion_filter : exclusion_filters_) {
+    if (FilterMatch(exclusion_filter, device))
+      return true;
   }
 
   return false;

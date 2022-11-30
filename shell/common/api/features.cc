@@ -54,10 +54,6 @@ bool IsPictureInPictureEnabled() {
   return BUILDFLAG(ENABLE_PICTURE_IN_PICTURE);
 }
 
-bool IsWinDarkModeWindowUiEnabled() {
-  return BUILDFLAG(ENABLE_WIN_DARK_MODE_WINDOW_UI);
-}
-
 bool IsComponentBuild() {
 #if defined(COMPONENT_BUILD)
   return true;
@@ -84,7 +80,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);
   dict.SetMethod("isExtensionsEnabled", &IsExtensionsEnabled);
-  dict.SetMethod("isWinDarkModeWindowUiEnabled", &IsWinDarkModeWindowUiEnabled);
 }
 
 }  // namespace

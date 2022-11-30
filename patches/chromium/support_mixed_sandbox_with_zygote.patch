@@ -22,10 +22,10 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index fb25a7c19f20ca690963c5a15bd09224687b5f57..d8939c1936830b101d6bb4079cd99e6015b481c4 100644
+index a0cbbcb558917e57ef62c82ef9a4ffc5c2e59d57..05b41950ba338ef3a94046508863a9bcb38d7532 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1786,9 +1786,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1769,9 +1769,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
              cmd_line.get(), IsJitDisabled());
@@ -39,13 +39,13 @@ index fb25a7c19f20ca690963c5a15bd09224687b5f57..d8939c1936830b101d6bb4079cd99e60
          std::make_unique<RendererSandboxedProcessLauncherDelegate>();
 +#endif
  #endif
-     // Spawn the child process asynchronously to avoid blocking the UI thread.
-     // As long as there's no renderer prefix, we can use the zygote process
+ 
+     auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index e8d6ef94664bb37996871c0cc0db7c815783b786..0d56fa0aebee80883019a100900119972bf02edd 100644
+index 81f25ee3d7eb26a336cae05bd158e3cd1ec07257..9d95eccc579e0778f0b3f3a3a31817380e3989c2 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-@@ -25,6 +25,9 @@ namespace content {
+@@ -31,6 +31,9 @@ namespace content {
  
  #if BUILDFLAG(USE_ZYGOTE_HANDLE)
  ZygoteHandle RendererSandboxedProcessLauncherDelegate::GetZygote() {
@@ -55,10 +55,10 @@ index e8d6ef94664bb37996871c0cc0db7c815783b786..0d56fa0aebee80883019a10090011997
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -52,6 +55,9 @@ RendererSandboxedProcessLauncherDelegateWin::
-                                                 bool is_jit_disabled)
-     : renderer_code_integrity_enabled_(
-           GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()) {
+@@ -60,6 +63,9 @@ RendererSandboxedProcessLauncherDelegateWin::
+           GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()),
+       renderer_app_container_disabled_(
+           GetContentClient()->browser()->IsRendererAppContainerDisabled()) {
 +#if BUILDFLAG(USE_ZYGOTE_HANDLE)
 +  use_zygote_ = !cmd_line->HasSwitch(switches::kNoZygote);
 +#endif
@@ -66,7 +66,7 @@ index e8d6ef94664bb37996871c0cc0db7c815783b786..0d56fa0aebee80883019a10090011997
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 463df70c55df932427c761a67dbc89d7657f9703..d6d8094e31129eb7ca1f0bf36523d48204281795 100644
+index 736b46ec59d495c9e5639fa53d2d76e8510d091c..bc37668adab98027d61f684c95b81d8c1dc893cd 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate

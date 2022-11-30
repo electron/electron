@@ -1,0 +1,87 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@salesforce.com>
+Date: Thu, 6 Oct 2022 04:09:16 -0700
+Subject: fix: expose the built-in electron module via the ESM loader
+
+This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
+
+diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
+index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc7106159218 100644
+--- a/lib/internal/modules/esm/get_format.js
++++ b/lib/internal/modules/esm/get_format.js
+@@ -30,6 +30,7 @@ const protocolHandlers = {
+   'http:': getHttpProtocolModuleFormat,
+   'https:': getHttpProtocolModuleFormat,
+   'node:'() { return 'builtin'; },
++  'electron:'() { return 'commonjs'; },
+ };
+ 
+ /**
+diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
+index bfee280212fc4d85b2b0a92ac79d898de3cb5ab3..a79cec8d82b439202ecf40b3d55b75706d3aaf29 100644
+--- a/lib/internal/modules/esm/resolve.js
++++ b/lib/internal/modules/esm/resolve.js
+@@ -795,6 +795,8 @@ function parsePackageName(specifier, base) {
+   return { packageName, packageSubpath, isScoped };
+ }
+ 
++const electronSpecifiers = new SafeSet(['electron', 'electron/main', 'electron/common', 'electron/renderer']);
++
+ /**
+  * @param {string} specifier
+  * @param {string | URL | undefined} base
+@@ -807,6 +809,10 @@ function packageResolve(specifier, base, conditions) {
+     return new URL('node:' + specifier);
+   }
+ 
++  if (electronSpecifiers.has(specifier)) {
++    return new URL('electron:electron');
++  }
++
+   const { packageName, packageSubpath, isScoped } =
+     parsePackageName(specifier, base);
+ 
+@@ -1005,7 +1011,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
+ 
+ function throwIfUnsupportedURLProtocol(url) {
+   if (url.protocol !== 'file:' && url.protocol !== 'data:' &&
+-      url.protocol !== 'node:') {
++      url.protocol !== 'node:' && url.protocol !== 'electron:') {
+     throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(url);
+   }
+ }
+diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
+index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..d1527b859bbea15fdf30622fc8f2700bde5b4591 100644
+--- a/lib/internal/modules/esm/translators.js
++++ b/lib/internal/modules/esm/translators.js
+@@ -154,7 +154,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+ 
+   if (!cjsParse) await initCJSParse();
+   const { module, exportNames } = cjsPreparseModuleExports(filename);
+-  const namesWithDefault = exportNames.has('default') ?
++  const namesWithDefault = filename === 'electron' ? ['default', ...Object.keys(module.exports)] : exportNames.has('default') ?
+     [...exportNames] : ['default', ...exportNames];
+ 
+   return new ModuleWrap(url, undefined, namesWithDefault, function() {
+@@ -173,7 +173,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+       }
+     }
+ 
+-    for (const exportName of exportNames) {
++    for (const exportName of namesWithDefault) {
+       if (!ObjectPrototypeHasOwnProperty(exports, exportName) ||
+           exportName === 'default')
+         continue;
+diff --git a/lib/internal/url.js b/lib/internal/url.js
+index 2a4ffefe2450708af61e09d7a9530bec1c15d922..9a1c49df14e8b3cef7e66789242a625c6afb3ca9 100644
+--- a/lib/internal/url.js
++++ b/lib/internal/url.js
+@@ -1483,6 +1483,8 @@ function fileURLToPath(path) {
+     path = new URL(path);
+   else if (!isURLInstance(path))
+     throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
++  if (path.protocol === 'electron:')
++    return 'electron';
+   if (path.protocol !== 'file:')
+     throw new ERR_INVALID_URL_SCHEME('file');
+   return isWindows ? getPathFromURLWin32(path) : getPathFromURLPosix(path);

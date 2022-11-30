@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 1 Sep 2022 15:31:47 -0400
+Subject: fixup for error: declaration shadows a local variable
+ [-Werror,-Wshadow]
+
+This was triggered by 3860569: Enable -Wshadow on Linux.
+
+https://chromium-review.googlesource.com/c/chromium/src/+/3860569
+
+diff --git a/src/node_options-inl.h b/src/node_options-inl.h
+old mode 100644
+new mode 100755
+index 7facb22afc3c9bd7b52a61626cca1d7733acb7fc..0c1f36d072f053494258e4117cd8f43e2fe940ba
+--- a/src/node_options-inl.h
++++ b/src/node_options-inl.h
+@@ -387,12 +387,12 @@ void OptionsParser<Options>::Parse(
+         implied_name.insert(2, "no-");
+       }
+       auto implications = implications_.equal_range(implied_name);
+-      for (auto it = implications.first; it != implications.second; ++it) {
+-        if (it->second.type == kV8Option) {
+-          v8_args->push_back(it->second.name);
++      for (auto it2 = implications.first; it2 != implications.second; ++it2) {
++        if (it2->second.type == kV8Option) {
++          v8_args->push_back(it2->second.name);
+         } else {
+-          *it->second.target_field->template Lookup<bool>(options) =
+-              it->second.target_value;
++          *it2->second.target_field->template Lookup<bool>(options) =
++              it2->second.target_value;
+         }
+       }
+     }

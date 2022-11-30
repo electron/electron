@@ -13,6 +13,7 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/win_caption_button.h"
+#include "shell/browser/ui/views/win_caption_button_container.h"
 
 namespace electron {
 
@@ -43,6 +44,9 @@ class WinFrameView : public FramelessView {
 
   NativeWindowViews* window() const { return window_; }
   views::Widget* frame() const { return frame_; }
+  WinCaptionButtonContainer* caption_button_container() {
+    return caption_button_container_;
+  }
 
   bool IsMaximized() const;
 
@@ -60,6 +64,9 @@ class WinFrameView : public FramelessView {
   friend class WinCaptionButtonContainer;
 
   int FrameBorderThickness() const;
+
+  // views::ViewTargeterDelegate:
+  views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
 
   // Returns the thickness of the window border for the top edge of the frame,
   // which is sometimes different than FrameBorderThickness(). Does not include

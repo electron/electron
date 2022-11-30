@@ -17,9 +17,7 @@
 #include "ui/base/clipboard/scoped_clipboard_writer.h"
 #include "ui/gfx/codec/png_codec.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 ui::ClipboardBuffer Clipboard::GetClipboardBuffer(gin_helper::Arguments* args) {
   std::string type;
@@ -260,9 +258,7 @@ void Clipboard::Clear(gin_helper::Arguments* args) {
   ui::Clipboard::GetForCurrentThread()->Clear(GetClipboardBuffer(args));
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

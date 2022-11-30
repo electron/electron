@@ -1,0 +1,7 @@
+GtkFileChooserNative* gtk_file_chooser_native_new(const gchar* title, GtkWindow* parent, GtkFileChooserAction action, const gchar* accept_label, const gchar* cancel_label);
+void gtk_native_dialog_set_modal(GtkNativeDialog* self, gboolean modal);
+void gtk_native_dialog_show(GtkNativeDialog* self);
+void gtk_native_dialog_hide(GtkNativeDialog* self);
+gint gtk_native_dialog_run(GtkNativeDialog* self);
+void gtk_native_dialog_destroy(GtkNativeDialog* self);
+GType gtk_native_dialog_get_type(void);

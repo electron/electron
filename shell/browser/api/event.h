@@ -43,7 +43,7 @@ class Event : public gin::Wrappable<Event> {
   const char* GetTypeName() override;
 
  private:
-  // Replyer for the synchronous messages.
+  // Replier for the synchronous messages.
   InvokeCallback callback_;
 };
 

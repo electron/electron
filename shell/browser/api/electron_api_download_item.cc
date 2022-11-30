@@ -48,9 +48,7 @@ struct Converter<download::DownloadItem::DownloadState> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -301,6 +299,4 @@ gin::Handle<DownloadItem> DownloadItem::FromOrCreate(
   return handle;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

@@ -8,7 +8,6 @@
 
 #include "base/bind.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 
@@ -75,8 +74,8 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
   }
 
   // Send the callback to the browser thread.
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(callback_, converted));
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(callback_, converted));
 }
 
 /**

@@ -182,18 +182,27 @@ bool ElectronBundleMover::IsCurrentAppInApplicationsFolder() {
   return IsInApplicationsFolder([[NSBundle mainBundle] bundlePath]);
 }
 
+NSString* resolvePath(NSString* path) {
+  NSString* standardizedPath = [path stringByStandardizingPath];
+  char resolved[PATH_MAX];
+  if (realpath([standardizedPath UTF8String], resolved) == NULL)
+    return path;
+  return @(resolved);
+}
+
 bool ElectronBundleMover::IsInApplicationsFolder(NSString* bundlePath) {
   // Check all the normal Application directories
   NSArray* applicationDirs = NSSearchPathForDirectoriesInDomains(
       NSApplicationDirectory, NSAllDomainsMask, true);
+  NSString* resolvedBundlePath = resolvePath(bundlePath);
   for (NSString* appDir in applicationDirs) {
-    if ([bundlePath hasPrefix:appDir])
+    if ([resolvedBundlePath hasPrefix:appDir])
       return true;
   }
 
   // Also, handle the case that the user has some other Application directory
   // (perhaps on a separate data partition).
-  if ([[bundlePath pathComponents] containsObject:@"Applications"])
+  if ([[resolvedBundlePath pathComponents] containsObject:@"Applications"])
     return true;
 
   return false;
@@ -291,9 +300,10 @@ bool ElectronBundleMover::AuthorizedInstall(NSString* srcPath,
 
   AuthorizationItem myItems = {kAuthorizationRightExecute, 0, NULL, 0};
   AuthorizationRights myRights = {1, &myItems};
-  AuthorizationFlags myFlags = (AuthorizationFlags)(
-      kAuthorizationFlagInteractionAllowed | kAuthorizationFlagExtendRights |
-      kAuthorizationFlagPreAuthorize);
+  AuthorizationFlags myFlags =
+      (AuthorizationFlags)(kAuthorizationFlagInteractionAllowed |
+                           kAuthorizationFlagExtendRights |
+                           kAuthorizationFlagPreAuthorize);
 
   err = AuthorizationCopyRights(myAuthorizationRef, &myRights, NULL, myFlags,
                                 NULL);

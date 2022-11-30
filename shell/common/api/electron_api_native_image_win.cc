@@ -17,9 +17,7 @@
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 // static
 v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
@@ -102,6 +100,4 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   return handle;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

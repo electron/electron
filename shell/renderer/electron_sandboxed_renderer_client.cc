@@ -36,16 +36,6 @@ namespace {
 const char kLifecycleKey[] = "lifecycle";
 const char kModuleCacheKey[] = "native-module-cache";
 
-bool IsDevTools(content::RenderFrame* render_frame) {
-  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
-      "devtools");
-}
-
-bool IsDevToolsExtension(content::RenderFrame* render_frame) {
-  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
-      "chrome-extension");
-}
-
 v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
   gin_helper::Dictionary global(isolate, context->Global());
@@ -207,17 +197,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
   // Only allow preload for the main frame or
   // For devtools we still want to run the preload_bundle script
   // Or when nodeSupport is explicitly enabled in sub frames
-  bool is_main_frame = render_frame->IsMainFrame();
-  bool is_devtools =
-      IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
-
-  bool allow_node_in_sub_frames =
-      render_frame->GetBlinkPreferences().node_integration_in_sub_frames;
-
-  bool should_load_preload =
-      (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
-      !IsWebViewFrame(context, render_frame);
-  if (!should_load_preload)
+  if (!ShouldLoadPreload(context, render_frame))
     return;
 
   injected_frames_.insert(render_frame);

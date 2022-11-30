@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include <iterator>
 #include <utility>
 
 #include "base/hash/hash.h"
@@ -106,9 +107,11 @@ void RequestGarbageCollectionForTesting(v8::Isolate* isolate) {
 // This causes a fatal error by creating a circular extension dependency.
 void TriggerFatalErrorForTesting(v8::Isolate* isolate) {
   static const char* aDeps[] = {"B"};
-  v8::RegisterExtension(std::make_unique<v8::Extension>("A", "", 1, aDeps));
+  v8::RegisterExtension(
+      std::make_unique<v8::Extension>("A", "", std::size(aDeps), aDeps));
   static const char* bDeps[] = {"A"};
-  v8::RegisterExtension(std::make_unique<v8::Extension>("B", "", 1, bDeps));
+  v8::RegisterExtension(
+      std::make_unique<v8::Extension>("B", "", std::size(aDeps), bDeps));
   v8::ExtensionConfiguration config(1, bDeps);
   v8::Context::New(isolate, &config);
 }

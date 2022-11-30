@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Thu, 5 May 2022 14:14:36 -0700
+Subject: use new constructor for ScriptOrigin when >= 17.x
+
+https://chromium-review.googlesource.com/c/v8/v8/+/3395880
+
+diff --git a/test/cpp/news.cpp b/test/cpp/news.cpp
+index a218167c7e3a5ec90c6668943cb395dba2bbe3a7..08557d5478d5400445603deffd721525ecbf746e 100644
+--- a/test/cpp/news.cpp
++++ b/test/cpp/news.cpp
+@@ -115,7 +115,7 @@ NAN_METHOD(NewScript) {
+ 
+ NAN_METHOD(NewScript2) {
+   v8::ScriptOrigin origin(
+-#if NODE_MODULE_VERSION >= NODE_18_0_MODULE_VERSION
++#if NODE_MODULE_VERSION >= NODE_17_0_MODULE_VERSION
+     info.GetIsolate(),
+ #endif
+     New<v8::String>("x").ToLocalChecked());
+@@ -136,7 +136,7 @@ NAN_METHOD(CompileScript) {
+ 
+ NAN_METHOD(CompileScript2) {
+   v8::ScriptOrigin origin(
+-#if NODE_MODULE_VERSION >= NODE_18_0_MODULE_VERSION
++#if NODE_MODULE_VERSION >= NODE_17_0_MODULE_VERSION
+     info.GetIsolate(),
+ #endif
+     New<v8::String>("x").ToLocalChecked());

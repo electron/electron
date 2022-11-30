@@ -158,13 +158,14 @@ class Browser : public WindowListObserver {
 
   // Hide the application.
   void Hide();
+  bool IsHidden();
 
   // Show the application.
   void Show();
 
   // Creates an activity and sets it as the one currently in use.
   void SetUserActivity(const std::string& type,
-                       base::DictionaryValue user_info,
+                       base::Value::Dict user_info,
                        gin::Arguments* args);
 
   // Returns the type name of the current user activity.
@@ -179,7 +180,7 @@ class Browser : public WindowListObserver {
 
   // Updates the current user activity
   void UpdateCurrentActivity(const std::string& type,
-                             base::DictionaryValue user_info);
+                             base::Value::Dict user_info);
 
   // Indicates that an user activity is about to be resumed.
   bool WillContinueUserActivity(const std::string& type);
@@ -190,16 +191,16 @@ class Browser : public WindowListObserver {
 
   // Resumes an activity via hand-off.
   bool ContinueUserActivity(const std::string& type,
-                            base::DictionaryValue user_info,
-                            base::DictionaryValue details);
+                            base::Value::Dict user_info,
+                            base::Value::Dict details);
 
   // Indicates that an activity was continued on another device.
   void UserActivityWasContinued(const std::string& type,
-                                base::DictionaryValue user_info);
+                                base::Value::Dict user_info);
 
   // Gives an opportunity to update the Handoff payload.
   bool UpdateUserActivityState(const std::string& type,
-                               base::DictionaryValue user_info);
+                               base::Value::Dict user_info);
 
   // Bounce the dock icon.
   enum class BounceType{
@@ -230,7 +231,7 @@ class Browser : public WindowListObserver {
 #endif  // BUILDFLAG(IS_MAC)
 
   void ShowAboutPanel();
-  void SetAboutPanelOptions(base::DictionaryValue options);
+  void SetAboutPanelOptions(base::Value::Dict options);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   void ShowEmojiPanel();
@@ -287,7 +288,7 @@ class Browser : public WindowListObserver {
 
   // Tell the application the loading has been done.
   void WillFinishLaunching();
-  void DidFinishLaunching(base::DictionaryValue launch_info);
+  void DidFinishLaunching(base::Value::Dict launch_info);
 
   void OnAccessibilitySupportChanged();
 

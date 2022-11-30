@@ -7,9 +7,7 @@
 #include "base/mac/sdk_forward_declarations.h"
 #include "shell/browser/mac/electron_application.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void NativeTheme::UpdateMacOSAppearanceForOverrideValue(
     ui::NativeTheme::ThemeSource override) {
@@ -32,6 +30,4 @@ void NativeTheme::UpdateMacOSAppearanceForOverrideValue(
   }
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

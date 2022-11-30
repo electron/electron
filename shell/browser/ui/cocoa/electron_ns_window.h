@@ -16,13 +16,14 @@ class NativeWindowMac;
 // Prevents window from resizing during the scope.
 class ScopedDisableResize {
  public:
-  ScopedDisableResize() { disable_resize_ = true; }
-  ~ScopedDisableResize() { disable_resize_ = false; }
+  ScopedDisableResize() { disable_resize_++; }
+  ~ScopedDisableResize() { disable_resize_--; }
 
-  static bool IsResizeDisabled() { return disable_resize_; }
+  // True if there are 1+ nested ScopedDisableResize objects in the scope
+  static bool IsResizeDisabled() { return disable_resize_ > 0; }
 
  private:
-  static bool disable_resize_;
+  static int disable_resize_;
 };
 
 }  // namespace electron

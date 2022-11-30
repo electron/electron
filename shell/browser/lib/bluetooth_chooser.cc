@@ -131,7 +131,7 @@ void BluetoothChooser::AddOrUpdateDevice(const std::string& device_id,
         "select-bluetooth-device", GetDeviceList(),
         base::BindOnce(&OnDeviceChosen, event_handler_));
 
-    // If emit not implimented select first device that matches the filters
+    // If emit not implemented select first device that matches the filters
     //  provided.
     if (!prevent_default) {
       event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);

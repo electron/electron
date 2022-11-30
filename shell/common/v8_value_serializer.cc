@@ -12,13 +12,18 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "skia/public/mojom/bitmap.mojom.h"
 #include "third_party/blink/public/common/messaging/cloneable_message.h"
+#include "third_party/blink/public/common/messaging/web_message_port.h"
 #include "ui/gfx/image/image_skia.h"
 #include "v8/include/v8.h"
 
 namespace electron {
 
 namespace {
-enum SerializationTag { kNativeImageTag = 'i', kVersionTag = 0xFF };
+enum SerializationTag {
+  kNativeImageTag = 'i',
+  kTrailerOffsetTag = 0xFE,
+  kVersionTag = 0xFF
+};
 }  // namespace
 
 class V8Serializer : public v8::ValueSerializer::Delegate {
@@ -46,6 +51,8 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
     DCHECK_EQ(buffer.first, data_.data());
     out->encoded_message = base::make_span(buffer.first, buffer.second);
     out->owned_encoded_message = std::move(data_);
+    out->sender_agent_cluster_id =
+        blink::WebMessagePort::GetEmbedderAgentClusterID();
 
     return true;
   }
@@ -164,6 +171,23 @@ class V8Deserializer : public v8::ValueDeserializer::Delegate {
       return false;
     if (!deserializer_.ReadUint32(blink_version))
       return false;
+    static constexpr uint32_t kMinWireFormatVersionWithTrailer = 21;
+    if (*blink_version >= kMinWireFormatVersionWithTrailer) {
+      // In these versions, we expect kTrailerOffsetTag (0xFE) followed by an
+      // offset and size. See details in
+      // third_party/blink/renderer/core/v8/serialization/serialization_tag.h.
+      uint8_t trailer_offset_tag = 0;
+      if (!ReadTag(&trailer_offset_tag) ||
+          trailer_offset_tag != kTrailerOffsetTag)
+        return false;
+      const void* trailer_offset_and_size_bytes = nullptr;
+      static constexpr size_t kTrailerOffsetDataSize =
+          sizeof(uint64_t) + sizeof(uint32_t);
+      if (!deserializer_.ReadRawBytes(kTrailerOffsetDataSize,
+                                      &trailer_offset_and_size_bytes))
+        return false;
+    }
+
     return true;
   }
 

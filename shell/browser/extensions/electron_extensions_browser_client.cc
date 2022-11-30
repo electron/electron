@@ -4,12 +4,12 @@
 
 #include "shell/browser/extensions/electron_extensions_browser_client.h"
 
+#include <algorithm>
 #include <utility>
 
 #include "base/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/path_service.h"
-#include "base/task/post_task.h"
 #include "build/build_config.h"
 #include "chrome/browser/extensions/chrome_url_request_util.h"
 #include "chrome/common/chrome_paths.h"
@@ -118,6 +118,29 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
   } else {
     return context;
   }
+}
+
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetRedirectedContextInIncognito(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return GetOriginalContext(context);
+}
+
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetContextForRegularAndIncognito(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return context;
+}
+
+content::BrowserContext* ElectronExtensionsBrowserClient::GetRegularProfile(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return context->IsOffTheRecord() ? nullptr : context;
 }
 
 bool ElectronExtensionsBrowserClient::IsGuestSession(
@@ -298,11 +321,11 @@ ElectronExtensionsBrowserClient::GetComponentExtensionResourceManager() {
 void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     extensions::events::HistogramValue histogram_value,
     const std::string& event_name,
-    std::unique_ptr<base::ListValue> args,
+    base::Value::List args,
     bool dispatch_to_off_the_record_profiles) {
   if (!BrowserThread::CurrentlyOn(BrowserThread::UI)) {
-    base::PostTask(
-        FROM_HERE, {BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(
             &ElectronExtensionsBrowserClient::BroadcastEventToRenderers,
             base::Unretained(this), histogram_value, event_name,
@@ -310,12 +333,12 @@ void ElectronExtensionsBrowserClient::BroadcastEventToRenderers(
     return;
   }
 
-  auto event = std::make_unique<extensions::Event>(
-      histogram_value, event_name, std::move(*args).TakeListDeprecated());
-  auto& context_map = ElectronBrowserContext::browser_context_map();
-  for (auto const& entry : context_map) {
-    if (entry.second) {
-      extensions::EventRouter::Get(entry.second.get())
+  auto event = std::make_unique<extensions::Event>(histogram_value, event_name,
+                                                   args.Clone());
+  for (auto const& [key, browser_context] :
+       ElectronBrowserContext::browser_context_map()) {
+    if (browser_context) {
+      extensions::EventRouter::Get(browser_context.get())
           ->BroadcastEvent(std::move(event));
     }
   }

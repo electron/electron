@@ -78,8 +78,7 @@ struct Converter<CustomScheme> {
 
 }  // namespace gin
 
-namespace electron {
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Protocol::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -312,8 +311,7 @@ const char* Protocol::GetTypeName() {
   return "Protocol";
 }
 
-}  // namespace api
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

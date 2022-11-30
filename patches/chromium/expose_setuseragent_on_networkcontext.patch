@@ -10,7 +10,7 @@ patch may be merged upstream, at which point this patch should be
 removed.
 
 diff --git a/net/url_request/static_http_user_agent_settings.h b/net/url_request/static_http_user_agent_settings.h
-index 14c71cc69388da46f62d9835e2a06fef0870da02..9481ea08401ae29ae9c1d960491b05b364257cc8 100644
+index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d41b0dbd3b 100644
 --- a/net/url_request/static_http_user_agent_settings.h
 +++ b/net/url_request/static_http_user_agent_settings.h
 @@ -30,13 +30,17 @@ class NET_EXPORT StaticHttpUserAgentSettings : public HttpUserAgentSettings {
@@ -33,10 +33,10 @@ index 14c71cc69388da46f62d9835e2a06fef0870da02..9481ea08401ae29ae9c1d960491b05b3
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 4c8982a8ae3ae23fbeef244cd23b43c889d3fa94..13b48d5acadf5dcfb40a829751b089c1c29f9450 100644
+index 8f891afc636eeece8bac36d4ae5e1142d905aa02..f4b16ea0e9a766790a757523ab188e35ca288c29 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1350,6 +1350,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1423,6 +1423,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,22 +51,22 @@ index 4c8982a8ae3ae23fbeef244cd23b43c889d3fa94..13b48d5acadf5dcfb40a829751b089c1
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index eed05c05d1da28284af6ae0cef45dbbb47254058..f32671202010fa57901a09723feecacc72dbd5f9 100644
+index 7facbaf42e2538f8f7a78a2f7e87c3ac27fed61c..dcb5439f8d88372789b452c92798aaf67f7706a8 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
-@@ -283,6 +283,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -303,6 +303,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CloseIdleConnections(CloseIdleConnectionsCallback callback) override;
    void SetNetworkConditions(const base::UnguessableToken& throttling_profile_id,
                              mojom::NetworkConditionsPtr conditions) override;
 +  void SetUserAgent(const std::string& new_user_agent) override;
    void SetAcceptLanguage(const std::string& new_accept_language) override;
    void SetEnableReferrers(bool enable_referrers) override;
- #if BUILDFLAG(IS_CHROMEOS)
+   void SetEnablePreconnect(bool enable_preconnect) override;
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index c929eb10af5b8856debdc0d665eac767e9730714..c20bd2a2d6b989386ce7ef97e43f677e2c5291fa 100644
+index d75efeccf532f1d36d35cd38f8d8d5039dc4267c..f07a9626378780c2090edcc2f055ce53a231bd7a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1089,6 +1089,9 @@ interface NetworkContext {
+@@ -1116,6 +1116,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
@@ -77,7 +77,7 @@ index c929eb10af5b8856debdc0d665eac767e9730714..c20bd2a2d6b989386ce7ef97e43f677e
    SetAcceptLanguage(string new_accept_language);
  
 diff --git a/services/network/test/test_network_context.h b/services/network/test/test_network_context.h
-index d143a82b1fd021bb03b760b91e87c7714f5395b9..3c18369ff3ab80430e21caac03373605dad64a88 100644
+index fb185c14365680e9b34b40739ffa969f806178ac..2a8e6b85ca16653c180064597c2c0932334bc946 100644
 --- a/services/network/test/test_network_context.h
 +++ b/services/network/test/test_network_context.h
 @@ -136,6 +136,7 @@ class TestNetworkContext : public mojom::NetworkContext {
@@ -87,4 +87,4 @@ index d143a82b1fd021bb03b760b91e87c7714f5395b9..3c18369ff3ab80430e21caac03373605
 +  void SetUserAgent(const std::string& new_user_agent) override {}
    void SetAcceptLanguage(const std::string& new_accept_language) override {}
    void SetEnableReferrers(bool enable_referrers) override {}
- #if BUILDFLAG(IS_CHROMEOS)
+   void SetEnablePreconnect(bool enable_preconnect) override {}

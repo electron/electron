@@ -35,7 +35,7 @@ page you load in your renderer executes code in this world.
 
 When `contextIsolation` is enabled in your `webPreferences` (this is the default behavior since Electron 12.0.0), your `preload` scripts run in an
 "Isolated World".  You can read more about context isolation and what it affects in the
-[security](../tutorial/security.md#3-enable-context-isolation-for-remote-content) docs.
+[security](../tutorial/security.md#3-enable-context-isolation) docs.
 
 ## Methods
 
@@ -43,6 +43,12 @@ The `contextBridge` module has the following methods:
 
 ### `contextBridge.exposeInMainWorld(apiKey, api)`
 
+* `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
+* `api` any - Your API, more information on what this API can be and how it works is available below.
+
+### `contextBridge.exposeInIsolatedWorld(worldId, apiKey, api)`
+
+* `worldId` Integer - The ID of the world to inject the API into. `0` is the default world, `999` is the world used by Electron's `contextIsolation` feature. Using 999 would expose the object for preload context. We recommend using 1000+ while creating isolated world.
 * `apiKey` string - The key to inject the API onto `window` with.  The API will be accessible on `window[apiKey]`.
 * `api` any - Your API, more information on what this API can be and how it works is available below.
 
@@ -82,6 +88,26 @@ contextBridge.exposeInMainWorld(
     }
   }
 )
+```
+
+An example of `exposeInIsolatedWorld` is shown below:
+
+```javascript
+const { contextBridge, ipcRenderer } = require('electron')
+
+contextBridge.exposeInIsolatedWorld(
+  1004,
+  'electron',
+  {
+    doThing: () => ipcRenderer.send('do-a-thing')
+  }
+)
+```
+
+```javascript
+// Renderer (In isolated world id1004)
+
+window.electron.doThing()
 ```
 
 ### API Functions

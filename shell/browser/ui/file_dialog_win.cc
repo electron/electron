@@ -22,7 +22,6 @@
 #include "base/win/registry.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 
 namespace file_dialog {
@@ -102,7 +101,6 @@ static void SetDefaultFolder(IFileDialog* dialog,
 
 static HRESULT ShowFileDialog(IFileDialog* dialog,
                               const DialogSettings& settings) {
-  electron::UnresponsiveSuppressor suppressor;
   HWND parent_window =
       settings.parent_window
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
@@ -221,7 +219,6 @@ void ShowOpenDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
                  bool success, std::vector<base::FilePath> result) {
-    v8::Locker locker(promise.isolate());
     v8::HandleScope handle_scope(promise.isolate());
     gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", !success);
@@ -271,7 +268,6 @@ void ShowSaveDialog(const DialogSettings& settings,
                     gin_helper::Promise<gin_helper::Dictionary> promise) {
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
                  bool success, base::FilePath result) {
-    v8::Locker locker(promise.isolate());
     v8::HandleScope handle_scope(promise.isolate());
     gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", !success);

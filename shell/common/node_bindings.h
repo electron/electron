@@ -5,7 +5,9 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
+#include <string>
 #include <type_traits>
+#include <vector>
 
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
@@ -74,7 +76,7 @@ class UvHandle {
 
 class NodeBindings {
  public:
-  enum class BrowserEnvironment { kBrowser, kRenderer, kWorker };
+  enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
   static void RegisterBuiltinModules();
@@ -85,18 +87,24 @@ class NodeBindings {
   // Setup V8, libuv.
   void Initialize();
 
+  void SetNodeCliFlags();
+
   // Create the environment and load node.js.
+  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
+                                       node::MultiIsolatePlatform* platform,
+                                       std::vector<std::string> args,
+                                       std::vector<std::string> exec_args);
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
                                        node::MultiIsolatePlatform* platform);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
 
-  // Prepare for message loop integration.
-  virtual void PrepareMessageLoop();
+  // Prepare embed thread for message loop integration.
+  void PrepareEmbedThread();
 
-  // Do message loop integration.
-  virtual void RunMessageLoop();
+  // Notify embed thread to start polling after environment is loaded.
+  void StartPolling();
 
   // Gets/sets the per isolate data.
   void set_isolate_data(node::IsolateData* isolate_data) {
@@ -143,6 +151,9 @@ class NodeBindings {
  private:
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
+
+  // Indicates whether polling thread has been created.
+  bool initialized_ = false;
 
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;

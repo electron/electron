@@ -21,17 +21,9 @@
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 namespace electron {
-
-namespace {
-
-bool IsDevToolsExtension(content::RenderFrame* render_frame) {
-  return static_cast<GURL>(render_frame->GetWebFrame()->GetDocument().Url())
-      .SchemeIs("chrome-extension");
-}
-
-}  // namespace
 
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
@@ -77,15 +69,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   // Only load Node.js if we are a main frame or a devtools extension
   // unless Node.js support has been explicitly enabled for subframes.
-  auto prefs = render_frame->GetBlinkPreferences();
-  bool is_main_frame = render_frame->IsMainFrame();
-  bool is_devtools = IsDevToolsExtension(render_frame);
-  bool allow_node_in_subframes = prefs.node_integration_in_sub_frames;
-
-  bool should_load_node =
-      (is_main_frame || is_devtools || allow_node_in_subframes) &&
-      !IsWebViewFrame(renderer_context, render_frame);
-  if (!should_load_node)
+  if (!ShouldLoadPreload(renderer_context, render_frame))
     return;
 
   injected_frames_.insert(render_frame);
@@ -93,9 +77,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
     node_bindings_->Initialize();
-    node_bindings_->PrepareMessageLoop();
-  } else {
-    node_bindings_->PrepareMessageLoop();
+    node_bindings_->PrepareEmbedThread();
   }
 
   // Setup node tracing controller.
@@ -103,8 +85,8 @@ void ElectronRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
-  bool initialized = node::InitializeContext(renderer_context);
-  CHECK(initialized);
+  v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
+  CHECK(!initialized.IsNothing() && initialized.FromJust());
 
   node::Environment* env =
       node_bindings_->CreateEnvironment(renderer_context, nullptr);
@@ -131,7 +113,7 @@ void ElectronRendererClient::DidCreateScriptContext(
     node_bindings_->set_uv_env(env);
 
     // Give the node loop a run to make sure everything is ready.
-    node_bindings_->RunMessageLoop();
+    node_bindings_->StartPolling();
   }
 }
 
@@ -175,8 +157,15 @@ void ElectronRendererClient::WillReleaseScriptContext(
 
 void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
     v8::Local<v8::Context> context) {
-  // TODO(loc): Note that this will not be correct for in-process child windows
-  // with webPreferences that have a different value for nodeIntegrationInWorker
+  // We do not create a Node.js environment in service or shared workers
+  // owing to an inability to customize sandbox policies in these workers
+  // given that they're run out-of-process.
+  auto* ec = blink::ExecutionContext::From(context);
+  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope())
+    return;
+
+  // This won't be correct for in-process child windows with webPreferences
+  // that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
     WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
@@ -185,6 +174,10 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
+  auto* ec = blink::ExecutionContext::From(context);
+  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope())
+    return;
+
   // TODO(loc): Note that this will not be correct for in-process child windows
   // with webPreferences that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(

@@ -115,9 +115,9 @@ const win = new BrowserWindow({
 })
 ```
 
-On Windows, you can also specify the color of the overlay and its symbols by setting
-`titleBarOverlay` to an object with the `color` and `symbolColor` properties. If an option
-is not specified, the color will default to its system color for the window control buttons:
+On either platform `titleBarOverlay` can also be an object. On both macOS and Windows, the height of the overlay can be specified with the `height` property. On Windows, the color of the overlay and its symbols can be specified using the `color` and `symbolColor` properties respectively.
+
+If a color option is not specified, the color will default to its system color for the window control buttons. Similarly, if the height option is not specified it will default to the default height:
 
 ```javascript title='main.js'
 // on Windows
@@ -126,7 +126,8 @@ const win = new BrowserWindow({
   titleBarStyle: 'hidden',
   titleBarOverlay: {
     color: '#2f3241',
-    symbolColor: '#74b1be'
+    symbolColor: '#74b1be',
+    height: 60
   }
 })
 ```
@@ -134,6 +135,10 @@ const win = new BrowserWindow({
 > Note: Once your title bar overlay is enabled from the main process, you can access the overlay's
 > color and dimension values from a renderer using a set of readonly
 > [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars].
+
+### Limitations
+
+* Transparent colors are currently not supported. Progress updates for this feature can be found in PR [#33567](https://github.com/electron/electron/issues/33567).
 
 ## Create transparent windows
 

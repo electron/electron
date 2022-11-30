@@ -56,9 +56,7 @@ struct Converter<electron::TrayIcon::IconType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -389,7 +387,6 @@ gfx::Rect Tray::GetBounds() {
 bool Tray::CheckAlive() {
   if (!tray_icon_) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     gin_helper::ErrorThrower(isolate).ThrowError("Tray is destroyed");
     return false;
@@ -423,9 +420,7 @@ v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

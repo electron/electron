@@ -17,7 +17,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
-#include "base/task/post_task.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -40,6 +39,7 @@
 #include "mojo/public/cpp/bindings/self_owned_receiver.h"
 #include "net/base/completion_repeating_callback.h"
 #include "net/base/load_flags.h"
+#include "net/base/network_anonymization_key.h"
 #include "net/http/http_auth_handler_factory.h"
 #include "net/http/http_auth_preferences.h"
 #include "net/http/http_cache.h"
@@ -53,6 +53,7 @@
 #include "shell/browser/api/electron_api_net_log.h"
 #include "shell/browser/api/electron_api_protocol.h"
 #include "shell/browser/api/electron_api_service_worker_context.h"
+#include "shell/browser/api/electron_api_web_frame_main.h"
 #include "shell/browser/api/electron_api_web_request.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_context.h"
@@ -66,6 +67,7 @@
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -73,6 +75,8 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
+#include "third_party/blink/public/common/storage_key/storage_key.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 #include "ui/base/l10n/l10n_util.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -96,27 +100,10 @@
 using content::BrowserThread;
 using content::StoragePartition;
 
-namespace predictors {
-// NOTE(nornagon): this is copied from
-// //chrome/browser/predictors/resource_prefetch_predictor.cc we don't need
-// anything in that file other than this constructor. Without it we get a link
-// error. Probably upstream the constructor should be moved to
-// preconnect_manager.cc.
-PreconnectRequest::PreconnectRequest(
-    const url::Origin& origin,
-    int num_sockets,
-    const net::NetworkIsolationKey& network_isolation_key)
-    : origin(origin),
-      num_sockets(num_sockets),
-      network_isolation_key(network_isolation_key) {
-  DCHECK_GE(num_sockets, 0);
-}
-}  // namespace predictors
-
 namespace {
 
 struct ClearStorageDataOptions {
-  GURL origin;
+  blink::StorageKey storage_key;
   uint32_t storage_types = StoragePartition::REMOVE_DATA_MASK_ALL;
   uint32_t quota_types = StoragePartition::QUOTA_MANAGED_STORAGE_MASK_ALL;
 };
@@ -151,12 +138,34 @@ uint32_t GetQuotaMask(const std::vector<std::string>& quota_types) {
     auto type = base::ToLowerASCII(it);
     if (type == "temporary")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_TEMPORARY;
-    else if (type == "persistent")
-      quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_PERSISTENT;
     else if (type == "syncable")
       quota_mask |= StoragePartition::QUOTA_MANAGED_STORAGE_MASK_SYNCABLE;
   }
   return quota_mask;
+}
+
+base::Value::Dict createProxyConfig(ProxyPrefs::ProxyMode proxy_mode,
+                                    std::string const& pac_url,
+                                    std::string const& proxy_server,
+                                    std::string const& bypass_list) {
+  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
+    return ProxyConfigDictionary::CreateDirect();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
+    return ProxyConfigDictionary::CreateSystem();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
+    return ProxyConfigDictionary::CreateAutoDetect();
+  }
+
+  if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
+    const bool pac_mandatory = true;
+    return ProxyConfigDictionary::CreatePacScript(pac_url, pac_mandatory);
+  }
+
+  return ProxyConfigDictionary::CreateFixedServers(proxy_server, bypass_list);
 }
 
 }  // namespace
@@ -171,7 +180,8 @@ struct Converter<ClearStorageDataOptions> {
     gin_helper::Dictionary options;
     if (!ConvertFromV8(isolate, val, &options))
       return false;
-    options.Get("origin", &out->origin);
+    if (GURL storage_origin; options.Get("origin", &storage_origin))
+      out->storage_key = blink::StorageKey(url::Origin::Create(storage_origin));
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);
@@ -243,9 +253,7 @@ struct Converter<network::mojom::SSLConfigPtr> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -372,7 +380,6 @@ void Session::OnDownloadCreated(content::DownloadManager* manager,
   if (item->IsSavePackageDownload())
     return;
 
-  v8::Locker locker(isolate_);
   v8::HandleScope handle_scope(isolate_);
   auto handle = DownloadItem::FromOrCreate(isolate_, item);
   if (item->GetState() == download::DownloadItem::INTERRUPTED)
@@ -468,8 +475,8 @@ v8::Local<v8::Promise> Session::ClearStorageData(gin::Arguments* args) {
   }
 
   storage_partition->ClearData(
-      options.storage_types, options.quota_types, options.origin, base::Time(),
-      base::Time::Max(),
+      options.storage_types, options.quota_types, options.storage_key,
+      base::Time(), base::Time::Max(),
       base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                      std::move(promise)));
   return handle;
@@ -516,26 +523,10 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
     }
   }
 
-  std::unique_ptr<base::Value> proxy_config;
-  if (proxy_mode == ProxyPrefs::MODE_DIRECT) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateDirect());
-  } else if (proxy_mode == ProxyPrefs::MODE_SYSTEM) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreateSystem());
-  } else if (proxy_mode == ProxyPrefs::MODE_AUTO_DETECT) {
-    proxy_config = std::make_unique<base::Value>(
-        ProxyConfigDictionary::CreateAutoDetect());
-  } else if (proxy_mode == ProxyPrefs::MODE_PAC_SCRIPT) {
-    proxy_config =
-        std::make_unique<base::Value>(ProxyConfigDictionary::CreatePacScript(
-            pac_url, true /* pac_mandatory */));
-  } else {
-    proxy_config = std::make_unique<base::Value>(
-        ProxyConfigDictionary::CreateFixedServers(proxy_rules, bypass_list));
-  }
   browser_context_->in_memory_pref_store()->SetValue(
-      proxy_config::prefs::kProxy, std::move(proxy_config),
+      proxy_config::prefs::kProxy,
+      base::Value{
+          createProxyConfig(proxy_mode, pac_url, proxy_rules, bypass_list)},
       WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
   base::ThreadTaskRunnerHandle::Get()->PostTask(
@@ -623,7 +614,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionRequestHandler(base::BindRepeating(
       [](ElectronPermissionManager::RequestHandler* handler,
          content::WebContents* web_contents,
-         content::PermissionType permission_type,
+         blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
         handler->Run(web_contents, permission_type,
@@ -645,6 +636,22 @@ void Session::SetPermissionCheckHandler(v8::Local<v8::Value> val,
   permission_manager->SetPermissionCheckHandler(handler);
 }
 
+void Session::SetDisplayMediaRequestHandler(v8::Isolate* isolate,
+                                            v8::Local<v8::Value> val) {
+  if (val->IsNull()) {
+    browser_context_->SetDisplayMediaRequestHandler(
+        DisplayMediaRequestHandler());
+    return;
+  }
+  DisplayMediaRequestHandler handler;
+  if (!gin::ConvertFromV8(isolate, val, &handler)) {
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "Display media request handler must be null or a function");
+    return;
+  }
+  browser_context_->SetDisplayMediaRequestHandler(handler);
+}
+
 void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
                                          gin::Arguments* args) {
   ElectronPermissionManager::DeviceCheckHandler handler;
@@ -655,6 +662,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetDevicePermissionHandler(handler);
+}
+
+void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
+                                         gin::Arguments* args) {
+  ElectronPermissionManager::BluetoothPairingHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetBluetoothPairingHandler(handler);
 }
 
 v8::Local<v8::Promise> Session::ClearHostResolverCache(gin::Arguments* args) {
@@ -926,7 +945,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
   url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkIsolationKey(origin, origin)}};
+       net::NetworkAnonymizationKey(net::SchemefulSite(origin),
+                                    net::SchemefulSite(origin))}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
@@ -952,8 +972,8 @@ void Session::Preconnect(const gin_helper::Dictionary& options,
   }
 
   DCHECK_GT(num_sockets_to_preconnect, 0);
-  base::PostTask(
-      FROM_HERE, {content::BrowserThread::UI},
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE,
       base::BindOnce(&StartPreconnectOnUI, base::Unretained(browser_context_),
                      url, num_sockets_to_preconnect));
 }
@@ -1019,14 +1039,15 @@ v8::Local<v8::Promise> Session::ClearCodeCaches(
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 base::Value Session::GetSpellCheckerLanguages() {
   return browser_context_->prefs()
-      ->Get(spellcheck::prefs::kSpellCheckDictionaries)
-      ->Clone();
+      ->GetValue(spellcheck::prefs::kSpellCheckDictionaries)
+      .Clone();
 }
 
 void Session::SetSpellCheckerLanguages(
     gin_helper::ErrorThrower thrower,
     const std::vector<std::string>& languages) {
-  base::ListValue language_codes;
+#if !BUILDFLAG(IS_MAC)
+  base::Value::List language_codes;
   for (const std::string& lang : languages) {
     std::string code = spellcheck::GetCorrespondingSpellCheckLanguage(lang);
     if (code.empty()) {
@@ -1037,14 +1058,16 @@ void Session::SetSpellCheckerLanguages(
     language_codes.Append(code);
   }
   browser_context_->prefs()->Set(spellcheck::prefs::kSpellCheckDictionaries,
-                                 language_codes);
+                                 base::Value(std::move(language_codes)));
   // Enable spellcheck if > 0 languages, disable if no languages set
   browser_context_->prefs()->SetBoolean(spellcheck::prefs::kSpellCheckEnable,
                                         !languages.empty());
+#endif
 }
 
 void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
                                           const GURL& url) {
+#if !BUILDFLAG(IS_MAC)
   if (!url.is_valid()) {
     thrower.ThrowError(
         "The URL you provided to setSpellCheckerDictionaryDownloadURL is not a "
@@ -1052,6 +1075,7 @@ void SetSpellCheckerDictionaryDownloadURL(gin_helper::ErrorThrower thrower,
     return;
   }
   SpellcheckHunspellDictionary::SetBaseDownloadURL(url);
+#endif
 }
 
 v8::Local<v8::Promise> Session::ListWordsInSpellCheckerDictionary() {
@@ -1164,7 +1188,7 @@ gin::Handle<Session> Session::CreateFrom(
 // static
 gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
                                             const std::string& partition,
-                                            base::DictionaryValue options) {
+                                            base::Value::Dict options) {
   ElectronBrowserContext* browser_context;
   if (partition.empty()) {
     browser_context =
@@ -1200,8 +1224,12 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
                  &Session::SetPermissionRequestHandler)
       .SetMethod("setPermissionCheckHandler",
                  &Session::SetPermissionCheckHandler)
+      .SetMethod("setDisplayMediaRequestHandler",
+                 &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setBluetoothPairingHandler",
+                 &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
       .SetMethod("clearAuthCache", &Session::ClearAuthCache)
       .SetMethod("allowNTLMCredentialsForDomains",
@@ -1257,9 +1285,7 @@ const char* Session::GetTypeName() {
   return "Session";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
@@ -1271,7 +1297,7 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
     args->ThrowTypeError("Session can only be received when app is ready");
     return v8::Null(args->isolate());
   }
-  base::DictionaryValue options;
+  base::Value::Dict options;
   args->GetNext(&options);
   return Session::FromPartition(args->isolate(), partition, std::move(options))
       .ToV8();

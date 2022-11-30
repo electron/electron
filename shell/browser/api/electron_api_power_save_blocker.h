@@ -13,9 +13,7 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/wake_lock.mojom.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
  public:
@@ -56,8 +54,6 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
   mojo::Remote<device::mojom::WakeLock> wake_lock_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_SAVE_BLOCKER_H_

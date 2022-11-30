@@ -153,20 +153,20 @@ v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
     v8::Isolate* isolate,
     net::HttpResponseHeaders* headers) {
-  base::DictionaryValue response_headers;
+  base::Value::Dict response_headers;
   if (headers) {
     size_t iter = 0;
     std::string key;
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
       key = base::ToLowerASCII(key);
-      base::Value* values = response_headers.FindListKey(key);
+      base::Value::List* values = response_headers.FindList(key);
       if (!values)
-        values = response_headers.SetKey(key, base::ListValue());
+        values = &response_headers.Set(key, base::Value::List())->GetList();
       values->Append(value);
     }
   }
-  return ConvertToV8(isolate, response_headers);
+  return ConvertToV8(isolate, base::Value(std::move(response_headers)));
 }
 
 bool Converter<net::HttpResponseHeaders*>::FromV8(
@@ -234,13 +234,13 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HttpRequestHeaders* out) {
-  base::DictionaryValue dict;
+  base::Value::Dict dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
-  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
-    if (it.value().is_string()) {
-      std::string value = it.value().GetString();
-      out->SetHeader(it.key(), value);
+  for (const auto it : dict) {
+    if (it.second.is_string()) {
+      std::string value = it.second.GetString();
+      out->SetHeader(it.first, value);
     }
   }
   return true;
@@ -313,33 +313,31 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     scoped_refptr<network::ResourceRequestBody>* out) {
-  auto list = std::make_unique<base::ListValue>();
-  if (!ConvertFromV8(isolate, val, list.get()))
+  base::Value list_value;
+  if (!ConvertFromV8(isolate, val, &list_value) || !list_value.is_list())
     return false;
+  base::Value::List& list = list_value.GetList();
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
-  for (size_t i = 0; i < list->GetListDeprecated().size(); ++i) {
-    base::DictionaryValue* dict = nullptr;
-    std::string type;
-    if (!list->GetDictionary(i, &dict))
+  for (size_t i = 0; i < list.size(); ++i) {
+    base::Value& dict_value = list[i];
+    if (!dict_value.is_dict())
       return false;
-    dict->GetString("type", &type);
-    if (type == "rawData") {
-      const base::Value::BlobStorage* bytes = dict->FindBlobKey("bytes");
+    base::Value::Dict& dict = dict_value.GetDict();
+    std::string* type = dict.FindString("type");
+    if (!type)
+      return false;
+    if (*type == "rawData") {
+      const base::Value::BlobStorage* bytes = dict.FindBlob("bytes");
       (*out)->AppendBytes(reinterpret_cast<const char*>(bytes->data()),
                           base::checked_cast<int>(bytes->size()));
-    } else if (type == "file") {
-      const std::string* file = dict->FindStringKey("filePath");
-      if (file == nullptr) {
+    } else if (*type == "file") {
+      const std::string* file = dict.FindString("filePath");
+      if (!file)
         return false;
-      }
-      int offset = 0, length = -1;
-      double modification_time = 0.0;
-      absl::optional<double> maybe_modification_time =
-          dict->FindDoubleKey("modificationTime");
-      if (maybe_modification_time.has_value())
-        modification_time = maybe_modification_time.value();
-      dict->GetInteger("offset", &offset);
-      dict->GetInteger("file", &length);
+      double modification_time =
+          dict.FindDouble("modificationTime").value_or(0.0);
+      int offset = dict.FindInt("offset").value_or(0);
+      int length = dict.FindInt("length").value_or(-1);
       (*out)->AppendFileRange(base::FilePath::FromUTF8Unsafe(*file),
                               static_cast<uint64_t>(offset),
                               static_cast<uint64_t>(length),

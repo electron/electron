@@ -8,12 +8,12 @@
 #import <Cocoa/Cocoa.h>
 
 #include <memory>
-#include <queue>
 #include <string>
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_window.h"
+#include "shell/common/api/api.mojom.h"
 #include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
@@ -104,6 +104,8 @@ class NativeWindowMac : public NativeWindow,
   void SetDocumentEdited(bool edited) override;
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
+  bool IsHiddenInMissionControl() override;
+  void SetHiddenInMissionControl(bool hidden) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;
@@ -162,21 +164,20 @@ class NativeWindowMac : public NativeWindow,
   // cleanup in destructor.
   void Cleanup();
 
-  // Use a custom content view instead of Chromium's BridgedContentView.
-  void OverrideNSWindowContentView();
-
   void UpdateVibrancyRadii(bool fullscreen);
 
+  void UpdateWindowOriginalFrame();
+
   // Set the attribute of NSWindow while work around a bug of zoom button.
+  bool HasStyleMask(NSUInteger flag) const;
   void SetStyleMask(bool on, NSUInteger flag);
   void SetCollectionBehavior(bool on, NSUInteger flag);
   void SetWindowLevel(int level);
 
-  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
-
-  // Handle fullscreen transitions.
-  void SetFullScreenTransitionState(FullScreenTransitionState state);
-  void HandlePendingFullscreenTransitions();
+  bool HandleDeferredClose();
+  void SetHasDeferredWindowClose(bool defer_close) {
+    has_deferred_window_close_ = defer_close;
+  }
 
   enum class VisualEffectState {
     kFollowWindow,
@@ -206,6 +207,8 @@ class NativeWindowMac : public NativeWindow,
   // views::WidgetDelegate:
   views::View* GetContentsView() override;
   bool CanMaximize() const override;
+  std::unique_ptr<views::NonClientFrameView> CreateNonClientFrameView(
+      views::Widget* widget) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -228,14 +231,6 @@ class NativeWindowMac : public NativeWindow,
   base::scoped_nsobject<ElectronPreviewItem> preview_item_;
   base::scoped_nsobject<ElectronTouchBar> touch_bar_;
 
-  // Event monitor for scroll wheel event.
-  id wheel_event_monitor_;
-
-  // The NSView that used as contentView of window.
-  //
-  // For frameless window it would fill the whole window.
-  base::scoped_nsobject<NSView> container_view_;
-
   // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
 
@@ -243,12 +238,11 @@ class NativeWindowMac : public NativeWindow,
   bool zoom_to_page_width_ = false;
   absl::optional<gfx::Point> traffic_light_position_;
 
-  std::queue<bool> pending_transitions_;
-  FullScreenTransitionState fullscreen_transition_state() const {
-    return fullscreen_transition_state_;
-  }
-  FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::NONE;
+  // Trying to close an NSWindow during a fullscreen transition will cause the
+  // window to lock up. Use this to track if CloseWindow was called during a
+  // fullscreen transition, to defer the -[NSWindow close] call until the
+  // transition is complete.
+  bool has_deferred_window_close_ = false;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 
@@ -265,8 +259,12 @@ class NativeWindowMac : public NativeWindow,
   // Controls the position and visibility of window buttons.
   base::scoped_nsobject<WindowButtonsProxy> buttons_proxy_;
 
+  std::unique_ptr<SkRegion> draggable_region_;
+
   // Maximizable window state; necessary for persistence through redraws.
   bool maximizable_ = true;
+
+  bool user_set_bounds_maximized_ = false;
 
   // Simple (pre-Lion) Fullscreen Settings
   bool always_simple_fullscreen_ = false;

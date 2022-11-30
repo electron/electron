@@ -9,22 +9,22 @@ at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.
 
 diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
-index 9008af973427d7dab8170449bc5767cebc9d2e9e..e312287e4aca61b51a69c8413088f56f9f704b5e 100644
+index 7e93d25f653a3291e3f8635231e847c334207918..bd2a4fc62aa80a5dfbcb0e416708286930c63f26 100644
 --- a/ui/ozone/platform/x11/ozone_platform_x11.cc
 +++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
-@@ -200,6 +200,7 @@ class OzonePlatformX11 : public OzonePlatform,
+@@ -191,6 +191,7 @@ class OzonePlatformX11 : public OzonePlatform,
+           base::MessagePumpType::UI;
        properties->supports_vulkan_swap_chain = true;
-       properties->uses_external_vulkan_image_factory = true;
        properties->skia_can_fall_back_to_x11 = true;
 +      properties->electron_can_call_x11 = true;
        properties->platform_shows_drag_image = false;
        properties->supports_global_application_menus = true;
        properties->app_modal_dialogs_use_event_blocker = true;
 diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
-index 22ba32317a74df24249d1528dcaaa28ff18bd0f4..fa57f97520a0327be2c7f5179591ca61b801c8b0 100644
+index 8850a11c1d0a04825ca75a8bd1ddf4819821fe76..939fdc14611b7a6af2daad838b9180f2bc3411a6 100644
 --- a/ui/ozone/public/ozone_platform.h
 +++ b/ui/ozone/public/ozone_platform.h
-@@ -132,6 +132,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
+@@ -125,6 +125,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
      // Linux only: determines if Skia can fall back to the X11 output device.
      bool skia_can_fall_back_to_x11 = false;
  

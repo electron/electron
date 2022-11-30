@@ -8,47 +8,21 @@
 #include <string>
 
 #include "base/memory/singleton.h"
+#include "components/webrtc/media_stream_device_enumerator_impl.h"
 #include "content/public/browser/media_observer.h"
 #include "content/public/browser/media_stream_request.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 namespace electron {
 
 // This singleton is used to receive updates about media events from the content
 // layer.
-class MediaCaptureDevicesDispatcher : public content::MediaObserver {
+class MediaCaptureDevicesDispatcher
+    : public content::MediaObserver,
+      public webrtc::MediaStreamDeviceEnumeratorImpl {
  public:
   static MediaCaptureDevicesDispatcher* GetInstance();
-
-  // Methods for observers. Called on UI thread.
-  const blink::MediaStreamDevices& GetAudioCaptureDevices();
-  const blink::MediaStreamDevices& GetVideoCaptureDevices();
-
-  // Helper to get the default devices which can be used by the media request.
-  // Uses the first available devices if the default devices are not available.
-  // If the return list is empty, it means there is no available device on the
-  // OS.
-  // Called on the UI thread.
-  void GetDefaultDevices(bool audio,
-                         bool video,
-                         blink::MediaStreamDevices* devices);
-
-  // Helpers for picking particular requested devices, identified by raw id.
-  // If the device requested is not available it will return NULL.
-  const blink::MediaStreamDevice* GetRequestedAudioDevice(
-      const std::string& requested_audio_device_id);
-  const blink::MediaStreamDevice* GetRequestedVideoDevice(
-      const std::string& requested_video_device_id);
-
-  // Returns the first available audio or video device, or NULL if no devices
-  // are available.
-  const blink::MediaStreamDevice* GetFirstAvailableAudioDevice();
-  const blink::MediaStreamDevice* GetFirstAvailableVideoDevice();
-
-  // Unittests that do not require actual device enumeration should call this
-  // API on the singleton. It is safe to call this multiple times on the
-  // singleton.
-  void DisableDeviceEnumerationForTesting();
 
   // Overridden from content::MediaObserver:
   void OnAudioCaptureDevicesChanged() override;
@@ -77,15 +51,6 @@ class MediaCaptureDevicesDispatcher : public content::MediaObserver {
 
   MediaCaptureDevicesDispatcher();
   ~MediaCaptureDevicesDispatcher() override;
-
-  // Only for testing, a list of cached audio capture devices.
-  blink::MediaStreamDevices test_audio_devices_;
-
-  // Only for testing, a list of cached video capture devices.
-  blink::MediaStreamDevices test_video_devices_;
-
-  // Flag used by unittests to disable device enumeration.
-  bool is_device_enumeration_disabled_ = false;
 };
 
 }  // namespace electron

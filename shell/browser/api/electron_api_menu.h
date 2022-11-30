@@ -16,9 +16,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Menu : public gin::Wrappable<Menu>,
              public gin_helper::EventEmitterMixin<Menu>,
@@ -123,9 +121,7 @@ class Menu : public gin::Wrappable<Menu>,
   bool WorksWhenHiddenAt(int index) const;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace gin {
 

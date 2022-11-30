@@ -99,7 +99,7 @@ You should at least follow these steps to improve the security of your applicati
 
 1. [Only load secure content](#1-only-load-secure-content)
 2. [Disable the Node.js integration in all renderers that display remote content](#2-do-not-enable-nodejs-integration-for-remote-content)
-3. [Enable context isolation in all renderers that display remote content](#3-enable-context-isolation-for-remote-content)
+3. [Enable context isolation in all renderers](#3-enable-context-isolation)
 4. [Enable process sandboxing](#4-enable-process-sandboxing)
 5. [Use `ses.setPermissionRequestHandler()` in all sessions that load remote content](#5-handle-session-permission-requests-from-remote-content)
 6. [Do not disable `webSecurity`](#6-do-not-disable-websecurity)
@@ -113,6 +113,7 @@ You should at least follow these steps to improve the security of your applicati
 14. [Disable or limit creation of new windows](#14-disable-or-limit-creation-of-new-windows)
 15. [Do not use `shell.openExternal` with untrusted content](#15-do-not-use-shellopenexternal-with-untrusted-content)
 16. [Use a current version of Electron](#16-use-a-current-version-of-electron)
+17. [Validate the `sender` of all IPC messages](#17-validate-the-sender-of-all-ipc-messages)
 
 To automate the detection of misconfigurations and insecure patterns, it is
 possible to use
@@ -130,10 +131,8 @@ like `HTTP`. Similarly, we recommend the use of `WSS` over `WS`, `FTPS` over
 
 #### Why?
 
-`HTTPS` has three main benefits:
+`HTTPS` has two main benefits:
 
-1. It authenticates the remote server, ensuring your app connects to the correct
-   host instead of an impersonator.
 1. It ensures data integrity, asserting that the data was not modified while in
    transit between your application and the host.
 1. It encrypts the traffic between your user and the destination host, making it
@@ -225,7 +224,7 @@ do consume Node.js modules or features. Preload scripts continue to have access
 to `require` and other Node.js features, allowing developers to expose a custom
 API to remotely loaded content via the [contextBridge API](../api/context-bridge.md).
 
-### 3. Enable Context Isolation for remote content
+### 3. Enable Context Isolation
 
 :::info
 This recommendation is the default behavior in Electron since 12.0.0.
@@ -256,7 +255,7 @@ the sandbox in all renderers. Loading, reading or processing any untrusted
 content in an unsandboxed process, including the main process, is not advised.
 
 :::info
-For more information on what `contextIsolation` is and how to enable it please
+For more information on what Process Sandboxing is and how to enable it please
 see our dedicated [Process Sandboxing](sandbox.md) document.
 :::info
 

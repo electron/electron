@@ -12,15 +12,12 @@
 #include "base/command_line.h"
 #include "base/strings/string_split.h"
 #include "base/strings/stringprintf.h"
-#include "chrome/common/pdf_util.h"
 #include "components/network_hints/renderer/web_prescient_networking_impl.h"
-#include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "content/common/buildflags.h"
 #include "content/public/common/content_constants.h"
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
-#include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
@@ -49,6 +46,7 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/media/multi_buffer_data_source.h"  // nogncheck
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
+#include "third_party/widevine/cdm/buildflags.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "base/strings/sys_string_conversions.h"
@@ -58,7 +56,7 @@
 #include <shlobj.h>
 #endif
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
+#if BUILDFLAG(ENABLE_WIDEVINE)
 #include "chrome/renderer/media/chrome_key_systems.h"  // nogncheck
 #endif
 
@@ -68,10 +66,14 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
+#include "chrome/common/pdf_util.h"
+#include "components/pdf/common/internal_plugin_helpers.h"
+#include "components/pdf/renderer/pdf_internal_plugin_delegate.h"
 #include "shell/common/electron_constants.h"
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
+#include "shell/common/plugin_info.h"
 #include "shell/renderer/pepper_helper.h"
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 
@@ -88,6 +90,7 @@
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/extension_web_view_helper.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
@@ -111,8 +114,37 @@ std::vector<std::string> ParseSchemesCLISwitch(base::CommandLine* command_line,
                            base::SPLIT_WANT_NONEMPTY);
 }
 
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+class ChromePdfInternalPluginDelegate final
+    : public pdf::PdfInternalPluginDelegate {
+ public:
+  ChromePdfInternalPluginDelegate() = default;
+  ChromePdfInternalPluginDelegate(const ChromePdfInternalPluginDelegate&) =
+      delete;
+  ChromePdfInternalPluginDelegate& operator=(
+      const ChromePdfInternalPluginDelegate&) = delete;
+  ~ChromePdfInternalPluginDelegate() override = default;
+
+  // `pdf::PdfInternalPluginDelegate`:
+  bool IsAllowedOrigin(const url::Origin& origin) const override {
+    return origin.scheme() == extensions::kExtensionScheme &&
+           origin.host() == extension_misc::kPdfExtensionId;
+  }
+};
+#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
+
 // static
 RendererClientBase* g_renderer_client_base = nullptr;
+
+bool IsDevTools(content::RenderFrame* render_frame) {
+  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
+      "devtools");
+}
+
+bool IsDevToolsExtension(content::RenderFrame* render_frame) {
+  return render_frame->GetWebFrame()->GetDocument().Url().ProtocolIs(
+      "chrome-extension");
+}
 
 }  // namespace
 
@@ -174,6 +206,19 @@ void RendererClientBase::BindProcess(v8::Isolate* isolate,
   process->SetReadOnly("contextIsolated",
                        render_frame->GetBlinkPreferences().context_isolation);
   process->SetReadOnly("contextId", context_id);
+}
+
+bool RendererClientBase::ShouldLoadPreload(
+    v8::Handle<v8::Context> context,
+    content::RenderFrame* render_frame) const {
+  auto prefs = render_frame->GetBlinkPreferences();
+  bool is_main_frame = render_frame->IsMainFrame();
+  bool is_devtools =
+      IsDevTools(render_frame) || IsDevToolsExtension(render_frame);
+  bool allow_node_in_sub_frames = prefs.node_integration_in_sub_frames;
+
+  return (is_main_frame || is_devtools || allow_node_in_sub_frames) &&
+         !IsWebViewFrame(context, render_frame);
 }
 
 void RendererClientBase::RenderThreadStarted() {
@@ -279,10 +324,11 @@ void RendererClientBase::RenderFrameCreated(
 
   dispatcher->OnRenderFrameCreated(render_frame);
 
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(
-          &extensions::MimeHandlerViewContainerManager::BindReceiver,
-          render_frame->GetRoutingID()));
+  render_frame->GetAssociatedInterfaceRegistry()
+      ->AddInterface<extensions::mojom::MimeHandlerViewContainerManager>(
+          base::BindRepeating(
+              &extensions::MimeHandlerViewContainerManager::BindReceiver,
+              render_frame->GetRoutingID()));
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -311,29 +357,12 @@ void RendererClientBase::DidClearWindowObject(
   render_frame->GetWebFrame()->ExecuteScript(blink::WebScriptSource("void 0"));
 }
 
-class ChromePdfInternalPluginDelegate final
-    : public pdf::PdfInternalPluginDelegate {
- public:
-  ChromePdfInternalPluginDelegate() = default;
-  ChromePdfInternalPluginDelegate(const ChromePdfInternalPluginDelegate&) =
-      delete;
-  ChromePdfInternalPluginDelegate& operator=(
-      const ChromePdfInternalPluginDelegate&) = delete;
-  ~ChromePdfInternalPluginDelegate() override = default;
-
-  // `pdf::PdfInternalPluginDelegate`:
-  bool IsAllowedOrigin(const url::Origin& origin) const override {
-    return origin.scheme() == extensions::kExtensionScheme &&
-           origin.host() == extension_misc::kPdfExtensionId;
-  }
-};
-
 bool RendererClientBase::OverrideCreatePlugin(
     content::RenderFrame* render_frame,
     const blink::WebPluginParams& params,
     blink::WebPlugin** plugin) {
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  if (params.mime_type.Utf8() == kPdfPluginMimeType) {
+  if (params.mime_type.Utf8() == pdf::kInternalPluginMimeType) {
     *plugin = pdf::CreateInternalPlugin(
         std::move(params), render_frame,
         std::make_unique<ChromePdfInternalPluginDelegate>());
@@ -342,7 +371,6 @@ bool RendererClientBase::OverrideCreatePlugin(
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
   if (params.mime_type.Utf8() == content::kBrowserPluginMimeType ||
-      params.mime_type.Utf8() == kPdfPluginMimeType ||
       render_frame->GetBlinkPreferences().enable_plugins)
     return false;
 
@@ -352,8 +380,10 @@ bool RendererClientBase::OverrideCreatePlugin(
 
 void RendererClientBase::GetSupportedKeySystems(
     media::GetSupportedKeySystemsCB cb) {
-#if defined(WIDEVINE_CDM_AVAILABLE)
+#if BUILDFLAG(ENABLE_WIDEVINE)
   GetChromeKeySystems(std::move(cb));
+#else
+  std::move(cb).Run({});
 #endif
 }
 
@@ -371,7 +401,7 @@ bool RendererClientBase::IsPluginHandledExternally(
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   DCHECK(plugin_element.HasHTMLTagName("object") ||
          plugin_element.HasHTMLTagName("embed"));
-  if (mime_type == "application/x-google-chrome-pdf") {
+  if (mime_type == pdf::kInternalPluginMimeType) {
     if (IsPdfInternalPluginAllowedOrigin(
             render_frame->GetWebFrame()->GetSecurityOrigin())) {
       return true;
@@ -379,11 +409,10 @@ bool RendererClientBase::IsPluginHandledExternally(
 
     content::WebPluginInfo info;
     info.type = content::WebPluginInfo::PLUGIN_TYPE_PEPPER_OUT_OF_PROCESS;
-    const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
-    info.name = kPDFExtensionPluginName;
-    info.path = base::FilePath::FromUTF8Unsafe("internal-pdf-viewer");
+    info.name = base::ASCIIToUTF16(kPDFInternalPluginName);
+    info.path = base::FilePath(kPdfPluginPath);
     info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-    info.mime_types.emplace_back("application/x-google-chrome-pdf", "pdf",
+    info.mime_types.emplace_back(pdf::kInternalPluginMimeType, "pdf",
                                  "Portable Document Format");
     return extensions::MimeHandlerViewContainerManager::Get(
                content::RenderFrame::FromWebFrame(
@@ -392,21 +421,12 @@ bool RendererClientBase::IsPluginHandledExternally(
         ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
   }
 
-  // TODO(nornagon): this info should be shared with the data in
-  // electron_content_client.cc / ComputeBuiltInPlugins.
-  content::WebPluginInfo info;
-  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  const char16_t kPDFExtensionPluginName[] = u"Chromium PDF Viewer";
-  info.name = kPDFExtensionPluginName;
-  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
-  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-  info.mime_types.emplace_back("application/pdf", "pdf",
-                               "Portable Document Format");
   return extensions::MimeHandlerViewContainerManager::Get(
              content::RenderFrame::FromWebFrame(
                  plugin_element.GetDocument().GetFrame()),
              true /* create_if_does_not_exist */)
-      ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
+      ->CreateFrameContainer(plugin_element, original_url, mime_type,
+                             GetPDFPluginInfo());
 #else
   return false;
 #endif
@@ -415,6 +435,7 @@ bool RendererClientBase::IsPluginHandledExternally(
 v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
     const blink::WebElement& plugin_element,
     v8::Isolate* isolate) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // If there is a MimeHandlerView that can provide the scriptable object then
   // MaybeCreateMimeHandlerView must have been called before and a container
   // manager should exist.
@@ -424,6 +445,7 @@ v8::Local<v8::Object> RendererClientBase::GetScriptableObject(
       false /* create_if_does_not_exist */);
   if (container_manager)
     return container_manager->GetScriptableObject(plugin_element, isolate);
+#endif
   return v8::Local<v8::Object>();
 }
 
@@ -509,6 +531,14 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
   extensions_renderer_client_->GetDispatcher()
       ->WillDestroyServiceWorkerContextOnWorkerThread(
           context, service_worker_version_id, service_worker_scope, script_url);
+#endif
+}
+
+void RendererClientBase::WebViewCreated(blink::WebView* web_view,
+                                        bool was_created_by_renderer,
+                                        const url::Origin* outermost_origin) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  new extensions::ExtensionWebViewHelper(web_view, outermost_origin);
 #endif
 }
 
@@ -600,7 +630,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     v8::Local<v8::Object> context,
     v8::Local<v8::Function> register_cb) {
   v8::HandleScope handle_scope(isolate);
-  v8::Context::Scope context_scope(context->CreationContext());
+  v8::Context::Scope context_scope(context->GetCreationContextChecked());
   blink::WebCustomElement::EmbedderNamesAllowedScope embedder_names_scope;
 
   content::RenderFrame* render_frame = GetRenderFrame(context);
@@ -608,8 +638,8 @@ void RendererClientBase::AllowGuestViewElementDefinition(
     return;
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
-      context->CreationContext(), register_cb, v8::Null(isolate), 0, nullptr,
-      nullptr);
+      context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
+      nullptr, base::NullCallback());
 }
 
 }  // namespace electron

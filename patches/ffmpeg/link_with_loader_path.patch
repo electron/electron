@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Tue, 2 Aug 2022 11:53:00 +0900
+Subject: fix: link with @loader_path/libffmpeg.dylib
+
+Submitted to https://chromium-review.googlesource.com/c/chromium/third_party/ffmpeg/+/3803946.
+
+When building with `is_component_build=false is_component_ffmpeg=true`,
+we must manually instruct executables to link with the ffmpeg.dylib,
+which is generated at the @loader_path, where for most targets is the
+out/{Release,Debug} dir.
+
+Using @rpath is wrong because the @rpath of most targets does not
+include the out dir, and the linker won't be able to find ffmpeg.dylib
+because of so.
+
+diff --git a/BUILD.gn b/BUILD.gn
+index 5ea4e373360f1e09d8295be89beb063f482ec165..4fd65674d1a2a94868de6aa32bdde04a4b9c2662 100755
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -448,7 +448,7 @@ if (is_component_ffmpeg) {
+ 
+     if (!is_component_build) {
+       if (is_mac) {
+-        ldflags += [ "-Wl,-install_name,@rpath/libffmpeg.dylib" ]
++        ldflags += [ "-Wl,-install_name,@loader_path/libffmpeg.dylib" ]
+       } else if (is_linux) {
+         all_dependent_configs = [
+           "//build/config/gcc:rpath_for_built_shared_libraries",

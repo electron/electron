@@ -16,9 +16,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo AutoUpdater::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -32,7 +30,6 @@ AutoUpdater::~AutoUpdater() {
 
 void AutoUpdater::OnError(const std::string& message) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (GetWrapper(isolate).ToLocal(&wrapper)) {
@@ -49,7 +46,6 @@ void AutoUpdater::OnError(const std::string& message,
                           const int code,
                           const std::string& domain) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Object> wrapper;
   if (GetWrapper(isolate).ToLocal(&wrapper)) {
@@ -136,9 +132,7 @@ const char* AutoUpdater::GetTypeName() {
   return "AutoUpdater";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

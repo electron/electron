@@ -54,7 +54,6 @@ class ProxyingURLLoaderFactory
     InProgressRequest(
         ProxyingURLLoaderFactory* factory,
         uint64_t web_request_id,
-        int32_t view_routing_id,
         int32_t frame_routing_id,
         int32_t network_service_request_id,
         uint32_t options,
@@ -89,17 +88,16 @@ class ProxyingURLLoaderFactory
     // network::mojom::URLLoaderClient:
     void OnReceiveEarlyHints(
         network::mojom::EarlyHintsPtr early_hints) override;
-    void OnReceiveResponse(network::mojom::URLResponseHeadPtr head,
-                           mojo::ScopedDataPipeConsumerHandle body) override;
+    void OnReceiveResponse(
+        network::mojom::URLResponseHeadPtr head,
+        mojo::ScopedDataPipeConsumerHandle body,
+        absl::optional<mojo_base::BigBuffer> cached_metadata) override;
     void OnReceiveRedirect(const net::RedirectInfo& redirect_info,
                            network::mojom::URLResponseHeadPtr head) override;
     void OnUploadProgress(int64_t current_position,
                           int64_t total_size,
                           OnUploadProgressCallback callback) override;
-    void OnReceiveCachedMetadata(mojo_base::BigBuffer data) override;
     void OnTransferSizeUpdated(int32_t transfer_size_diff) override;
-    void OnStartLoadingResponseBody(
-        mojo::ScopedDataPipeConsumerHandle body) override;
     void OnComplete(const network::URLLoaderCompletionStatus& status) override;
 
     void OnLoaderCreated(
@@ -136,7 +134,6 @@ class ProxyingURLLoaderFactory
     const absl::optional<url::Origin> original_initiator_;
     const uint64_t request_id_ = 0;
     const int32_t network_service_request_id_ = 0;
-    const int32_t view_routing_id_ = MSG_ROUTING_NONE;
     const int32_t frame_routing_id_ = MSG_ROUTING_NONE;
     const uint32_t options_ = 0;
     const net::MutableNetworkTrafficAnnotationTag traffic_annotation_;
@@ -187,6 +184,8 @@ class ProxyingURLLoaderFactory
     };
     std::unique_ptr<FollowRedirectParams> pending_follow_redirect_params_;
 
+    absl::optional<mojo_base::BigBuffer> current_cached_metadata_;
+
     base::WeakPtrFactory<InProgressRequest> weak_factory_{this};
   };
 
@@ -195,7 +194,6 @@ class ProxyingURLLoaderFactory
       const HandlersMap& intercepted_handlers,
       int render_process_id,
       int frame_routing_id,
-      int view_routing_id,
       uint64_t* request_id_generator,
       std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data,
       absl::optional<int64_t> navigation_id,
@@ -260,7 +258,6 @@ class ProxyingURLLoaderFactory
 
   const int render_process_id_;
   const int frame_routing_id_;
-  const int view_routing_id_;
   uint64_t* request_id_generator_;  // managed by ElectronBrowserClient
   std::unique_ptr<extensions::ExtensionNavigationUIData> navigation_ui_data_;
   absl::optional<int64_t> navigation_id_;

@@ -54,7 +54,7 @@ See [issues](issues.md) for more information.
 Most pull requests opened against the `electron/electron` repository include
 changes to either the C/C++ code in the `shell/` folder,
 the TypeScript code in the `lib/` folder, the documentation in `docs/`,
-or tests in the `spec/` and `spec-main/` folders.
+or tests in the `spec/` folder.
 
 See [pull requests](pull-requests.md) for more information.
 
@@ -64,7 +64,7 @@ If you want to add a new API module to Electron, you'll want to look in [creatin
 
 Electron has a fully-fledged governance system that oversees activity in Electron and whose working groups are responsible for areas like APIs, releases, and upgrades to Electron's dependencies including Chromium and Node.js. Depending on how frequently and to what end you want to contribute, you may want to consider joining a working group.
 
-Details about each group and their reponsibilities can be found in the [governance repo](https://github.com/electron/governance).
+Details about each group and their responsibilities can be found in the [governance repo](https://github.com/electron/governance).
 
 ## Patches in Electron
 

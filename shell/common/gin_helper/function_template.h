@@ -313,7 +313,7 @@ struct CallbackTraits<base::RepeatingCallback<T>> {
 
 // Specialization for member function pointers. We need to handle this case
 // specially because the first parameter for callbacks to MFP should typically
-// come from the the JavaScript "this" object the function was called on, not
+// come from the JavaScript "this" object the function was called on, not
 // from the first normal parameter.
 template <typename T>
 struct CallbackTraits<

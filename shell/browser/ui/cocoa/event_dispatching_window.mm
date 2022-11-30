@@ -20,8 +20,8 @@
 
 - (void)redispatchKeyEvent:(NSEvent*)event {
   NSEventType eventType = [event type];
-  if (eventType != NSKeyDown && eventType != NSKeyUp &&
-      eventType != NSFlagsChanged) {
+  if (eventType != NSEventTypeKeyDown && eventType != NSEventTypeKeyUp &&
+      eventType != NSEventTypeFlagsChanged) {
     return;
   }
 

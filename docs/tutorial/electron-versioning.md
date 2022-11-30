@@ -18,7 +18,7 @@ npm install --save-dev electron@latest
 
 There are several major changes from our 1.x strategy outlined below. Each change is intended to satisfy the needs and priorities of developers/maintainers and app developers.
 
-1. Strict use of the the [SemVer](#semver) spec
+1. Strict use of the [SemVer](#semver) spec
 2. Introduction of semver-compliant `-beta` tags
 3. Introduction of [conventional commit messages](https://conventionalcommits.org/)
 4. Well-defined stabilization branches

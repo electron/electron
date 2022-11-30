@@ -135,9 +135,7 @@ struct Converter<in_app_purchase::Product> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -211,9 +209,7 @@ void InAppPurchase::OnTransactionsUpdated(
 }
 #endif
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

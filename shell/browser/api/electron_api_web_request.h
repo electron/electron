@@ -19,9 +19,7 @@ namespace content {
 class BrowserContext;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
  public:
@@ -151,8 +149,6 @@ class WebRequest : public gin::Wrappable<WebRequest>, public WebRequestAPI {
   content::BrowserContext* browser_context_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_REQUEST_H_

@@ -84,7 +84,7 @@ that contains the user information dictionary sent along with the notification.
 
 ### `systemPreferences.subscribeNotification(event, callback)` _macOS_
 
-* `event` string
+* `event` string | null
 * `callback` Function
   * `event` string
   * `userInfo` Record<string, unknown>
@@ -109,9 +109,11 @@ example values of `event` are:
 * `AppleColorPreferencesChangedNotification`
 * `AppleShowScrollBarsSettingChanged`
 
+If `event` is null, the `NSDistributedNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc)  for more information.
+
 ### `systemPreferences.subscribeLocalNotification(event, callback)` _macOS_
 
-* `event` string
+* `event` string | null
 * `callback` Function
   * `event` string
   * `userInfo` Record<string, unknown>
@@ -122,9 +124,11 @@ Returns `number` - The ID of this subscription
 Same as `subscribeNotification`, but uses `NSNotificationCenter` for local defaults.
 This is necessary for events such as `NSUserDefaultsDidChangeNotification`.
 
+If `event` is null, the `NSNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc) for more information.
+
 ### `systemPreferences.subscribeWorkspaceNotification(event, callback)` _macOS_
 
-* `event` string
+* `event` string | null
 * `callback` Function
   * `event` string
   * `userInfo` Record<string, unknown>
@@ -134,6 +138,8 @@ Returns `number` - The ID of this subscription
 
 Same as `subscribeNotification`, but uses `NSWorkspace.sharedWorkspace.notificationCenter`.
 This is necessary for events such as `NSWorkspaceDidActivateApplicationNotification`.
+
+If `event` is null, the `NSWorkspaceNotificationCenter` doesn’t use it as criteria for delivery to the observer. See [docs](https://developer.apple.com/documentation/foundation/nsnotificationcenter/1411723-addobserverforname?language=objc) for more information.
 
 ### `systemPreferences.unsubscribeNotification(id)` _macOS_
 
@@ -177,11 +183,11 @@ Some popular `key` and `type`s are:
 * `NSPreferredWebServices`: `dictionary`
 * `NSUserDictionaryReplacementItems`: `array`
 
-### `systemPreferences.setUserDefault(key, type, value)` _macOS_
+### `systemPreferences.setUserDefault<Type extends keyof UserDefaultTypes>(key, type, value)` _macOS_
 
 * `key` string
-* `type` string - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array` or `dictionary`.
-* `value` string
+* `type` Type - Can be `string`, `boolean`, `integer`, `float`, `double`, `url`, `array` or `dictionary`.
+* `value` UserDefaultTypes[Type]
 
 Set the value of `key` in `NSUserDefaults`.
 

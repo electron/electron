@@ -65,7 +65,7 @@
   return YES;
 }
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 // This undocumented method notifies us if a user closes "Alert" notifications
 // https://chromium.googlesource.com/chromium/src/+/lkgr/chrome/browser/notifications/notification_platform_bridge_mac.mm
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center
@@ -76,7 +76,7 @@
 }
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 // This undocumented method notifies us if a user closes "Banner" notifications
 // https://github.com/mozilla/gecko-dev/blob/master/widget/cocoa/OSXNotificationCenter.mm
 - (void)userNotificationCenter:(NSUserNotificationCenter*)center

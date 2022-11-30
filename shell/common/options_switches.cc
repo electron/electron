@@ -39,6 +39,8 @@ const char kOverlaySymbolColor[] = "symbolColor";
 // The custom height for Window Controls Overlay.
 const char kOverlayHeight[] = "height";
 
+// whether to keep the window out of mission control
+const char kHiddenInMissionControl[] = "hiddenInMissionControl";
 // Whether the window should show in taskbar.
 const char kSkipTaskbar[] = "skipTaskbar";
 
@@ -266,8 +268,6 @@ const char kEnableAuthNegotiatePort[] = "enable-auth-negotiate-port";
 
 // If set, NTLM v2 is disabled for POSIX platforms.
 const char kDisableNTLMv2[] = "disable-ntlm-v2";
-
-const char kGlobalCrashKeys[] = "global-crash-keys";
 
 const char kEnableWebSQL[] = "enable-websql";
 

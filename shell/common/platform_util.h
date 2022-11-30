@@ -56,6 +56,10 @@ bool SetLoginItemEnabled(bool enabled);
 // Returns a success flag.
 // Unlike libgtkui, does *not* use "chromium-browser.desktop" as a fallback.
 bool GetDesktopName(std::string* setme);
+
+// The XDG application ID must match the name of the desktop entry file without
+// the .desktop extension.
+std::string GetXdgAppId();
 #endif
 
 }  // namespace platform_util

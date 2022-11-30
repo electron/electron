@@ -7,9 +7,7 @@
 #include "gin/public/wrapper_info.h"
 #include "shell/browser/api/electron_api_event_emitter.h"
 
-namespace gin_helper {
-
-namespace internal {
+namespace gin_helper::internal {
 
 gin::WrapperInfo kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -40,6 +38,4 @@ v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate) {
   return tmpl;
 }
 
-}  // namespace internal
-
-}  // namespace gin_helper
+}  // namespace gin_helper::internal

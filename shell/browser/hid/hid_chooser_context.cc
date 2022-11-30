@@ -13,22 +13,29 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "chrome/grit/generated_resources.h"
 #include "components/content_settings/core/common/content_settings_types.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/device_service.h"
-#include "electron/grit/electron_resources.h"
 #include "services/device/public/cpp/hid/hid_blocklist.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/web_contents_permission_helper.h"
+#include "shell/common/electron_constants.h"
+#include "shell/common/gin_converters/content_converter.h"
+#include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_converters/hid_device_info_converter.h"
+#include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
+
 #include "ui/base/l10n/l10n_util.h"
 
 namespace electron {
 
 const char kHidDeviceNameKey[] = "name";
 const char kHidGuidKey[] = "guid";
-const char kHidVendorIdKey[] = "vendorId";
-const char kHidProductIdKey[] = "productId";
-const char kHidSerialNumberKey[] = "serialNumber";
 
 HidChooserContext::HidChooserContext(ElectronBrowserContext* context)
     : browser_context_(context) {}
@@ -67,12 +74,12 @@ base::Value HidChooserContext::DeviceInfoToValue(
   value.SetStringKey(
       kHidDeviceNameKey,
       base::UTF16ToUTF8(HidChooserContext::DisplayNameFromDeviceInfo(device)));
-  value.SetIntKey(kHidVendorIdKey, device.vendor_id);
-  value.SetIntKey(kHidProductIdKey, device.product_id);
+  value.SetIntKey(kDeviceVendorIdKey, device.vendor_id);
+  value.SetIntKey(kDeviceProductIdKey, device.product_id);
   if (HidChooserContext::CanStorePersistentEntry(device)) {
     // Use the USB serial number as a persistent identifier. If it is
     // unavailable, only ephemeral permissions may be granted.
-    value.SetStringKey(kHidSerialNumberKey, device.serial_number);
+    value.SetStringKey(kDeviceSerialNumberKey, device.serial_number);
   } else {
     // The GUID is a temporary ID created on connection that remains valid until
     // the device is disconnected. Ephemeral permissions are keyed by this ID
@@ -84,28 +91,81 @@ base::Value HidChooserContext::DeviceInfoToValue(
 
 void HidChooserContext::GrantDevicePermission(
     const url::Origin& origin,
-    const device::mojom::HidDeviceInfo& device,
-    content::RenderFrameHost* render_frame_host) {
+    const device::mojom::HidDeviceInfo& device) {
   DCHECK(base::Contains(devices_, device.guid));
   if (CanStorePersistentEntry(device)) {
-    auto* web_contents =
-        content::WebContents::FromRenderFrameHost(render_frame_host);
-    auto* permission_helper =
-        WebContentsPermissionHelper::FromWebContents(web_contents);
-    permission_helper->GrantHIDDevicePermission(
-        origin, DeviceInfoToValue(device), render_frame_host);
+    auto* permission_manager = static_cast<ElectronPermissionManager*>(
+        browser_context_->GetPermissionControllerDelegate());
+
+    permission_manager->GrantDevicePermission(
+        static_cast<blink::PermissionType>(
+            WebContentsPermissionHelper::PermissionType::HID),
+        origin, DeviceInfoToValue(device), browser_context_);
   } else {
     ephemeral_devices_[origin].insert(device.guid);
   }
 }
 
+void HidChooserContext::RevokeDevicePermission(
+    const url::Origin& origin,
+    const device::mojom::HidDeviceInfo& device) {
+  DCHECK(base::Contains(devices_, device.guid));
+  if (CanStorePersistentEntry(device)) {
+    RevokePersistentDevicePermission(origin, device);
+  } else {
+    RevokeEphemeralDevicePermission(origin, device);
+  }
+  api::Session* session = api::Session::FromBrowserContext(browser_context_);
+  if (session) {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    gin_helper::Dictionary details =
+        gin_helper::Dictionary::CreateEmpty(isolate);
+    details.Set("device", device.Clone());
+    details.Set("origin", origin.Serialize());
+    session->Emit("hid-device-revoked", details);
+  }
+}
+
+void HidChooserContext::RevokePersistentDevicePermission(
+    const url::Origin& origin,
+    const device::mojom::HidDeviceInfo& device) {
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  permission_manager->RevokeDevicePermission(
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::HID),
+      origin, DeviceInfoToValue(device), browser_context_);
+  RevokeEphemeralDevicePermission(origin, device);
+}
+
+void HidChooserContext::RevokeEphemeralDevicePermission(
+    const url::Origin& origin,
+    const device::mojom::HidDeviceInfo& device) {
+  auto it = ephemeral_devices_.find(origin);
+  if (it != ephemeral_devices_.end()) {
+    std::set<std::string>& devices = it->second;
+    for (auto guid = devices.begin(); guid != devices.end();) {
+      DCHECK(base::Contains(devices_, *guid));
+
+      if (devices_[*guid]->physical_device_id != device.physical_device_id) {
+        ++guid;
+        continue;
+      }
+
+      guid = devices.erase(guid);
+      if (devices.empty())
+        ephemeral_devices_.erase(it);
+    }
+  }
+}
+
 bool HidChooserContext::HasDevicePermission(
     const url::Origin& origin,
-    const device::mojom::HidDeviceInfo& device,
-    content::RenderFrameHost* render_frame_host) {
+    const device::mojom::HidDeviceInfo& device) {
   if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kDisableHidBlocklist) &&
-      device::HidBlocklist::IsDeviceExcluded(device))
+      device.is_excluded_by_blocklist)
     return false;
 
   auto it = ephemeral_devices_.find(origin);
@@ -114,12 +174,12 @@ bool HidChooserContext::HasDevicePermission(
     return true;
   }
 
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  auto* permission_helper =
-      WebContentsPermissionHelper::FromWebContents(web_contents);
-  return permission_helper->CheckHIDDevicePermission(
-      origin, DeviceInfoToValue(device), render_frame_host);
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context_->GetPermissionControllerDelegate());
+  return permission_manager->CheckDevicePermission(
+      static_cast<blink::PermissionType>(
+          WebContentsPermissionHelper::PermissionType::HID),
+      origin, DeviceInfoToValue(device), browser_context_);
 }
 
 void HidChooserContext::AddDeviceObserver(DeviceObserver* observer) {

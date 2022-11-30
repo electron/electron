@@ -174,11 +174,6 @@ webview.addEventListener('found-in-page', function (e) {
 
 const requestId = webview.findInPage('test')
 
-webview.addEventListener('new-window', async e => {
-  const { shell } = require('electron')
-  await shell.openExternal(e.url)
-})
-
 webview.addEventListener('close', function () {
   webview.src = 'about:blank'
 })

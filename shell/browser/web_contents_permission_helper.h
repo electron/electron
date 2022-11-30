@@ -7,9 +7,9 @@
 
 #include "base/values.h"
 #include "content/public/browser/media_stream_request.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "third_party/blink/public/common/mediastream/media_stream_request.h"
+#include "third_party/blink/public/common/permissions/permission_utils.h"
 
 namespace electron {
 
@@ -25,15 +25,17 @@ class WebContentsPermissionHelper
       delete;
 
   enum class PermissionType {
-    POINTER_LOCK = static_cast<int>(content::PermissionType::NUM) + 1,
+    POINTER_LOCK = static_cast<int>(blink::PermissionType::NUM) + 1,
     FULLSCREEN,
     OPEN_EXTERNAL,
     SERIAL,
-    HID
+    HID,
+    USB
   };
 
   // Asynchronous Requests
-  void RequestFullscreenPermission(base::OnceCallback<void(bool)> callback);
+  void RequestFullscreenPermission(content::RenderFrameHost* requesting_frame,
+                                   base::OnceCallback<void(bool)> callback);
   void RequestMediaAccessPermission(const content::MediaStreamRequest& request,
                                     content::MediaResponseCallback callback);
   void RequestPointerLockPermission(
@@ -42,8 +44,10 @@ class WebContentsPermissionHelper
       base::OnceCallback<void(content::WebContents*, bool, bool, bool)>
           callback);
   void RequestWebNotificationPermission(
+      content::RenderFrameHost* requesting_frame,
       base::OnceCallback<void(bool)> callback);
-  void RequestOpenExternalPermission(base::OnceCallback<void(bool)> callback,
+  void RequestOpenExternalPermission(content::RenderFrameHost* requesting_frame,
+                                     base::OnceCallback<void(bool)> callback,
                                      bool user_gesture,
                                      const GURL& url);
 
@@ -51,45 +55,19 @@ class WebContentsPermissionHelper
   bool CheckMediaAccessPermission(const GURL& security_origin,
                                   blink::mojom::MediaStreamType type) const;
   bool CheckSerialAccessPermission(const url::Origin& embedding_origin) const;
-  bool CheckSerialPortPermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  void GrantSerialPortPermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  bool CheckHIDAccessPermission(const url::Origin& embedding_origin) const;
-  bool CheckHIDDevicePermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
-  void GrantHIDDevicePermission(
-      const url::Origin& origin,
-      base::Value device,
-      content::RenderFrameHost* render_frame_host) const;
 
  private:
   explicit WebContentsPermissionHelper(content::WebContents* web_contents);
   friend class content::WebContentsUserData<WebContentsPermissionHelper>;
 
-  void RequestPermission(content::PermissionType permission,
+  void RequestPermission(content::RenderFrameHost* requesting_frame,
+                         blink::PermissionType permission,
                          base::OnceCallback<void(bool)> callback,
                          bool user_gesture = false,
-                         const base::DictionaryValue* details = nullptr);
+                         base::Value::Dict details = {});
 
-  bool CheckPermission(content::PermissionType permission,
-                       const base::DictionaryValue* details) const;
-
-  bool CheckDevicePermission(content::PermissionType permission,
-                             const url::Origin& origin,
-                             const base::Value* device,
-                             content::RenderFrameHost* render_frame_host) const;
-
-  void GrantDevicePermission(content::PermissionType permission,
-                             const url::Origin& origin,
-                             const base::Value* device,
-                             content::RenderFrameHost* render_frame_host) const;
+  bool CheckPermission(blink::PermissionType permission,
+                       base::Value::Dict details) const;
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref

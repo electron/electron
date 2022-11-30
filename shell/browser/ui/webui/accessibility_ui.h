@@ -32,7 +32,7 @@ class ElectronAccessibilityUIMessageHandler
   void RegisterMessages() final;
 
  private:
-  void RequestNativeUITree(const base::ListValue* args);
+  void RequestNativeUITree(const base::Value::List& args);
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_WEBUI_ACCESSIBILITY_UI_H_

@@ -121,7 +121,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
-                   const gfx::Rect& pos,
+                   const gfx::Rect& bounds,
                    const gfx::Rect& anchor_rect) override;
   void UpdateCursor(const content::WebCursor&) override;
   void SetIsLoading(bool is_loading) override;

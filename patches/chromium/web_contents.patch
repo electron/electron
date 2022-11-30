@@ -9,12 +9,12 @@ is needed for OSR.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/226.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a82b571fdabe90771bc8f8ed4ae40df3085592c7..1942d3446225411bdce80628e219641b3089d4a3 100644
+index 0a828ca5ed134107f0c9d66915cc0008b623d416..38f58bb75ef90e7bfdd761a0125b1c9e60c7f5c4 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3045,6 +3045,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
-       site_instance.get(), params.renderer_initiated_creation,
-       params.main_frame_name, GetOriginalOpener(), primary_main_frame_policy);
+@@ -3094,6 +3094,13 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+       params.main_frame_name, GetOpener(), primary_main_frame_policy,
+       base::UnguessableToken::Create());
  
 +  if (params.view && params.delegate_view) {
 +    view_.reset(params.view);
@@ -23,22 +23,22 @@ index a82b571fdabe90771bc8f8ed4ae40df3085592c7..1942d3446225411bdce80628e219641b
 +
 +  if (!view_) {
 +
-   WebContentsViewDelegate* delegate =
+   std::unique_ptr<WebContentsViewDelegate> delegate =
        GetContentClient()->browser()->GetWebContentsViewDelegate(this);
  
-@@ -3055,6 +3062,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
-     view_.reset(CreateWebContentsView(this, delegate,
-                                       &render_view_host_delegate_view_));
+@@ -3104,6 +3111,7 @@ void WebContentsImpl::Init(const WebContents::CreateParams& params,
+     view_ = CreateWebContentsView(this, std::move(delegate),
+                                   &render_view_host_delegate_view_);
    }
 +  }  // !view_
    CHECK(render_view_host_delegate_view_);
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index cb672eb5276e8d3bb686f98405854f67970e72cb..d159f44dc855fee799f7b97b59a2a4e64631e7b4 100644
+index cc61bc1b435003c58d51f7e1c8656f96a28b8916..f0ca6d5d46e86bc85b60ff0de3185075f169075a 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -93,10 +93,13 @@ class BrowserContext;
+@@ -95,10 +95,13 @@ class BrowserContext;
  class BrowserPluginGuestDelegate;
  class RenderFrameHost;
  class RenderViewHost;
@@ -52,7 +52,7 @@ index cb672eb5276e8d3bb686f98405854f67970e72cb..d159f44dc855fee799f7b97b59a2a4e6
  class WebUI;
  struct DropData;
  struct MHTMLGenerationParams;
-@@ -234,6 +237,10 @@ class WebContents : public PageNavigator,
+@@ -238,6 +241,10 @@ class WebContents : public PageNavigator,
      network::mojom::WebSandboxFlags starting_sandbox_flags =
          network::mojom::WebSandboxFlags::kNone;
  

@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as klaw from 'klaw';
@@ -9,6 +8,8 @@ import * as streamChain from 'stream-chain';
 import * as streamJson from 'stream-json';
 import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
 import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
+
+import { chunkFilenames } from './lib/utils';
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const LLVM_BIN = path.resolve(
@@ -109,33 +110,6 @@ function getDepotToolsEnv (): NodeJS.ProcessEnv {
   return depotToolsEnv;
 }
 
-function chunkFilenames (filenames: string[], offset: number = 0): string[][] {
-  // Windows has a max command line length of 2047 characters, so we can't
-  // provide too many filenames without going over that. To work around that,
-  // chunk up a list of filenames such that it won't go over that limit when
-  // used as args. Use a much higher limit on other platforms which will
-  // effectively be a no-op.
-  const MAX_FILENAME_ARGS_LENGTH =
-    PLATFORM === 'win32' ? 2047 - offset : 100 * 1024;
-
-  return filenames.reduce(
-    (chunkedFilenames: string[][], filename) => {
-      const currChunk = chunkedFilenames[chunkedFilenames.length - 1];
-      const currChunkLength = currChunk.reduce(
-        (totalLength, _filename) => totalLength + _filename.length + 1,
-        0
-      );
-      if (currChunkLength + filename.length + 1 > MAX_FILENAME_ARGS_LENGTH) {
-        chunkedFilenames.push([filename]);
-      } else {
-        currChunk.push(filename);
-      }
-      return chunkedFilenames;
-    },
-    [[]]
-  );
-}
-
 async function runClangTidy (
   outDir: string,
   filenames: string[],
@@ -143,7 +117,7 @@ async function runClangTidy (
   jobs: number = 1
 ): Promise<boolean> {
   const cmd = path.resolve(LLVM_BIN, 'clang-tidy');
-  const args = [`-p=${outDir}`];
+  const args = [`-p=${outDir}`, '--use-color'];
 
   if (checks) args.push(`--checks=${checks}`);
 
@@ -199,41 +173,10 @@ async function runClangTidy (
   const worker = async () => {
     let filenames = chunkedFilenames.shift();
 
-    while (filenames) {
+    while (filenames?.length) {
       results.push(
         await spawnAsync(cmd, [...args, ...filenames], {}).then((result) => {
-          // We lost color, so recolorize because it's much more legible
-          // There's a --use-color flag for clang-tidy but it has no effect
-          // on Windows at the moment, so just recolor for everyone
-          let state = null;
-
-          for (const line of result.stdout.split('\n')) {
-            if (line.includes(' warning: ')) {
-              console.log(
-                line
-                  .split(' warning: ')
-                  .map((part) => chalk.whiteBright(part))
-                  .join(chalk.magentaBright(' warning: '))
-              );
-              state = 'code-line';
-            } else if (line.includes(' note: ')) {
-              const lineParts = line.split(' note: ');
-              lineParts[0] = chalk.whiteBright(lineParts[0]);
-              console.log(lineParts.join(chalk.grey(' note: ')));
-              state = 'code-line';
-            } else if (line.startsWith('error:')) {
-              console.log(
-                chalk.redBright('error: ') + line.split(' ').slice(1).join(' ')
-              );
-            } else if (state === 'code-line') {
-              console.log(line);
-              state = 'post-code-line';
-            } else if (state === 'post-code-line') {
-              console.log(chalk.greenBright(line));
-            } else {
-              console.log(line);
-            }
-          }
+          console.log(result.stdout);
 
           if (result.status !== 0) {
             console.error(result.stderr);
@@ -304,7 +247,7 @@ function parseCommandLine () {
   if (opts.help) showUsage();
 
   if (!opts['out-dir']) {
-    console.log('--out-dir is a required argunment');
+    console.log('--out-dir is a required argument');
     process.exit(0);
   }
 

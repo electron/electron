@@ -45,45 +45,8 @@ This patch should be upstreamed to Node.
 
 See also: https://source.chromium.org/chromium/chromium/src/+/main:v8/include/v8-cppgc.h;l=70-76;drc=5a758a97032f0b656c3c36a3497560762495501a
 
-diff --git a/src/base_object-inl.h b/src/base_object-inl.h
-index bb1e8d4b46bce3bf08f730ac5d43f7113d17ae39..6da0669943fc6465ffc47a1c8c3dadfea6beb1c9 100644
---- a/src/base_object-inl.h
-+++ b/src/base_object-inl.h
-@@ -32,10 +32,21 @@
- 
- namespace node {
- 
-+namespace {
-+// This just has to be different from the Chromium ones:
-+// https://source.chromium.org/chromium/chromium/src/+/main:gin/public/gin_embedders.h;l=18-23;drc=5a758a97032f0b656c3c36a3497560762495501a
-+// Otherwise, when Node is loaded in an isolate which uses cppgc, cppgc will
-+// misinterpret the data stored in the embedder fields and try to garbage
-+// collect them.
-+static uint16_t kNodeEmbedderId = 0x90de;
-+}
-+
- BaseObject::BaseObject(Environment* env, v8::Local<v8::Object> object)
-     : persistent_handle_(env->isolate(), object), env_(env) {
-   CHECK_EQ(false, object.IsEmpty());
--  CHECK_GT(object->InternalFieldCount(), 0);
-+  CHECK_GT(object->InternalFieldCount(), BaseObject::kSlot);
-+  object->SetAlignedPointerInInternalField(BaseObject::kWrapperType,
-+      &kNodeEmbedderId);
-   object->SetAlignedPointerInInternalField(
-       BaseObject::kSlot,
-       static_cast<void*>(this));
-@@ -151,7 +162,8 @@ bool BaseObject::IsWeakOrDetached() const {
- void BaseObject::LazilyInitializedJSTemplateConstructor(
-     const v8::FunctionCallbackInfo<v8::Value>& args) {
-   DCHECK(args.IsConstructCall());
--  DCHECK_GT(args.This()->InternalFieldCount(), 0);
-+  DCHECK_GT(args.This()->InternalFieldCount(), BaseObject::kSlot);
-+  args.This()->SetAlignedPointerInInternalField(BaseObject::kWrapperType, &kNodeEmbedderId);
-   args.This()->SetAlignedPointerInInternalField(BaseObject::kSlot, nullptr);
- }
- 
 diff --git a/src/base_object.h b/src/base_object.h
-index 1c63da92fd80c042d5ea729bdd70049cae51a141..3b8127e884187b21cebeabb39b60bd3010b62217 100644
+index 74af3c952748661c2106be9082dd8cf0f9d3b09a..3a48235fc310d7487fd8f371a4bb791d00872d39 100644
 --- a/src/base_object.h
 +++ b/src/base_object.h
 @@ -40,7 +40,7 @@ class TransferData;
@@ -95,3 +58,39 @@ index 1c63da92fd80c042d5ea729bdd70049cae51a141..3b8127e884187b21cebeabb39b60bd30
  
    // Associates this object with `object`. It uses the 0th internal field for
    // that, and in particular aborts if there is no such field.
+diff --git a/src/env.cc b/src/env.cc
+index 24aeb329c593bfd5a35877d6f4e2b7afa9848306..de41e5b7f6ff9f818c661484a93b74db7569e31f 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -2013,11 +2013,20 @@ void Environment::RunWeakRefCleanup() {
+   isolate()->ClearKeptObjects();
+ }
+ 
++// This just has to be different from the Chromium ones:
++// https://source.chromium.org/chromium/chromium/src/+/main:gin/public/gin_embedders.h;l=18-23;drc=5a758a97032f0b656c3c36a3497560762495501a
++// Otherwise, when Node is loaded in an isolate which uses cppgc, cppgc will
++// misinterpret the data stored in the embedder fields and try to garbage
++// collect them.
++uint16_t kNodeEmbedderId = 0x90de;
++
+ // Not really any better place than env.cc at this moment.
+ BaseObject::BaseObject(Environment* env, Local<Object> object)
+     : persistent_handle_(env->isolate(), object), env_(env) {
+   CHECK_EQ(false, object.IsEmpty());
+-  CHECK_GT(object->InternalFieldCount(), 0);
++  CHECK_GT(object->InternalFieldCount(), BaseObject::kSlot);
++  object->SetAlignedPointerInInternalField(BaseObject::kWrapperType,
++      &kNodeEmbedderId);
+   object->SetAlignedPointerInInternalField(BaseObject::kSlot,
+                                            static_cast<void*>(this));
+   env->AddCleanupHook(DeleteMe, static_cast<void*>(this));
+@@ -2071,7 +2080,8 @@ void BaseObject::MakeWeak() {
+ void BaseObject::LazilyInitializedJSTemplateConstructor(
+     const FunctionCallbackInfo<Value>& args) {
+   DCHECK(args.IsConstructCall());
+-  DCHECK_GT(args.This()->InternalFieldCount(), 0);
++  DCHECK_GT(args.This()->InternalFieldCount(), BaseObject::kSlot);
++  args.This()->SetAlignedPointerInInternalField(BaseObject::kWrapperType, &kNodeEmbedderId);
+   args.This()->SetAlignedPointerInInternalField(BaseObject::kSlot, nullptr);
+ }
+ 

@@ -9,18 +9,18 @@ errors. This is remedied by adding a small timeout to the test.
 
 We'll either upstream this or figure out a better solution.
 
-diff --git a/test/parallel/test-debugger-address.js b/test/parallel/test-debugger-address.js
-index bffc28ac916e8d241465f1e2649ab8aa4a15a0c7..079e668a3d1c505fa0a540fb1df87b32e603db48 100644
---- a/test/parallel/test-debugger-address.js
-+++ b/test/parallel/test-debugger-address.js
-@@ -59,6 +59,7 @@ function launchTarget(...args) {
-       cli = startCLI([`${host || '127.0.0.1'}:${port}`]);
-       return cli.waitForPrompt();
-     })
-+    .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
-     .then(() => cli.command('sb("alive.js", 3)'))
-     .then(() => cli.waitFor(/break/))
-     .then(() => cli.waitForPrompt())
+diff --git a/test/parallel/test-debugger-address.mjs b/test/parallel/test-debugger-address.mjs
+index eab99c9b0e2fb387ef9a716396e41c7fc93e93bc..f33e85415e3a8d5df073acbf03aed5271e88a1a7 100644
+--- a/test/parallel/test-debugger-address.mjs
++++ b/test/parallel/test-debugger-address.mjs
+@@ -56,6 +56,7 @@ function launchTarget(...args) {
+     const { childProc, host, port } = await launchTarget('--inspect=0', script);
+     target = childProc;
+     cli = startCLI([`${host || '127.0.0.1'}:${port}`]);
++    await new Promise(resolve => setTimeout(resolve, 1000))
+     await cli.waitForPrompt();
+     await cli.command('sb("alive.js", 3)');
+     await cli.waitFor(/break/);
 diff --git a/test/sequential/test-debugger-pid.js b/test/sequential/test-debugger-pid.js
 index 0056113ecaecd3a176ee9539b7fda0132ef59963..3228d0ecc220b5c8c8034fea0dce20f8c38ac68c 100644
 --- a/test/sequential/test-debugger-pid.js

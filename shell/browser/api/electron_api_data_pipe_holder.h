@@ -13,9 +13,7 @@
 #include "services/network/public/cpp/data_element.h"
 #include "services/network/public/mojom/data_pipe_getter.mojom.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 // Retains reference to the data pipe.
 class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
@@ -49,8 +47,6 @@ class DataPipeHolder : public gin::Wrappable<DataPipeHolder> {
   mojo::Remote<network::mojom::DataPipeGetter> data_pipe_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_DATA_PIPE_HOLDER_H_

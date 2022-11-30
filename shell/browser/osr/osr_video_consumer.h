@@ -33,7 +33,7 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
 
   void SetActive(bool active);
   void SetFrameRate(int frame_rate);
-  void SizeChanged();
+  void SizeChanged(const gfx::Size& size_in_pixels);
 
  private:
   // viz::mojom::FrameSinkVideoConsumer implementation.
@@ -43,6 +43,7 @@ class OffScreenVideoConsumer : public viz::mojom::FrameSinkVideoConsumer {
       const gfx::Rect& content_rect,
       mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
           callbacks) override;
+  void OnNewCropVersion(uint32_t crop_version) override;
   void OnFrameWithEmptyRegionCapture() override;
   void OnStopped() override;
   void OnLog(const std::string& message) override;

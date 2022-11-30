@@ -93,6 +93,9 @@ class RendererClientBase : public content::ContentRendererClient
                    gin_helper::Dictionary* process,
                    content::RenderFrame* render_frame);
 
+  bool ShouldLoadPreload(v8::Handle<v8::Context> context,
+                         content::RenderFrame* render_frame) const;
+
   // content::ContentRendererClient:
   void RenderThreadStarted() override;
   void ExposeInterfacesToBrowser(mojo::BinderMap* binders) override;
@@ -135,6 +138,9 @@ class RendererClientBase : public content::ContentRendererClient
       int64_t service_worker_version_id,
       const GURL& service_worker_scope,
       const GURL& script_url) override;
+  void WebViewCreated(blink::WebView* web_view,
+                      bool was_created_by_renderer,
+                      const url::Origin* outermost_origin) override;
 
  protected:
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

@@ -185,7 +185,7 @@ std::string SystemPreferences::GetMediaAccessStatus(
 }
 
 void SystemPreferences::InitializeWindow() {
-  invertered_color_scheme_ = IsInvertedColorScheme();
+  inverted_color_scheme_ = IsInvertedColorScheme();
   high_contrast_color_scheme_ = IsHighContrastColorScheme();
 
   // Wait until app is ready before creating sys color listener
@@ -243,10 +243,10 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
 }
 
 void SystemPreferences::OnSysColorChange() {
-  bool new_invertered_color_scheme = IsInvertedColorScheme();
-  if (new_invertered_color_scheme != invertered_color_scheme_) {
-    invertered_color_scheme_ = new_invertered_color_scheme;
-    Emit("inverted-color-scheme-changed", new_invertered_color_scheme);
+  bool new_inverted_color_scheme = IsInvertedColorScheme();
+  if (new_inverted_color_scheme != inverted_color_scheme_) {
+    inverted_color_scheme_ = new_inverted_color_scheme;
+    Emit("inverted-color-scheme-changed", new_inverted_color_scheme);
   }
 
   bool new_high_contrast_color_scheme = IsHighContrastColorScheme();
@@ -258,8 +258,7 @@ void SystemPreferences::OnSysColorChange() {
   Emit("color-changed");
 }
 
-void SystemPreferences::OnFinishLaunching(
-    const base::DictionaryValue& launch_info) {
+void SystemPreferences::OnFinishLaunching(base::Value::Dict launch_info) {
   color_change_listener_ =
       std::make_unique<gfx::ScopedSysColorChangeListener>(this);
 }

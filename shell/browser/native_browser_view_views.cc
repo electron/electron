@@ -6,7 +6,6 @@
 
 #include <vector>
 
-#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/views/background.h"
@@ -23,24 +22,6 @@ NativeBrowserViewViews::~NativeBrowserViewViews() = default;
 void NativeBrowserViewViews::SetAutoResizeFlags(uint8_t flags) {
   auto_resize_flags_ = flags;
   ResetAutoResizeProportions();
-}
-
-void NativeBrowserViewViews::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  // We need to snap the regions to the bounds of the current BrowserView.
-  // For example, if an attached BrowserView is draggable but its bounds are
-  // { x: 200,  y: 100, width: 300, height: 300 }
-  // then we need to add 200 to the x-value and 100 to the
-  // y-value of each of the passed regions or it will be incorrectly
-  // assumed that the regions begin in the top left corner as they
-  // would for the main client window.
-  auto const offset = GetBounds().OffsetFromOrigin();
-  auto snapped_regions = mojo::Clone(regions);
-  for (auto& snapped_region : snapped_regions) {
-    snapped_region->bounds.Offset(offset);
-  }
-
-  draggable_region_ = DraggableRegionsToSkRegion(snapped_regions);
 }
 
 void NativeBrowserViewViews::SetAutoResizeProportions(
@@ -128,6 +109,9 @@ void NativeBrowserViewViews::SetBounds(const gfx::Rect& bounds) {
   auto* view = iwc_view->GetView();
   view->SetBoundsRect(bounds);
   ResetAutoResizeProportions();
+
+  view->InvalidateLayout();
+  view->SchedulePaint();
 }
 
 gfx::Rect NativeBrowserViewViews::GetBounds() {

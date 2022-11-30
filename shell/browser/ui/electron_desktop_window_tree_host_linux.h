@@ -13,9 +13,9 @@
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "third_party/skia/include/core/SkRRect.h"
+#include "ui/linux/device_scale_factor_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/platform_window/platform_window.h"
-#include "ui/views/linux_ui/device_scale_factor_observer.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 
 namespace electron {
@@ -23,7 +23,7 @@ namespace electron {
 class ElectronDesktopWindowTreeHostLinux
     : public views::DesktopWindowTreeHostLinux,
       public ui::NativeThemeObserver,
-      public views::DeviceScaleFactorObserver {
+      public ui::DeviceScaleFactorObserver {
  public:
   ElectronDesktopWindowTreeHostLinux(
       NativeWindowViews* native_window_view,
@@ -46,6 +46,7 @@ class ElectronDesktopWindowTreeHostLinux
   void OnBoundsChanged(const BoundsChange& change) override;
   void OnWindowStateChanged(ui::PlatformWindowState old_state,
                             ui::PlatformWindowState new_state) override;
+  void OnWindowTiledStateChanged(ui::WindowTiledEdges new_tiled_edges) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -62,10 +63,7 @@ class ElectronDesktopWindowTreeHostLinux
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       theme_observation_{this};
-  base::ScopedObservation<views::LinuxUI,
-                          views::DeviceScaleFactorObserver,
-                          &views::LinuxUI::AddDeviceScaleFactorObserver,
-                          &views::LinuxUI::RemoveDeviceScaleFactorObserver>
+  base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
 };

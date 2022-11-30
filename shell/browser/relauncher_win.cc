@@ -14,9 +14,7 @@
 #include "sandbox/win/src/win_utils.h"
 #include "ui/base/win/shell.h"
 
-namespace relauncher {
-
-namespace internal {
+namespace relauncher::internal {
 
 namespace {
 
@@ -125,6 +123,4 @@ int LaunchProgram(const StringVector& relauncher_args,
   return process.IsValid() ? 0 : 1;
 }
 
-}  // namespace internal
-
-}  // namespace relauncher
+}  // namespace relauncher::internal

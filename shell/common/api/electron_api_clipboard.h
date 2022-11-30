@@ -17,9 +17,7 @@ class Arguments;
 class Dictionary;
 }  // namespace gin_helper
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Clipboard {
  public:
@@ -67,8 +65,6 @@ class Clipboard {
                           gin_helper::Arguments* args);
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_CLIPBOARD_H_

@@ -41,6 +41,11 @@
     <false/>
     <key>NSQuitAlwaysKeepsWindows</key>
     <false/>
+    <key>LSEnvironment</key>
+    <dict>
+      <key>MallocNanoZone</key>
+      <string>0</string>
+    </dict>
     <key>NSMicrophoneUsageDescription</key>
     <string>This app needs access to the microphone</string>
     <key>NSCameraUsageDescription</key>

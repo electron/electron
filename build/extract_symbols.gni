@@ -24,7 +24,11 @@ template("extract_symbols") {
     assert(defined(invoker.binary), "Need binary to dump")
     assert(defined(invoker.symbol_dir), "Need directory for symbol output")
 
-    dump_syms_label = "//third_party/breakpad:dump_syms($host_toolchain)"
+    if (host_os == "win" && target_cpu == "x86") {
+      dump_syms_label = "//third_party/breakpad:dump_syms(//build/toolchain/win:win_clang_x64)"
+    } else {
+      dump_syms_label = "//third_party/breakpad:dump_syms($host_toolchain)"
+    }
     dump_syms_binary = get_label_info(dump_syms_label, "root_out_dir") +
                        "/dump_syms$_host_executable_suffix"
 

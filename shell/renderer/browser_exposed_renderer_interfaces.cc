@@ -33,7 +33,8 @@ void ExposeElectronRendererInterfacesToBrowser(
     electron::RendererClientBase* client,
     mojo::BinderMap* binders) {
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  binders->Add(base::BindRepeating(&BindSpellChecker, client),
-               base::SequencedTaskRunnerHandle::Get());
+  binders->Add<spellcheck::mojom::SpellChecker>(
+      base::BindRepeating(&BindSpellChecker, client),
+      base::SequencedTaskRunnerHandle::Get());
 #endif
 }

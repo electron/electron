@@ -9,11 +9,13 @@
 #include <string>
 
 #include "shell/browser/ui/tray_icon.h"
-#include "ui/views/linux_ui/status_icon_linux.h"
+#include "ui/linux/status_icon_linux.h"
+
+class StatusIconLinuxDbus;
 
 namespace electron {
 
-class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
+class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
  public:
   TrayIconGtk();
   ~TrayIconGtk() override;
@@ -23,7 +25,7 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   void SetToolTip(const std::string& tool_tip) override;
   void SetContextMenu(ElectronMenuModel* menu_model) override;
 
-  // views::StatusIconLinux::Delegate
+  // ui::StatusIconLinux::Delegate
   void OnClick() override;
   bool HasClickAction() override;
   // The following four methods are only used by StatusIconLinuxDbus, which we
@@ -34,10 +36,17 @@ class TrayIconGtk : public TrayIcon, public views::StatusIconLinux::Delegate {
   void OnImplInitializationFailed() override;
 
  private:
-  std::unique_ptr<views::StatusIconLinux> icon_;
+  enum StatusIconType {
+    kTypeDbus,
+    kTypeNone,
+  };
+
+  scoped_refptr<StatusIconLinuxDbus> status_icon_;
+  StatusIconType status_icon_type_;
+
   gfx::ImageSkia image_;
   std::u16string tool_tip_;
-  ui::MenuModel* menu_model_;
+  raw_ptr<ui::MenuModel> menu_model_ = nullptr;
 };
 
 }  // namespace electron
