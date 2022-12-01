@@ -5,11 +5,10 @@ const { GitProcess } = require('dugite');
 const childProcess = require('child_process');
 const { ESLint } = require('eslint');
 const fs = require('fs');
-const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
-const { chunkFilenames } = require('./lib/utils');
+const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
@@ -277,21 +276,6 @@ async function findChangedFiles (top) {
   const relativePaths = result.stdout.split(/\r\n|\r|\n/g);
   const absolutePaths = relativePaths.map(x => path.join(top, x));
   return new Set(absolutePaths);
-}
-
-async function findMatchingFiles (top, test) {
-  return new Promise((resolve, reject) => {
-    const matches = [];
-    klaw(top, {
-      filter: f => path.basename(f) !== '.bin'
-    })
-      .on('end', () => resolve(matches))
-      .on('data', item => {
-        if (test(item.path)) {
-          matches.push(item.path);
-        }
-      });
-  });
 }
 
 async function findFiles (args, linter) {

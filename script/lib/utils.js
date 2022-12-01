@@ -1,5 +1,6 @@
 const { GitProcess } = require('dugite');
 const fs = require('fs');
+const klaw = require('klaw');
 const os = require('os');
 const path = require('path');
 
@@ -122,8 +123,29 @@ function chunkFilenames (filenames, offset = 0) {
   );
 }
 
+/**
+ * @param {string} top
+ * @param {(filename: string) => boolean} test
+ * @returns {Promise<string[]>}
+*/
+async function findMatchingFiles (top, test) {
+  return new Promise((resolve, reject) => {
+    const matches = [];
+    klaw(top, {
+      filter: f => path.basename(f) !== '.bin'
+    })
+      .on('end', () => resolve(matches))
+      .on('data', item => {
+        if (test(item.path)) {
+          matches.push(item.path);
+        }
+      });
+  });
+}
+
 module.exports = {
   chunkFilenames,
+  findMatchingFiles,
   getCurrentBranch,
   getElectronExec,
   getOutDir,
