@@ -172,7 +172,11 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   int max_width = max_size.width() > 0 ? max_size.width() : INT_MAX;
   int max_height = max_size.height() > 0 ? max_size.height() : INT_MAX;
   bool have_max_width = options.Get(options::kMaxWidth, &max_width);
+  if (have_max_width && max_width <= 0)
+    max_width = INT_MAX;
   bool have_max_height = options.Get(options::kMaxHeight, &max_height);
+  if (have_max_height && max_height <= 0)
+    max_height = INT_MAX;
 
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
