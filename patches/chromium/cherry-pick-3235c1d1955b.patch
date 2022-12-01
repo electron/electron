@@ -1,13 +1,12 @@
-From 3235c1d1955bcfb45487bce79a142b8b24f8e827 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Johannes Kron <kron@chromium.org>
-Date: Thu, 01 Dec 2022 01:52:27 +0000
-Subject: [PATCH] Set visible_rect for streams captured with ScreenCaptureKit
+Date: Thu, 1 Dec 2022 01:52:27 +0000
+Subject: Set visible_rect for streams captured with ScreenCaptureKit
 
 This is needed to make the window capturing code on macOS
 using the new ScreenCaptureKit API work, because the IOSurface
 may be larger than the actual content resulting in garbage
 unless the frame is cropped to |visible_rect|.
-
 
 Bug: chromium:1352405
 Change-Id: I1ce3c13947b9b4f9b75a071800a84a27a7c2ee4a
@@ -18,13 +17,12 @@ Reviewed-by: ccameron chromium <ccameron@chromium.org>
 Reviewed-by: Ilya Nikolaevskiy <ilnik@chromium.org>
 Reviewed-by: Will Cassella <cassew@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1077752}
----
 
 diff --git a/content/browser/media/capture/desktop_capture_device_mac.cc b/content/browser/media/capture/desktop_capture_device_mac.cc
-index 97e10e6..67e0e14 100644
+index 77eec733bed5cc6ba42ea77994b3a276279b0603..1807356bfad1d37ff09486db2e7cbe31b79ad6a8 100644
 --- a/content/browser/media/capture/desktop_capture_device_mac.cc
 +++ b/content/browser/media/capture/desktop_capture_device_mac.cc
-@@ -127,7 +127,8 @@
+@@ -127,7 +127,8 @@ class DesktopCaptureDeviceMac : public IOSurfaceCaptureDeviceBase {
  
   private:
    void OnFrame(gfx::ScopedInUseIOSurface io_surface) {
@@ -35,10 +33,10 @@ index 97e10e6..67e0e14 100644
  
    const CGDirectDisplayID display_id_;
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.cc b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-index ae076bd..0bf2c58 100644
+index ae076bdd6fb9c1ebc72baa2f78a8568d859564ce..0bf2c58b6840c15d827a7b4a5888d1f56ff50943 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.cc
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.cc
-@@ -39,10 +39,12 @@
+@@ -39,10 +39,12 @@ void IOSurfaceCaptureDeviceBase::RequestRefreshFrame() {
  
  void IOSurfaceCaptureDeviceBase::OnReceivedIOSurfaceFromStream(
      gfx::ScopedInUseIOSurface io_surface,
@@ -52,7 +50,7 @@ index ae076bd..0bf2c58 100644
  
    // Immediately send the new frame to the client.
    SendLastReceivedIOSurfaceToClient();
-@@ -66,7 +68,7 @@
+@@ -66,7 +68,7 @@ void IOSurfaceCaptureDeviceBase::SendLastReceivedIOSurfaceToClient() {
        media::CapturedExternalVideoBuffer(std::move(handle),
                                           last_received_capture_format_,
                                           gfx::ColorSpace::CreateREC709()),
@@ -62,7 +60,7 @@ index ae076bd..0bf2c58 100644
  
  void IOSurfaceCaptureDeviceBase::ComputeFrameSizeAndDestRect(
 diff --git a/content/browser/media/capture/io_surface_capture_device_base_mac.h b/content/browser/media/capture/io_surface_capture_device_base_mac.h
-index 2781f212..8ac1248 100644
+index 2781f212d77c9361ff2e28d5e13bbaab14ab0750..8ac12480f663a74dfbdcf7128a582a81b4474d25 100644
 --- a/content/browser/media/capture/io_surface_capture_device_base_mac.h
 +++ b/content/browser/media/capture/io_surface_capture_device_base_mac.h
 @@ -10,6 +10,7 @@
@@ -73,7 +71,7 @@ index 2781f212..8ac1248 100644
  #include "ui/gfx/mac/io_surface.h"
  
  namespace content {
-@@ -35,7 +36,8 @@
+@@ -35,7 +36,8 @@ class CONTENT_EXPORT IOSurfaceCaptureDeviceBase
   protected:
    void OnReceivedIOSurfaceFromStream(
        gfx::ScopedInUseIOSurface io_surface,
@@ -83,7 +81,7 @@ index 2781f212..8ac1248 100644
    void SendLastReceivedIOSurfaceToClient();
  
    // Given a source frame size `source_size`, and `capture_params_`, compute the
-@@ -71,6 +73,7 @@
+@@ -71,6 +73,7 @@ class CONTENT_EXPORT IOSurfaceCaptureDeviceBase
    // frames come in, then this will be repeatedly sent at `min_frame_rate_`.
    gfx::ScopedInUseIOSurface last_received_io_surface_;
    media::VideoCaptureFormat last_received_capture_format_;
@@ -92,7 +90,7 @@ index 2781f212..8ac1248 100644
    base::WeakPtrFactory<IOSurfaceCaptureDeviceBase> weak_factory_base_{this};
  };
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index 6627c86..476a8e6 100644
+index 5d640a372f1649e0e2cb7e1828dbb3c66eb1e4d7..cda6a78ca4c87b459252066189394817ea0c0890 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
 @@ -17,7 +17,8 @@
@@ -105,7 +103,7 @@ index 6627c86..476a8e6 100644
  using ErrorCallback = base::RepeatingClosure;
  
  API_AVAILABLE(macos(12.3))
-@@ -49,9 +50,14 @@
+@@ -49,9 +50,14 @@ - (void)stream:(SCStream*)stream
    if (!pixelBuffer)
      return;
  
@@ -122,7 +120,7 @@ index 6627c86..476a8e6 100644
    CFArrayRef attachmentsArray =
        CMSampleBufferGetSampleAttachmentsArray(sampleBuffer, false);
    if (attachmentsArray && CFArrayGetCount(attachmentsArray) > 0) {
-@@ -70,6 +76,7 @@
+@@ -70,6 +76,7 @@ - (void)stream:(SCStream*)stream
          succeed &= CFNumberGetValue(contentScaleValue, kCFNumberFloatType,
                                      &contentScale);
          if (succeed) {
@@ -130,7 +128,7 @@ index 6627c86..476a8e6 100644
            contentSize.emplace(round(contentRect.size.width / contentScale),
                                round(contentRect.size.height / contentScale));
          }
-@@ -81,7 +88,7 @@
+@@ -81,7 +88,7 @@ - (void)stream:(SCStream*)stream
      return;
    _sampleCallback.Run(
        gfx::ScopedInUseIOSurface(ioSurface, base::scoped_policy::RETAIN),
@@ -139,7 +137,7 @@ index 6627c86..476a8e6 100644
  }
  
  - (void)stream:(SCStream*)stream didStopWithError:(NSError*)error {
-@@ -240,7 +247,8 @@
+@@ -248,7 +255,8 @@ void OnStreamStopped(bool error) {
      }
    }
    void OnStreamSample(gfx::ScopedInUseIOSurface io_surface,
@@ -149,7 +147,7 @@ index 6627c86..476a8e6 100644
      if (requested_capture_format_) {
        // Does the size of io_surface match the requested format?
        size_t io_surface_width = IOSurfaceGetWidth(io_surface);
-@@ -302,9 +310,11 @@
+@@ -310,9 +318,11 @@ void OnStreamSample(gfx::ScopedInUseIOSurface io_surface,
          }
        }
      }
@@ -165,10 +163,10 @@ index 6627c86..476a8e6 100644
    void OnStreamError() {
      client()->OnError(media::VideoCaptureError::kScreenCaptureKitStreamError,
 diff --git a/content/browser/renderer_host/media/video_capture_controller_unittest.cc b/content/browser/renderer_host/media/video_capture_controller_unittest.cc
-index e85561e..5ab6525 100644
+index 048eea2a9edc5e9ea0817d4ae43187e49188f087..44505aabec3d17c87702a946b4e59d371308b83c 100644
 --- a/content/browser/renderer_host/media/video_capture_controller_unittest.cc
 +++ b/content/browser/renderer_host/media/video_capture_controller_unittest.cc
-@@ -700,7 +700,8 @@
+@@ -701,7 +701,8 @@ TEST_P(VideoCaptureControllerTest, CaptureWithScaledFrames) {
  
    device_client_->OnIncomingCapturedExternalBuffer(
        std::move(external_buffer), std::move(scaled_external_buffers),
@@ -179,10 +177,10 @@ index e85561e..5ab6525 100644
  
  #endif
 diff --git a/media/capture/video/chromeos/mock_video_capture_client.cc b/media/capture/video/chromeos/mock_video_capture_client.cc
-index 7c295fa4..fd38373 100644
+index 7c295fa4daaeb837a82685aee7d1f8d0512a2b4d..fd38373927c3864806b60e564389d83ada585cb6 100644
 --- a/media/capture/video/chromeos/mock_video_capture_client.cc
 +++ b/media/capture/video/chromeos/mock_video_capture_client.cc
-@@ -71,7 +71,8 @@
+@@ -71,7 +71,8 @@ void MockVideoCaptureClient::OnIncomingCapturedExternalBuffer(
      CapturedExternalVideoBuffer buffer,
      std::vector<CapturedExternalVideoBuffer> scaled_buffers,
      base::TimeTicks reference_time,
@@ -193,10 +191,10 @@ index 7c295fa4..fd38373 100644
      std::move(frame_cb_).Run();
  }
 diff --git a/media/capture/video/chromeos/mock_video_capture_client.h b/media/capture/video/chromeos/mock_video_capture_client.h
-index c4a3fba..d4f6fa9 100644
+index c4a3fba38054374927b342455d467f9fd555b79d..d4f6fa931b05bd50a4129301e18abf76617e2e93 100644
 --- a/media/capture/video/chromeos/mock_video_capture_client.h
 +++ b/media/capture/video/chromeos/mock_video_capture_client.h
-@@ -58,7 +58,8 @@
+@@ -58,7 +58,8 @@ class MockVideoCaptureClient : public VideoCaptureDevice::Client {
        CapturedExternalVideoBuffer buffer,
        std::vector<CapturedExternalVideoBuffer> scaled_buffers,
        base::TimeTicks reference_time,
@@ -207,10 +205,10 @@ index c4a3fba..d4f6fa9 100644
    ReserveResult ReserveOutputBuffer(const gfx::Size& dimensions,
                                      VideoPixelFormat format,
 diff --git a/media/capture/video/fuchsia/video_capture_device_fuchsia_test.cc b/media/capture/video/fuchsia/video_capture_device_fuchsia_test.cc
-index 3039594..0518b3c 100644
+index 3039594560a2de51557b32b336ca2673b0decd4c..0518b3c4cf6bcdc90031c0857d653cd5a0accfdb 100644
 --- a/media/capture/video/fuchsia/video_capture_device_fuchsia_test.cc
 +++ b/media/capture/video/fuchsia/video_capture_device_fuchsia_test.cc
-@@ -162,7 +162,8 @@
+@@ -162,7 +162,8 @@ class TestVideoCaptureClient final : public VideoCaptureDevice::Client {
        CapturedExternalVideoBuffer buffer,
        std::vector<CapturedExternalVideoBuffer> scaled_buffers,
        base::TimeTicks reference_time,
@@ -221,10 +219,10 @@ index 3039594..0518b3c 100644
    }
    void OnIncomingCapturedBuffer(Buffer buffer,
 diff --git a/media/capture/video/mac/video_capture_device_mac.mm b/media/capture/video/mac/video_capture_device_mac.mm
-index be9c4cf..7a0b6de 100644
+index 3fd0e0794c7fa1708b15fa5bd76502a000bcac91..1b6fa23748024058c0b2ccce6d211bd3978d5f3b 100644
 --- a/media/capture/video/mac/video_capture_device_mac.mm
 +++ b/media/capture/video/mac/video_capture_device_mac.mm
-@@ -826,9 +826,9 @@
+@@ -827,9 +827,9 @@ ScopedIOUSBInterfaceInterface control_interface(
                       ", and expected " + capture_format_.frame_size.ToString());
      return;
    }
@@ -238,10 +236,10 @@ index be9c4cf..7a0b6de 100644
  
  void VideoCaptureDeviceMac::OnPhotoTaken(const uint8_t* image_data,
 diff --git a/media/capture/video/mock_video_capture_device_client.h b/media/capture/video/mock_video_capture_device_client.h
-index 49c2399f..c65dcc3fa 100644
+index 49c2399f6d429e78032792134781f576c61ae15f..c65dcc3fa475090d9ca8e6890d523247c398780f 100644
 --- a/media/capture/video/mock_video_capture_device_client.h
 +++ b/media/capture/video/mock_video_capture_device_client.h
-@@ -35,11 +35,12 @@
+@@ -35,11 +35,12 @@ class MockVideoCaptureDeviceClient : public VideoCaptureDevice::Client {
                      base::TimeTicks reference_time,
                      base::TimeDelta timestamp,
                      int frame_feedback_id));
@@ -257,10 +255,10 @@ index 49c2399f..c65dcc3fa 100644
                 ReserveResult(const gfx::Size&, VideoPixelFormat, int, Buffer*));
    MOCK_METHOD3(OnError,
 diff --git a/media/capture/video/video_capture_device.h b/media/capture/video/video_capture_device.h
-index e401d78..f0ed8e81 100644
+index 76c0a61b372dafbba62c2ec7c84bbd6854f2fa02..5ef13cc639d148023147f0be812c1b09b2cbc815 100644
 --- a/media/capture/video/video_capture_device.h
 +++ b/media/capture/video/video_capture_device.h
-@@ -190,18 +190,21 @@
+@@ -191,18 +191,21 @@ class CAPTURE_EXPORT VideoCaptureDevice
          base::TimeDelta timestamp,
          int frame_feedback_id = 0) = 0;
  
@@ -291,10 +289,10 @@ index e401d78..f0ed8e81 100644
      // Reserve an output buffer into which contents can be captured directly.
      // The returned |buffer| will always be allocated with a memory size
 diff --git a/media/capture/video/video_capture_device_client.cc b/media/capture/video/video_capture_device_client.cc
-index 22ba00e..6f52d1f 100644
+index efa175865f53d5c187cbb65cb4c1b9b40be63614..6229529c8a5878aaec253d5acf1797ae3dcc139f 100644
 --- a/media/capture/video/video_capture_device_client.cc
 +++ b/media/capture/video/video_capture_device_client.cc
-@@ -484,14 +484,21 @@
+@@ -468,14 +468,21 @@ void VideoCaptureDeviceClient::OnIncomingCapturedExternalBuffer(
      CapturedExternalVideoBuffer buffer,
      std::vector<CapturedExternalVideoBuffer> scaled_buffers,
      base::TimeTicks reference_time,
@@ -319,7 +317,7 @@ index 22ba00e..6f52d1f 100644
    }
    receiver_->OnFrameReadyInBuffer(std::move(ready_frame),
                                    std::move(scaled_ready_frames));
-@@ -500,7 +507,8 @@
+@@ -484,7 +491,8 @@ void VideoCaptureDeviceClient::OnIncomingCapturedExternalBuffer(
  ReadyFrameInBuffer VideoCaptureDeviceClient::CreateReadyFrameFromExternalBuffer(
      CapturedExternalVideoBuffer buffer,
      base::TimeTicks reference_time,
@@ -329,7 +327,7 @@ index 22ba00e..6f52d1f 100644
    // Reserve an ID for this buffer that will not conflict with any of the IDs
    // used by |buffer_pool_|.
    int buffer_id_to_drop = VideoCaptureBufferPool::kInvalidId;
-@@ -533,7 +541,7 @@
+@@ -517,7 +525,7 @@ ReadyFrameInBuffer VideoCaptureDeviceClient::CreateReadyFrameFromExternalBuffer(
    info->pixel_format = buffer.format.pixel_format;
    info->color_space = buffer.color_space;
    info->coded_size = buffer.format.frame_size;
@@ -339,10 +337,10 @@ index 22ba00e..6f52d1f 100644
    info->metadata.reference_time = reference_time;
  
 diff --git a/media/capture/video/video_capture_device_client.h b/media/capture/video/video_capture_device_client.h
-index f1b017a..62f75f0 100644
+index d1c5b3db855d98f10cabcc71a09d40bbb2601296..56d432c99bcd16b221f574d312731f4c87706caf 100644
 --- a/media/capture/video/video_capture_device_client.h
 +++ b/media/capture/video/video_capture_device_client.h
-@@ -87,7 +87,8 @@
+@@ -87,7 +87,8 @@ class CAPTURE_EXPORT VideoCaptureDeviceClient
        CapturedExternalVideoBuffer buffer,
        std::vector<CapturedExternalVideoBuffer> scaled_buffers,
        base::TimeTicks reference_time,
@@ -352,7 +350,7 @@ index f1b017a..62f75f0 100644
    ReserveResult ReserveOutputBuffer(const gfx::Size& dimensions,
                                      VideoPixelFormat format,
                                      int frame_feedback_id,
-@@ -116,7 +117,8 @@
+@@ -116,7 +117,8 @@ class CAPTURE_EXPORT VideoCaptureDeviceClient
    ReadyFrameInBuffer CreateReadyFrameFromExternalBuffer(
        CapturedExternalVideoBuffer buffer,
        base::TimeTicks reference_time,
@@ -363,10 +361,10 @@ index f1b017a..62f75f0 100644
    // A branch of OnIncomingCapturedData for Y16 frame_format.pixel_format.
    void OnIncomingCapturedY16Data(const uint8_t* data,
 diff --git a/media/capture/video/win/video_capture_device_mf_win_unittest.cc b/media/capture/video/win/video_capture_device_mf_win_unittest.cc
-index 3911deb..960bdd1 100644
+index 1cffb468c33f6185bc656d19760854908e89aa65..293672feabe4172c2946a06ec54b2e67e5533afb 100644
 --- a/media/capture/video/win/video_capture_device_mf_win_unittest.cc
 +++ b/media/capture/video/win/video_capture_device_mf_win_unittest.cc
-@@ -83,7 +83,8 @@
+@@ -83,7 +83,8 @@ class MockClient : public VideoCaptureDevice::Client {
        CapturedExternalVideoBuffer buffer,
        std::vector<CapturedExternalVideoBuffer> scaled_buffers,
        base::TimeTicks reference_time,
