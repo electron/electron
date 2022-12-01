@@ -421,6 +421,8 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
+void NativeWindow::InvalidateShadow() {}
+
 void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
 void NativeWindow::SelectPreviousTab() {}
