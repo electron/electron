@@ -34,10 +34,10 @@ index 58c13ba42464553427584a98492fe11a4228e3ff..034134fea43ae7c88232e3969e2efcf8
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index aacb580a7506f2c86769251ad00d8679870a454a..400278ab26a4e095fd837fcf84c952a1297b173d 100644
+index 51e0b265a17b6d94c078e5ed6b4f74b7b2733a56..ba974126505603fdf3a60c3bfe2cb6ad794537ba 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3140,15 +3140,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3131,15 +3131,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
        SetMsgHandled(FALSE);
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
@@ -60,10 +60,10 @@ index aacb580a7506f2c86769251ad00d8679870a454a..400278ab26a4e095fd837fcf84c952a1
    }
  
 diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
-index 233dd12f86c20a7f5169caab998993f614e8bc7e..3bf6fc95a653f1783510378ffeef5b18da42e559 100644
+index 08e46c7b92f6cbe95c9cb524d09a6ed9e89ecf00..9de0b0d61f1ef2d0f02a53fa07a6e8f66cfad755 100644
 --- a/ui/views/win/hwnd_message_handler_delegate.h
 +++ b/ui/views/win/hwnd_message_handler_delegate.h
-@@ -258,6 +258,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+@@ -256,6 +256,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
    // Called when the window scale factor has changed.
    virtual void HandleWindowScaleFactorChanged(float window_scale_factor) = 0;
  
