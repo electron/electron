@@ -89,10 +89,6 @@ bool IsValidCustomProtocol(const std::wstring& scheme) {
 // takes in an assoc_str
 // (https://docs.microsoft.com/en-us/windows/win32/api/shlwapi/ne-shlwapi-assocstr)
 // and returns the application name, icon and path that handles the protocol.
-//
-// Windows 8 introduced a new protocol->executable binding system which cannot
-// be retrieved in the HKCR registry subkey method implemented below. We call
-// AssocQueryString with the new Win8-only flag ASSOCF_IS_PROTOCOL instead.
 std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
   const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
   if (!IsValidCustomProtocol(url_scheme))
@@ -134,34 +130,6 @@ std::wstring GetAppDisplayNameForProtocol(const GURL& url) {
 
 std::wstring GetAppPathForProtocol(const GURL& url) {
   return GetAppInfoHelperForProtocol(ASSOCSTR_EXECUTABLE, url);
-}
-
-std::wstring GetAppForProtocolUsingRegistry(const GURL& url) {
-  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
-  if (!IsValidCustomProtocol(url_scheme))
-    return std::wstring();
-
-  // First, try and extract the application's display name.
-  std::wstring command_to_launch;
-  base::win::RegKey cmd_key_name(HKEY_CLASSES_ROOT, url_scheme.c_str(),
-                                 KEY_READ);
-  if (cmd_key_name.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS &&
-      !command_to_launch.empty()) {
-    return command_to_launch;
-  }
-
-  // Otherwise, parse the command line in the registry, and return the basename
-  // of the program path if it exists.
-  const std::wstring cmd_key_path = url_scheme + L"\\shell\\open\\command";
-  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
-                                KEY_READ);
-  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
-    base::CommandLine command_line(
-        base::CommandLine::FromString(command_to_launch));
-    return command_line.GetProgram().BaseName().value();
-  }
-
-  return std::wstring();
 }
 
 bool FormatCommandLineString(std::wstring* exe,
@@ -312,42 +280,6 @@ void GetFileIcon(const base::FilePath& path,
                                           app_display_name, std::move(promise)),
                            cancelable_task_tracker_);
   }
-}
-
-void GetApplicationInfoForProtocolUsingRegistry(
-    v8::Isolate* isolate,
-    const GURL& url,
-    gin_helper::Promise<gin_helper::Dictionary> promise,
-    base::CancelableTaskTracker* cancelable_task_tracker_) {
-  base::FilePath app_path;
-
-  const std::wstring url_scheme = base::ASCIIToWide(url.scheme());
-  if (!IsValidCustomProtocol(url_scheme)) {
-    promise.RejectWithErrorMessage("invalid url_scheme");
-    return;
-  }
-  std::wstring command_to_launch;
-  const std::wstring cmd_key_path = url_scheme + L"\\shell\\open\\command";
-  base::win::RegKey cmd_key_exe(HKEY_CLASSES_ROOT, cmd_key_path.c_str(),
-                                KEY_READ);
-  if (cmd_key_exe.ReadValue(NULL, &command_to_launch) == ERROR_SUCCESS) {
-    base::CommandLine command_line(
-        base::CommandLine::FromString(command_to_launch));
-    app_path = command_line.GetProgram();
-  } else {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve installation path to app");
-    return;
-  }
-  const std::wstring app_display_name = GetAppForProtocolUsingRegistry(url);
-
-  if (app_display_name.empty()) {
-    promise.RejectWithErrorMessage(
-        "Unable to retrieve application display name");
-    return;
-  }
-  GetFileIcon(app_path, isolate, cancelable_task_tracker_, app_display_name,
-              std::move(promise));
 }
 
 // resolves `Promise<Object>` - Resolve with an object containing the following:
@@ -566,14 +498,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 }
 
 std::u16string Browser::GetApplicationNameForProtocol(const GURL& url) {
-  // Windows 8 or above has a new protocol association query.
-  if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    std::wstring application_name = GetAppDisplayNameForProtocol(url);
-    if (!application_name.empty())
-      return base::WideToUTF16(application_name);
-  }
-
-  return base::WideToUTF16(GetAppForProtocolUsingRegistry(url));
+  return base::WideToUTF16(GetAppDisplayNameForProtocol(url));
 }
 
 v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
@@ -582,15 +507,8 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  // Windows 8 or above has a new protocol association query.
-  if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    GetApplicationInfoForProtocolUsingAssocQuery(
-        isolate, url, std::move(promise), &cancelable_task_tracker_);
-    return handle;
-  }
-
-  GetApplicationInfoForProtocolUsingRegistry(isolate, url, std::move(promise),
-                                             &cancelable_task_tracker_);
+  GetApplicationInfoForProtocolUsingAssocQuery(isolate, url, std::move(promise),
+                                               &cancelable_task_tracker_);
   return handle;
 }
 

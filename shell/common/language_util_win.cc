@@ -18,8 +18,6 @@ namespace electron {
 
 bool GetPreferredLanguagesUsingGlobalization(
     std::vector<std::wstring>* languages) {
-  if (base::win::GetVersion() < base::win::Version::WIN10)
-    return false;
   if (!base::win::ResolveCoreWinRTDelayload() ||
       !base::win::ScopedHString::ResolveCoreWinRTStringDelayload())
     return false;

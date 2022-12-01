@@ -14,6 +14,11 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (23.0)
 
+### Removed: Windows 7 and 8 support
+
+Windows 7 and 8 are not supported anymore as Chromium 110 dropped support:
+https://support.google.com/chrome/thread/185534985/sunsetting-support-for-windows-7-8-8-1-in-early-2023?hl=en
+
 ### Removed: BrowserWindow `scroll-touch-*` events
 
 The deprecated `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge`
