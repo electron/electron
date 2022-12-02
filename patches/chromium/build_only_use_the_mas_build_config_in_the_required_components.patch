@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 52efb5635192d91e13d7c23951316f9a9678c35c..900552b7753073b2800b57b669edeef684b154c7 100644
+index c16491d621308b916780999af993a6752aca6ed9..241e84fd717eccc740f018c59ddd16c922a6c369 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1489,6 +1489,7 @@ component("base") {
+@@ -1484,6 +1484,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,11 +68,11 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 442786aa669af5422b308193c6fef2889ab5840f..fb3501cefe06f7dcd98f8e204c06b875cd7286a6 100644
+index ec8da4b89278e4f53ae302fb6ae860383966a2bc..75ee79708723f165d91fbc06a877fd047d2542bb 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -54,6 +54,7 @@ source_set("browser") {
-     "//tools/v8_context_snapshot:use_v8_context_snapshot",
+@@ -53,6 +53,7 @@ source_set("browser") {
+     "//content:content_implementation",
      "//v8:external_startup_data",
    ]
 +  configs += ["//electron/build/config:mas_build"]
@@ -128,7 +128,7 @@ index c342a9c95b1787c49b88ba62457c6f27151cbb87..6181018d4940569e1feb323587fcbc96
    if (is_android) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8d4037772564159083d303e04936fca010f489fd..f22644b7d4f1db1249c2b72275f8992879abc6f1 100644
+index 8ed81a36306f6dfae965ee90781e5bb79067fa92..33205cecb58d05ef8d7628b170a09137a463dcf8 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -190,6 +190,7 @@ source_set("audio") {
@@ -181,13 +181,13 @@ index 06b7f0310f1bca118cc2c89a9c21d3ebd661ec1e..b5b7432e1d998db003dd33622c750e81
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index f16b64bb355634d537737058a035fbb55e3e6b79..c4d5c6d8faa9d945391749047e83b7bf55a56f39 100644
+index 5de6278bb601be48690f4832c9d8379e74be13d5..2142d584e2910c0294c8d42e277e9e7931f00760 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -283,6 +283,7 @@ component("core") {
-     "//tools/v8_context_snapshot:use_v8_context_snapshot",
-     "//v8:external_startup_data",
-   ]
+@@ -280,6 +280,7 @@ component("core") {
+   configs -= core_config_remove
+   configs += core_config_add
+   configs += [ "//v8:external_startup_data" ]
 +  configs += ["//electron/build/config:mas_build"]
  
    public_deps = [

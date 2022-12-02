@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index fa4871fa8f0f5b14300f23385950cca4cef91a52..8030006a34744233930e1be8b2cb0cd5dfe58f9c 100644
+index 58be09545e68ebdea72cccf5d3de8006af6b9375..1cbd939074eed59fa7227eeced4b8f396de7d3bc 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -180,11 +180,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index fa4871fa8f0f5b14300f23385950cca4cef91a52..8030006a34744233930e1be8b2cb0cd5
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 7789e6ec959b562e395282854dc0817b168c5a78..ebd2cb9bb0a0e5bd5b01837abecd7c4585a78bcb 100644
+index a90a57bbcd39e14dbd9ac485a7df92ee1d74fd7c..c4d024176f1f17f39d8c3a36b06b3299831c982c 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4613,7 +4613,7 @@ static_library("browser") {
+@@ -4611,7 +4611,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 7789e6ec959b562e395282854dc0817b168c5a78..ebd2cb9bb0a0e5bd5b01837abecd7c45
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 66cb0375ce7ee246dcddb2473620900b86678704..430f5b460e57ff421af673d1d5513c36b9c18d32 100644
+index 698a62277215423b51a946d3a25523f844dce3ac..8174066a5bf7a470c11d6ac3f804363e3f28b8e4 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6221,7 +6221,6 @@ test("unit_tests") {
+@@ -6222,7 +6222,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 66cb0375ce7ee246dcddb2473620900b86678704..430f5b460e57ff421af673d1d5513c36
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:crash_reporter_client_win_unit_tests",
-@@ -6246,6 +6245,10 @@ test("unit_tests") {
+@@ -6247,6 +6246,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
