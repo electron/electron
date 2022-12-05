@@ -52,5 +52,6 @@ You can find the full list of "How to?" in the sidebar. If there is
 something that you would like to do that is not documented, please join
 our [Discord server][discord] and let us know!
 
+[app]: ../api/app.md
 [discord]: https://discord.gg/electronjs
 [fiddle]: https://www.electronjs.org/fiddle

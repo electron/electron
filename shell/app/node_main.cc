@@ -205,7 +205,11 @@ int NodeMain(int argc, char* argv[]) {
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
     // Initialize gin::IsolateHolder.
-    JavascriptEnvironment gin_env(loop);
+    bool setup_wasm_streaming =
+        node::per_process::cli_options->get_per_isolate_options()
+            ->get_per_env_options()
+            ->experimental_fetch;
+    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
 
     v8::Isolate* isolate = gin_env.isolate();
 
@@ -226,8 +230,7 @@ int NodeMain(int argc, char* argv[]) {
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
-      node::IsolateSettings is;
-      node::SetIsolateUpForNode(isolate, is);
+      node::SetIsolateUpForNode(isolate);
 
       gin_helper::Dictionary process(isolate, env->process_object());
       process.SetMethod("crash", &ElectronBindings::Crash);

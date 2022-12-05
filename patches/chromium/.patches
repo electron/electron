@@ -10,7 +10,6 @@ render_widget_host_view_base.patch
 render_widget_host_view_mac.patch
 webview_cross_drag.patch
 gin_enable_disable_v8_platform.patch
-disable-redraw-lock.patch
 enable_reset_aspect_ratio.patch
 boringssl_build_gn.patch
 pepper_plugin_support.patch
@@ -125,3 +124,4 @@ fix_tray_icon_gone_on_lock_screen.patch
 chore_introduce_blocking_api_for_electron.patch
 chore_patch_out_partition_attribute_dcheck_for_webviews.patch
 expose_v8initializer_codegenerationcheckcallbackinmainthread.patch
+chore_patch_out_profile_methods_in_profile_selections_cc.patch
