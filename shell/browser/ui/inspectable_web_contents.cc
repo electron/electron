@@ -886,7 +886,7 @@ void InspectableWebContents::RemovePreference(const std::string& name) {
 
 void InspectableWebContents::ClearPreferences() {
   DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
-  unsynced_update.Get()->DictClear();
+  unsynced_update->GetDict().clear();
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
