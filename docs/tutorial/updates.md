@@ -67,7 +67,7 @@ Depending on your needs, you can choose from one of these:
   to minify server cost.
 
 Once you've deployed your update server, you can instrument your app code to receive and
-apply the updates with Electron's [autoUpdater] module.
+apply the updates with Electron's [autoUpdater](../api/auto-updater.md) module.
 
 ### Step 2: Receiving updates in your app
 

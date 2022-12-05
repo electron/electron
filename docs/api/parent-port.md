@@ -44,3 +44,5 @@ event.
 * `message` any
 
 Sends a message from the process to its parent.
+
+[event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
