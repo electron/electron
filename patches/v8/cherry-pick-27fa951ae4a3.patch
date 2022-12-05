@@ -1,7 +1,7 @@
-From 27fa951ae4a3801126e84bc94d5c82dd2370d18b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Toon Verwaest <verwaest@chromium.org>
 Date: Wed, 30 Nov 2022 15:07:26 +0100
-Subject: [PATCH] [parser] Fix eval tracking
+Subject: Fix eval tracking
 
 Due to mismatch in strictness we otherwise invalidly mark scopes as
 calling sloppy eval.
@@ -12,13 +12,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4066044
 Reviewed-by: Igor Sheludko <ishell@chromium.org>
 Commit-Queue: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#84575}
----
 
 diff --git a/src/ast/scopes.cc b/src/ast/scopes.cc
-index e55eecf..cecce4c 100644
+index 679472c7c62916727735cbbcd7c6caf1fa7ae8bb..54709de5b747f0c6f450943e110c4f82b97c29ca 100644
 --- a/src/ast/scopes.cc
 +++ b/src/ast/scopes.cc
-@@ -885,9 +885,8 @@
+@@ -888,9 +888,8 @@ void DeclarationScope::AddLocal(Variable* var) {
  }
  
  void Scope::Snapshot::Reparent(DeclarationScope* new_parent) {
@@ -30,7 +29,7 @@ index e55eecf..cecce4c 100644
    DCHECK_EQ(new_parent, new_parent->GetClosureScope());
    DCHECK_NULL(new_parent->inner_scope_);
    DCHECK(new_parent->unresolved_list_.is_empty());
-@@ -912,12 +911,11 @@
+@@ -915,12 +914,11 @@ void Scope::Snapshot::Reparent(DeclarationScope* new_parent) {
      new_parent->sibling_ = top_inner_scope_;
    }
  
@@ -45,7 +44,7 @@ index e55eecf..cecce4c 100644
    for (auto it = top_local_; it != outer_closure->locals()->end(); ++it) {
      Variable* local = *it;
      DCHECK_EQ(VariableMode::kTemporary, local->mode());
-@@ -929,16 +927,10 @@
+@@ -932,16 +930,10 @@ void Scope::Snapshot::Reparent(DeclarationScope* new_parent) {
    outer_closure->locals_.Rewind(top_local_);
  
    // Move eval calls since Snapshot's creation into new_parent.
@@ -65,7 +64,7 @@ index e55eecf..cecce4c 100644
  }
  
  void Scope::ReplaceOuterScope(Scope* outer) {
-@@ -2577,6 +2569,9 @@
+@@ -2579,6 +2571,9 @@ void Scope::AllocateVariablesRecursively() {
    this->ForEach([](Scope* scope) -> Iteration {
      DCHECK(!scope->already_resolved_);
      if (WasLazilyParsed(scope)) return Iteration::kContinue;
@@ -76,10 +75,10 @@ index e55eecf..cecce4c 100644
  
      // Allocate variables for this scope.
 diff --git a/src/ast/scopes.h b/src/ast/scopes.h
-index 32e16b8..3d06268 100644
+index 9f4970931454e78468eba7bc2cf01289fa598289..29e329833f247d901e20fb227ceedbdd2ee4127a 100644
 --- a/src/ast/scopes.h
 +++ b/src/ast/scopes.h
-@@ -110,12 +110,6 @@
+@@ -112,12 +112,6 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
  
    class Snapshot final {
     public:
@@ -92,7 +91,7 @@ index 32e16b8..3d06268 100644
      inline explicit Snapshot(Scope* scope);
  
      // Disallow copy and move.
-@@ -123,45 +117,31 @@
+@@ -125,45 +119,31 @@ class V8_EXPORT_PRIVATE Scope : public NON_EXPORTED_BASE(ZoneObject) {
      Snapshot(Snapshot&&) = delete;
  
      ~Snapshot() {
@@ -153,7 +152,7 @@ index 32e16b8..3d06268 100644
    };
  
    enum class DeserializationMode { kIncludingVariables, kScopesOnly };
-@@ -907,8 +887,8 @@
+@@ -909,8 +889,8 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
    void RecordDeclarationScopeEvalCall() {
      calls_eval_ = true;
  
@@ -164,7 +163,7 @@ index 32e16b8..3d06268 100644
  
      // Sloppy eval in script scopes can only introduce global variables anyway,
      // so we don't care that it calls sloppy eval.
-@@ -942,7 +922,6 @@
+@@ -944,7 +924,6 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
      }
  
      sloppy_eval_can_extend_vars_ = true;
@@ -172,7 +171,7 @@ index 32e16b8..3d06268 100644
    }
  
    bool sloppy_eval_can_extend_vars() const {
-@@ -1367,7 +1346,9 @@
+@@ -1369,7 +1348,9 @@ class V8_EXPORT_PRIVATE DeclarationScope : public Scope {
  
  void Scope::RecordEvalCall() {
    calls_eval_ = true;
@@ -183,7 +182,7 @@ index 32e16b8..3d06268 100644
    RecordInnerScopeEvalCall();
    // The eval contents might access "super" (if it's inside a function that
    // binds super).
-@@ -1380,14 +1361,18 @@
+@@ -1382,14 +1363,18 @@ void Scope::RecordEvalCall() {
  }
  
  Scope::Snapshot::Snapshot(Scope* scope)
