@@ -568,6 +568,13 @@ step-electron-build: &step-electron-build
         ninja -C out/Default electron:electron_mksnapshot_zip -j $NUMBER_OF_NINJA_PROCESSES
         ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        # Remove unused args from mksnapshot_args
+        SEDOPTION=
+        if [ "`uname`" == "Darwin" ]; then
+          SEDOPTION="-i ''"
+        fi
+        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
         (cd out/Default; zip mksnapshot.zip mksnapshot_args clang_x64_v8_arm64/gen/v8/embedded.S)
         rm -rf out/Default/clang_x64_v8_arm64/gen
         rm -rf out/Default/clang_x64_v8_arm64/obj
@@ -758,6 +765,13 @@ step-mksnapshot-build: &step-mksnapshot-build
       if [ "$USE_PREBUILT_V8_CONTEXT_SNAPSHOT" != "1" ]; then
         ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
+        # Remove unused args from mksnapshot_args
+        SEDOPTION=
+        if [ "`uname`" == "Darwin" ]; then
+          SEDOPTION="-i ''"
+        fi
+        sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
+        sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
       fi
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
@@ -2194,3 +2208,5 @@ workflows:
   lint:
     jobs:
       - lint
+
+# VS Code Extension Version: 1.1.1
