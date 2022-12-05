@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Johannes Kron <kron@chromium.org>
+Date: Mon, 28 Nov 2022 10:17:22 +0000
+Subject: Add feature for window capturing with ScreenCaptureKit
+
+Makes it possible to launch window capturing with
+ScreenCaptureKit individually.
+
+Bug: chromium:1352405
+Change-Id: Ie58d15007667db887ebf5f6f3092ef323f925461
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4047186
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Commit-Queue: Johannes Kron <kron@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1076120}
+
+diff --git a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+index 4e510e5199a62e536542088e79c9b825225664fa..21d8f08c5d7abf414f0ecc7a909a87d9d5ce0513 100644
+--- a/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
++++ b/content/browser/renderer_host/media/in_process_video_capture_device_launcher.cc
+@@ -98,6 +98,13 @@ BASE_FEATURE(kDesktopCaptureMacV2,
+ BASE_FEATURE(kScreenCaptureKitMac,
+              "ScreenCaptureKitMac",
+              base::FEATURE_DISABLED_BY_DEFAULT);
++
++// If this feature is enabled, ScreenCaptureKit will be used for window
++// capturing even if kScreenCaptureKitMac is disabled. Please note that this
++// feature has no effect if kScreenCaptureKitMac is enabled.
++BASE_FEATURE(kScreenCaptureKitMacWindow,
++             "ScreenCaptureKitMacWindow",
++             base::FEATURE_DISABLED_BY_DEFAULT);
+ #endif
+ 
+ void IncrementDesktopCaptureCounters(const DesktopMediaID& device_id) {
+@@ -491,7 +498,9 @@ void InProcessVideoCaptureDeviceLauncher::DoStartDesktopCaptureOnDeviceThread(
+   // Prefer using ScreenCaptureKit. After that try DesktopCaptureDeviceMac, and
+   // if both fail, use the generic DesktopCaptureDevice.
+   if (!video_capture_device &&
+-      base::FeatureList::IsEnabled(kScreenCaptureKitMac)) {
++      (base::FeatureList::IsEnabled(kScreenCaptureKitMac) ||
++       (desktop_id.type == DesktopMediaID::TYPE_WINDOW &&
++        base::FeatureList::IsEnabled(kScreenCaptureKitMacWindow)))) {
+     if ((video_capture_device = CreateScreenCaptureKitDeviceMac(desktop_id)))
+       implementation = kScreenCaptureKitDeviceMac;
+   }
