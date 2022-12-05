@@ -30,7 +30,8 @@ gfx::ImageSkia GetBestImageRep(const gfx::ImageSkia& image) {
 }  // namespace
 
 TrayIconGtk::TrayIconGtk()
-    : status_icon_(new StatusIconLinuxDbus), status_icon_type_(kTypeDbus) {
+    : status_icon_(new StatusIconLinuxDbus),
+      status_icon_type_(StatusIconType::kDbus) {
   status_icon_->SetDelegate(this);
 }
 
@@ -68,11 +69,11 @@ ui::MenuModel* TrayIconGtk::GetMenuModel() const {
 
 void TrayIconGtk::OnImplInitializationFailed() {
   switch (status_icon_type_) {
-    case kTypeDbus:
+    case StatusIconType::kDbus:
       status_icon_ = nullptr;
-      status_icon_type_ = kTypeNone;
+      status_icon_type_ = StatusIconType::kNone;
       return;
-    case kTypeNone:
+    case StatusIconType::kNone:
       NOTREACHED();
   }
 }
