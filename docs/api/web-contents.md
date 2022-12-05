@@ -2073,3 +2073,4 @@ with open(), or by navigating a link with a target attribute.
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+[`MessagePortMain`]: message-port-main.md
