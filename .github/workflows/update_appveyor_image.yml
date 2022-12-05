@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout
-      uses: actions/checkout@v3
+      uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # v3.1.0
       with:
         fetch-depth: 0
     - name: Yarn install
@@ -37,7 +37,7 @@ jobs:
         fi
     - name: (Optionally) Update Appveyor Image
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
-      uses: mikefarah/yq@v4.27.2
+      uses: mikefarah/yq@1c7dc0e88aad311c89889bc5ce5d8f96931a1bd0 # v4.27.2
       with:
         cmd: yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor.yml" > "appveyor2.yml"
     - name: (Optionally) Generate Commit Diff
@@ -48,7 +48,7 @@ jobs:
         rm appveyor2.yml appveyor.diff
     - name: (Optionally) Commit and Pull Request
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
-      uses: peter-evans/create-pull-request@v4
+      uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
       with:
         token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
         commit-message: 'build: update appveyor image to latest version'
