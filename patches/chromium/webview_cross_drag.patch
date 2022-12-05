@@ -8,7 +8,7 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index 35503a854b6b5a9ce86dc6647f0ce4fa344dd7cb..305bcb07d9bc40b884c7971b01d516cdea1a4190 100644
+index cfe0a9f92e4ef3c58dfa7f235b2f5046d3e21ee9..454667b98a8e80a374a7e1a169c5b02b0078a818 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
 @@ -918,10 +918,7 @@ bool WebContentsViewAura::IsValidDragTarget(

@@ -247,17 +247,11 @@ void AutofillPopup::UpdatePopupBounds() {
   gfx::Size preferred_size =
       gfx::Size(GetDesiredPopupWidth(), GetDesiredPopupHeight());
 
-  if (base::FeatureList::IsEnabled(
-          autofill::features::kAutofillCenterAlignedSuggestions)) {
-    popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
-                                         base::i18n::IsRTL(), true);
-    CalculatePopupXAndWidthHorizontallyCentered(
-        preferred_size.width(), window_bounds, element_bounds_,
-        base::i18n::IsRTL(), &popup_bounds_);
-  } else {
-    popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
-                                         base::i18n::IsRTL(), false);
-  }
+  popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
+                                       base::i18n::IsRTL(), true);
+  CalculatePopupXAndWidthHorizontallyCentered(
+      preferred_size.width(), window_bounds, element_bounds_,
+      base::i18n::IsRTL(), &popup_bounds_);
 }
 
 gfx::Rect AutofillPopup::popup_bounds_in_view() {

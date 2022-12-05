@@ -3167,7 +3167,7 @@ void WebContents::StartDrag(const gin_helper::Dictionary& item,
 
   // Start dragging.
   if (!files.empty()) {
-    base::CurrentThread::ScopedNestableTaskAllower allow;
+    base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
     DragFileItems(files, icon->image(), web_contents()->GetNativeView());
   } else {
     gin_helper::ErrorThrower(args->isolate())
