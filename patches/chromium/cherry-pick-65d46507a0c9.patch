@@ -1,0 +1,115 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: evliu <evliu@google.com>
+Date: Mon, 14 Nov 2022 20:05:12 +0000
+Subject: [Merge to M108] Replace raw pointer to LocalMuter with weak ptr
+
+This CL replaces a raw pointer to LocalMuter with a weak ptr. Additional
+info about this bug here: http://crbug/1377783
+
+(cherry picked from commit 9989b93eb12c93b9351d5bf2872c1069ef5f7d01)
+
+Bug: 1377783
+Change-Id: Id821ea800ba12f1cfae4677fc591c12dec112852
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3997421
+Reviewed-by: Paul Semel <paulsemel@chromium.org>
+Reviewed-by: Olga Sharonova <olka@chromium.org>
+Commit-Queue: Evan Liu <evliu@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1068776}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4024547
+Auto-Submit: Evan Liu <evliu@google.com>
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Reviewed-by: Evan Liu <evliu@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#824}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/services/audio/local_muter.h b/services/audio/local_muter.h
+index a484c7dfd60883b07c8fc61da768edf508ac53af..b108e32306a264be4d51027c4419efc70a5dbe0c 100644
+--- a/services/audio/local_muter.h
++++ b/services/audio/local_muter.h
+@@ -7,6 +7,7 @@
+ 
+ #include "base/callback.h"
+ #include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/sequence_checker.h"
+ #include "base/unguessable_token.h"
+ #include "media/mojo/mojom/audio_stream_factory.mojom.h"
+@@ -46,6 +47,8 @@ class LocalMuter final : public media::mojom::LocalMuter,
+ 
+   bool HasReceivers() { return !receivers_.empty(); }
+ 
++  base::WeakPtr<LocalMuter> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
++
+  private:
+   // Runs the |all_bindings_lost_callback_| when |bindings_| becomes empty.
+   void OnBindingLost();
+@@ -57,6 +60,8 @@ class LocalMuter final : public media::mojom::LocalMuter,
+   base::RepeatingClosure all_bindings_lost_callback_;
+ 
+   SEQUENCE_CHECKER(sequence_checker_);
++
++  base::WeakPtrFactory<LocalMuter> weak_factory_{this};
+ };
+ 
+ }  // namespace audio
+diff --git a/services/audio/stream_factory.cc b/services/audio/stream_factory.cc
+index 48152cb64769ab1a76920d2581f373b57fef85c9..60ff2766809d4c43c021e47cfa5087b9dbe089b8 100644
+--- a/services/audio/stream_factory.cc
++++ b/services/audio/stream_factory.cc
+@@ -181,8 +181,9 @@ void StreamFactory::BindMuter(
+   if (it == muters_.end()) {
+     auto muter_ptr = std::make_unique<LocalMuter>(&coordinator_, group_id);
+     muter = muter_ptr.get();
+-    muter->SetAllBindingsLostCallback(base::BindRepeating(
+-        &StreamFactory::DestroyMuter, base::Unretained(this), muter));
++    muter->SetAllBindingsLostCallback(
++        base::BindRepeating(&StreamFactory::DestroyMuter,
++                            base::Unretained(this), muter_ptr->GetWeakPtr()));
+     muters_.emplace_back(std::move(muter_ptr));
+   } else {
+     muter = it->get();
+@@ -254,9 +255,10 @@ void StreamFactory::DestroyOutputStream(OutputStream* stream) {
+   DCHECK_EQ(1u, erased);
+ }
+ 
+-void StreamFactory::DestroyMuter(LocalMuter* muter) {
++void StreamFactory::DestroyMuter(base::WeakPtr<LocalMuter> muter) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(owning_sequence_);
+-  DCHECK(muter);
++  if (!muter)
++    return;
+ 
+   // Output streams have a task posting before destruction (see the OnError
+   // function in output_stream.cc). To ensure that stream destruction and
+@@ -265,13 +267,11 @@ void StreamFactory::DestroyMuter(LocalMuter* muter) {
+   // Otherwise, a "destroy all streams, then destroy the muter" sequence may
+   // result in a brief blip of audio.
+   auto do_destroy = [](base::WeakPtr<StreamFactory> weak_this,
+-                       LocalMuter* muter) {
+-    if (weak_this) {
+-
++                       base::WeakPtr<LocalMuter> muter) {
++    if (weak_this && muter) {
+       const auto it =
+           std::find_if(weak_this->muters_.begin(), weak_this->muters_.end(),
+-                       base::MatchesUniquePtr(muter));
+-      DCHECK(it != weak_this->muters_.end());
++                       base::MatchesUniquePtr(muter.get()));
+ 
+       // The LocalMuter can still have receivers if a receiver was bound after
+       // DestroyMuter is called but before the do_destroy task is run.
+diff --git a/services/audio/stream_factory.h b/services/audio/stream_factory.h
+index 2207c72cb39e666e5c207016035a9d295d708aa0..b6119025f043e433455b35ee71e2b130299d1d21 100644
+--- a/services/audio/stream_factory.h
++++ b/services/audio/stream_factory.h
+@@ -110,7 +110,7 @@ class StreamFactory final : public media::mojom::AudioStreamFactory {
+ 
+   void DestroyInputStream(InputStream* stream);
+   void DestroyOutputStream(OutputStream* stream);
+-  void DestroyMuter(LocalMuter* muter);
++  void DestroyMuter(base::WeakPtr<LocalMuter> muter);
+   void DestroyLoopbackStream(LoopbackStream* stream);
+ 
+   SEQUENCE_CHECKER(owning_sequence_);
