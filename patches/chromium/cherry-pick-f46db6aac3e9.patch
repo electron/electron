@@ -1,7 +1,7 @@
-From f46db6aac3e9b23511c70e3afe84b641e7ef8812 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Xiaocheng Hu <xiaochengh@chromium.org>
 Date: Mon, 14 Nov 2022 20:01:38 +0000
-Subject: [PATCH] Do not traverse directory symlinks when uploading folder
+Subject: Do not traverse directory symlinks when uploading folder
 
 Previous patch crrev.com/c/3866767 removed symlink files when uploading
 a folder. However, while the remaining files are themselves not
@@ -28,13 +28,12 @@ Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
 Owners-Override: Srinivas Sista <srinivassista@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5359@{#823}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/content/browser/web_contents/file_chooser_impl.cc b/content/browser/web_contents/file_chooser_impl.cc
-index 85b2032d..0dcecea 100644
+index 1aa19f7a735b444f2c33d5084edcdd14e3c2f5c5..f4fa1afda64bf0606d28d4accaec56e2624133db 100644
 --- a/content/browser/web_contents/file_chooser_impl.cc
 +++ b/content/browser/web_contents/file_chooser_impl.cc
-@@ -23,10 +23,24 @@
+@@ -23,10 +23,24 @@ namespace content {
  
  namespace {
  
@@ -61,7 +60,7 @@ index 85b2032d..0dcecea 100644
        [](const auto& file) { return file->get_native_file()->file_path; });
    files.erase(new_end, files.end());
    return files;
-@@ -78,7 +92,7 @@
+@@ -78,7 +92,7 @@ void FileChooserImpl::FileSelectListenerImpl::FileSelected(
    base::ThreadPool::PostTaskAndReplyWithResult(
        FROM_HERE,
        {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
@@ -71,10 +70,10 @@ index 85b2032d..0dcecea 100644
                       base_dir, mode));
  }
 diff --git a/content/browser/web_contents/file_chooser_impl_browsertest.cc b/content/browser/web_contents/file_chooser_impl_browsertest.cc
-index 5f6c39b7..dc07f3ce 100644
+index 2acd2216331bd9be56eb9705f0e9c0d3bceb9e93..d988e221688ee19493e43c0b5f736fa432843cd0 100644
 --- a/content/browser/web_contents/file_chooser_impl_browsertest.cc
 +++ b/content/browser/web_contents/file_chooser_impl_browsertest.cc
-@@ -177,8 +177,8 @@
+@@ -177,8 +177,8 @@ IN_PROC_BROWSER_TEST_F(FileChooserImplBrowserTest, UploadFolderWithSymlink) {
        return;
    }
  
@@ -85,7 +84,7 @@ index 5f6c39b7..dc07f3ce 100644
    shell()->web_contents()->SetDelegate(delegate.get());
    EXPECT_TRUE(ExecJs(shell(),
                       "(async () => {"
-@@ -195,4 +195,45 @@
+@@ -195,4 +195,45 @@ IN_PROC_BROWSER_TEST_F(FileChooserImplBrowserTest, UploadFolderWithSymlink) {
        EvalJs(shell(), "document.getElementById('fileinput').files[0].name;"));
  }
  
@@ -132,10 +131,10 @@ index 5f6c39b7..dc07f3ce 100644
 +
  }  // namespace content
 diff --git a/content/test/content_browser_test_utils_internal.cc b/content/test/content_browser_test_utils_internal.cc
-index 87025f3..75ac93d 100644
+index dbdf244571956645c6494c4cdab514dd42dbb6c2..70166cf3470595c928b202325f56f17abd0a61ac 100644
 --- a/content/test/content_browser_test_utils_internal.cc
 +++ b/content/test/content_browser_test_utils_internal.cc
-@@ -445,12 +445,16 @@
+@@ -448,12 +448,16 @@ Shell* OpenPopup(const ToRenderFrameHost& opener,
  }
  
  FileChooserDelegate::FileChooserDelegate(std::vector<base::FilePath> files,
@@ -153,7 +152,7 @@ index 87025f3..75ac93d 100644
                            std::move(callback)) {}
  
  FileChooserDelegate::~FileChooserDelegate() = default;
-@@ -459,6 +463,9 @@
+@@ -462,6 +466,9 @@ void FileChooserDelegate::RunFileChooser(
      RenderFrameHost* render_frame_host,
      scoped_refptr<content::FileSelectListener> listener,
      const blink::mojom::FileChooserParams& params) {
@@ -163,7 +162,7 @@ index 87025f3..75ac93d 100644
    // Send the selected files to the renderer process.
    std::vector<blink::mojom::FileChooserFileInfoPtr> files;
    for (const auto& file : files_) {
-@@ -466,7 +473,7 @@
+@@ -469,7 +476,7 @@ void FileChooserDelegate::RunFileChooser(
          blink::mojom::NativeFileInfo::New(file, std::u16string()));
      files.push_back(std::move(file_info));
    }
@@ -173,10 +172,10 @@ index 87025f3..75ac93d 100644
    params_ = params.Clone();
    if (callback_)
 diff --git a/content/test/content_browser_test_utils_internal.h b/content/test/content_browser_test_utils_internal.h
-index 5f1024bd..be090a2 100644
+index 3bf1bb93e15b0a5270262837802e140ad72a9231..6bd95d55add1c0da850be6078d02c3eae479ea62 100644
 --- a/content/test/content_browser_test_utils_internal.h
 +++ b/content/test/content_browser_test_utils_internal.h
-@@ -179,7 +179,10 @@
+@@ -179,7 +179,10 @@ class FileChooserDelegate : public WebContentsDelegate {
    // The mocked file dialog will always reply that the user selected |file| or
    // |files|. |callback| is invoked when RunFileChooser() is called.
    FileChooserDelegate(const base::FilePath& file, base::OnceClosure callback);
@@ -187,7 +186,7 @@ index 5f1024bd..be090a2 100644
                        base::OnceClosure callback);
    ~FileChooserDelegate() override;
  
-@@ -193,6 +196,7 @@
+@@ -193,6 +196,7 @@ class FileChooserDelegate : public WebContentsDelegate {
  
   private:
    std::vector<base::FilePath> files_;
@@ -197,14 +196,14 @@ index 5f1024bd..be090a2 100644
  };
 diff --git a/content/test/data/file_chooser/dir_with_dir_symlink/foo.txt b/content/test/data/file_chooser/dir_with_dir_symlink/foo.txt
 new file mode 100644
-index 0000000..257cc564
+index 0000000000000000000000000000000000000000..257cc5642cb1a054f08cc83f2d943e56fd3ebe99
 --- /dev/null
 +++ b/content/test/data/file_chooser/dir_with_dir_symlink/foo.txt
 @@ -0,0 +1 @@
 +foo
 diff --git a/content/test/data/file_chooser/dir_with_dir_symlink/symlink b/content/test/data/file_chooser/dir_with_dir_symlink/symlink
 new file mode 120000
-index 0000000..10f6d1a
+index 0000000000000000000000000000000000000000..10f6d1ab9ba9ede59b719d4ba1581588e172abb6
 --- /dev/null
 +++ b/content/test/data/file_chooser/dir_with_dir_symlink/symlink
 @@ -0,0 +1 @@
@@ -212,7 +211,7 @@ index 0000000..10f6d1a
 \ No newline at end of file
 diff --git a/content/test/data/file_chooser/linked_dir/bar.txt b/content/test/data/file_chooser/linked_dir/bar.txt
 new file mode 100644
-index 0000000..5716ca59
+index 0000000000000000000000000000000000000000..5716ca5987cbf97d6bb54920bea6adde242d87e6
 --- /dev/null
 +++ b/content/test/data/file_chooser/linked_dir/bar.txt
 @@ -0,0 +1 @@
