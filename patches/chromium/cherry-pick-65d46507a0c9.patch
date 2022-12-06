@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: evliu <evliu@google.com>
 Date: Mon, 14 Nov 2022 20:05:12 +0000
-Subject: [Merge to M108] Replace raw pointer to LocalMuter with weak ptr
+Subject: Replace raw pointer to LocalMuter with weak ptr
 
 This CL replaces a raw pointer to LocalMuter with a weak ptr. Additional
 info about this bug here: http://crbug/1377783
@@ -55,7 +55,7 @@ index a484c7dfd60883b07c8fc61da768edf508ac53af..b108e32306a264be4d51027c4419efc7
  
  }  // namespace audio
 diff --git a/services/audio/stream_factory.cc b/services/audio/stream_factory.cc
-index 98fc82b48ff020c49fdeab1adae947a84873f6b2..7d6f80d2b8908a9c5469a543973f08cc2af2be6b 100644
+index 98fc82b48ff020c49fdeab1adae947a84873f6b2..dad6051bc712e6b923ec26b0abc56625d8dcbed5 100644
 --- a/services/audio/stream_factory.cc
 +++ b/services/audio/stream_factory.cc
 @@ -184,8 +184,9 @@ void StreamFactory::BindMuter(
@@ -90,10 +90,9 @@ index 98fc82b48ff020c49fdeab1adae947a84873f6b2..7d6f80d2b8908a9c5469a543973f08cc
 -                       LocalMuter* muter) {
 -    if (weak_this) {
 -
--      const auto it =
 +                       base::WeakPtr<LocalMuter> muter) {
 +    if (weak_this && muter) {
-+      const auto it =
+       const auto it =
            std::find_if(weak_this->muters_.begin(), weak_this->muters_.end(),
 -                       base::MatchesUniquePtr(muter));
 -      DCHECK(it != weak_this->muters_.end());
