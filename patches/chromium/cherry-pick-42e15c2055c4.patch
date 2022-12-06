@@ -1,0 +1,116 @@
+From 42e15c2055c4969f2b234f704a15a7a874d58c5e Mon Sep 17 00:00:00 2001
+From: Joey Arhar <jarhar@chromium.org>
+Date: Tue, 22 Nov 2022 00:12:31 +0000
+Subject: [PATCH] Avoid use-after-free in ValidationMessageOverlayDelegate
+
+When ValidationMessageOverlayDelegate calls
+ForceSynchronousDocumentInstall, it can somehow cause another validation
+overlay to be created and delete the ValidationMessageOverlayDelegate.
+This patch avoids additional code from being run inside the deleted
+ValidationMessageOverlayDelegate.
+
+(cherry picked from commit a37b66ded21af7ff1442bddd2ec3a0845535b3d6)
+
+Fixed: 1382581
+Change-Id: I044f91ecb55c77c4a5c40030b6856fc9a8ac7f6f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4019655
+Reviewed-by: David Baron <dbaron@chromium.org>
+Commit-Queue: Joey Arhar <jarhar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1071652}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4043489
+Commit-Queue: David Baron <dbaron@chromium.org>
+Auto-Submit: Joey Arhar <jarhar@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5359@{#911}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+---
+
+diff --git a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc
+index 23dc28b..8d12cae0 100644
+--- a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc
++++ b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc
+@@ -86,6 +86,8 @@
+     EventDispatchForbiddenScope::AllowUserAgentEvents allow_events;
+     page_->WillBeDestroyed();
+   }
++  if (destroyed_ptr_)
++    *destroyed_ptr_ = true;
+ }
+ 
+ LocalFrameView& ValidationMessageOverlayDelegate::FrameView() const {
+@@ -177,7 +179,18 @@
+   WriteDocument(data.get());
+   float zoom_factor = anchor_->GetDocument().GetFrame()->PageZoomFactor();
+   frame->SetPageZoomFactor(zoom_factor);
++
++  // ForceSynchronousDocumentInstall can cause another call to
++  // ValidationMessageClientImpl::ShowValidationMessage, which will hide this
++  // validation message and may even delete this. In order to avoid continuing
++  // when this is destroyed, |destroyed| will be set to true in the destructor.
++  bool destroyed = false;
++  DCHECK(!destroyed_ptr_);
++  destroyed_ptr_ = &destroyed;
+   frame->ForceSynchronousDocumentInstall("text/html", data);
++  if (destroyed)
++    return;
++  destroyed_ptr_ = nullptr;
+ 
+   Element& main_message = GetElementById("main-message");
+   main_message.setTextContent(message_);
+diff --git a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h
+index 1f46d0d..1633aff 100644
+--- a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h
++++ b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h
+@@ -72,6 +72,10 @@
+   String sub_message_;
+   TextDirection message_dir_;
+   TextDirection sub_message_dir_;
++
++  // Used by CreatePage() to determine if this has been deleted in the middle of
++  // the function.
++  bool* destroyed_ptr_ = nullptr;
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/constraints/reportValidity-crash.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/constraints/reportValidity-crash.html
+new file mode 100644
+index 0000000..d6bab92
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/constraints/reportValidity-crash.html
+@@ -0,0 +1,37 @@
++<!DOCTYPE html>
++<html>
++
++<head>
++<script>
++Object.prototype.__defineGetter__('then', prom);
++var prom_count = 0;
++function prom() {
++prom_count++;
++if (prom_count > 2) return;
++var v14 = x37.animate({},100);
++v14.reverse();
++v14.ready;
++v14.currentTime = 0;
++x57.reportValidity();
++}
++function f0() {
++var v38 = x37.animate({},300);
++v38.ready;
++x57.prepend(x78);
++}
++function f1() {
++var x57 = document.getElementById("x57");
++x57.disabled = false;
++}
++</script>
++</head>
++
++<body>
++<fieldset id="x37">
++<canvas onfocusin="f0()" >
++<input id="x78" autofocus=""  onfocusout="f1()" >
++</canvas>
++<select id="x57" disabled=""  required=""></select>
++</body>
++
++</html>
