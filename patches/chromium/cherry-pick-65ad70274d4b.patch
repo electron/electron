@@ -1,7 +1,7 @@
-From 65ad70274d4ba4059a743dbe941c340e7670e2d0 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ilya Nikolaevskiy <ilnik@chromium.org>
 Date: Mon, 14 Nov 2022 12:33:49 +0000
-Subject: [PATCH] Fix UAF in VideoCaptureDeviceWin::FrameReceived
+Subject: Fix UAF in VideoCaptureDeviceWin::FrameReceived
 
 (cherry picked from commit d08a3822658cb4ca4261659f1487069a14b51bd9)
 
@@ -14,13 +14,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1069054}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4023295
 Cr-Commit-Position: refs/branch-heads/5359@{#809}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/media/capture/video/win/video_capture_device_win.cc b/media/capture/video/win/video_capture_device_win.cc
-index 459c5ae..040aad1 100644
+index f2380053969cbb5292eaec3b4b01e7358788ef54..898d66ce5d9ce43ff55b426dca933014918c9339 100644
 --- a/media/capture/video/win/video_capture_device_win.cc
 +++ b/media/capture/video/win/video_capture_device_win.cc
-@@ -872,35 +872,36 @@
+@@ -872,34 +872,35 @@ void VideoCaptureDeviceWin::FrameReceived(const uint8_t* buffer,
                                            const VideoCaptureFormat& format,
                                            base::TimeDelta timestamp,
                                            bool flip_y) {
@@ -34,34 +33,22 @@ index 459c5ae..040aad1 100644
      base::AutoLock lock(lock_);
      if (state_ != kCapturing)
        return;
-+
-+    if (first_ref_time_.is_null())
-+      first_ref_time_ = base::TimeTicks::Now();
-+
-+    // There is a chance that the platform does not provide us with the
-+    // timestamp, in which case, we use reference time to calculate a timestamp.
-+    if (timestamp == kNoTimestamp)
-+      timestamp = base::TimeTicks::Now() - first_ref_time_;
-+
-+    // TODO(julien.isorce): retrieve the color space information using the
-+    // DirectShow api, AM_MEDIA_TYPE::VIDEOINFOHEADER2::dwControlFlags. If
-+    // AMCONTROL_COLORINFO_PRESENT, then reinterpret dwControlFlags as a
-+    // DXVA_ExtendedFormat. Then use its fields DXVA_VideoPrimaries,
-+    // DXVA_VideoTransferMatrix, DXVA_VideoTransferFunction and
-+    // DXVA_NominalRangeto build a gfx::ColorSpace. See http://crbug.com/959992.
-+    client_->OnIncomingCapturedData(buffer, length, format, gfx::ColorSpace(),
-+                                    camera_rotation_.value(), flip_y,
-+                                    base::TimeTicks::Now(), timestamp);
-   }
+-  }
  
 -  if (first_ref_time_.is_null())
 -    first_ref_time_ = base::TimeTicks::Now();
--
++    if (first_ref_time_.is_null())
++      first_ref_time_ = base::TimeTicks::Now();
+ 
 -  // There is a chance that the platform does not provide us with the timestamp,
 -  // in which case, we use reference time to calculate a timestamp.
 -  if (timestamp == kNoTimestamp)
 -    timestamp = base::TimeTicks::Now() - first_ref_time_;
--
++    // There is a chance that the platform does not provide us with the
++    // timestamp, in which case, we use reference time to calculate a timestamp.
++    if (timestamp == kNoTimestamp)
++      timestamp = base::TimeTicks::Now() - first_ref_time_;
+ 
 -  // We always calculate camera rotation for the first frame. We also cache the
 -  // latest value to use when AutoRotation is turned off.
 -  if (!camera_rotation_.has_value() || IsAutoRotationEnabled())
@@ -76,7 +63,16 @@ index 459c5ae..040aad1 100644
 -  client_->OnIncomingCapturedData(buffer, length, format, gfx::ColorSpace(),
 -                                  camera_rotation_.value(), flip_y,
 -                                  base::TimeTicks::Now(), timestamp);
--
++    // TODO(julien.isorce): retrieve the color space information using the
++    // DirectShow api, AM_MEDIA_TYPE::VIDEOINFOHEADER2::dwControlFlags. If
++    // AMCONTROL_COLORINFO_PRESENT, then reinterpret dwControlFlags as a
++    // DXVA_ExtendedFormat. Then use its fields DXVA_VideoPrimaries,
++    // DXVA_VideoTransferMatrix, DXVA_VideoTransferFunction and
++    // DXVA_NominalRangeto build a gfx::ColorSpace. See http://crbug.com/959992.
++    client_->OnIncomingCapturedData(buffer, length, format, gfx::ColorSpace(),
++                                    camera_rotation_.value(), flip_y,
++                                    base::TimeTicks::Now(), timestamp);
++  }
+ 
    while (!take_photo_callbacks_.empty()) {
      TakePhotoCallback cb = std::move(take_photo_callbacks_.front());
-     take_photo_callbacks_.pop();
