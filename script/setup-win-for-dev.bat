@@ -50,13 +50,14 @@ set chocolateyUseWindowsCompression='true'
 SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 REM Install Visual Studio Toolchain
-choco install visualstudio2019buildtools --package-parameters "--quiet --wait --norestart --nocache  --installPath ""%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community"" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.VC.ATLMFC --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 --add Microsoft.VisualStudio.Component.Windows%wsdk% --includeRecommended"
+choco install visualstudio2019buildtools --package-parameters "--quiet --wait --norestart --nocache  --installPath ""%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community"" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.VC.ATLMFC --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 --add Microsoft.VisualStudio.Component.Windows%wsdk% --add Microsoft.VisualStudio.Workload.NativeDesktop --includeRecommended"
 
 REM Install Windows SDK
 choco install windows-sdk-10-version-2104-all
 
 REM Install nodejs python git and yarn needed dependencies
-choco install -y nodejs-lts python2 git yarn
+choco install -y nodejs-lts --version=16.15.0
+choco install -y python2 git yarn
 choco install python --version 3.7.9
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH%
