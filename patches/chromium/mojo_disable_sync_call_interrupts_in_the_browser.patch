@@ -1,0 +1,536 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Thu, 10 Nov 2022 03:24:17 +0000
+Subject: Mojo: Disable sync call interrupts in the browser
+
+This changes the default Mojo sync call behavior in the browser process
+to prevent any blocking sync calls from being interrupted by other
+incoming sync IPC dispatches.
+
+(cherry picked from commit b6f921260e0e763db7a72de9c7a3f0f78a99f21f)
+
+Bug: 1376099
+Change-Id: I53681ef379fdd3c2bfc37d7e16b3de17acad5d20
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3989408
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1065369}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4018257
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Auto-Submit: Daniel Cheng <dcheng@chromium.org>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#719}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index a3e5764a1920c8a6bf1ce21e02d0ac743b027a40..ce8b70cc792b2ae45624840e0f71270f85f00836 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -93,6 +93,7 @@
+ #include "media/media_buildflags.h"
+ #include "mojo/core/embedder/embedder.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
++#include "mojo/public/cpp/bindings/sync_call_restrictions.h"
+ #include "mojo/public/cpp/platform/platform_channel.h"
+ #include "mojo/public/cpp/system/dynamic_library_support.h"
+ #include "mojo/public/cpp/system/invitation.h"
+@@ -1083,6 +1084,11 @@ int ContentMainRunnerImpl::RunBrowser(MainFunctionParams main_params,
+   if (is_browser_main_loop_started_)
+     return -1;
+ 
++  if (!base::CommandLine::ForCurrentProcess()->HasSwitch(
++          switches::kSingleProcess)) {
++    mojo::SyncCallRestrictions::DisableSyncCallInterrupts();
++  }
++
+   if (!mojo_ipc_support_) {
+     const ContentMainDelegate::InvokedInBrowserProcess invoked_in_browser{
+         .is_running_test = !main_params.ui_task.is_null()};
+diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
+index a0bd86951a20cf2d60c7805a3a7fa687d66ca329..f35570d245003e760d15d8f60419648e2ba60c5a 100644
+--- a/ipc/ipc_mojo_bootstrap.cc
++++ b/ipc/ipc_mojo_bootstrap.cc
+@@ -16,13 +16,15 @@
+ #include "base/bind.h"
+ #include "base/callback.h"
+ #include "base/check_op.h"
++#include "base/containers/circular_deque.h"
+ #include "base/containers/contains.h"
+-#include "base/containers/queue.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/no_destructor.h"
++#include "base/ranges/algorithm.h"
+ #include "base/strings/stringprintf.h"
+ #include "base/synchronization/lock.h"
++#include "base/synchronization/waitable_event.h"
+ #include "base/task/common/task_annotator.h"
+ #include "base/task/sequenced_task_runner.h"
+ #include "base/task/single_thread_task_runner.h"
+@@ -48,6 +50,7 @@
+ #include "mojo/public/cpp/bindings/pipe_control_message_proxy.h"
+ #include "mojo/public/cpp/bindings/sequence_local_sync_event_watcher.h"
+ #include "mojo/public/cpp/bindings/tracing_helpers.h"
++#include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ namespace IPC {
+ 
+@@ -466,6 +469,11 @@ class ChannelAssociatedGroupController
+       return *this;
+     }
+ 
++    bool HasRequestId(uint64_t request_id) {
++      return !value_.IsNull() && value_.version() >= 1 &&
++             value_.header_v1()->request_id == request_id;
++    }
++
+     mojo::Message& value() { return value_; }
+ 
+    private:
+@@ -557,10 +565,15 @@ class ChannelAssociatedGroupController
+       sync_watcher_.reset();
+     }
+ 
+-    uint32_t EnqueueSyncMessage(MessageWrapper message) {
++    absl::optional<uint32_t> EnqueueSyncMessage(MessageWrapper message) {
+       controller_->lock_.AssertAcquired();
++      if (exclusive_wait_ && exclusive_wait_->TryFulfillingWith(message)) {
++        exclusive_wait_ = nullptr;
++        return absl::nullopt;
++      }
++
+       uint32_t id = GenerateSyncMessageId();
+-      sync_messages_.emplace(id, std::move(message));
++      sync_messages_.emplace_back(id, std::move(message));
+       SignalSyncMessageEvent();
+       return id;
+     }
+@@ -577,7 +590,7 @@ class ChannelAssociatedGroupController
+       if (sync_messages_.empty() || sync_messages_.front().first != id)
+         return MessageWrapper();
+       MessageWrapper message = std::move(sync_messages_.front().second);
+-      sync_messages_.pop();
++      sync_messages_.pop_front();
+       return message;
+     }
+ 
+@@ -607,10 +620,38 @@ class ChannelAssociatedGroupController
+       return sync_watcher_->SyncWatch(&should_stop);
+     }
+ 
++    MessageWrapper WaitForIncomingSyncReply(uint64_t request_id) {
++      absl::optional<ExclusiveSyncWait> wait;
++      {
++        base::AutoLock lock(controller_->lock_);
++        for (auto& [id, message] : sync_messages_) {
++          if (message.HasRequestId(request_id)) {
++            return std::move(message);
++          }
++        }
++
++        DCHECK(!exclusive_wait_);
++        wait.emplace(request_id);
++        exclusive_wait_ = &wait.value();
++      }
++
++      wait->event.Wait();
++      return std::move(wait->message);
++    }
++
+     bool SyncWatchExclusive(uint64_t request_id) override {
+-      // We don't support exclusive waits on Channel-associated interfaces.
+-      NOTREACHED();
+-      return false;
++      MessageWrapper message = WaitForIncomingSyncReply(request_id);
++      if (message.value().IsNull() || !client_) {
++        return false;
++      }
++
++      if (!client_->HandleIncomingMessage(&message.value())) {
++        base::AutoLock locker(controller_->lock_);
++        controller_->RaiseError();
++        return false;
++      }
++
++      return true;
+     }
+ 
+     void RegisterExternalSyncWaiter(uint64_t request_id) override {}
+@@ -624,6 +665,9 @@ class ChannelAssociatedGroupController
+       DCHECK(closed_);
+       DCHECK(peer_closed_);
+       DCHECK(!sync_watcher_);
++      if (exclusive_wait_) {
++        exclusive_wait_->event.Signal();
++      }
+     }
+ 
+     void OnSyncMessageEventReady() {
+@@ -637,7 +681,7 @@ class ChannelAssociatedGroupController
+       if (!sync_messages_.empty()) {
+         MessageWrapper message_wrapper =
+             std::move(sync_messages_.front().second);
+-        sync_messages_.pop();
++        sync_messages_.pop_front();
+ 
+         bool dispatch_succeeded;
+         mojo::InterfaceEndpointClient* client = client_;
+@@ -685,6 +729,28 @@ class ChannelAssociatedGroupController
+       return id;
+     }
+ 
++    // Tracks the state of a pending sync wait which excludes all other incoming
++    // IPC on the waiting thread.
++    struct ExclusiveSyncWait {
++      explicit ExclusiveSyncWait(uint64_t request_id)
++          : request_id(request_id) {}
++      ~ExclusiveSyncWait() = default;
++
++      bool TryFulfillingWith(MessageWrapper& wrapper) {
++        if (!wrapper.HasRequestId(request_id)) {
++          return false;
++        }
++
++        message = std::move(wrapper);
++        event.Signal();
++        return true;
++      }
++
++      uint64_t request_id;
++      base::WaitableEvent event;
++      MessageWrapper message;
++    };
++
+     const raw_ptr<ChannelAssociatedGroupController> controller_;
+     const mojo::InterfaceId id_;
+ 
+@@ -696,7 +762,8 @@ class ChannelAssociatedGroupController
+     raw_ptr<mojo::InterfaceEndpointClient> client_ = nullptr;
+     scoped_refptr<base::SequencedTaskRunner> task_runner_;
+     std::unique_ptr<mojo::SequenceLocalSyncEventWatcher> sync_watcher_;
+-    base::queue<std::pair<uint32_t, MessageWrapper>> sync_messages_;
++    base::circular_deque<std::pair<uint32_t, MessageWrapper>> sync_messages_;
++    ExclusiveSyncWait* exclusive_wait_ = nullptr;
+     uint32_t next_sync_message_id_ = 0;
+   };
+ 
+@@ -929,12 +996,15 @@ class ChannelAssociatedGroupController
+         // sync message queue. If the endpoint was blocking, it will dequeue the
+         // message and dispatch it. Otherwise the posted |AcceptSyncMessage()|
+         // call will dequeue the message and dispatch it.
+-        uint32_t message_id =
++        absl::optional<uint32_t> message_id =
+             endpoint->EnqueueSyncMessage(std::move(message_wrapper));
+-        task_runner->PostTask(
+-            FROM_HERE,
+-            base::BindOnce(&ChannelAssociatedGroupController::AcceptSyncMessage,
+-                           this, id, message_id));
++        if (message_id) {
++          task_runner->PostTask(
++              FROM_HERE,
++              base::BindOnce(
++                  &ChannelAssociatedGroupController::AcceptSyncMessage, this,
++                  id, *message_id));
++        }
+         return true;
+       }
+ 
+diff --git a/mojo/public/cpp/bindings/interface_endpoint_controller.h b/mojo/public/cpp/bindings/interface_endpoint_controller.h
+index 89dbe39994620148e0ef33910b7cc7baacd7cc2e..8649abe1ac9c4b964c2bf833b850aa6f898b7103 100644
+--- a/mojo/public/cpp/bindings/interface_endpoint_controller.h
++++ b/mojo/public/cpp/bindings/interface_endpoint_controller.h
+@@ -36,6 +36,10 @@ class InterfaceEndpointController {
+   // Watches the endpoint for a specific incoming sync reply. This method only
+   // returns true once the reply is received, or false if the endpoint is
+   // detached or destroyed beforehand.
++  //
++  // Unlike with SyncWatch(), no other IPCs (not even other sync IPCs) can be
++  // dispatched to the calling thread while SyncWatchExclusive() is waiting on
++  // the reply for `request_id`.
+   virtual bool SyncWatchExclusive(uint64_t request_id) = 0;
+ 
+   // Notifies the controller that a specific in-flight sync message identified
+diff --git a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
+index 1830df7354d7dfa007cca97ddc346db0165098b7..c4ddc89cd9d0894814d64856179539f0d757a388 100644
+--- a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
++++ b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
+@@ -389,7 +389,9 @@ void ThreadSafeInterfaceEndpointClientProxy::SendMessageWithResponder(
+   }
+ 
+   // If the Remote is bound on another sequence, post the call.
+-  const bool allow_interrupt = !message.has_flag(Message::kFlagNoInterrupt);
++  const bool allow_interrupt =
++      SyncCallRestrictions::AreSyncCallInterruptsEnabled() &&
++      !message.has_flag(Message::kFlagNoInterrupt);
+   auto response = base::MakeRefCounted<SyncResponseInfo>();
+   auto response_signaler = std::make_unique<SyncResponseSignaler>(response);
+   task_runner_->PostTask(
+@@ -627,7 +629,9 @@ bool InterfaceEndpointClient::SendMessageWithResponder(
+ 
+   const uint32_t message_name = message->name();
+   const bool is_sync = message->has_flag(Message::kFlagIsSync);
+-  const bool exclusive_wait = message->has_flag(Message::kFlagNoInterrupt);
++  const bool exclusive_wait =
++      message->has_flag(Message::kFlagNoInterrupt) ||
++      !SyncCallRestrictions::AreSyncCallInterruptsEnabled();
+   if (!controller_->SendMessage(message))
+     return false;
+ 
+diff --git a/mojo/public/cpp/bindings/lib/sync_call_restrictions.cc b/mojo/public/cpp/bindings/lib/sync_call_restrictions.cc
+index 329901dec12572e8d8833eba33ad1cc793919084..6242391074ee6279cfea29cf1e73ac4ef874445a 100644
+--- a/mojo/public/cpp/bindings/lib/sync_call_restrictions.cc
++++ b/mojo/public/cpp/bindings/lib/sync_call_restrictions.cc
+@@ -4,8 +4,6 @@
+ 
+ #include "mojo/public/cpp/bindings/sync_call_restrictions.h"
+ 
+-#if ENABLE_SYNC_CALL_RESTRICTIONS
+-
+ #include "base/check_op.h"
+ #include "base/debug/leak_annotations.h"
+ #include "base/logging.h"
+@@ -19,6 +17,11 @@ namespace mojo {
+ 
+ namespace {
+ 
++// Sync call interrupts are enabled by default.
++bool g_enable_sync_call_interrupts = true;
++
++#if ENABLE_SYNC_CALL_RESTRICTIONS
++
+ class GlobalSyncCallSettings {
+  public:
+   GlobalSyncCallSettings() = default;
+@@ -61,8 +64,12 @@ bool SyncCallRestrictionsEnforceable() {
+   return base::internal::SequenceLocalStorageMap::IsSetForCurrentThread();
+ }
+ 
++#endif  // ENABLE_SYNC_CALL_RESTRICTIONS
++
+ }  // namespace
+ 
++#if ENABLE_SYNC_CALL_RESTRICTIONS
++
+ // static
+ void SyncCallRestrictions::AssertSyncCallAllowed() {
+   if (GetGlobalSettings().sync_call_allowed_by_default() ||
+@@ -102,6 +109,21 @@ void SyncCallRestrictions::DecreaseScopedAllowCount() {
+   --GetSequenceLocalScopedAllowCount();
+ }
+ 
+-}  // namespace mojo
+-
+ #endif  // ENABLE_SYNC_CALL_RESTRICTIONS
++
++// static
++void SyncCallRestrictions::DisableSyncCallInterrupts() {
++  g_enable_sync_call_interrupts = false;
++}
++
++// static
++void SyncCallRestrictions::EnableSyncCallInterruptsForTesting() {
++  g_enable_sync_call_interrupts = true;
++}
++
++// static
++bool SyncCallRestrictions::AreSyncCallInterruptsEnabled() {
++  return g_enable_sync_call_interrupts;
++}
++
++}  // namespace mojo
+diff --git a/mojo/public/cpp/bindings/sync_call_restrictions.h b/mojo/public/cpp/bindings/sync_call_restrictions.h
+index e7e67ee824b2a87eb14b45a3f2d76d471ff864fb..1653fd63033383b40b643c03500b26bdc65a44a6 100644
+--- a/mojo/public/cpp/bindings/sync_call_restrictions.h
++++ b/mojo/public/cpp/bindings/sync_call_restrictions.h
+@@ -86,6 +86,20 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) SyncCallRestrictions {
+   static void DisallowSyncCall() {}
+ #endif
+ 
++  // Globally disables sync call interrupts. This means that all sync calls in
++  // the current process will be strictly blocking until a reply is received,
++  // and no incoming sync calls can dispatch on the blocking thread in interim.
++  static void DisableSyncCallInterrupts();
++
++  // Used only in tests to re-enable sync call interrupts after disabling them.
++  static void EnableSyncCallInterruptsForTesting();
++
++  // Indicates whether sync call interrupts are enabled in the calling process.
++  // They're enabled by default, so any sync message that isn't marked [Sync]
++  // may have its blocking call interrupted to dispatch other incoming sync
++  // IPCs which target the blocking thread.
++  static bool AreSyncCallInterruptsEnabled();
++
+  private:
+   // DO NOT ADD ANY OTHER FRIEND STATEMENTS, talk to mojo/OWNERS first.
+   // BEGIN ALLOWED USAGE.
+diff --git a/mojo/public/cpp/bindings/tests/sync_method_unittest.cc b/mojo/public/cpp/bindings/tests/sync_method_unittest.cc
+index cfac737af29e653d788eb1ce7669f73ae7b320d4..d794d29df07d289d34b3b1aae9f8574fc914c050 100644
+--- a/mojo/public/cpp/bindings/tests/sync_method_unittest.cc
++++ b/mojo/public/cpp/bindings/tests/sync_method_unittest.cc
+@@ -25,6 +25,7 @@
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ #include "mojo/public/cpp/bindings/shared_associated_remote.h"
+ #include "mojo/public/cpp/bindings/shared_remote.h"
++#include "mojo/public/cpp/bindings/sync_call_restrictions.h"
+ #include "mojo/public/cpp/bindings/tests/bindings_test_base.h"
+ #include "mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom.h"
+ #include "mojo/public/interfaces/bindings/tests/test_sync_methods.mojom.h"
+@@ -1563,7 +1564,144 @@ TEST_P(SyncInterruptTest, SharedAssociatedRemoteNoInterrupt) {
+   EXPECT_EQ(0, same_pipe_ponger().num_sync_pongs());
+ }
+ 
++class SyncService : public mojom::SyncService {
++ public:
++  explicit SyncService(PendingReceiver<mojom::SyncService> receiver)
++      : receiver_(this, std::move(receiver)) {}
++
++  void SetCallHandler(base::OnceClosure call_handler) {
++    call_handler_ = std::move(call_handler);
++  }
++
++  // mojom::SyncService:
++  void SyncCall(SyncCallCallback callback) override {
++    std::move(callback).Run();
++    if (call_handler_) {
++      std::move(call_handler_).Run();
++    }
++  }
++
++ private:
++  Receiver<mojom::SyncService> receiver_;
++  base::OnceClosure call_handler_;
++};
++
++class DisableSyncInterruptTest : public BindingsTestBase {
++ public:
++  void SetUp() override {
++    mojo::SyncCallRestrictions::DisableSyncCallInterrupts();
++  }
++
++  void TearDown() override {
++    mojo::SyncCallRestrictions::EnableSyncCallInterruptsForTesting();
++  }
++};
++
++TEST_P(DisableSyncInterruptTest, NoInterruptWhenDisabled) {
++  PendingRemote<mojom::SyncService> interrupter;
++  SyncService service(interrupter.InitWithNewPipeAndPassReceiver());
++
++  base::RunLoop wait_for_main_thread_service_call;
++  bool main_thread_service_called = false;
++  service.SetCallHandler(base::BindLambdaForTesting([&] {
++    main_thread_service_called = true;
++    wait_for_main_thread_service_call.Quit();
++  }));
++
++  Remote<mojom::SyncService> caller;
++  base::Thread background_service_thread("SyncService");
++  background_service_thread.Start();
++  base::SequenceBound<SyncService> background_service{
++      background_service_thread.task_runner(),
++      caller.BindNewPipeAndPassReceiver()};
++
++  base::Thread interrupter_thread("Interrupter");
++  interrupter_thread.Start();
++  interrupter_thread.task_runner()->PostTask(
++      FROM_HERE, base::BindLambdaForTesting([&interrupter] {
++        // Issue a sync call to the SyncService on the main thread. This should
++        // never be dispatched until *after* the sync call *from* the main
++        // thread completes below.
++        Remote<mojom::SyncService>(std::move(interrupter))->SyncCall();
++      }));
++
++  // The key test expectation here is that `main_thread_service_called` cannot
++  // be set to true until after SyncCall() returns and we can pump the thread's
++  // message loop. If sync interrupts are not properly disabled, this
++  // expectation can fail flakily (and often.)
++  caller->SyncCall();
++  EXPECT_FALSE(main_thread_service_called);
++
++  // Now the incoming sync call can be dispatched.
++  wait_for_main_thread_service_call.Run();
++  EXPECT_TRUE(main_thread_service_called);
++
++  background_service.SynchronouslyResetForTest();
++  interrupter_thread.Stop();
++  background_service_thread.Stop();
++}
++
++TEST_P(DisableSyncInterruptTest, SharedRemoteNoInterruptWhenDisabled) {
++  PendingRemote<mojom::SyncService> interrupter;
++  SyncService service(interrupter.InitWithNewPipeAndPassReceiver());
++
++  base::RunLoop wait_for_main_thread_service_call;
++  bool main_thread_service_called = false;
++  service.SetCallHandler(base::BindLambdaForTesting([&] {
++    main_thread_service_called = true;
++    wait_for_main_thread_service_call.Quit();
++  }));
++
++  // Bind a SharedRemote to another background thread so that we exercise
++  // SharedRemote's own sync wait codepath when called into from the main
++  // thread.
++  base::Thread background_client_thread("Client");
++  background_client_thread.Start();
++
++  base::Thread background_service_thread("Service");
++  background_service_thread.Start();
++
++  SharedRemote<mojom::SyncService> caller;
++  base::SequenceBound<SyncService> background_service{
++      background_service_thread.task_runner(),
++      caller.BindNewPipeAndPassReceiver(
++          background_client_thread.task_runner())};
++
++  base::Thread interrupter_thread("Interrupter");
++  interrupter_thread.Start();
++  interrupter_thread.task_runner()->PostTask(
++      FROM_HERE, base::BindLambdaForTesting([&interrupter] {
++        // Issue a sync call to the SyncService on the main thread. This should
++        // never be dispatched until *after* the sync call *from* the main
++        // thread completes below.
++        Remote<mojom::SyncService>(std::move(interrupter))->SyncCall();
++      }));
++
++  // The key test expectation here is that `main_thread_service_called` cannot
++  // be set to true until after SyncCall() returns and we can pump the thread's
++  // message loop. If sync interrupts are not properly disabled, this
++  // expectation can fail flakily (and often.)
++  caller->SyncCall();
++  EXPECT_FALSE(main_thread_service_called);
++
++  // Now the incoming sync call can be dispatched.
++  wait_for_main_thread_service_call.Run();
++  EXPECT_TRUE(main_thread_service_called);
++
++  background_service.SynchronouslyResetForTest();
++
++  // We need to reset the SharedRemote before the client thread is stopped, to
++  // ensure the necessary teardown work is executed on that thread. Otherwise
++  // the underlying pipe and related state will leak, and ASan will complain.
++  caller.reset();
++
++  interrupter_thread.Stop();
++  background_service_thread.Stop();
++  background_client_thread.Stop();
++}
++
+ INSTANTIATE_MOJO_BINDINGS_TEST_SUITE_P(SyncInterruptTest);
++INSTANTIATE_MOJO_BINDINGS_TEST_SUITE_P(DisableSyncInterruptTest);
+ 
+ }  // namespace
+ }  // namespace sync_method_unittest
+diff --git a/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom b/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom
+index 383b54f3ab654d664192522c061058b29fd0509a..951442b3585ad22f936568e211ad41f8ae358705 100644
+--- a/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom
++++ b/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom
+@@ -45,3 +45,7 @@ interface Ponger {
+   [Sync] Pong() => ();
+   PongAsync();
+ };
++
++interface SyncService {
++  [Sync] SyncCall() => ();
++};

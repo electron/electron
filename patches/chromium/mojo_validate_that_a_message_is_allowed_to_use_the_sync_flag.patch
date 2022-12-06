@@ -1,0 +1,946 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Daniel Cheng <dcheng@chromium.org>
+Date: Sat, 12 Nov 2022 00:27:56 +0000
+Subject: [mojo] Validate that a message is allowed to use the sync flag.
+
+This changes consists of several coordinated changes:
+- The C++ bindings generator now emits an array of method ordinals that
+  are allowed to use sync calls, but only if any method has a [Sync]
+  annotation. This is intended to minimize the code cost to interfaces
+  that do not have any sync methods (i.e. most of them).
+- The C++ binding endpoints (mojo::Receiver, et cetera) now plumb the
+  array of sync-allowed ordinals to the InterfaceEndpointClient.
+- Processing an incoming message checks if the incoming message is
+  allowed to use the sync flag by filtering it against the array of
+  sync-allowed ordinals that was previously passed to the
+  InterfaceEndpointClient.
+
+This also fixes an incorrect forward declaration of ValidationContext in
+the generated bindings that discovered in the process of writing the
+test.
+
+(cherry picked from commit 4365dddb49847a422bce674383b4aa4f38ff9e89)
+
+Bug: 1376099
+Change-Id: Icb5864dcab96ccd18c98b4cc6ade7cdef39e209f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3994146
+Reviewed-by: Ken Rockot <rockot@google.com>
+Commit-Queue: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1067894}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4018151
+Auto-Submit: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#774}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/mojo/public/cpp/bindings/BUILD.gn b/mojo/public/cpp/bindings/BUILD.gn
+index 2c27474d1200f80ff7abc773eaafdc9d30494f58..de587d8759f2e850ef9de355551c4be12f3ca6e7 100644
+--- a/mojo/public/cpp/bindings/BUILD.gn
++++ b/mojo/public/cpp/bindings/BUILD.gn
+@@ -183,6 +183,7 @@ component("bindings") {
+     "lib/sync_event_watcher.cc",
+     "lib/sync_handle_registry.cc",
+     "lib/sync_handle_watcher.cc",
++    "lib/sync_method_traits.h",
+     "lib/task_runner_helper.cc",
+     "lib/task_runner_helper.h",
+     "lib/thread_safe_forwarder_base.cc",
+diff --git a/mojo/public/cpp/bindings/associated_receiver.h b/mojo/public/cpp/bindings/associated_receiver.h
+index 8731b179fecfa212c3c802fb5e57189e97d782e6..220c0355a45362bdb018e335a1cb0e8e4a4abd96 100644
+--- a/mojo/public/cpp/bindings/associated_receiver.h
++++ b/mojo/public/cpp/bindings/associated_receiver.h
+@@ -5,15 +5,19 @@
+ #ifndef MOJO_PUBLIC_CPP_BINDINGS_ASSOCIATED_RECEIVER_H_
+ #define MOJO_PUBLIC_CPP_BINDINGS_ASSOCIATED_RECEIVER_H_
+ 
++#include <stdint.h>
++
+ #include <memory>
+ #include <utility>
+ 
+ #include "base/check.h"
++#include "base/containers/span.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/scoped_refptr.h"
+ #include "base/memory/weak_ptr.h"
+ #include "base/strings/string_piece.h"
+ #include "base/task/sequenced_task_runner.h"
++#include "mojo/public/cpp/bindings/lib/sync_method_traits.h"
+ #include "mojo/public/cpp/bindings/pending_associated_receiver.h"
+ #include "mojo/public/cpp/bindings/pending_associated_remote.h"
+ #include "mojo/public/cpp/bindings/raw_ptr_impl_ref_traits.h"
+@@ -60,7 +64,7 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) AssociatedReceiverBase {
+   void BindImpl(ScopedInterfaceEndpointHandle handle,
+                 MessageReceiverWithResponderStatus* receiver,
+                 std::unique_ptr<MessageReceiver> payload_validator,
+-                bool expect_sync_requests,
++                base::span<const uint32_t> sync_method_ordinals,
+                 scoped_refptr<base::SequencedTaskRunner> runner,
+                 uint32_t interface_version,
+                 const char* interface_name,
+@@ -201,8 +205,8 @@ class AssociatedReceiver : public internal::AssociatedReceiverBase {
+     if (pending_receiver) {
+       BindImpl(pending_receiver.PassHandle(), &stub_,
+                base::WrapUnique(new typename Interface::RequestValidator_()),
+-               Interface::HasSyncMethods_, std::move(task_runner),
+-               Interface::Version_, Interface::Name_,
++               internal::SyncMethodTraits<Interface>::GetOrdinals(),
++               std::move(task_runner), Interface::Version_, Interface::Name_,
+                Interface::MessageToMethodInfo_,
+                Interface::MessageToMethodName_);
+     } else {
+diff --git a/mojo/public/cpp/bindings/interface_endpoint_client.h b/mojo/public/cpp/bindings/interface_endpoint_client.h
+index cd79a5edb3f939623b874db36542ee651113c164..d746b1473d95a367f47e309049e85241bdba095b 100644
+--- a/mojo/public/cpp/bindings/interface_endpoint_client.h
++++ b/mojo/public/cpp/bindings/interface_endpoint_client.h
+@@ -13,6 +13,7 @@
+ 
+ #include "base/callback.h"
+ #include "base/component_export.h"
++#include "base/containers/span.h"
+ #include "base/dcheck_is_on.h"
+ #include "base/location.h"
+ #include "base/memory/raw_ptr.h"
+@@ -56,7 +57,7 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) InterfaceEndpointClient
+   InterfaceEndpointClient(ScopedInterfaceEndpointHandle handle,
+                           MessageReceiverWithResponderStatus* receiver,
+                           std::unique_ptr<MessageReceiver> payload_validator,
+-                          bool expect_sync_requests,
++                          base::span<const uint32_t> sync_method_ordinals,
+                           scoped_refptr<base::SequencedTaskRunner> task_runner,
+                           uint32_t interface_version,
+                           const char* interface_name,
+@@ -220,6 +221,10 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) InterfaceEndpointClient
+   // The router lock must be held when calling this.
+   void ForgetAsyncRequest(uint64_t request_id);
+ 
++  base::span<const uint32_t> sync_method_ordinals() const {
++    return sync_method_ordinals_;
++  }
++
+  private:
+   struct PendingAsyncResponse {
+    public:
+@@ -281,7 +286,7 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) InterfaceEndpointClient
+ 
+   bool HandleValidatedMessage(Message* message);
+ 
+-  const bool expect_sync_requests_ = false;
++  const base::span<const uint32_t> sync_method_ordinals_;
+ 
+   // The callback to invoke when our peer endpoint sends us NotifyIdle and we
+   // have no outstanding unacked messages. If null, no callback has been set and
+diff --git a/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.cc b/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.cc
+index 0be4148158a0d779770cba9c6cc2204d957e753d..5a23491320fbcf28db67511309dde641c4439837 100644
+--- a/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.cc
++++ b/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.cc
+@@ -4,6 +4,11 @@
+ 
+ #include "mojo/public/cpp/bindings/lib/associated_interface_ptr_state.h"
+ 
++#include <stdint.h>
++
++#include <utility>
++
++#include "base/containers/span.h"
+ #include "mojo/public/cpp/bindings/lib/task_runner_helper.h"
+ 
+ namespace mojo {
+@@ -70,7 +75,8 @@ void AssociatedInterfacePtrStateBase::Bind(
+   // The version is only queried from the client so the value passed here
+   // will not be used.
+   endpoint_client_ = std::make_unique<InterfaceEndpointClient>(
+-      std::move(handle), nullptr, std::move(validator), false,
++      std::move(handle), nullptr, std::move(validator),
++      /*sync_method_ordinals=*/base::span<const uint32_t>(),
+       GetTaskRunnerToUseFromUserProvidedTaskRunner(std::move(runner)), 0u,
+       interface_name, method_info_callback, method_name_callback);
+ }
+diff --git a/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.h b/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.h
+index 5ac4091604df3054f5f678f97c39c1fb133346d3..67cc5b07c18375ea7f58cda223766b9fe8c5e4e0 100644
+--- a/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.h
++++ b/mojo/public/cpp/bindings/lib/associated_interface_ptr_state.h
+@@ -141,6 +141,10 @@ class AssociatedInterfacePtrState : public AssociatedInterfacePtrStateBase {
+     return info;
+   }
+ 
++  InterfaceEndpointClient* endpoint_client_for_test() {
++    return endpoint_client();
++  }
++
+  private:
+   std::unique_ptr<Proxy> proxy_;
+ };
+diff --git a/mojo/public/cpp/bindings/lib/associated_receiver.cc b/mojo/public/cpp/bindings/lib/associated_receiver.cc
+index a25df8c6127e0c0f2fd398bb5e7dafe4be23aa94..c450ef2d9d0e66ba0ce66458c29d1ce616c5740e 100644
+--- a/mojo/public/cpp/bindings/lib/associated_receiver.cc
++++ b/mojo/public/cpp/bindings/lib/associated_receiver.cc
+@@ -64,7 +64,7 @@ void AssociatedReceiverBase::BindImpl(
+     ScopedInterfaceEndpointHandle handle,
+     MessageReceiverWithResponderStatus* receiver,
+     std::unique_ptr<MessageReceiver> payload_validator,
+-    bool expect_sync_requests,
++    base::span<const uint32_t> sync_method_ordinals,
+     scoped_refptr<base::SequencedTaskRunner> runner,
+     uint32_t interface_version,
+     const char* interface_name,
+@@ -74,7 +74,7 @@ void AssociatedReceiverBase::BindImpl(
+ 
+   endpoint_client_ = std::make_unique<InterfaceEndpointClient>(
+       std::move(handle), receiver, std::move(payload_validator),
+-      expect_sync_requests,
++      sync_method_ordinals,
+       internal::GetTaskRunnerToUseFromUserProvidedTaskRunner(std::move(runner)),
+       interface_version, interface_name, method_info_callback,
+       method_name_callback);
+diff --git a/mojo/public/cpp/bindings/lib/binding_state.cc b/mojo/public/cpp/bindings/lib/binding_state.cc
+index 227727f170964cc761a358323272bb1e3123951d..e0c926b04d10364815f270a4f0e1dc542fa8370a 100644
+--- a/mojo/public/cpp/bindings/lib/binding_state.cc
++++ b/mojo/public/cpp/bindings/lib/binding_state.cc
+@@ -107,7 +107,7 @@ void BindingStateBase::BindInternal(
+     const char* interface_name,
+     std::unique_ptr<MessageReceiver> request_validator,
+     bool passes_associated_kinds,
+-    bool has_sync_methods,
++    base::span<const uint32_t> sync_method_ordinals,
+     MessageReceiverWithResponderStatus* stub,
+     uint32_t interface_version,
+     MessageToMethodInfoCallback method_info_callback,
+@@ -121,7 +121,7 @@ void BindingStateBase::BindInternal(
+   MultiplexRouter::Config config =
+       passes_associated_kinds
+           ? MultiplexRouter::MULTI_INTERFACE
+-          : (has_sync_methods
++          : (!sync_method_ordinals.empty()
+                  ? MultiplexRouter::SINGLE_INTERFACE_WITH_SYNC_METHODS
+                  : MultiplexRouter::SINGLE_INTERFACE);
+   router_ = MultiplexRouter::CreateAndStartReceiving(
+@@ -131,7 +131,7 @@ void BindingStateBase::BindInternal(
+ 
+   endpoint_client_ = std::make_unique<InterfaceEndpointClient>(
+       router_->CreateLocalEndpointHandle(kPrimaryInterfaceId), stub,
+-      std::move(request_validator), has_sync_methods,
++      std::move(request_validator), sync_method_ordinals,
+       std::move(sequenced_runner), interface_version, interface_name,
+       method_info_callback, method_name_callback);
+   endpoint_client_->SetIdleTrackingEnabledCallback(
+diff --git a/mojo/public/cpp/bindings/lib/binding_state.h b/mojo/public/cpp/bindings/lib/binding_state.h
+index 1b33aa78a952dcfeb39c466ecd47f840896c41c4..cf1f3f377e5e6662d86720fbd7121ed69e6c9b42 100644
+--- a/mojo/public/cpp/bindings/lib/binding_state.h
++++ b/mojo/public/cpp/bindings/lib/binding_state.h
+@@ -5,6 +5,8 @@
+ #ifndef MOJO_PUBLIC_CPP_BINDINGS_LIB_BINDING_STATE_H_
+ #define MOJO_PUBLIC_CPP_BINDINGS_LIB_BINDING_STATE_H_
+ 
++#include <stdint.h>
++
+ #include <memory>
+ #include <utility>
+ 
+@@ -12,6 +14,7 @@
+ #include "base/callback.h"
+ #include "base/check.h"
+ #include "base/component_export.h"
++#include "base/containers/span.h"
+ #include "base/memory/ptr_util.h"
+ #include "base/memory/ref_counted.h"
+ #include "base/strings/string_piece.h"
+@@ -23,6 +26,7 @@
+ #include "mojo/public/cpp/bindings/interface_id.h"
+ #include "mojo/public/cpp/bindings/lib/multiplex_router.h"
+ #include "mojo/public/cpp/bindings/lib/pending_receiver_state.h"
++#include "mojo/public/cpp/bindings/lib/sync_method_traits.h"
+ #include "mojo/public/cpp/bindings/message_header_validator.h"
+ #include "mojo/public/cpp/bindings/pending_flush.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+@@ -90,7 +94,7 @@ class COMPONENT_EXPORT(MOJO_CPP_BINDINGS) BindingStateBase {
+                     const char* interface_name,
+                     std::unique_ptr<MessageReceiver> request_validator,
+                     bool passes_associated_kinds,
+-                    bool has_sync_methods,
++                    base::span<const uint32_t> sync_method_ordinals,
+                     MessageReceiverWithResponderStatus* stub,
+                     uint32_t interface_version,
+                     MessageToMethodInfoCallback method_info_callback,
+@@ -121,9 +125,9 @@ class BindingState : public BindingStateBase {
+     BindingStateBase::BindInternal(
+         std::move(receiver_state), runner, Interface::Name_,
+         std::make_unique<typename Interface::RequestValidator_>(),
+-        Interface::PassesAssociatedKinds_, Interface::HasSyncMethods_, &stub_,
+-        Interface::Version_, Interface::MessageToMethodInfo_,
+-        Interface::MessageToMethodName_);
++        Interface::PassesAssociatedKinds_,
++        SyncMethodTraits<Interface>::GetOrdinals(), &stub_, Interface::Version_,
++        Interface::MessageToMethodInfo_, Interface::MessageToMethodName_);
+   }
+ 
+   PendingReceiver<Interface> Unbind() {
+diff --git a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
+index c4ddc89cd9d0894814d64856179539f0d757a388..1a2799f11b987b17994aa4c85bd77af571cf73e9 100644
+--- a/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
++++ b/mojo/public/cpp/bindings/lib/interface_endpoint_client.cc
+@@ -441,13 +441,13 @@ InterfaceEndpointClient::InterfaceEndpointClient(
+     ScopedInterfaceEndpointHandle handle,
+     MessageReceiverWithResponderStatus* receiver,
+     std::unique_ptr<MessageReceiver> payload_validator,
+-    bool expect_sync_requests,
++    base::span<const uint32_t> sync_method_ordinals,
+     scoped_refptr<base::SequencedTaskRunner> task_runner,
+     uint32_t interface_version,
+     const char* interface_name,
+     MessageToMethodInfoCallback method_info_callback,
+     MessageToMethodNameCallback method_name_callback)
+-    : expect_sync_requests_(expect_sync_requests),
++    : sync_method_ordinals_(sync_method_ordinals),
+       handle_(std::move(handle)),
+       incoming_receiver_(receiver),
+       dispatcher_(&thunk_),
+@@ -857,7 +857,8 @@ void InterfaceEndpointClient::InitControllerIfNecessary() {
+ 
+   controller_ = handle_.group_controller()->AttachEndpointClient(handle_, this,
+                                                                  task_runner_);
+-  if (expect_sync_requests_ && task_runner_->RunsTasksInCurrentSequence())
++  if (!sync_method_ordinals_.empty() &&
++      task_runner_->RunsTasksInCurrentSequence())
+     controller_->AllowWokenUpBySyncWatchOnSameThread();
+ }
+ 
+diff --git a/mojo/public/cpp/bindings/lib/interface_ptr_state.cc b/mojo/public/cpp/bindings/lib/interface_ptr_state.cc
+index 66bfb042c8c67644c2b94dd2dc7759aaf91088c6..1a9e45fd825c8ae867f36e03698176a15600ca0d 100644
+--- a/mojo/public/cpp/bindings/lib/interface_ptr_state.cc
++++ b/mojo/public/cpp/bindings/lib/interface_ptr_state.cc
+@@ -4,6 +4,11 @@
+ 
+ #include "mojo/public/cpp/bindings/lib/interface_ptr_state.h"
+ 
++#include <stdint.h>
++
++#include <utility>
++
++#include "base/containers/span.h"
+ #include "mojo/public/cpp/bindings/lib/task_runner_helper.h"
+ 
+ namespace mojo {
+@@ -100,7 +105,9 @@ bool InterfacePtrStateBase::InitializeEndpointClient(
+                                     interface_name);
+   endpoint_client_ = std::make_unique<InterfaceEndpointClient>(
+       router_->CreateLocalEndpointHandle(kPrimaryInterfaceId), nullptr,
+-      std::move(payload_validator), false, std::move(runner_),
++      std::move(payload_validator),
++      /* sync_method_ordinals= */ base::span<const uint32_t>(),
++      std::move(runner_),
+       // The version is only queried from the client so the value passed here
+       // will not be used.
+       0u, interface_name, method_info_callback, method_name_callback);
+diff --git a/mojo/public/cpp/bindings/lib/interface_ptr_state.h b/mojo/public/cpp/bindings/lib/interface_ptr_state.h
+index 3e4a5f87422f40143c631123153b7b1138cdfb8f..b3921a464b96aa33d2a7d98309c9745008b4aae1 100644
+--- a/mojo/public/cpp/bindings/lib/interface_ptr_state.h
++++ b/mojo/public/cpp/bindings/lib/interface_ptr_state.h
+@@ -25,6 +25,7 @@
+ #include "mojo/public/cpp/bindings/interface_endpoint_client.h"
+ #include "mojo/public/cpp/bindings/lib/multiplex_router.h"
+ #include "mojo/public/cpp/bindings/lib/pending_remote_state.h"
++#include "mojo/public/cpp/bindings/lib/sync_method_traits.h"
+ #include "mojo/public/cpp/bindings/pending_flush.h"
+ #include "mojo/public/cpp/bindings/thread_safe_proxy.h"
+ #include "mojo/public/cpp/system/message_pipe.h"
+@@ -249,6 +250,10 @@ class InterfacePtrState : public InterfacePtrStateBase {
+     endpoint_client()->RaiseError();
+   }
+ 
++  InterfaceEndpointClient* endpoint_client_for_test() {
++    return endpoint_client();
++  }
++
+  private:
+   void ConfigureProxyIfNecessary() {
+     // The proxy has been configured.
+@@ -259,7 +264,8 @@ class InterfacePtrState : public InterfacePtrStateBase {
+     }
+ 
+     if (InitializeEndpointClient(
+-            Interface::PassesAssociatedKinds_, Interface::HasSyncMethods_,
++            Interface::PassesAssociatedKinds_,
++            !SyncMethodTraits<Interface>::GetOrdinals().empty(),
+             Interface::HasUninterruptableMethods_,
+             std::make_unique<typename Interface::ResponseValidator_>(),
+             Interface::Name_, Interface::MessageToMethodInfo_,
+diff --git a/mojo/public/cpp/bindings/lib/multiplex_router.cc b/mojo/public/cpp/bindings/lib/multiplex_router.cc
+index b9c92d5ec9eab57972cf870efff51fe09e381623..c04999f0ac8881cc86ed34761ddeb8e8dfc83164 100644
+--- a/mojo/public/cpp/bindings/lib/multiplex_router.cc
++++ b/mojo/public/cpp/bindings/lib/multiplex_router.cc
+@@ -1067,6 +1067,12 @@ bool MultiplexRouter::ProcessIncomingMessage(
+ 
+   bool can_direct_call;
+   if (message->has_flag(Message::kFlagIsSync)) {
++    if (!message->has_flag(Message::kFlagIsResponse) &&
++        !base::Contains(endpoint->client()->sync_method_ordinals(),
++                        message->name())) {
++      RaiseErrorInNonTestingMode();
++      return true;
++    }
+     can_direct_call = client_call_behavior != NO_DIRECT_CLIENT_CALLS &&
+                       endpoint->task_runner()->RunsTasksInCurrentSequence();
+   } else {
+diff --git a/mojo/public/cpp/bindings/lib/sync_method_traits.h b/mojo/public/cpp/bindings/lib/sync_method_traits.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..2b334f8d01c2edb7c3e6b98fb8d35925aded11ab
+--- /dev/null
++++ b/mojo/public/cpp/bindings/lib/sync_method_traits.h
+@@ -0,0 +1,31 @@
++// Copyright 2022 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef MOJO_PUBLIC_CPP_BINDINGS_LIB_SYNC_METHOD_TRAITS_H_
++#define MOJO_PUBLIC_CPP_BINDINGS_LIB_SYNC_METHOD_TRAITS_H_
++
++#include <stdint.h>
++
++#include <type_traits>
++
++#include "base/containers/span.h"
++
++namespace mojo::internal {
++
++template <typename Interface, typename SFINAE = void>
++struct SyncMethodTraits {
++  static constexpr base::span<const uint32_t> GetOrdinals() { return {}; }
++};
++
++template <typename Interface>
++struct SyncMethodTraits<Interface,
++                        std::void_t<decltype(Interface::kSyncMethodOrdinals)>> {
++  static constexpr base::span<const uint32_t> GetOrdinals() {
++    return Interface::kSyncMethodOrdinals;
++  }
++};
++
++}  // namespace mojo::internal
++
++#endif  // MOJO_PUBLIC_CPP_BINDINGS_LIB_SYNC_METHOD_TRAITS_H_
+diff --git a/mojo/public/cpp/bindings/tests/BUILD.gn b/mojo/public/cpp/bindings/tests/BUILD.gn
+index 248176f6f350b57bb5138924c68c4393ba1c11a8..25cfe56438d099ddcb4ed04a4e83b9abb89b8d14 100644
+--- a/mojo/public/cpp/bindings/tests/BUILD.gn
++++ b/mojo/public/cpp/bindings/tests/BUILD.gn
+@@ -65,6 +65,7 @@ source_set("tests") {
+     ":mojo_public_bindings_test_utils",
+     ":test_extra_cpp_template_mojom",
+     ":test_mojom",
++    ":test_mojom__generate_message_ids",
+     "//base/test:test_support",
+     "//mojo/core/test:test_support",
+     "//mojo/public/cpp/bindings",
+diff --git a/mojo/public/cpp/bindings/tests/bindings_perftest.cc b/mojo/public/cpp/bindings/tests/bindings_perftest.cc
+index 173c6c801853fc9b19ca123d8cd1f580894d3e8e..383072ead95d459f62c2adf2a937edfc81681597 100644
+--- a/mojo/public/cpp/bindings/tests/bindings_perftest.cc
++++ b/mojo/public/cpp/bindings/tests/bindings_perftest.cc
+@@ -212,12 +212,12 @@ TEST_F(MojoBindingsPerftest, MultiplexRouterPingPong) {
+ 
+   InterfaceEndpointClient client0(
+       router0->CreateLocalEndpointHandle(kPrimaryInterfaceId), &paddle0,
+-      nullptr, false, base::ThreadTaskRunnerHandle::Get(), 0u,
+-      kTestInterfaceName, MessageToMethodInfo, MessageToMethodName);
++      nullptr, {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      MessageToMethodInfo, MessageToMethodName);
+   InterfaceEndpointClient client1(
+       router1->CreateLocalEndpointHandle(kPrimaryInterfaceId), &paddle1,
+-      nullptr, false, base::ThreadTaskRunnerHandle::Get(), 0u,
+-      kTestInterfaceName, MessageToMethodInfo, MessageToMethodName);
++      nullptr, {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      MessageToMethodInfo, MessageToMethodName);
+ 
+   paddle0.set_sender(&client0);
+   paddle1.set_sender(&client1);
+@@ -264,8 +264,8 @@ TEST_F(MojoBindingsPerftest, MultiplexRouterDispatchCost) {
+   CounterReceiver receiver;
+   InterfaceEndpointClient client(
+       router->CreateLocalEndpointHandle(kPrimaryInterfaceId), &receiver,
+-      nullptr, false, base::ThreadTaskRunnerHandle::Get(), 0u,
+-      kTestInterfaceName, MessageToMethodInfo, MessageToMethodName);
++      nullptr, {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      MessageToMethodInfo, MessageToMethodName);
+ 
+   static const uint32_t kIterations[] = {1000, 3000000};
+ 
+diff --git a/mojo/public/cpp/bindings/tests/multiplex_router_unittest.cc b/mojo/public/cpp/bindings/tests/multiplex_router_unittest.cc
+index c04c3867a9629c28ec45c5d376c5688760c463c9..e340a28a0ea1536187386e3764fe019119e53f12 100644
+--- a/mojo/public/cpp/bindings/tests/multiplex_router_unittest.cc
++++ b/mojo/public/cpp/bindings/tests/multiplex_router_unittest.cc
+@@ -74,13 +74,13 @@ class MultiplexRouterTest : public testing::Test {
+ 
+ TEST_F(MultiplexRouterTest, BasicRequestResponse) {
+   InterfaceEndpointClient client0(
+-      std::move(endpoint0_), nullptr, std::make_unique<PassThroughFilter>(),
+-      false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      std::move(endpoint0_), nullptr, std::make_unique<PassThroughFilter>(), {},
++      base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+       MessageToMethodInfo, MessageToMethodName);
+   ResponseGenerator generator;
+   InterfaceEndpointClient client1(
+       std::move(endpoint1_), &generator, std::make_unique<PassThroughFilter>(),
+-      false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+       MessageToMethodInfo, MessageToMethodName);
+ 
+   Message request;
+@@ -123,13 +123,13 @@ TEST_F(MultiplexRouterTest, BasicRequestResponse) {
+ 
+ TEST_F(MultiplexRouterTest, BasicRequestResponse_Synchronous) {
+   InterfaceEndpointClient client0(
+-      std::move(endpoint0_), nullptr, std::make_unique<PassThroughFilter>(),
+-      false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      std::move(endpoint0_), nullptr, std::make_unique<PassThroughFilter>(), {},
++      base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+       MessageToMethodInfo, MessageToMethodName);
+   ResponseGenerator generator;
+   InterfaceEndpointClient client1(
+       std::move(endpoint1_), &generator, std::make_unique<PassThroughFilter>(),
+-      false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+       MessageToMethodInfo, MessageToMethodName);
+ 
+   Message request;
+@@ -173,14 +173,14 @@ TEST_F(MultiplexRouterTest, BasicRequestResponse_Synchronous) {
+ TEST_F(MultiplexRouterTest, LazyResponses) {
+   InterfaceEndpointClient client0(
+       std::move(endpoint0_), nullptr, base::WrapUnique(new PassThroughFilter()),
+-      false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+       MessageToMethodInfo, MessageToMethodName);
+   base::RunLoop run_loop;
+   LazyResponseGenerator generator(run_loop.QuitClosure());
+   InterfaceEndpointClient client1(std::move(endpoint1_), &generator,
+-                                  base::WrapUnique(new PassThroughFilter()),
+-                                  false, base::ThreadTaskRunnerHandle::Get(),
+-                                  0u, kTestInterfaceName, MessageToMethodInfo,
++                                  base::WrapUnique(new PassThroughFilter()), {},
++                                  base::ThreadTaskRunnerHandle::Get(), 0u,
++                                  kTestInterfaceName, MessageToMethodInfo,
+                                   MessageToMethodName);
+ 
+   Message request;
+@@ -247,7 +247,7 @@ TEST_F(MultiplexRouterTest, MissingResponses) {
+   base::RunLoop run_loop0, run_loop1;
+   InterfaceEndpointClient client0(
+       std::move(endpoint0_), nullptr, base::WrapUnique(new PassThroughFilter()),
+-      false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++      {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+       MessageToMethodInfo, MessageToMethodName);
+   bool error_handler_called0 = false;
+   client0.set_connection_error_handler(base::BindOnce(
+@@ -256,9 +256,9 @@ TEST_F(MultiplexRouterTest, MissingResponses) {
+   base::RunLoop run_loop3;
+   LazyResponseGenerator generator(run_loop3.QuitClosure());
+   InterfaceEndpointClient client1(std::move(endpoint1_), &generator,
+-                                  base::WrapUnique(new PassThroughFilter()),
+-                                  false, base::ThreadTaskRunnerHandle::Get(),
+-                                  0u, kTestInterfaceName, MessageToMethodInfo,
++                                  base::WrapUnique(new PassThroughFilter()), {},
++                                  base::ThreadTaskRunnerHandle::Get(), 0u,
++                                  kTestInterfaceName, MessageToMethodInfo,
+                                   MessageToMethodName);
+   bool error_handler_called1 = false;
+   client1.set_connection_error_handler(base::BindOnce(
+@@ -306,12 +306,12 @@ TEST_F(MultiplexRouterTest, LateResponse) {
+   {
+     InterfaceEndpointClient client0(
+         std::move(endpoint0_), nullptr, std::make_unique<PassThroughFilter>(),
+-        false, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
++        {}, base::ThreadTaskRunnerHandle::Get(), 0u, kTestInterfaceName,
+         MessageToMethodInfo, MessageToMethodName);
+     InterfaceEndpointClient client1(std::move(endpoint1_), &generator,
+-                                    std::make_unique<PassThroughFilter>(),
+-                                    false, base::ThreadTaskRunnerHandle::Get(),
+-                                    0u, kTestInterfaceName, MessageToMethodInfo,
++                                    std::make_unique<PassThroughFilter>(), {},
++                                    base::ThreadTaskRunnerHandle::Get(), 0u,
++                                    kTestInterfaceName, MessageToMethodInfo,
+                                     MessageToMethodName);
+ 
+     Message request;
+diff --git a/mojo/public/cpp/bindings/tests/sync_method_unittest.cc b/mojo/public/cpp/bindings/tests/sync_method_unittest.cc
+index d794d29df07d289d34b3b1aae9f8574fc914c050..6de90c8ec9619358e97d50726d7c8c6820df7990 100644
+--- a/mojo/public/cpp/bindings/tests/sync_method_unittest.cc
++++ b/mojo/public/cpp/bindings/tests/sync_method_unittest.cc
+@@ -2,6 +2,7 @@
+ // Use of this source code is governed by a BSD-style license that can be
+ // found in the LICENSE file.
+ 
++#include <tuple>
+ #include <utility>
+ 
+ #include "base/barrier_closure.h"
+@@ -9,15 +10,21 @@
+ #include "base/check.h"
+ #include "base/run_loop.h"
+ #include "base/sequence_token.h"
++#include "base/task/sequenced_task_runner.h"
+ #include "base/task/thread_pool.h"
+ #include "base/test/bind.h"
+ #include "base/test/task_environment.h"
+ #include "base/threading/sequence_bound.h"
++#include "base/threading/sequenced_task_runner_handle.h"
+ #include "base/threading/thread.h"
+ #include "base/time/time.h"
+ #include "mojo/public/cpp/bindings/associated_receiver.h"
+ #include "mojo/public/cpp/bindings/associated_receiver_set.h"
+ #include "mojo/public/cpp/bindings/associated_remote.h"
++#include "mojo/public/cpp/bindings/lib/message_fragment.h"
++#include "mojo/public/cpp/bindings/lib/send_message_helper.h"
++#include "mojo/public/cpp/bindings/lib/serialization_util.h"
++#include "mojo/public/cpp/bindings/message.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "mojo/public/cpp/bindings/receiver_set.h"
+ #include "mojo/public/cpp/bindings/remote.h"
+@@ -27,10 +34,16 @@
+ #include "mojo/public/cpp/bindings/shared_remote.h"
+ #include "mojo/public/cpp/bindings/sync_call_restrictions.h"
+ #include "mojo/public/cpp/bindings/tests/bindings_test_base.h"
++#include "mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom-shared-message-ids.h"
+ #include "mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom.h"
+ #include "mojo/public/interfaces/bindings/tests/test_sync_methods.mojom.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
++// This needs to be included last, since it forward declares a bunch of classes
++// but depends on those definitions to be included by headers that sort
++// lexicographically after.
++#include "mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom-params-data.h"
++
+ namespace mojo {
+ namespace test {
+ namespace sync_method_unittest {
+@@ -1703,6 +1716,237 @@ TEST_P(DisableSyncInterruptTest, SharedRemoteNoInterruptWhenDisabled) {
+ INSTANTIATE_MOJO_BINDINGS_TEST_SUITE_P(SyncInterruptTest);
+ INSTANTIATE_MOJO_BINDINGS_TEST_SUITE_P(DisableSyncInterruptTest);
+ 
++class OneSyncImpl;
++
++class NoSyncImpl : public mojom::NoSync {
++ public:
++  explicit NoSyncImpl(PendingReceiver<mojom::NoSync> receiver)
++      : receiver_(this, std::move(receiver)) {}
++
++  explicit NoSyncImpl(
++      PendingAssociatedReceiver<mojom::NoSync> associated_receiver)
++      : associated_receiver_(this, std::move(associated_receiver)) {}
++
++  // mojom::NoSync implementation:
++  void Method(MethodCallback callback) override;
++  void BindNoSync(PendingAssociatedReceiver<mojom::NoSync> receiver) override;
++  void BindOneSync(PendingAssociatedReceiver<mojom::OneSync> receiver) override;
++
++ private:
++  Receiver<mojom::NoSync> receiver_{this};
++  AssociatedReceiver<mojom::NoSync> associated_receiver_{this};
++
++  std::unique_ptr<NoSyncImpl> associated_no_sync_;
++  std::unique_ptr<OneSyncImpl> associated_one_sync_;
++};
++
++class OneSyncImpl : public mojom::OneSync {
++ public:
++  explicit OneSyncImpl(PendingReceiver<mojom::OneSync> receiver)
++      : receiver_(this, std::move(receiver)) {}
++
++  explicit OneSyncImpl(
++      PendingAssociatedReceiver<mojom::OneSync> associated_receiver)
++      : associated_receiver_(this, std::move(associated_receiver)) {}
++
++  // mojom::OneSync implementation:
++  void Method(MethodCallback callback) override;
++  void SyncMethod(SyncMethodCallback callback) override;
++  void BindNoSync(PendingAssociatedReceiver<mojom::NoSync> receiver) override;
++  void BindOneSync(PendingAssociatedReceiver<mojom::OneSync> receiver) override;
++
++ private:
++  Receiver<mojom::OneSync> receiver_{this};
++  AssociatedReceiver<mojom::OneSync> associated_receiver_{this};
++
++  std::unique_ptr<NoSyncImpl> associated_no_sync_;
++  std::unique_ptr<OneSyncImpl> associated_one_sync_;
++};
++
++void NoSyncImpl::Method(MethodCallback callback) {
++  EXPECT_TRUE(false);
++  std::move(callback).Run();
++}
++
++void NoSyncImpl::BindNoSync(PendingAssociatedReceiver<mojom::NoSync> receiver) {
++  associated_no_sync_ = std::make_unique<NoSyncImpl>(std::move(receiver));
++}
++
++void NoSyncImpl::BindOneSync(
++    PendingAssociatedReceiver<mojom::OneSync> receiver) {
++  associated_one_sync_ = std::make_unique<OneSyncImpl>(std::move(receiver));
++}
++
++void OneSyncImpl::Method(MethodCallback callback) {
++  EXPECT_TRUE(false);
++  std::move(callback).Run();
++}
++
++void OneSyncImpl::SyncMethod(MethodCallback callback) {
++  std::move(callback).Run();
++}
++
++void OneSyncImpl::BindNoSync(
++    PendingAssociatedReceiver<mojom::NoSync> receiver) {
++  associated_no_sync_ = std::make_unique<NoSyncImpl>(std::move(receiver));
++}
++
++void OneSyncImpl::BindOneSync(
++    PendingAssociatedReceiver<mojom::OneSync> receiver) {
++  associated_one_sync_ = std::make_unique<OneSyncImpl>(std::move(receiver));
++}
++
++class NoResponseExpectedResponder : public MessageReceiver {
++ public:
++  explicit NoResponseExpectedResponder() = default;
++
++  // MessageReceiver implementation:
++  bool Accept(Message* message) override {
++    EXPECT_TRUE(false);
++    return true;
++  }
++};
++
++class SyncFlagValidationTest : public ::testing::TestWithParam<uint32_t> {
++ protected:
++  Message MakeNoSyncMethodMessage() {
++    const uint32_t flags =
++        // Always set the sync flag, as that's the primary point of the test.
++        Message::kFlagIsSync |
++        // InterfaceEndpointClient requires this flag if sending a message with
++        // a responder.
++        Message::kFlagExpectsResponse | GetParam();
++    Message message(mojom::internal::kNoSync_Method_Name, flags, 0, 0, nullptr);
++    ::mojo::internal::MessageFragment<
++        mojom::internal::NoSync_Method_Params_Data>
++        params(message);
++    params.Allocate();
++    return message;
++  }
++
++  Message MakeOneSyncMethodMessage() {
++    const uint32_t flags =
++        // Always set the sync flag, as that's the primary point of the test.
++        Message::kFlagIsSync |
++        // InterfaceEndpointClient requires this flag if sending a message with
++        // a responder.
++        Message::kFlagExpectsResponse | GetParam();
++    Message message(mojom::internal::kOneSync_Method_Name, flags, 0, 0,
++                    nullptr);
++    ::mojo::internal::MessageFragment<
++        mojom::internal::NoSync_Method_Params_Data>
++        params(message);
++    params.Allocate();
++    return message;
++  }
++
++  void FlushPostedTasks() {
++    base::RunLoop run_loop;
++    base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE,
++                                                     run_loop.QuitClosure());
++    run_loop.Run();
++  }
++
++ private:
++  base::test::SingleThreadTaskEnvironment task_environment;
++};
++
++TEST_P(SyncFlagValidationTest, NonSync) {
++  Remote<mojom::NoSync> remote;
++  NoSyncImpl impl(remote.BindNewPipeAndPassReceiver());
++
++  Message message = MakeNoSyncMethodMessage();
++  auto responder = std::make_unique<NoResponseExpectedResponder>();
++  ASSERT_TRUE(remote.internal_state()->endpoint_client_for_test());
++  ::mojo::internal::SendMojoMessage(
++      *remote.internal_state()->endpoint_client_for_test(), message,
++      std::move(responder));
++}
++
++TEST_P(SyncFlagValidationTest, OneSync) {
++  Remote<mojom::OneSync> remote;
++  OneSyncImpl impl(remote.BindNewPipeAndPassReceiver());
++
++  Message message = MakeOneSyncMethodMessage();
++  auto responder = std::make_unique<NoResponseExpectedResponder>();
++  ASSERT_TRUE(remote.internal_state()->endpoint_client_for_test());
++  ::mojo::internal::SendMojoMessage(
++      *remote.internal_state()->endpoint_client_for_test(), message,
++      std::move(responder));
++}
++
++TEST_P(SyncFlagValidationTest, NoSyncAssociatedWithNoSync) {
++  Remote<mojom::NoSync> remote;
++  NoSyncImpl impl(remote.BindNewPipeAndPassReceiver());
++
++  AssociatedRemote<mojom::NoSync> associated_remote;
++  remote->BindNoSync(associated_remote.BindNewEndpointAndPassReceiver());
++
++  FlushPostedTasks();
++
++  Message message = MakeNoSyncMethodMessage();
++  auto responder = std::make_unique<NoResponseExpectedResponder>();
++  ASSERT_TRUE(remote.internal_state()->endpoint_client_for_test());
++  ::mojo::internal::SendMojoMessage(
++      *associated_remote.internal_state()->endpoint_client_for_test(), message,
++      std::move(responder));
++}
++
++TEST_P(SyncFlagValidationTest, OneSyncAssociatedWithNoSync) {
++  Remote<mojom::NoSync> remote;
++  NoSyncImpl impl(remote.BindNewPipeAndPassReceiver());
++
++  AssociatedRemote<mojom::OneSync> associated_remote;
++  remote->BindOneSync(associated_remote.BindNewEndpointAndPassReceiver());
++
++  FlushPostedTasks();
++
++  Message message = MakeOneSyncMethodMessage();
++  auto responder = std::make_unique<NoResponseExpectedResponder>();
++  ASSERT_TRUE(remote.internal_state()->endpoint_client_for_test());
++  ::mojo::internal::SendMojoMessage(
++      *associated_remote.internal_state()->endpoint_client_for_test(), message,
++      std::move(responder));
++}
++
++TEST_P(SyncFlagValidationTest, NoSyncAssociatedWithOneSync) {
++  Remote<mojom::OneSync> remote;
++  OneSyncImpl impl(remote.BindNewPipeAndPassReceiver());
++
++  AssociatedRemote<mojom::NoSync> associated_remote;
++  remote->BindNoSync(associated_remote.BindNewEndpointAndPassReceiver());
++
++  FlushPostedTasks();
++
++  Message message = MakeNoSyncMethodMessage();
++  auto responder = std::make_unique<NoResponseExpectedResponder>();
++  ASSERT_TRUE(remote.internal_state()->endpoint_client_for_test());
++  ::mojo::internal::SendMojoMessage(
++      *associated_remote.internal_state()->endpoint_client_for_test(), message,
++      std::move(responder));
++}
++
++TEST_P(SyncFlagValidationTest, OneSyncAssociatedWithOneSync) {
++  Remote<mojom::OneSync> remote;
++  OneSyncImpl impl(remote.BindNewPipeAndPassReceiver());
++
++  AssociatedRemote<mojom::OneSync> associated_remote;
++  remote->BindOneSync(associated_remote.BindNewEndpointAndPassReceiver());
++
++  FlushPostedTasks();
++
++  Message message = MakeOneSyncMethodMessage();
++  auto responder = std::make_unique<NoResponseExpectedResponder>();
++  ASSERT_TRUE(remote.internal_state()->endpoint_client_for_test());
++  ::mojo::internal::SendMojoMessage(
++      *associated_remote.internal_state()->endpoint_client_for_test(), message,
++      std::move(responder));
++}
++
++INSTANTIATE_TEST_SUITE_P(,
++                         SyncFlagValidationTest,
++                         ::testing::Values(0, Message::kFlagIsResponse));
++
+ }  // namespace
+ }  // namespace sync_method_unittest
+ }  // namespace test
+diff --git a/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom b/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom
+index 951442b3585ad22f936568e211ad41f8ae358705..0cc5f7c6d288f988b6114ff6b5b80546558eb378 100644
+--- a/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom
++++ b/mojo/public/cpp/bindings/tests/sync_method_unittest.test-mojom
+@@ -49,3 +49,20 @@ interface Ponger {
+ interface SyncService {
+   [Sync] SyncCall() => ();
+ };
++
++interface NoSync {
++  Method() => ();
++
++  BindNoSync(pending_associated_receiver<NoSync> no_sync);
++  BindOneSync(pending_associated_receiver<OneSync> one_sync);
++};
++
++interface OneSync {
++  Method() => ();
++
++  [Sync]
++  SyncMethod() => ();
++
++  BindNoSync(pending_associated_receiver<NoSync> no_sync);
++  BindOneSync(pending_associated_receiver<OneSync> one_sync);
++};
+diff --git a/mojo/public/tools/bindings/generators/cpp_templates/interface_declaration.tmpl b/mojo/public/tools/bindings/generators/cpp_templates/interface_declaration.tmpl
+index c53d4eac2ee4c0c0134f25b3f7a1c2275c545f55..6e02107bd623def01aed76b85d58e932f92ef03f 100644
+--- a/mojo/public/tools/bindings/generators/cpp_templates/interface_declaration.tmpl
++++ b/mojo/public/tools/bindings/generators/cpp_templates/interface_declaration.tmpl
+@@ -32,7 +32,12 @@ class {{export_attribute}} {{interface.name}}
+ {%- endif %}
+   static constexpr uint32_t Version_ = {{interface.version}};
+   static constexpr bool PassesAssociatedKinds_ = {% if interface|passes_associated_kinds %}true{% else %}false{% endif %};
+-  static constexpr bool HasSyncMethods_ = {% if interface|has_sync_methods %}true{% else %}false{% endif %};
++{%- set sync_method_ordinals = interface|get_sync_method_ordinals -%}
++{%- if sync_method_ordinals %}
++  static inline constexpr uint32_t kSyncMethodOrdinals[] = {
++    {{sync_method_ordinals|sort|join(', \n')|indent(4)}}
++  };
++{%- endif %}
+   static constexpr bool HasUninterruptableMethods_ =
+       {%- if interface|has_uninterruptable_methods %} true
+       {%- else %} false{% endif %};
+diff --git a/mojo/public/tools/bindings/generators/cpp_templates/module-params-data.h.tmpl b/mojo/public/tools/bindings/generators/cpp_templates/module-params-data.h.tmpl
+index af3bc5168beb5f9e5b9cfe63354dbdb6b29ff8a1..ab71e91dab403f4c552165eba5da7e32a61b1b83 100644
+--- a/mojo/public/tools/bindings/generators/cpp_templates/module-params-data.h.tmpl
++++ b/mojo/public/tools/bindings/generators/cpp_templates/module-params-data.h.tmpl
+@@ -17,13 +17,15 @@
+ #pragma clang diagnostic ignored "-Wunused-private-field"
+ #endif
+ 
++namespace mojo::internal {
++class ValidationContext;
++}
++
+ {%- for namespace in namespaces_as_array %}
+ namespace {{namespace}} {
+ {%- endfor %}
+ namespace internal {
+ 
+-class ValidationContext;
+-
+ {#--- Interface parameter definitions #}
+ {%- for interface in interfaces %}
+ {%-   for method in interface.methods %}
+diff --git a/mojo/public/tools/bindings/generators/mojom_cpp_generator.py b/mojo/public/tools/bindings/generators/mojom_cpp_generator.py
+index 014f2bf04da4f2e11a13d57d910ecc8a8b489113..add5a877cb7e38da4599d3ae76ea0bd9486637da 100644
+--- a/mojo/public/tools/bindings/generators/mojom_cpp_generator.py
++++ b/mojo/public/tools/bindings/generators/mojom_cpp_generator.py
+@@ -403,7 +403,7 @@ class Generator(generator.Generator):
+         "get_qualified_name_for_kind": self._GetQualifiedNameForKind,
+         "has_callbacks": mojom.HasCallbacks,
+         "has_packed_method_ordinals": HasPackedMethodOrdinals,
+-        "has_sync_methods": mojom.HasSyncMethods,
++        "get_sync_method_ordinals": mojom.GetSyncMethodOrdinals,
+         "has_uninterruptable_methods": mojom.HasUninterruptableMethods,
+         "method_supports_lazy_serialization":
+         self._MethodSupportsLazySerialization,
+diff --git a/mojo/public/tools/mojom/mojom/generate/module.py b/mojo/public/tools/mojom/mojom/generate/module.py
+index eff9376b78b20dfa39efc60f7548a965a38700f1..b952ada97535aa2da8a29bc6275f738dfb0c70db 100644
+--- a/mojo/public/tools/mojom/mojom/generate/module.py
++++ b/mojo/public/tools/mojom/mojom/generate/module.py
+@@ -1729,11 +1729,8 @@ def MethodPassesInterfaces(method):
+   return _AnyMethodParameterRecursive(method, IsInterfaceKind)
+ 
+ 
+-def HasSyncMethods(interface):
+-  for method in interface.methods:
+-    if method.sync:
+-      return True
+-  return False
++def GetSyncMethodOrdinals(interface):
++  return [method.ordinal for method in interface.methods if method.sync]
+ 
+ 
+ def HasUninterruptableMethods(interface):
