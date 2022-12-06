@@ -1,7 +1,7 @@
-From 42e15c2055c4969f2b234f704a15a7a874d58c5e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Joey Arhar <jarhar@chromium.org>
 Date: Tue, 22 Nov 2022 00:12:31 +0000
-Subject: [PATCH] Avoid use-after-free in ValidationMessageOverlayDelegate
+Subject: Avoid use-after-free in ValidationMessageOverlayDelegate
 
 When ValidationMessageOverlayDelegate calls
 ForceSynchronousDocumentInstall, it can somehow cause another validation
@@ -22,13 +22,12 @@ Commit-Queue: David Baron <dbaron@chromium.org>
 Auto-Submit: Joey Arhar <jarhar@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5359@{#911}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc
-index 23dc28b..8d12cae0 100644
+index 33575769b1fa9361c91d27815832f467f7a7f19c..a8a1df886fd8accfdf9fcf9d06ba24e11f16293a 100644
 --- a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc
 +++ b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.cc
-@@ -86,6 +86,8 @@
+@@ -85,6 +85,8 @@ ValidationMessageOverlayDelegate::~ValidationMessageOverlayDelegate() {
      EventDispatchForbiddenScope::AllowUserAgentEvents allow_events;
      page_->WillBeDestroyed();
    }
@@ -37,7 +36,7 @@ index 23dc28b..8d12cae0 100644
  }
  
  LocalFrameView& ValidationMessageOverlayDelegate::FrameView() const {
-@@ -177,7 +179,18 @@
+@@ -175,7 +177,18 @@ void ValidationMessageOverlayDelegate::CreatePage(const FrameOverlay& overlay) {
    WriteDocument(data.get());
    float zoom_factor = anchor_->GetDocument().GetFrame()->PageZoomFactor();
    frame->SetPageZoomFactor(zoom_factor);
@@ -57,10 +56,10 @@ index 23dc28b..8d12cae0 100644
    Element& main_message = GetElementById("main-message");
    main_message.setTextContent(message_);
 diff --git a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h
-index 1f46d0d..1633aff 100644
+index 9db786a4fbd12bc6aeefc520143f872965ad7df8..26e96d8ffad11938dcc3dc5b059f2c7ebf077b94 100644
 --- a/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h
 +++ b/third_party/blink/renderer/core/page/validation_message_overlay_delegate.h
-@@ -72,6 +72,10 @@
+@@ -72,6 +72,10 @@ class CORE_EXPORT ValidationMessageOverlayDelegate
    String sub_message_;
    TextDirection message_dir_;
    TextDirection sub_message_dir_;
@@ -73,7 +72,7 @@ index 1f46d0d..1633aff 100644
  }  // namespace blink
 diff --git a/third_party/blink/web_tests/external/wpt/html/semantics/forms/constraints/reportValidity-crash.html b/third_party/blink/web_tests/external/wpt/html/semantics/forms/constraints/reportValidity-crash.html
 new file mode 100644
-index 0000000..d6bab92
+index 0000000000000000000000000000000000000000..d6bab924adc9fb481235af10d706cbf4d4ef2df9
 --- /dev/null
 +++ b/third_party/blink/web_tests/external/wpt/html/semantics/forms/constraints/reportValidity-crash.html
 @@ -0,0 +1,37 @@
