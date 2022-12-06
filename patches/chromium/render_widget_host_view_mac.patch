@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 031641cc5388ac4074f2f2eef8962667904dd056..74fd61af5685f2223b07975776cf8e245bf84a14 100644
+index d89c11d6727b019e9c339e1bd9e943e5451a8501..6fc595a674d7d8f0bb630ea7471ad9c09a5f9ac9 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -161,6 +161,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -50,7 +50,7 @@ index 031641cc5388ac4074f2f2eef8962667904dd056..74fd61af5685f2223b07975776cf8e24
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -986,6 +1002,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -995,6 +1011,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  
@@ -61,7 +61,7 @@ index 031641cc5388ac4074f2f2eef8962667904dd056..74fd61af5685f2223b07975776cf8e24
    // We only handle key down events and just simply forward other events.
    if (eventType != NSEventTypeKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1810,9 +1830,11 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -1819,9 +1839,11 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -73,7 +73,7 @@ index 031641cc5388ac4074f2f2eef8962667904dd056..74fd61af5685f2223b07975776cf8e24
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1821,7 +1843,10 @@ - (NSArray*)validAttributesForMarkedText {
+@@ -1830,7 +1852,10 @@ - (NSArray*)validAttributesForMarkedText {
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,

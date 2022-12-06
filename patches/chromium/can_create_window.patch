@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 51a472c855bbcc55c7ac9e71152db10db5a338ed..68436bab8c7bcd15a151b3d3e8856d2dfcb0b82c 100644
+index abcc844e6e0e856c12af6a27cc2c0a1d4d421ac5..688e15ec41a92ea0981a0dda512c230c9617a691 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7288,6 +7288,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7301,6 +7301,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index 51a472c855bbcc55c7ac9e71152db10db5a338ed..68436bab8c7bcd15a151b3d3e8856d2d
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 92a6ef2bae58718d51e7e9cfeeef24313762d6ab..5d33c006e858757ffd1d6754e90cec96ac6dcad1 100644
+index 4ba95a1e95935f8286fbf9b5f954d1a7478109ac..ebb28bc50e642d86d43f74d1409fa43691c24cc6 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4057,6 +4057,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4050,6 +4050,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 92a6ef2bae58718d51e7e9cfeeef24313762d6ab..5d33c006e858757ffd1d6754e90cec96
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4098,12 +4104,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4091,12 +4097,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,7 +66,7 @@ index 8d9b71b8dd507f835a07ef56e86489ed7cfe4255..73266701ec802a4aed782658e60665f9
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2a4a2183db5c6b2f981f757c248cabb7e9e007f8..33755467c637974f3c0a16eb2a8fe5c6b83b14b5 100644
+index 5a6ca34100f6b8e7e2082df102ad3defa6c39aa7..d5c93c0f08e249fc190d671bbdc5fdaa6814a9a9 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -620,6 +620,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 2a4a2183db5c6b2f981f757c248cabb7e9e007f8..33755467c637974f3c0a16eb2a8fe5c6
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 39eadbcc3fe914c154f5b655a09675427a24d0ed..c8a5bdeb03e085f607cfdc79f14879c8c1379257 100644
+index a436c6a67b565e6cbb2a08af055cafab2d0d1086..43bda1c3de942ca05a9f5b842ce2a23ec67ae23e 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -164,6 +164,7 @@ class NetworkService;
@@ -148,10 +148,10 @@ index e2ce097fb78d853bb7098b1ce7dacfadd6d188d9..a082d41de24f963fe170108e80601946
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index a274c4ba456b0fe7fce935866768aaa336347581..08bd2ab693d381ae422fe57757cff59875be019d 100644
+index cb64cc0b5e7cb776bb7585871223ee5b444ba98c..d9c5503d69d449f5778f5f5dc428198ba9c94242 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6253,6 +6253,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6257,6 +6257,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
        /*openee_can_access_opener_origin=*/true,
        !GetWebFrame()->IsAllowedToDownload(), GetWebFrame()->IsAdFrame());
  
@@ -189,7 +189,7 @@ index 55f3b2ce596f18fdffde7f23f01da98778816395..07496fded98e6ac926b219f56f769e2a
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e4daf3420 100644
+index a50a83d36f9172add44867ee0b0f1c89779b387e..c4ac7d4c885e764cfcfc3f2cd25e31b4b1a64a55 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
 @@ -34,6 +34,7 @@
@@ -200,7 +200,7 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  namespace blink {
  
-@@ -68,6 +69,8 @@ struct WebWindowFeatures {
+@@ -63,6 +64,8 @@ struct WebWindowFeatures {
    // Represents the attribution source declared by Attribution Reporting related
    // window features, if any.
    absl::optional<Impression> impression;
@@ -210,10 +210,10 @@ index 34570168ccb123f5102dcf8fa6bbf98e7c373ec6..192701e56d258da41b3724292853885e
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index c7a66bc0e034b77baf476374de66986cd47983e8..4e6f466a64565580aa81f6242f517470a9f85b38 100644
+index 73ac61819e149731f96ff0c5d0df0fc940c534a9..52a3d802801ec6f47739cbac355a3fa2a43ff033 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2204,6 +2204,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2205,6 +2205,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window, completed_url);
  

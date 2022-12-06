@@ -17,78 +17,77 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 65921550e62dbcd79f77192951b95991c3e904a1..743e81c07052979dfb83cc0ed44a6653ddf52321 100644
+index d2dd33303bfbfe4bfa9c65d8275d6be2f10614a2..6362f3ec3a1a2b04e324f5819d9d780b2c144043 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -119,6 +119,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
-   isolation_info = other.isolation_info;
+@@ -120,6 +120,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
    disable_secure_dns = other.disable_secure_dns;
    has_user_activation = other.has_user_activation;
+   allow_cookies_from_browser = other.allow_cookies_from_browser;
 +  report_raw_headers = other.report_raw_headers;
    cookie_observer =
        Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
            other.cookie_observer));
-@@ -139,6 +140,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -140,6 +141,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
 +         report_raw_headers == other.report_raw_headers &&
           has_user_activation == other.has_user_activation &&
+          allow_cookies_from_browser == other.allow_cookies_from_browser &&
           client_security_state == other.client_security_state;
- }
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index b3ff3cc494d5d63ed0af9745131cfd52da12cd43..05954160ee3cbc86a3dec4ba2b1f6750cd6d5209 100644
+index a97f7c4b7cdd39c42344d3f1d85104dac1ea113f..51b36c5637583cd2174328aff9eb227f1b104d2d 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
-@@ -62,6 +62,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
-     net::IsolationInfo isolation_info;
+@@ -63,6 +63,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
      bool disable_secure_dns = false;
      bool has_user_activation = false;
+     bool allow_cookies_from_browser = false;
 +    bool report_raw_headers = false;
      mojo::PendingRemote<mojom::CookieAccessObserver> cookie_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
          url_loader_network_observer;
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 1702f66d2ec0871f15e475ae3901b48637140d59..824523653ae45ae9b66f316f9ee608f351aae728 100644
+index 157837198d38f9fe0212582ed0db352daf06cd4f..fbca8fb3532ac434d37448b2f29469bdcb91ffc2 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -88,6 +88,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
-   }
+@@ -89,6 +89,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->disable_secure_dns = data.disable_secure_dns();
    out->has_user_activation = data.has_user_activation();
+   out->allow_cookies_from_browser = data.allow_cookies_from_browser();
 +  out->report_raw_headers = data.report_raw_headers();
    out->cookie_observer = data.TakeCookieObserver<
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->url_loader_network_observer = data.TakeUrlLoaderNetworkObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index af527034303f0660934d50a441fa178ddaeca475..aa1a1290ebb261a4f5045cf14882e750822784c4 100644
+index f90223417ecfd8e6c63255bfd75f2223f4623e28..ed871bf64cb889aaf173d00bd7c390a871cbc856 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -65,6 +65,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+@@ -68,6 +68,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
+   static bool allow_cookies_from_browser(
        const network::ResourceRequest::TrustedParams& trusted_params) {
-     return trusted_params.has_user_activation;
-   }
+     return trusted_params.allow_cookies_from_browser;
 +  static bool report_raw_headers(
 +      const network::ResourceRequest::TrustedParams& trusted_params) {
 +    return trusted_params.report_raw_headers;
-+  }
+   }
    static mojo::PendingRemote<network::mojom::CookieAccessObserver>
    cookie_observer(
-       const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index bf3c8e3dc4d15d33118144f801b661fed667a5ba..4bce0983d28d44d3dd6d34aaca684f1f978e18fd 100644
+index 0363f3db4f5d81edb96cc6a4e0b61a4a70d37802..6a104a6fa5d7e08bc3ef1e14f877d9364e4fc4f5 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -55,6 +55,9 @@ struct TrustedUrlRequestParams {
-   // without user gesture. Used to determine the `Sec-Fetch-User` header.
-   bool has_user_activation;
- 
+@@ -69,6 +69,9 @@ struct TrustedUrlRequestParams {
+   // sites. If needed, the caller can add the cookies back in the call to
+   // FollowRedirect().
+   bool allow_cookies_from_browser;
++  
 +  // [Electron] Whether to provide unfiltered response headers.
 +  bool report_raw_headers;
-+
+ 
    // Observer which should be notified when this URLRequest reads or writes
    // a cookie. If this is set to non-null, the observer passed to
-   // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
 index f4cbafde0cfa92e3e93f5480242025b3d5c822c4..73a7a02a224a4737c4f7a97a98a73e7f67ce3250 100644
 --- a/services/network/public/mojom/url_response_head.mojom
@@ -112,18 +111,18 @@ index f4cbafde0cfa92e3e93f5480242025b3d5c822c4..73a7a02a224a4737c4f7a97a98a73e7f
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 023729747d16816a6ba38159ace5ab1ec7bb2db5..aa3277bfd3dc1f7bab474ba0ff21f8c6e1d851eb 100644
+index 0e035229187f521a27ad48c5cb6ec25222978381..30b49cad7ebbd9f53463e45f2e8a3708db59904f 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -582,6 +582,7 @@ URLLoader::URLLoader(
- 
-   if (request.trusted_params) {
+@@ -638,6 +638,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
+     allow_cookies_from_browser_ =
+         request.trusted_params->allow_cookies_from_browser;
 +    report_raw_headers_ = request.trusted_params->report_raw_headers;
    }
  
    throttling_token_ = network::ScopedThrottlingToken::MaybeCreate(
-@@ -645,7 +646,7 @@ URLLoader::URLLoader(
+@@ -701,7 +702,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -132,7 +131,7 @@ index 023729747d16816a6ba38159ace5ab1ec7bb2db5..aa3277bfd3dc1f7bab474ba0ff21f8c6
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1430,6 +1431,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1506,6 +1507,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,7 +152,7 @@ index 023729747d16816a6ba38159ace5ab1ec7bb2db5..aa3277bfd3dc1f7bab474ba0ff21f8c6
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index 766c64384d49e04c7d09e79d01c803b39cadfbf7..151443796c915319c9fb09c1c4fd18181b9c9bad 100644
+index f3debcea0c6fa85ba5f24824edb198d99082d51a..a7fd51f9d5e111060889fe631b4fcc65937623de 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -505,6 +505,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader

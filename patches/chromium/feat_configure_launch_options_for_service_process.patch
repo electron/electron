@@ -56,10 +56,10 @@ index cfadd28fca9f80bf57578db78d5472c4f75414e1..4925dc5cafbf312c3c9640d5873d6219
    return true;
  }
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index d74a40c0e5731281b132cc1c3dc2416f9dc2b083..dd8a9d35af617441c6643ed643b459a35b612969 100644
+index ac447f041b2476ba419494b52faf538fbb40912b..2160eef23a435ef61671712689cfc9e7d666364f 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
-@@ -73,7 +73,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -74,7 +74,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        'mojo', base::MachRendezvousPort(endpoint.TakeMachReceiveRight())));
  
    options->environment = delegate_->GetEnvironment();
