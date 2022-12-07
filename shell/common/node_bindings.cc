@@ -161,8 +161,7 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
                                      v8::Local<v8::String> source) {
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
-  v8::Isolate* isolate = context->GetIsolate();
-  if (node::Environment::GetCurrent(isolate) == nullptr) {
+  if (node::Environment::GetCurrent(context) == nullptr) {
     if (gin_helper::Locker::IsBrowserProcess())
       return false;
     return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
@@ -178,8 +177,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
     bool is_code_like) {
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
-  v8::Isolate* isolate = context->GetIsolate();
-  if (node::Environment::GetCurrent(isolate) == nullptr) {
+  if (node::Environment::GetCurrent(context) == nullptr) {
     if (gin_helper::Locker::IsBrowserProcess()) {
       NOTREACHED();
       return {false, {}};
