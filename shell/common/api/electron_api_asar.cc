@@ -51,7 +51,7 @@ class Archive : public node::ObjectWrap {
           isolate, "failed to convert path to V8")));
       return;
     }
-    
+
     auto archive = asar::GetOrCreateAsarArchive(path);
     if (!archive) {
       isolate->ThrowException(v8::Exception::Error(node::FIXED_ONE_BYTE_STRING(
