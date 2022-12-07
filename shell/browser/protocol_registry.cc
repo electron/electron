@@ -72,4 +72,10 @@ bool ProtocolRegistry::IsProtocolIntercepted(const std::string& scheme) {
   return base::Contains(intercept_handlers_, scheme);
 }
 
+void ProtocolRegistry::HandleProtocol(const std::string& scheme,
+                                      const ProtocolHandler& handler) {
+  generic_handlers_.try_emplace(scheme, std::list<ProtocolHandler>())
+      .first->second.push_front(handler);
+}
+
 }  // namespace electron

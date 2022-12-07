@@ -68,6 +68,7 @@ class Protocol : public gin::Wrappable<Protocol> {
                                   const ProtocolHandler& handler);
   bool UninterceptProtocol(const std::string& scheme, gin::Arguments* args);
   bool IsProtocolIntercepted(const std::string& scheme);
+  void HandleProtocol(const std::string& scheme, ProtocolHandler handler);
 
   // Old async version of IsProtocolRegistered.
   v8::Local<v8::Promise> IsProtocolHandled(const std::string& scheme,
