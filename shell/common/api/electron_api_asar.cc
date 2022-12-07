@@ -53,7 +53,7 @@ class Archive : public node::ObjectWrap {
     }
     
     auto archive = asar::GetOrCreateAsarArchive(path);
-    if(!archive) {
+    if (!archive) {
       isolate->ThrowException(v8::Exception::Error(node::FIXED_ONE_BYTE_STRING(
           isolate, "failed to initialize archive")));
       return;
