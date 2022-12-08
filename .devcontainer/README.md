@@ -56,3 +56,4 @@ xvfb-run e test --runners=main
 # Run the old remote tests
 xvfb-run e test --runners=remote
 ```
+V
