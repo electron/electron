@@ -218,32 +218,32 @@ index a8a223d1d9ea6de51a27f148c008ee8be38af29a..328200858bd7aa4077bf6824bfc1367b
    }
  
 diff --git a/sandbox/mac/sandbox_compiler.cc b/sandbox/mac/sandbox_compiler.cc
-index 22df394f5e9c4fe511694439e2123390450616bc..6d42e4f08045ea1f452e7879d46d466409723e9f 100644
+index 6b4d14d97b8489d0cb4ec41451db6a8e548bbb0e..c874e74dd1f8d180fb32609c89029e8484af3ee8 100644
 --- a/sandbox/mac/sandbox_compiler.cc
 +++ b/sandbox/mac/sandbox_compiler.cc
-@@ -34,6 +34,7 @@ bool SandboxCompiler::SetParameter(const std::string& key,
+@@ -47,6 +47,7 @@ bool SandboxCompiler::SetParameter(const std::string& key,
  }
  
  bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
 +#if !IS_MAS_BUILD()
-   std::vector<const char*> params;
+   if (mode_ == Target::kSource) {
+     std::vector<const char*> params;
  
-   for (const auto& kv : policy_.params()) {
-@@ -45,6 +46,9 @@ bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
- 
-   return sandbox::Seatbelt::InitWithParams(policy_.profile().c_str(), 0,
-                                            params.data(), error);
+@@ -67,6 +68,9 @@ bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
+     }
+   }
+   return false;
 +#else
 +  return true;
 +#endif
  }
  
- const mac::SandboxPolicy& SandboxCompiler::CompilePolicyToProto() {
+ absl::optional<mac::SandboxPolicy> SandboxCompiler::CompilePolicyToProto(
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 67a2d05024f0a9ef4e7e049f27cc6f22b1f0fab7..d2ccdf80c17d05d6bbb4bcc2bf2c0fe2a84b695a 100644
+index 4adf96ab87282f7c8dd02b9a83894fc89671c195..c5990ef75118e60b32e5304901ee9aa135ed42ee 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
-@@ -81,7 +81,11 @@ void Seatbelt::FreeError(char* errorbuf) {
+@@ -201,7 +201,11 @@ void Seatbelt::FreeError(char* errorbuf) {
  
  // static
  bool Seatbelt::IsSandboxed() {

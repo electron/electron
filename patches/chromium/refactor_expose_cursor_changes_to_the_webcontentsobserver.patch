@@ -43,10 +43,10 @@ index 6ae9753ee4fb1422cf9ba1866b40bcd5e6a7daad..5c5ea9ca6ecb429cde7279159d147988
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ebb28bc50e642d86d43f74d1409fa43691c24cc6..4aea4b4809f36509a8967e1c8e2251214a9ebbf3 100644
+index 3046f45ad1cc6c4327759d6b75553c1265016b28..51f1073dad1d1584f4beec2a486e1030056aecde 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4632,6 +4632,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4715,6 +4715,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,10 +59,10 @@ index ebb28bc50e642d86d43f74d1409fa43691c24cc6..4aea4b4809f36509a8967e1c8e225121
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 41db1934060a6a3be168c2029c44767f111b2ee3..4099bf4af86f421285c6335cc9ecd67e0eeff383 100644
+index 36e5784b92cfd4bed6b5e638c93122e3cfbc6985..c169e05bb9ec141d158b074e149a4167377a4963 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -966,6 +966,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -968,6 +968,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -71,7 +71,7 @@ index 41db1934060a6a3be168c2029c44767f111b2ee3..4099bf4af86f421285c6335cc9ecd67e
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index 27ddea8168064c81eb59faebf6e1b516b621b358..1ff82e2783e608d3860282b9d5be816891c43ae1 100644
+index d89d18e8d2509629c0d43c199c9a4ae3a302c062..283a8f88eb46fa75dc4e5ddd396b79cb3d936259 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@

@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index fab875470b919945127565a300961adc431bf9f7..3383da183b8dc08b9d420a642774f1f871ef0d61 100644
+index 5f075f6fabb851c1487526c3d5cd5c69e2890f47..4de904fa65ce922f633b131302bc2a68f4f147cc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1490,6 +1490,7 @@ component("base") {
+@@ -1483,6 +1483,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c61112bf57f7b37552c5bfb27952c40858b932cd..6b8fea63b5d3d246946ae937de46bb3bda78b05b 100644
+index ed005c1aec0a52bed44eba058ff3440a4740309b..92c1c9eb044ba165f83509475c62e21ddc90ff81 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -153,18 +153,18 @@ index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aa
  
  # The standard API of net/dns.
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3edb116d9b2 100644
+index 9ad0c932796e9d330ad7501f358b7c2d51ba0ac9..e6a4b7f608f19d4b239968a0f438cf9c6bfc6f7a 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
-@@ -37,6 +37,7 @@ component("seatbelt") {
+@@ -41,6 +41,7 @@ component("seatbelt") {
    ]
-   public_deps = [ "//third_party/protobuf:protobuf_lite" ]
+   public_configs = [ "//third_party/abseil-cpp:absl_include_config" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
 +  configs += ["//electron/build/config:mas_build"]
  }
  
  component("seatbelt_extension") {
-@@ -50,6 +51,7 @@ component("seatbelt_extension") {
+@@ -54,6 +55,7 @@ component("seatbelt_extension") {
    libs = [ "sandbox" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -172,7 +172,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  }
  
  component("system_services") {
-@@ -64,6 +66,7 @@ component("system_services") {
+@@ -68,6 +70,7 @@ component("system_services") {
    deps = [ ":seatbelt_export" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -206,10 +206,10 @@ index 1ca2843130e81f9ea6be7a71b6b2a8d68bd413ae..712e4428bc9417f114a695a5980c4888
  
  test("accelerated_widget_mac_unittests") {
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index a0e2cbd08be3bcf88c726864e29ed9ee7425d492..fcd72c0821dab5e53a7271464b774065862474bd 100644
+index 19a94b01d8d96ed276e932fda9edb2d85e06ed34..09b6d15c4f6e9b867b7c4fe3d8c86585794605ad 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -242,6 +242,7 @@ component("platform") {
+@@ -244,6 +244,7 @@ component("platform") {
          "AppKit.framework",
          "Foundation.framework",
        ]
@@ -218,7 +218,7 @@ index a0e2cbd08be3bcf88c726864e29ed9ee7425d492..fcd72c0821dab5e53a7271464b774065
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index e8b06c7fa14405902abc84dc738efdbb327a3677..4e2160b8377b348b6cf654ff01307a524be2e1ac 100644
+index cf78d4d320cd5a831e03d92329da3e29c8b1f276..d63c1cfce27d0f0472a0bc79df0a3855dbd54ec7 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -347,6 +347,7 @@ component("base") {

@@ -121,7 +121,7 @@ index d17376917f4d8f5740b265a00e748929cbade643..f8c89a491c9b27e03d19327761c21bd1
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6ad43ee56 100644
+index 7a41f222b5441ea07902c094587ee6e73ccc3f35..e448b3de2e6b73bfabab76859674d1ce98bf5c93 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -267,8 +267,8 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
 +#endif
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
    if (printing::features::kEnableOopPrintDriversJobPrint.Get() &&
-       !service_manager_client_id_.has_value()) {
-@@ -583,18 +614,20 @@ void PrintViewManagerBase::UpdatePrintSettings(
+ #if BUILDFLAG(ENABLE_PRINT_CONTENT_ANALYSIS)
+@@ -586,18 +617,20 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value::Dict job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -290,7 +290,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
    content::BrowserContext* context =
        web_contents() ? web_contents()->GetBrowserContext() : nullptr;
    PrefService* prefs =
-@@ -604,6 +637,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -607,6 +640,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
      if (value > 0)
        job_settings.Set(kSettingRasterizePdfDpi, value);
    }
@@ -298,7 +298,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
  
    auto callback_wrapper =
        base::BindOnce(&PrintViewManagerBase::UpdatePrintSettingsReply,
-@@ -641,14 +675,14 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
+@@ -644,14 +678,14 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
      // didn't happen for some reason.
      bad_message::ReceivedBadMessage(
          render_process_host, bad_message::PVMB_SCRIPTED_PRINT_FENCED_FRAME);
@@ -315,7 +315,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
      return;
    }
  #endif
-@@ -687,7 +721,6 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie,
+@@ -690,7 +724,6 @@ void PrintViewManagerBase::PrintingFailed(int32_t cookie,
    PrintManager::PrintingFailed(cookie, reason);
  
  #if !BUILDFLAG(IS_ANDROID)  // Android does not implement this function.
@@ -323,7 +323,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
  #endif
  
    ReleasePrinterQuery();
-@@ -702,6 +735,11 @@ void PrintViewManagerBase::RemoveObserver(Observer& observer) {
+@@ -705,6 +738,11 @@ void PrintViewManagerBase::RemoveObserver(Observer& observer) {
  }
  
  void PrintViewManagerBase::ShowInvalidPrinterSettingsError() {
@@ -335,7 +335,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
        FROM_HERE, base::BindOnce(&ShowWarningMessageBox,
                                  l10n_util::GetStringUTF16(
-@@ -712,11 +750,13 @@ void PrintViewManagerBase::RenderFrameHostStateChanged(
+@@ -715,11 +753,13 @@ void PrintViewManagerBase::RenderFrameHostStateChanged(
      content::RenderFrameHost* render_frame_host,
      content::RenderFrameHost::LifecycleState /*old_state*/,
      content::RenderFrameHost::LifecycleState new_state) {
@@ -349,7 +349,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
  }
  
  void PrintViewManagerBase::RenderFrameDeleted(
-@@ -768,14 +808,20 @@ void PrintViewManagerBase::OnJobDone() {
+@@ -771,14 +811,20 @@ void PrintViewManagerBase::OnJobDone() {
    // Printing is done, we don't need it anymore.
    // print_job_->is_job_pending() may still be true, depending on the order
    // of object registration.
@@ -373,7 +373,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
  #endif
  
    TerminatePrintJob(true);
-@@ -787,7 +833,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
+@@ -790,7 +836,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
  
    // Is the document already complete?
    if (print_job_->document() && print_job_->document()->IsComplete()) {
@@ -382,7 +382,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
      return true;
    }
  
-@@ -835,7 +881,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -838,7 +884,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current `print_job_`.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -394,7 +394,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
    if (!weak_this)
      return false;
  
-@@ -856,7 +905,7 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -859,7 +908,7 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  #endif
    print_job_->AddObserver(*this);
  
@@ -403,7 +403,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
    return true;
  }
  
-@@ -918,6 +967,11 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -921,6 +970,11 @@ void PrintViewManagerBase::ReleasePrintJob() {
    }
  #endif
  
@@ -415,7 +415,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
    if (!print_job_)
      return;
  
-@@ -925,7 +979,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -928,7 +982,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
      // printing_rfh_ should only ever point to a RenderFrameHost with a live
      // RenderFrame.
      DCHECK(rfh->IsRenderFrameLive());
@@ -424,7 +424,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
    }
  
    print_job_->RemoveObserver(*this);
-@@ -967,7 +1021,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -970,7 +1024,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -433,7 +433,7 @@ index 331eb8e86b3b9f0a92a002f231e4c918c10a0107..843feb1915ae461593b06393cdd4d8b6
      return true;
  
    if (!cookie) {
-@@ -1073,7 +1127,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
+@@ -1076,7 +1130,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
  }
  
  void PrintViewManagerBase::CompletePrintNow(content::RenderFrameHost* rfh) {
@@ -783,10 +783,10 @@ index 97151dfd451fc847472fa82d418ab1f5abd8d853..e8e963aca6c1ab0360c55da0ad0845b9
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index a0a2d0a8bb40e214b224940adc04c9a9681915ef..c61112bf57f7b37552c5bfb27952c40858b932cd 100644
+index 9ce87452c63408c56161cef3effe86606f4dce64..ed005c1aec0a52bed44eba058ff3440a4740309b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2792,8 +2792,9 @@ source_set("browser") {
+@@ -2798,8 +2798,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -835,10 +835,10 @@ index 42095172d1406860249601537648fe22790ba744..361c20ef66d5c7acd34528711c52714d
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 228f84aea28ad1a0778d42aa6c96f6fad6d8a708..8b62528faa1a27a5f2f09f90bd23267e22f5d044 100644
+index d709edc697f1390a3eb086c4be16a8185bf6e66c..e6f4cdf018bb9a1cdf140a3b80eaca9accd289d8 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -23,7 +23,6 @@
+@@ -25,7 +25,6 @@
  #include "sandbox/policy/mac/nacl_loader.sb.h"
  #include "sandbox/policy/mac/network.sb.h"
  #include "sandbox/policy/mac/ppapi.sb.h"
@@ -846,7 +846,7 @@ index 228f84aea28ad1a0778d42aa6c96f6fad6d8a708..8b62528faa1a27a5f2f09f90bd23267e
  #include "sandbox/policy/mac/print_compositor.sb.h"
  #include "sandbox/policy/mac/renderer.sb.h"
  #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
-@@ -33,6 +32,10 @@
+@@ -35,6 +34,10 @@
  #include "sandbox/policy/mac/utility.sb.h"
  #include "sandbox/policy/mojom/sandbox.mojom.h"
  
