@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Austin Sullivan <asully@chromium.org>
+Date: Tue, 11 Oct 2022 20:53:22 +0000
+Subject: FSA: Block .url files in getFileHandle and getEntries
+
+Fixed: 1354518
+Change-Id: I663d4481ccc2047c49d7466bbfe9751e8c140edf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3945587
+Reviewed-by: Marijn Kruisselbrink <mek@chromium.org>
+Commit-Queue: Marijn Kruisselbrink <mek@chromium.org>
+Auto-Submit: Austin Sullivan <asully@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1057675}
+
+diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+index 7e673f903a71a309e8d92b966330875ef2772f84..13ce0b974268215f0e92ccedd2f56643c8a36679 100644
+--- a/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
++++ b/content/browser/file_system_access/file_system_access_directory_handle_impl.cc
+@@ -444,9 +444,12 @@ bool IsShellIntegratedExtension(const base::FilePath::StringType& extension) {
+ 
+   // .lnk and .scf files may be used to execute arbitrary code (see
+   // https://nvd.nist.gov/vuln/detail/CVE-2010-2568 and
+-  // https://crbug.com/1227995, respectively).
++  // https://crbug.com/1227995, respectively). '.url' files can be used to read
++  // arbitrary files (see https://crbug.com/1307930 and
++  // https://crbug.com/1354518).
+   if (extension_lower == FILE_PATH_LITERAL("lnk") ||
+-      extension_lower == FILE_PATH_LITERAL("scf")) {
++      extension_lower == FILE_PATH_LITERAL("scf") ||
++      extension_lower == FILE_PATH_LITERAL("url")) {
+     return true;
+   }
+ 
+diff --git a/content/browser/file_system_access/file_system_access_directory_handle_impl_unittest.cc b/content/browser/file_system_access/file_system_access_directory_handle_impl_unittest.cc
+index 606e34473296199317747fa949158f402b163ec0..9dd03ca412fdc69d7e6bb18b08a157ac9b69bf13 100644
+--- a/content/browser/file_system_access/file_system_access_directory_handle_impl_unittest.cc
++++ b/content/browser/file_system_access/file_system_access_directory_handle_impl_unittest.cc
+@@ -150,6 +150,7 @@ TEST_F(FileSystemAccessDirectoryHandleImplTest, IsSafePathComponent) {
+       "My Computer.{20D04FE0-3AEA-1069-A2D8-08002B30309D}",
+       "a\\a",
+       "a.lnk",
++      "a.url",
+       "a/a",
+       "C:\\",
+       "C:/",
+@@ -205,8 +206,8 @@ TEST_F(FileSystemAccessDirectoryHandleImplTest, GetEntries) {
+   constexpr const char* kSafeNames[] = {"a", "a.txt", "My Computer", "lnk.txt",
+                                         "a.local"};
+   constexpr const char* kUnsafeNames[] = {
+-      "con",  "con.zip", "NUL",   "a.",
+-      "a\"a", "a . .",   "a.lnk", "My Computer.{a}",
++      "con",   "con.zip",         "NUL",   "a.", "a\"a", "a . .",
++      "a.lnk", "My Computer.{a}", "a.url",
+   };
+   for (const char* name : kSafeNames) {
+     ASSERT_TRUE(base::WriteFile(dir_.GetPath().AppendASCII(name), "data"))
