@@ -20,12 +20,15 @@
 #include "net/http/http_util.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -266,8 +269,9 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderFactory* url_loader_factory,
-    int options) {
+    scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
+    int options)
+    : url_loader_factory_(url_loader_factory) {
   if (!request->trusted_params)
     request->trusted_params = network::ResourceRequest::TrustedParams();
   mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
@@ -302,7 +306,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
       &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
 
-  loader_->DownloadAsStream(url_loader_factory, this);
+  loader_->DownloadAsStream(url_loader_factory.get(), this);
 }
 
 void SimpleURLLoaderWrapper::Pin() {
@@ -530,12 +534,32 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       session = Session::FromPartition(args->isolate(), "");
   }
 
-  auto url_loader_factory = session->browser_context()->GetURLLoaderFactory();
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory;
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(session->browser_context());
+  if (request->url.SchemeIsFile()) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        AsarURLLoaderFactory::Create();
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (protocol_registry->IsProtocolRegistered(request->url.scheme())) {
+    auto& protocol_handler =
+        protocol_registry->handlers().at(request->url.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else {
+    url_loader_factory = session->browser_context()->GetURLLoaderFactory();
+  }
 
   auto ret = gin::CreateHandle(
       args->isolate(),
-      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get(),
-                                 options));
+      new SimpleURLLoaderWrapper(std::move(request),
+                                 std::move(url_loader_factory), options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
@@ -579,7 +603,6 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   // Note that |response_head.headers| are filtered by Chromium and should not
   // be used here.
-  DCHECK(!response_head.raw_response_headers.empty());
   dict.Set("rawHeaders", response_head.raw_response_headers);
   Emit("response-started", final_url, dict);
 }

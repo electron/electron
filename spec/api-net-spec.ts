@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import * as dns from 'dns';
-import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
+import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions, protocol } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
+import * as path from 'path';
 import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './events-helpers';
 import { defer, delay } from './spec-helpers';
@@ -1959,6 +1960,34 @@ describe('net module', () => {
       urlRequest.chunkedEncoding = true;
       urlRequest.write(randomBuffer(kOneMegaByte));
       await collectStreamBody(await getResponse(urlRequest));
+    });
+  });
+
+  describe('non-http schemes', () => {
+    it('can request file:// URLs', async () => {
+      const r = net.request(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
+      const body = await collectStreamBody(await getResponse(r));
+      expect(body).to.equal('hello world\n');
+    });
+
+    it('can make requests to custom protocols', async () => {
+      protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.unregisterProtocol('electron-test');
+      });
+      const r = net.request('electron-test://foo');
+      const body = await collectStreamBody(await getResponse(r));
+      expect(body).to.equal('hello electron-test:foo/');
+    });
+
+    it('runs through intercept handlers', async () => {
+      protocol.interceptStringProtocol('http', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.uninterceptProtocol('http');
+      });
+      const r = net.request('http://foo');
+      const body = await collectStreamBody(await getResponse(r));
+      expect(body).to.equal('hello http://foo/');
     });
   });
 });

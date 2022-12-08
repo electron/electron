@@ -10,8 +10,6 @@ const {
   createURLLoader
 } = process._linkedBinding('electron_browser_net');
 
-const kSupportedProtocols = new Set(['http:', 'https:']);
-
 // set of headers that Node.js discards duplicates for
 // see https://nodejs.org/api/http.html#http_message_headers
 const discardableDuplicateHeaders = new Set([
@@ -220,9 +218,6 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
   if (!urlStr) {
     const urlObj: url.UrlObject = {};
     const protocol = options.protocol || 'http:';
-    if (!kSupportedProtocols.has(protocol)) {
-      throw new Error('Protocol "' + protocol + '" not supported');
-    }
     urlObj.protocol = protocol;
 
     if (options.host) {

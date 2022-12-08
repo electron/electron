@@ -31,6 +31,7 @@ class Handle;
 namespace network {
 class SimpleURLLoader;
 struct ResourceRequest;
+class SharedURLLoaderFactory;
 }  // namespace network
 
 namespace electron::api {
@@ -54,9 +55,10 @@ class SimpleURLLoaderWrapper
   const char* GetTypeName() override;
 
  private:
-  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> request,
-                         network::mojom::URLLoaderFactory* url_loader_factory,
-                         int options);
+  SimpleURLLoaderWrapper(
+      std::unique_ptr<network::ResourceRequest> request,
+      scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
+      int options);
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,
@@ -112,6 +114,7 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
   v8::Global<v8::Value> pinned_chunk_pipe_getter_;
