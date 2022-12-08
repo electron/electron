@@ -129,3 +129,4 @@ build_allow_electron_to_use_exec_script.patch
 cherry-pick-67c9cbc784d6.patch
 cherry-pick-933cc81c6bad.patch
 cherry-pick-42e15c2055c4.patch
+cherry-pick-f98adc846aad.patch
