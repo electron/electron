@@ -1,4 +1,94 @@
-#!/bin/sh
+#!/Users/bin/Bash ENV
+RUN
+RUNS RUN ON starts-on :ON :
+BEGIN :ON :
+ON :
+ON :
+-on :
+GLOW4 :
 . "$(dirname "$0")/_/husky.sh"
+ecause of that, your profile is hidden from the public. If you believe this is a mistake, contact support to have your account status reviewed.
+microsoft
+/
+vscode
+Public
+Code
+Issues
+5k+
+Pull requests
+363
+Actions
+Projects
+3
+Wiki
+Security
+7
+Insights
+git: validate URI for clone command (#149180)
+Co-authored-by: Ladislau Szomoru <3372902+lszomoru@users.noreply.github.com>
+ main (#149180)
+ 1.74.0 
+…
+ 1.68.0
+@joyceerhl
+@lszomoru
+joyceerhl and lszomoru committed on May 10 
+1 parent 8965a02 commit c5da5332d54f610b1b3e6dd9ea9b699971b57407
+Showing 1 changed file with 21 additions and 1 deletion.
+  22  
+extensions/git/src/protocolHandler.ts
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+import { UriHandler, Uri, window, Disposable, commands } from 'vscode';
+import { dispose } from './util';
+import * as querystring from 'querystring';
 
+const schemes = new Set(['file', 'git', 'http', 'https', 'ssh']);
+
+export class GitProtocolHandler implements UriHandler {
+
+	private disposables: Disposable[] = [];
+	constructor() {
+		this.disposables.push(window.registerUriHandler(this));
+	}
+	handleUri(uri: Uri): void {
+		switch (uri.path) {
+			case '/clone': this.clone(uri);
+		}
+	}
+	private clone(uri: Uri): void {
+		const data = querystring.parse(uri.query);
+
+		if (!data.url) {
+			console.warn('Failed to open URI:', uri);
+			return;
+		}
+
+		if (Array.isArray(data.url) && data.url.length === 0) {
+			console.warn('Failed to open URI:', uri);
+			return;
+		}
+
+		let cloneUri: Uri;
+		try {
+			cloneUri = Uri.parse(Array.isArray(data.url) ? data.url[0] : data.url, true);
+			if (!schemes.has(cloneUri.scheme.toLowerCase())) {
+				throw new Error('Unsupported scheme.');
+			}
+		}
+		catch (ex) {
+			console.warn('Invalid URI:', uri);
+			return;
+		}
+
+		commands.executeCommand('git.clone', data.url);
+		commands.executeCommand('git.clone', cloneUri.toString(true));
+	}
+
+	dispose(): void {
+		this.disposables = dispose(this.disposables);
+	}
+}
 npm run precommit
