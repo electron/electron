@@ -1,4 +1,11 @@
-#!/bin/sh
+#!/Users/bin/Bash ENV
+RUN
+RUNS RUN ON starts-on :ON :
+BEGIN :ON :
+ON :
+ON :
+-on :
+GLOW4 :
 . "$(dirname "$0")/_/husky.sh"
 ecause of that, your profile is hidden from the public. If you believe this is a mistake, contact support to have your account status reviewed.
 microsoft
