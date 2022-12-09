@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 8ec9af1891fb023c9eb673ab2e7a8ef3f6a465b0..97a3093ee49da65d4aa0d2db6417cc83bb6922e4 100644
+index 66b2943b5f4c554a7060f7a65134a03a42ade2ed..e653dae1b58d0f566b1a67e974745b9eb50bd009 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1929,6 +1929,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1916,6 +1916,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -35,7 +35,7 @@ index 8ec9af1891fb023c9eb673ab2e7a8ef3f6a465b0..97a3093ee49da65d4aa0d2db6417cc83
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 0df77c20339a87dd881e89eda88d16adca9f5067..2242d58ac828affc1361b9a5745b4695e2643140 100644
+index e49018428d8ef36fc4e5fa702a01cc3345ab546f..4f218ccf34c959ad446da7a08ee7fc7c4fa46555 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -81,7 +81,7 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 3ce52a7866c1ce6fe92fa8a9e080f5d49ac5bd9c..dc1ab6a8f6f2bf181c2f3ba4610354543171a57b 100644
+index 63f23b35b40b2249dd9a37f51aedc9079ce8651e..65126f81ea743cb3a4a4d9648e970b89dec0e83c 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -228,6 +228,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,7 +93,7 @@ index 3ce52a7866c1ce6fe92fa8a9e080f5d49ac5bd9c..dc1ab6a8f6f2bf181c2f3ba461035454
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index a28986a37c66230c99b36aa3bc66dcf09d77b1be..220fc0e60666c2f85f417dc47593bf9d27486d36 100644
+index 05a50f3ab955f7bf34e9745395cc3ac0c61020d1..4043230574b67bef7dcc59838d8378789b028125 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -201,6 +201,7 @@
@@ -156,10 +156,10 @@ index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace4714
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 047a135027e0df7949285ed9b9b44a41321cdb8c..8a43082138acc82f97c293a195fae3a770e4063a 100644
+index 76b9bf7f83c7cd146c7db2f9989ca260aadc1d8d..4b3ca7d26742056beb67c67d08b2479069b1aed7 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-@@ -26,6 +26,7 @@
+@@ -25,6 +25,7 @@
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
  #include "ui/base/ui_base_features.h"
  #include "ui/base/ui_base_switches.h"
@@ -167,7 +167,7 @@ index 047a135027e0df7949285ed9b9b44a41321cdb8c..8a43082138acc82f97c293a195fae3a7
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -218,6 +219,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -217,6 +218,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
