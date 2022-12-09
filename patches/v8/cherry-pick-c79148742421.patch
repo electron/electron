@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Fri, 28 Oct 2022 10:21:27 -0700
+Subject: Merged: Reland "[Promise.any] Fix errors allocation"
+
+Bug: chromium:1379054
+
+(cherry picked from commit 8b35091b2d244c975975e1c78e4cd09cb479b5dc)
+
+Change-Id: Iec8f8bb51f4434d6ae86887cf742f2883a9b7bef
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4004804
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.8@{#34}
+Cr-Branched-From: f1bc03fd6b4c201abd9f0fd9d51fb989150f97b9-refs/heads/10.8.168@{#1}
+Cr-Branched-From: 237de893e1c0a0628a57d0f5797483d3add7f005-refs/heads/main@{#83672}
+
+diff --git a/src/builtins/promise-any.tq b/src/builtins/promise-any.tq
+index ffb285a06a83557d8657aef6c04acc5c65513a62..7e707e649f11bc946a6d1173180d7293fe94d8ce 100644
+--- a/src/builtins/promise-any.tq
++++ b/src/builtins/promise-any.tq
+@@ -119,7 +119,19 @@ PromiseAnyRejectElementClosure(
+           kPromiseAnyRejectElementRemainingSlot);
+ 
+   // 9. Set errors[index] to x.
+-  const newCapacity = IntPtrMax(SmiUntag(remainingElementsCount), index + 1);
++
++  // The max computation below is an optimization to avoid excessive allocations
++  // in the case of input promises being asynchronously rejected in ascending
++  // index order.
++  //
++  // Note that subtracting 1 from remainingElementsCount is intentional. The
++  // value of remainingElementsCount is 1 larger than the actual value during
++  // iteration. So in the case of synchronous rejection, newCapacity is the
++  // correct size by subtracting 1. In the case of asynchronous rejection this
++  // is 1 smaller than the correct size, but is not incorrect as it is maxed
++  // with index + 1.
++  const newCapacity =
++      IntPtrMax(SmiUntag(remainingElementsCount) - 1, index + 1);
+   if (newCapacity > errors.length_intptr) deferred {
+       errors = ExtractFixedArray(errors, 0, errors.length_intptr, newCapacity);
+       *ContextSlot(
+@@ -306,6 +318,7 @@ Reject(JSAny) {
+           PromiseAnyRejectElementContextSlots::
+               kPromiseAnyRejectElementErrorsSlot);
+ 
++      check(errors.length == index - 1);
+       const error = ConstructAggregateError(errors);
+       // 3. Return ThrowCompletion(error).
+       goto Reject(error);
+diff --git a/tools/v8heapconst.py b/tools/v8heapconst.py
+index 925c866c9ac5c9377f8ee75a312ce2710eb88f1c..2764c00a5ce1563a30f5927f722b36b91901036c 100644
+--- a/tools/v8heapconst.py
++++ b/tools/v8heapconst.py
+@@ -544,30 +544,30 @@ KNOWN_OBJECTS = {
+   ("old_space", 0x04625): "StringSplitCache",
+   ("old_space", 0x04a2d): "RegExpMultipleCache",
+   ("old_space", 0x04e35): "BuiltinsConstantsTable",
+-  ("old_space", 0x05285): "AsyncFunctionAwaitRejectSharedFun",
+-  ("old_space", 0x052a9): "AsyncFunctionAwaitResolveSharedFun",
+-  ("old_space", 0x052cd): "AsyncGeneratorAwaitRejectSharedFun",
+-  ("old_space", 0x052f1): "AsyncGeneratorAwaitResolveSharedFun",
+-  ("old_space", 0x05315): "AsyncGeneratorYieldResolveSharedFun",
+-  ("old_space", 0x05339): "AsyncGeneratorReturnResolveSharedFun",
+-  ("old_space", 0x0535d): "AsyncGeneratorReturnClosedRejectSharedFun",
+-  ("old_space", 0x05381): "AsyncGeneratorReturnClosedResolveSharedFun",
+-  ("old_space", 0x053a5): "AsyncIteratorValueUnwrapSharedFun",
+-  ("old_space", 0x053c9): "PromiseAllResolveElementSharedFun",
+-  ("old_space", 0x053ed): "PromiseAllSettledResolveElementSharedFun",
+-  ("old_space", 0x05411): "PromiseAllSettledRejectElementSharedFun",
+-  ("old_space", 0x05435): "PromiseAnyRejectElementSharedFun",
+-  ("old_space", 0x05459): "PromiseCapabilityDefaultRejectSharedFun",
+-  ("old_space", 0x0547d): "PromiseCapabilityDefaultResolveSharedFun",
+-  ("old_space", 0x054a1): "PromiseCatchFinallySharedFun",
+-  ("old_space", 0x054c5): "PromiseGetCapabilitiesExecutorSharedFun",
+-  ("old_space", 0x054e9): "PromiseThenFinallySharedFun",
+-  ("old_space", 0x0550d): "PromiseThrowerFinallySharedFun",
+-  ("old_space", 0x05531): "PromiseValueThunkFinallySharedFun",
+-  ("old_space", 0x05555): "ProxyRevokeSharedFun",
+-  ("old_space", 0x05579): "ShadowRealmImportValueFulfilledSFI",
+-  ("old_space", 0x0559d): "SourceTextModuleExecuteAsyncModuleFulfilledSFI",
+-  ("old_space", 0x055c1): "SourceTextModuleExecuteAsyncModuleRejectedSFI",
++  ("old_space", 0x05289): "AsyncFunctionAwaitRejectSharedFun",
++  ("old_space", 0x052ad): "AsyncFunctionAwaitResolveSharedFun",
++  ("old_space", 0x052d1): "AsyncGeneratorAwaitRejectSharedFun",
++  ("old_space", 0x052f5): "AsyncGeneratorAwaitResolveSharedFun",
++  ("old_space", 0x05319): "AsyncGeneratorYieldResolveSharedFun",
++  ("old_space", 0x0533d): "AsyncGeneratorReturnResolveSharedFun",
++  ("old_space", 0x05361): "AsyncGeneratorReturnClosedRejectSharedFun",
++  ("old_space", 0x05385): "AsyncGeneratorReturnClosedResolveSharedFun",
++  ("old_space", 0x053a9): "AsyncIteratorValueUnwrapSharedFun",
++  ("old_space", 0x053cd): "PromiseAllResolveElementSharedFun",
++  ("old_space", 0x053f1): "PromiseAllSettledResolveElementSharedFun",
++  ("old_space", 0x05415): "PromiseAllSettledRejectElementSharedFun",
++  ("old_space", 0x05439): "PromiseAnyRejectElementSharedFun",
++  ("old_space", 0x0545d): "PromiseCapabilityDefaultRejectSharedFun",
++  ("old_space", 0x05481): "PromiseCapabilityDefaultResolveSharedFun",
++  ("old_space", 0x054a5): "PromiseCatchFinallySharedFun",
++  ("old_space", 0x054c9): "PromiseGetCapabilitiesExecutorSharedFun",
++  ("old_space", 0x054ed): "PromiseThenFinallySharedFun",
++  ("old_space", 0x05511): "PromiseThrowerFinallySharedFun",
++  ("old_space", 0x05535): "PromiseValueThunkFinallySharedFun",
++  ("old_space", 0x05559): "ProxyRevokeSharedFun",
++  ("old_space", 0x0557d): "ShadowRealmImportValueFulfilledSFI",
++  ("old_space", 0x055a1): "SourceTextModuleExecuteAsyncModuleFulfilledSFI",
++  ("old_space", 0x055c5): "SourceTextModuleExecuteAsyncModuleRejectedSFI",
+ }
+ 
+ # Lower 32 bits of first page addresses for various heap spaces.
