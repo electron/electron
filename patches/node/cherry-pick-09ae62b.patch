@@ -1,7 +1,7 @@
-From 09ae62b9a869ff19d634b0fd1f5a17f198cd1ae7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Michael Dawson <mdawson@devrus.com>
 Date: Tue, 25 Oct 2022 17:39:41 -0400
-Subject: [PATCH] node-api: handle no support for external buffers
+Subject: node-api: handle no support for external buffers
 
 Refs: https://github.com/electron/electron/issues/35801
 Refs: https://github.com/nodejs/abi-stable-node/issues/441
@@ -19,19 +19,9 @@ Signed-off-by: Michael Dawson <mdawson@devrus.com>
 PR-URL: https://github.com/nodejs/node/pull/45181
 Reviewed-By: Chengzhong Wu <legendecas@gmail.com>
 Reviewed-By: Minwoo Jung <nodecorelab@gmail.com>
----
- doc/api/n-api.md                              | 27 +++++++++++++++++++
- src/js_native_api.h                           |  2 ++
- src/js_native_api_types.h                     |  3 ++-
- src/js_native_api_v8.cc                       |  3 ++-
- src/node_api.cc                               |  4 +++
- src/node_api.h                                |  2 ++
- .../js-native-api/test_general/test_general.c |  5 ++++
- test/node-api/test_general/test_general.c     |  5 ++++
- 8 files changed, 49 insertions(+), 2 deletions(-)
 
 diff --git a/doc/api/n-api.md b/doc/api/n-api.md
-index 3a2b9bceb2ab..b0b89de1c75b 100644
+index 056634cbe6aece0403765cde5150f2b5a7b2486a..d5621bfac8374657b7749325592e4c6259cbae7a 100644
 --- a/doc/api/n-api.md
 +++ b/doc/api/n-api.md
 @@ -579,6 +579,7 @@ typedef enum {
@@ -83,7 +73,7 @@ index 3a2b9bceb2ab..b0b89de1c75b 100644
  backed by the passed in buffer. While this is still a fully-supported data
  structure, in most cases using a `TypedArray` will suffice.
 diff --git a/src/js_native_api.h b/src/js_native_api.h
-index 220d140d4bfe..d11a2c5a18cf 100644
+index 220d140d4bfe9a076c739cdc2b03ea22963aa704..d11a2c5a18cf16ece1c74b735886b5ee0c7ec009 100644
 --- a/src/js_native_api.h
 +++ b/src/js_native_api.h
 @@ -401,6 +401,7 @@ NAPI_EXTERN napi_status NAPI_CDECL napi_create_arraybuffer(napi_env env,
@@ -103,7 +93,7 @@ index 220d140d4bfe..d11a2c5a18cf 100644
      napi_env env, napi_value arraybuffer, void** data, size_t* byte_length);
  NAPI_EXTERN napi_status NAPI_CDECL napi_is_typedarray(napi_env env,
 diff --git a/src/js_native_api_types.h b/src/js_native_api_types.h
-index 376930ba4a32..517614950a90 100644
+index 376930ba4a32206097bc2f20f4c04c9910c231e0..517614950a90f75330e7afeafcc4ed180308c871 100644
 --- a/src/js_native_api_types.h
 +++ b/src/js_native_api_types.h
 @@ -98,7 +98,8 @@ typedef enum {
@@ -117,7 +107,7 @@ index 376930ba4a32..517614950a90 100644
  // Note: when adding a new enum value to `napi_status`, please also update
  //   * `const int last_status` in the definition of `napi_get_last_error_info()'
 diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
-index 58567c5e44a9..9000175d9d86 100644
+index 58567c5e44a9e7442c5dd9f7448c6e5e39a64bae..9000175d9d869a715977bdf6e8314e178ec5bf76 100644
 --- a/src/js_native_api_v8.cc
 +++ b/src/js_native_api_v8.cc
 @@ -746,6 +746,7 @@ static const char* error_messages[] = {
@@ -138,7 +128,7 @@ index 58567c5e44a9..9000175d9d86 100644
    static_assert(NAPI_ARRAYSIZE(error_messages) == last_status + 1,
                  "Count of error messages must match count of error values");
 diff --git a/src/node_api.cc b/src/node_api.cc
-index a37d354eaf0e..15fe8a07f705 100644
+index 48b94a7c12873c9d2b4054bd45d74091404bc65b..15c224dc92768bd8c61d36cf24a6d533b448045b 100644
 --- a/src/node_api.cc
 +++ b/src/node_api.cc
 @@ -950,6 +950,10 @@ napi_status NAPI_CDECL napi_create_external_buffer(napi_env env,
@@ -153,7 +143,7 @@ index a37d354eaf0e..15fe8a07f705 100644
  
    // The finalizer object will delete itself after invoking the callback.
 diff --git a/src/node_api.h b/src/node_api.h
-index 3dc17f31f687..8e6af2cf284e 100644
+index 3dc17f31f68778abb767ae8ea36c3f5b865091a8..8e6af2cf284e851f2c7774600e3b28676ed87a31 100644
 --- a/src/node_api.h
 +++ b/src/node_api.h
 @@ -153,6 +153,7 @@ NAPI_EXTERN napi_status NAPI_CDECL napi_create_buffer(napi_env env,
@@ -173,7 +163,7 @@ index 3dc17f31f687..8e6af2cf284e 100644
                                                             size_t length,
                                                             const void* data,
 diff --git a/test/js-native-api/test_general/test_general.c b/test/js-native-api/test_general/test_general.c
-index 7b755ce9a9f2..b474ab442cb7 100644
+index 7b755ce9a9f202eaf91e5103d6c0204925f99cac..b474ab442cb763cb84ec77901da91a6f1471c946 100644
 --- a/test/js-native-api/test_general/test_general.c
 +++ b/test/js-native-api/test_general/test_general.c
 @@ -1,3 +1,8 @@
@@ -186,7 +176,7 @@ index 7b755ce9a9f2..b474ab442cb7 100644
  #include <stdlib.h>
  #include <stdint.h>
 diff --git a/test/node-api/test_general/test_general.c b/test/node-api/test_general/test_general.c
-index d430e2df4f35..b8d837d5e456 100644
+index d430e2df4f3520fddbc5ce8d260adba565e6c3c9..b8d837d5e45650fcb9ba04030721b0f51377f078 100644
 --- a/test/node-api/test_general/test_general.c
 +++ b/test/node-api/test_general/test_general.c
 @@ -1,4 +1,9 @@
