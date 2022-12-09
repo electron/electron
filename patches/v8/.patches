@@ -10,3 +10,4 @@ revert_fix_cppgc_removed_deleted_cstors_in_cppheapcreateparams.patch
 revert_runtime_dhceck_terminating_exception_in_microtasks.patch
 chore_disable_is_execution_terminating_dcheck.patch
 cherry-pick-27fa951ae4a3.patch
+cherry-pick-c79148742421.patch
