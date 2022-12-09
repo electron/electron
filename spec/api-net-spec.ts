@@ -1989,5 +1989,29 @@ describe('net module', () => {
       const body = await collectStreamBody(await getResponse(r));
       expect(body).to.equal('hello http://foo/');
     });
+
+    it('file: runs through intercept handlers', async () => {
+      protocol.interceptStringProtocol('file', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.uninterceptProtocol('file');
+      });
+      const r = net.request('file://foo');
+      const body = await collectStreamBody(await getResponse(r));
+      expect(body).to.equal('hello file://foo/');
+    });
+
+    it('can be redirected', async () => {
+      protocol.interceptStringProtocol('file', (req, cb) => { cb({ statusCode: 302, headers: { location: 'electron-test://bar' } }); });
+      defer(() => {
+        protocol.uninterceptProtocol('file');
+      });
+      protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.unregisterProtocol('electron-test');
+      });
+      const r = net.request('file://foo');
+      const body = await collectStreamBody(await getResponse(r));
+      expect(body).to.equal('hello electron-test://bar');
+    });
   });
 });

@@ -34,6 +34,10 @@ struct ResourceRequest;
 class SharedURLLoaderFactory;
 }  // namespace network
 
+namespace electron {
+class ElectronBrowserContext;
+}
+
 namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
@@ -55,10 +59,9 @@ class SimpleURLLoaderWrapper
   const char* GetTypeName() override;
 
  private:
-  SimpleURLLoaderWrapper(
-      std::unique_ptr<network::ResourceRequest> request,
-      scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory,
-      int options);
+  SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
+                         std::unique_ptr<network::ResourceRequest> request,
+                         int options);
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,
@@ -101,6 +104,9 @@ class SimpleURLLoaderWrapper
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
           observer) override;
 
+  scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactoryForURL(
+      const GURL& url);
+
   // SimpleURLLoader callbacks
   void OnResponseStarted(const GURL& final_url,
                          const network::mojom::URLResponseHead& response_head);
@@ -114,6 +120,9 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
+  ElectronBrowserContext* browser_context_;
+  int request_options_;
+  std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
