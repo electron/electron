@@ -53,3 +53,4 @@ fix_parallel_test-v8-stats.patch
 fix_expose_the_built-in_electron_module_via_the_esm_loader.patch
 chore_enable_c_17_for_native_modules.patch
 enable_crashpad_linux_node_processes.patch
+cherry-pick-09ae62b.patch
