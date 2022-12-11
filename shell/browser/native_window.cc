@@ -243,7 +243,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
 #if BUILDFLAG(IS_MAC)
   std::string type;
   if (options.Get(options::kVibrancyType, &type)) {
-    SetVibrancy(type, false, 0.0f);
+    SetVibrancy(type, false, 0);
   }
 #endif
   std::string color;

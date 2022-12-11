@@ -1835,11 +1835,12 @@ Adds a window as a tab on this window, after the tab for the window instance.
   the [macOS documentation][vibrancy-docs] for more details.
 * `options` boolean (optional)
   * `animate` boolean (optional) - Whether to animate or not the vibrancy toggle.
-  * `animationDuration` number (optional) - The duration of the animation in milliseconds.
+  * `animationDuration` number (optional) - if nonzero, the change to vibrancy will be animated over the given duration (in milliseconds).
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window. The `animate` parameter only
-animates fading in or fading out the vibrancy effect not between types of vibrancy.
+aanimates fading in or fading out the vibrancy effect. Animating between
+different types of vibrancy is not supported.
 
 Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
 deprecated and will be removed in an upcoming version of macOS.

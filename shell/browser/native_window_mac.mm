@@ -1361,7 +1361,7 @@ void NativeWindowMac::SetVibrancy(const std::string& type,
     vibrancy_type_ = type;
 
     if (animate) {
-      __weak auto weak_delegate = window_delegate_.get();
+      __weak ElectronNSWindowDelegate* weak_delegate = window_delegate_.get();
       [NSAnimationContext
           runAnimationGroup:^(NSAnimationContext* context) {
             context.duration = duration / 1000.0f;
