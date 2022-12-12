@@ -4,11 +4,11 @@ import argparse
 import os
 import sys
 
-from lib.config import LINUX_BINARIES, PLATFORM
-from lib.util import execute, get_out_dir
+from lib.config import PLATFORM
+from lib.util import execute, get_linux_binaries, get_out_dir
 
 def add_debug_link_into_binaries(directory, target_cpu, debug_dir):
-  for binary in LINUX_BINARIES:
+  for binary in get_linux_binaries():
     binary_path = os.path.join(directory, binary)
     if os.path.isfile(binary_path):
       add_debug_link_into_binary(binary_path, target_cpu, debug_dir)
