@@ -1,0 +1,218 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Xiaocheng Hu <xiaochengh@chromium.org>
+Date: Mon, 14 Nov 2022 20:01:38 +0000
+Subject: Do not traverse directory symlinks when uploading folder
+
+Previous patch crrev.com/c/3866767 removed symlink files when uploading
+a folder. However, while the remaining files are themselves not
+symlinks, they may be included as the result of traversing directory
+symlink.
+
+This patch further excludes such files by checking if any parent
+directory is a symlink, all the way until the base directory (which is
+the directory chosen for upload).
+
+(cherry picked from commit 4fa830d8af6b2fb293219edeb39eebccfd322305)
+
+Fixed: 1378997
+Change-Id: I75a92df4cd50f9aba7824955a3de792583bc6154
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3997720
+Reviewed-by: Austin Sullivan <asully@chromium.org>
+Reviewed-by: Mason Freed <masonf@chromium.org>
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Commit-Queue: Xiaocheng Hu <xiaochengh@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1067310}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4025427
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Owners-Override: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5359@{#823}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/content/browser/web_contents/file_chooser_impl.cc b/content/browser/web_contents/file_chooser_impl.cc
+index 1aa19f7a735b444f2c33d5084edcdd14e3c2f5c5..f4fa1afda64bf0606d28d4accaec56e2624133db 100644
+--- a/content/browser/web_contents/file_chooser_impl.cc
++++ b/content/browser/web_contents/file_chooser_impl.cc
+@@ -23,10 +23,24 @@ namespace content {
+ 
+ namespace {
+ 
++// Removes any file that is a symlink or is inside a directory symlink.
++// For |kUploadFolder| mode only. |base_dir| is the folder being uploaded.
+ std::vector<blink::mojom::FileChooserFileInfoPtr> RemoveSymlinks(
+-    std::vector<blink::mojom::FileChooserFileInfoPtr> files) {
++    std::vector<blink::mojom::FileChooserFileInfoPtr> files,
++    base::FilePath base_dir) {
++  DCHECK(!base_dir.empty());
+   auto new_end = base::ranges::remove_if(
+-      files, &base::IsLink,
++      files,
++      [&base_dir](const base::FilePath& file_path) {
++        if (base::IsLink(file_path))
++          return true;
++        for (base::FilePath path = file_path.DirName(); base_dir.IsParent(path);
++             path = path.DirName()) {
++          if (base::IsLink(path))
++            return true;
++        }
++        return false;
++      },
+       [](const auto& file) { return file->get_native_file()->file_path; });
+   files.erase(new_end, files.end());
+   return files;
+@@ -78,7 +92,7 @@ void FileChooserImpl::FileSelectListenerImpl::FileSelected(
+   base::ThreadPool::PostTaskAndReplyWithResult(
+       FROM_HERE,
+       {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
+-      base::BindOnce(&RemoveSymlinks, std::move(files)),
++      base::BindOnce(&RemoveSymlinks, std::move(files), base_dir),
+       base::BindOnce(&FileChooserImpl::FileSelected, owner_->GetWeakPtr(),
+                      base_dir, mode));
+ }
+diff --git a/content/browser/web_contents/file_chooser_impl_browsertest.cc b/content/browser/web_contents/file_chooser_impl_browsertest.cc
+index 2acd2216331bd9be56eb9705f0e9c0d3bceb9e93..d988e221688ee19493e43c0b5f736fa432843cd0 100644
+--- a/content/browser/web_contents/file_chooser_impl_browsertest.cc
++++ b/content/browser/web_contents/file_chooser_impl_browsertest.cc
+@@ -177,8 +177,8 @@ IN_PROC_BROWSER_TEST_F(FileChooserImplBrowserTest, UploadFolderWithSymlink) {
+       return;
+   }
+ 
+-  std::unique_ptr<FileChooserDelegate> delegate(
+-      new FileChooserDelegate({text_file, symlink_file}, base::OnceClosure()));
++  std::unique_ptr<FileChooserDelegate> delegate(new FileChooserDelegate(
++      {text_file, symlink_file}, folder_to_upload, base::OnceClosure()));
+   shell()->web_contents()->SetDelegate(delegate.get());
+   EXPECT_TRUE(ExecJs(shell(),
+                      "(async () => {"
+@@ -195,4 +195,45 @@ IN_PROC_BROWSER_TEST_F(FileChooserImplBrowserTest, UploadFolderWithSymlink) {
+       EvalJs(shell(), "document.getElementById('fileinput').files[0].name;"));
+ }
+ 
++// https://crbug.com/1378997
++IN_PROC_BROWSER_TEST_F(FileChooserImplBrowserTest, UploadFolderWithDirSymlink) {
++  EXPECT_TRUE(NavigateToURL(
++      shell(), GetTestUrl(".", "file_input_webkitdirectory.html")));
++
++  // The folder contains a regular file and a directory symbolic link.
++  // When uploading the folder, the symbolic link should not be followed.
++  base::FilePath dir_test_data;
++  ASSERT_TRUE(base::PathService::Get(DIR_TEST_DATA, &dir_test_data));
++  base::FilePath folder_to_upload = dir_test_data.AppendASCII("file_chooser")
++                                        .AppendASCII("dir_with_dir_symlink");
++
++  base::FilePath foo_file = folder_to_upload.AppendASCII("foo.txt");
++  base::FilePath dir_symlink = folder_to_upload.AppendASCII("symlink");
++  base::FilePath bar_file = dir_symlink.AppendASCII("bar.txt");
++
++  // Skip the test if symbolic links are not supported.
++  {
++    base::ScopedAllowBlockingForTesting allow_blocking;
++    if (!base::IsLink(dir_symlink))
++      return;
++  }
++
++  std::unique_ptr<FileChooserDelegate> delegate(new FileChooserDelegate(
++      {foo_file, bar_file}, folder_to_upload, base::OnceClosure()));
++  shell()->web_contents()->SetDelegate(delegate.get());
++  EXPECT_TRUE(ExecJs(shell(),
++                     "(async () => {"
++                     "  let listener = new Promise("
++                     "      resolve => fileinput.onchange = resolve);"
++                     "  fileinput.click();"
++                     "  await listener;"
++                     "})()"));
++
++  EXPECT_EQ(
++      1, EvalJs(shell(), "document.getElementById('fileinput').files.length;"));
++  EXPECT_EQ(
++      "foo.txt",
++      EvalJs(shell(), "document.getElementById('fileinput').files[0].name;"));
++}
++
+ }  // namespace content
+diff --git a/content/test/content_browser_test_utils_internal.cc b/content/test/content_browser_test_utils_internal.cc
+index dbdf244571956645c6494c4cdab514dd42dbb6c2..70166cf3470595c928b202325f56f17abd0a61ac 100644
+--- a/content/test/content_browser_test_utils_internal.cc
++++ b/content/test/content_browser_test_utils_internal.cc
+@@ -448,12 +448,16 @@ Shell* OpenPopup(const ToRenderFrameHost& opener,
+ }
+ 
+ FileChooserDelegate::FileChooserDelegate(std::vector<base::FilePath> files,
++                                         const base::FilePath& base_dir,
+                                          base::OnceClosure callback)
+-    : files_(std::move(files)), callback_(std::move(callback)) {}
++    : files_(std::move(files)),
++      base_dir_(base_dir),
++      callback_(std::move(callback)) {}
+ 
+ FileChooserDelegate::FileChooserDelegate(const base::FilePath& file,
+                                          base::OnceClosure callback)
+     : FileChooserDelegate(std::vector<base::FilePath>(1, file),
++                          base::FilePath(),
+                           std::move(callback)) {}
+ 
+ FileChooserDelegate::~FileChooserDelegate() = default;
+@@ -462,6 +466,9 @@ void FileChooserDelegate::RunFileChooser(
+     RenderFrameHost* render_frame_host,
+     scoped_refptr<content::FileSelectListener> listener,
+     const blink::mojom::FileChooserParams& params) {
++  // |base_dir_| should be set for and only for |kUploadFolder| mode.
++  DCHECK(base_dir_.empty() ==
++         (params.mode != blink::mojom::FileChooserParams::Mode::kUploadFolder));
+   // Send the selected files to the renderer process.
+   std::vector<blink::mojom::FileChooserFileInfoPtr> files;
+   for (const auto& file : files_) {
+@@ -469,7 +476,7 @@ void FileChooserDelegate::RunFileChooser(
+         blink::mojom::NativeFileInfo::New(file, std::u16string()));
+     files.push_back(std::move(file_info));
+   }
+-  listener->FileSelected(std::move(files), base::FilePath(), params.mode);
++  listener->FileSelected(std::move(files), base_dir_, params.mode);
+ 
+   params_ = params.Clone();
+   if (callback_)
+diff --git a/content/test/content_browser_test_utils_internal.h b/content/test/content_browser_test_utils_internal.h
+index 3bf1bb93e15b0a5270262837802e140ad72a9231..6bd95d55add1c0da850be6078d02c3eae479ea62 100644
+--- a/content/test/content_browser_test_utils_internal.h
++++ b/content/test/content_browser_test_utils_internal.h
+@@ -179,7 +179,10 @@ class FileChooserDelegate : public WebContentsDelegate {
+   // The mocked file dialog will always reply that the user selected |file| or
+   // |files|. |callback| is invoked when RunFileChooser() is called.
+   FileChooserDelegate(const base::FilePath& file, base::OnceClosure callback);
++  // |base_dir| must be set to the folder being uploaded in |kUploadFolder|
++  // mode, and must be empty in all other modes.
+   FileChooserDelegate(std::vector<base::FilePath> files,
++                      const base::FilePath& base_dir,
+                       base::OnceClosure callback);
+   ~FileChooserDelegate() override;
+ 
+@@ -193,6 +196,7 @@ class FileChooserDelegate : public WebContentsDelegate {
+ 
+  private:
+   std::vector<base::FilePath> files_;
++  const base::FilePath base_dir_;
+   base::OnceClosure callback_;
+   blink::mojom::FileChooserParamsPtr params_;
+ };
+diff --git a/content/test/data/file_chooser/dir_with_dir_symlink/foo.txt b/content/test/data/file_chooser/dir_with_dir_symlink/foo.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..257cc5642cb1a054f08cc83f2d943e56fd3ebe99
+--- /dev/null
++++ b/content/test/data/file_chooser/dir_with_dir_symlink/foo.txt
+@@ -0,0 +1 @@
++foo
+diff --git a/content/test/data/file_chooser/dir_with_dir_symlink/symlink b/content/test/data/file_chooser/dir_with_dir_symlink/symlink
+new file mode 120000
+index 0000000000000000000000000000000000000000..10f6d1ab9ba9ede59b719d4ba1581588e172abb6
+--- /dev/null
++++ b/content/test/data/file_chooser/dir_with_dir_symlink/symlink
+@@ -0,0 +1 @@
++../linked_dir/
+\ No newline at end of file
+diff --git a/content/test/data/file_chooser/linked_dir/bar.txt b/content/test/data/file_chooser/linked_dir/bar.txt
+new file mode 100644
+index 0000000000000000000000000000000000000000..5716ca5987cbf97d6bb54920bea6adde242d87e6
+--- /dev/null
++++ b/content/test/data/file_chooser/linked_dir/bar.txt
+@@ -0,0 +1 @@
++bar
