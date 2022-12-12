@@ -296,9 +296,9 @@ void SimpleURLLoaderWrapper::Start() {
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request_->request_body);
-  auto* request_ref = request_.get();
   auto request2 = std::make_unique<network::ResourceRequest>();
   *request2 = *request_;
+  auto* request_ref = request2.get();
   loader_ =
       network::SimpleURLLoader::Create(std::move(request2), kTrafficAnnotation);
   if (request_body) {
