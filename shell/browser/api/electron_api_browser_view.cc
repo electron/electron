@@ -20,6 +20,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
+#include "ui/base/hit_test.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace gin {
@@ -105,16 +106,16 @@ void BrowserView::SetOwnerWindow(BaseWindow* window) {
   if (web_contents())
     web_contents()->SetOwnerWindow(window ? window->window() : nullptr);
 
-  if (owner_window_.get()) {
-    owner_window_->window()->remove_inspectable_view(
-        view_->GetInspectableWebContentsView());
-  }
-
   owner_window_ = window ? window->GetWeakPtr() : nullptr;
+}
 
-  if (owner_window_.get() && view_->GetInspectableWebContentsView())
-    owner_window_->window()->add_inspectable_view(
-        view_->GetInspectableWebContentsView());
+int BrowserView::NonClientHitTest(const gfx::Point& point) {
+  gfx::Rect bounds = GetBounds();
+  gfx::Point local_point(point.x() - bounds.x(), point.y() - bounds.y());
+  SkRegion* region = api_web_contents_->draggable_region();
+  if (region && region->contains(local_point.x(), local_point.y()))
+    return HTCAPTION;
+  return HTNOWHERE;
 }
 
 BrowserView::~BrowserView() {
@@ -128,14 +129,6 @@ void BrowserView::WebContentsDestroyed() {
   api_web_contents_ = nullptr;
   web_contents_.Reset();
   Unpin();
-}
-
-void BrowserView::OnDraggableRegionsUpdated(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  InspectableWebContentsView* iwc_view = view_->GetInspectableWebContentsView();
-  if (!iwc_view)
-    return;
-  iwc_view->UpdateDraggableRegions(regions);
 }
 
 // static

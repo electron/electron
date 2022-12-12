@@ -209,6 +209,9 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   std::string windowType;
   options.Get(options::kType, &windowType);
 
+  bool hiddenInMissionControl = false;
+  options.Get(options::kHiddenInMissionControl, &hiddenInMissionControl);
+
   bool useStandardWindow = true;
   // eventually deprecate separate "standardWindow" option in favor of
   // standard / textured window types
@@ -223,8 +226,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
 
-  // Removing NSWindowStyleMaskTitled removes window title, which removes
-  // rounded corners of window.
+  // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
+  // for frameless window.
   bool rounded_corner = true;
   options.Get(options::kRoundedCorners, &rounded_corner);
   if (!rounded_corner && !has_frame())
@@ -346,6 +349,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   bool disableAutoHideCursor = false;
   options.Get(options::kDisableAutoHideCursor, &disableAutoHideCursor);
   [window_ setDisableAutoHideCursor:disableAutoHideCursor];
+
+  SetHiddenInMissionControl(hiddenInMissionControl);
 
   // Set maximizable state last to ensure zoom button does not get reset
   // by calls to other APIs.
@@ -1056,6 +1061,10 @@ bool NativeWindowMac::HasShadow() {
   return [window_ hasShadow];
 }
 
+void NativeWindowMac::InvalidateShadow() {
+  [window_ invalidateShadow];
+}
+
 void NativeWindowMac::SetOpacity(const double opacity) {
   const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
   [window_ setAlphaValue:boundedOpacity];
@@ -1085,9 +1094,17 @@ bool NativeWindowMac::IsDocumentEdited() {
   return [window_ isDocumentEdited];
 }
 
+bool NativeWindowMac::IsHiddenInMissionControl() {
+  NSUInteger collectionBehavior = [window_ collectionBehavior];
+  return collectionBehavior & NSWindowCollectionBehaviorTransient;
+}
+
+void NativeWindowMac::SetHiddenInMissionControl(bool hidden) {
+  SetCollectionBehavior(hidden, NSWindowCollectionBehaviorTransient);
+}
+
 void NativeWindowMac::SetIgnoreMouseEvents(bool ignore, bool forward) {
   [window_ setIgnoresMouseEvents:ignore];
-
   if (!ignore) {
     SetForwardMouseMessages(NO);
   } else {
@@ -1651,9 +1668,9 @@ class NativeAppWindowFrameViewMac : public views::NativeFrameViewMac {
 
     // Check for possible draggable region in the client area for the frameless
     // window.
-    SkRegion const* draggable_region = native_window_->draggable_region();
-    if (draggable_region && draggable_region->contains(point.x(), point.y()))
-      return HTCAPTION;
+    int contents_hit_test = native_window_->NonClientHitTest(point);
+    if (contents_hit_test != HTNOWHERE)
+      return contents_hit_test;
 
     return HTCLIENT;
   }

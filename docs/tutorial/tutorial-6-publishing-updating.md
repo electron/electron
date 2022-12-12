@@ -78,27 +78,21 @@ Once you have it installed, you need to set it up in your Forge
 configuration. A full list of options is documented in the Forge's
 [`PublisherGitHubConfig`] API docs.
 
-```json title='package.json' {6-16}
-{
-  //...
-  "config": {
-    "forge": {
-      "publishers": [
-        {
-          "name": "@electron-forge/publisher-github",
-          "config": {
-            "repository": {
-              "owner": "github-user-name",
-              "name": "github-repo-name"
-            },
-            "prerelease": false,
-            "draft": true
-          }
-        }
-      ]
-    }
-  }
-  //...
+```js title='forge.config.js'
+module.exports = {
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'github-user-name',
+          name: 'github-repo-name',
+        },
+        prerelease: false,
+        draft: true,
+      },
+    },
+  ],
 }
 ```
 
@@ -233,7 +227,7 @@ rest of our docs and happy developing! If you have questions, please stop by our
 [github actions]: https://github.com/features/actions
 [github publisher]: https://www.electronforge.io/config/publishers/github
 [github releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
-[git tag]: https://git-scm.com/book/en/v2/Git-Basics-Tagging
+[git-tag]: https://git-scm.com/book/en/v2/Git-Basics-Tagging
 [new-pat]: https://github.com/settings/tokens/new
 [publish command]: https://www.electronforge.io/cli#publish
 [publisher]: https://www.electronforge.io/config/publishers

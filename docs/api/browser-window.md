@@ -192,6 +192,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     macOS. Default is `false`.
   * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
     Default is `false`.
+  * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
   * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
   * `title` string (optional) - Default window title. Default is `"Electron"`. If the HTML tag `<title>` is defined in the HTML file loaded by `loadURL()`, this property will be ignored.
   * `icon` ([NativeImage](native-image.md) | string) (optional) - The window icon. On Windows it is
@@ -1255,6 +1256,16 @@ Returns `boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
+#### `win.setHiddenInMissionControl(hidden)` _macOS_
+
+* `hidden` boolean
+
+Sets whether the window will be hidden when the user toggles into mission control.
+
+#### `win.isHiddenInMissionControl()` _macOS_
+
+Returns `boolean` - Whether the window will be hidden when the user toggles into mission control.
+
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` boolean
@@ -1553,6 +1564,13 @@ screen readers
 
 Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
 convey some sort of application status or to passively notify the user.
+
+#### `win.invalidateShadow()` _macOS_
+
+Invalidates the window shadow so that it is recomputed based on the current window shape.
+
+`BrowserWindows` that are transparent can sometimes leave behind visual artifacts on macOS.
+This method can be used to clear these artifacts when, for example, performing an animation.
 
 #### `win.setHasShadow(hasShadow)`
 

@@ -67,9 +67,11 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
@@ -977,7 +979,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ScopedAllowBlockingForElectron allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -985,7 +987,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
       {
-        base::ThreadRestrictions::ScopedAllowIO allow_io;
+        ScopedAllowBlockingForElectron allow_blocking;
         base::PathService::Override(DIR_APP_LOGS, path);
       }
     }
@@ -1803,6 +1805,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getPreferredSystemLanguages", &GetPreferredLanguages)
       .SetMethod("getSystemLocale", &App::GetSystemLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if BUILDFLAG(USE_NSS_CERTS)
@@ -1824,7 +1827,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("getGPUInfo", &App::GetGPUInfo)
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif

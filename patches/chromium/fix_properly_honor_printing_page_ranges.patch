@@ -62,7 +62,7 @@ index 9dd650de9a9a372eba11854aa48695d5bdbff8aa..561ac4a781432a974ec6e5d131859863
    PMPrintSettings print_settings =
        static_cast<PMPrintSettings>([print_info_.get() PMPrintSettings]);
 diff --git a/printing/printing_context_system_dialog_win.cc b/printing/printing_context_system_dialog_win.cc
-index 07f495636151c5ad7399bf2bd810e0732b06e24e..ddd5c57d05ec4f298a028ac15656f4d90583f03c 100644
+index 07847521e7217c78480205812a73cc89503c00d2..586e866ca7ec0eb0b573d23e3bd95792c22bff20 100644
 --- a/printing/printing_context_system_dialog_win.cc
 +++ b/printing/printing_context_system_dialog_win.cc
 @@ -75,14 +75,28 @@ void PrintingContextSystemDialogWin::AskUserForSettings(
@@ -100,10 +100,10 @@ index 07f495636151c5ad7399bf2bd810e0732b06e24e..ddd5c57d05ec4f298a028ac15656f4d9
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 98985bc4c291212604e5b6cfe7fce0d27c698675..f46202bfa500ac282f2e4ba1c3237f6d4e48184a 100644
+index 5f6ee7ded85f4e7a0de03c080d950acdc6a43162..da2f2d5a526c0aec6f6cd7a18da26571709f1329 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
-@@ -245,6 +245,24 @@ void PrintDialogGtk::UpdateSettings(
+@@ -247,6 +247,24 @@ void PrintDialogGtk::UpdateSettings(
  
    gtk_print_settings_set_n_copies(gtk_settings_, settings->copies());
    gtk_print_settings_set_collate(gtk_settings_, settings->collate());

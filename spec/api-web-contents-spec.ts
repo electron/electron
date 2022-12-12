@@ -362,6 +362,12 @@ describe('webContents module', () => {
       await expect(w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))).to.eventually.be.fulfilled();
     });
 
+    it('resolves when navigating within the page', async () => {
+      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await new Promise(resolve => setTimeout(resolve));
+      await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
+    });
+
     it('rejects when failing to load a file URL', async () => {
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_FILE_NOT_FOUND');
@@ -1659,9 +1665,7 @@ describe('webContents module', () => {
       });
     });
 
-    // TODO(jeremy): window.open() in a real browser passes the referrer, but
-    // our hacked-up window.open() shim doesn't. It should.
-    xit('propagates referrer information to windows opened with window.open', (done) => {
+    it('propagates referrer information to windows opened with window.open', (done) => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
         if (req.url === '/should_have_referrer') {
@@ -1679,7 +1683,7 @@ describe('webContents module', () => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.setWindowOpenHandler(details => {
             expect(details.referrer.url).to.equal(url);
-            expect(details.referrer.policy).to.equal('no-referrer-when-downgrade');
+            expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
             return { action: 'allow' };
           });
           w.webContents.executeJavaScript('window.open(location.href + "should_have_referrer")');

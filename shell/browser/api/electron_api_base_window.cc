@@ -639,6 +639,10 @@ std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
+void BaseWindow::InvalidateShadow() {
+  window_->InvalidateShadow();
+}
+
 void BaseWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
@@ -766,6 +770,7 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
     }
 
     window_->AddBrowserView(browser_view->view());
+    window_->AddDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(this);
     browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
   }
@@ -775,6 +780,7 @@ void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
   auto iter = browser_views_.find(browser_view->ID());
   if (iter != browser_views_.end()) {
     window_->RemoveBrowserView(browser_view->view());
+    window_->RemoveDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(nullptr);
     iter->second.Reset();
     browser_views_.erase(iter);
@@ -878,6 +884,16 @@ void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
 gfx::Point BaseWindow::GetTrafficLightPosition() const {
   // For backward compatibility we treat default value as (0, 0).
   return window_->GetTrafficLightPosition().value_or(gfx::Point());
+}
+#endif
+
+#if BUILDFLAG(IS_MAC)
+bool BaseWindow::IsHiddenInMissionControl() {
+  return window_->IsHiddenInMissionControl();
+}
+
+void BaseWindow::SetHiddenInMissionControl(bool hidden) {
+  window_->SetHiddenInMissionControl(hidden);
 }
 #endif
 
@@ -1114,6 +1130,7 @@ void BaseWindow::ResetBrowserViews() {
       DCHECK_EQ(owner_window, this);
       browser_view->SetOwnerWindow(nullptr);
       window_->RemoveBrowserView(browser_view->view());
+      window_->RemoveDraggableRegionProvider(browser_view.get());
       browser_view->SetOwnerWindow(nullptr);
     }
 
@@ -1246,6 +1263,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if BUILDFLAG(IS_MAC)
+      .SetMethod("invalidateShadow", &BaseWindow::InvalidateShadow)
       .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
@@ -1256,6 +1274,14 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getTrafficLightPosition",
                  &BaseWindow::GetTrafficLightPosition)
 #endif
+
+#if BUILDFLAG(IS_MAC)
+      .SetMethod("isHiddenInMissionControl",
+                 &BaseWindow::IsHiddenInMissionControl)
+      .SetMethod("setHiddenInMissionControl",
+                 &BaseWindow::SetHiddenInMissionControl)
+#endif
+
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)

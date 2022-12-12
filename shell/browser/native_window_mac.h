@@ -94,6 +94,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsKiosk() override;
   void SetBackgroundColor(SkColor color) override;
   SkColor GetBackgroundColor() override;
+  void InvalidateShadow() override;
   void SetHasShadow(bool has_shadow) override;
   bool HasShadow() override;
   void SetOpacity(const double opacity) override;
@@ -103,6 +104,8 @@ class NativeWindowMac : public NativeWindow,
   void SetDocumentEdited(bool edited) override;
   bool IsDocumentEdited() override;
   void SetIgnoreMouseEvents(bool ignore, bool forward) override;
+  bool IsHiddenInMissionControl() override;
+  void SetHiddenInMissionControl(bool hidden) override;
   void SetContentProtection(bool enable) override;
   void SetFocusable(bool focusable) override;
   bool IsFocusable() override;

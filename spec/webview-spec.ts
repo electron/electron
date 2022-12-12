@@ -1957,36 +1957,6 @@ describe('<webview> tag', function () {
         ['with sandbox', true] as const
       ]) {
         describe(description, () => {
-          it('emits resize events', async () => {
-            await loadWebViewAndWaitForEvent(w, {
-              src: `file://${fixtures}/pages/a.html`,
-              webpreferences: `sandbox=${sandbox ? 'yes' : 'no'}`
-            }, 'dom-ready');
-
-            const firstResizeSignal = w.executeJavaScript(`new Promise((resolve, reject) => {
-              webview.addEventListener('resize', (e) => resolve({...e}), {once: true})
-            })`);
-
-            const insertedCSS = await w.insertCSS('webview { width: 100px; height: 10px; }');
-
-            const firstResizeEvent = await firstResizeSignal;
-            expect(firstResizeEvent.newWidth).to.equal(100);
-            expect(firstResizeEvent.newHeight).to.equal(10);
-
-            await w.removeInsertedCSS(insertedCSS);
-
-            const secondResizeSignal = w.executeJavaScript(`new Promise((resolve, reject) => {
-              webview.addEventListener('resize', (e) => resolve({...e}), {once: true})
-            })`);
-
-            const newWidth = 1234;
-            const newHeight = 789;
-            await w.insertCSS(`webview { width: ${newWidth}px; height: ${newHeight}px; }`);
-            const secondResizeEvent = await secondResizeSignal;
-            expect(secondResizeEvent.newWidth).to.equal(newWidth);
-            expect(secondResizeEvent.newHeight).to.equal(newHeight);
-          });
-
           it('emits focus event', async () => {
             await loadWebViewAndWaitForEvent(w, {
               src: `file://${fixtures}/pages/a.html`,

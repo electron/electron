@@ -99,7 +99,7 @@ base::Value::Dict BuildTargetDescriptor(
   target_data.Set(kPidField, static_cast<int>(base::GetProcId(handle)));
   target_data.Set(kFaviconUrlField, favicon_url.spec());
   target_data.Set(kAccessibilityModeField,
-                  static_cast<int>(accessibility_mode.mode()));
+                  static_cast<int>(accessibility_mode.flags()));
   target_data.Set(kTypeField, kPage);
   return target_data;
 }
@@ -297,7 +297,8 @@ void HandleAccessibilityRequestCallback(
   std::string json_string;
   base::JSONWriter::Write(base::Value(std::move(data)), &json_string);
 
-  std::move(callback).Run(base::RefCountedString::TakeString(&json_string));
+  std::move(callback).Run(
+      base::MakeRefCounted<base::RefCountedString>(std::move(json_string)));
 }
 
 }  // namespace

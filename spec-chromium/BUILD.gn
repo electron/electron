@@ -47,7 +47,7 @@ group("chromium_unittests") {
     "//v8/test/unittests:unittests",
   ]
 
-  if (enable_basic_printing) {
+  if (enable_printing) {
     deps += [ "//printing:printing_unittests" ]
   }
 

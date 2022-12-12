@@ -83,7 +83,6 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
-#include "shell/browser/electron_quota_permission_context.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
 #include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
@@ -112,6 +111,7 @@
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -192,7 +192,6 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/views/overlay/document_overlay_window_views.h"
 #include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
@@ -466,7 +465,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     int process_id) {
   // Make sure we're about to launch a known executable
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForElectron allow_blocking;
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
@@ -603,11 +602,6 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
   return api_key;
 }
 
-scoped_refptr<content::QuotaPermissionContext>
-ElectronBrowserClient::CreateQuotaPermissionContext() {
-  return base::MakeRefCounted<ElectronQuotaPermissionContext>();
-}
-
 content::GeneratedCodeCacheSettings
 ElectronBrowserClient::GetGeneratedCodeCacheSettings(
     content::BrowserContext* context) {
@@ -700,24 +694,6 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
         static_cast<VideoOverlayWindowViews*>(overlay_window.get());
-    ui::win::SetAppIdForWindow(app_user_model_id,
-                               overlay_window_view->GetNativeWindow()
-                                   ->GetHost()
-                                   ->GetAcceleratedWidget());
-  }
-#endif
-  return overlay_window;
-}
-
-std::unique_ptr<content::DocumentOverlayWindow>
-ElectronBrowserClient::CreateWindowForDocumentPictureInPicture(
-    content::DocumentPictureInPictureWindowController* controller) {
-  auto overlay_window = content::DocumentOverlayWindow::Create(controller);
-#if BUILDFLAG(IS_WIN)
-  std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
-  if (!app_user_model_id.empty()) {
-    auto* overlay_window_view =
-        static_cast<DocumentOverlayWindowViews*>(overlay_window.get());
     ui::win::SetAppIdForWindow(app_user_model_id,
                                overlay_window_view->GetNativeWindow()
                                    ->GetHost()
@@ -1737,6 +1713,12 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   if (!bluetooth_delegate_)
     bluetooth_delegate_ = std::make_unique<ElectronBluetoothDelegate>();
   return bluetooth_delegate_.get();
+}
+
+content::UsbDelegate* ElectronBrowserClient::GetUsbDelegate() {
+  if (!usb_delegate_)
+    usb_delegate_ = std::make_unique<ElectronUsbDelegate>();
+  return usb_delegate_.get();
 }
 
 void BindBadgeServiceForServiceWorker(

@@ -156,6 +156,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsTabletMode() const;
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor(gin_helper::Arguments* args);
+  void InvalidateShadow();
   void SetHasShadow(bool has_shadow);
   bool HasShadow();
   void SetOpacity(const double opacity);
@@ -196,6 +197,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
+#endif
+
+#if BUILDFLAG(IS_MAC)
+  bool IsHiddenInMissionControl();
+  void SetHiddenInMissionControl(bool hidden);
 #endif
 
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);

@@ -23,3 +23,14 @@ jobs:
             This issue has been closed due to inactivity, and will not be monitored.  If this is a bug and you can reproduce this issue on a [supported version of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline) please open a new issue and include instructions for reproducing the issue.
           exempt-issue-labels: "discussion,security \U0001F512,enhancement :sparkles:"
           only-pr-labels: not-a-real-label
+  pending-repro:
+    steps:
+      - uses: actions/stale@3de2653986ebd134983c79fe2be5d45cc3d9f4e1
+        with:
+          days-before-stale: -1
+          days-before-close: 10
+          stale-issue-label: blocked/need-repro
+          stale-pr-label: not-a-real-label
+          operations-per-run: 1750
+          close-issue-message: >
+            Unfortunately, without a way to reproduce this issue, we're unable to continue investigation. This issue has been closed and will not be monitored further. If you're able to provide a minimal test case that reproduces this issue on a [supported version of Electron](https://www.electronjs.org/docs/latest/tutorial/electron-timelines#timeline) please open a new issue and include instructions for reproducing the issue.

@@ -43,7 +43,6 @@
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
-#include "content/public/browser/plugin_service.h"
 #include "content/public/common/content_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ppapi/shared_impl/ppapi_switches.h"  // nogncheck crbug.com/1125897
@@ -121,20 +120,6 @@ void ComputeBuiltInPlugins(std::vector<content::ContentPluginInfo>* plugins) {
                                            "Portable Document Format");
   pdf_info.mime_types.push_back(pdf_mime_type);
   plugins->push_back(pdf_info);
-
-  // NB. in Chrome, this plugin isn't registered until the PDF extension is
-  // loaded. However, in Electron, we load the PDF extension unconditionally
-  // when it is enabled in the build, so we're OK to load the plugin eagerly
-  // here.
-  content::WebPluginInfo info;
-  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  info.name = base::ASCIIToUTF16(kPDFExtensionPluginName);
-  // This isn't a real file path; it's just used as a unique identifier.
-  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
-  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-  info.mime_types.emplace_back(kPDFMimeType, "pdf", "Portable Document Format");
-  content::PluginService::GetInstance()->RefreshPlugins();
-  content::PluginService::GetInstance()->RegisterInternalPlugin(info, true);
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 #endif  // BUILDFLAG(ENABLE_PLUGINS)

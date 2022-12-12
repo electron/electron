@@ -21,6 +21,7 @@
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
+#include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -174,7 +175,11 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   int max_width = max_size.width() > 0 ? max_size.width() : INT_MAX;
   int max_height = max_size.height() > 0 ? max_size.height() : INT_MAX;
   bool have_max_width = options.Get(options::kMaxWidth, &max_width);
+  if (have_max_width && max_width <= 0)
+    max_width = INT_MAX;
   bool have_max_height = options.Get(options::kMaxHeight, &max_height);
+  if (have_max_height && max_height <= 0)
+    max_height = INT_MAX;
 
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
@@ -415,6 +420,8 @@ void NativeWindow::SetMenu(ElectronMenuModel* menu) {}
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
+
+void NativeWindow::InvalidateShadow() {}
 
 void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
@@ -685,9 +692,28 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 }
 #endif
 
-void NativeWindow::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
+int NativeWindow::NonClientHitTest(const gfx::Point& point) {
+  for (auto* provider : draggable_region_providers_) {
+    int hit = provider->NonClientHitTest(point);
+    if (hit != HTNOWHERE)
+      return hit;
+  }
+  return HTNOWHERE;
+}
+
+void NativeWindow::AddDraggableRegionProvider(
+    DraggableRegionProvider* provider) {
+  if (std::find(draggable_region_providers_.begin(),
+                draggable_region_providers_.end(),
+                provider) == draggable_region_providers_.end()) {
+    draggable_region_providers_.push_back(provider);
+  }
+}
+
+void NativeWindow::RemoveDraggableRegionProvider(
+    DraggableRegionProvider* provider) {
+  draggable_region_providers_.remove_if(
+      [&provider](DraggableRegionProvider* p) { return p == provider; });
 }
 
 views::Widget* NativeWindow::GetWidget() {

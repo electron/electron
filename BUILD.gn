@@ -107,6 +107,14 @@ branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
+electron_version = exec_script("script/print-version.py",
+                               [],
+                               "trim string",
+                               [
+                                 ".git/packed-refs",
+                                 ".git/HEAD",
+                                 "script/lib/get-version.js",
+                               ])
 
 if (is_mas_build) {
   assert(is_mac,
@@ -313,12 +321,9 @@ npm_action("electron_version_args") {
 
   outputs = [ "$target_gen_dir/electron_version.args" ]
 
-  args = rebase_path(outputs)
+  args = rebase_path(outputs) + [ "$electron_version" ]
 
-  inputs = [
-    "ELECTRON_VERSION",
-    "script/generate-version-json.js",
-  ]
+  inputs = [ "script/generate-version-json.js" ]
 }
 
 templated_file("electron_version_header") {
@@ -328,6 +333,39 @@ templated_file("electron_version_header") {
   output = "$target_gen_dir/electron_version.h"
 
   args_files = get_target_outputs(":electron_version_args")
+}
+
+templated_file("electron_win_rc") {
+  deps = [ ":electron_version_args" ]
+
+  template = "build/templates/electron_rc.tmpl"
+  output = "$target_gen_dir/win-resources/electron.rc"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
+copy("electron_win_resource_files") {
+  sources = [
+    "shell/browser/resources/win/electron.ico",
+    "shell/browser/resources/win/resource.h",
+  ]
+  outputs = [ "$target_gen_dir/win-resources/{{source_file_part}}" ]
+}
+
+templated_file("electron_version_file") {
+  deps = [ ":electron_version_args" ]
+
+  template = "build/templates/version_string.tmpl"
+  output = "$root_build_dir/version"
+
+  args_files = get_target_outputs(":electron_version_args")
+}
+
+group("electron_win32_resources") {
+  public_deps = [
+    ":electron_win_rc",
+    ":electron_win_resource_files",
+  ]
 }
 
 action("electron_fuses") {
@@ -474,6 +512,8 @@ source_set("electron_lib") {
     ]
   }
 
+  configs += [ "//electron/build/config:mas_build" ]
+
   sources = filenames.lib_sources
   if (is_win) {
     sources += filenames.lib_sources_win
@@ -535,7 +575,6 @@ source_set("electron_lib") {
     if (is_mas_build) {
       sources += [ "shell/browser/api/electron_api_app_mas.mm" ]
       sources -= [ "shell/browser/auto_updater_mac.mm" ]
-      defines += [ "MAS_BUILD" ]
       sources -= [
         "shell/app/electron_crash_reporter_client.cc",
         "shell/app/electron_crash_reporter_client.h",
@@ -593,16 +632,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/certificate_manager_model.cc",
       "shell/browser/certificate_manager_model.h",
-      "shell/browser/ui/gtk/app_indicator_icon.cc",
-      "shell/browser/ui/gtk/app_indicator_icon.h",
-      "shell/browser/ui/gtk/app_indicator_icon_menu.cc",
-      "shell/browser/ui/gtk/app_indicator_icon_menu.h",
-      "shell/browser/ui/gtk/gtk_status_icon.cc",
-      "shell/browser/ui/gtk/gtk_status_icon.h",
       "shell/browser/ui/gtk/menu_util.cc",
       "shell/browser/ui/gtk/menu_util.h",
-      "shell/browser/ui/gtk/status_icon.cc",
-      "shell/browser/ui/gtk/status_icon.h",
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",
     ]
@@ -625,6 +656,10 @@ source_set("electron_lib") {
   if (enable_plugins) {
     deps += [ "chromium_src:plugins" ]
     sources += [
+      "shell/common/plugin_info.cc",
+      "shell/common/plugin_info.h",
+      "shell/renderer/electron_renderer_pepper_host_factory.cc",
+      "shell/renderer/electron_renderer_pepper_host_factory.h",
       "shell/renderer/pepper_helper.cc",
       "shell/renderer/pepper_helper.h",
     ]
@@ -685,7 +720,7 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_basic_printing) {
+  if (enable_printing) {
     sources += [
       "shell/browser/printing/print_view_manager_electron.cc",
       "shell/browser/printing/print_view_manager_electron.h",
@@ -711,7 +746,7 @@ source_set("electron_lib") {
       "//components/update_client:update_client",
       "//components/zoom",
       "//extensions/browser",
-      "//extensions/browser:core_api_provider",
+      "//extensions/browser/api:api_provider",
       "//extensions/browser/updater",
       "//extensions/common",
       "//extensions/common:core_api_provider",
@@ -763,7 +798,6 @@ if (is_mac) {
   electron_helper_name = "$electron_product_name Helper"
   electron_login_helper_name = "$electron_product_name Login Helper"
   electron_framework_version = "A"
-  electron_version = read_file("ELECTRON_VERSION", "trim string")
 
   mac_xib_bundle_data("electron_xibs") {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
@@ -936,6 +970,7 @@ if (is_mac) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
+      extra_configs = [ "//electron/build/config:mas_build" ]
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
@@ -1106,6 +1141,7 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
+    extra_configs = [ "//electron/build/config:mas_build" ]
   }
 
   if (enable_dsyms) {
@@ -1204,6 +1240,7 @@ if (is_mac) {
       ":default_app_asar",
       ":electron_app_manifest",
       ":electron_lib",
+      ":electron_win32_resources",
       ":packed_resources",
       "//components/crash/core/app",
       "//content:sandbox_helper_win",
@@ -1237,8 +1274,7 @@ if (is_mac) {
 
     if (is_win) {
       sources += [
-        # TODO: we should be generating our .rc files more like how chrome does
-        "shell/browser/resources/win/electron.rc",
+        "$target_gen_dir/win-resources/electron.rc",
         "shell/browser/resources/win/resource.h",
       ]
 
@@ -1420,15 +1456,10 @@ group("licenses") {
   ]
 }
 
-copy("electron_version") {
-  sources = [ "ELECTRON_VERSION" ]
-  outputs = [ "$root_build_dir/version" ]
-}
-
 dist_zip("electron_dist_zip") {
   data_deps = [
     ":electron_app",
-    ":electron_version",
+    ":electron_version_file",
     ":licenses",
   ]
   if (is_linux) {
@@ -1446,7 +1477,7 @@ dist_zip("electron_ffmpeg_zip") {
 
 electron_chromedriver_deps = [
   ":licenses",
-  "//chrome/test/chromedriver",
+  "//chrome/test/chromedriver:chromedriver_server",
   "//electron/buildflags",
 ]
 
