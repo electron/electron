@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 #define ELECTRON_SHELL_BROWSER_PROTOCOL_REGISTRY_H_
 
-#include <list>
-#include <map>
 #include <string>
 
 #include "content/public/browser/content_browser_client.h"
@@ -33,10 +31,6 @@ class ProtocolRegistry {
 
   const HandlersMap& intercept_handlers() const { return intercept_handlers_; }
   const HandlersMap& handlers() const { return handlers_; }
-  const std::map<std::string, std::list<ProtocolHandler>>& generic_handlers()
-      const {
-    return generic_handlers_;
-  }
 
   bool RegisterProtocol(ProtocolType type,
                         const std::string& scheme,
@@ -50,9 +44,6 @@ class ProtocolRegistry {
   bool UninterceptProtocol(const std::string& scheme);
   bool IsProtocolIntercepted(const std::string& scheme);
 
-  void HandleProtocol(const std::string& scheme,
-                      const ProtocolHandler& handler);
-
  private:
   friend class ElectronBrowserContext;
 
@@ -60,7 +51,6 @@ class ProtocolRegistry {
 
   HandlersMap handlers_;
   HandlersMap intercept_handlers_;
-  std::map<std::string, std::list<ProtocolHandler>> generic_handlers_;
 };
 
 }  // namespace electron

@@ -12,7 +12,6 @@
 #include <string>
 #include <vector>
 
-#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_frame_host.h"
@@ -32,7 +31,6 @@
 #include "services/network/url_loader_factory.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
 #include "shell/browser/net/web_request_api_interface.h"
-#include "shell/browser/protocol_registry.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "url/gurl.h"
 
@@ -193,7 +191,7 @@ class ProxyingURLLoaderFactory
 
   ProxyingURLLoaderFactory(
       WebRequestAPI* web_request_api,
-      ProtocolRegistry* protocol_registry,
+      const HandlersMap& intercepted_handlers,
       int render_process_id,
       int frame_routing_id,
       uint64_t* request_id_generator,
@@ -249,7 +247,14 @@ class ProxyingURLLoaderFactory
   // Passed from api::WebRequest.
   WebRequestAPI* web_request_api_;
 
-  raw_ptr<ProtocolRegistry> protocol_registry_;  // weak
+  // This is passed from api::Protocol.
+  //
+  // The Protocol instance lives through the lifetime of BrowserContext,
+  // which is guaranteed to cover the lifetime of URLLoaderFactory, so the
+  // reference is guaranteed to be valid.
+  //
+  // In this way we can avoid using code from api namespace in this file.
+  const HandlersMap& intercepted_handlers_;
 
   const int render_process_id_;
   const int frame_routing_id_;

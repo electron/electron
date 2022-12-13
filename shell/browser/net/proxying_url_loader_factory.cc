@@ -745,7 +745,7 @@ void ProxyingURLLoaderFactory::InProgressRequest::OnRequestError(
 
 ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
     WebRequestAPI* web_request_api,
-    ProtocolRegistry* protocol_registry,
+    const HandlersMap& intercepted_handlers,
     int render_process_id,
     int frame_routing_id,
     uint64_t* request_id_generator,
@@ -757,7 +757,7 @@ ProxyingURLLoaderFactory::ProxyingURLLoaderFactory(
         header_client_receiver,
     content::ContentBrowserClient::URLLoaderFactoryType loader_factory_type)
     : web_request_api_(web_request_api),
-      protocol_registry_(protocol_registry),
+      intercepted_handlers_(intercepted_handlers),
       render_process_id_(render_process_id),
       frame_routing_id_(frame_routing_id),
       request_id_generator_(request_id_generator),
@@ -806,8 +806,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   }
 
   // Check if user has intercepted this scheme.
-  auto it = protocol_registry_->intercept_handlers().find(request.url.scheme());
-  if (it != protocol_registry_->intercept_handlers().end()) {
+  auto it = intercepted_handlers_.find(request.url.scheme());
+  if (it != intercepted_handlers_.end()) {
     mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
     this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
 
@@ -818,22 +818,6 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
                                 std::move(client), traffic_annotation,
                                 std::move(loader_remote), it->second.first));
     return;
-  }
-  auto it2 = protocol_registry_->generic_handlers().find(request.url.scheme());
-  if (it2 != protocol_registry_->generic_handlers().end()) {
-    const std::list<ProtocolHandler>& handlers = it2->second;
-    if (!handlers.empty()) {
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
-      this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
-
-      handlers.front().Run(
-          request,
-          base::BindOnce(&ElectronURLLoaderFactory::StartLoading,
-                         std::move(loader), request_id, options, request,
-                         std::move(client), traffic_annotation,
-                         std::move(loader_remote), ProtocolType::kFree));
-      return;
-    }
   }
 
   // The loader of ServiceWorker forbids loading scripts from file:// URLs, and

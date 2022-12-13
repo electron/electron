@@ -265,11 +265,6 @@ void Protocol::HandleOptionalCallback(gin::Arguments* args,
   }
 }
 
-void Protocol::HandleProtocol(const std::string& scheme,
-                              ProtocolHandler handler) {
-  protocol_registry_->HandleProtocol(scheme, handler);
-}
-
 // static
 gin::Handle<Protocol> Protocol::Create(
     v8::Isolate* isolate,
@@ -309,8 +304,7 @@ gin::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
       .SetMethod("interceptProtocol",
                  &Protocol::InterceptProtocolFor<ProtocolType::kFree>)
       .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
-      .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted)
-      .SetMethod("handle", &Protocol::HandleProtocol);
+      .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted);
 }
 
 const char* Protocol::GetTypeName() {
