@@ -4,6 +4,7 @@
 
 #include "shell/browser/net/electron_url_loader_factory.h"
 
+#include <list>
 #include <memory>
 #include <string>
 #include <utility>
@@ -466,10 +467,10 @@ void ElectronURLLoaderFactory::StartLoading(
       if (data->IsArrayBufferView()) {
         StartLoadingBuffer(std::move(client), std::move(head),
                            data.As<v8::ArrayBufferView>());
-      } else if (data->IsString())
+      } else if (data->IsString()) {
         SendContents(std::move(client), std::move(head),
                      gin::V8ToString(args->isolate(), data));
-      else if (LooksLikeStream(args->isolate(), data)) {
+      } else if (LooksLikeStream(args->isolate(), data)) {
         StartLoadingStream(std::move(client), std::move(loader),
                            std::move(head), dict);
       } else if (!dict.IsEmpty()) {
