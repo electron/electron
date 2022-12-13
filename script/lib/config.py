@@ -13,16 +13,6 @@ PLATFORM = {
   'win32': 'win32',
 }[sys.platform]
 
-LINUX_BINARIES = [
-  'chrome-sandbox',
-  'chrome_crashpad_handler',
-  'electron',
-  'libEGL.so',
-  'libGLESv2.so',
-  'libffmpeg.so',
-  'libvk_swiftshader.so',
-]
-
 verbose_mode = False
 
 
