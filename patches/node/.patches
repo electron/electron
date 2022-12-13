@@ -47,3 +47,4 @@ build_ensure_native_module_compilation_fails_if_not_using_a_new.patch
 buffer_fix_atob_input_validation.patch
 fix_expose_the_built-in_electron_module_via_the_esm_loader.patch
 chore_enable_c_17_for_native_modules.patch
+cherry-pick-09ae62b.patch
