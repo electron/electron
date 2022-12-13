@@ -2094,6 +2094,16 @@ describe('net module', () => {
       await emittedOnce(urlRequest, 'abort');
     });
 
+    it('blocks redirect to file: by default', async () => {
+      const helloUrl = url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString();
+      protocol.interceptStringProtocol('http', (req, cb) => {
+        cb({ statusCode: 302, headers: { location: helloUrl } });
+      });
+      const r = net.request('http://foo');
+      const body = await collectStreamBody(await getResponse(r));
+      expect(body).to.equal('hello electron-test://bar');
+    });
+
     it('a 307 redirected POST request preserves the body', async () => {
       const bodyData = 'Hello World!';
       let postedBodyData: any;

@@ -273,9 +273,17 @@ gin::Handle<Protocol> Protocol::Create(
       isolate, new Protocol(isolate, browser_context->protocol_registry()));
 }
 
-gin::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin::Wrappable<Protocol>::GetObjectTemplateBuilder(isolate)
+// static
+gin::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
+  thrower.ThrowError("Protocol cannot be created from JS");
+  return gin::Handle<Protocol>();
+}
+
+// static
+v8::Local<v8::ObjectTemplate> Protocol::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> tmpl) {
+  return gin::ObjectTemplateBuilder(isolate, "Protocol", tmpl)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
@@ -304,7 +312,8 @@ gin::ObjectTemplateBuilder Protocol::GetObjectTemplateBuilder(
       .SetMethod("interceptProtocol",
                  &Protocol::InterceptProtocolFor<ProtocolType::kFree>)
       .SetMethod("uninterceptProtocol", &Protocol::UninterceptProtocol)
-      .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted);
+      .SetMethod("isProtocolIntercepted", &Protocol::IsProtocolIntercepted)
+      .Build();
 }
 
 const char* Protocol::GetTypeName() {
@@ -333,6 +342,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("Protocol", electron::api::Protocol::GetConstructor(context));
   dict.SetMethod("registerSchemesAsPrivileged", &RegisterSchemesAsPrivileged);
   dict.SetMethod("getStandardSchemes", &electron::api::GetStandardSchemes);
 }
