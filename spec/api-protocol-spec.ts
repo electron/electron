@@ -74,7 +74,7 @@ describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(() => { contents = (webContents as any).create({ sandbox: true }); });
-  after(() => (contents as any).destroy());
+  after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
     // Note that we need to do navigation every time after a protocol is
@@ -964,7 +964,7 @@ describe('protocol module', () => {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
         setTimeout(() => {
-          (newContents as any).destroy();
+          newContents.destroy();
         });
       }
     }
@@ -1062,7 +1062,7 @@ describe('protocol module', () => {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
         setTimeout(() => {
-          (newContents as any).destroy();
+          newContents.destroy();
         });
       }
     }
