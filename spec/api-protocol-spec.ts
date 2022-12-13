@@ -19,7 +19,6 @@ const fixturesPath = path.resolve(__dirname, 'fixtures');
 const registerStringProtocol = protocol.registerStringProtocol;
 const registerBufferProtocol = protocol.registerBufferProtocol;
 const registerFileProtocol = protocol.registerFileProtocol;
-const registerHttpProtocol = protocol.registerHttpProtocol;
 const registerStreamProtocol = protocol.registerStreamProtocol;
 const interceptStringProtocol = protocol.interceptStringProtocol;
 const interceptBufferProtocol = protocol.interceptBufferProtocol;
@@ -146,366 +145,395 @@ describe('protocol module', () => {
     });
   });
 
-  describe('protocol.registerStringProtocol', () => {
-    it('sends string as response', async () => {
-      registerStringProtocol(protocolName, (request, callback) => callback(text));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-    });
+  for (const [registerStringProtocol, name] of [
+    [protocol.registerStringProtocol, 'protocol.registerStringProtocol'] as const,
+    [(protocol as any).registerProtocol as typeof protocol.registerStringProtocol, 'protocol.registerProtocol'] as const
+  ]) {
+    describe(name, () => {
+      it('sends string as response', async () => {
+        registerStringProtocol(protocolName, (request, callback) => callback(text));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+      });
 
-    it('sets Access-Control-Allow-Origin', async () => {
-      registerStringProtocol(protocolName, (request, callback) => callback(text));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-      expect(r.headers).to.have.property('access-control-allow-origin', '*');
-    });
+      it('sets Access-Control-Allow-Origin', async () => {
+        registerStringProtocol(protocolName, (request, callback) => callback(text));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+        expect(r.headers).to.have.property('access-control-allow-origin', '*');
+      });
 
-    it('sends object as response', async () => {
-      registerStringProtocol(protocolName, (request, callback) => {
-        callback({
-          data: text,
-          mimeType: 'text/html'
+      it('sends object as response', async () => {
+        registerStringProtocol(protocolName, (request, callback) => {
+          callback({
+            data: text,
+            mimeType: 'text/html'
+          });
         });
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
       });
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-    });
 
-    it('fails when sending object other than string', async () => {
-      const notAString = () => {};
-      registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+      it('fails when sending object other than string', async () => {
+        const notAString = () => {};
+        registerStringProtocol(protocolName, (request, callback) => callback(notAString as any));
+        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+      });
     });
-  });
+  }
 
-  describe('protocol.registerBufferProtocol', () => {
-    const buffer = Buffer.from(text);
-    it('sends Buffer as response', async () => {
-      registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-    });
+  for (const [registerBufferProtocol, name] of [
+    [protocol.registerBufferProtocol, 'protocol.registerBufferProtocol'] as const,
+    [(protocol as any).registerProtocol as typeof protocol.registerBufferProtocol, 'protocol.registerProtocol'] as const
+  ]) {
+    describe(name, () => {
+      const buffer = Buffer.from(text);
+      it('sends Buffer as response', async () => {
+        registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+      });
 
-    it('sets Access-Control-Allow-Origin', async () => {
-      registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-      expect(r.headers).to.have.property('access-control-allow-origin', '*');
-    });
+      it('sets Access-Control-Allow-Origin', async () => {
+        registerBufferProtocol(protocolName, (request, callback) => callback(buffer));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+        expect(r.headers).to.have.property('access-control-allow-origin', '*');
+      });
 
-    it('sends object as response', async () => {
-      registerBufferProtocol(protocolName, (request, callback) => {
-        callback({
-          data: buffer,
-          mimeType: 'text/html'
+      it('sends object as response', async () => {
+        registerBufferProtocol(protocolName, (request, callback) => {
+          callback({
+            data: buffer,
+            mimeType: 'text/html'
+          });
         });
-      });
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-    });
-
-    it('fails when sending string', async () => {
-      registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
-    });
-  });
-
-  describe('protocol.registerFileProtocol', () => {
-    const filePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'file1');
-    const fileContent = fs.readFileSync(filePath);
-    const normalPath = path.join(fixturesPath, 'pages', 'a.html');
-    const normalContent = fs.readFileSync(normalPath);
-
-    afterEach(closeAllWindows);
-
-    it('sends file path as response', async () => {
-      registerFileProtocol(protocolName, (request, callback) => callback(filePath));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(String(fileContent));
-    });
-
-    it('sets Access-Control-Allow-Origin', async () => {
-      registerFileProtocol(protocolName, (request, callback) => callback(filePath));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(String(fileContent));
-      expect(r.headers).to.have.property('access-control-allow-origin', '*');
-    });
-
-    it('sets custom headers', async () => {
-      registerFileProtocol(protocolName, (request, callback) => callback({
-        path: filePath,
-        headers: { 'X-Great-Header': 'sogreat' }
-      }));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(String(fileContent));
-      expect(r.headers).to.have.property('x-great-header', 'sogreat');
-    });
-
-    it('can load iframes with custom protocols', (done) => {
-      registerFileProtocol('custom', (request, callback) => {
-        const filename = request.url.substring(9);
-        const p = path.join(__dirname, 'fixtures', 'pages', filename);
-        callback({ path: p });
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
       });
 
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
-        }
+      if (name !== 'protocol.registerProtocol') {
+        it('fails when sending string', async () => {
+          registerBufferProtocol(protocolName, (request, callback) => callback(text as any));
+          await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+        });
+      }
+    });
+  }
+
+  for (const [registerFileProtocol, name] of [
+    [protocol.registerFileProtocol, 'protocol.registerFileProtocol'] as const,
+    [(protocol as any).registerProtocol as typeof protocol.registerFileProtocol, 'protocol.registerProtocol'] as const
+  ]) {
+    describe(name, () => {
+      const filePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'file1');
+      const fileContent = fs.readFileSync(filePath);
+      const normalPath = path.join(fixturesPath, 'pages', 'a.html');
+      const normalContent = fs.readFileSync(normalPath);
+
+      afterEach(closeAllWindows);
+
+      if (name === 'protocol.registerFileProtocol') {
+        it('sends file path as response', async () => {
+          registerFileProtocol(protocolName, (request, callback) => callback(filePath));
+          const r = await ajax(protocolName + '://fake-host');
+          expect(r.data).to.equal(String(fileContent));
+        });
+      }
+
+      it('sets Access-Control-Allow-Origin', async () => {
+        registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(String(fileContent));
+        expect(r.headers).to.have.property('access-control-allow-origin', '*');
       });
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
-      ipcMain.once('loaded-iframe-custom-protocol', () => done());
-    });
-
-    it.skip('throws an error when custom headers are invalid', (done) => {
-      registerFileProtocol(protocolName, (request, callback) => {
-        expect(() => callback({
+      it('sets custom headers', async () => {
+        registerFileProtocol(protocolName, (request, callback) => callback({
           path: filePath,
-          headers: { 'X-Great-Header': (42 as any) }
-        })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string');
-        done();
+          headers: { 'X-Great-Header': 'sogreat' }
+        }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(String(fileContent));
+        expect(r.headers).to.have.property('x-great-header', 'sogreat');
       });
-      ajax(protocolName + '://fake-host').catch(() => {});
-    });
 
-    it('sends object as response', async () => {
-      registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(String(fileContent));
-    });
-
-    it('can send normal file', async () => {
-      registerFileProtocol(protocolName, (request, callback) => callback(normalPath));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(String(normalContent));
-    });
-
-    it('fails when sending unexist-file', async () => {
-      const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist');
-      registerFileProtocol(protocolName, (request, callback) => callback(fakeFilePath));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
-    });
-
-    it('fails when sending unsupported content', async () => {
-      registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
-    });
-  });
-
-  describe('protocol.registerHttpProtocol', () => {
-    it('sends url as response', async () => {
-      const server = http.createServer((req, res) => {
-        expect(req.headers.accept).to.not.equal('');
-        res.end(text);
-        server.close();
-      });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-
-      const port = (server.address() as AddressInfo).port;
-      const url = 'http://127.0.0.1:' + port;
-      registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-    });
-
-    it('fails when sending invalid url', async () => {
-      registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
-    });
-
-    it('fails when sending unsupported content', async () => {
-      registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
-      await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
-    });
-
-    it('works when target URL redirects', async () => {
-      const server = http.createServer((req, res) => {
-        if (req.url === '/serverRedirect') {
-          res.statusCode = 301;
-          res.setHeader('Location', `http://${req.rawHeaders[1]}`);
-          res.end();
-        } else {
-          res.end(text);
-        }
-      });
-      after(() => server.close());
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-
-      const port = (server.address() as AddressInfo).port;
-      const url = `${protocolName}://fake-host`;
-      const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
-      registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
-
-      const r = await ajax(url);
-      expect(r.data).to.equal(text);
-    });
-
-    it('can access request headers', (done) => {
-      protocol.registerHttpProtocol(protocolName, (request) => {
-        try {
-          expect(request).to.have.property('headers');
-          done();
-        } catch (e) {
-          done(e);
-        }
-      });
-      ajax(protocolName + '://fake-host').catch(() => {});
-    });
-  });
-
-  describe('protocol.registerStreamProtocol', () => {
-    it('sends Stream as response', async () => {
-      registerStreamProtocol(protocolName, (request, callback) => callback(getStream()));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-    });
-
-    it('sends object as response', async () => {
-      registerStreamProtocol(protocolName, (request, callback) => callback({ data: getStream() }));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-      expect(r.status).to.equal(200);
-    });
-
-    it('sends custom response headers', async () => {
-      registerStreamProtocol(protocolName, (request, callback) => callback({
-        data: getStream(3),
-        headers: {
-          'x-electron': ['a', 'b']
-        }
-      }));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.equal(text);
-      expect(r.status).to.equal(200);
-      expect(r.headers).to.have.property('x-electron', 'a, b');
-    });
-
-    it('sends custom status code', async () => {
-      registerStreamProtocol(protocolName, (request, callback) => callback({
-        statusCode: 204,
-        data: null as any
-      }));
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.be.empty('data');
-      expect(r.status).to.equal(204);
-    });
-
-    it('receives request headers', async () => {
-      registerStreamProtocol(protocolName, (request, callback) => {
-        callback({
-          headers: {
-            'content-type': 'application/json'
-          },
-          data: getStream(5, JSON.stringify(Object.assign({}, request.headers)))
+      it('can load iframes with custom protocols', (done) => {
+        registerFileProtocol('custom', (request, callback) => {
+          const filename = request.url.substring(9);
+          const p = path.join(__dirname, 'fixtures', 'pages', filename);
+          callback({ path: p });
         });
-      });
-      const r = await ajax(protocolName + '://fake-host', { headers: { 'x-return-headers': 'yes' } });
-      expect(JSON.parse(r.data)['x-return-headers']).to.equal('yes');
-    });
 
-    it('returns response multiple response headers with the same name', async () => {
-      registerStreamProtocol(protocolName, (request, callback) => {
-        callback({
-          headers: {
-            header1: ['value1', 'value2'],
-            header2: 'value3'
-          },
-          data: getStream()
-        });
-      });
-      const r = await ajax(protocolName + '://fake-host');
-      // SUBTLE: when the response headers have multiple values it
-      // separates values by ", ". When the response headers are incorrectly
-      // converting an array to a string it separates values by ",".
-      expect(r.headers).to.have.property('header1', 'value1, value2');
-      expect(r.headers).to.have.property('header2', 'value3');
-    });
-
-    it('can handle large responses', async () => {
-      const data = Buffer.alloc(128 * 1024);
-      registerStreamProtocol(protocolName, (request, callback) => {
-        callback(getStream(data.length, data));
-      });
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.have.lengthOf(data.length);
-    });
-
-    it('can handle a stream completing while writing', async () => {
-      function dumbPassthrough () {
-        return new stream.Transform({
-          async transform (chunk, encoding, cb) {
-            cb(null, chunk);
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
           }
         });
-      }
-      registerStreamProtocol(protocolName, (request, callback) => {
-        callback({
-          statusCode: 200,
-          headers: { 'Content-Type': 'text/plain' },
-          data: getStream(1024 * 1024, Buffer.alloc(1024 * 1024 * 2)).pipe(dumbPassthrough())
-        });
-      });
-      const r = await ajax(protocolName + '://fake-host');
-      expect(r.data).to.have.lengthOf(1024 * 1024 * 2);
-    });
 
-    it('can handle next-tick scheduling during read calls', async () => {
-      const events = new EventEmitter();
-      function createStream () {
-        const buffers = [
-          Buffer.alloc(65536),
-          Buffer.alloc(65537),
-          Buffer.alloc(39156)
-        ];
-        const e = new stream.Readable({ highWaterMark: 0 });
-        e.push(buffers.shift());
-        e._read = function () {
-          process.nextTick(() => this.push(buffers.shift() || null));
-        };
-        e.on('end', function () {
-          events.emit('end');
-        });
-        return e;
-      }
-      registerStreamProtocol(protocolName, (request, callback) => {
-        callback({
-          statusCode: 200,
-          headers: { 'Content-Type': 'text/plain' },
-          data: createStream()
-        });
-      });
-      const hasEndedPromise = emittedOnce(events, 'end');
-      ajax(protocolName + '://fake-host').catch(() => {});
-      await hasEndedPromise;
-    });
-
-    it('destroys response streams when aborted before completion', async () => {
-      const events = new EventEmitter();
-      registerStreamProtocol(protocolName, (request, callback) => {
-        const responseStream = new stream.PassThrough();
-        responseStream.push('data\r\n');
-        responseStream.on('close', () => {
-          events.emit('close');
-        });
-        callback({
-          statusCode: 200,
-          headers: { 'Content-Type': 'text/plain' },
-          data: responseStream
-        });
-        events.emit('respond');
+        w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
+        ipcMain.once('loaded-iframe-custom-protocol', () => done());
       });
 
-      const hasRespondedPromise = emittedOnce(events, 'respond');
-      const hasClosedPromise = emittedOnce(events, 'close');
-      ajax(protocolName + '://fake-host').catch(() => {});
-      await hasRespondedPromise;
-      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
-      await hasClosedPromise;
+      it.skip('throws an error when custom headers are invalid', (done) => {
+        registerFileProtocol(protocolName, (request, callback) => {
+          expect(() => callback({
+            path: filePath,
+            headers: { 'X-Great-Header': (42 as any) }
+          })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string');
+          done();
+        });
+        ajax(protocolName + '://fake-host').catch(() => {});
+      });
+
+      it('sends object as response', async () => {
+        registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(String(fileContent));
+      });
+
+      it('can send normal file', async () => {
+        registerFileProtocol(protocolName, (request, callback) => callback({ path: normalPath }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(String(normalContent));
+      });
+
+      it('fails when sending unexist-file', async () => {
+        const fakeFilePath = path.join(fixturesPath, 'test.asar', 'a.asar', 'not-exist');
+        registerFileProtocol(protocolName, (request, callback) => callback({ path: fakeFilePath }));
+        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+      });
+
+      it('fails when sending unsupported content', async () => {
+        registerFileProtocol(protocolName, (request, callback) => callback(new Date() as any));
+        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+      });
     });
-  });
+  }
+
+  for (const [registerHttpProtocol, name] of [
+    [protocol.registerHttpProtocol, 'protocol.registerHttpProtocol'] as const,
+    [(protocol as any).registerProtocol as typeof protocol.registerHttpProtocol, 'protocol.registerProtocol'] as const
+  ]) {
+    describe(name, () => {
+      it('sends url as response', async () => {
+        const server = http.createServer((req, res) => {
+          expect(req.headers.accept).to.not.equal('');
+          res.end(text);
+          server.close();
+        });
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+
+        const port = (server.address() as AddressInfo).port;
+        const url = 'http://127.0.0.1:' + port;
+        registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+      });
+
+      it('fails when sending invalid url', async () => {
+        registerHttpProtocol(protocolName, (request, callback) => callback({ url: 'url' }));
+        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+      });
+
+      it('fails when sending unsupported content', async () => {
+        registerHttpProtocol(protocolName, (request, callback) => callback(new Date() as any));
+        await expect(ajax(protocolName + '://fake-host')).to.be.eventually.rejected();
+      });
+
+      it('works when target URL redirects', async () => {
+        const server = http.createServer((req, res) => {
+          if (req.url === '/serverRedirect') {
+            res.statusCode = 301;
+            res.setHeader('Location', `http://${req.rawHeaders[1]}`);
+            res.end();
+          } else {
+            res.end(text);
+          }
+        });
+        after(() => server.close());
+        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+
+        const port = (server.address() as AddressInfo).port;
+        const url = `${protocolName}://fake-host`;
+        const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
+        registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
+
+        const r = await ajax(url);
+        expect(r.data).to.equal(text);
+      });
+
+      it('can access request headers', (done) => {
+        protocol.registerHttpProtocol(protocolName, (request) => {
+          try {
+            expect(request).to.have.property('headers');
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+        ajax(protocolName + '://fake-host').catch(() => {});
+      });
+    });
+  }
+
+  for (const [registerStreamProtocol, name] of [
+    [protocol.registerStreamProtocol, 'protocol.registerStreamProtocol'] as const,
+    [(protocol as any).registerProtocol as typeof protocol.registerStreamProtocol, 'protocol.registerProtocol'] as const
+  ]) {
+    describe(name, () => {
+      it('sends Stream as response', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => callback(getStream()));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+      });
+
+      it('sends object as response', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => callback({ data: getStream() }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+        expect(r.status).to.equal(200);
+      });
+
+      it('sends custom response headers', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => callback({
+          data: getStream(3),
+          headers: {
+            'x-electron': ['a', 'b']
+          }
+        }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.equal(text);
+        expect(r.status).to.equal(200);
+        expect(r.headers).to.have.property('x-electron', 'a, b');
+      });
+
+      it('sends custom status code', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => callback({
+          statusCode: 204,
+          data: null as any
+        }));
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.be.empty('data');
+        expect(r.status).to.equal(204);
+      });
+
+      it('receives request headers', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => {
+          callback({
+            headers: {
+              'content-type': 'application/json'
+            },
+            data: getStream(5, JSON.stringify(Object.assign({}, request.headers)))
+          });
+        });
+        const r = await ajax(protocolName + '://fake-host', { headers: { 'x-return-headers': 'yes' } });
+        expect(JSON.parse(r.data)['x-return-headers']).to.equal('yes');
+      });
+
+      it('returns response multiple response headers with the same name', async () => {
+        registerStreamProtocol(protocolName, (request, callback) => {
+          callback({
+            headers: {
+              header1: ['value1', 'value2'],
+              header2: 'value3'
+            },
+            data: getStream()
+          });
+        });
+        const r = await ajax(protocolName + '://fake-host');
+        // SUBTLE: when the response headers have multiple values it
+        // separates values by ", ". When the response headers are incorrectly
+        // converting an array to a string it separates values by ",".
+        expect(r.headers).to.have.property('header1', 'value1, value2');
+        expect(r.headers).to.have.property('header2', 'value3');
+      });
+
+      it('can handle large responses', async () => {
+        const data = Buffer.alloc(128 * 1024);
+        registerStreamProtocol(protocolName, (request, callback) => {
+          callback(getStream(data.length, data));
+        });
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.have.lengthOf(data.length);
+      });
+
+      it('can handle a stream completing while writing', async () => {
+        function dumbPassthrough () {
+          return new stream.Transform({
+            async transform (chunk, encoding, cb) {
+              cb(null, chunk);
+            }
+          });
+        }
+        registerStreamProtocol(protocolName, (request, callback) => {
+          callback({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/plain' },
+            data: getStream(1024 * 1024, Buffer.alloc(1024 * 1024 * 2)).pipe(dumbPassthrough())
+          });
+        });
+        const r = await ajax(protocolName + '://fake-host');
+        expect(r.data).to.have.lengthOf(1024 * 1024 * 2);
+      });
+
+      it('can handle next-tick scheduling during read calls', async () => {
+        const events = new EventEmitter();
+        function createStream () {
+          const buffers = [
+            Buffer.alloc(65536),
+            Buffer.alloc(65537),
+            Buffer.alloc(39156)
+          ];
+          const e = new stream.Readable({ highWaterMark: 0 });
+          e.push(buffers.shift());
+          e._read = function () {
+            process.nextTick(() => this.push(buffers.shift() || null));
+          };
+          e.on('end', function () {
+            events.emit('end');
+          });
+          return e;
+        }
+        registerStreamProtocol(protocolName, (request, callback) => {
+          callback({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/plain' },
+            data: createStream()
+          });
+        });
+        const hasEndedPromise = emittedOnce(events, 'end');
+        ajax(protocolName + '://fake-host').catch(() => {});
+        await hasEndedPromise;
+      });
+
+      it('destroys response streams when aborted before completion', async () => {
+        const events = new EventEmitter();
+        registerStreamProtocol(protocolName, (request, callback) => {
+          const responseStream = new stream.PassThrough();
+          responseStream.push('data\r\n');
+          responseStream.on('close', () => {
+            events.emit('close');
+          });
+          callback({
+            statusCode: 200,
+            headers: { 'Content-Type': 'text/plain' },
+            data: responseStream
+          });
+          events.emit('respond');
+        });
+
+        const hasRespondedPromise = emittedOnce(events, 'respond');
+        const hasClosedPromise = emittedOnce(events, 'close');
+        ajax(protocolName + '://fake-host').catch(() => {});
+        await hasRespondedPromise;
+        await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+        await hasClosedPromise;
+      });
+    });
+  }
 
   describe('protocol.isProtocolRegistered', () => {
     it('returns false when scheme is not registered', () => {
