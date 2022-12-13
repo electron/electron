@@ -293,17 +293,23 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
 }
 
 void SimpleURLLoaderWrapper::Start() {
-  // SimpleURLLoader wants to control the request body itself. We have other
-  // ideas.
-  auto request_body = std::move(request_->request_body);
-  auto request2 = std::make_unique<network::ResourceRequest>();
-  *request2 = *request_;
-  auto* request_ref = request2.get();
+  // Make a copy of the request; we'll need to re-send it if we get redirected.
+  auto request = std::make_unique<network::ResourceRequest>();
+  *request = *request_;
+
+  // SimpleURLLoader has no way to set a data pipe as the request body, which
+  // we need to do for streaming upload, so instead we "cheat" and pretend to
+  // SimpleURLLoader like there is no request_body when we construct it. Later,
+  // we will sneakily put the request_body back while it isn't looking.
+  scoped_refptr<network::ResourceRequestBody> request_body =
+      std::move(request->request_body);
+
+  network::ResourceRequest* request_ref = request.get();
   loader_ =
-      network::SimpleURLLoader::Create(std::move(request2), kTrafficAnnotation);
-  if (request_body) {
+      network::SimpleURLLoader::Create(std::move(request), kTrafficAnnotation);
+
+  if (request_body)
     request_ref->request_body = std::move(request_body);
-  }
 
   loader_->SetAllowHttpErrorResults(true);
   loader_->SetURLLoaderFactoryOptions(request_options_);
@@ -637,6 +643,10 @@ void SimpleURLLoaderWrapper::OnRedirect(
     std::vector<std::string>* removed_headers) {
   Emit("redirect", redirect_info, response_head.headers.get());
 
+  if (!loader_)
+    // The redirect was aborted by JS.
+    return;
+
   // Optimization: if both the old and new URLs are handled by the network
   // service, just FollowRedirect.
   if (network::IsURLHandledByNetworkService(redirect_info.new_url) &&
@@ -650,7 +660,8 @@ void SimpleURLLoaderWrapper::OnRedirect(
   bool should_clear_upload = false;
   net::RedirectUtil::UpdateHttpRequest(
       request_->url, request_->method, redirect_info, *removed_headers,
-      absl::nullopt /* TODO? */, &request_->headers, &should_clear_upload);
+      /* modified_headers = */ absl::nullopt, &request_->headers,
+      &should_clear_upload);
   if (should_clear_upload) {
     // The request body is no longer applicable.
     request_->request_body.reset();
@@ -669,7 +680,6 @@ void SimpleURLLoaderWrapper::OnRedirect(
   request_->referrer_policy = redirect_info.new_referrer_policy;
   request_->navigation_redirect_chain.push_back(redirect_info.new_url);
 
-  // TODO: more redirect_info stuff
   Start();
 }
 
