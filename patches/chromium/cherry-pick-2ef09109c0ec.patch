@@ -1,0 +1,364 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jun Kokatsu <jkokatsu@google.com>
+Date: Thu, 22 Sep 2022 22:16:55 +0000
+Subject: Unify security check for Javascript URL navigation
+
+This change unifies CSP and Trusted Types check for Javascript URL
+navigations.
+
+Bug: 1365082
+Change-Id: I46aea31a918c6397ea71fd5ab345bc9dc19d91c2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3905476
+Auto-Submit: Jun Kokatsu <jkokatsu@google.com>
+Commit-Queue: Jun Kokatsu <jkokatsu@google.com>
+Reviewed-by: Nate Chapin <japhet@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1050416}
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/script_controller.cc b/third_party/blink/renderer/bindings/core/v8/script_controller.cc
+index 5ad3d687829db7ed64424b0f593e3aab7951e37e..da289bc7ffc4416ad817b0f344bc24cc0f084582 100644
+--- a/third_party/blink/renderer/bindings/core/v8/script_controller.cc
++++ b/third_party/blink/renderer/bindings/core/v8/script_controller.cc
+@@ -164,34 +164,9 @@ void ScriptController::ExecuteJavaScriptURL(
+     const DOMWrapperWorld* world_for_csp) {
+   DCHECK(url.ProtocolIsJavaScript());
+ 
+-  const int kJavascriptSchemeLength = sizeof("javascript:") - 1;
+-  String script_source = DecodeURLEscapeSequences(
+-      url.GetString(), DecodeURLMode::kUTF8OrIsomorphic);
+-
+   if (!window_->GetFrame())
+     return;
+ 
+-  auto* policy = window_->GetContentSecurityPolicyForWorld(world_for_csp);
+-  if (csp_disposition == network::mojom::CSPDisposition::CHECK &&
+-      !policy->AllowInline(ContentSecurityPolicy::InlineType::kNavigation,
+-                           nullptr, script_source, String() /* nonce */,
+-                           window_->Url(), EventHandlerPosition().line_)) {
+-    return;
+-  }
+-
+-  // TODO(crbug.com/896041): Investigate how trusted type checks can be
+-  // implemented for isolated worlds.
+-  const bool should_bypass_trusted_type_check =
+-      csp_disposition == network::mojom::CSPDisposition::DO_NOT_CHECK ||
+-      ContentSecurityPolicy::ShouldBypassMainWorldDeprecated(world_for_csp);
+-  script_source = script_source.Substring(kJavascriptSchemeLength);
+-  if (!should_bypass_trusted_type_check) {
+-    script_source = TrustedTypesCheckForJavascriptURLinNavigation(
+-        script_source, window_.Get());
+-    if (script_source.IsEmpty())
+-      return;
+-  }
+-
+   bool had_navigation_before =
+       window_->GetFrame()->Loader().HasProvisionalNavigation();
+ 
+@@ -199,6 +174,9 @@ void ScriptController::ExecuteJavaScriptURL(
+   // Step 6. "Let baseURL be settings's API base URL." [spec text]
+   const KURL base_url = window_->BaseURL();
+ 
++  String script_source = window_->CheckAndGetJavascriptUrl(
++      world_for_csp, url, nullptr /* element */, csp_disposition);
++
+   // Step 7. "Let script be the result of creating a classic script given
+   // scriptSource, settings, baseURL, and the default classic script fetch
+   // options." [spec text]
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
+index 2f0615ee1454946d6f46f6626ce9b860a0e04fee..3eab00e4410e749aecdf600097cb68df22dcf072 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.cc
++++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
+@@ -415,6 +415,39 @@ bool LocalDOMWindow::CanExecuteScripts(
+   return script_enabled;
+ }
+ 
++String LocalDOMWindow::CheckAndGetJavascriptUrl(
++    const DOMWrapperWorld* world,
++    const KURL& url,
++    Element* element,
++    network::mojom::CSPDisposition csp_disposition) {
++  const int kJavascriptSchemeLength = sizeof("javascript:") - 1;
++  String decoded_url = DecodeURLEscapeSequences(
++      url.GetString(), DecodeURLMode::kUTF8OrIsomorphic);
++  String script_source = decoded_url.Substring(kJavascriptSchemeLength);
++
++  if (csp_disposition == network::mojom::CSPDisposition::DO_NOT_CHECK)
++    return script_source;
++
++  // Check the CSP of the caller (the "source browsing context") if required,
++  // as per https://html.spec.whatwg.org/C/#javascript-protocol.
++  if (!GetContentSecurityPolicyForWorld(world)->AllowInline(
++          ContentSecurityPolicy::InlineType::kNavigation, element, decoded_url,
++          String() /* nonce */, Url(), OrdinalNumber::First()))
++    return String();
++
++  // TODO(crbug.com/896041): Investigate how trusted type checks can be
++  // implemented for isolated worlds.
++  if (ContentSecurityPolicy::ShouldBypassMainWorldDeprecated(world))
++    return script_source;
++
++  // https://w3c.github.io/webappsec-trusted-types/dist/spec/#require-trusted-types-for-pre-navigation-check
++  // 4.9.1.1. require-trusted-types-for Pre-Navigation check
++  script_source =
++      TrustedTypesCheckForJavascriptURLinNavigation(script_source, this);
++
++  return script_source;
++}
++
+ void LocalDOMWindow::ExceptionThrown(ErrorEvent* event) {
+   MainThreadDebugger::Instance()->ExceptionThrown(this, event);
+ }
+diff --git a/third_party/blink/renderer/core/frame/local_dom_window.h b/third_party/blink/renderer/core/frame/local_dom_window.h
+index dcc065abe83948ca3d906f676365226dd82c732d..da06213cfbe2bd156509cd1ff67d600d528c34b0 100644
+--- a/third_party/blink/renderer/core/frame/local_dom_window.h
++++ b/third_party/blink/renderer/core/frame/local_dom_window.h
+@@ -31,6 +31,7 @@
+ 
+ #include "services/metrics/public/cpp/ukm_recorder.h"
+ #include "services/metrics/public/cpp/ukm_source_id.h"
++#include "services/network/public/mojom/content_security_policy.mojom-blink.h"
+ #include "third_party/blink/public/common/frame/fullscreen_request_token.h"
+ #include "third_party/blink/public/common/frame/payment_request_token.h"
+ #include "third_party/blink/public/common/metrics/post_message_counter.h"
+@@ -211,6 +212,16 @@ class CORE_EXPORT LocalDOMWindow final : public DOMWindow,
+       mojom::blink::PermissionsPolicyFeature feature,
+       UseCounterImpl::PermissionsPolicyUsageType type);
+ 
++  // Checks if navigation to Javascript URL is allowed. This check should run
++  // before any action is taken (e.g. creating new window) for all
++  // same-origin navigations.
++  String CheckAndGetJavascriptUrl(
++      const DOMWrapperWorld* world,
++      const KURL& url,
++      Element* element,
++      network::mojom::CSPDisposition csp_disposition =
++          network::mojom::CSPDisposition::CHECK);
++
+   Document* InstallNewDocument(const DocumentInit&);
+ 
+   // EventTarget overrides:
+diff --git a/third_party/blink/renderer/core/frame/location.cc b/third_party/blink/renderer/core/frame/location.cc
+index a1aeede568cfe33267d87fa68f096d20a83d50f9..92740842827d470d63da34dd90bdb937321c1a83 100644
+--- a/third_party/blink/renderer/core/frame/location.cc
++++ b/third_party/blink/renderer/core/frame/location.cc
+@@ -270,23 +270,6 @@ void Location::SetLocation(const String& url,
+     return;
+   }
+ 
+-  // Check the source browsing context's CSP to fulfill the CSP check
+-  // requirement of https://html.spec.whatwg.org/C/#navigate for javascript
+-  // URLs. Although the spec states we should perform this check on task
+-  // execution, there are concerns about the correctness of that statement,
+-  // see http://github.com/whatwg/html/issues/2591.
+-  if (completed_url.ProtocolIsJavaScript()) {
+-    String script_source = DecodeURLEscapeSequences(
+-        completed_url.GetString(), DecodeURLMode::kUTF8OrIsomorphic);
+-    if (!incumbent_window->GetContentSecurityPolicyForCurrentWorld()
+-             ->AllowInline(ContentSecurityPolicy::InlineType::kNavigation,
+-                           nullptr /* element */, script_source,
+-                           String() /* nonce */, incumbent_window->Url(),
+-                           OrdinalNumber::First())) {
+-      return;
+-    }
+-  }
+-
+   V8DOMActivityLogger* activity_logger =
+       V8DOMActivityLogger::CurrentActivityLoggerIfIsolatedWorld();
+   if (activity_logger) {
+diff --git a/third_party/blink/renderer/core/loader/frame_loader.cc b/third_party/blink/renderer/core/loader/frame_loader.cc
+index e2398389b2064f0d804977ea9f5233cf34da5dae..49601b48571fbaebda29b6c2848a65275e4fd861 100644
+--- a/third_party/blink/renderer/core/loader/frame_loader.cc
++++ b/third_party/blink/renderer/core/loader/frame_loader.cc
+@@ -547,19 +547,12 @@ bool FrameLoader::AllowRequestForThisFrame(const FrameLoadRequest& request) {
+ 
+   const KURL& url = request.GetResourceRequest().Url();
+   if (url.ProtocolIsJavaScript()) {
+-    // Check the CSP of the caller (the "source browsing context") if required,
+-    // as per https://html.spec.whatwg.org/C/#javascript-protocol.
+-    bool javascript_url_is_allowed =
+-        request.GetOriginWindow()
+-            ->GetContentSecurityPolicyForWorld(request.JavascriptWorld().get())
+-            ->AllowInline(ContentSecurityPolicy::InlineType::kNavigation,
+-                          frame_->DeprecatedLocalOwner(), url.GetString(),
+-                          String() /* nonce */,
+-                          request.GetOriginWindow()->Url(),
+-                          OrdinalNumber::First());
+-
+-    if (!javascript_url_is_allowed)
++    if (request.GetOriginWindow()
++            ->CheckAndGetJavascriptUrl(request.JavascriptWorld().get(), url,
++                                       frame_->DeprecatedLocalOwner())
++            .IsEmpty()) {
+       return false;
++    }
+ 
+     if (frame_->Owner() && ((frame_->Owner()->GetFramePolicy().sandbox_flags &
+                              network::mojom::blink::WebSandboxFlags::kOrigin) !=
+diff --git a/third_party/blink/renderer/core/page/create_window.cc b/third_party/blink/renderer/core/page/create_window.cc
+index c526aab02f300a32404253537df6ff6c506664f8..36796587c96a51bc90f460def64358ec9788c72e 100644
+--- a/third_party/blink/renderer/core/page/create_window.cc
++++ b/third_party/blink/renderer/core/page/create_window.cc
+@@ -294,15 +294,11 @@ Frame* CreateNewWindow(LocalFrame& opener_frame,
+   request.SetFrameType(mojom::RequestContextFrameType::kAuxiliary);
+ 
+   const KURL& url = request.GetResourceRequest().Url();
+-  auto* csp_for_world = opener_window.GetContentSecurityPolicyForCurrentWorld();
+-  if (url.ProtocolIsJavaScript() && csp_for_world) {
+-    String script_source = DecodeURLEscapeSequences(
+-        url.GetString(), DecodeURLMode::kUTF8OrIsomorphic);
+-
+-    if (!csp_for_world->AllowInline(
+-            ContentSecurityPolicy::InlineType::kNavigation,
+-            nullptr /* element */, script_source, String() /* nonce */,
+-            opener_window.Url(), OrdinalNumber::First())) {
++  if (url.ProtocolIsJavaScript()) {
++    if (opener_window
++            .CheckAndGetJavascriptUrl(request.JavascriptWorld().get(), url,
++                                      nullptr /* element */)
++            .IsEmpty()) {
+       return nullptr;
+     }
+   }
+diff --git a/third_party/blink/web_tests/external/wpt/trusted-types/support/frame-without-trusted-types.html b/third_party/blink/web_tests/external/wpt/trusted-types/support/frame-without-trusted-types.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..25cf073e79fa48f4311c3729f0b39d9be2a64e7c
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/trusted-types/support/frame-without-trusted-types.html
+@@ -0,0 +1,6 @@
++<!DOCTYPE html>
++<head>
++</head>
++<body>
++</body>
++</html>
+diff --git a/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-report-only-support.html b/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-report-only-support.html
+index d00d0538753a74411feeec42d5682082031c09d4..5f7856fabb7bb16085ffaffffbf6d7553179e8f3 100644
+--- a/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-report-only-support.html
++++ b/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-report-only-support.html
+@@ -5,7 +5,8 @@
+ <p>Support page for trusted-types-navigation-report-only.*.html tests.</p>
+ <a id="anchor" href="#">link</a>
+ <script>
+-  if (location.search == "?defaultpolicy") {
++  const params = new URLSearchParams(location.search);
++  if (!!params.get("defaultpolicy")) {
+     trustedTypes.createPolicy("default", {
+         createScript: s => s.replace("continue", "defaultpolicywashere"),
+     });
+@@ -36,9 +37,17 @@
+   // won't disturb delivery of that event to the opener.
+   const anchor = document.getElementById("anchor");
+   anchor.href = target;
++
++  if (!!params.get("frame")) {
++    const frame = document.createElement("iframe");
++    frame.src = "frame-without-trusted-types.html";
++    frames.name = "frame";
++    document.body.appendChild(frame);
++    anchor.target = "frame";
++  }
++
+   if (!location.hash) {
+     document.addEventListener("DOMContentLoaded", _ => anchor.click());
+   }
+ </script>
+ </body>
+-
+diff --git a/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-support.html b/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-support.html
+index cd41f3968e7c74f84a7541506053808073ce541d..5e02e6d4bf5aff9fa4f0b4b897a35726ed24168b 100644
+--- a/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-support.html
++++ b/third_party/blink/web_tests/external/wpt/trusted-types/support/navigation-support.html
+@@ -5,7 +5,8 @@
+ <p>Support page for trusted-types-navigation.*.html tests.</p>
+ <a id="anchor" href="#">link</a>
+ <script>
+-  if (location.search == "?defaultpolicy") {
++  const params = new URLSearchParams(location.search);
++  if (!!params.get("defaultpolicy")) {
+     trustedTypes.createPolicy("default", {
+         createScript: s => s.replace("continue", "defaultpolicywashere"),
+     });
+@@ -35,8 +36,16 @@
+ 
+   const anchor = document.getElementById("anchor");
+   anchor.href = target;
++
++  if (!!params.get("frame")) {
++    const frame = document.createElement("iframe");
++    frame.src = "frame-without-trusted-types.html";
++    frames.name = "frame";
++    document.body.appendChild(frame);
++    anchor.target = "frame";
++  }
++
+   if (!location.hash)
+     document.addEventListener("DOMContentLoaded", _ => anchor.click());
+ </script>
+ </body>
+-
+diff --git a/third_party/blink/web_tests/external/wpt/trusted-types/trusted-types-navigation.tentative.html b/third_party/blink/web_tests/external/wpt/trusted-types/trusted-types-navigation.tentative.html
+index 4e784611dd64ecf2f9995403b1d4e5a19f8b4548..2113711902ae787cb3ad5d0e44eaed0fc2e99b87 100644
+--- a/third_party/blink/web_tests/external/wpt/trusted-types/trusted-types-navigation.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/trusted-types/trusted-types-navigation.tentative.html
+@@ -38,10 +38,10 @@
+   }, "Navigate a window with javascript:-urls in enforcing mode.");
+ 
+   promise_test(t => {
+-    openWindow(t, "support/navigation-support.html?defaultpolicy");
++    openWindow(t, "support/navigation-support.html?defaultpolicy=1");
+     return Promise.all([
+-      expectLoadedAsMessage("navigation-support.html?defaultpolicy"),
+-      expectLoadedAsMessage("navigation-support.html?defaultpolicy&defaultpolicywashere"),
++      expectLoadedAsMessage("navigation-support.html?defaultpolicy=1"),
++      expectLoadedAsMessage("navigation-support.html?defaultpolicy=1&defaultpolicywashere"),
+     ]);
+   }, "Navigate a window with javascript:-urls w/ default policy in enforcing mode.");
+ 
+@@ -55,12 +55,46 @@
+   }, "Navigate a window with javascript:-urls in report-only mode.");
+ 
+   promise_test(t => {
+-    const page = "navigation-report-only-support.html?defaultpolicy";
++    const page = "navigation-report-only-support.html?defaultpolicy=1";
+     openWindow(t, `support/${page}`);
+     return Promise.all([
+       expectLoadedAsMessage(page),
+-      expectLoadedAsMessage("navigation-support.html?defaultpolicy#defaultpolicywashere"),
++      expectLoadedAsMessage("navigation-support.html?defaultpolicy=1#defaultpolicywashere"),
+     ]);
+   }, "Navigate a window with javascript:-urls w/ default policy in report-only mode.");
++
++  promise_test(t => {
++    openWindow(t, "support/navigation-support.html?frame=1");
++    return Promise.all([
++      expectLoadedAsMessage("navigation-support.html?frame=1"),
++      expectViolationAsMessage("Location href"),
++    ]);
++  }, "Navigate a frame with javascript:-urls in enforcing mode.");
++
++  promise_test(t => {
++    openWindow(t, "support/navigation-support.html?defaultpolicy=1&frame=1");
++    return Promise.all([
++      expectLoadedAsMessage("navigation-support.html?defaultpolicy=1&frame=1"),
++      expectLoadedAsMessage("navigation-support.html?defaultpolicy=1&frame=1&defaultpolicywashere"),
++    ]);
++  }, "Navigate a frame with javascript:-urls w/ default policy in enforcing mode.");
++
++  promise_test(t => {
++    const page = "navigation-report-only-support.html?frame=1"
++    openWindow(t, `support/${page}`);
++    return Promise.all([
++      expectLoadedAsMessage(page),
++      expectLoadedAsMessage("navigation-support.html?frame=1#continue"),
++    ]);
++  }, "Navigate a frame with javascript:-urls in report-only mode.");
++
++  promise_test(t => {
++    const page = "navigation-report-only-support.html?defaultpolicy=1&frame=1";
++    openWindow(t, `support/${page}`);
++    return Promise.all([
++      expectLoadedAsMessage(page),
++      expectLoadedAsMessage("navigation-support.html?defaultpolicy=1&frame=1#defaultpolicywashere"),
++    ]);
++  }, "Navigate a frame with javascript:-urls w/ default policy in report-only mode.");
+ </script>
+ </body>
