@@ -1,7 +1,10 @@
-From 32b7dc86a76357086a2a57bd18800525ffd76916 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
-Date: Thu, 01 Dec 2022 16:05:49 +0100
-Subject: [PATCH] [ext-code-space] Fix DCHECKs in VisitSpillSlot
+Date: Thu, 1 Dec 2022 16:05:49 +0100
+Subject: Fix DCHECKs in VisitSpillSlot
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 ... to match new encoding of the forwarding pointers.
 
@@ -12,13 +15,12 @@ Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Auto-Submit: Igor Sheludko <ishell@chromium.org>
 Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#84601}
----
 
 diff --git a/src/execution/frames.cc b/src/execution/frames.cc
-index 5065f5f..6dfdda7 100644
+index 5065f5fe3bab7d8a9aca3db98754339ed86b0907..6dfdda7059cafb8a5bf597cd61b46fdb3177ddeb 100644
 --- a/src/execution/frames.cc
 +++ b/src/execution/frames.cc
-@@ -1119,8 +1119,8 @@
+@@ -1119,8 +1119,8 @@ void VisitSpillSlot(Isolate* isolate, RootVisitor* v,
                                     ? map_word.ToForwardingAddress(raw)
                                     : raw;
          bool is_self_forwarded =
@@ -30,10 +32,10 @@ index 5065f5f..6dfdda7 100644
            // The object might be in a self-forwarding state if it's located
            // in new large object space. GC will fix this at a later stage.
 diff --git a/src/objects/objects.h b/src/objects/objects.h
-index 1910d94..b50909b 100644
+index a40a169ce5d2b14e4b973cc1c5e6b4d986cbb314..2fa31a912c75a832cc0e051dfd54f4cd1ac50a79 100644
 --- a/src/objects/objects.h
 +++ b/src/objects/objects.h
-@@ -904,7 +904,17 @@
+@@ -904,7 +904,17 @@ class MapWord {
    // View this map word as a forwarding address.
    inline HeapObject ToForwardingAddress(HeapObject map_word_host);
  
@@ -52,7 +54,7 @@ index 1910d94..b50909b 100644
  
  #ifdef V8_MAP_PACKING
    static constexpr Address Pack(Address map) {
-@@ -929,7 +939,7 @@
+@@ -929,7 +939,7 @@ class MapWord {
    template <typename TFieldType, int kFieldOffset, typename CompressionScheme>
    friend class TaggedField;
  
