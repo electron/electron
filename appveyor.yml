@@ -40,7 +40,7 @@ environment:
   matrix:
 
     - job_name: Build
-    - job_name: Test
+    - job_name: Test On Windows On Arm Hardware
       job_depends_on: Build
       APPVEYOR_BUILD_WORKER_IMAGE: Windows
       APPVEYOR_BUILD_WORKER_CLOUD: WOA
@@ -207,16 +207,15 @@ for:
           }
   - matrix:
       only:
-        - job_name: Test
+        - job_name: Test On Windows On Arm Hardware
 
-    init:
-      - ps: |
-          if ($env:RUN_TESTS -ne 'true') {
-            Write-warning "Skipping tests for $env:APPVEYOR_PROJECT_NAME"; Exit-AppveyorBuild
-          }
-          if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-            Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-          }
+    environment:
+        IGNORE_YARN_INSTALL_ERROR: 1
+        ELECTRON_TEST_RESULTS_DIR: junit
+        MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
+        MOCHA_REPORTER: mocha-multi-reporters
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true  
+
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
@@ -276,8 +275,16 @@ for:
       - echo "Done verifying mksnapshot"
       - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
-
-    # Uncomment these lines to enable RDP
+    
     # on_finish:
+      # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
+      - cd ..
+      - rmdir /s out\Default
+      - ps: |
+          Get-Process | Where Name -Like "electron*" | Stop-Process      
+          Get-Process | Where Name -Like "msedge*" | Stop-Process
+      - ps: |
+          Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
+          Remove-Item -path $env:LOCALAPPDATA/Electron* -Recurse -Force -ErrorAction Ignore
