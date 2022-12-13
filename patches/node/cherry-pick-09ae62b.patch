@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Michael Dawson <mdawson@devrus.com>
+Date: Tue, 25 Oct 2022 17:39:41 -0400
+Subject: node-api: handle no support for external buffers
+
+Refs: https://github.com/electron/electron/issues/35801
+Refs: https://github.com/nodejs/abi-stable-node/issues/441
+
+Electron recently dropped support for external
+buffers. Provide a way for addon authors to:
+- hide the methods to create external buffers so they can
+  avoid using them if they want the broadest compatibility.
+- call the methods that create external buffers at runtime
+  to check if external buffers are supported and either
+  use them or not based on the return code.
+
+Signed-off-by: Michael Dawson <mdawson@devrus.com>
+
+PR-URL: https://github.com/nodejs/node/pull/45181
+Reviewed-By: Chengzhong Wu <legendecas@gmail.com>
+Reviewed-By: Minwoo Jung <nodecorelab@gmail.com>
+
+diff --git a/doc/api/n-api.md b/doc/api/n-api.md
+index 71a0081352d3497b9d0c12666b2c6e3ef6da650a..6ba74e5dc7a358ea3dc1e1ce6cd9636a6143c371 100644
+--- a/doc/api/n-api.md
++++ b/doc/api/n-api.md
+@@ -579,6 +579,7 @@ typedef enum {
+   napi_arraybuffer_expected,
+   napi_detachable_arraybuffer_expected,
+   napi_would_deadlock,  /* unused */
++  napi_no_external_buffers_allowed
+ } napi_status;
+ ```
+ 
+@@ -2399,6 +2400,19 @@ napi_create_external_arraybuffer(napi_env env,
+ 
+ Returns `napi_ok` if the API succeeded.
+ 
++**Some runtimes other than Node.js have dropped support for external buffers**.
++On runtimes other than Node.js this method may return
++`napi_no_external_buffers_allowed` to indicate that external
++buffers are not supported. One such runtime is Electron as
++described in this issue
++[electron/issues/35801](https://github.com/electron/electron/issues/35801).
++
++In order to maintain broadest compatibility with all runtimes
++you may define `NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED` in your addon before
++includes for the node-api headers. Doing so will hide the 2 functions
++that create external buffers. This will ensure a compilation error
++occurs if you accidentally use one of these methods.
++
+ This API returns a Node-API value corresponding to a JavaScript `ArrayBuffer`.
+ The underlying byte buffer of the `ArrayBuffer` is externally allocated and
+ managed. The caller must ensure that the byte buffer remains valid until the
+@@ -2443,6 +2457,19 @@ napi_status napi_create_external_buffer(napi_env env,
+ 
+ Returns `napi_ok` if the API succeeded.
+ 
++**Some runtimes other than Node.js have dropped support for external buffers**.
++On runtimes other than Node.js this method may return
++`napi_no_external_buffers_allowed` to indicate that external
++buffers are not supported. One such runtime is Electron as
++described in this issue
++[electron/issues/35801](https://github.com/electron/electron/issues/35801).
++
++In order to maintain broadest compatibility with all runtimes
++you may define `NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED` in your addon before
++includes for the node-api headers. Doing so will hide the 2 functions
++that create external buffers. This will ensure a compilation error
++occurs if you accidentally use one of these methods.
++
+ This API allocates a `node::Buffer` object and initializes it with data
+ backed by the passed in buffer. While this is still a fully-supported data
+ structure, in most cases using a `TypedArray` will suffice.
+diff --git a/src/js_native_api.h b/src/js_native_api.h
+index 220d140d4bfe9a076c739cdc2b03ea22963aa704..d11a2c5a18cf16ece1c74b735886b5ee0c7ec009 100644
+--- a/src/js_native_api.h
++++ b/src/js_native_api.h
+@@ -401,6 +401,7 @@ NAPI_EXTERN napi_status NAPI_CDECL napi_create_arraybuffer(napi_env env,
+                                                            size_t byte_length,
+                                                            void** data,
+                                                            napi_value* result);
++#ifndef NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
+ NAPI_EXTERN napi_status NAPI_CDECL
+ napi_create_external_arraybuffer(napi_env env,
+                                  void* external_data,
+@@ -408,6 +409,7 @@ napi_create_external_arraybuffer(napi_env env,
+                                  napi_finalize finalize_cb,
+                                  void* finalize_hint,
+                                  napi_value* result);
++#endif  // NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
+ NAPI_EXTERN napi_status NAPI_CDECL napi_get_arraybuffer_info(
+     napi_env env, napi_value arraybuffer, void** data, size_t* byte_length);
+ NAPI_EXTERN napi_status NAPI_CDECL napi_is_typedarray(napi_env env,
+diff --git a/src/js_native_api_types.h b/src/js_native_api_types.h
+index 376930ba4a32206097bc2f20f4c04c9910c231e0..517614950a90f75330e7afeafcc4ed180308c871 100644
+--- a/src/js_native_api_types.h
++++ b/src/js_native_api_types.h
+@@ -98,7 +98,8 @@ typedef enum {
+   napi_date_expected,
+   napi_arraybuffer_expected,
+   napi_detachable_arraybuffer_expected,
+-  napi_would_deadlock  // unused
++  napi_would_deadlock,  // unused
++  napi_no_external_buffers_allowed
+ } napi_status;
+ // Note: when adding a new enum value to `napi_status`, please also update
+ //   * `const int last_status` in the definition of `napi_get_last_error_info()'
+diff --git a/src/js_native_api_v8.cc b/src/js_native_api_v8.cc
+index 5f8e21e0b58c8a8fea1e3ee2e0eecf5b892e4683..bafcb9bec5bafdb775b467476c94f44ca8c4b64e 100644
+--- a/src/js_native_api_v8.cc
++++ b/src/js_native_api_v8.cc
+@@ -748,6 +748,7 @@ static const char* error_messages[] = {
+     "An arraybuffer was expected",
+     "A detachable arraybuffer was expected",
+     "Main thread would deadlock",
++    "External buffers are not allowed",
+ };
+ 
+ napi_status NAPI_CDECL napi_get_last_error_info(
+@@ -759,7 +760,7 @@ napi_status NAPI_CDECL napi_get_last_error_info(
+   // message in the `napi_status` enum each time a new error message is added.
+   // We don't have a napi_status_last as this would result in an ABI
+   // change each time a message was added.
+-  const int last_status = napi_would_deadlock;
++  const int last_status = napi_no_external_buffers_allowed;
+ 
+   static_assert(NAPI_ARRAYSIZE(error_messages) == last_status + 1,
+                 "Count of error messages must match count of error values");
+diff --git a/src/node_api.cc b/src/node_api.cc
+index 08352b0a584b543cf1ad2947f820d8a5dc7fe0db..26e0292083cd760b7f6aeddca3527631652c5d03 100644
+--- a/src/node_api.cc
++++ b/src/node_api.cc
+@@ -949,6 +949,10 @@ napi_status NAPI_CDECL napi_create_external_buffer(napi_env env,
+   NAPI_PREAMBLE(env);
+   CHECK_ARG(env, result);
+ 
++#if defined(V8_ENABLE_SANDBOX)
++  return napi_set_last_error(env, napi_no_external_buffers_allowed);
++#endif
++
+   v8::Isolate* isolate = env->isolate;
+ 
+   // The finalizer object will delete itself after invoking the callback.
+diff --git a/src/node_api.h b/src/node_api.h
+index 982b41cadf20aed89c3c61feeec8e74ed875e25c..07af926cafb536a25c99ada43cdf0fc1c2f72896 100644
+--- a/src/node_api.h
++++ b/src/node_api.h
+@@ -153,6 +153,7 @@ NAPI_EXTERN napi_status NAPI_CDECL napi_create_buffer(napi_env env,
+                                                       size_t length,
+                                                       void** data,
+                                                       napi_value* result);
++#ifndef NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
+ NAPI_EXTERN napi_status NAPI_CDECL
+ napi_create_external_buffer(napi_env env,
+                             size_t length,
+@@ -160,6 +161,7 @@ napi_create_external_buffer(napi_env env,
+                             napi_finalize finalize_cb,
+                             void* finalize_hint,
+                             napi_value* result);
++#endif  // NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
+ NAPI_EXTERN napi_status NAPI_CDECL napi_create_buffer_copy(napi_env env,
+                                                            size_t length,
+                                                            const void* data,
+diff --git a/test/js-native-api/test_general/test_general.c b/test/js-native-api/test_general/test_general.c
+index 7b755ce9a9f202eaf91e5103d6c0204925f99cac..b474ab442cb763cb84ec77901da91a6f1471c946 100644
+--- a/test/js-native-api/test_general/test_general.c
++++ b/test/js-native-api/test_general/test_general.c
+@@ -1,3 +1,8 @@
++// we define NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED here to
++// validate that it can be used as a form of test itself. It is
++// not related to any of the other tests
++// defined in the file
++#define NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <stdint.h>
+diff --git a/test/node-api/test_general/test_general.c b/test/node-api/test_general/test_general.c
+index d430e2df4f3520fddbc5ce8d260adba565e6c3c9..b8d837d5e45650fcb9ba04030721b0f51377f078 100644
+--- a/test/node-api/test_general/test_general.c
++++ b/test/node-api/test_general/test_general.c
+@@ -1,4 +1,9 @@
+ #define NAPI_EXPERIMENTAL
++// we define NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED here to validate that it can
++// be used as a form of test itself. It is
++// not related to any of the other tests
++// defined in the file
++#define NODE_API_NO_EXTERNAL_BUFFERS_ALLOWED
+ #include <node_api.h>
+ #include <stdlib.h>
+ #include "../../js-native-api/common.h"
