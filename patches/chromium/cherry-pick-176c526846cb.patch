@@ -1,0 +1,192 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Sesek <rsesek@chromium.org>
+Date: Fri, 18 Nov 2022 19:31:38 +0000
+Subject: Fix a data race leading to use-after-free in mojo::ChannelMac
+ ShutDown
+
+(cherry picked from commit bd8a1e43aa93d5bb7674cb5a431e7375f7e2f192)
+
+Bug: 1378564
+Change-Id: I67041b1e2ef08dd0ee1ccbf6d534249c539b74db
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4027242
+Commit-Queue: Robert Sesek <rsesek@chromium.org>
+Reviewed-by: Ken Rockot <rockot@google.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1071700}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4035114
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Robert Sesek <rsesek@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#881}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/mojo/core/channel_mac.cc b/mojo/core/channel_mac.cc
+index ce813f3d66a3d6841b4b04a625d8fd1a816b4a3e..344336b86d7ebb2df7be50db2d2f737320378342 100644
+--- a/mojo/core/channel_mac.cc
++++ b/mojo/core/channel_mac.cc
+@@ -25,6 +25,7 @@
+ #include "base/mac/scoped_mach_vm.h"
+ #include "base/message_loop/message_pump_for_io.h"
+ #include "base/task/current_thread.h"
++#include "base/thread_annotations.h"
+ #include "base/trace_event/typed_macros.h"
+ 
+ extern "C" {
+@@ -182,7 +183,10 @@ class ChannelMac : public Channel,
+         vm_allocate(mach_task_self(), &address, size,
+                     VM_MAKE_TAG(VM_MEMORY_MACH_MSG) | VM_FLAGS_ANYWHERE);
+     MACH_CHECK(kr == KERN_SUCCESS, kr) << "vm_allocate";
+-    send_buffer_.reset(address, size);
++    {
++      base::AutoLock lock(write_lock_);
++      send_buffer_.reset(address, size);
++    }
+ 
+     kr = vm_allocate(mach_task_self(), &address, size,
+                      VM_MAKE_TAG(VM_MEMORY_MACH_MSG) | VM_FLAGS_ANYWHERE);
+@@ -222,7 +226,11 @@ class ChannelMac : public Channel,
+ 
+     watch_controller_.StopWatchingMachPort();
+ 
+-    send_buffer_.reset();
++    {
++      base::AutoLock lock(write_lock_);
++      send_buffer_.reset();
++      reject_writes_ = true;
++    }
+     receive_buffer_.reset();
+     incoming_handles_.clear();
+ 
+@@ -330,7 +338,7 @@ class ChannelMac : public Channel,
+     SendPendingMessagesLocked();
+   }
+ 
+-  void SendPendingMessagesLocked() {
++  void SendPendingMessagesLocked() EXCLUSIVE_LOCKS_REQUIRED(write_lock_) {
+     // If a previous send failed due to the receiver's kernel message queue
+     // being full, attempt to send that failed message first.
+     if (send_buffer_contains_message_ && !reject_writes_) {
+@@ -357,7 +365,8 @@ class ChannelMac : public Channel,
+     }
+   }
+ 
+-  bool SendMessageLocked(MessagePtr message) {
++  bool SendMessageLocked(MessagePtr message)
++      EXCLUSIVE_LOCKS_REQUIRED(write_lock_) {
+     DCHECK(!send_buffer_contains_message_);
+     base::BufferIterator<char> buffer(
+         reinterpret_cast<char*>(send_buffer_.address()), send_buffer_.size());
+@@ -452,7 +461,8 @@ class ChannelMac : public Channel,
+     return MachMessageSendLocked(header);
+   }
+ 
+-  bool MachMessageSendLocked(mach_msg_header_t* header) {
++  bool MachMessageSendLocked(mach_msg_header_t* header)
++      EXCLUSIVE_LOCKS_REQUIRED(write_lock_) {
+     kern_return_t kr = mach_msg(header, MACH_SEND_MSG | MACH_SEND_TIMEOUT,
+                                 header->msgh_size, 0, MACH_PORT_NULL,
+                                 /*timeout=*/0, MACH_PORT_NULL);
+@@ -674,7 +684,7 @@ class ChannelMac : public Channel,
+   }
+ 
+   // Marks the channel as unaccepting of new messages and shuts it down.
+-  void OnWriteErrorLocked(Error error) {
++  void OnWriteErrorLocked(Error error) EXCLUSIVE_LOCKS_REQUIRED(write_lock_) {
+     reject_writes_ = true;
+     io_task_runner_->PostTask(
+         FROM_HERE, base::BindOnce(&ChannelMac::OnError, this, error));
+@@ -716,17 +726,17 @@ class ChannelMac : public Channel,
+   // Lock that protects the following members.
+   base::Lock write_lock_;
+   // Whether writes should be rejected due to an internal error.
+-  bool reject_writes_ = false;
++  bool reject_writes_ GUARDED_BY(write_lock_) = false;
+   // IO buffer for sending Mach messages.
+-  base::mac::ScopedMachVM send_buffer_;
++  base::mac::ScopedMachVM send_buffer_ GUARDED_BY(write_lock_);
+   // If a message timed out during send in MachMessageSendLocked(), this will
+   // be true to indicate that |send_buffer_| contains a message that must
+   // be sent. If this is true, then other calls to Write() queue messages onto
+   // |pending_messages_|.
+-  bool send_buffer_contains_message_ = false;
++  bool send_buffer_contains_message_ GUARDED_BY(write_lock_) = false;
+   // When |handshake_done_| is false or |send_buffer_contains_message_| is true,
+   // calls to Write() will enqueue messages here.
+-  base::circular_deque<MessagePtr> pending_messages_;
++  base::circular_deque<MessagePtr> pending_messages_ GUARDED_BY(write_lock_);
+ };
+ 
+ }  // namespace
+diff --git a/mojo/core/channel_unittest.cc b/mojo/core/channel_unittest.cc
+index 3842426dbf494615628d47f9d9d563a631d117ad..2f5c95d79450021a1cbe4b9289f658ba84813453 100644
+--- a/mojo/core/channel_unittest.cc
++++ b/mojo/core/channel_unittest.cc
+@@ -714,6 +714,69 @@ TEST(ChannelTest, SendToDeadMachPortName) {
+ }
+ #endif  // BUILDFLAG(IS_MAC)
+ 
++TEST(ChannelTest, ShutDownStress) {
++  base::test::SingleThreadTaskEnvironment task_environment(
++      base::test::TaskEnvironment::MainThreadType::IO);
++
++  // Create a second IO thread for Channel B.
++  base::Thread peer_thread("channel_b_io");
++  peer_thread.StartWithOptions(
++      base::Thread::Options(base::MessagePumpType::IO, 0));
++
++  // Create two channels, A and B, which run on different threads.
++  PlatformChannel platform_channel;
++
++  CallbackChannelDelegate delegate_a;
++  scoped_refptr<Channel> channel_a = Channel::Create(
++      &delegate_a, ConnectionParams(platform_channel.TakeLocalEndpoint()),
++      Channel::HandlePolicy::kRejectHandles,
++      task_environment.GetMainThreadTaskRunner());
++  channel_a->Start();
++
++  scoped_refptr<Channel> channel_b = Channel::Create(
++      nullptr, ConnectionParams(platform_channel.TakeRemoteEndpoint()),
++      Channel::HandlePolicy::kRejectHandles, peer_thread.task_runner());
++  channel_b->Start();
++
++  base::WaitableEvent go_event;
++
++  // Warm up the channel to ensure that A and B are connected, then quit.
++  channel_b->Write(Channel::Message::CreateMessage(0, 0));
++  {
++    base::RunLoop run_loop;
++    delegate_a.set_on_message(run_loop.QuitClosure());
++    run_loop.Run();
++  }
++
++  // Block the peer thread while some tasks are queued up from the test main
++  // thread.
++  peer_thread.task_runner()->PostTask(
++      FROM_HERE,
++      base::BindOnce(&base::WaitableEvent::Wait, base::Unretained(&go_event)));
++
++  // First, write some messages for Channel B.
++  for (int i = 0; i < 500; ++i) {
++    channel_b->Write(Channel::Message::CreateMessage(0, 0));
++  }
++
++  // Then shut down channel B.
++  channel_b->ShutDown();
++
++  // Un-block the peer thread.
++  go_event.Signal();
++
++  // And then flood the channel with messages. This will suss out data races
++  // during Channel B's shutdown, since Writes can happen across threads
++  // without a PostTask.
++  for (int i = 0; i < 1000; ++i) {
++    channel_b->Write(Channel::Message::CreateMessage(0, 0));
++  }
++
++  // Explicitly join the thread to wait for pending tasks, which may reference
++  // stack variables, to complete.
++  peer_thread.Stop();
++}
++
+ }  // namespace
+ }  // namespace core
+ }  // namespace mojo
