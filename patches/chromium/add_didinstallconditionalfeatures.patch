@@ -23,10 +23,10 @@ index 7308301ceac36e7bc39cb82181e21f010caa7584..72c9d7960aaf7d98352ef41630fc2398
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 33c2f94275bc94cc094a8ba205c80660913451a8..ca885e3e9de780683a905c290ddf5a7fa4c65065 100644
+index a727a4dc1424b74d3ce42fb98fa2532f10a942bd..4027794ba99642156eab42f8c332e8baae5a9866 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4400,6 +4400,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4389,6 +4389,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -92,7 +92,7 @@ index 68ddcc6249fb85983069ce37bca2a3e71dcb7d44..110a7772999563563bdd5e52e2de027e
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index f2a3fba1a2e68787b9564ca6bb1dfc034fc24db6..0b5a36cbcb82445c13448ff32d6149dc14158f3a 100644
+index 535cff84f194d988b840662c70880f8541319242..118a1735cae961996876efc9a7d03877f9446bcb 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -283,6 +283,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(

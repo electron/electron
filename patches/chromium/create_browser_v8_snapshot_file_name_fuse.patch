@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index 594dccff460d14fdcfdd2f325a65ea4ec08568b1..063b922848a9fb52c804495d7c609a48dc255be3 100644
+index ceda3bfeb5897eadd072bf1f06898210329ff5cf..0045b62c2b189308845c470763da7996fd3550e3 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -38,6 +38,7 @@
@@ -17,8 +17,8 @@ index 594dccff460d14fdcfdd2f325a65ea4ec08568b1..063b922848a9fb52c804495d7c609a48
 +#include "base/strings/string_piece.h"
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/string_util.h"
- #include "base/task/thread_pool/thread_pool_instance.h"
-@@ -244,8 +245,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+ #include "base/task/thread_pool/environment_config.h"
+@@ -245,8 +246,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  #endif
  
@@ -33,7 +33,7 @@ index 594dccff460d14fdcfdd2f325a65ea4ec08568b1..063b922848a9fb52c804495d7c609a48
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -274,11 +280,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -275,11 +281,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -48,7 +48,7 @@ index 594dccff460d14fdcfdd2f325a65ea4ec08568b1..063b922848a9fb52c804495d7c609a48
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -944,7 +951,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -950,7 +957,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  

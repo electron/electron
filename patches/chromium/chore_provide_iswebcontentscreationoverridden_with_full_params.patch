@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 109aaf139473ea5c0639397bcfb05e0efc59e5e4..8cf4b2135a2920c25c656d2395ca8c81aec24989 100644
+index cf17df50c56acbfdc25c205eb6e11e8fd74192c0..bb5bab64b06dac5ba78893da2484bf040fa3f4ce 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4033,8 +4033,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -316,7 +316,7 @@ index 06d3ed32b65708d91b220cdd4991fd377d84217c..bc942580c1bfb16bc5a8e9168f55626d
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 79718f203da48e11e9c86ea0cf32d80e9aa091ea..f75e5b9b13da62240e34a9daa408acb42cf3c842 100644
+index 0cb90a5d6891197054ae1311ee6cfea4b3256212..02f37ad519c6c415a5e6b3542707a4d19d5ad4fd 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
 @@ -554,8 +554,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
@@ -330,10 +330,10 @@ index 79718f203da48e11e9c86ea0cf32d80e9aa091ea..f75e5b9b13da62240e34a9daa408acb4
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
-index 3cd9d5686bc1b242e09e94403bc5ab971a7438ae..f6b02d131d4c02abef04669bd61ab9c04a903ed7 100644
+index 8bd7e95a4076a3cf3661b3d195075862d8be6a1b..bd0bb18e79b493222ed77816e11565650fbbbbc6 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.h
 +++ b/fuchsia_web/webengine/browser/frame_impl.h
-@@ -293,8 +293,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
+@@ -295,8 +295,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

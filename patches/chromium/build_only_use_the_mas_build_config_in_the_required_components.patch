@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index b88265c41b601f9b6cbb3a4a7e1ca59affee6c04..11b6c6017b0fc1fcfb0234391e04a77cf1e95ea0 100644
+index 915ecd8d726cec265848502622dd13d4dff099b7..554dc59e40c6da9d272bd7e61657762978645149 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -153,18 +153,18 @@ index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aa
  
  # The standard API of net/dns.
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index 9ad0c932796e9d330ad7501f358b7c2d51ba0ac9..e6a4b7f608f19d4b239968a0f438cf9c6bfc6f7a 100644
+index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3edb116d9b2 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
-@@ -41,6 +41,7 @@ component("seatbelt") {
+@@ -37,6 +37,7 @@ component("seatbelt") {
    ]
-   public_configs = [ "//third_party/abseil-cpp:absl_include_config" ]
+   public_deps = [ "//third_party/protobuf:protobuf_lite" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
 +  configs += ["//electron/build/config:mas_build"]
  }
  
  component("seatbelt_extension") {
-@@ -54,6 +55,7 @@ component("seatbelt_extension") {
+@@ -50,6 +51,7 @@ component("seatbelt_extension") {
    libs = [ "sandbox" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -172,7 +172,7 @@ index 9ad0c932796e9d330ad7501f358b7c2d51ba0ac9..e6a4b7f608f19d4b239968a0f438cf9c
  }
  
  component("system_services") {
-@@ -68,6 +70,7 @@ component("system_services") {
+@@ -64,6 +66,7 @@ component("system_services") {
    deps = [ ":seatbelt_export" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -257,10 +257,10 @@ index 0f1747b8b5f562c22fad4d4a8bef20cf823f8bac..731af13b2e4a35d728372b9937aceba0
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index b2b0e7bbfd4ff42065a7a5aeb13dbe76e5c2e23b..c03ba8f19233a5fc70f378e9af83333afa2a5c1b 100644
+index e4200f6b54b139e883958402e966f49d75d81f85..22f13e194fa033607d35a9a741571a8492dfef37 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -662,6 +662,7 @@ component("views") {
+@@ -661,6 +661,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

@@ -56,7 +56,7 @@ index cfadd28fca9f80bf57578db78d5472c4f75414e1..4925dc5cafbf312c3c9640d5873d6219
    return true;
  }
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 1c37d9ec9c76985b8bcbde26e9adcc1b61ab547c..c9024d6adc00f45eb6fdead976e03788feb8ce3c 100644
+index db736da8fd77bcde98f69d92f5ff053c0d0a2518..4fc799bd2738698712eec94ac5b51cc67e714c91 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -117,7 +117,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(

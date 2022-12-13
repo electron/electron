@@ -44,7 +44,7 @@ index 89b9323c08cfed0d3ea3a0ec1beaa0bdfabe343e..69ae95eb8537bab751d27749d6cf392a
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 0359472f5525dc549611a049701748a8ff202d2b..6f9c0497d644106e838ea6e4d94b979000e83dbe 100644
+index 41e73ceaa9f71e38c579ca2506372cb2d2b5300e..8fa32a5f280225742182bd21b5d94422c719c27a 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -566,10 +566,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -105,7 +105,7 @@ index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..8c69b989882084946bb821e1d64d7565
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 67473b500bc8305bc21ec0324001ea5a64612aee..859e45bd6f4f130947e0718e32fea4abe8fe3a8c 100644
+index af40af18152d184b9235e412ab053a9674a1b498..54de20661940542fb6565aefa6117966b5968ca0 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -22,7 +22,9 @@
@@ -118,7 +118,7 @@ index 67473b500bc8305bc21ec0324001ea5a64612aee..859e45bd6f4f130947e0718e32fea4ab
  
  namespace {
  
-@@ -621,6 +623,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -616,6 +618,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    if ([NSApp isActive])
      return window == [NSApp accessibilityFocusedWindow];
  
@@ -126,7 +126,7 @@ index 67473b500bc8305bc21ec0324001ea5a64612aee..859e45bd6f4f130947e0718e32fea4ab
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -648,6 +651,7 @@ void PostAnnouncementNotification(NSString* announcement) {
+@@ -643,6 +646,7 @@ void PostAnnouncementNotification(NSString* announcement) {
    // from within the app shim content.
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
      return true;
