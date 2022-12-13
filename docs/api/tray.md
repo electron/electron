@@ -12,6 +12,7 @@ Process: [Main](../glossary.md#main-process)
 const { app, Menu, Tray } = require('electron')
 
 let tray = null
+
 app.whenReady().then(() => {
   tray = new Tray('/path/to/my/icon')
   const contextMenu = Menu.buildFromTemplate([
@@ -22,6 +23,13 @@ app.whenReady().then(() => {
   ])
   tray.setToolTip('This is my application.')
   tray.setContextMenu(contextMenu)
+})
+
+app.on('quit', () => {
+  // If the tray icon is not destroyed, on some
+  // platforms (including Windows) it may not
+  // disappear until the mouse moves over it.
+  tray?.destroy()
 })
 ```
 
