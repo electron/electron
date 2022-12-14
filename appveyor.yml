@@ -281,9 +281,9 @@ for:
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
       - ps: |
-          Get-Process | Where Name -Like "electron*" | Stop-Process      
-          Get-Process | Where Name -Like "msedge*" | Stop-Process
+          Get-Process | Where Name -Like "electron*" | Stop-Process -Force -ErrorAction Ignore
+          Get-Process | Where Name -Like "msedge*" | Stop-Process -Force -ErrorAction Ignore
       - ps: |
-          Remove-Item -path $env:APPDATA/Electron* -Recurse -Force -ErrorAction Ignore
-          Remove-Item -path $env:LOCALAPPDATA/Electron* -Recurse -Force -ErrorAction Ignore
+          Remove-Item -path $env:APPDATA\Electron* -Recurse -Force -ErrorAction Ignore
+          Remove-Item -path $env:LOCALAPPDATA\Electron* -Recurse -Force -ErrorAction Ignore
           Remove-Item -path C:\projects -Recurse -Force -ErrorAction Ignore
