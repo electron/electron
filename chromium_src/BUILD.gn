@@ -80,7 +80,6 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
     "//chrome/browser/ui/frame/window_frame_util.cc",
     "//chrome/browser/ui/frame/window_frame_util.h",
-    "//chrome/browser/ui/native_window_tracker.h",
     "//chrome/browser/ui/ui_features.cc",
     "//chrome/browser/ui/ui_features.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
@@ -89,6 +88,7 @@ static_library("chrome") {
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
+    "//ui/views/native_window_tracker.h",
   ]
 
   if (is_posix) {
@@ -138,9 +138,9 @@ static_library("chrome") {
   if (use_aura) {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
-      "//chrome/browser/ui/aura/native_window_tracker_aura.cc",
-      "//chrome/browser/ui/aura/native_window_tracker_aura.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
+      "//ui/views/native_window_tracker_aura.cc",
+      "//ui/views/native_window_tracker_aura.h",
     ]
   }
 
