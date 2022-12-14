@@ -124,3 +124,7 @@ cherry-pick-7196a42b42ce.patch
 fix_tray_icon_gone_on_lock_screen.patch
 cherry-pick-2611772cf0a0.patch
 cherry-pick-3235c1d1955b.patch
+chore_introduce_blocking_api_for_electron.patch
+chore_patch_out_partition_attribute_dcheck_for_webviews.patch
+expose_v8initializer_codegenerationcheckcallbackinmainthread.patch
+chore_patch_out_profile_methods_in_profile_selections_cc.patch

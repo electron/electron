@@ -158,19 +158,35 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 }
 
 bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
+                                     v8::Local<v8::String> source) {
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
-  v8::Isolate* isolate = context->GetIsolate();
-  if (node::Environment::GetCurrent(isolate) == nullptr) {
+  if (node::Environment::GetCurrent(context) == nullptr) {
     if (gin_helper::Locker::IsBrowserProcess())
       return false;
     return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
-        context, v8::String::Empty(isolate));
+        context, source);
   }
 
-  return node::AllowWasmCodeGenerationCallback(context,
-                                               v8::String::Empty(isolate));
+  return node::AllowWasmCodeGenerationCallback(context, source);
+}
+
+v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Value> source,
+    bool is_code_like) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  if (node::Environment::GetCurrent(context) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess()) {
+      NOTREACHED();
+      return {false, {}};
+    }
+    return blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
+        context, source, is_code_like);
+  }
+
+  return node::ModifyCodeGenerationFromStrings(context, source, is_code_like);
 }
 
 void ErrorMessageListener(v8::Local<v8::Message> message,
@@ -547,6 +563,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Use a custom callback here to allow us to leverage Blink's logic in the
   // renderer process.
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+  is.modify_code_generation_from_strings_callback =
+      ModifyCodeGenerationFromStrings;
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kUtility) {
