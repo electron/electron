@@ -355,6 +355,30 @@ describe('web security', () => {
     });
   });
 
+  describe('csp in sandbox: false', () => {
+    it('is correctly applied', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { sandbox: false }
+      });
+      w.loadURL(`data:text/html,<head>
+          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+        </head>
+        <script>
+          try {
+            // We use console.log here because it is easier than making a
+            // preload script, and the behavior under test changes when
+            // contextIsolation: false
+            console.log(eval('failure'))
+          } catch (e) {
+            console.log('success')
+          }
+        </script>`);
+      const [,, message] = await emittedOnce(w.webContents, 'console-message');
+      expect(message).to.equal('success');
+    });
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
     const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);
