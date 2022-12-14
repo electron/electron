@@ -1479,7 +1479,7 @@ describe('chromium features', () => {
       });
 
       afterEach(() => {
-        (contents as any).destroy();
+        contents.destroy();
         contents = null as any;
       });
 
@@ -1595,7 +1595,7 @@ describe('chromium features', () => {
 
       afterEach(async () => {
         if (contents) {
-          (contents as any).destroy();
+          contents.destroy();
           contents = null as any;
         }
         await closeAllWindows();
