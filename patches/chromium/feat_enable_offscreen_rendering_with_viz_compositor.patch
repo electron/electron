@@ -231,10 +231,10 @@ index b09785bfc8143c355e75d473a9a25b2e355c97a0..a6cd4e2399b1b17bad00c9e6f6520819
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac895d8d5f4
+index 0000000000000000000000000000000000000000..4857347fd0654a46be42fbda45036760eb51177d
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,159 @@
+@@ -0,0 +1,160 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -269,7 +269,7 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +}
 +
 +void SoftwareOutputDeviceBase::Resize(const gfx::Size& viewport_pixel_size,
-+                                         float scale_factor) {
++                                      float scale_factor) {
 +  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 +  DCHECK(!in_paint_);
 +
@@ -280,8 +280,7 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +  ResizeDelegated();
 +}
 +
-+SkCanvas* SoftwareOutputDeviceBase::BeginPaint(
-+    const gfx::Rect& damage_rect) {
++SkCanvas* SoftwareOutputDeviceBase::BeginPaint(const gfx::Rect& damage_rect) {
 +  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
 +  DCHECK(!in_paint_);
 +
@@ -319,7 +318,8 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +
 +  // We aren't waiting on DrawAck() and can immediately run the callback.
 +  if (!waiting_on_draw_ack_) {
-+    task_runner_->PostTask(FROM_HERE,
++    task_runner_->PostTask(
++        FROM_HERE,
 +        base::BindOnce(std::move(swap_ack_callback), viewport_pixel_size_));
 +    return;
 +  }
@@ -344,11 +344,11 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +    return;
 +  }
 +
-+  #if defined(WIN32)
++#if defined(WIN32)
 +  canvas_ = skia::CreatePlatformCanvasWithSharedSection(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
 +      region.GetPlatformHandle(), skia::CRASH_ON_FAILURE);
-+  #else
++#else
 +  shm_mapping_ = region.Map();
 +  if (!shm_mapping_.IsValid()) {
 +    DLOG(ERROR) << "Failed to map " << required_bytes << " bytes";
@@ -358,7 +358,7 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +  canvas_ = skia::CreatePlatformCanvasWithPixels(
 +      viewport_pixel_size_.width(), viewport_pixel_size_.height(), false,
 +      static_cast<uint8_t*>(shm_mapping_.memory()), skia::CRASH_ON_FAILURE);
-+  #endif
++#endif
 +
 +  // Transfer region ownership to the browser process.
 +  layered_window_updater_->OnAllocatedSharedMemory(viewport_pixel_size_,
@@ -376,8 +376,9 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +  if (!canvas_)
 +    return;
 +
-+  layered_window_updater_->Draw(damage_rect, base::BindOnce(
-+      &SoftwareOutputDeviceProxy::DrawAck, base::Unretained(this)));
++  layered_window_updater_->Draw(
++      damage_rect, base::BindOnce(&SoftwareOutputDeviceProxy::DrawAck,
++                                  base::Unretained(this)));
 +  waiting_on_draw_ack_ = true;
 +
 +  TRACE_EVENT_ASYNC_BEGIN0("viz", "SoftwareOutputDeviceProxy::Draw", this);
@@ -396,10 +397,10 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..ce997ec62c30be32778d825ea379ba37f73acc05
+index 0000000000000000000000000000000000000000..3a60871d510b5c6272da191b6885596ac0e25f96
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,96 @@
+@@ -0,0 +1,98 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -467,11 +468,13 @@ index 0000000000000000000000000000000000000000..ce997ec62c30be32778d825ea379ba37
 +  ~SoftwareOutputDeviceProxy() override;
 +
 +  SoftwareOutputDeviceProxy(const SoftwareOutputDeviceProxy&) = delete;
-+  SoftwareOutputDeviceProxy& operator=(const SoftwareOutputDeviceProxy&) = delete;
++  SoftwareOutputDeviceProxy& operator=(const SoftwareOutputDeviceProxy&) =
++      delete;
 +
 +  // SoftwareOutputDevice implementation.
-+  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
-+                     gl::FrameData data) override;
++  void OnSwapBuffers(
++      SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
++      gl::FrameData data) override;
 +
 +  // SoftwareOutputDeviceBase implementation.
 +  void ResizeDelegated() override;
