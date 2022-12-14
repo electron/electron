@@ -396,7 +396,7 @@ index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac8
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..05c7da6c24c9a099eb2ca920075b8df672602bb4
+index 0000000000000000000000000000000000000000..ce997ec62c30be32778d825ea379ba37f73acc05
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
 @@ -0,0 +1,96 @@
@@ -470,7 +470,7 @@ index 0000000000000000000000000000000000000000..05c7da6c24c9a099eb2ca920075b8df6
 +  SoftwareOutputDeviceProxy& operator=(const SoftwareOutputDeviceProxy&) = delete;
 +
 +  // SoftwareOutputDevice implementation.
-+  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback
++  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
 +                     gl::FrameData data) override;
 +
 +  // SoftwareOutputDeviceBase implementation.
