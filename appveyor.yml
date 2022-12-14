@@ -214,7 +214,9 @@ for:
         ELECTRON_TEST_RESULTS_DIR: junit
         MOCHA_MULTI_REPORTERS: 'mocha-junit-reporter, tap'
         MOCHA_REPORTER: mocha-multi-reporters
-        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true  
+        ELECTRON_SKIP_NATIVE_MODULE_TESTS: true
+
+    clone_folder:  C:\Users\appveyor\projects\src\electron
 
     build_script:
       - ps: |
@@ -286,4 +288,4 @@ for:
       - ps: |
           Remove-Item -path $env:APPDATA\Electron* -Recurse -Force -ErrorAction Ignore
           Remove-Item -path $env:LOCALAPPDATA\Electron* -Recurse -Force -ErrorAction Ignore
-          Remove-Item -path C:\projects -Recurse -Force -ErrorAction Ignore
+          Remove-Item -path C:\Users\appveyor\projects\src\electron -Recurse -Force -ErrorAction Ignore
