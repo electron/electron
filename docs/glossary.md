@@ -239,6 +239,4 @@ embedded content.
 [offscreen rendering]: tutorial/offscreen-rendering.md
 [process sandboxing]: tutorial/sandbox.md
 [renderer]: #renderer-process
-[userland]: #userland
 [UtilityProcess]: api/utility-process.md
-[v8]: #v8

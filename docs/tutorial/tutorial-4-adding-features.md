@@ -65,7 +65,6 @@ into end users' hands.
 [discord]: https://discord.gg/electronjs
 [github]: https://github.com/electron/website/issues/new
 [how-to]: ./examples.md
-[node-platform]: https://nodejs.org/api/process.html#process_process_platform
 
 <!-- Tutorial links -->
 

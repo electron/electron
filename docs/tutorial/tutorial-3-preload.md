@@ -254,32 +254,15 @@ functionality to your app, then teaching you distributing your app to users.
 
 <!-- Links -->
 
-[advanced-installation]: ./installation.md
-[application debugging]: ./application-debugging.md
-[app]: ../api/app.md
-[app-ready]: ../api/app.md#event-ready
-[app-when-ready]: ../api/app.md#appwhenready
-[browser-window]: ../api/browser-window.md
-[commonjs]: https://nodejs.org/docs/latest/api/modules.html#modules_modules_commonjs_modules
-[compound task]: https://code.visualstudio.com/Docs/editor/tasks#_compound-tasks
 [content-script]: https://developer.chrome.com/docs/extensions/mv3/content_scripts/
 [contextbridge]: ../api/context-bridge.md
-[context-isolation]: ./context-isolation.md
 [`document.getelementbyid`]: https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById
-[devtools-extension]: ./devtools-extension.md
 [dirname]: https://nodejs.org/api/modules.html#modules_dirname
 [global]: https://developer.mozilla.org/en-US/docs/Glossary/Global_object
 [ipc]: ./ipc.md
-[mdn-csp]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 [modules]: ../api/app.md
 [node-api]: https://nodejs.org/dist/latest/docs/api/
-[package-json-main]: https://docs.npmjs.com/cli/v7/configuring-npm/package-json#main
-[package-scripts]: https://docs.npmjs.com/cli/v7/using-npm/scripts
 [path-join]: https://nodejs.org/api/path.html#path_path_join_paths
-[process-model]: ./process-model.md
-[react]: https://reactjs.org
-[sandbox]: ./sandbox.md
-[webpack]: https://webpack.js.org
 
 <!-- Tutorial links -->
 

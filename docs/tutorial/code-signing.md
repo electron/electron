@@ -189,7 +189,6 @@ can find [its documentation here](https://www.electron.build/code-signing).
 See the [Windows Store Guide].
 
 [apple developer program]: https://developer.apple.com/programs/
-[`electron-forge`]: https://github.com/electron/forge
 [`@electron/osx-sign`]: https://github.com/electron/osx-sign
 [`electron-packager`]: https://github.com/electron/electron-packager
 [`@electron/notarize`]: https://github.com/electron/notarize
