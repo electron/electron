@@ -52,7 +52,7 @@ class Archive : public node::ObjectWrap {
       return;
     }
 
-    auto archive = asar::GetOrCreateAsarArchive(path);
+    std::shared_ptr<asar::Archive> archive = asar::GetOrCreateAsarArchive(path);
     if (!archive) {
       isolate->ThrowException(v8::Exception::Error(node::FIXED_ONE_BYTE_STRING(
           isolate, "failed to initialize archive")));
