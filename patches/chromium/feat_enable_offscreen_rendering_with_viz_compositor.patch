@@ -231,10 +231,10 @@ index b09785bfc8143c355e75d473a9a25b2e355c97a0..a6cd4e2399b1b17bad00c9e6f6520819
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..d5e90022d129ce6a7a8effd6c85d3a5295ac79bf
+index 0000000000000000000000000000000000000000..0d054e0ce09a26f3aec96af2fc06dac895d8d5f4
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,158 @@
+@@ -0,0 +1,159 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -313,7 +313,8 @@ index 0000000000000000000000000000000000000000..d5e90022d129ce6a7a8effd6c85d3a52
 +}
 +
 +void SoftwareOutputDeviceProxy::OnSwapBuffers(
-+    SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback) {
++    SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
++    gl::FrameData data) {
 +  DCHECK(swap_ack_callback_.is_null());
 +
 +  // We aren't waiting on DrawAck() and can immediately run the callback.
@@ -395,10 +396,10 @@ index 0000000000000000000000000000000000000000..d5e90022d129ce6a7a8effd6c85d3a52
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..daeabe1906b177adfe56b8057a72afb33269f976
+index 0000000000000000000000000000000000000000..05c7da6c24c9a099eb2ca920075b8df672602bb4
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
-@@ -0,0 +1,95 @@
+@@ -0,0 +1,96 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -469,7 +470,8 @@ index 0000000000000000000000000000000000000000..daeabe1906b177adfe56b8057a72afb3
 +  SoftwareOutputDeviceProxy& operator=(const SoftwareOutputDeviceProxy&) = delete;
 +
 +  // SoftwareOutputDevice implementation.
-+  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback) override;
++  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
++                     gl::FrameData data) override;
 +
 +  // SoftwareOutputDeviceBase implementation.
 +  void ResizeDelegated() override;
