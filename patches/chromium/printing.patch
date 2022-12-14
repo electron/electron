@@ -121,7 +121,7 @@ index d17376917f4d8f5740b265a00e748929cbade643..f8c89a491c9b27e03d19327761c21bd1
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 7a41f222b5441ea07902c094587ee6e73ccc3f35..e448b3de2e6b73bfabab76859674d1ce98bf5c93 100644
+index 3a0834bd34d8ef894ff7dcfc588ac86c7c51e2e0..6695e86dbae0c16504c18054d136fc3b63a32475 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@

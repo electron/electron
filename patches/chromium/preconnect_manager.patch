@@ -10,7 +10,7 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index de39505b1e515559182b6b3f25ffbe96f0b8262b..bc6bb3b347f8f90ffe8c992e2e11fbd8198b7631 100644
+index de39505b1e515559182b6b3f25ffbe96f0b8262b..a040d30dd35f3f6c4dda58fb9d2e3e537ecbb9f7 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -10,9 +10,11 @@
@@ -46,7 +46,7 @@ index de39505b1e515559182b6b3f25ffbe96f0b8262b..bc6bb3b347f8f90ffe8c992e2e11fbd8
  PreconnectedRequestStats::PreconnectedRequestStats(const url::Origin& origin,
                                                     bool was_preconnected)
      : origin(origin), was_preconnected(was_preconnected) {}
-@@ -83,12 +83,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
+@@ -83,12 +99,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
  PreconnectManager::~PreconnectManager() = default;
  
  bool PreconnectManager::IsEnabled() {
@@ -106,4 +106,3 @@ index 5f7e0db497a48829a330d7aae63d0da34cca7e33..d25f97a11174cb6e28b961cd7fc59ba3
  
  struct PreconnectedRequestStats {
    PreconnectedRequestStats(const url::Origin& origin, bool was_preconnected);
-
