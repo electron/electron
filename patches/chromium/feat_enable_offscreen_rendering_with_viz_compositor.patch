@@ -470,7 +470,7 @@ index 0000000000000000000000000000000000000000..05c7da6c24c9a099eb2ca920075b8df6
 +  SoftwareOutputDeviceProxy& operator=(const SoftwareOutputDeviceProxy&) = delete;
 +
 +  // SoftwareOutputDevice implementation.
-+  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
++  void OnSwapBuffers(SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback
 +                     gl::FrameData data) override;
 +
 +  // SoftwareOutputDeviceBase implementation.
