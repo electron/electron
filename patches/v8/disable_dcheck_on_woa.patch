@@ -1,0 +1,26 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Wed, 14 Dec 2022 13:15:17 -0500
+Subject: disable dcheck on woa
+
+This DCHECK is causing problems on Windows on Arm because
+the thread gets migrated to another CPU.  According to
+Richard Townsend at ARM, this issue should be fixed in a newer
+version of V8, so this patch can probably be removed in the next
+chromium roll.
+
+diff --git a/src/base/platform/time.cc b/src/base/platform/time.cc
+index f5f418947b92f16be5dba633a16d529d778565ea..e9accf465e265c40a7cf1d42f86af40d9712f390 100644
+--- a/src/base/platform/time.cc
++++ b/src/base/platform/time.cc
+@@ -907,7 +907,9 @@ double ThreadTicks::TSCTicksPerSecond() {
+     return 0;
+ 
+   // Compute the frequency of the TSC.
+-  DCHECK_GE(tsc_now, tsc_initial);
++  #ifndef V8_HOST_ARCH_ARM64
++    DCHECK_GE(tsc_now, tsc_initial);
++  #endif
+   uint64_t tsc_ticks = tsc_now - tsc_initial;
+   tsc_ticks_per_second = tsc_ticks / elapsed_time_seconds;
+ 
