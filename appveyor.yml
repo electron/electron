@@ -45,7 +45,7 @@ environment:
       APPVEYOR_BUILD_WORKER_IMAGE: Windows
       APPVEYOR_BUILD_WORKER_CLOUD: WOA
 
-clone_folder: C:\projects\src\electron
+clone_folder:  C:\Users\appveyor\projects\src\electron
 
 # the first failed job cancels other jobs and fails entire build
 matrix:
@@ -191,7 +191,7 @@ for:
     on_finish:
       # Uncomment this lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      - cd C:\projects\src
+      - cd C:\Users\appveyor\projects\src
       - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
       - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
       - if exist out\Default\shell_browser_ui_unittests.exe (appveyor-retry appveyor PushArtifact out\Default\shell_browser_ui_unittests.exe)
@@ -266,8 +266,8 @@ for:
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
-      - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
+      - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging
+      - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
       - echo "About to verify mksnapshot"
@@ -279,11 +279,10 @@ for:
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )
       - ps: |
           Get-Process | Where Name -Like "electron*" | Stop-Process -Force -ErrorAction Ignore
           Get-Process | Where Name -Like "msedge*" | Stop-Process -Force -ErrorAction Ignore
       - ps: |
           Remove-Item -path $env:APPDATA\Electron* -Recurse -Force -ErrorAction Ignore
           Remove-Item -path $env:LOCALAPPDATA\Electron* -Recurse -Force -ErrorAction Ignore
-          Remove-Item -path C:\projects -Recurse -Force -ErrorAction Ignore
+          Remove-Item -path C:\Users\appveyor\projects -Recurse -Force -ErrorAction Ignore
