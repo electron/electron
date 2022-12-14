@@ -36,13 +36,13 @@ guide!).
 
 | Guide                 | Description                                                                                                         |
 | :-------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| [Message ports]       | This guide provides some examples of how you might use MessagePorts in your app to communicate different processes. |
-| [Device access]       | Learn how to access the device hardware (Bluetooth, USB, Serial).                                                   |
-| [Keyboard shortcuts]  | Configure local and global keyboard shortcuts for your Electron application.                                        |
-| [Multithreading]      | With Web Workers, it is possible to run JavaScript in OS-level threads                                              |
-| [Offscreen rendering] | Offscreen rendering lets you obtain the content of a BrowserWindow in a bitmap, so it can be rendered anywhere.     |
-| [Spellchecker]        | Learn how to use the built-in spellchecker, set languages, etc.                                                     |
-| [Web embeds]          | Discover the different ways to embed third-party web content in your application.                                   |
+| [Message ports][]       | This guide provides some examples of how you might use MessagePorts in your app to communicate different processes. |
+| [Device access][]       | Learn how to access the device hardware (Bluetooth, USB, Serial).                                                   |
+| [Keyboard shortcuts][]  | Configure local and global keyboard shortcuts for your Electron application.                                        |
+| [Multithreading][]      | With Web Workers, it is possible to run JavaScript in OS-level threads                                              |
+| [Offscreen rendering][] | Offscreen rendering lets you obtain the content of a BrowserWindow in a bitmap, so it can be rendered anywhere.     |
+| [Spellchecker][]        | Learn how to use the built-in spellchecker, set languages, etc.                                                     |
+| [Web embeds][]          | Discover the different ways to embed third-party web content in your application.                                   |
 
 <!-- guide-table-end -->
 
@@ -55,3 +55,10 @@ our [Discord server][discord] and let us know!
 [app]: ../api/app.md
 [discord]: https://discord.gg/electronjs
 [fiddle]: https://www.electronjs.org/fiddle
+[Message ports]: ./message-ports.md
+[Device access]: ./devices.md
+[Keyboard shortcuts]: ./keyboard-shortcuts.md
+[Multithreading]: ./multithreading.md
+[Offscreen rendering]: ./offscreen-rendering.md
+[Spellchecker]: ./spellchecker.md
+[Web embeds]: ./web-embeds.md

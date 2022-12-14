@@ -58,7 +58,7 @@ For more information, check out the [Process Sandboxing](./sandbox.md) guide.
 
 Preload scripts are injected before a web page loads in the renderer,
 similar to a Chrome extension's [content scripts][content-script]. To add features to your renderer
-that require privileged access, you can define [global] objects through the
+that require privileged access, you can define [global][] objects through the
 [contextBridge][contextbridge] API.
 
 To demonstrate this concept, you will create a preload script that exposes your app's
@@ -115,7 +115,7 @@ There are two Node.js concepts that are used here:
 
 At this point, the renderer has access to the `versions` global, so let's display that
 information in the window. This variable can be accessed via `window.versions` or simply
-`versions`. Create a `renderer.js` script that uses the [`document.getElementById`]
+`versions`. Create a `renderer.js` script that uses the [`document.getElementById`][]
 DOM API to replace the displayed text for the HTML element with `info` as its `id` property.
 
 ```js title="renderer.js"

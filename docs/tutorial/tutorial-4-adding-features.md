@@ -49,7 +49,7 @@ and deeper operating system integrations. To get started, check out the
 
 :::note Let us know if something is missing!
 
-If you can't find what you are looking for, please let us know on [GitHub] or in
+If you can't find what you are looking for, please let us know on [GitHub][] or in
 our [Discord server][discord]!
 
 :::

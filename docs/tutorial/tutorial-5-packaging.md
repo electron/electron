@@ -24,7 +24,7 @@ This is **part 5** of the Electron tutorial.
 ## Learning goals
 
 In this part of the tutorial, we'll be going over the basics of packaging and distributing
-your app with [Electron Forge].
+your app with [Electron Forge][].
 
 ## Using Electron Forge
 
@@ -35,8 +35,8 @@ as a **distributable**). Distributables can be either installers (e.g. MSI on Wi
 portable executable files (e.g. `.app` on macOS).
 
 Electron Forge is an all-in-one tool that handles the packaging and distribution of Electron
-apps. Under the hood, it combines a lot of existing Electron tools (e.g. [`electron-packager`],
-[`@electron/osx-sign`], [`electron-winstaller`], etc.) into a single interface so you do not
+apps. Under the hood, it combines a lot of existing Electron tools (e.g. [`electron-packager`][],
+[`@electron/osx-sign`][], [`electron-winstaller`][], etc.) into a single interface so you do not
 have to worry about wiring them all together.
 
 ### Importing your project into Forge
@@ -65,7 +65,7 @@ to your `package.json` file.
 :::info CLI documentation
 
 For more information on `make` and other Forge APIs, check out
-the [Electron Forge CLI documentation].
+the [Electron Forge CLI documentation][].
 
 :::
 
@@ -106,21 +106,21 @@ created your first bundled Electron application.
 :::tip Distributable formats
 
 Electron Forge can be configured to create distributables in different OS-specific formats
-(e.g. DMG, deb, MSI, etc.). See Forge's [Makers] documentation for all configuration options.
+(e.g. DMG, deb, MSI, etc.). See Forge's [Makers][] documentation for all configuration options.
 
 :::
 
 :::tip Creating and adding application icons
 
 Setting custom application icons requires a few additions to your config.
-Check out [Forge's icon tutorial] for more information.
+Check out [Forge's icon tutorial][] for more information.
 
 :::
 
 :::info Packaging without Electron Forge
 
 If you want to manually package your code, or if you're just interested understanding the
-mechanics behind packaging an Electron app, check out the full [Application Packaging]
+mechanics behind packaging an Electron app, check out the full [Application Packaging][]
 documentation.
 
 :::
