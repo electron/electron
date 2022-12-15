@@ -1,9 +1,10 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
-import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron/main';
+import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
 import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
+import * as url from 'url';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as qs from 'querystring';
@@ -12,7 +13,7 @@ import { EventEmitter } from 'events';
 import { closeAllWindows, closeWindow } from './window-helpers';
 import { emittedOnce } from './events-helpers';
 import { WebmGenerator } from './video-helpers';
-import { delay } from './spec-helpers';
+import { defer, delay } from './spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -33,6 +34,32 @@ const postData = {
   name: 'post test',
   type: 'string'
 };
+
+async function getResponse (urlRequest: Electron.ClientRequest) {
+  return new Promise<Electron.IncomingMessage>((resolve, reject) => {
+    urlRequest.on('error', reject);
+    urlRequest.on('abort', reject);
+    urlRequest.on('response', (response) => resolve(response));
+    urlRequest.end();
+  });
+}
+
+async function collectStreamBody (response: Electron.IncomingMessage | http.IncomingMessage) {
+  return (await collectStreamBodyBuffer(response)).toString();
+}
+
+function collectStreamBodyBuffer (response: Electron.IncomingMessage | http.IncomingMessage) {
+  return new Promise<Buffer>((resolve, reject) => {
+    response.on('error', reject);
+    (response as NodeJS.EventEmitter).on('aborted', reject);
+    const data: Buffer[] = [];
+    response.on('data', (chunk) => data.push(chunk));
+    response.on('end', (chunk?: Buffer) => {
+      if (chunk) data.push(chunk);
+      resolve(Buffer.concat(data));
+    });
+  });
+}
 
 function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
@@ -57,7 +84,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
 }
 
 // A promise that can be resolved externally.
-function defer (): Promise<any> & {resolve: Function, reject: Function} {
+function deferPromise (): Promise<any> & {resolve: Function, reject: Function} {
   let promiseResolve: Function = null as unknown as Function;
   let promiseReject: Function = null as unknown as Function;
   const promise: any = new Promise((resolve, reject) => {
@@ -868,7 +895,7 @@ describe('protocol module', () => {
     });
 
     it('can have fetch working in it', async () => {
-      const requestReceived = defer();
+      const requestReceived = deferPromise();
       const server = http.createServer((req, res) => {
         res.end();
         server.close();
@@ -1094,5 +1121,132 @@ describe('protocol module', () => {
         });
       }
     }
+  });
+
+  describe('handle', () => {
+    afterEach(closeAllWindows);
+
+    it('receives requests to a custom scheme', async () => {
+      protocol.handle('test-scheme', (req) => { return { body: 'hello ' + req.url }; });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const resp = await getResponse(net.request('test-scheme://foo'));
+      expect(resp.statusCode).to.equal(200);
+    });
+    it('can be unhandled', async () => {
+      protocol.handle('test-scheme', (req) => { return { body: 'hello ' + req.url }; });
+      defer(() => {
+        try {
+          // In case of failure, make sure we unhandle. But we should succeed
+          // :)
+          protocol.unhandle('test-scheme');
+        } catch (_ignored) { /* ignore */ }
+      });
+      const resp1 = await getResponse(net.request('test-scheme://foo'));
+      expect(resp1.statusCode).to.equal(200);
+      protocol.unhandle('test-scheme');
+      await expect(getResponse(net.request('test-scheme://foo'))).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
+    });
+    it('receives requests to an existing scheme', async () => {
+      protocol.handle('https', (req) => { return { body: 'hello ' + req.url }; });
+      defer(() => { protocol.unhandle('https'); });
+      const body = await collectStreamBody(await getResponse(net.request('https://foo')));
+      expect(body).to.equal('hello https://foo/');
+    });
+    it('receives requests to an existing scheme when navigating', async () => {
+      protocol.handle('https', (req) => { return { body: 'hello ' + req.url }; });
+      defer(() => { protocol.unhandle('https'); });
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('https://localhost');
+      expect(await w.webContents.executeJavaScript('document.body.textContent')).to.equal('hello https://localhost/');
+    });
+    it('can send buffer body', async () => {
+      protocol.handle('test-scheme', (req) => { return { body: Buffer.from('hello ' + req.url) }; });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
+      expect(body).to.equal('hello test-scheme:foo/');
+    });
+    it('can send stream body', async () => {
+      protocol.handle('test-scheme', () => { return { body: getStream() }; });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
+      expect(body).to.equal(text);
+    });
+    it('can send errors', async () => {
+      protocol.handle('test-scheme', () => { return { error: -802 }; });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(getResponse(net.request('test-scheme://foo'))).to.eventually.be.rejectedWith('net::ERR_DNS_SERVER_FAILED'); // it's always DNS
+    });
+    it('correctly sets statusCode', async () => {
+      protocol.handle('test-scheme', () => { return { statusCode: 201 }; });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const resp = await getResponse(net.request('test-scheme://foo'));
+      expect(resp.statusCode).to.equal(201);
+    });
+    it('correctly sets content-type and charset', async () => {
+      protocol.handle('test-scheme', () => { return { headers: { 'content-type': 'text/html; charset=testcharset' } }; });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const resp = await getResponse(net.request('test-scheme://foo'));
+      expect(resp.headers).to.have.property('content-type').which.equals('text/html; charset=testcharset');
+    });
+    it('can forward an http request', async () => {
+      const server = http.createServer((req, res) => {
+        expect(req.headers.accept).to.not.equal('');
+        res.end(text);
+      });
+      defer(() => { server.close(); });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      const url = 'http://127.0.0.1:' + port;
+
+      protocol.handle('test-scheme', async (req) => {
+        const upstreamReq = net.request({ ...req, url });
+        upstreamReq.end();
+        const resp = await new Promise<any>(resolve => upstreamReq.on('response', resolve));
+        return {
+          body: resp
+        };
+      });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
+      expect(body).to.equal(text);
+    });
+    it('can forward an http request with headers', async () => {
+      const server = http.createServer((req, res) => {
+        res.setHeader('foo', 'bar');
+        res.end(text);
+      });
+      defer(() => { server.close(); });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const port = (server.address() as AddressInfo).port;
+      const url = 'http://127.0.0.1:' + port;
+
+      protocol.handle('test-scheme', async (req) => {
+        const upstreamReq = net.request({ ...req, url });
+        upstreamReq.end();
+        const resp = await new Promise<any>(resolve => upstreamReq.on('response', resolve));
+        return {
+          headers: resp.headers,
+          body: resp
+        };
+      });
+      defer(() => { protocol.unhandle('test-scheme'); });
+
+      const resp = await getResponse(net.request('test-scheme://foo'));
+      expect(resp.headers.foo).to.equal('bar');
+    });
+    it('can forward to file', async () => {
+      protocol.handle('test-scheme', async () => {
+        const upstreamReq = net.request({ url: url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString() });
+        upstreamReq.end();
+        const resp = await new Promise<any>(resolve => upstreamReq.on('response', resolve));
+        return {
+          body: resp
+        };
+      });
+      defer(() => { protocol.unhandle('test-scheme'); });
+
+      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
+      expect(body).to.equal('hello world\n');
+    });
   });
 });

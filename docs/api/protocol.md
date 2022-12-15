@@ -109,6 +109,22 @@ The `<video>` and `<audio>` HTML elements expect protocols to buffer their
 responses by default. The `stream` flag configures those elements to correctly
 expect streaming responses.
 
+### `protocol.handle(scheme, handler)`
+
+* `scheme` string - scheme to handle, for example `https` or `my-app`. This is
+  the bit before the `:` in a URL.
+* `handler` Function<HandleProtocolResponse | Promise<HandleProtocolResponse>>
+  * `request` [ProtocolRequest](structures/protocol-request.md)
+
+Register a protocol handler for `scheme`. Requests made to URLs with this
+scheme will delegate to this handler to determine what response should be sent.
+
+### `protocol.unhandle(scheme)`
+
+* `scheme` string - scheme for which to remove the handler.
+
+Removes a protocol handler registered with `protocol.handle`.
+
 ### `protocol.registerFileProtocol(scheme, handler)`
 
 * `scheme` string
