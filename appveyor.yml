@@ -248,7 +248,7 @@ for:
             }
           }
       - ps: |
-          $out_default_zips = @('dist.zip','pdb.zip','mksnapshot.zip')
+          $out_default_zips = @('dist.zip','pdb.zip')
           foreach($zip_name in $out_default_zips) {
             7z x -y -osrc\out\Default $zip_name
           }
