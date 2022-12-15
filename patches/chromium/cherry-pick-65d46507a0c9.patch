@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: evliu <evliu@google.com>
 Date: Mon, 14 Nov 2022 20:05:12 +0000
-Subject: [Merge to M108] Replace raw pointer to LocalMuter with weak ptr
+Subject: Replace raw pointer to LocalMuter with weak ptr
 
 This CL replaces a raw pointer to LocalMuter with a weak ptr. Additional
 info about this bug here: http://crbug/1377783
