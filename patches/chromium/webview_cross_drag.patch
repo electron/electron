@@ -24,10 +24,10 @@ index 67dcac149803694ef13ab471ce9b84eb7e9c07ec..35ca1d706a4e29e8533e0c962f4459e1
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 4cd92f6e8bf97bc9b9014529ffd3ba4a80692663..195d852116ad291e43b3a06a17e217f67ec23cdb 100644
+index 6179af43f4cd4a34de3075841c1f5018ba7c979c..07c6fcee586bae2a4f58ccebbdad838f6b811bbd 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -391,9 +391,7 @@ - (void)resetDragStartTrackers {
+@@ -389,9 +389,7 @@ - (void)resetDragStartTrackers {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {
