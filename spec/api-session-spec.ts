@@ -31,13 +31,11 @@ describe('session module', () => {
     });
   });
 
-  describe('session.fromPartition(partition)', () => {
-    const apppath = require('electron').app.getAppPath();
-    const loc = '/tmpstore';
-    const partionloc = apppath + loc;
-    const ses = session.fromPartition(partionloc);
+  describe('session.fromPath(path)', () => {
     it('returns storage path of a session which was created with an absolute path', () => {
-      expect(ses.storagePath).to.equal(partionloc);
+      const tmppath = require('electron').app.getPath('temp');
+      const ses = session.fromPath(tmppath);
+      expect(ses.storagePath).to.equal(tmppath);
     });
   });
 

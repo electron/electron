@@ -100,6 +100,12 @@ class ElectronBrowserContext : public content::BrowserContext {
                                       bool in_memory,
                                       base::Value::Dict options = {});
 
+  // Get or create the BrowserContext using the |absolute_path|.
+  // The |options| will be passed to constructor when there is no
+  // existing BrowserContext.
+  static ElectronBrowserContext* FromPath(base::FilePath path,
+                                          base::Value::Dict options = {});
+
   static BrowserContextMap& browser_context_map();
 
   void SetUserAgent(const std::string& user_agent);
@@ -193,6 +199,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   ElectronBrowserContext(const std::string& partition,
                          bool in_memory,
                          base::Value::Dict options);
+
+  ElectronBrowserContext(base::FilePath partition, base::Value::Dict options);
 
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,

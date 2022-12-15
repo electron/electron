@@ -98,9 +98,9 @@ std::string MakePartitionName(const std::string& input) {
 }
 
 // base::escape a path based partition string.
-std::string MakePathBasedPartitionName(const std::string& input) {
-  return base::EscapePath(input);
-}
+// std::string MakePathBasedPartitionName(const std::string& input) {
+//  return base::EscapePath(input);
+//}
 
 }  // namespace
 
@@ -131,17 +131,50 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                     &max_cache_size_);
 
   base::PathService::Get(DIR_SESSION_DATA, &path_);
-  if (!in_memory && !partition.empty()) {
-    if (partition.starts_with(base::FilePath::kSeparators)) {
-      /* When an absolute path is provided, use it. */
-      path_ =
-          base::FilePath::FromUTF8Unsafe(MakePathBasedPartitionName(partition));
-    } else {
-      path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
-                  .Append(base::FilePath::FromUTF8Unsafe(
-                      MakePartitionName(partition)));
-    }
+  if (!in_memory && !partition.empty())
+    path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
+                .Append(base::FilePath::FromUTF8Unsafe(
+                    MakePartitionName(partition)));
+
+  BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
+
+  // Initialize Pref Registry.
+  InitPrefs();
+
+  cookie_change_notifier_ = std::make_unique<CookieChangeNotifier>(this);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  if (!in_memory_) {
+    BrowserContextDependencyManager::GetInstance()
+        ->CreateBrowserContextServices(this);
+
+    extension_system_ = static_cast<extensions::ElectronExtensionSystem*>(
+        extensions::ExtensionSystem::Get(this));
+    extension_system_->InitForRegularProfile(true /* extensions_enabled */);
+    extension_system_->FinishInitialization();
   }
+#endif
+}
+
+ElectronBrowserContext::ElectronBrowserContext(base::FilePath partition,
+                                               base::Value::Dict options)
+    : in_memory_pref_store_(new ValueMapPrefStore),
+      storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
+      protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
+      in_memory_(false),
+      ssl_config_(network::mojom::SSLConfig::New()) {
+  path_ = std::move(partition);
+
+  // Read options.
+  base::CommandLine* command_line = base::CommandLine::ForCurrentProcess();
+  use_cache_ = !command_line->HasSwitch(switches::kDisableHttpCache);
+  if (auto use_cache_opt = options.FindBool("cache")) {
+    use_cache_ = use_cache_opt.value();
+  }
+
+  base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
+                    &max_cache_size_);
+
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
 
   // Initialize Pref Registry.
@@ -685,6 +718,23 @@ ElectronBrowserContext* ElectronBrowserContext::From(
 
   auto* new_context =
       new ElectronBrowserContext(partition, in_memory, std::move(options));
+  browser_context_map()[key] =
+      std::unique_ptr<ElectronBrowserContext>(new_context);
+  return new_context;
+}
+
+ElectronBrowserContext* ElectronBrowserContext::FromPath(
+    const base::FilePath path,
+    base::Value::Dict options) {
+  PartitionKey key(path.AsUTF8Unsafe(), false);
+
+  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
+  if (browser_context) {
+    return browser_context;
+  }
+
+  auto* new_context =
+      new ElectronBrowserContext(std::move(path), std::move(options));
   browser_context_map()[key] =
       std::unique_ptr<ElectronBrowserContext>(new_context);
   return new_context;
