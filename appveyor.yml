@@ -233,7 +233,7 @@ for:
           # Download build artifacts
           $apiUrl = 'https://ci.appveyor.com/api'
           $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-          $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')
+          $artifacts_to_download = @('dist.zip','ffmpeg.zip','node_headers.zip','pdb.zip','electron.lib')
           foreach ($job in $build_info.build.jobs) {
             if ($job.name -eq "Build") {
               $jobId = $job.jobId
@@ -248,7 +248,7 @@ for:
             }
           }
       - ps: |
-          $out_default_zips = @('dist.zip','chromedriver.zip','mksnapshot.zip')
+          $out_default_zips = @('dist.zip','pdb.zip','mksnapshot.zip')
           foreach($zip_name in $out_default_zips) {
             7z x -y -osrc\out\Default $zip_name
           }
@@ -262,21 +262,17 @@ for:
           cd src
           New-Item .\out\Default\gen\node_headers\Release -Type directory
           Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
+      - set npm_config_nodedir=%cd%\out\Default\gen\node_headers          
+      - set npm_config_arch=arm64
       - cd electron
       # Explicitly set npm_config_arch because the .env doesn't persist
       - ps: >-
           if ($env:TARGET_ARCH -eq 'ia32') {
             $env:npm_config_arch = "ia32"
           }
-      - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
-      - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
+      - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
-      - echo "About to verify mksnapshot"
-      - echo Verifying mksnapshot & python electron\script\verify-mksnapshot.py --build-dir out\Default --source-root %cd%
-      - echo "Done verifying mksnapshot"
-      - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
-      - echo "Done verifying chromedriver"
     
     on_finish:
       # Uncomment these lines to enable RDP
