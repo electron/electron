@@ -39,6 +39,37 @@ describe('session module', () => {
     });
   });
 
+  describe('session.fromPath(path) with a quota.', () => {
+    const pathloc = 'testsession';
+    after(() => {
+      const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+    });
+    it('Assert that a set quota value is returned when a quota value is specified for a session', async () => {
+      const quotasize = 256000;
+      const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+      fs.mkdirSync(tmppath);
+      const localsession = session.fromPath(tmppath, { quota: quotasize });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: localsession
+        }
+      });
+
+      const readQuotaSize: any = () => {
+        return w.webContents.executeJavaScript(`
+          navigator.storage.estimate().then(estimate => estimate.quota).catch(err => err.message);
+        `);
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      const size = await readQuotaSize();
+      expect(size).to.equal(quotasize);
+    });
+  });
+
   describe('ses.cookies', () => {
     const name = '0';
     const value = '0';
