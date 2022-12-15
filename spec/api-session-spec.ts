@@ -31,6 +31,16 @@ describe('session module', () => {
     });
   });
 
+  describe('session.fromPartition(partition)', () => {
+    const apppath = require('electron').app.getAppPath();
+    const loc = '/tmpstore';
+    const partionloc = apppath + loc;
+    const ses = session.fromPartition(partionloc);
+    it('returns storage path of a session which was created with an absolute path', () => {
+      expect(ses.storagePath).to.equal(partionloc);
+    });
+  });
+
   describe('ses.cookies', () => {
     const name = '0';
     const value = '0';
