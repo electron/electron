@@ -206,6 +206,8 @@ class ElectronBrowserContext : public content::BrowserContext {
                          bool in_memory,
                          base::Value::Dict options);
 
+  ElectronBrowserContext(base::FilePath partition, base::Value::Dict options);
+
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,
       content::MediaResponseCallback callback,
