@@ -1,7 +1,7 @@
-From 77208afba04dd703a018252efc2698b84fb41698 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jaroslav Sevcik <jarin@chromium.org>
-Date: Thu, 01 Dec 2022 14:15:52 +0000
-Subject: [PATCH] Make WidgetBase::BeginMainFrame resilient to disposed 'this'
+Date: Thu, 1 Dec 2022 14:15:52 +0000
+Subject: Make WidgetBase::BeginMainFrame resilient to disposed 'this'
 
 This patch makes sure that WidgetBase::BeginMainFrame can finish
 execution even if processing the RAF-throttled handlers
@@ -20,13 +20,12 @@ Auto-Submit: Jaroslav Sevcik <jarin@chromium.org>
 Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5359@{#1053}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
-index 2e57c4f..f779d8d 100644
+index 115f0e5774a3adde821bd34e5fac6645989e400e..4255884857a8d869a7a1e4f262f0f487dde16e24 100644
 --- a/third_party/blink/renderer/platform/widget/widget_base.cc
 +++ b/third_party/blink/renderer/platform/widget/widget_base.cc
-@@ -898,8 +898,14 @@
+@@ -893,8 +893,14 @@ void WidgetBase::BeginMainFrame(base::TimeTicks frame_time) {
    if (ShouldRecordBeginMainFrameMetrics()) {
      raf_aligned_input_start_time = base::TimeTicks::Now();
    }
