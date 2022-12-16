@@ -16,12 +16,12 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c55fa4467 100644
+index c454d2f6fd4c4f7fce5f966238146ea02d25ca21..64413ff91f581d5491c403dfd8a362029c807550 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -18,7 +18,9 @@
- #include "ui/gl/gl_surface_egl.h"
  #include "ui/gl/gpu_switching_observer.h"
+ #include "ui/gl/presenter.h"
  
 +#if !IS_MAS_BUILD()
  @class CAContext;
@@ -29,7 +29,7 @@ index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c
  @class CALayer;
  
  namespace ui {
-@@ -109,7 +111,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
+@@ -109,7 +111,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -40,7 +40,7 @@ index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 320e3b9377b4f4255dc368480d94130b3936b931..9b03f2e13c91dc2b281b9e3d35676cf023207fa5 100644
+index 62b840925fa626c147b0c66a08e0d1a90764d104..de5d7b9f6140c8f8f23fc2b1bb55b062a1e33752 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -71,12 +71,14 @@

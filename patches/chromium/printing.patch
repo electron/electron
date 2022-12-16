@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index cf98951ce66478e0ceaf12c60daded5af599014f..1450cf3adc59d4ef7c3cce7d46ea4b16ef5e4bf7 100644
+index 9075b6f33090bb2f84efbad3bf44acc123e07cfd..33c001f0722db7c59e0906962c5fdfb8cd82dffd 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -965,7 +965,6 @@ if (is_win) {
@@ -78,7 +78,7 @@ index a1372cc90fc84b159e9952fa747e36360ae1a170..429b93910457675347b3b80e232e71aa
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_job_worker.cc b/chrome/browser/printing/print_job_worker.cc
-index d17376917f4d8f5740b265a00e748929cbade643..f8c89a491c9b27e03d19327761c21bd1991d77f3 100644
+index ba331906397e7355dba0377641eb08ba14495648..790f48fa351f82f22968a63733986b62a9f5fc00 100644
 --- a/chrome/browser/printing/print_job_worker.cc
 +++ b/chrome/browser/printing/print_job_worker.cc
 @@ -19,7 +19,6 @@
@@ -98,7 +98,7 @@ index d17376917f4d8f5740b265a00e748929cbade643..f8c89a491c9b27e03d19327761c21bd1
  #include "printing/buildflags/buildflags.h"
  #include "printing/mojom/print.mojom.h"
 @@ -218,16 +218,19 @@ void PrintJobWorker::SetSettings(base::Value::Dict new_settings,
- #endif  // BUILDFLAG(IS_LINUX) && defined(USE_CUPS)
+ #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_CUPS)
    }
  
 -  mojom::ResultCode result;
@@ -789,10 +789,10 @@ index 97151dfd451fc847472fa82d418ab1f5abd8d853..e8e963aca6c1ab0360c55da0ad0845b9
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bda779776ee8febb94a3c9bd3134106c8e1bfda0..94bacf44ff4d1e8b4a098b5883e63a7ae2b4bf07 100644
+index 4942fc08415ccf092a13a5a45202455abf646709..480fc097887864f51eb95d660816bfe0a73793ec 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2815,8 +2815,9 @@ source_set("browser") {
+@@ -2817,8 +2817,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

@@ -93,11 +93,11 @@ index de753e5a941170d162132f2917b11672a50e833f..7e1fab06bf317758b731d56acb86ab0b
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 828c062d299299cfa0e319190d9c509e11d0224d..8bcec1f3569250976c59c9942c5271137725e926 100644
+index fa8995e7c65ac082ae1b6ddfe6f0a0c5e97a5460..518b21c9fc762f380cc4f131eb09d526106e3eba 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -201,6 +201,7 @@
- #include "ui/accessibility/accessibility_switches.h"
+ #include "ui/base/ui_base_features.h"
  #include "ui/base/ui_base_switches.h"
  #include "ui/display/display_switches.h"
 +#include "ui/gfx/switches.h"
