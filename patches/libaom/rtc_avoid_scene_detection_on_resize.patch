@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Marco Paniconi <marpan@google.com>
+Date: Mon, 28 Nov 2022 14:25:08 -0800
+Subject: rtc: Avoid scene detection on resize
+
+Don't enter scene detection under external resize.
+Add rc->prev_coded_width/height to track the
+previous encoded frame eweight/height.
+The rc is part of layer context so this will be
+per spatial layer for SVC.
+
+This fixes the buffer overflow issue below.
+
+Bug: chromium:1393384
+Change-Id: I4b11818a27c439c2d2c42036dff7b8777f70a86e
+(cherry picked from commit bee1caded272127a6d6b70ac79479083d183d5d0)
+
+diff --git a/av1/encoder/ratectrl.c b/av1/encoder/ratectrl.c
+index 3e6939c5e1a5fbb1c52069a03c0317fa3e05aaf2..3c9498b8889bf0352aa0b640a82556daf36c62cc 100644
+--- a/av1/encoder/ratectrl.c
++++ b/av1/encoder/ratectrl.c
+@@ -2136,6 +2136,9 @@ void av1_rc_postencode_update(AV1_COMP *cpi, uint64_t bytes_used) {
+   }
+ #endif
+   if (current_frame->frame_type == KEY_FRAME) rc->frames_since_key = 0;
++
++  rc->prev_coded_width = cm->width;
++  rc->prev_coded_height = cm->height;
+   // if (current_frame->frame_number == 1 && cm->show_frame)
+   /*
+   rc->this_frame_target =
+@@ -2152,6 +2155,8 @@ void av1_rc_postencode_update_drop_frame(AV1_COMP *cpi) {
+   cpi->rc.rc_2_frame = 0;
+   cpi->rc.rc_1_frame = 0;
+   cpi->rc.prev_avg_frame_bandwidth = cpi->rc.avg_frame_bandwidth;
++  cpi->rc.prev_coded_width = cpi->common.width;
++  cpi->rc.prev_coded_height = cpi->common.height;
+ }
+ 
+ int av1_find_qindex(double desired_q, aom_bit_depth_t bit_depth,
+@@ -3096,8 +3101,15 @@ void av1_get_one_pass_rt_params(AV1_COMP *cpi,
+     }
+   }
+   // Check for scene change: for SVC check on base spatial layer only.
+-  if (cpi->sf.rt_sf.check_scene_detection && svc->spatial_layer_id == 0)
+-    rc_scene_detection_onepass_rt(cpi);
++  if (cpi->sf.rt_sf.check_scene_detection && svc->spatial_layer_id == 0) {
++    if (rc->prev_coded_width == cm->width &&
++        rc->prev_coded_height == cm->height) {
++      rc_scene_detection_onepass_rt(cpi);
++    } else if (cpi->src_sad_blk_64x64) {
++      aom_free(cpi->src_sad_blk_64x64);
++      cpi->src_sad_blk_64x64 = NULL;
++    }
++  }
+   // Check for dynamic resize, for single spatial layer for now.
+   // For temporal layers only check on base temporal layer.
+   if (cpi->oxcf.resize_cfg.resize_mode == RESIZE_DYNAMIC) {
+diff --git a/av1/encoder/ratectrl.h b/av1/encoder/ratectrl.h
+index 486fda38036226d0e92c0bb69a029b196f44b6c9..f9e9b8b0a506970f79bf1799d50f45abf9ecb684 100644
+--- a/av1/encoder/ratectrl.h
++++ b/av1/encoder/ratectrl.h
+@@ -253,6 +253,9 @@ typedef struct {
+   int frame_level_fast_extra_bits;
+ 
+   double frame_level_rate_correction_factors[RATE_FACTOR_LEVELS];
++
++  int prev_coded_width;
++  int prev_coded_height;
+   /*!\endcond */
+ } RATE_CONTROL;
+ 
