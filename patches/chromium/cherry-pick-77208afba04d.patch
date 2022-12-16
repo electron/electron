@@ -1,0 +1,43 @@
+From 77208afba04dd703a018252efc2698b84fb41698 Mon Sep 17 00:00:00 2001
+From: Jaroslav Sevcik <jarin@chromium.org>
+Date: Thu, 01 Dec 2022 14:15:52 +0000
+Subject: [PATCH] Make WidgetBase::BeginMainFrame resilient to disposed 'this'
+
+This patch makes sure that WidgetBase::BeginMainFrame can finish
+execution even if processing the RAF-throttled handlers
+(DispatchRafAlignedInput) destroys 'this' instance.
+
+(cherry picked from commit af6e22c14bec7ad64115b24ece6d423f144214ca)
+
+Bug: chromium:1381871
+Change-Id: I81aa4ba697f80f8666bb2a3b5542cac210b1efa9
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4030809
+Reviewed-by: Dave Tapuska <dtapuska@chromium.org>
+Commit-Queue: Jaroslav Sevcik <jarin@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1072864}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4068023
+Auto-Submit: Jaroslav Sevcik <jarin@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5359@{#1053}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+---
+
+diff --git a/third_party/blink/renderer/platform/widget/widget_base.cc b/third_party/blink/renderer/platform/widget/widget_base.cc
+index 2e57c4f..f779d8d 100644
+--- a/third_party/blink/renderer/platform/widget/widget_base.cc
++++ b/third_party/blink/renderer/platform/widget/widget_base.cc
+@@ -898,8 +898,14 @@
+   if (ShouldRecordBeginMainFrameMetrics()) {
+     raf_aligned_input_start_time = base::TimeTicks::Now();
+   }
++
++  auto weak_this = weak_ptr_factory_.GetWeakPtr();
+   widget_input_handler_manager_->input_event_queue()->DispatchRafAlignedInput(
+       frame_time);
++  // DispatchRafAlignedInput could have detached the frame.
++  if (!weak_this)
++    return;
++
+   if (ShouldRecordBeginMainFrameMetrics()) {
+     client_->RecordDispatchRafAlignedInputTime(raf_aligned_input_start_time);
+   }
