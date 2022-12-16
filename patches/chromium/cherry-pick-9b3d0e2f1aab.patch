@@ -1,7 +1,7 @@
-From 9b3d0e2f1aabe679bed6096e045c71dd0901d528 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Corentin Wallez <cwallez@chromium.org>
 Date: Tue, 29 Nov 2022 14:07:46 +0000
-Subject: [PATCH] Keep a reference to the transfer buffer in Dawn read/write handles.
+Subject: Keep a reference to the transfer buffer in Dawn read/write handles.
 
 Previously the Dawn read/write handles in the GPU process only contained
 a pointer to the inside of a shmem region owned by a gpu::Buffer that
@@ -18,10 +18,9 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4056276
 Reviewed-by: Austin Eng <enga@chromium.org>
 Commit-Queue: Corentin Wallez <cwallez@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1076828}
----
 
 diff --git a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
-index 4f12f4d..635e58962 100644
+index a15b6f9b3b345079d8cf8251ca5f77b6e7ef647a..10941d9f65c66e50303cf7293180c29fced8ffe2 100644
 --- a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
 +++ b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
 @@ -6,6 +6,7 @@
@@ -32,7 +31,7 @@ index 4f12f4d..635e58962 100644
  #include "gpu/command_buffer/service/common_decoder.h"
  
  namespace gpu {
-@@ -16,8 +17,8 @@
+@@ -16,8 +17,8 @@ namespace {
  class ReadHandleImpl
      : public dawn::wire::server::MemoryTransferService::ReadHandle {
   public:
@@ -43,7 +42,7 @@ index 4f12f4d..635e58962 100644
  
    ~ReadHandleImpl() override = default;
  
-@@ -44,6 +45,8 @@
+@@ -44,6 +45,8 @@ class ReadHandleImpl
    }
  
   private:
@@ -52,7 +51,7 @@ index 4f12f4d..635e58962 100644
    raw_ptr<void> ptr_;
    uint32_t size_;
  };
-@@ -51,8 +54,8 @@
+@@ -51,8 +54,8 @@ class ReadHandleImpl
  class WriteHandleImpl
      : public dawn::wire::server::MemoryTransferService::WriteHandle {
   public:
@@ -63,7 +62,7 @@ index 4f12f4d..635e58962 100644
  
    ~WriteHandleImpl() override = default;
  
-@@ -82,7 +85,9 @@
+@@ -82,7 +85,9 @@ class WriteHandleImpl
    }
  
   private:
@@ -74,7 +73,7 @@ index 4f12f4d..635e58962 100644
    uint32_t size_;
  };
  
-@@ -111,13 +116,19 @@
+@@ -111,13 +116,19 @@ bool DawnServiceMemoryTransferService::DeserializeReadHandle(
    int32_t shm_id = handle->shm_id;
    uint32_t shm_offset = handle->shm_offset;
  
@@ -96,7 +95,7 @@ index 4f12f4d..635e58962 100644
  
    return true;
  }
-@@ -139,13 +150,19 @@
+@@ -139,13 +150,19 @@ bool DawnServiceMemoryTransferService::DeserializeWriteHandle(
    int32_t shm_id = handle->shm_id;
    uint32_t shm_offset = handle->shm_offset;
  
