@@ -1,0 +1,41 @@
+From 6478bec229b3f9349fe86dae6c049889ec5f6764 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 15:37:39 -0600
+Subject: [PATCH] third_party/node: Use system node binary as fallback
+
+---
+ third_party/node/node.py | 15 ++++++++++-----
+ 1 file changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/third_party/node/node.py b/third_party/node/node.py
+index 8097e2c49acf..fccbea8c5a1b 100755
+--- a/third_party/node/node.py
++++ b/third_party/node/node.py
+@@ -7,14 +7,19 @@ from os import path as os_path
+ import platform
+ import subprocess
+ import sys
++import distutils.spawn
+ 
+ 
+ def GetBinaryPath():
+-  return os_path.join(os_path.dirname(__file__), *{
+-    'Darwin': ('mac', 'node-darwin-x64', 'bin', 'node'),
+-    'Linux': ('linux', 'node-linux-x64', 'bin', 'node'),
+-    'Windows': ('win', 'node.exe'),
+-  }[platform.system()])
++  if platform.system() == "Linux" and platform.machine != "x86_64":
++    # No prepackaged binary for this platform, look in PATH
++    return distutils.spawn.find_executable("node")
++  else:
++    return os_path.join(os_path.dirname(__file__), *{
++      'Darwin': ('mac', 'node-darwin-x64', 'bin', 'node'),
++      'Linux': ('linux', 'node-linux-x64', 'bin', 'node'),
++      'Windows': ('win', 'node.exe'),
++    }[platform.system()])
+ 
+ 
+ def RunNode(cmd_parts, stdout=None):
+-- 
+2.19.1
+

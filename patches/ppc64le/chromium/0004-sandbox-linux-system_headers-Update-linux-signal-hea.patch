@@ -1,0 +1,26 @@
+From 298df3dc44f7121cd8cb9a06b29fa3b16c959b8d Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 19:13:25 -0500
+Subject: [PATCH 4/4] sandbox/linux/system_headers: Update linux signal header
+ for ppc64
+
+---
+ sandbox/linux/system_headers/linux_signal.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sandbox/linux/system_headers/linux_signal.h b/sandbox/linux/system_headers/linux_signal.h
+index 5ac4fdb42ce6..b27b4ea5f254 100644
+--- a/sandbox/linux/system_headers/linux_signal.h
++++ b/sandbox/linux/system_headers/linux_signal.h
+@@ -11,7 +11,7 @@
+ // (not undefined, but defined different values and in different memory
+ // layouts). So, fill the gap here.
+ #if defined(__i386__) || defined(__x86_64__) || defined(__arm__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+ 
+ #define LINUX_SIGHUP 1
+ #define LINUX_SIGINT 2
+-- 
+2.17.1
+

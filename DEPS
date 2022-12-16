@@ -2,7 +2,7 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '110.0.5451.0',
+    'c3fe86ee16293b2a54852c748423d8b2a490e434',
   'node_version':
     'v18.12.1',
   'nan_version':
@@ -67,7 +67,7 @@ vars = {
 
 deps = {
   'src': {
-    'url': (Var("chromium_git")) + '/chromium/src.git@' + (Var("chromium_version")),
+    'url': 'https://github.com/shawnanastasio/chromium.git@' + (Var("chromium_version")),
     'condition': 'checkout_chromium and process_deps',
   },
   'src/third_party/nan': {
@@ -122,6 +122,7 @@ hooks = [
       'python3',
       'src/electron/script/apply_all_patches.py',
       'src/electron/patches/config.json',
+      'src/electron/patches/ppc64le/config.json',
     ],
   },
   {

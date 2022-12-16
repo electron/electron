@@ -1,0 +1,112 @@
+From 1d44643a7c7cf650efd1093d22cd5bf859fdcb51 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 20:52:13 -0500
+Subject: [PATCH] sandbox/linux/seccomp-bpf: Add ppc64 syscall stub
+
+---
+ sandbox/linux/seccomp-bpf/syscall.cc | 53 ++++++++++++++++++++++++++--
+ 1 file changed, 51 insertions(+), 2 deletions(-)
+
+diff --git a/sandbox/linux/seccomp-bpf/syscall.cc b/sandbox/linux/seccomp-bpf/syscall.cc
+index d6db70f0ded5..b335d3c86f80 100644
+--- a/sandbox/linux/seccomp-bpf/syscall.cc
++++ b/sandbox/linux/seccomp-bpf/syscall.cc
+@@ -15,7 +15,7 @@ namespace sandbox {
+ namespace {
+ 
+ #if defined(ARCH_CPU_X86_FAMILY) || defined(ARCH_CPU_ARM_FAMILY) || \
+-    defined(ARCH_CPU_MIPS_FAMILY)
++    defined(ARCH_CPU_MIPS_FAMILY) || defined (ARCH_CPU_PPC64_FAMILY)
+ // Number that's not currently used by any Linux kernel ABIs.
+ const int kInvalidSyscallNumber = 0x351d3;
+ #else
+@@ -307,12 +307,56 @@ asm(// We need to be able to tell the kernel exactly where we made a
+     // Enter the kernel
+     "svc 0\n"
+     "2:ret\n"
++    ".cfi_endproc\n"
++    ".size SyscallAsm, .-SyscallAsm\n"
++#elif defined(__powerpc64__)
++    ".text\n"
++    ".align 4\n"
++    ".type SyscallAsm @function\n"
++    "SyscallAsm:\n"
++    ".cfi_startproc\n"
++
++    // Check if r3 is negative
++    "cmpdi 3, 0\n"
++    "bgt 2f\n"
++
++    // Load address of 3f into r3 and return
++    "mflr 10\n"
++    "bl 1f\n"
++    "1: mflr 3\n"
++    "mtlr 10\n"
++    "addi 3, 3, 4*13\n"
++    "blr\n"
++
++    // Load arguments from array into r3-8
++    // save param 3 in r10
++    "2:\n"
++    "mr 0, 3\n"
++    "ld 3, 0(4)\n"
++    "ld 5, 16(4)\n"
++    "ld 6, 24(4)\n"
++    "ld 7, 32(4)\n"
++    "ld 8, 40(4)\n"
++    "ld 4, 8(4)\n"
++    "li 9, 0\n"
++
++    // Enter kernel
++    "sc\n"
++
++    // Magic return address
++    "3:\n"
++    // Like MIPS, ppc64 return values are always positive.
++    // Check for error in cr0.SO and negate upon error
++    "bc 4, 3, 4f\n"
++    "neg 3, 3\n"
++    "4: blr\n"
++
+     ".cfi_endproc\n"
+     ".size SyscallAsm, .-SyscallAsm\n"
+ #endif
+     );  // asm
+ 
+-#if defined(__x86_64__)
++#if defined(__x86_64__) || defined(__powerpc64__)
+ extern "C" {
+ intptr_t SyscallAsm(intptr_t nr, const intptr_t args[6]);
+ }
+@@ -426,6 +470,8 @@ intptr_t Syscall::Call(int nr,
+     ret = inout;
+   }
+ 
++#elif defined(__powerpc64__)
++  intptr_t ret = SyscallAsm(nr, args);
+ #else
+ #error "Unimplemented architecture"
+ #endif
+@@ -442,8 +488,18 @@ void Syscall::PutValueInUcontext(intptr_t ret_val, ucontext_t* ctx) {
+     // needs to be changed back.
+     ret_val = -ret_val;
+     SECCOMP_PARM4(ctx) = 1;
+-  } else
++  } else {
+     SECCOMP_PARM4(ctx) = 0;
++  }
++#endif
++#if defined(__powerpc64__)
++  // Same as MIPS, need to invert ret and set error register (cr0.SO)
++  if (ret_val <= -1 && ret_val >= -4095) {
++    ret_val = -ret_val;
++    ctx->uc_mcontext.regs->ccr |= (1 << 28);
++  } else {
++    ctx->uc_mcontext.regs->ccr &= ~(1 << 28);
++  }
+ #endif
+   SECCOMP_RESULT(ctx) = static_cast<greg_t>(ret_val);
+ }
+-- 
+2.17.1
+

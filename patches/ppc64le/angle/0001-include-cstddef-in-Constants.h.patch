@@ -1,0 +1,24 @@
+From b9508b0a15bdc80fbe5dc39112dd7076f643bd46 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 15:46:44 -0600
+Subject: [PATCH] include cstddef in Constants.h
+
+---
+ src/libANGLE/Constants.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/libANGLE/Constants.h b/src/libANGLE/Constants.h
+index 2fe921af3..0a0bfe442 100644
+--- a/src/libANGLE/Constants.h
++++ b/src/libANGLE/Constants.h
+@@ -9,6 +9,7 @@
+ #ifndef LIBANGLE_CONSTANTS_H_
+ #define LIBANGLE_CONSTANTS_H_
+ 
++#include <cstddef>
+ #include "common/platform.h"
+ 
+ namespace gl
+-- 
+2.19.1
+

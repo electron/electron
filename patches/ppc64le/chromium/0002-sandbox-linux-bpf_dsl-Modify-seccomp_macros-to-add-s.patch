@@ -1,0 +1,79 @@
+From 3c4705bfdda45feb860a1f121631773e5fe8e53f Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 19:11:26 -0500
+Subject: [PATCH 1/4] sandbox/linux/bpf_dsl: Modify seccomp_macros to add
+ support for ppc64
+
+---
+ sandbox/linux/bpf_dsl/seccomp_macros.h | 43 ++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/sandbox/linux/bpf_dsl/seccomp_macros.h b/sandbox/linux/bpf_dsl/seccomp_macros.h
+index e4e8142c46b0..11bce2632130 100644
+--- a/sandbox/linux/bpf_dsl/seccomp_macros.h
++++ b/sandbox/linux/bpf_dsl/seccomp_macros.h
+@@ -16,6 +16,9 @@
+ #if defined(__mips__)
+ // sys/user.h in eglibc misses size_t definition
+ #include <stddef.h>
++#elif defined(__powerpc64__)
++// Manually define greg_t on ppc64
++typedef unsigned long long greg_t;
+ #endif
+ #endif
+ 
+@@ -345,6 +348,51 @@ struct regs_struct {
+ #define SECCOMP_PT_PARM4(_regs) (_regs).regs[3]
+ #define SECCOMP_PT_PARM5(_regs) (_regs).regs[4]
+ #define SECCOMP_PT_PARM6(_regs) (_regs).regs[5]
++
++#elif defined(__powerpc64__)
++#include <asm/ptrace.h>
++
++typedef struct pt_regs regs_struct;
++
++#ifdef ARCH_CPU_LITTLE_ENDIAN
++#define SECCOMP_ARCH AUDIT_ARCH_PPC64LE
++#else
++#define SECCOMP_ARCH AUDIT_ARCH_PPC64
++#endif
++
++#define SECCOMP_REG(_ctx, _reg) ((_ctx)->uc_mcontext.regs->gpr[_reg])
++
++#define SECCOMP_RESULT(_ctx) SECCOMP_REG(_ctx, 3)
++#define SECCOMP_SYSCALL(_ctx) SECCOMP_REG(_ctx, 0)
++#define SECCOMP_IP(_ctx) (_ctx)->uc_mcontext.regs->nip
++#define SECCOMP_PARM1(_ctx) SECCOMP_REG(_ctx, 3)
++#define SECCOMP_PARM2(_ctx) SECCOMP_REG(_ctx, 4)
++#define SECCOMP_PARM3(_ctx) SECCOMP_REG(_ctx, 5)
++#define SECCOMP_PARM4(_ctx) SECCOMP_REG(_ctx, 6)
++#define SECCOMP_PARM5(_ctx) SECCOMP_REG(_ctx, 7)
++#define SECCOMP_PARM6(_ctx) SECCOMP_REG(_ctx, 8)
++
++#define SECCOMP_NR_IDX (offsetof(struct arch_seccomp_data, nr))
++#define SECCOMP_ARCH_IDX (offsetof(struct arch_seccomp_data, arch))
++#define SECCOMP_IP_MSB_IDX \
++  (offsetof(struct arch_seccomp_data, instruction_pointer) + 4)
++#define SECCOMP_IP_LSB_IDX \
++  (offsetof(struct arch_seccomp_data, instruction_pointer) + 0)
++#define SECCOMP_ARG_MSB_IDX(nr) \
++  (offsetof(struct arch_seccomp_data, args) + 8 * (nr) + 4)
++#define SECCOMP_ARG_LSB_IDX(nr) \
++  (offsetof(struct arch_seccomp_data, args) + 8 * (nr) + 0)
++
++#define SECCOMP_PT_RESULT(_regs) (_regs).gpr[3]
++#define SECCOMP_PT_SYSCALL(_regs) (_regs).gpr[0]
++#define SECCOMP_PT_IP(_regs) (_regs).nip
++#define SECCOMP_PT_PARM1(_regs) (_regs).gpr[3]
++#define SECCOMP_PT_PARM2(_regs) (_regs).gpr[4]
++#define SECCOMP_PT_PARM3(_regs) (_regs).gpr[5]
++#define SECCOMP_PT_PARM4(_regs) (_regs).gpr[6]
++#define SECCOMP_PT_PARM5(_regs) (_regs).gpr[7]
++#define SECCOMP_PT_PARM6(_regs) (_regs).gpr[8]
++
+ #else
+ #error Unsupported target platform
+
+-- 
+2.17.1
+

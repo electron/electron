@@ -1,0 +1,98 @@
+From 036d209a3f1a771de9aed31dfbe804aaf91d1c27 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 23:35:21 -0500
+Subject: [PATCH] sandbox/linux: Implement partial support for ppc64 syscalls
+ and ucontext
+
+Unlike other architectures, the ppc64 files currently rely on applicable
+headers being provided by the system. It is sufficient for standard
+GNU/Linux environments, but may require expansion elsewhere.
+---
+ sandbox/linux/BUILD.gn                              |  2 ++
+ sandbox/linux/system_headers/linux_syscalls.h       |  4 ++++
+ sandbox/linux/system_headers/linux_ucontext.h       |  2 ++
+ sandbox/linux/system_headers/ppc64_linux_syscalls.h | 12 ++++++++++++
+ sandbox/linux/system_headers/ppc64_linux_ucontext.h | 12 ++++++++++++
+ 5 files changed, 32 insertions(+)
+ create mode 100644 sandbox/linux/system_headers/ppc64_linux_syscalls.h
+ create mode 100644 sandbox/linux/system_headers/ppc64_linux_ucontext.h
+
+diff --git a/sandbox/linux/BUILD.gn b/sandbox/linux/BUILD.gn
+index 754fe5a50b32..fa54258ce16c 100644
+--- a/sandbox/linux/BUILD.gn
++++ b/sandbox/linux/BUILD.gn
+@@ -416,6 +416,8 @@ component("sandbox_services") {
+ 
+ source_set("sandbox_services_headers") {
+   sources = [
++    "system_headers/ppc64_linux_syscalls.h",
++    "system_headers/ppc64_linux_ucontext.h",
+     "system_headers/arm64_linux_syscalls.h",
+     "system_headers/arm64_linux_ucontext.h",
+     "system_headers/arm_linux_syscalls.h",
+diff --git a/sandbox/linux/system_headers/linux_syscalls.h b/sandbox/linux/system_headers/linux_syscalls.h
+index 761c08abec76..28ebf2f4eb8d 100644
+--- a/sandbox/linux/system_headers/linux_syscalls.h
++++ b/sandbox/linux/system_headers/linux_syscalls.h
+@@ -33,5 +33,9 @@
+ #include "sandbox/linux/system_headers/arm64_linux_syscalls.h"
+ #endif
+ 
++#if defined(__powerpc64__)
++#include "sandbox/linux/system_headers/ppc64_linux_syscalls.h"
++#endif
++
+ #endif  // SANDBOX_LINUX_SYSTEM_HEADERS_LINUX_SYSCALLS_H_
+ 
+diff --git a/sandbox/linux/system_headers/linux_ucontext.h b/sandbox/linux/system_headers/linux_ucontext.h
+index e97d7277d3d4..f3f05849ad12 100644
+--- a/sandbox/linux/system_headers/linux_ucontext.h
++++ b/sandbox/linux/system_headers/linux_ucontext.h
+@@ -19,6 +19,8 @@
+ #include "sandbox/linux/system_headers/mips64_linux_ucontext.h"
+ #elif defined(__aarch64__)
+ #include "sandbox/linux/system_headers/arm64_linux_ucontext.h"
++#elif defined(__powerpc64__)
++#include "sandbox/linux/system_headers/ppc64_linux_ucontext.h"
+ #else
+ #error "No support for your architecture in Android or PNaCl header"
+ #endif
+diff --git a/sandbox/linux/system_headers/ppc64_linux_syscalls.h b/sandbox/linux/system_headers/ppc64_linux_syscalls.h
+new file mode 100644
+index 000000000000..ccacffe22ea3
+--- /dev/null
++++ b/sandbox/linux/system_headers/ppc64_linux_syscalls.h
+@@ -0,0 +1,12 @@
++// Copyright 2014 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef SANDBOX_LINUX_SYSTEM_HEADERS_PPC64_LINUX_SYSCALLS_H_
++#define SANDBOX_LINUX_SYSTEM_HEADERS_PPC64_LINUX_SYSCALLS_H_
++
++#include <asm/unistd.h>
++
++//TODO: is it necessary to redefine syscall numbers for PPC64?
++
++#endif  // SANDBOX_LINUX_SYSTEM_HEADERS_PPC64_LINUX_SYSCALLS_H_
+diff --git a/sandbox/linux/system_headers/ppc64_linux_ucontext.h b/sandbox/linux/system_headers/ppc64_linux_ucontext.h
+new file mode 100644
+index 000000000000..07728e087911
+--- /dev/null
++++ b/sandbox/linux/system_headers/ppc64_linux_ucontext.h
+@@ -0,0 +1,12 @@
++// Copyright 2014 The Chromium Authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef SANDBOX_LINUX_SYSTEM_HEADERS_PPC64_LINUX_UCONTEXT_H_
++#define SANDBOX_LINUX_SYSTEM_HEADERS_PPC64_LINUX_UCONTEXT_H_
++
++#include <sys/ucontext.h>
++
++//TODO: is it necessary to redefine ucontext on PPC64?
++
++#endif  // SANDBOX_LINUX_SYSTEM_HEADERS_PPC64_LINUX_UCONTEXT_H_
+-- 
+2.17.1
+

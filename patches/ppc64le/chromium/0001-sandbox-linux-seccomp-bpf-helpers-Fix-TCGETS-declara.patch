@@ -1,0 +1,55 @@
+From 10e547ae9fbecaa2a3028a57ec56c104fc8e61ca Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Fri, 10 Aug 2018 00:19:51 -0500
+Subject: [PATCH] sandbox/linux/seccomp-bpf-helpers: Fix TCGETS declaration on
+ PPC64
+
+---
+ .../syscall_parameters_restrictions.cc          | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+index 2577f02f2e95..102647c14f14 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+@@ -36,6 +36,11 @@
+ #include <sys/ioctl.h>
+ #endif
+ 
++// On PPC64, TCGETS is defined in terms of struct termios, so we must include termios.h
++#ifdef __powerpc64__
++#include <termios.h>
++#endif
++
+ #if defined(OS_ANDROID)
+ 
+ #if !defined(F_DUPFD_CLOEXEC)
+@@ -98,6 +103,15 @@ inline bool IsArchitectureMips() {
+ #endif
+ }
+ 
++inline bool IsArchitecturePPC64() {
++#if defined(__powerpc64__)
++  return true;
++#else
++  return false;
++#endif
++}
++
++
+ // Ubuntu's version of glibc has a race condition in sem_post that can cause
+ // it to call futex(2) with bogus op arguments. To workaround this, we need
+ // to allow those futex(2) calls to fail with EINVAL, instead of crashing the
+@@ -231,6 +245,9 @@ ResultExpr RestrictFcntlCommands() {
+   if (IsArchitectureX86_64() || IsArchitectureI386() || IsArchitectureMips())
+     kOLargeFileFlag = 0100000;
+ 
++  if (IsArchitecturePPC64())
++    kOLargeFileFlag = 0200000;
++
+   const Arg<int> cmd(1);
+   const Arg<long> long_arg(2);
+ 
+-- 
+2.17.1
+

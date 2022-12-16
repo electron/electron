@@ -1,0 +1,45 @@
+From b2d2727355ab06d0b1c800a531ba47e7a0ff56b7 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Fri, 14 Sep 2018 16:04:47 -0500
+Subject: [PATCH] DONTMERGE: Disable v8 unit tests
+
+---
+ test/BUILD.gn | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/test/BUILD.gn b/test/BUILD.gn
+index 45e1b34032..3f61171d6d 100644
+--- a/test/BUILD.gn
++++ b/test/BUILD.gn
+@@ -30,7 +30,7 @@ group("gn_all") {
+     deps += [
+       "cctest:cctest",
+       "cctest:generate-bytecode-expectations",
+-      "unittests:unittests",
++      #"unittests:unittests",
+     ]
+   }
+ }
+@@ -79,7 +79,7 @@ group("v8_bot_default") {
+     "mjsunit:v8_mjsunit",
+     "mkgrokdump:mkgrokdump",
+     "preparser:v8_preparser",
+-    "unittests:unittests",
++    #"unittests:unittests",
+     "wasm-spec-tests:v8_wasm_spec_tests",
+     "webkit:v8_webkit",
+   ]
+@@ -98,8 +98,8 @@ group("v8_default") {
+     "mjsunit:v8_mjsunit",
+     "mkgrokdump:mkgrokdump",
+     "preparser:v8_preparser",
+-    "unittests:unittests",
+-    "wasm-spec-tests:v8_wasm_spec_tests",
++    #"unittests:unittests",
++    #"wasm-spec-tests:v8_wasm_spec_tests",
+   ]
+ }
+ 
+-- 
+2.17.1
+

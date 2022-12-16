@@ -1,0 +1,31 @@
+From 395c2ee2961ba35c3018470f8f21d00ccc149621 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 13 Sep 2018 15:13:21 -0500
+Subject: [PATCH 6/6] build/toolchain: allow clang on ppc64
+
+---
+ build/toolchain/linux/BUILD.gn | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/build/toolchain/linux/BUILD.gn b/build/toolchain/linux/BUILD.gn
+index 4e9ff440d18c..9cee3b5ad6d1 100644
+--- a/build/toolchain/linux/BUILD.gn
++++ b/build/toolchain/linux/BUILD.gn
+@@ -5,6 +5,14 @@
+ import("//build/config/sysroot.gni")
+ import("//build/toolchain/gcc_toolchain.gni")
+ 
++clang_toolchain("clang_ppc64") {
++  enable_linker_map = true
++  toolchain_args = {
++    current_cpu = "ppc64"
++    current_os = "linux"
++  }
++}
++
+ clang_toolchain("clang_arm") {
+   toolprefix = "arm-linux-gnueabihf-"
+   toolchain_args = {
+-- 
+2.17.1
+

@@ -1,0 +1,26 @@
+From 2ca8124d12261c009a4c7867d43bfff60c2b1cf2 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 23:40:11 -0500
+Subject: [PATCH] sandbox/linux/seccomp-bpf-helpers: Skip vserver syscall on
+ ppc64
+
+---
+ sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+index 9f1cdef1bcc4..a8a89228994c 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+@@ -1007,7 +1007,7 @@ bool SyscallSets::IsMisc(int sysno) {
+ #if defined(__x86_64__)
+     case __NR_tuxcall:
+ #endif
+-#if !defined(__aarch64__)
++#if !defined(__aarch64__) && !defined(__powerpc64__)
+     case __NR_vserver:
+ #endif
+       return true;
+-- 
+2.17.1
+

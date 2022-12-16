@@ -1,0 +1,31 @@
+From 563141e57f910614a28b0c9d05a49ddf0842a329 Mon Sep 17 00:00:00 2001
+From: Timothy Pearson <tpearson@raptorengineering.com>
+Date: Fri, 21 Sep 2018 05:22:32 -0500
+Subject: [PATCH] Apply blink 64k page workaround to ppc64 systems
+
+Signed-off-by: Timothy Pearson <tpearson@raptorengineering.com>
+---
+ third_party/blink/renderer/platform/heap/heap_page.h | 4 ++--
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/blink/renderer/platform/heap/heap_page.h b/third_party/blink/renderer/platform/heap/heap_page.h
+index 2bc6d7cc77..ff8466a4d2 100644
+--- a/third_party/blink/renderer/platform/heap/heap_page.h
++++ b/third_party/blink/renderer/platform/heap/heap_page.h
+@@ -67,11 +66,12 @@ constexpr size_t kBlinkPageBaseMask = ~kBlinkPageOffsetMask;
+ constexpr size_t kBlinkPagesPerRegion = 10;
+ 
+ // TODO(nya): Replace this with something like #if ENABLE_NACL.
+-#if 0
++#if defined(ARCH_CPU_PPC64)
+ // NaCl's system page size is 64 KiB. This causes a problem in Oilpan's heap
+ // layout because Oilpan allocates two guard pages for each Blink page (whose
+ // size is kBlinkPageSize = 2^17 = 128 KiB). So we don't use guard pages in
+ // NaCl.
++// The same issue holds for ppc64 systems, which use a 64k page size.
+ constexpr size_t kBlinkGuardPageSize = 0;
+ #else
+ constexpr size_t kBlinkGuardPageSize = base::kSystemPageSize;
+-- 
+2.17.0
+

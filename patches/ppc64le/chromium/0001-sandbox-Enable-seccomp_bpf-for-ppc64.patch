@@ -1,0 +1,24 @@
+From 0c65e40ae578b743b5f06956597ebc9700768d18 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 22:45:47 -0500
+Subject: [PATCH 1/1] sandbox: Enable seccomp_bpf for ppc64
+
+---
+ sandbox/features.gni | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/sandbox/features.gni b/sandbox/features.gni
+index 89693c54c4f5..6017c7eea95e 100644
+--- a/sandbox/features.gni
++++ b/sandbox/features.gni
+@@ -12,6 +12,6 @@ use_seccomp_bpf =
+     (is_linux || is_android) &&
+     (current_cpu == "x86" || current_cpu == "x64" || current_cpu == "arm" ||
+      current_cpu == "arm64" || current_cpu == "mipsel" ||
+-     current_cpu == "mips64el")
++     current_cpu == "mips64el" || current_cpu == "ppc64")
+ 
+ use_seccomp_bpf = use_seccomp_bpf || is_nacl_nonsfi
+-- 
+2.17.1
+

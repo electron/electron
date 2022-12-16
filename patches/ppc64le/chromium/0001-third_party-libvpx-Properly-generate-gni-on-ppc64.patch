@@ -1,0 +1,83 @@
+From cc613c2e3bac8d4d1ff153700b819f964435923a Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Tue, 4 Sep 2018 18:16:07 -0500
+Subject: [PATCH] third_party/libvpx: Properly generate gni on ppc64
+
+---
+ third_party/libvpx/BUILD.gn        |  2 ++
+ third_party/libvpx/generate_gni.sh | 10 ++++++++++
+ 2 files changed, 12 insertions(+)
+
+diff --git a/third_party/libvpx/BUILD.gn b/third_party/libvpx/BUILD.gn
+index c1b718e..db3b003 100644
+--- a/third_party/libvpx/BUILD.gn
++++ b/third_party/libvpx/BUILD.gn
+@@ -86,6 +86,14 @@ config("libvpx_config") {
+       "-Wno-sign-compare",
+     ]
+   }
++
++  if (current_cpu == "ppc64") {
++    cflags += [
++      "-mcpu=power9",
++      "-maltivec",
++      "-mvsx",
++    ]
++  }
+ }
+ 
+ # This config is applied to targets that depend on libvpx.
+@@ -248,6 +256,8 @@ if (current_cpu == "arm") {
+   } else {
+     arm_assembly_sources = libvpx_srcs_arm_assembly
+   }
++} else if (current_cpu == "ppc64") {
++  sources = libvpx_srcs_ppc64
+ }
+ 
+ # Converts ARM assembly files to GAS style.
+diff --git a/third_party/libvpx/generate_gni.sh b/third_party/libvpx/generate_gni.sh
+index 2c94f6f685a3..c1758c6f193a 100755
+--- a/third_party/libvpx/generate_gni.sh
++++ b/third_party/libvpx/generate_gni.sh
+@@ -350,6 +350,7 @@ gen_config_files linux/arm-neon-cpu-detect "--target=armv7-linux-gcc --enable-ru
+ gen_config_files linux/arm64 "--target=armv8-linux-gcc ${all_platforms}"
+ gen_config_files linux/mipsel "--target=mips32-linux-gcc ${all_platforms}"
+ gen_config_files linux/mips64el "--target=mips64-linux-gcc ${all_platforms}"
++gen_config_files linux/ppc64 "--target=generic-gnu ${all_platforms}"
+ gen_config_files linux/generic "--target=generic-gnu $HIGHBD ${all_platforms}"
+ gen_config_files win/ia32 "--target=x86-win32-vs12 ${all_platforms} ${x86_platforms}"
+ gen_config_files win/x64 "--target=x86_64-win64-vs12 ${all_platforms} ${x86_platforms}"
+@@ -372,6 +373,7 @@ lint_config linux/arm-neon-cpu-detect
+ lint_config linux/arm64
+ lint_config linux/mipsel
+ lint_config linux/mips64el
++lint_config linux/ppc64
+ lint_config linux/generic
+ lint_config win/ia32
+ lint_config win/x64
+@@ -395,6 +397,7 @@ gen_rtcd_header linux/arm-neon-cpu-detect armv7
+ gen_rtcd_header linux/arm64 armv8
+ gen_rtcd_header linux/mipsel mipsel
+ gen_rtcd_header linux/mips64el mips64el
++gen_rtcd_header linux/ppc64 ppc
+ gen_rtcd_header linux/generic generic
+ gen_rtcd_header win/ia32 x86
+ gen_rtcd_header win/x64 x86_64
+@@ -464,6 +467,13 @@ if [ -z $ONLY_CONFIGS ]; then
+ 
+   echo "MIPS64 source list is identical to MIPS source list. No need to generate it."
+ 
++  echo "Generate ppc64 source list."
++  config=$(print_config_basic linux/ppc64)
++  make_clean
++  make libvpx_srcs.txt target=libs $config > /dev/null
++  convert_srcs_to_project_files libvpx_srcs.txt libvpx_srcs_ppc64
++
++
+   echo "Generate NaCl source list."
+   config=$(print_config_basic nacl)
+   make_clean
+-- 
+2.17.1
+

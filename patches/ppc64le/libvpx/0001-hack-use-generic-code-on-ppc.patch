@@ -1,0 +1,28 @@
+From 963a894f4efb4aa7d0a45785c98387f73b37ea5e Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 15:12:38 -0600
+Subject: [PATCH] hack: use generic code on ppc
+
+---
+ build/make/rtcd.pl | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/build/make/rtcd.pl b/build/make/rtcd.pl
+index 68e92b52c..11e19621a 100755
+--- a/build/make/rtcd.pl
++++ b/build/make/rtcd.pl
+@@ -435,8 +435,9 @@ if ($opts{arch} eq 'x86') {
+   &require("neon");
+   arm;
+ } elsif ($opts{arch} =~ /^ppc/ ) {
+-  @ALL_ARCHS = filter(qw/vsx/);
+-  ppc;
++  #@ALL_ARCHS = filter(qw/vsx/);
++  #ppc;
++  unoptimized;
+ } else {
+   unoptimized;
+ }
+-- 
+2.19.1
+

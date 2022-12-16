@@ -1,0 +1,27 @@
+From df88b075aed5514401c74f44e34fbc8fb834ddc2 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Tue, 14 Aug 2018 00:08:09 -0500
+Subject: [PATCH 2/3] third_party/closure_compiler: Remove useless JVM flag
+ -client
+
+Fixes fail on hosts with JVMs that don't support -client
+like ppc64 OpenJDK.
+---
+ third_party/closure_compiler/compile2.py | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/third_party/closure_compiler/compile2.py b/third_party/closure_compiler/compile2.py
+index 3d778425c5eb..d94060b2d416 100755
+--- a/third_party/closure_compiler/compile2.py
++++ b/third_party/closure_compiler/compile2.py
+@@ -27,7 +27,6 @@ class Checker(object):
+     "java",
+     "-jar",
+     "-Xms1024m",
+-    "-client",
+     "-XX:+TieredCompilation"
+   ]
+ 
+-- 
+2.17.1
+

@@ -1,0 +1,40 @@
+From 43f9d87e16f5f0d182f03a70afe426367aad5895 Mon Sep 17 00:00:00 2001
+From: Timothy Pearson <tpearson@raptorengineering.com>
+Date: Fri, 21 Sep 2018 03:45:43 -0500
+Subject: [PATCH] Properly detect little endian PPC64 systems
+
+Signed-off-by: Timothy Pearson <tpearson@raptorengineering.com>
+---
+ third_party/sqlite/amalgamation/sqlite3.c | 2 +-
+ third_party/sqlite/src/src/sqliteInt.h    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/third_party/sqlite/amalgamation/sqlite3.c b/third_party/sqlite/amalgamation/sqlite3.c
+index c3b29441aa..10fe5e6a97 100644
+--- a/third_party/sqlite/amalgamation/sqlite3.c
++++ b/third_party/sqlite/amalgamation/sqlite3.c
+@@ -13641,7 +13641,7 @@ typedef INT16_TYPE LogEst;
+ # if defined(i386)     || defined(__i386__)   || defined(_M_IX86) ||    \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)  ||    \
+      defined(_M_AMD64) || defined(_M_ARM)     || defined(__x86)   ||    \
+-     defined(__arm__)
++     defined(__arm__) || (defined(__ppc64__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__))
+ #   define SQLITE_BYTEORDER    1234
+ # elif defined(sparc)    || defined(__ppc__)
+ #   define SQLITE_BYTEORDER    4321
+diff --git a/third_party/sqlite/src/src/sqliteInt.h b/third_party/sqlite/src/src/sqliteInt.h
+index 53ad684d7d..fe5bf0a690 100644
+--- a/third_party/sqlite/src/src/sqliteInt.h
++++ b/third_party/sqlite/src/src/sqliteInt.h
+@@ -832,7 +832,7 @@ typedef INT16_TYPE LogEst;
+ # if defined(i386)     || defined(__i386__)   || defined(_M_IX86) ||    \
+      defined(__x86_64) || defined(__x86_64__) || defined(_M_X64)  ||    \
+      defined(_M_AMD64) || defined(_M_ARM)     || defined(__x86)   ||    \
+-     defined(__arm__)
++     defined(__arm__) || (defined(__ppc64__) && (__BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__))
+ #   define SQLITE_BYTEORDER    1234
+ # elif defined(sparc)    || defined(__ppc__)
+ #   define SQLITE_BYTEORDER    4321
+-- 
+2.17.0
+

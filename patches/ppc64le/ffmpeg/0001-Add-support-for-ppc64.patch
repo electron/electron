@@ -1,0 +1,98 @@
+From 2b977a504b2f0f7634d44d7fde991259eaacf276 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Sat, 1 Sep 2018 16:43:48 -0500
+Subject: [PATCH] Add support for ppc64
+
+---
+ chromium/scripts/build_ffmpeg.py         | 11 +++++++++--
+ chromium/scripts/copy_config.sh          |  2 +-
+ chromium/scripts/generate_gn.py          |  2 +-
+ chromium/scripts/generate_gn_unittest.py |  3 ++-
+ 4 files changed, 13 insertions(+), 5 deletions(-)
+
+diff --git a/chromium/scripts/build_ffmpeg.py b/chromium/scripts/build_ffmpeg.py
+index 309d7b9a00..ca316dd24d 100755
+--- a/chromium/scripts/build_ffmpeg.py
++++ b/chromium/scripts/build_ffmpeg.py
+@@ -36,7 +36,7 @@ ARCH_MAP = {
+     'android': ['ia32', 'x64', 'mipsel', 'mips64el', 'arm-neon', 'arm64'],
+     'linux': [
+         'ia32', 'x64', 'mipsel', 'mips64el', 'noasm-x64', 'arm', 'arm-neon',
+-        'arm64'
++        'arm64', 'ppc64'
+     ],
+     'mac': ['x64'],
+     'win': ['ia32', 'x64'],
+@@ -128,6 +128,8 @@ def DetermineHostOsAndArch():
+     host_arch = 'mips64el'
+   elif platform.machine().startswith('arm'):
+     host_arch = 'arm'
++  elif platform.machine() == 'ppc64le':
++    host_arch = 'ppc64'
+   else:
+     return None
+ 
+@@ -746,6 +748,11 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
+             '--extra-cflags=--target=mips64el-linux-gnuabi64',
+             '--extra-ldflags=--target=mips64el-linux-gnuabi64',
+         ])
++    elif target_arch == 'ppc64':
++      configure_flags['Common'].extend([
++        '--arch=ppc64le',
++        '--extra-cflags=-mcpu=power9'
++      ])
+     else:
+       print(
+           'Error: Unknown target arch %r for target OS %r!' % (target_arch,
+@@ -771,7 +778,7 @@ def ConfigureAndBuild(target_arch, target_os, host_os, host_arch, parallel_jobs,
+     # typically be the system one, so explicitly configure use of Clang's
+     # ld.lld, to ensure that things like cross-compilation and LTO work.
+     # This does not work for arm64, ia32 and is always used on mac.
+-    if target_arch not in ['arm64', 'ia32', 'mipsel'] and target_os != 'mac':
++    if target_arch not in ['arm64', 'ia32', 'mipsel', 'ppc64'] and target_os != 'mac':
+       configure_flags['Common'].append('--extra-ldflags=-fuse-ld=lld')
+ 
+   # Should be run on Mac, unless we're cross-compiling on Linux.
+diff --git a/chromium/scripts/copy_config.sh b/chromium/scripts/copy_config.sh
+index 0e5159d6f4..7e4e8175f7 100755
+--- a/chromium/scripts/copy_config.sh
++++ b/chromium/scripts/copy_config.sh
+@@ -10,7 +10,7 @@ for os in android linux linux-noasm mac win; do
+     # Copy config files for various architectures:
+     #   - ia32/x64 have config.asm, config.h
+     #   - arm/arm-neon have config.h
+-    for arch in arm arm-neon arm64 ia32 x64 mipsel mips64el; do
++    for arch in arm arm-neon arm64 ia32 x64 mipsel mips64el ppc64; do
+       # Don't waste time on non-existent configs, if no config.h then skip.
+       [ ! -e "build.$arch.$os/$target/config.h" ] && continue
+       for f in config.h config.asm libavutil/avconfig.h libavutil/ffversion.h libavcodec/bsf_list.c libavcodec/codec_list.c libavcodec/parser_list.c libavformat/demuxer_list.c libavformat/muxer_list.c libavformat/protocol_list.c; do
+diff --git a/chromium/scripts/generate_gn.py b/chromium/scripts/generate_gn.py
+index b4adb7f45c..7191648231 100755
+--- a/chromium/scripts/generate_gn.py
++++ b/chromium/scripts/generate_gn.py
+@@ -77,7 +77,7 @@ GN_SOURCE_END = """]
+ Attr = enum('ARCHITECTURE', 'TARGET', 'PLATFORM')
+ SUPPORT_MATRIX = {
+     Attr.ARCHITECTURE:
+-        set(['ia32', 'x64', 'arm', 'arm64', 'arm-neon', 'mipsel', 'mips64el']),
++        set(['ia32', 'x64', 'arm', 'arm64', 'arm-neon', 'mipsel', 'mips64el', 'ppc64']),
+     Attr.TARGET:
+         set(['Chromium', 'Chrome', 'ChromeOS']),
+     Attr.PLATFORM:
+diff --git a/chromium/scripts/generate_gn_unittest.py b/chromium/scripts/generate_gn_unittest.py
+index c4c2faf614..4ba85171a2 100755
+--- a/chromium/scripts/generate_gn_unittest.py
++++ b/chromium/scripts/generate_gn_unittest.py
+@@ -374,7 +374,8 @@ class SourceSetUnittest(unittest.TestCase):
+             SourceListCondition('arm64', 'Chromium', 'linux'),
+             SourceListCondition('arm-neon', 'Chromium', 'linux'),
+             SourceListCondition('mipsel', 'Chromium', 'linux'),
+-            SourceListCondition('mips64el', 'Chromium', 'linux')
++            SourceListCondition('mips64el', 'Chromium', 'linux'),
++            SourceListCondition('ppc64', 'Chromium', 'linux')
+         ]))
+     gg.ReduceConditionalLogic(a)
+ 
+-- 
+2.17.1
+

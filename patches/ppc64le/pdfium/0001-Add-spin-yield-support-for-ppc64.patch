@@ -1,0 +1,25 @@
+From f91999eb7c3bca1a59413906eb5fb747046d74df Mon Sep 17 00:00:00 2001
+From: Timothy Pearson <tpearson@raptorengineering.com>
+Date: Tue, 18 Sep 2018 15:16:04 -0500
+Subject: [PATCH] Add spin yield support for ppc64
+
+---
+ third_party/base/allocator/partition_allocator/spin_lock.cc | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/third_party/base/allocator/partition_allocator/spin_lock.cc b/third_party/base/allocator/partition_allocator/spin_lock.cc
+index 8d7151a..2338339 100644
+--- a/third_party/base/allocator/partition_allocator/spin_lock.cc
++++ b/third_party/base/allocator/partition_allocator/spin_lock.cc
+@@ -37,6 +37,8 @@
+ // Don't bother doing using .word here since r2 is the lowest supported mips64
+ // that Chromium supports.
+ #define YIELD_PROCESSOR __asm__ __volatile__("pause")
++#elif defined(ARCH_CPU_PPC64)
++#define YIELD_PROCESSOR __asm__ __volatile__("or 31,31,31")
+ #endif
+ #endif
+ 
+-- 
+2.7.4
+

@@ -1,0 +1,29 @@
+From 7d882b0eaeee7b9dee4c3565256fef8f01a3caee Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Mon, 12 Nov 2018 16:51:09 -0600
+Subject: [PATCH] libdrm: Use __has_include to get major/minor
+
+---
+ xf86drm.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/xf86drm.c b/xf86drm.c
+index 1e87610b..d1283f25 100644
+--- a/xf86drm.c
++++ b/xf86drm.c
+@@ -54,10 +54,10 @@
+ #include <sys/ioctl.h>
+ #include <sys/time.h>
+ #include <stdarg.h>
+-#ifdef MAJOR_IN_MKDEV
++#if __has_include(<sys/mkdev.h>)
+ #include <sys/mkdev.h>
+ #endif
+-#ifdef MAJOR_IN_SYSMACROS
++#if __has_include(<sys/sysmacros.h>)
+ #include <sys/sysmacros.h>
+ #endif
+ #include <math.h>
+-- 
+2.19.1
+

@@ -1,0 +1,25 @@
+From 707c1e394600a60ed287eb21759830f920566222 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Sun, 2 Sep 2018 01:48:55 -0500
+Subject: [PATCH] third_party/blink: Fix build on ppc64
+
+---
+ third_party/blink/renderer/platform/wtf/dtoa/utils.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/third_party/blink/renderer/platform/wtf/dtoa/utils.h b/third_party/blink/renderer/platform/wtf/dtoa/utils.h
+index 19a222edfd0f..2dfc5a4f47bb 100644
+--- a/third_party/blink/renderer/platform/wtf/dtoa/utils.h
++++ b/third_party/blink/renderer/platform/wtf/dtoa/utils.h
+@@ -45,7 +45,7 @@
+ // disabled.)
+ // On Linux,x86 89255e-22 != Div_double(89255.0/1e22)
+ #if defined(_M_X64) || defined(__x86_64__) || defined(__ARMEL__) || \
+-    defined(__aarch64__) || defined(__MIPSEL__)
++    defined(__aarch64__) || defined(__MIPSEL__) || defined(__powerpc64__)
+ #define DOUBLE_CONVERSION_CORRECT_DOUBLE_OPERATIONS 1
+ #elif defined(_M_IX86) || defined(__i386__)
+ #if defined(_WIN32)
+-- 
+2.17.1
+

@@ -1,0 +1,25 @@
+From 97e0a8aeef235edfc4b431d20ba2642bd5048ca9 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 08:43:35 -0600
+Subject: [PATCH] libc++: ppc64le clang workaround
+
+---
+ include/thread | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/thread b/include/thread
+index 0629d70ef..bfd29de08 100644
+--- a/include/thread
++++ b/include/thread
+@@ -435,7 +435,7 @@ sleep_for(const chrono::duration<_Rep, _Period>& __d)
+     using namespace chrono;
+     if (__d > duration<_Rep, _Period>::zero())
+     {
+-        _LIBCPP_CONSTEXPR duration<long double> _Max = nanoseconds::max();
++        duration<long double> _Max = nanoseconds::max();
+         nanoseconds __ns;
+         if (__d < _Max)
+         {
+-- 
+2.19.1
+

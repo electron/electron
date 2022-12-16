@@ -1,0 +1,48 @@
+From 9844fff68c6e0729af295ac8c6e262e805b1b4d1 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Sun, 2 Sep 2018 02:26:57 -0500
+Subject: [PATCH] components/update_client: Fix building on ppc64
+
+---
+ components/update_client/update_query_params.cc | 4 ++++
+ components/update_client/update_query_params.h  | 2 +-
+ 2 files changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/components/update_client/update_query_params.cc b/components/update_client/update_query_params.cc
+index 272016c762e9..4b02d3ce506a 100644
+--- a/components/update_client/update_query_params.cc
++++ b/components/update_client/update_query_params.cc
+@@ -55,6 +55,8 @@ const char kArch[] =
+     "mips64el";
+ #elif defined(__mips__)
+     "mipsel";
++#elif defined(__powerpc64__)
++    "ppc64";
+ #else
+ #error "unknown arch"
+ #endif
+@@ -127,6 +129,8 @@ const char* UpdateQueryParams::GetNaclArch() {
+   return "mips32";
+ #elif defined(ARCH_CPU_MIPS64EL)
+   return "mips64";
++#elif defined(ARCH_CPU_PPC64)
++  return "ppc64";
+ #else
+ // NOTE: when adding new values here, please remember to update the
+ // comment in the .h file about possible return values from this function.
+diff --git a/components/update_client/update_query_params.h b/components/update_client/update_query_params.h
+index a35e4c3771fe..e315e144cf1c 100644
+--- a/components/update_client/update_query_params.h
++++ b/components/update_client/update_query_params.h
+@@ -45,7 +45,7 @@ class UpdateQueryParams {
+   // Returns the value we use for the "nacl_arch" parameter. Note that this may
+   // be different from the "arch" parameter above (e.g. one may be 32-bit and
+   // the other 64-bit). Possible return values include: "x86-32", "x86-64",
+-  // "arm", and "mips32".
++  // "arm", "mips32", and "ppc64".
+   static const char* GetNaclArch();
+ 
+   // Returns the current version of Chrome/Chromium.
+-- 
+2.17.1
+

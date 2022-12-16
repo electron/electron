@@ -1,0 +1,14 @@
+{
+  "src/electron/patches/ppc64le/chromium": "src",
+  "src/electron/patches/ppc64le/libc++": "src/buildtools/third_party/libc++/trunk",
+  "src/electron/patches/ppc64le/breakpad": "src/third_party/breakpad/breakpad",
+  "src/electron/patches/ppc64le/crashpad": "src/third_party/crashpad/crashpad",
+  "src/electron/patches/ppc64le/ffmpeg": "src/third_party/ffmpeg",
+  "src/electron/patches/ppc64le/libvpx": "src/third_party/libvpx/source/libvpx",
+  "src/electron/patches/ppc64le/pdfium": "src/third_party/pdfium",
+  "src/electron/patches/ppc64le/angle": "src/third_party/angle",
+  "src/electron/patches/ppc64le/lss": "src/third_party/lss",
+  "src/electron/patches/ppc64le/v8": "src/v8",
+  "src/electron/patches/ppc64le/webrtc": "src/third_party/webrtc",
+  "src/electron/patches/ppc64le/libdrm": "src/third_party/libdrm/src"
+}

@@ -1,0 +1,1419 @@
+From ce461ef13779f1b89ad7980ed1db6053acb9d35a Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 09:46:12 -0600
+Subject: [PATCH] crashpad: Implement support for ppc64
+
+---
+ third_party/crashpad/crashpad/CONTRIBUTORS    |   1 +
+ .../crashpad/compat/linux/sys/capability.h    |  30 +++
+ .../crashpad/crashpad/compat/linux/sys/user.h |   1 +
+ .../crashpad/minidump/minidump_context.h      |  67 ++++++
+ .../minidump/minidump_context_writer.cc       |  51 +++++
+ .../minidump/minidump_context_writer.h        |  39 ++++
+ .../minidump/minidump_misc_info_writer.cc     |   2 +
+ .../crashpad/snapshot/capture_memory.cc       |   5 +
+ .../crashpad/snapshot/cpu_architecture.h      |   5 +-
+ .../crashpad/crashpad/snapshot/cpu_context.cc |   5 +
+ .../crashpad/crashpad/snapshot/cpu_context.h  |  19 ++
+ .../snapshot/linux/cpu_context_linux.h        |  73 ++++++
+ .../snapshot/linux/debug_rendezvous_test.cc   |   4 +-
+ .../linux/exception_snapshot_linux.cc         |  63 ++++++
+ .../snapshot/linux/exception_snapshot_linux.h |   2 +
+ .../linux/exception_snapshot_linux_test.cc    |  21 ++
+ .../snapshot/linux/process_reader_linux.cc    |   2 +
+ .../crashpad/snapshot/linux/signal_context.h  |  83 +++++++
+ .../snapshot/linux/system_snapshot_linux.cc   |  11 +
+ .../snapshot/linux/thread_snapshot_linux.cc   |   8 +
+ .../snapshot/linux/thread_snapshot_linux.h    |   2 +
+ .../sanitized/process_snapshot_sanitized.cc   |   1 +
+ .../crashpad/crashpad/test/linux/get_tls.cc   |   2 +
+ .../crashpad/test/multiprocess_posix.cc       |   3 +-
+ .../crashpad/util/linux/auxiliary_vector.cc   |   6 +
+ .../crashpad/util/linux/ptrace_broker.cc      |   6 +
+ .../crashpad/crashpad/util/linux/ptracer.cc   |  61 +++++
+ .../crashpad/util/linux/thread_info.h         |  54 +++++
+ .../crashpad/util/misc/capture_context.h      |   1 +
+ .../util/misc/capture_context_linux.S         | 212 +++++++++++++++++-
+ .../util/misc/capture_context_test.cc         |   3 +-
+ .../misc/capture_context_test_util_linux.cc   |   6 +
+ .../crashpad/util/posix/signals_test.cc       |  10 +-
+ 33 files changed, 850 insertions(+), 9 deletions(-)
+ create mode 100644 third_party/crashpad/crashpad/compat/linux/sys/capability.h
+
+diff --git a/third_party/crashpad/crashpad/CONTRIBUTORS b/third_party/crashpad/crashpad/CONTRIBUTORS
+index 2080cc456e6b..4ad2cd37fcfb 100644
+--- a/third_party/crashpad/crashpad/CONTRIBUTORS
++++ b/third_party/crashpad/crashpad/CONTRIBUTORS
+@@ -12,3 +12,4 @@
+ Mark Mentovai <mark@chromium.org>
+ Robert Sesek <rsesek@chromium.org>
+ Scott Graham <scottmg@chromium.org>
++Shawn Anastasio <shawnanastasio@yahoo.com>
+diff --git a/third_party/crashpad/crashpad/compat/linux/sys/capability.h b/third_party/crashpad/crashpad/compat/linux/sys/capability.h
+new file mode 100644
+index 000000000000..4dea38a8325b
+--- /dev/null
++++ b/third_party/crashpad/crashpad/compat/linux/sys/capability.h
+@@ -0,0 +1,30 @@
++// Copyright 2018 The Crashpad Authors. All rights reserved.
++//
++// Licensed under the Apache License, Version 2.0 (the "License");
++// you may not use this file except in compliance with the License.
++// You may obtain a copy of the License at
++//
++//     http://www.apache.org/licenses/LICENSE-2.0
++//
++// Unless required by applicable law or agreed to in writing, software
++// distributed under the License is distributed on an "AS IS" BASIS,
++// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++// See the License for the specific language governing permissions and
++// limitations under the License.
++
++#ifndef CRASHPAD_COMPAT_LINUX_SYS_CAPABILITY_H_
++#define CRASHPAD_COMPAT_LINUX_SYS_CAPABILITY_H_
++
++#if !defined(__powerpc64__)
++#include_next <sys/capability.h>
++#else
++// sys/compatibility.h is not available on PPC64
++#include_next <linux/capability.h>
++#include_next <unistd.h>
++#include_next <sys/syscall.h>
++static inline int capget(cap_user_header_t hdrp, cap_user_data_t datap) {
++  return syscall(SYS_capset, hdrp, datap);
++}
++#endif // !defined(__powerpc64__)
++
++#endif  // CRASHPAD_COMPAT_LINUX_SYS_CAPABILITY_H_
+diff --git a/third_party/crashpad/crashpad/compat/linux/sys/user.h b/third_party/crashpad/crashpad/compat/linux/sys/user.h
+index 0ce5338b48b8..9fb34c8342b5 100644
+--- a/third_party/crashpad/crashpad/compat/linux/sys/user.h
++++ b/third_party/crashpad/crashpad/compat/linux/sys/user.h
+@@ -15,6 +15,7 @@
+ #ifndef CRASHPAD_COMPAT_LINUX_SYS_USER_H_
+ #define CRASHPAD_COMPAT_LINUX_SYS_USER_H_
+ 
++#include <cstddef>
+ #include_next <sys/user.h>
+ 
+ #include <features.h>
+diff --git a/third_party/crashpad/crashpad/minidump/minidump_context.h b/third_party/crashpad/crashpad/minidump/minidump_context.h
+index 6f51b5a4d298..36c17862a06c 100644
+--- a/third_party/crashpad/crashpad/minidump/minidump_context.h
++++ b/third_party/crashpad/crashpad/minidump/minidump_context.h
+@@ -564,6 +564,73 @@ struct MinidumpContextMIPS64 {
+   uint64_t fir;
+ };
+ 
++//! \brief ppc64-specific flags for MinidumpPPC64::context_flags
++//! Based on minidump_cpu_ppc64.h from breakpad
++enum MinidumpContextPPC64Flags : uint32_t {
++  //! \brief Identifies the context as PPC64.
++  kMinidumpContextPPC64 = 0x01000000,
++
++  //! \brief Indicates the validity of general purpose registers.
++  //!
++  //! Registers `r0`-`r31`, `nip`, `msr`, `lr`, etc. are valid.
++  kMinidumpContextPPC64Base = kMinidumpContextPPC64 | 0x00000001,
++
++  //! \brief Indicates the validity of floating point registers.
++  //!
++  //! Registers `fp0`-`fp31`, `fpscr` are valid.
++  kMinidumpContextPPC64Floating = kMinidumpContextPPC64 | 0x00000008,
++    
++  //! \brief Indicates the validity of Altivec/VMX registers.
++  //!
++  //! Registers `v0`-`v31`, `vscr`, `vrsave`.
++  kMinidumpContextPPC64Vector = kMinidumpContextPPC64 | 0x00000020,
++
++  //! \brief Indicates the validity of all registers
++  kMinidumpContextPPC64All = kMinidumpContextPPC64Base     |
++                             kMinidumpContextPPC64Floating |
++                             kMinidumpContextPPC64Vector
++};
++
++//! \brief A PPC64 CPU context carried in a minidump file.
++//! Based on minidump_cpu_ppc64.h from breakpad.
++struct MinidumpContextPPC64 {
++  uint64_t context_flags;
++ 
++  //! \brief General purpose registers.
++  uint64_t nip;
++  uint64_t msr;
++  uint64_t regs[32];
++  uint64_t ccr;
++  uint64_t xer;
++  uint64_t lnk;
++  uint64_t ctr;
++
++  //! \brief Vector save register.
++  uint64_t vrsave;
++
++  //! \brief Floating point registers.
++  double fpregs[32];
++
++  //! \brief FPU status register.
++  double fpscr;
++
++  //! \brief Altivec/VMX vector registers.
++  struct {
++      //! \brief Vector registers are 128bits.
++      uint128_struct save_vr[32];
++      uint128_struct save_vscr;
++
++      //! \brief Padding included for breakpad compatibiltiy.
++      uint32_t save_pad5[4];
++        
++      //! \brief VRSAVE register.
++      uint32_t save_vrsave;
++
++      //! \brief Padding included for breakpad compatibiltiy.
++      uint32_t save_pad6[7];
++  } vregs;
++};
++
+ }  // namespace crashpad
+ 
+ #endif  // CRASHPAD_MINIDUMP_MINIDUMP_CONTEXT_H_
+diff --git a/third_party/crashpad/crashpad/minidump/minidump_context_writer.cc b/third_party/crashpad/crashpad/minidump/minidump_context_writer.cc
+index 20adbf3fc7ba..e1f71b8afd91 100644
+--- a/third_party/crashpad/crashpad/minidump/minidump_context_writer.cc
++++ b/third_party/crashpad/crashpad/minidump/minidump_context_writer.cc
+@@ -101,6 +101,13 @@ MinidumpContextWriter::CreateFromSnapshot(const CPUContext* context_snapshot) {
+       break;
+     }
+ 
++    case kCPUArchitecturePPC64: {
++      context = std::make_unique<MinidumpContextPPC64Writer>();
++      reinterpret_cast<MinidumpContextPPC64Writer*>(context.get())
++          ->InitalizeFromSnapshot(context_snapshot->ppc64);
++      break;
++    }
++
+     default: {
+       LOG(ERROR) << "unknown context architecture "
+                  << context_snapshot->architecture;
+@@ -450,4 +457,48 @@ size_t MinidumpContextMIPS64Writer::ContextSize() const {
+   return sizeof(context_);
+ }
+ 
++MinidumpContextPPC64Writer::MinidumpContextPPC64Writer()
++  : MinidumpContextWriter(), context_() {
++    context_.context_flags = kMinidumpContextPPC64;
++}
++
++MinidumpContextPPC64Writer::~MinidumpContextPPC64Writer() = default;
++
++void MinidumpContextPPC64Writer::InitalizeFromSnapshot(
++    const CPUContextPPC64* context_snapshot) {
++  DCHECK_EQ(state(), kStateMutable);
++  DCHECK_EQ(context_.context_flags, kMinidumpContextPPC64);
++
++  context_.context_flags = kMinidumpContextPPC64All;
++
++  memcpy(context_.regs, context_snapshot->regs, sizeof(context_.regs));
++  context_.nip = context_snapshot->nip;
++  context_.msr = context_snapshot->msr;
++  context_.ccr = context_snapshot->ccr;
++  context_.xer = context_snapshot->xer;
++  context_.lnk = context_snapshot->lnk;
++  context_.ctr = context_snapshot->ctr;
++ 
++  context_.vrsave = context_snapshot->vrsave;
++
++  memcpy(context_.fpregs, context_snapshot->fpregs, sizeof(context_.fpregs));
++  context_.fpscr = context_snapshot->fpscr;
++
++  memcpy(context_.vregs.save_vr, context_snapshot->vregs.save_vr, 
++         sizeof(context_.vregs.save_vr));
++  memcpy(&context_.vregs.save_vscr, &context_snapshot->vregs.save_vscr,
++         sizeof(context_.vregs.save_vscr));
++}
++
++bool MinidumpContextPPC64Writer::WriteObject(
++    FileWriterInterface* file_writer) { 
++  DCHECK_EQ(state(), kStateWritable);
++  return file_writer->Write(&context_, sizeof(context_));
++}
++
++size_t MinidumpContextPPC64Writer::ContextSize() const {
++  DCHECK_GE(state(), kStateFrozen);
++  return sizeof(context_);
++}
++
+ }  // namespace crashpad
+diff --git a/third_party/crashpad/crashpad/minidump/minidump_context_writer.h b/third_party/crashpad/crashpad/minidump/minidump_context_writer.h
+index d4ab936ee7f9..1d22fc59c97c 100644
+--- a/third_party/crashpad/crashpad/minidump/minidump_context_writer.h
++++ b/third_party/crashpad/crashpad/minidump/minidump_context_writer.h
+@@ -315,6 +315,45 @@ class MinidumpContextMIPS64Writer final : public MinidumpContextWriter {
+   DISALLOW_COPY_AND_ASSIGN(MinidumpContextMIPS64Writer);
+ };
+ 
++class MinidumpContextPPC64Writer final : public MinidumpContextWriter {
++ public:
++  MinidumpContextPPC64Writer();
++  ~MinidumpContextPPC64Writer() override;
++
++  //! \brief Initalizes the MinidumpContextPPC64 based on \a context_snapshot.
++  //!
++  //! \param[in] context_snapshot The context snapshot to use as source data.
++  //!
++  //! \note Valid in #kStateMutable. No mutation of context() may be done before
++  //!     calling this method, and it is not normally necessary to alter
++  //!     context() after calling this method.
++  void InitalizeFromSnapshot(const CPUContextPPC64* context_snapshot);
++
++  //! \brief Returns a pointer to the context structure that this object will
++  //!     write.
++  //!
++  //! \attention This returns a non-`const` pointer to this object’s private
++  //!     data so that a caller can populate the context structure directly.
++  //!     This is done because providing setter interfaces to each field in the
++  //!     context structure would be unwieldy and cumbersome. Care must be taken
++  //!     to populate the context structure correctly. The context structure
++  //!     must only be modified while this object is in the #kStateMutable
++  //!     state.
++  MinidumpContextPPC64* context() { return &context_; }
++
++ protected:
++  // MinidumpWritable:
++  bool WriteObject(FileWriterInterface* file_writer) override;
++
++  // MinidumpContextWriter:
++  size_t ContextSize() const override;
++
++ private:
++  MinidumpContextPPC64 context_;
++
++  DISALLOW_COPY_AND_ASSIGN(MinidumpContextPPC64Writer);
++};
++
+ }  // namespace crashpad
+ 
+ #endif  // CRASHPAD_MINIDUMP_MINIDUMP_CONTEXT_WRITER_H_
+diff --git a/third_party/crashpad/crashpad/minidump/minidump_misc_info_writer.cc b/third_party/crashpad/crashpad/minidump/minidump_misc_info_writer.cc
+index d83ed2379d0c..1712927a13bf 100644
+--- a/third_party/crashpad/crashpad/minidump/minidump_misc_info_writer.cc
++++ b/third_party/crashpad/crashpad/minidump/minidump_misc_info_writer.cc
+@@ -126,6 +126,8 @@ std::string MinidumpMiscInfoDebugBuildString() {
+   static constexpr char kCPU[] = "mips";
+ #elif defined(ARCH_CPU_MIPS64EL)
+   static constexpr char kCPU[] = "mips64";
++#elif defined(ARCH_CPU_PPC64)
++  static constexpr char kCPU[] = "ppc64";
+ #else
+ #error define kCPU for this CPU
+ #endif
+diff --git a/third_party/crashpad/crashpad/snapshot/capture_memory.cc b/third_party/crashpad/crashpad/snapshot/capture_memory.cc
+index 98f400e8a184..25e6c87eaf5f 100644
+--- a/third_party/crashpad/crashpad/snapshot/capture_memory.cc
++++ b/third_party/crashpad/crashpad/snapshot/capture_memory.cc
+@@ -110,6 +110,11 @@ void CaptureMemory::PointedToByContext(const CPUContext& context,
+   for (size_t i = 0; i < arraysize(context.mipsel->regs); ++i) {
+     MaybeCaptureMemoryAround(delegate, context.mipsel->regs[i]);
+   }
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  MaybeCaptureMemoryAround(delegate, context.ppc64->nip);
++  for (size_t i = 0; i < arraysize(context.ppc64->regs); ++i) {
++    MaybeCaptureMemoryAround(delegate, context.ppc64->regs[i]);
++  }
+ #else
+ #error Port.
+ #endif
+diff --git a/third_party/crashpad/crashpad/snapshot/cpu_architecture.h b/third_party/crashpad/crashpad/snapshot/cpu_architecture.h
+index 811a7209587d..f4f83981dfdc 100644
+--- a/third_party/crashpad/crashpad/snapshot/cpu_architecture.h
++++ b/third_party/crashpad/crashpad/snapshot/cpu_architecture.h
+@@ -43,7 +43,10 @@ enum CPUArchitecture {
+   kCPUArchitectureMIPSEL,
+ 
+   //! \brief 64-bit MIPSEL.
+-  kCPUArchitectureMIPS64EL
++  kCPUArchitectureMIPS64EL,
++
++  //! \brief 64-bit PPC64.
++  kCPUArchitecturePPC64
+ };
+ 
+ }  // namespace crashpad
+diff --git a/third_party/crashpad/crashpad/snapshot/cpu_context.cc b/third_party/crashpad/crashpad/snapshot/cpu_context.cc
+index 4d7c1e5ac293..39af7c459e58 100644
+--- a/third_party/crashpad/crashpad/snapshot/cpu_context.cc
++++ b/third_party/crashpad/crashpad/snapshot/cpu_context.cc
+@@ -168,6 +168,8 @@ uint64_t CPUContext::InstructionPointer() const {
+       return arm->pc;
+     case kCPUArchitectureARM64:
+       return arm64->pc;
++    case kCPUArchitecturePPC64:
++      return ppc64->nip;
+     default:
+       NOTREACHED();
+       return ~0ull;
+@@ -184,6 +186,8 @@ uint64_t CPUContext::StackPointer() const {
+       return arm->sp;
+     case kCPUArchitectureARM64:
+       return arm64->sp;
++    case kCPUArchitecturePPC64:
++      return ppc64->regs[1];
+     default:
+       NOTREACHED();
+       return ~0ull;
+@@ -195,6 +199,7 @@ bool CPUContext::Is64Bit() const {
+     case kCPUArchitectureX86_64:
+     case kCPUArchitectureARM64:
+     case kCPUArchitectureMIPS64EL:
++    case kCPUArchitecturePPC64:
+       return true;
+     case kCPUArchitectureX86:
+     case kCPUArchitectureARM:
+diff --git a/third_party/crashpad/crashpad/snapshot/cpu_context.h b/third_party/crashpad/crashpad/snapshot/cpu_context.h
+index 4dde94368dec..08774599ba9f 100644
+--- a/third_party/crashpad/crashpad/snapshot/cpu_context.h
++++ b/third_party/crashpad/crashpad/snapshot/cpu_context.h
+@@ -352,6 +352,24 @@ struct CPUContextMIPS64 {
+   uint64_t fir;
+ };
+ 
++//! \brief A context structure carrying PPC64 CPU state.
++struct CPUContextPPC64 {
++  uint64_t nip;
++  uint64_t msr;
++  uint64_t regs[32];
++  uint64_t ccr;
++  uint64_t xer;
++  uint64_t lnk;
++  uint64_t ctr;
++  uint64_t vrsave;
++  double fpregs[32];
++  double fpscr;
++  struct {
++    uint128_struct save_vr[32];
++    uint128_struct save_vscr;
++  } vregs;
++};
++
+ //! \brief A context structure capable of carrying the context of any supported
+ //!     CPU architecture.
+ struct CPUContext {
+@@ -382,6 +400,7 @@ struct CPUContext {
+     CPUContextARM64* arm64;
+     CPUContextMIPS* mipsel;
+     CPUContextMIPS64* mips64;
++    CPUContextPPC64* ppc64;
+   };
+ };
+ 
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/cpu_context_linux.h b/third_party/crashpad/crashpad/snapshot/linux/cpu_context_linux.h
+index 37fbc4325cea..7d011f8ca06d 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/cpu_context_linux.h
++++ b/third_party/crashpad/crashpad/snapshot/linux/cpu_context_linux.h
+@@ -15,6 +15,7 @@
+ #ifndef CRASHPAD_SNAPSHOT_LINUX_CPU_CONTEXT_LINUX_H_
+ #define CRASHPAD_SNAPSHOT_LINUX_CPU_CONTEXT_LINUX_H_
+ 
++#include <cstring>
+ #include "build/build_config.h"
+ #include "snapshot/cpu_context.h"
+ #include "snapshot/linux/signal_context.h"
+@@ -174,6 +175,78 @@ void InitializeCPUContextMIPS(
+ 
+ #endif  // ARCH_CPU_MIPS_FAMILY || DOXYGEN
+ 
++#if defined(ARCH_CPU_PPC64_FAMILY) || DOXYGEN
++
++//! \brief Initalizes a CPUContextPPC64 structure from native context
++//!     structures on Linux.
++//!
++//! \param[in] thread_context The native thread context.
++//! \param[in] float_context The native float context.
++//! \param[in] vector_context The native vector context.
++//! \param[out] context The CPUContextPPC64 structure to initalize.
++template <typename Traits>
++void InitializeCPUContextPPC64(
++    const ThreadContext::t64_t& thread_context,
++    const FloatContext::f64_t& float_context,
++    const VectorContext::v64_t& vector_context,
++    typename Traits::CPUContext* context) {
++
++  memcpy(context->regs, thread_context.gpr, sizeof(context->regs));
++  context->nip = thread_context.nip;
++  context->msr = thread_context.msr;
++  context->ccr = thread_context.ccr;
++  context->xer = thread_context.xer;
++  context->lnk = thread_context.lnk;
++  context->ctr = thread_context.ctr;
++  
++  memcpy(context->fpregs, float_context.fpregs, sizeof(context->fpregs));
++  context->fpscr = float_context.fpscr;
++
++  for (uint8_t i = 0; i < 32; i++) {
++    context->vregs.save_vr[i] = {
++      (((uint64_t)vector_context.vrregs[i][0]) << 32) |
++        vector_context.vrregs[i][1],
++      (((uint64_t)vector_context.vrregs[i][2]) << 32) |
++        vector_context.vrregs[i][3]
++    };
++  }
++  context->vrsave = vector_context.vrsave;
++  context->vregs.save_vscr = {0, (uint64_t)vector_context.vscr.vscr_word};
++}
++
++template <typename Traits>
++void InitializeCPUContextPPC64(
++    const SignalThreadContext64 &thread_context,
++    const SignalFloatContext64 &float_context,
++    const SignalVectorContext64 &vector_context,
++    typename Traits::CPUContext* context) {
++
++  memcpy(context->regs, thread_context.regs, sizeof(context->regs));
++  context->nip = thread_context.nip;
++  context->msr = thread_context.msr;
++  context->ccr = thread_context.ccr;
++  context->xer = thread_context.xer;
++  context->lnk = thread_context.lnk;
++  context->ctr = thread_context.ctr;
++  
++  memcpy(context->fpregs, float_context.regs, sizeof(context->fpregs));
++  context->fpscr = float_context.fpscr;
++
++  for (uint8_t i = 0; i < 32; i++) {
++    context->vregs.save_vr[i] = {
++      (((uint64_t)vector_context.vrregs[i][0]) << 32) |
++        vector_context.vrregs[i][1],
++      (((uint64_t)vector_context.vrregs[i][2]) << 32) |
++        vector_context.vrregs[i][3]
++    };
++  }
++  context->vrsave = vector_context.vrsave;
++  context->vregs.save_vscr = {0, (uint64_t)vector_context.vscr.vscr_word};
++}
++
++
++#endif
++
+ }  // namespace internal
+ }  // namespace crashpad
+ 
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/debug_rendezvous_test.cc b/third_party/crashpad/crashpad/snapshot/linux/debug_rendezvous_test.cc
+index f9920ab43f02..33f99964f2d5 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/debug_rendezvous_test.cc
++++ b/third_party/crashpad/crashpad/snapshot/linux/debug_rendezvous_test.cc
+@@ -158,9 +158,11 @@ void TestAgainstTarget(PtraceConnection* connection) {
+           const bool is_vdso_mapping =
+               device == 0 && inode == 0 && mapping_name == "[vdso]";
+           static constexpr char kPrefix[] = "linux-vdso.so.";
++          static constexpr char kPrefix64[] = "linux-vdso64.so.";
+           return is_vdso_mapping ==
+                  (module_name.empty() ||
+-                  module_name.compare(0, strlen(kPrefix), kPrefix) == 0);
++                  module_name.compare(0, strlen(kPrefix), kPrefix) == 0 ||
++                  module_name.compare(0, strlen(kPrefix64), kPrefix64) == 0);
+         },
+         module_mapping->name,
+         module_mapping->device,
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.cc b/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.cc
+index 4256f942015c..57330a0de690 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.cc
++++ b/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.cc
+@@ -323,6 +323,69 @@ bool ExceptionSnapshotLinux::ReadContext<ContextTraits64>(
+       reader, context_address, context_.mips64);
+ }
+ 
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++
++template <typename Traits>
++static bool ReadContext(ProcessReaderLinux* reader,
++                        LinuxVMAddress context_address,
++                        typename Traits::CPUContext* dest_context) {
++  ProcessMemory* memory = reader->Memory();
++
++  LinuxVMAddress gp_regs_address = context_address + 
++                                   offsetof(UContext, mcontext) +
++                                   offsetof(typename Traits::MContext, gp_regs);
++
++  typename Traits::SignalThreadContext thread_context;
++  if (!memory->Read(gp_regs_address, sizeof(thread_context), &thread_context)) {
++    LOG(ERROR) << "Couldn't read gp_regs!";
++    return false;
++  }
++
++  LinuxVMAddress fp_regs_address = context_address +
++                                   offsetof(UContext, mcontext) +
++                                   offsetof(typename Traits::MContext, fp_regs);
++
++  typename Traits::SignalFloatContext fp_context;
++  if (!memory->Read(fp_regs_address, sizeof(fp_context), &fp_context)) {
++    LOG(ERROR) << "Couldn't read fp_regs!";
++    return false;
++  }
++  
++  LinuxVMAddress v_regs_ptr_address = context_address +
++                                  offsetof(UContext, mcontext) +
++                                  offsetof(typename Traits::MContext, vmx_reserve) + 8;
++  
++  typename Traits::SignalVectorContext v_context;
++  if (!memory->Read(v_regs_ptr_address, sizeof(v_context), &v_context)) {
++    LOG(ERROR) << "Couldn't read v_regs!";
++    return false;
++  }
++
++  InitializeCPUContextPPC64<ContextTraits64>(thread_context, fp_context, 
++                            v_context, dest_context);
++
++  return true;
++}
++
++template<>
++bool ExceptionSnapshotLinux::ReadContext<ContextTraits64>(
++    ProcessReaderLinux* reader,
++    LinuxVMAddress context_address) {
++  context_.architecture = kCPUArchitecturePPC64;
++  context_.ppc64 = &context_union_.ppc64;
++
++  return internal::ReadContext<ContextTraits64>(
++      reader, context_address, context_.ppc64);
++}
++
++template<>
++bool ExceptionSnapshotLinux::ReadContext<ContextTraits32>(
++    ProcessReaderLinux* reader,
++    LinuxVMAddress context_address) {
++  // PPC64 is 64-bit
++  return false;
++}
++
+ #endif  // ARCH_CPU_X86_FAMILY
+ 
+ bool ExceptionSnapshotLinux::Initialize(ProcessReaderLinux* process_reader,
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.h b/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.h
+index ea0cd21066d2..e42df520ff47 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.h
++++ b/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux.h
+@@ -84,6 +84,8 @@ class ExceptionSnapshotLinux final : public ExceptionSnapshot {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+     CPUContextMIPS mipsel;
+     CPUContextMIPS64 mips64;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++    CPUContextPPC64 ppc64;
+ #endif
+   } context_union_;
+   CPUContext context_;
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux_test.cc b/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux_test.cc
+index df9ad9e9fed3..21026ceb2c34 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux_test.cc
++++ b/third_party/crashpad/crashpad/snapshot/linux/exception_snapshot_linux_test.cc
+@@ -295,7 +295,28 @@ void ExpectContext(const CPUContext& actual, const NativeCPUContext& expected) {
+             0);
+ #undef CPU_ARCH_NAME
+ }
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++using NativeCPUContext = ucontext_t;
++
++void InitializeContext(NativeCPUContext* context) {
++  for (size_t reg = 0; reg < 32; ++reg) {
++    context->uc_mcontext.gp_regs[reg] = reg;
++  }
++
++  memset(&context->uc_mcontext.fp_regs, 44, 
++      sizeof(context->uc_mcontext.fp_regs));
++}
+ 
++void ExpectContext(const CPUContext& actual, const NativeCPUContext& expected) {
++  EXPECT_EQ(actual.architecture, kCPUArchitecturePPC64);
++
++  for (size_t reg = 0; reg < 32; ++reg) {
++    EXPECT_EQ(actual.ppc64->regs[reg], expected.uc_mcontext.gp_regs[reg]);
++  }
++
++  EXPECT_EQ(memcmp(actual.ppc64->fpregs, expected.uc_mcontext.fp_regs, 
++            sizeof(actual.ppc64->fpregs)), 0);
++}
+ #else
+ #error Port.
+ #endif
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc b/third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc
+index 038d5cef03f5..35bc137230d1 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc
++++ b/third_party/crashpad/crashpad/snapshot/linux/process_reader_linux.cc
+@@ -103,6 +103,8 @@ void ProcessReaderLinux::Thread::InitializeStack(ProcessReaderLinux* reader) {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   stack_pointer = reader->Is64Bit() ? thread_info.thread_context.t64.regs[29]
+                                     : thread_info.thread_context.t32.regs[29];
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  stack_pointer = thread_info.thread_context.t64.gpr[1];
+ #else
+ #error Port.
+ #endif
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/signal_context.h b/third_party/crashpad/crashpad/snapshot/linux/signal_context.h
+index 110024680bdb..8e335a0960cf 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/signal_context.h
++++ b/third_party/crashpad/crashpad/snapshot/linux/signal_context.h
+@@ -422,6 +422,89 @@ static_assert(offsetof(UContext<ContextTraits64>, mcontext.fpregs) ==
+               "context offset mismatch");
+ #endif
+ 
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++
++struct SignalThreadContext64 {
++  uint64_t regs[32];
++  uint64_t nip;
++  uint64_t msr;
++  uint64_t orig_r3;
++  uint64_t ctr;
++  uint64_t lnk;
++  uint64_t xer;
++  uint64_t ccr;
++  uint64_t softe;
++  uint64_t trap;
++  uint64_t dar;
++  uint64_t dsisr;
++  uint64_t result;
++  uint64_t dscr;
++  uint64_t fpr0[3];
++};
++
++struct SignalFloatContext64 {
++  double regs[32];
++  double fpscr;
++};
++
++struct SignalVectorContext64 {
++  int32_t vrregs[32][4];
++  struct {
++    int32_t __pad[3];
++    int32_t vscr_word;
++  } vscr;
++  int32_t vrsave;
++  int32_t __pad[3];
++} __attribute__((__aligned__(16)));
++
++
++#pragma pack(pop)
++struct MContext64 {
++  uint64_t reserved[4];
++  int32_t signal;
++  int32_t __pad0;
++  uint64_t handler;
++  uint64_t oldmask;
++  uint64_t pt_regs_ptr;
++  SignalThreadContext64 gp_regs;
++  SignalFloatContext64  fp_regs;
++  SignalVectorContext64 *v_regs;
++  int64_t vmx_reserve[69];
++};
++
++struct ContextTraits64 : public Traits64 {
++  using MContext = MContext64;
++  using SignalThreadContext = SignalThreadContext64;
++  using SignalFloatContext = SignalFloatContext64;
++  using SignalVectorContext = SignalVectorContext64;
++  using CPUContext = CPUContextPPC64;
++};
++
++struct ContextTraits32 : public Traits32 {};
++
++struct UContext {
++  uint64_t flags;
++  uint64_t link;
++  SignalStack<ContextTraits64> stack;
++  Sigset<ContextTraits64> sigmask;
++  MContext64 mcontext;
++};
++#pragma pack(push, 1)
++
++static_assert(sizeof(UContext) == sizeof(ucontext_t),
++              "ucontext_t size mismatch");
++static_assert(sizeof(MContext64) == sizeof(mcontext_t),
++              "mcontext_t size mismatch");
++static_assert(sizeof(SignalThreadContext64) == sizeof(gregset_t),
++              "gregset_t size mismatch");
++static_assert(sizeof(SignalFloatContext64) == sizeof(fpregset_t),
++              "fpregset_t size mismatch");
++static_assert(sizeof(SignalVectorContext64) == sizeof(_libc_vrstate),
++              "vrstate size mismatch");
++static_assert(offsetof(UContext, mcontext) ==
++              offsetof(ucontext_t, uc_mcontext), "mcontext offset mismatch");
++static_assert(offsetof(MContext64, gp_regs) ==
++              offsetof(mcontext_t, gp_regs), "gp_regs offset mismatch");
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/system_snapshot_linux.cc b/third_party/crashpad/crashpad/snapshot/linux/system_snapshot_linux.cc
+index 8564d3d45570..ad27fa8c1daf 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/system_snapshot_linux.cc
++++ b/third_party/crashpad/crashpad/snapshot/linux/system_snapshot_linux.cc
+@@ -203,6 +203,8 @@ CPUArchitecture SystemSnapshotLinux::GetCPUArchitecture() const {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   return process_reader_->Is64Bit() ? kCPUArchitectureMIPS64EL
+                                     : kCPUArchitectureMIPSEL;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  return kCPUArchitecturePPC64;
+ #else
+ #error port to your architecture
+ #endif
+@@ -218,6 +220,9 @@ uint32_t SystemSnapshotLinux::CPURevision() const {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   // Not implementable on MIPS
+   return 0;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  // Not yet implemented on PPC64
++  return 0;
+ #else
+ #error port to your architecture
+ #endif
+@@ -238,6 +243,9 @@ std::string SystemSnapshotLinux::CPUVendor() const {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   // Not implementable on MIPS
+   return std::string();
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  // Not yet implemented on PPC64
++  return 0;
+ #else
+ #error port to your architecture
+ #endif
+@@ -371,6 +379,9 @@ bool SystemSnapshotLinux::NXEnabled() const {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   // Not implementable on MIPS
+   return false;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  // Not yet implemented on PPC64
++  return false;
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc b/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc
+index 8ffbfe8bf2cb..55eee73bde71 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc
++++ b/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.cc
+@@ -85,6 +85,14 @@ bool ThreadSnapshotLinux::Initialize(ProcessReaderLinux* process_reader,
+         thread.thread_info.float_context.f32,
+         context_.mipsel);
+   }
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  context_.architecture = kCPUArchitecturePPC64;
++  context_.ppc64 = &context_union_.ppc64;
++  InitializeCPUContextPPC64<ContextTraits64>(
++      thread.thread_info.thread_context.t64,
++      thread.thread_info.float_context.f64,
++      thread.thread_info.vector_context.v64,
++      context_.ppc64);
+ #else
+ #error Port.
+ #endif
+diff --git a/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h b/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h
+index 17e471f3272d..cea09d0741b2 100644
+--- a/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h
++++ b/third_party/crashpad/crashpad/snapshot/linux/thread_snapshot_linux.h
+@@ -68,6 +68,8 @@ class ThreadSnapshotLinux final : public ThreadSnapshot {
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+     CPUContextMIPS mipsel;
+     CPUContextMIPS64 mips64;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++    CPUContextPPC64 ppc64;
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+diff --git a/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc b/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc
+index 76caeb5aae4c..20eb7982ee72 100644
+--- a/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc
++++ b/third_party/crashpad/crashpad/snapshot/sanitized/process_snapshot_sanitized.cc
+@@ -57,6 +57,7 @@ class StackReferencesAddressRange : public MemorySnapshot::Delegate {
+     const size_t aligned_sp_offset =
+         (sp_offset + sizeof(Pointer) - 1) & ~(sizeof(Pointer) - 1);
+ 
++
+     auto words = reinterpret_cast<Pointer*>(static_cast<char*>(data) +
+                                             aligned_sp_offset);
+     size_t word_count = (size - aligned_sp_offset) / sizeof(Pointer);
+diff --git a/third_party/crashpad/crashpad/test/linux/get_tls.cc b/third_party/crashpad/crashpad/test/linux/get_tls.cc
+index 452724deae5d..6e3a5a896acc 100644
+--- a/third_party/crashpad/crashpad/test/linux/get_tls.cc
++++ b/third_party/crashpad/crashpad/test/linux/get_tls.cc
+@@ -49,6 +49,8 @@ LinuxVMAddress GetTLS() {
+       : "=r"(tls)
+       :
+       : "$3");
++#elif defined(ARCH_CPU_PPC64)
++  asm("mr %0, 13": "=r"(tls));
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_ARMEL
+diff --git a/third_party/crashpad/crashpad/test/multiprocess_posix.cc b/third_party/crashpad/crashpad/test/multiprocess_posix.cc
+index 2e0c3856dd43..88997d547e0a 100644
+--- a/third_party/crashpad/crashpad/test/multiprocess_posix.cc
++++ b/third_party/crashpad/crashpad/test/multiprocess_posix.cc
+@@ -162,7 +162,8 @@ void Multiprocess::SetExpectedChildTermination(TerminationReason reason,
+ }
+ 
+ void Multiprocess::SetExpectedChildTerminationBuiltinTrap() {
+-#if defined(ARCH_CPU_ARM64) || defined(ARCH_CPU_MIPS_FAMILY)
++#if defined(ARCH_CPU_ARM64) || defined(ARCH_CPU_MIPS_FAMILY) || \
++    defined(ARCH_CPU_PPC64_FAMILY)
+   SetExpectedChildTermination(kTerminationSignal, SIGTRAP);
+ #else
+   SetExpectedChildTermination(kTerminationSignal, SIGILL);
+diff --git a/third_party/crashpad/crashpad/util/linux/auxiliary_vector.cc b/third_party/crashpad/crashpad/util/linux/auxiliary_vector.cc
+index d3d5ebdfb9fa..1ff5b95c3d4e 100644
+--- a/third_party/crashpad/crashpad/util/linux/auxiliary_vector.cc
++++ b/third_party/crashpad/crashpad/util/linux/auxiliary_vector.cc
+@@ -56,7 +56,13 @@ bool AuxiliaryVector::Read(PtraceConnection* connection) {
+     if (type == AT_IGNORE) {
+       continue;
+     }
++#if defined(ARCH_CPU_PPC64_FAMILY)
++    if (type == AT_IGNOREPPC) {
++      continue;
++    }
++#endif
+     if (!MapInsertOrReplace(&values_, type, value, nullptr)) {
++      printf("duplicate entry type no: %lu\n", (unsigned long)type);
+       LOG(ERROR) << "duplicate auxv entry";
+       return false;
+     }
+diff --git a/third_party/crashpad/crashpad/util/linux/ptrace_broker.cc b/third_party/crashpad/crashpad/util/linux/ptrace_broker.cc
+index e9d306867763..49ec5a5b4d24 100644
+--- a/third_party/crashpad/crashpad/util/linux/ptrace_broker.cc
++++ b/third_party/crashpad/crashpad/util/linux/ptrace_broker.cc
+@@ -92,9 +92,15 @@ int PtraceBroker::Run() {
+ }
+ 
+ bool PtraceBroker::AllocateAttachments() {
++#if !defined(ARCH_CPU_PPC64_FAMILY)
++  size_t page_size = getpagesize();
++  size_t alloc_size =
++      (sizeof(ScopedPtraceAttach) + page_size - 1) & ~(page_size - 1);
++#else
+   constexpr size_t page_size = 4096;
+   constexpr size_t alloc_size =
+       (sizeof(ScopedPtraceAttach) + page_size - 1) & ~(page_size - 1);
++#endif
+   void* alloc = sbrk(alloc_size);
+   if (reinterpret_cast<intptr_t>(alloc) == -1) {
+     return false;
+diff --git a/third_party/crashpad/crashpad/util/linux/ptracer.cc b/third_party/crashpad/crashpad/util/linux/ptracer.cc
+index c6c92299464a..f928cf9deb81 100644
+--- a/third_party/crashpad/crashpad/util/linux/ptracer.cc
++++ b/third_party/crashpad/crashpad/util/linux/ptracer.cc
+@@ -394,6 +394,64 @@ bool GetThreadArea64(pid_t tid,
+   return true;
+ }
+ 
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++// PPC64 has had HAVE_ARCH_TRACEHOOK set since 2.6.27 (even before x86 had it).
++// That means we can simply use PTRACE_GETREGESET.
++
++template <typename Destination>
++bool GetRegisterSet(pid_t tid, int set, Destination* dest, bool can_log) {
++  iovec iov;
++  iov.iov_base = reinterpret_cast<void*>(dest);
++  iov.iov_len = sizeof(*dest);
++  if (ptrace(PTRACE_GETREGSET, tid, reinterpret_cast<void*>(set), &iov) != 0) {
++    PLOG_IF(ERROR, can_log) << "ptrace";
++    return false;
++  }
++  if (iov.iov_len != sizeof(*dest)) {
++    LOG_IF(ERROR, can_log) << "Unexpected registers size";
++    return false;
++  }
++  return true;
++}
++
++bool GetVectorRegisters64(pid_t tid,
++                          VectorContext* context,
++                          bool can_log) {
++  return GetRegisterSet(tid, NT_PPC_VMX, &context->v64, can_log);
++}
++
++bool GetFloatingPointRegisters64(pid_t tid,
++                                 FloatContext* context,
++                                 bool can_log) {
++  return GetRegisterSet(tid, NT_PRFPREG, &context->f64, can_log);
++}
++
++bool GetThreadArea64(pid_t tid,
++                     const ThreadContext& context,
++                     LinuxVMAddress* address,
++                     bool can_log) {
++  // PPC64 doesn't have PTRACE_GET_THREAD_AREA since the thread pointer
++  // is stored in GPR 13.
++  ThreadContext::t64_t tc;
++  if (!GetRegisterSet(tid, NT_PRSTATUS, &tc, can_log)) {
++    LOG_IF(ERROR, can_log) << "Unable to get thread pointer!";
++    return false;
++  }
++ 
++  *address = tc.gpr[13];
++
++  return true;  
++}
++
++// Stubs for 32-bit functions not applicable on PPC64
++bool GetFloatingPointRegisters32(pid_t tid,
++                                 FloatContext* context,
++                                 bool can_log) { return false; }
++bool GetThreadArea32(pid_t tid,
++                     const ThreadContext &context,
++                     LinuxVMAddress *address,
++                     bool can_log) { return false; }
++
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+@@ -486,6 +544,9 @@ bool Ptracer::GetThreadInfo(pid_t tid, ThreadInfo* info) {
+   if (is_64_bit_) {
+     return GetGeneralPurposeRegisters64(tid, &info->thread_context, can_log_) &&
+            GetFloatingPointRegisters64(tid, &info->float_context, can_log_) &&
++#if defined(ARCH_CPU_PPC64_FAMILY)
++           GetVectorRegisters64(tid, &info->vector_context, can_log_) &&
++#endif
+            GetThreadArea64(tid,
+                            info->thread_context,
+                            &info->thread_specific_data_address,
+diff --git a/third_party/crashpad/crashpad/util/linux/thread_info.h b/third_party/crashpad/crashpad/util/linux/thread_info.h
+index 5b55c24a76d5..acd8a51c5747 100644
+--- a/third_party/crashpad/crashpad/util/linux/thread_info.h
++++ b/third_party/crashpad/crashpad/util/linux/thread_info.h
+@@ -28,6 +28,10 @@
+ #include <android/api-level.h>
+ #endif
+ 
++#if defined(ARCH_CPU_PPC64_FAMILY)
++#include <sys/ucontext.h>
++#endif
++
+ namespace crashpad {
+ 
+ //! \brief The set of general purpose registers for an architecture family.
+@@ -79,6 +83,8 @@ union ThreadContext {
+     uint32_t cp0_status;
+     uint32_t cp0_cause;
+     uint32_t padding1_;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++    // PPC64 is 64-bit
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+@@ -132,6 +138,21 @@ union ThreadContext {
+     uint64_t cp0_badvaddr;
+     uint64_t cp0_status;
+     uint64_t cp0_cause;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++    // Reflects struct pt_regs in asm/ptrace.h.
++    uint64_t gpr[32];
++    uint64_t nip;
++    uint64_t msr;
++    uint64_t orig_gpr3;
++    uint64_t ctr;
++    uint64_t lnk;
++    uint64_t xer;
++    uint64_t ccr;
++    uint64_t softe;
++    uint64_t trap;
++    uint64_t dar;
++    uint64_t dsisr;
++    uint64_t result;
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+@@ -143,6 +164,8 @@ union ThreadContext {
+   using NativeThreadContext = user_regs;
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+ // No appropriate NativeThreadsContext type available for MIPS
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  using NativeThreadContext = struct pt_regs;
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY || ARCH_CPU_ARM64
+@@ -218,6 +241,8 @@ union FloatContext {
+     } fpregs[32];
+     uint32_t fpcsr;
+     uint32_t fpu_id;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++    // PPC64 is 64-bit
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+@@ -252,6 +277,10 @@ union FloatContext {
+     double fpregs[32];
+     uint32_t fpcsr;
+     uint32_t fpu_id;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++    // Reflects fpregset_t in sys/ucontext.h
++    double fpregs[32];
++    double fpscr;
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86_FAMILY
+@@ -280,6 +309,8 @@ union FloatContext {
+   static_assert(sizeof(f64) == sizeof(user_fpsimd_struct), "Size mismatch");
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+ // No appropriate floating point context native type for available MIPS.
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  static_assert(sizeof(f64) == sizeof(fpregset_t), "Size mismatch");
+ #else
+ #error Port.
+ #endif  // ARCH_CPU_X86
+@@ -287,6 +318,26 @@ union FloatContext {
+ static_assert(std::is_standard_layout<FloatContext>::value,
+               "Not standard layout");
+ 
++//! \brief The vector registers used for an architecture family
++union VectorContext {
++  struct v32_t {} v32;
++#if defined(ARCH_CPU_PPC64_FAMILY)
++  __attribute__((__aligned__(16))) // Vector context must be doubleword aligned.
++#endif
++  struct v64_t {
++#if defined(ARCH_CPU_PPC64_FAMILY)
++    // Reflects vrregset_t in sys/ucontext.h
++    uint32_t vrregs[32][4];
++    struct {
++      uint32_t __pad[3];
++      uint32_t vscr_word;
++    } vscr;
++    uint32_t vrsave;
++    uint32_t __pad[3];
++#endif
++  } v64;
++};
++
+ //! \brief A collection of `ptrace`-able information about a thread.
+ struct ThreadInfo {
+   ThreadInfo();
+@@ -298,6 +349,9 @@ struct ThreadInfo {
+   //! \brief The floating point registers for the thread.
+   FloatContext float_context;
+ 
++  //! \brief (Optional) The vector registers used for the thread.
++  VectorContext vector_context;
++
+   //! \brief The thread-local storage address for the thread.
+   LinuxVMAddress thread_specific_data_address;
+ };
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context.h b/third_party/crashpad/crashpad/util/misc/capture_context.h
+index 541589dfde2f..5b0fc8218c0e 100644
+--- a/third_party/crashpad/crashpad/util/misc/capture_context.h
++++ b/third_party/crashpad/crashpad/util/misc/capture_context.h
+@@ -66,6 +66,7 @@ using NativeCPUContext = ucontext_t;
+ //!     macOS/Linux/Fuchsia | x86_64       | `%%rdi`
+ //!     Linux               | ARM/ARM64    | `r0`/`x0`
+ //!     Linux               | MIPS/MIPS64  | `$a0`
++//!     Linux               | PPC64        | `r3`
+ //!
+ //!     Additionally, the value `LR` on ARM/ARM64 will be the return address of
+ //!     this function.
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_linux.S b/third_party/crashpad/crashpad/util/misc/capture_context_linux.S
+index 42999a90db4b..e9ae9574e194 100644
+--- a/third_party/crashpad/crashpad/util/misc/capture_context_linux.S
++++ b/third_party/crashpad/crashpad/util/misc/capture_context_linux.S
+@@ -28,7 +28,7 @@
+   .globl CAPTURECONTEXT_SYMBOL2
+ #if defined(__i386__) || defined(__x86_64__)
+   .balign 16, 0x90
+-#elif defined(__arm__) || defined(__aarch64__) || defined(__mips__)
++#elif defined(__arm__) || defined(__aarch64__) || defined(__mips__) || defined(__powerpc64__)
+   .balign 4, 0x0
+ #endif
+ 
+@@ -421,4 +421,214 @@ CAPTURECONTEXT_SYMBOL2:
+   jr $ra
+ 
+   .set at
++#elif defined(__powerpc64__)
++  // Store r0-r31
++  std 0, 0xe8(3)   // context->uc_mcontext.gp_regs[0]
++  std 1, 0xf0(3)   // context->uc_mcontext.gp_regs[1]
++  std 2, 0xf8(3)   // context->uc_mcontext.gp_regs[2]
++  // note that r3's original value was lost
++  std 3, 0x100(3)  // context->uc_mcontext.gp_regs[3]
++  std 4, 0x108(3)  // context->uc_mcontext.gp_regs[4]
++  std 5, 0x110(3)  // context->uc_mcontext.gp_regs[5]
++  std 6, 0x118(3)  // context->uc_mcontext.gp_regs[6]
++  std 7, 0x120(3)  // context->uc_mcontext.gp_regs[7]
++  std 8, 0x128(3)  // context->uc_mcontext.gp_regs[8]
++  std 9, 0x130(3)  // context->uc_mcontext.gp_regs[9]
++  std 10, 0x138(3) // context->uc_mcontext.gp_regs[10]
++  std 11, 0x140(3) // context->uc_mcontext.gp_regs[11]
++  std 12, 0x148(3) // context->uc_mcontext.gp_regs[12]
++  std 13, 0x150(3) // context->uc_mcontext.gp_regs[13]
++  std 14, 0x158(3) // context->uc_mcontext.gp_regs[14]
++  std 15, 0x160(3) // context->uc_mcontext.gp_regs[15]
++  std 16, 0x168(3) // context->uc_mcontext.gp_regs[16]
++  std 17, 0x170(3) // context->uc_mcontext.gp_regs[17]
++  std 18, 0x178(3) // context->uc_mcontext.gp_regs[18]
++  std 19, 0x180(3) // context->uc_mcontext.gp_regs[19]
++  std 20, 0x188(3) // context->uc_mcontext.gp_regs[20]
++  std 21, 0x190(3) // context->uc_mcontext.gp_regs[21]
++  std 22, 0x198(3) // context->uc_mcontext.gp_regs[22]
++  std 23, 0x1a0(3) // context->uc_mcontext.gp_regs[23]
++  std 24, 0x1a8(3) // context->uc_mcontext.gp_regs[24]
++  std 25, 0x1b0(3) // context->uc_mcontext.gp_regs[25]
++  std 26, 0x1b8(3) // context->uc_mcontext.gp_regs[26]
++  std 27, 0x1c0(3) // context->uc_mcontext.gp_regs[27]
++  std 28, 0x1c8(3) // context->uc_mcontext.gp_regs[28]
++  std 29, 0x1d0(3) // context->uc_mcontext.gp_regs[29]
++  std 30, 0x1d8(3) // context->uc_mcontext.gp_regs[30]
++  std 31, 0x1e0(3) // context->uc_mcontext.gp_regs[31]
++
++  // For NIP, we can use the value in the link register
++  mflr 0
++  std 0, 0x1e8(3) // context->uc_mcontext.gp_regs[PT_NIP]
++ 
++  // CTR
++  mfctr 0
++  std 0, 0x200(3) // context->uc_mcontext.gp_regs[PT_CTR]
++
++  // For LNK, we'll use the caller's LR save area (2 stack frames up).
++  // r4 can be used as a scratch register since it has already been saved.
++  ld 4, 0(1)
++  ld 4, 16(4)
++  std 4, 0x208(3) // context->uc_mcontext.gp_regs[PT_LNK]
++
++  // XER
++  mfxer 0
++  std 0, 0x210(3) // context->uc_mcontext.gp_regs[PT_XER]
++
++  // CCR
++  mfcr 0
++  std 0, 0x218(3) // context->uc_mcontext.gp_regs[PT_CCR]
++
++  // MSR, orig_r3, MQ, TRAP, DAR, DSISR, RESULT, DSCR, 
++  // not used or not relevant,  zero them out.
++  li 4, 0
++  std 4, 0x1f0(3) // context->uc_mcontext.gp_regs[PT_MSR]
++  std 4, 0x1f8(3) // context->uc_mcontext.gp_regs[PT_ORIG_R3]
++  std 4, 0x220(3) // context->uc_mcontext.gp_regs[PT_MQ]
++  std 4, 0x228(3) // context->uc_mcontext.gp_regs[PT_TRAP]
++  std 4, 0x230(3) // context->uc_mcontext.gp_regs[PT_DAR]
++  std 4, 0x238(3) // context->uc_mcontext.gp_regs[PT_DSISR]
++  std 4, 0x240(3) // context->uc_mcontext.gp_regs[PT_RESULT]
++  std 4, 0x248(3) // context->uc_mcontext.gp_regs[PT_DSCR]
++
++  // Update context->uc_mcontext.regs to point to gp_regs
++  addi 0, 3, 0xe8
++  std 0, 0xe0(3)
++
++  // Save floating point registers 0-31
++  stfd 0, 0x268(3)  // context->uc_mcontext.fp_regs[0]
++  stfd 1, 0x270(3)  // context->uc_mcontext.fp_regs[1]
++  stfd 2, 0x278(3)  // context->uc_mcontext.fp_regs[2]
++  stfd 3, 0x280(3)  // context->uc_mcontext.fp_regs[3]
++  stfd 4, 0x288(3)  // context->uc_mcontext.fp_regs[4]
++  stfd 5, 0x290(3)  // context->uc_mcontext.fp_regs[5]
++  stfd 6, 0x298(3)  // context->uc_mcontext.fp_regs[6]
++  stfd 7, 0x2a0(3)  // context->uc_mcontext.fp_regs[7]
++  stfd 8, 0x2a8(3)  // context->uc_mcontext.fp_regs[8]
++  stfd 9, 0x2b0(3)  // context->uc_mcontext.fp_regs[9]
++  stfd 10, 0x2b8(3) // context->uc_mcontext.fp_regs[10]
++  stfd 11, 0x2c0(3) // context->uc_mcontext.fp_regs[11]
++  stfd 12, 0x2c8(3) // context->uc_mcontext.fp_regs[12]
++  stfd 13, 0x2d0(3) // context->uc_mcontext.fp_regs[13]
++  stfd 14, 0x2d8(3) // context->uc_mcontext.fp_regs[14]
++  stfd 15, 0x2e0(3) // context->uc_mcontext.fp_regs[15]
++  stfd 16, 0x2e8(3) // context->uc_mcontext.fp_regs[16]
++  stfd 17, 0x2f0(3) // context->uc_mcontext.fp_regs[17]
++  stfd 18, 0x2f8(3) // context->uc_mcontext.fp_regs[18]
++  stfd 19, 0x300(3) // context->uc_mcontext.fp_regs[19]
++  stfd 20, 0x308(3) // context->uc_mcontext.fp_regs[20]
++  stfd 21, 0x310(3) // context->uc_mcontext.fp_regs[21]
++  stfd 22, 0x318(3) // context->uc_mcontext.fp_regs[22]
++  stfd 23, 0x320(3) // context->uc_mcontext.fp_regs[23]
++  stfd 24, 0x328(3) // context->uc_mcontext.fp_regs[24]
++  stfd 25, 0x330(3) // context->uc_mcontext.fp_regs[25]
++  stfd 26, 0x338(3) // context->uc_mcontext.fp_regs[26]
++  stfd 27, 0x340(3) // context->uc_mcontext.fp_regs[27]
++  stfd 28, 0x348(3) // context->uc_mcontext.fp_regs[28]
++  stfd 29, 0x350(3) // context->uc_mcontext.fp_regs[29]
++  stfd 30, 0x358(3) // context->uc_mcontext.fp_regs[30]
++  stfd 31, 0x360(3) // context->uc_mcontext.fp_regs[31]
++
++  // FPSCR
++  mffs 0
++  stfd 0, 0x368(3) // context->uc_mcontext.fp_regs[32]
++ 
++  // Save VMX Vector registers
++  // Update r4 to contain the base address of vmx_reserve
++  addi 4, 3, 0x378
++  // Ensure that it is quadword aligned
++  andi. 5, 4, 0xF
++  beq 1f // No alignment is necessary
++  // Address is doubleword aligned and not quadword aligned, add 8
++  addi 4, 4, 8
++  
++1: 
++  // Store VMX registers 0-31
++  // r4 will contain the base address
++  // r5 will contain the index
++  li 5, 0
++  stvx 0, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 0]
++  addi 5, 5, 16
++  stvx 1, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 1]
++  addi 5, 5, 16
++  stvx 2, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 2]
++  addi 5, 5, 16
++  stvx 3, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 3]
++  addi 5, 5, 16
++  stvx 4, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 4]
++  addi 5, 5, 16
++  stvx 5, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 5]
++  addi 5, 5, 16
++  stvx 6, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 6]
++  addi 5, 5, 16
++  stvx 7, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 7]
++  addi 5, 5, 16
++  stvx 8, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 8]
++  addi 5, 5, 16
++  stvx 9, 4, 5   // context->uc_mcontext.vmx_reserve[(align) + 9]
++  addi 5, 5, 16
++  stvx 10, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 10]
++  addi 5, 5, 16
++  stvx 11, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 11]
++  addi 5, 5, 16
++  stvx 12, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 12]
++  addi 5, 5, 16
++  stvx 13, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 13]
++  addi 5, 5, 16
++  stvx 14, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 14]
++  addi 5, 5, 16
++  stvx 15, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 15]
++  addi 5, 5, 16
++  stvx 16, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 16]
++  addi 5, 5, 16
++  stvx 17, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 17]
++  addi 5, 5, 16
++  stvx 18, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 18]
++  addi 5, 5, 16
++  stvx 19, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 19]
++  addi 5, 5, 16
++  stvx 20, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 20]
++  addi 5, 5, 16
++  stvx 21, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 21]
++  addi 5, 5, 16
++  stvx 22, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 22]
++  addi 5, 5, 16
++  stvx 23, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 23]
++  addi 5, 5, 16
++  stvx 24, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 24]
++  addi 5, 5, 16
++  stvx 25, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 25]
++  addi 5, 5, 16
++  stvx 26, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 26]
++  addi 5, 5, 16
++  stvx 27, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 27]
++  addi 5, 5, 16
++  stvx 28, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 28]
++  addi 5, 5, 16
++  stvx 29, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 29]
++  addi 5, 5, 16
++  stvx 30, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 30]
++  addi 5, 5, 16
++  stvx 31, 4, 5  // context->uc_mcontext.vmx_reserve[(align) + 31]
++  addi 5, 5, 16
++
++  // VSCR
++  mfvscr 0
++  stvx 0, 4, 5
++  addi 5, 5, 16
++
++  // VRSAVE
++  mfvrsave 0
++  stwx 0, 4, 5
++
++  // Update context->uc_mcontext.v_regs to point to vmx_reserve + alignment.  
++  std 4, 0x370(3)
++
++  // Zero out all unused fields
++  li 4, 0
++  std 4, 0xc8(3) // context->uc_mcontext.signal
++  std 4, 0xd0(3) // context->uc_mcontext.handler
++  std 4, 0xd8(3) // context->uc_mcontext.oldmask
++ 
++  blr
+ #endif  // __i386__
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_test.cc b/third_party/crashpad/crashpad/util/misc/capture_context_test.cc
+index 1117789df47b..e9e8eadf0377 100644
+--- a/third_party/crashpad/crashpad/util/misc/capture_context_test.cc
++++ b/third_party/crashpad/crashpad/util/misc/capture_context_test.cc
+@@ -49,7 +49,8 @@ void TestCaptureContext() {
+   // reference program counter.
+   uintptr_t pc = ProgramCounterFromContext(context_1);
+ 
+-#if !defined(ADDRESS_SANITIZER) && !defined(ARCH_CPU_MIPS_FAMILY)
++#if !defined(ADDRESS_SANITIZER) && !defined(ARCH_CPU_MIPS_FAMILY) && \
++    !defined(ARCH_CPU_PPC64_FAMILY)
+   // AddressSanitizer can cause enough code bloat that the “nearby” check would
+   // likely fail.
+   const uintptr_t kReferencePC =
+diff --git a/third_party/crashpad/crashpad/util/misc/capture_context_test_util_linux.cc b/third_party/crashpad/crashpad/util/misc/capture_context_test_util_linux.cc
+index 9fc5db28c48a..5f69f8dcedbf 100644
+--- a/third_party/crashpad/crashpad/util/misc/capture_context_test_util_linux.cc
++++ b/third_party/crashpad/crashpad/util/misc/capture_context_test_util_linux.cc
+@@ -36,6 +36,8 @@ void SanityCheckContext(const NativeCPUContext& context) {
+   EXPECT_EQ(context.uc_mcontext.regs[0], FromPointerCast<uintptr_t>(&context));
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   EXPECT_EQ(context.uc_mcontext.gregs[4], FromPointerCast<uintptr_t>(&context));
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  EXPECT_EQ(context.uc_mcontext.gp_regs[3], FromPointerCast<uintptr_t>(&context));
+ #endif
+ }
+ 
+@@ -50,6 +52,8 @@ uintptr_t ProgramCounterFromContext(const NativeCPUContext& context) {
+   return context.uc_mcontext.pc;
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   return context.uc_mcontext.pc;
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  return context.uc_mcontext.gp_regs[PT_NIP];
+ #endif
+ }
+ 
+@@ -64,6 +68,8 @@ uintptr_t StackPointerFromContext(const NativeCPUContext& context) {
+   return context.uc_mcontext.sp;
+ #elif defined(ARCH_CPU_MIPS_FAMILY)
+   return context.uc_mcontext.gregs[29];
++#elif defined(ARCH_CPU_PPC64_FAMILY)
++  return context.uc_mcontext.gp_regs[1];
+ #endif
+ }
+ 
+diff --git a/third_party/crashpad/crashpad/util/posix/signals_test.cc b/third_party/crashpad/crashpad/util/posix/signals_test.cc
+index 75ff55805d1c..f4506404f9cc 100644
+--- a/third_party/crashpad/crashpad/util/posix/signals_test.cc
++++ b/third_party/crashpad/crashpad/util/posix/signals_test.cc
+@@ -45,9 +45,9 @@ bool CanCauseSignal(int sig) {
+   return sig == SIGABRT ||
+          sig == SIGALRM ||
+          sig == SIGBUS ||
+-#if !defined(ARCH_CPU_ARM64)
++#if !defined(ARCH_CPU_ARM64) && !defined(ARCH_CPU_PPC64)
+          sig == SIGFPE ||
+-#endif  // !defined(ARCH_CPU_ARM64)
++#endif  // !defined(ARCH_CPU_ARM64) && !defined(ARCH_CPU_PPC64)
+ #if defined(ARCH_CPU_X86_FAMILY) || defined(ARCH_CPU_ARMEL)
+          sig == SIGILL ||
+ #endif  // defined(ARCH_CPU_X86_FAMILY) || defined(ARCH_CPU_ARMEL
+@@ -116,9 +116,11 @@ void CauseSignal(int sig) {
+       break;
+     }
+ 
+-#if !defined(ARCH_CPU_ARM64)
++#if !defined(ARCH_CPU_ARM64) && !defined(ARCH_CPU_PPC64)
+     // ARM64 has hardware integer division instructions that don’t generate a
+     // trap for divide-by-zero, so this doesn’t produce SIGFPE.
++    //
++    // PPC64 fixed-point division by zero also doesn't produce a SIGFPE.
+     case SIGFPE: {
+       // Optimization makes this tricky, so get zero from a system call likely
+       // to succeed, and try to do something with the result.
+@@ -136,7 +138,7 @@ void CauseSignal(int sig) {
+       fstat(quotient, &stat_buf);
+       break;
+     }
+-#endif  // ARCH_CPU_ARM64
++#endif  // !defined(ARCH_CPU_ARM64) && !defined(ARCH_CPU_PPC64)
+ 
+ #if defined(ARCH_CPU_X86_FAMILY) || defined(ARCH_CPU_ARMEL)
+     case SIGILL: {
+-- 
+2.19.1
+

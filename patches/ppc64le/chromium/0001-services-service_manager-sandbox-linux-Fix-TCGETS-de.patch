@@ -1,0 +1,29 @@
+From 7468b266532bd607eb1f5292d758256d800b2eee Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Fri, 10 Aug 2018 00:23:50 -0500
+Subject: [PATCH] services/service_manager/sandbox/linux: Fix TCGETS
+ declaration on PPC64
+
+---
+ .../sandbox/linux/bpf_renderer_policy_linux.cc               | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/services/service_manager/sandbox/linux/bpf_renderer_policy_linux.cc b/services/service_manager/sandbox/linux/bpf_renderer_policy_linux.cc
+index bbeb3152da5d..156cd0d24650 100644
+--- a/services/service_manager/sandbox/linux/bpf_renderer_policy_linux.cc
++++ b/services/service_manager/sandbox/linux/bpf_renderer_policy_linux.cc
+@@ -15,6 +15,11 @@
+ #include "sandbox/linux/system_headers/linux_syscalls.h"
+ #include "services/service_manager/sandbox/linux/sandbox_linux.h"
+ 
++// On PPC64, TCGETS is defined in terms of struct termios, so we must include termios.h
++#ifdef __powerpc64__
++#include <termios.h>
++#endif
++
+ #if defined(OS_CHROMEOS)
+ // TODO(vignatti): replace the local definitions below with #include
+ // <linux/dma-buf.h> once kernel version 4.6 becomes widely used.
+-- 
+2.17.1
+

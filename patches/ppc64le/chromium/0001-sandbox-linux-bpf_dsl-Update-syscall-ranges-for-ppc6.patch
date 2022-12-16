@@ -1,0 +1,30 @@
+From c9043a422fb4a5a6c72aaa1b907cea5f6a3061dd Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 19:10:24 -0500
+Subject: [PATCH 1/4] sandbox/linux/bpf_dsl: Update syscall ranges for ppc64
+
+---
+ sandbox/linux/bpf_dsl/linux_syscall_ranges.h | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/sandbox/linux/bpf_dsl/linux_syscall_ranges.h b/sandbox/linux/bpf_dsl/linux_syscall_ranges.h
+index 334a00bb9136..272d65b2ae3d 100644
+--- a/sandbox/linux/bpf_dsl/linux_syscall_ranges.h
++++ b/sandbox/linux/bpf_dsl/linux_syscall_ranges.h
+@@ -53,6 +53,13 @@
+ #define MAX_PUBLIC_SYSCALL 279u
+ #define MAX_SYSCALL MAX_PUBLIC_SYSCALL
+ 
++#elif defined(__powerpc64__)
++
++#include <asm/unistd.h>
++#define MIN_SYSCALL 0u
++#define MAX_PUBLIC_SYSCALL 386u
++#define MAX_SYSCALL MAX_PUBLIC_SYSCALL
++
+ #else
+ #error "Unsupported architecture"
+ #endif
+-- 
+2.17.1
+

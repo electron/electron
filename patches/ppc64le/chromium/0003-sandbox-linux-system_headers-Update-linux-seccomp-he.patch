@@ -1,0 +1,40 @@
+From cca78240860abb63bbcfe94d1e5f04a1f23c527d Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Thu, 9 Aug 2018 19:11:56 -0500
+Subject: [PATCH 3/4] sandbox/linux/system_headers: Update linux seccomp header
+ for ppc64
+
+---
+ sandbox/linux/system_headers/linux_seccomp.h | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/sandbox/linux/system_headers/linux_seccomp.h b/sandbox/linux/system_headers/linux_seccomp.h
+index a60fe2ad3dcf..c8464eef1f38 100644
+--- a/sandbox/linux/system_headers/linux_seccomp.h
++++ b/sandbox/linux/system_headers/linux_seccomp.h
+@@ -29,6 +29,9 @@
+ #ifndef EM_AARCH64
+ #define EM_AARCH64 183
+ #endif
++#ifndef EM_PPC64
++#define EM_PPC64 21
++#endif
+ 
+ #ifndef __AUDIT_ARCH_64BIT
+ #define __AUDIT_ARCH_64BIT 0x80000000
+@@ -54,6 +57,12 @@
+ #ifndef AUDIT_ARCH_AARCH64
+ #define AUDIT_ARCH_AARCH64 (EM_AARCH64 | __AUDIT_ARCH_64BIT | __AUDIT_ARCH_LE)
+ #endif
++#ifndef AUDIT_ARCH_PPC64
++#define AUDIT_ARCH_PPC64 (EM_PPC64 | __AUDIT_ARCH_64BIT)
++#endif
++#ifndef AUDIT_ARCH_PPC64LE
++#define AUDIT_ARCH_PPC64LE (EM_PPC64 | __AUDIT_ARCH_64BIT | __AUDIT_ARCH_LE)
++#endif
+ 
+ // For prctl.h
+ #ifndef PR_SET_SECCOMP
+-- 
+2.17.1
+

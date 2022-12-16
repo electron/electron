@@ -1,0 +1,505 @@
+From da52663deec77f705d7d58b18484c3e28e563f10 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Tue, 18 Sep 2018 18:39:28 -0500
+Subject: [PATCH] sandbox/linux: Update syscall helpers/lists for ppc64
+
+---
+ .../seccomp-bpf-helpers/baseline_policy.cc    |   8 +-
+ .../syscall_parameters_restrictions.cc        |   2 +-
+ .../syscall_parameters_restrictions.h         |   2 +-
+ .../linux/seccomp-bpf-helpers/syscall_sets.cc | 108 ++++++++++--------
+ .../linux/seccomp-bpf-helpers/syscall_sets.h  |   6 +-
+ sandbox/linux/services/syscall_wrappers.cc    |   2 +-
+ 6 files changed, 73 insertions(+), 55 deletions(-)
+
+diff --git a/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc b/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+index 426ea0757e5c..9c2f3d26bfc7 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/baseline_policy.cc
+@@ -86,7 +86,7 @@ bool IsBaselinePolicyWatched(int sysno) {
+          SyscallSets::IsNuma(sysno) ||
+          SyscallSets::IsPrctl(sysno) ||
+          SyscallSets::IsProcessGroupOrSession(sysno) ||
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+          SyscallSets::IsSocketCall(sysno) ||
+ #endif
+ #if defined(__arm__)
+@@ -188,7 +188,7 @@ ResultExpr EvaluateSyscallImpl(int fs_denied_errno,
+   }
+ 
+ #if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+   if (sysno == __NR_mmap)
+     return RestrictMmapFlags();
+ #endif
+@@ -205,7 +205,7 @@ ResultExpr EvaluateSyscallImpl(int fs_denied_errno,
+     return RestrictPrctl();
+ 
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+   if (sysno == __NR_socketpair) {
+     // Only allow AF_UNIX, PF_UNIX. Crash if anything else is seen.
+     static_assert(AF_UNIX == PF_UNIX,
+@@ -244,7 +244,7 @@ ResultExpr EvaluateSyscallImpl(int fs_denied_errno,
+     return Error(EPERM);
+   }
+ 
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+   if (SyscallSets::IsSocketCall(sysno))
+     return RestrictSocketcallCommand();
+ #endif
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+index 102647c14f14..670483fa40ae 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.cc
+@@ -268,7 +268,7 @@ ResultExpr RestrictFcntlCommands() {
+       .Default(CrashSIGSYS());
+ }
+ 
+-#if defined(__i386__) || defined(__mips__)
++#if defined(__i386__) || defined(__mips__) || defined(__powerpc64__)
+ ResultExpr RestrictSocketcallCommand() {
+   // Unfortunately, we are unable to restrict the first parameter to
+   // socketpair(2). Whilst initially sounding bad, it's noteworthy that very
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h
+index 71c56093d92b..f8b9c0c6bf52 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_parameters_restrictions.h
+@@ -48,7 +48,7 @@ SANDBOX_EXPORT bpf_dsl::ResultExpr RestrictMprotectFlags();
+ // O_NONBLOCK | O_SYNC | O_LARGEFILE | O_CLOEXEC | O_NOATIME.
+ SANDBOX_EXPORT bpf_dsl::ResultExpr RestrictFcntlCommands();
+ 
+-#if defined(__i386__) || defined(__mips__)
++#if defined(__i386__) || defined(__mips__) || defined(__powerpc64__)
+ // Restrict socketcall(2) to only allow socketpair(2), send(2), recv(2),
+ // sendto(2), recvfrom(2), shutdown(2), sendmsg(2) and recvmsg(2).
+ SANDBOX_EXPORT bpf_dsl::ResultExpr RestrictSocketcallCommand();
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+index a8a89228994c..d9ed23522082 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.cc
+@@ -28,7 +28,8 @@ bool SyscallSets::IsKill(int sysno) {
+ bool SyscallSets::IsAllowedGettime(int sysno) {
+   switch (sysno) {
+     case __NR_gettimeofday:
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips32__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR_time:
+ #endif
+       return true;
+@@ -42,7 +43,7 @@ bool SyscallSets::IsAllowedGettime(int sysno) {
+     case __NR_ftime:  // Obsolete.
+ #endif
+     case __NR_settimeofday:  // Privileged.
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_stime:
+ #endif
+     default:
+@@ -108,7 +109,7 @@ bool SyscallSets::IsFileSystem(int sysno) {
+     case __NR_faccessat:  // EPERM not a valid errno.
+     case __NR_fchmodat:
+     case __NR_fchownat:  // Should be called chownat ?
+-#if defined(__x86_64__) || defined(__aarch64__)
++#if defined(__x86_64__) || defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_newfstatat:  // fstatat(). EPERM not a valid errno.
+ #elif defined(__i386__) || defined(__arm__) || defined(__mips32__)
+     case __NR_fstatat64:
+@@ -125,7 +126,7 @@ bool SyscallSets::IsFileSystem(int sysno) {
+     case __NR_memfd_create:
+     case __NR_mkdirat:
+     case __NR_mknodat:
+-#if defined(__i386__)
++#if defined(__i386__) || defined(__powerpc64__)
+     case __NR_oldlstat:
+     case __NR_oldstat:
+ #endif
+@@ -146,7 +147,8 @@ bool SyscallSets::IsFileSystem(int sysno) {
+     case __NR_truncate64:
+ #endif
+     case __NR_unlinkat:
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_utime:
+ #endif
+     case __NR_utimensat:  // New.
+@@ -164,7 +166,8 @@ bool SyscallSets::IsAllowedFileSystemAccessViaFd(int sysno) {
+ #endif
+       return true;
+ // TODO(jln): these should be denied gracefully as well (moved below).
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_fadvise64:  // EPERM not a valid errno.
+ #endif
+ #if defined(__i386__)
+@@ -176,7 +179,8 @@ bool SyscallSets::IsAllowedFileSystemAccessViaFd(int sysno) {
+     case __NR_fdatasync:  // EPERM not a valid errno.
+     case __NR_flock:      // EPERM not a valid errno.
+     case __NR_fstatfs:    // Give information about the whole filesystem.
+-#if defined(__i386__) || defined(__arm__) || defined(__mips32__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR_fstatfs64:
+ #endif
+     case __NR_fsync:  // EPERM not a valid errno.
+@@ -188,6 +192,8 @@ bool SyscallSets::IsAllowedFileSystemAccessViaFd(int sysno) {
+     case __NR_sync_file_range:  // EPERM not a valid errno.
+ #elif defined(__arm__)
+     case __NR_arm_sync_file_range:  // EPERM not a valid errno.
++#elif defined(__powerpc64__)
++    case __NR_sync_file_range2: // EPERM not a valid errno.
+ #endif
+     default:
+       return false;
+@@ -211,7 +217,7 @@ bool SyscallSets::IsDeniedFileSystemAccessViaFd(int sysno) {
+     case __NR_getdents:    // EPERM not a valid errno.
+ #endif
+     case __NR_getdents64:  // EPERM not a valid errno.
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_readdir:
+ #endif
+       return true;
+@@ -252,7 +258,7 @@ bool SyscallSets::IsGetSimpleId(int sysno) {
+ bool SyscallSets::IsProcessPrivilegeChange(int sysno) {
+   switch (sysno) {
+     case __NR_capset:
+-#if defined(__i386__) || defined(__x86_64__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__powerpc64__)
+     case __NR_ioperm:  // Intel privilege.
+     case __NR_iopl:    // Intel privilege.
+ #endif
+@@ -301,7 +307,8 @@ bool SyscallSets::IsAllowedSignalHandling(int sysno) {
+     case __NR_rt_sigaction:
+     case __NR_rt_sigprocmask:
+     case __NR_rt_sigreturn:
+-#if defined(__i386__) || defined(__arm__) || defined(__mips32__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR_sigaction:
+     case __NR_sigprocmask:
+     case __NR_sigreturn:
+@@ -317,7 +324,8 @@ bool SyscallSets::IsAllowedSignalHandling(int sysno) {
+     case __NR_signalfd:
+ #endif
+     case __NR_signalfd4:
+-#if defined(__i386__) || defined(__arm__) || defined(__mips32__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR_sigpending:
+     case __NR_sigsuspend:
+ #endif
+@@ -340,7 +348,7 @@ bool SyscallSets::IsAllowedOperationOnFd(int sysno) {
+ #endif
+     case __NR_dup3:
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_shutdown:
+ #endif
+       return true;
+@@ -372,7 +380,7 @@ bool SyscallSets::IsAllowedProcessStartOrDeath(int sysno) {
+     case __NR_exit_group:
+     case __NR_wait4:
+     case __NR_waitid:
+-#if defined(__i386__)
++#if defined(__i386__) || defined(__powerpc64__)
+     case __NR_waitpid:
+ #endif
+       return true;
+@@ -389,7 +397,7 @@ bool SyscallSets::IsAllowedProcessStartOrDeath(int sysno) {
+ #endif
+     case __NR_set_tid_address:
+     case __NR_unshare:
+-#if !defined(__mips__) && !defined(__aarch64__)
++#if !defined(__mips__) && !defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_vfork:
+ #endif
+     default:
+@@ -438,7 +446,7 @@ bool SyscallSets::IsAllowedGetOrModifySocket(int sysno) {
+       return true;
+     default:
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_socketpair:  // We will want to inspect its argument.
+ #endif
+       return false;
+@@ -448,7 +456,7 @@ bool SyscallSets::IsAllowedGetOrModifySocket(int sysno) {
+ bool SyscallSets::IsDeniedGetOrModifySocket(int sysno) {
+   switch (sysno) {
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_accept:
+     case __NR_accept4:
+     case __NR_bind:
+@@ -462,7 +470,7 @@ bool SyscallSets::IsDeniedGetOrModifySocket(int sysno) {
+   }
+ }
+ 
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+ // Big multiplexing system call for sockets.
+ bool SyscallSets::IsSocketCall(int sysno) {
+   switch (sysno) {
+@@ -476,7 +484,8 @@ bool SyscallSets::IsSocketCall(int sysno) {
+ }
+ #endif
+ 
+-#if defined(__x86_64__) || defined(__arm__) || defined(__mips__)
++#if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
++    defined(__powerpc64__)
+ bool SyscallSets::IsNetworkSocketInformation(int sysno) {
+   switch (sysno) {
+     case __NR_getpeername:
+@@ -501,7 +510,7 @@ bool SyscallSets::IsAllowedAddressSpaceAccess(int sysno) {
+     case __NR_mincore:
+     case __NR_mlockall:
+ #if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_mmap:
+ #endif
+ #if defined(__i386__) || defined(__arm__) || defined(__mips32__)
+@@ -528,7 +537,8 @@ bool SyscallSets::IsAllowedAddressSpaceAccess(int sysno) {
+ bool SyscallSets::IsAllowedGeneralIo(int sysno) {
+   switch (sysno) {
+     case __NR_lseek:
+-#if defined(__i386__) || defined(__arm__) || defined(__mips32__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR__llseek:
+ #endif
+ #if !defined(__aarch64__)
+@@ -538,25 +548,26 @@ bool SyscallSets::IsAllowedGeneralIo(int sysno) {
+     case __NR_pselect6:
+     case __NR_read:
+     case __NR_readv:
+-#if defined(__arm__) || defined(__mips32__)
++#if defined(__arm__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_recv:
+ #endif
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_recvfrom:  // Could specify source.
+     case __NR_recvmsg:   // Could specify source.
+ #endif
+-#if defined(__i386__) || defined(__x86_64__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__powerpc64__)
+     case __NR_select:
+ #endif
+-#if defined(__i386__) || defined(__arm__) || defined(__mips__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR__newselect:
+ #endif
+-#if defined(__arm__) || defined(__mips32__)
++#if defined(__arm__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_send:
+ #endif
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_sendmsg:  // Could specify destination.
+     case __NR_sendto:   // Could specify destination.
+ #endif
+@@ -612,7 +623,8 @@ bool SyscallSets::IsAllowedBasicScheduler(int sysno) {
+     case __NR_nanosleep:
+       return true;
+     case __NR_getpriority:
+-#if defined(__i386__) || defined(__arm__) || defined(__mips32__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR_nice:
+ #endif
+     case __NR_setpriority:
+@@ -623,7 +635,8 @@ bool SyscallSets::IsAllowedBasicScheduler(int sysno) {
+ 
+ bool SyscallSets::IsAdminOperation(int sysno) {
+   switch (sysno) {
+-#if defined(__i386__) || defined(__arm__) || defined(__mips32__)
++#if defined(__i386__) || defined(__arm__) || defined(__mips32__) || \
++    defined(__powerpc64__)
+     case __NR_bdflush:
+ #endif
+     case __NR_kexec_load:
+@@ -639,7 +652,8 @@ bool SyscallSets::IsAdminOperation(int sysno) {
+ 
+ bool SyscallSets::IsKernelModule(int sysno) {
+   switch (sysno) {
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_create_module:
+     case __NR_get_kernel_syms:  // Should ENOSYS.
+     case __NR_query_module:
+@@ -671,7 +685,7 @@ bool SyscallSets::IsFsControl(int sysno) {
+     case __NR_quotactl:
+     case __NR_swapoff:
+     case __NR_swapon:
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_umount:
+ #endif
+     case __NR_umount2:
+@@ -687,7 +701,7 @@ bool SyscallSets::IsNuma(int sysno) {
+     case __NR_getcpu:
+     case __NR_mbind:
+ #if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_migrate_pages:
+ #endif
+     case __NR_move_pages:
+@@ -716,13 +730,13 @@ bool SyscallSets::IsGlobalProcessEnvironment(int sysno) {
+   switch (sysno) {
+     case __NR_acct:  // Privileged.
+ #if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+     case __NR_getrlimit:
+ #endif
+-#if defined(__i386__) || defined(__arm__)
++#if defined(__i386__) || defined(__arm__) || defined(__powerpc64__)
+     case __NR_ugetrlimit:
+ #endif
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_ulimit:
+ #endif
+     case __NR_getrusage:
+@@ -756,7 +770,7 @@ bool SyscallSets::IsGlobalSystemStatus(int sysno) {
+ #endif
+     case __NR_sysinfo:
+     case __NR_uname:
+-#if defined(__i386__)
++#if defined(__i386__) || defined(__powerpc64__)
+     case __NR_olduname:
+     case __NR_oldolduname:
+ #endif
+@@ -847,7 +861,7 @@ bool SyscallSets::IsSystemVMessageQueue(int sysno) {
+ }
+ #endif
+ 
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+ // Big system V multiplexing system call.
+ bool SyscallSets::IsSystemVIpc(int sysno) {
+   switch (sysno) {
+@@ -866,7 +880,7 @@ bool SyscallSets::IsAnySystemV(int sysno) {
+     || defined(__mips64__)
+   return IsSystemVMessageQueue(sysno) || IsSystemVSemaphores(sysno) ||
+          IsSystemVSharedMemory(sysno);
+-#elif defined(__i386__) || defined(__mips32__)
++#elif defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+   return IsSystemVIpc(sysno);
+ #endif
+ }
+@@ -919,7 +933,8 @@ bool SyscallSets::IsFaNotify(int sysno) {
+ bool SyscallSets::IsTimer(int sysno) {
+   switch (sysno) {
+     case __NR_getitimer:
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_alarm:
+ #endif
+     case __NR_setitimer:
+@@ -978,16 +993,18 @@ bool SyscallSets::IsMisc(int sysno) {
+     case __NR_syncfs:
+     case __NR_vhangup:
+ // The system calls below are not implemented.
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_afs_syscall:
+ #endif
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_break:
+ #endif
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_getpmsg:
+ #endif
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_gtty:
+     case __NR_idle:
+     case __NR_lock:
+@@ -995,16 +1012,17 @@ bool SyscallSets::IsMisc(int sysno) {
+     case __NR_prof:
+     case __NR_profil:
+ #endif
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || \
++    defined(__powerpc64__)
+     case __NR_putpmsg:
+ #endif
+ #if defined(__x86_64__)
+     case __NR_security:
+ #endif
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+     case __NR_stty:
+ #endif
+-#if defined(__x86_64__)
++#if defined(__x86_64__) || defined(__powerpc64__)
+     case __NR_tuxcall:
+ #endif
+ #if !defined(__aarch64__) && !defined(__powerpc64__)
+diff --git a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.h b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.h
+index c31d5e9c13b3..7898be9e1863 100644
+--- a/sandbox/linux/seccomp-bpf-helpers/syscall_sets.h
++++ b/sandbox/linux/seccomp-bpf-helpers/syscall_sets.h
+@@ -42,13 +42,13 @@ class SANDBOX_EXPORT SyscallSets {
+   static bool IsAllowedGetOrModifySocket(int sysno);
+   static bool IsDeniedGetOrModifySocket(int sysno);
+ 
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+   // Big multiplexing system call for sockets.
+   static bool IsSocketCall(int sysno);
+ #endif
+ 
+ #if defined(__x86_64__) || defined(__arm__) || defined(__mips__) || \
+-    defined(__aarch64__)
++    defined(__aarch64__) || defined(__powerpc64__)
+   static bool IsNetworkSocketInformation(int sysno);
+ #endif
+ 
+@@ -85,7 +85,7 @@ class SANDBOX_EXPORT SyscallSets {
+   static bool IsSystemVMessageQueue(int sysno);
+ #endif
+ 
+-#if defined(__i386__) || defined(__mips32__)
++#if defined(__i386__) || defined(__mips32__) || defined(__powerpc64__)
+   // Big system V multiplexing system call.
+   static bool IsSystemVIpc(int sysno);
+ #endif
+diff --git a/sandbox/linux/services/syscall_wrappers.cc b/sandbox/linux/services/syscall_wrappers.cc
+index fcfd2aa129d4..f6eb32fb7621 100644
+--- a/sandbox/linux/services/syscall_wrappers.cc
++++ b/sandbox/linux/services/syscall_wrappers.cc
+@@ -58,7 +58,7 @@ long sys_clone(unsigned long flags,
+ #if defined(ARCH_CPU_X86_64)
+   return syscall(__NR_clone, flags, child_stack, ptid, ctid, tls);
+ #elif defined(ARCH_CPU_X86) || defined(ARCH_CPU_ARM_FAMILY) || \
+-    defined(ARCH_CPU_MIPS_FAMILY)
++    defined(ARCH_CPU_MIPS_FAMILY) || defined(ARCH_CPU_PPC64_FAMILY)
+   // CONFIG_CLONE_BACKWARDS defined.
+   return syscall(__NR_clone, flags, child_stack, ptid, tls, ctid);
+ #endif
+-- 
+2.17.1
+

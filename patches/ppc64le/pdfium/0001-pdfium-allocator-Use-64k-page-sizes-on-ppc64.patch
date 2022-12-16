@@ -1,0 +1,51 @@
+From f91999eb7c3bca1a59413906eb5fb747046d74df Mon Sep 17 00:00:00 2001
+From: Timothy Pearson <tpearson@raptorengineering.com>
+Date: Fri, 26 Oct 2018 03:56:00 -0600
+Subject: [PATCH] pdfium: Use 64k page sizes on ppc64
+Fix pdfium abort due to invalid page protection requests on misaligned page addresses
+Signed-off-by: Timothy Pearson <tpearson@raptorengineering.com>
+
+---
+ third_party/base/allocator/partition_allocator/page_allocator.h          | 6 +++++-
+ third_party/base/allocator/partition_allocator/partition_alloc.h         | 2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/third_party/base/allocator/partition_allocator/page_allocator.h b/third_party/base/allocator/partition_allocator/page_allocator.h
+index 308d09979114..f6566e2f0b0a 100644
+--- a/third_party/base/allocator/partition_allocator/page_allocator.h
++++ b/third_party/base/allocator/partition_allocator/page_allocator.h
+@@ -16,7 +16,7 @@
+ namespace pdfium {
+ namespace base {
+ 
+-#if defined(OS_WIN)
++#if defined(OS_WIN) || defined(ARCH_CPU_PPC64)
+ static const size_t kPageAllocationGranularityShift = 16;  // 64KB
+ #elif defined(_MIPS_ARCH_LOONGSON)
+ static const size_t kPageAllocationGranularityShift = 14;  // 16KB
+@@ -35,6 +35,10 @@
+ // Loongson have 16384 sized system pages.
+ #if defined(_MIPS_ARCH_LOONGSON)
+ static const size_t kSystemPageSize = 16384;
++#elif defined(ARCH_CPU_PPC64)
++// TODO: modern ppc64 can do 4k and 64k page sizes
++// for now, 64k is assumed
++static constexpr size_t kSystemPageSize = 65536;
+ #else
+ static const size_t kSystemPageSize = 4096;
+ #endif
+diff --git a/third_party/base/allocator/partition_allocator/partition_alloc.h b/third_party/base/allocator/partition_allocator/partition_alloc.h
+index e0fb19ec6164..46fa755d685f 100644
+--- a/third_party/base/allocator/partition_allocator/partition_alloc.h
++++ b/third_party/base/allocator/partition_allocator/partition_alloc.h
+@@ -97,6 +97,8 @@
+ // against the end of a system page.
+ #if defined(_MIPS_ARCH_LOONGSON)
+ static const size_t kPartitionPageShift = 16;  // 64KB
++#elif defined(ARCH_CPU_PPC64)
++static const size_t kPartitionPageShift = 18;  // 256KB
+ #else
+ static const size_t kPartitionPageShift = 14;  // 16KB
+ #endif
+-- 
+2.17.1

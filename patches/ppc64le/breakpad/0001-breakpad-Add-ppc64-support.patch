@@ -1,0 +1,836 @@
+From eb26ce24be986692990aee986fbca9244e38f245 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 09:19:33 -0600
+Subject: [PATCH] breakpad: Add ppc64 support
+
+---
+ .../dump_writer_common/raw_context_cpu.h      |  2 +
+ .../linux/dump_writer_common/thread_info.cc   | 56 ++++++++++++++++++-
+ .../linux/dump_writer_common/thread_info.h    |  9 +++
+ .../dump_writer_common/ucontext_reader.cc     | 42 ++++++++++++++
+ .../dump_writer_common/ucontext_reader.h      |  3 +
+ src/client/linux/handler/exception_handler.cc | 22 +++++++-
+ src/client/linux/handler/exception_handler.h  |  6 +-
+ .../handler/exception_handler_unittest.cc     |  8 ++-
+ .../microdump_writer/microdump_writer.cc      | 14 ++++-
+ .../microdump_writer_unittest.cc              | 15 ++++-
+ .../minidump_writer/linux_core_dumper.cc      |  8 ++-
+ .../linux/minidump_writer/linux_dumper.cc     |  4 +-
+ .../linux/minidump_writer/linux_dumper.h      |  3 +-
+ .../linux_dumper_unittest_helper.cc           |  2 +
+ .../minidump_writer/linux_ptrace_dumper.cc    | 19 +++++--
+ .../linux_ptrace_dumper_unittest.cc           |  5 ++
+ .../linux/minidump_writer/minidump_writer.cc  | 18 ++++--
+ .../linux/minidump_writer/minidump_writer.h   |  2 +
+ .../minidump_writer_unittest.cc               |  3 +
+ src/common/linux/memory_mapped_file.cc        |  3 +-
+ .../linux/memory_mapped_file_unittest.cc      |  7 ++-
+ src/common/memory_allocator_unittest.cc       |  3 +-
+ src/processor/exploitability_linux.cc         |  2 +
+ src/processor/exploitability_unittest.cc      | 15 +++--
+ src/tools/linux/md2core/minidump-2-core.cc    | 45 +++++++++++++++
+ 25 files changed, 281 insertions(+), 35 deletions(-)
+
+diff --git a/src/client/linux/dump_writer_common/raw_context_cpu.h b/src/client/linux/dump_writer_common/raw_context_cpu.h
+index e2ef45df..e295bd76 100644
+--- a/src/client/linux/dump_writer_common/raw_context_cpu.h
++++ b/src/client/linux/dump_writer_common/raw_context_cpu.h
+@@ -44,6 +44,8 @@ typedef MDRawContextARM RawContextCPU;
+ typedef MDRawContextARM64 RawContextCPU;
+ #elif defined(__mips__)
+ typedef MDRawContextMIPS RawContextCPU;
++#elif defined(__powerpc64__)
++typedef MDRawContextPPC64 RawContextCPU;
+ #else
+ #error "This code has not been ported to your platform yet."
+ #endif
+diff --git a/src/client/linux/dump_writer_common/thread_info.cc b/src/client/linux/dump_writer_common/thread_info.cc
+index 0a1041d6..d2a7b339 100644
+--- a/src/client/linux/dump_writer_common/thread_info.cc
++++ b/src/client/linux/dump_writer_common/thread_info.cc
+@@ -270,7 +270,42 @@ void ThreadInfo::FillCPUContext(RawContextCPU* out) const {
+   out->float_save.fir = mcontext.fpc_eir;
+ #endif
+ }
+-#endif  // __mips__
++
++#elif defined(__powerpc64__)
++
++uintptr_t ThreadInfo::GetInstructionPointer() const {
++    return mcontext.gp_regs[PT_NIP];
++}
++
++void ThreadInfo::FillCPUContext(RawContextCPU* out) const {
++    out->context_flags = MD_CONTEXT_PPC64_FULL;
++    for (int i = 0; i < MD_CONTEXT_PPC64_GPR_COUNT; i++)
++        out->gpr[i] = mcontext.gp_regs[i];
++
++    out->lr = mcontext.gp_regs[PT_LNK];
++    out->srr0 = mcontext.gp_regs[PT_NIP];
++    out->srr1 = mcontext.gp_regs[PT_MSR];
++    out->cr = mcontext.gp_regs[PT_CCR];
++    out->xer = mcontext.gp_regs[PT_XER];
++    out->ctr = mcontext.gp_regs[PT_CTR];
++    
++    for (int i = 0; i < MD_FLOATINGSAVEAREA_PPC_FPR_COUNT; i++)
++        out->float_save.fpregs[i] = mcontext.fp_regs[i];
++
++    out->float_save.fpscr = mcontext.fp_regs[NFPREG-1];
++
++    for (int i = 0; i < MD_VECTORSAVEAREA_PPC_VR_COUNT; i++)
++        out->vector_save.save_vr[i] = \
++            {(((uint64_t)vregs.vrregs[i][0]) << 32) 
++                          | vregs.vrregs[i][1], 
++            (((uint64_t)vregs.vrregs[i][2]) << 32)
++                         | vregs.vrregs[i][3]};
++
++    out->vrsave = vregs.vrsave;
++    out->vector_save.save_vscr = {0, vregs.vscr.vscr_word};
++    out->vector_save.save_vrvalid = 0xFFFFFFFF; 
++}
++#endif  // __powerpc64__
+ 
+ void ThreadInfo::GetGeneralPurposeRegisters(void** gp_regs, size_t* size) {
+   assert(gp_regs || size);
+@@ -279,6 +314,11 @@ void ThreadInfo::GetGeneralPurposeRegisters(void** gp_regs, size_t* size) {
+     *gp_regs = mcontext.gregs;
+   if (size)
+     *size = sizeof(mcontext.gregs);
++#elif defined(__powerpc64__)
++  if (gp_regs)
++    *gp_regs = mcontext.gp_regs;
++  if (size)
++    *size = sizeof(mcontext.gp_regs);
+ #else
+   if (gp_regs)
+     *gp_regs = &regs;
+@@ -294,6 +334,11 @@ void ThreadInfo::GetFloatingPointRegisters(void** fp_regs, size_t* size) {
+     *fp_regs = &mcontext.fpregs;
+   if (size)
+     *size = sizeof(mcontext.fpregs);
++#elif defined(__powerpc64__)
++  if (fp_regs)
++    *fp_regs = &mcontext.fp_regs;
++  if (size)
++    *size = sizeof(mcontext.fp_regs);
+ #else
+   if (fp_regs)
+     *fp_regs = &fpregs;
+@@ -302,4 +347,13 @@ void ThreadInfo::GetFloatingPointRegisters(void** fp_regs, size_t* size) {
+ #endif
+ }
+ 
++#if defined(__powerpc64__)
++void ThreadInfo::GetVectorRegisters(void** v_regs, size_t* size) {
++    if (v_regs)
++        *v_regs = &vregs;
++    if (size)
++        *size = sizeof(vregs);
++}
++#endif
++
+ }  // namespace google_breakpad
+diff --git a/src/client/linux/dump_writer_common/thread_info.h b/src/client/linux/dump_writer_common/thread_info.h
+index fb216fa6..fb669126 100644
+--- a/src/client/linux/dump_writer_common/thread_info.h
++++ b/src/client/linux/dump_writer_common/thread_info.h
+@@ -68,6 +68,10 @@ struct ThreadInfo {
+   // Use the structures defined in <sys/user.h>
+   struct user_regs_struct regs;
+   struct user_fpsimd_struct fpregs;
++#elif defined(__powerpc64__)
++  // Use the structures defined in <sys/ucontext.h>.
++  mcontext_t mcontext;
++  struct _libc_vrstate vregs;
+ #elif defined(__mips__)
+   // Use the structure defined in <sys/ucontext.h>.
+   mcontext_t mcontext;
+@@ -84,6 +88,11 @@ struct ThreadInfo {
+ 
+   // Returns the pointer and size of float point register area.
+   void GetFloatingPointRegisters(void** fp_regs, size_t* size);
++
++#if defined(__powerpc64__)
++  // Returns the pointer and size of the vector register area. (PPC64 only)
++  void GetVectorRegisters(void** v_regs, size_t* size);
++#endif
+ };
+ 
+ }  // namespace google_breakpad
+diff --git a/src/client/linux/dump_writer_common/ucontext_reader.cc b/src/client/linux/dump_writer_common/ucontext_reader.cc
+index 052ce37c..8aeddd04 100644
+--- a/src/client/linux/dump_writer_common/ucontext_reader.cc
++++ b/src/client/linux/dump_writer_common/ucontext_reader.cc
+@@ -254,6 +254,48 @@ void UContextReader::FillCPUContext(RawContextCPU *out, const ucontext_t *uc) {
+   out->float_save.fir = uc->uc_mcontext.fpc_eir;  // Unused.
+ #endif
+ }
++
++#elif defined(__powerpc64__)
++
++uintptr_t UContextReader::GetStackPointer(const ucontext_t* uc) {
++    return uc->uc_mcontext.gp_regs[MD_CONTEXT_PPC64_REG_SP];
++}
++
++uintptr_t UContextReader::GetInstructionPointer(const ucontext_t* uc) {
++    return uc->uc_mcontext.gp_regs[PT_NIP];
++}
++
++void UContextReader::FillCPUContext(RawContextCPU* out, const ucontext_t* uc,
++                                    const struct _libc_vrstate* vregs) {
++    out->context_flags = MD_CONTEXT_PPC64_FULL;
++
++    for (int i = 0; i < MD_CONTEXT_PPC64_GPR_COUNT; i++)
++        out->gpr[i] = uc->uc_mcontext.gp_regs[i];
++
++    out->lr = uc->uc_mcontext.gp_regs[PT_LNK];    
++    out->srr0 = uc->uc_mcontext.gp_regs[PT_NIP];
++    out->srr1 = uc->uc_mcontext.gp_regs[PT_MSR];
++    out->cr = uc->uc_mcontext.gp_regs[PT_CCR];
++    out->xer = uc->uc_mcontext.gp_regs[PT_XER];
++    out->ctr = uc->uc_mcontext.gp_regs[PT_CTR];
++    
++    for (int i = 0; i < MD_FLOATINGSAVEAREA_PPC_FPR_COUNT; i++)
++        out->float_save.fpregs[i] = uc->uc_mcontext.fp_regs[i];
++
++    out->float_save.fpscr = uc->uc_mcontext.fp_regs[NFPREG-1];
++
++    for (int i = 0; i < MD_VECTORSAVEAREA_PPC_VR_COUNT; i++)
++        out->vector_save.save_vr[i] =
++            {(((uint64_t)vregs->vrregs[i][0]) << 32) 
++                         | vregs->vrregs[i][1], 
++             (((uint64_t)vregs->vrregs[i][2]) << 32)
++                         | vregs->vrregs[i][3]};
++
++    out->vrsave = vregs->vrsave;
++    out->vector_save.save_vscr = {0, vregs->vscr.vscr_word};
++    out->vector_save.save_vrvalid = 0xFFFFFFFF; 
++}
++
+ #endif
+ 
+ }  // namespace google_breakpad
+diff --git a/src/client/linux/dump_writer_common/ucontext_reader.h b/src/client/linux/dump_writer_common/ucontext_reader.h
+index f830618f..6248818e 100644
+--- a/src/client/linux/dump_writer_common/ucontext_reader.h
++++ b/src/client/linux/dump_writer_common/ucontext_reader.h
+@@ -54,6 +54,9 @@ struct UContextReader {
+ #elif defined(__aarch64__)
+   static void FillCPUContext(RawContextCPU *out, const ucontext_t *uc,
+                              const struct fpsimd_context* fpregs);
++#elif defined(__powerpc64__)
++  static void FillCPUContext(RawContextCPU *out, const ucontext_t *uc,
++                             const struct _libc_vrstate* vregs);
+ #else
+   static void FillCPUContext(RawContextCPU *out, const ucontext_t *uc);
+ #endif
+diff --git a/src/client/linux/handler/exception_handler.cc b/src/client/linux/handler/exception_handler.cc
+index b895f6d7..901cd68f 100644
+--- a/src/client/linux/handler/exception_handler.cc
++++ b/src/client/linux/handler/exception_handler.cc
+@@ -461,9 +461,16 @@ bool ExceptionHandler::HandleSignal(int /*sig*/, siginfo_t* info, void* uc) {
+     memcpy(&g_crash_context_.float_state, fp_ptr,
+            sizeof(g_crash_context_.float_state));
+   }
++#elif defined(__powerpc64__)
++  // On PPC64, we must copy VR state
++  ucontext_t* uc_ptr = (ucontext_t*)uc;
++  if (uc_ptr->uc_mcontext.v_regs) {
++    memcpy(&g_crash_context_.vector_state, uc_ptr->uc_mcontext.v_regs,
++           sizeof(g_crash_context_.vector_state));
++  }
+ #elif !defined(__ARM_EABI__) && !defined(__mips__)
+   // FP state is not part of user ABI on ARM Linux.
+-  // In case of MIPS Linux FP state is already part of ucontext_t
++  // In case of MIPS, Linux FP state is already part of ucontext_t
+   // and 'float_state' is not a member of CrashContext.
+   ucontext_t* uc_ptr = (ucontext_t*)uc;
+   if (uc_ptr->uc_mcontext.fpregs) {
+@@ -701,11 +708,19 @@ bool ExceptionHandler::WriteMinidump() {
+   }
+ #endif
+ 
+-#if !defined(__ARM_EABI__) && !defined(__aarch64__) && !defined(__mips__)
++#if !defined(__ARM_EABI__) && !defined(__aarch64__) && !defined(__mips__) \
++    && !defined(__powerpc64__)
+   // FPU state is not part of ARM EABI ucontext_t.
+   memcpy(&context.float_state, context.context.uc_mcontext.fpregs,
+          sizeof(context.float_state));
+ #endif
++
++#if defined(__powerpc64__)
++  // Vector registers must be copied on PPC64
++  memcpy(&context.vector_state, context.context.uc_mcontext.v_regs,
++         sizeof(context.vector_state));
++#endif
++
+   context.tid = sys_gettid();
+ 
+   // Add an exception stream to the minidump for better reporting.
+@@ -726,6 +741,9 @@ bool ExceptionHandler::WriteMinidump() {
+ #elif defined(__mips__)
+   context.siginfo.si_addr =
+       reinterpret_cast<void*>(context.context.uc_mcontext.pc);
++#elif defined(__powerpc64__)
++  context.siginfo.si_addr =
++      reinterpret_cast<void*>(context.context.uc_mcontext.gp_regs[PT_NIP]);
+ #else
+ #error "This code has not been ported to your platform yet."
+ #endif
+diff --git a/src/client/linux/handler/exception_handler.h b/src/client/linux/handler/exception_handler.h
+index 1695a2b7..31441f42 100644
+--- a/src/client/linux/handler/exception_handler.h
++++ b/src/client/linux/handler/exception_handler.h
+@@ -192,7 +192,11 @@ class ExceptionHandler {
+     siginfo_t siginfo;
+     pid_t tid;  // the crashing thread.
+     ucontext_t context;
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++    // PPC64's FP state is a part of ucontext_t like MIPS but the vector
++    // state is not, so a struct is needed.
++    vstate_t vector_state;
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+     // #ifdef this out because FP state is not part of user ABI for Linux ARM.
+     // In case of MIPS Linux FP state is already part of ucontext_t so
+     // 'float_state' is not required.
+diff --git a/src/client/linux/handler/exception_handler_unittest.cc b/src/client/linux/handler/exception_handler_unittest.cc
+index 329d0147..32d7700c 100644
+--- a/src/client/linux/handler/exception_handler_unittest.cc
++++ b/src/client/linux/handler/exception_handler_unittest.cc
+@@ -307,7 +307,7 @@ TEST(ExceptionHandlerTest, ParallelChildCrashesDontHang) {
+   }
+ 
+   // Wait a while until the child should have crashed.
+-  usleep(1000000);
++  usleep(2000000);
+   // Kill the child if it is still running.
+   kill(child, SIGKILL);
+ 
+@@ -555,6 +555,8 @@ const unsigned char kIllegalInstruction[] = {
+ #if defined(__mips__)
+   // mfc2 zero,Impl - usually illegal in userspace.
+   0x48, 0x00, 0x00, 0x48
++#elif defined(__powerpc64__)
++  0x01, 0x01, 0x01, 0x01 // Crashes on a tested POWER9 cpu
+ #else
+   // This crashes with SIGILL on x86/x86-64/arm.
+   0xff, 0xff, 0xff, 0xff
+@@ -750,10 +752,10 @@ TEST(ExceptionHandlerTest, InstructionPointerMemoryMaxBound) {
+ 
+   // These are defined here so the parent can use them to check the
+   // data from the minidump afterwards.
+-  // Use 4k here because the OS will hand out a single page even
++  // Use the page size here because the OS will hand out a single page even
+   // if a smaller size is requested, and this test wants to
+   // test the upper bound of the memory range.
+-  const uint32_t kMemorySize = 4096;  // bytes
++  const uint32_t kMemorySize = getpagesize();  // bytes
+   const int kOffset = kMemorySize - sizeof(kIllegalInstruction);
+ 
+   const pid_t child = fork();
+diff --git a/src/client/linux/microdump_writer/microdump_writer.cc b/src/client/linux/microdump_writer/microdump_writer.cc
+index fa3c1713..6ce709e2 100644
+--- a/src/client/linux/microdump_writer/microdump_writer.cc
++++ b/src/client/linux/microdump_writer/microdump_writer.cc
+@@ -138,7 +138,9 @@ class MicrodumpWriter {
+                   const MicrodumpExtraInfo& microdump_extra_info,
+                   LinuxDumper* dumper)
+       : ucontext_(context ? &context->context : NULL),
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++        vector_state_(context ? &context->vector_state : NULL),
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+         float_state_(context ? &context->float_state : NULL),
+ #endif
+         dumper_(dumper),
+@@ -337,6 +339,8 @@ class MicrodumpWriter {
+ # else
+ #  error "This mips ABI is currently not supported (n32)"
+ #endif
++#elif defined(__powerpc64__)
++    const char kArch[] = "ppc64";
+ #else
+ #error "This code has not been ported to your platform yet"
+ #endif
+@@ -409,7 +413,9 @@ class MicrodumpWriter {
+   void DumpCPUState() {
+     RawContextCPU cpu;
+     my_memset(&cpu, 0, sizeof(RawContextCPU));
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++    UContextReader::FillCPUContext(&cpu, ucontext_, vector_state_);
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+     UContextReader::FillCPUContext(&cpu, ucontext_, float_state_);
+ #else
+     UContextReader::FillCPUContext(&cpu, ucontext_);
+@@ -605,7 +611,9 @@ class MicrodumpWriter {
+   void* Alloc(unsigned bytes) { return dumper_->allocator()->Alloc(bytes); }
+ 
+   const ucontext_t* const ucontext_;
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++  const google_breakpad::vstate_t* const vector_state_;
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+   const google_breakpad::fpstate_t* const float_state_;
+ #endif
+   LinuxDumper* dumper_;
+diff --git a/src/client/linux/microdump_writer/microdump_writer_unittest.cc b/src/client/linux/microdump_writer/microdump_writer_unittest.cc
+index c2fea022..8c62c524 100644
+--- a/src/client/linux/microdump_writer/microdump_writer_unittest.cc
++++ b/src/client/linux/microdump_writer/microdump_writer_unittest.cc
+@@ -278,10 +278,19 @@ TEST(MicrodumpWriterTest, BasicWithMappings) {
+   CrashAndGetMicrodump(mappings, MicrodumpExtraInfo(), &buf);
+   ASSERT_TRUE(ContainsMicrodump(buf));
+ 
++  int page_size = getpagesize();
+ #ifdef __LP64__
+-  ASSERT_NE(std::string::npos,
+-            buf.find("M 0000000000001000 000000000000002A 0000000000001000 "
+-                     "33221100554477668899AABBCCDDEEFF0 libfoo.so"));
++  // This test is only available for the following page sizes
++  ASSERT_TRUE((page_size == 4096) || (page_size == 65536));
++  if (page_size == 4096) { 
++    ASSERT_NE(std::string::npos,
++              buf.find("M 0000000000001000 000000000000002A 0000000000001000 "
++                       "33221100554477668899AABBCCDDEEFF0 libfoo.so"));
++  } else {
++    ASSERT_NE(std::string::npos,
++              buf.find("M 0000000000010000 000000000000002A 0000000000010000 "
++                       "33221100554477668899AABBCCDDEEFF0 libfoo.so"));
++  }
+ #else
+   ASSERT_NE(std::string::npos,
+             buf.find("M 00001000 0000002A 00001000 "
+diff --git a/src/client/linux/minidump_writer/linux_core_dumper.cc b/src/client/linux/minidump_writer/linux_core_dumper.cc
+index 9bf2d2ef..18262496 100644
+--- a/src/client/linux/minidump_writer/linux_core_dumper.cc
++++ b/src/client/linux/minidump_writer/linux_core_dumper.cc
+@@ -111,6 +111,9 @@ bool LinuxCoreDumper::GetThreadInfoByIndex(size_t index, ThreadInfo* info) {
+ #elif defined(__mips__)
+   stack_pointer =
+       reinterpret_cast<uint8_t*>(info->mcontext.gregs[MD_CONTEXT_MIPS_REG_SP]);
++#elif defined(__powerpc64__)
++  stack_pointer =
++      reinterpret_cast<uint8_t*>(info->mcontext.gp_regs[MD_CONTEXT_PPC64_REG_SP]);
+ #else
+ #error "This code hasn't been ported to your platform yet."
+ #endif
+@@ -195,7 +198,10 @@ bool LinuxCoreDumper::EnumerateThreads() {
+         memset(&info, 0, sizeof(ThreadInfo));
+         info.tgid = status->pr_pgrp;
+         info.ppid = status->pr_ppid;
+-#if defined(__mips__)
++#if defined(__powerpc64__)
++        for (int i = 0; i < 31; i++)
++            info.mcontext.gp_regs[i] = status->pr_reg[i];
++#elif defined(__mips__)
+ #if defined(__ANDROID__)
+         for (int i = EF_R0; i <= EF_R31; i++)
+           info.mcontext.gregs[i - EF_R0] = status->pr_reg[i];
+diff --git a/src/client/linux/minidump_writer/linux_dumper.cc b/src/client/linux/minidump_writer/linux_dumper.cc
+index dbedecd5..f91f7f99 100644
+--- a/src/client/linux/minidump_writer/linux_dumper.cc
++++ b/src/client/linux/minidump_writer/linux_dumper.cc
+@@ -798,7 +798,9 @@ bool LinuxDumper::GetStackInfo(const void** stack, size_t* stack_len,
+       reinterpret_cast<uint8_t*>(int_stack_pointer & ~(page_size - 1));
+ 
+   // The number of bytes of stack which we try to capture.
+-  static const ptrdiff_t kStackToCapture = 32 * 1024;
++  // This now depends on page_size to avoid missing data
++  // on systems with larger page sizes.
++  static const ptrdiff_t kStackToCapture = 8 * page_size;
+ 
+   const MappingInfo* mapping = FindMapping(stack_pointer);
+   if (!mapping)
+diff --git a/src/client/linux/minidump_writer/linux_dumper.h b/src/client/linux/minidump_writer/linux_dumper.h
+index 76448fad..617ac6d0 100644
+--- a/src/client/linux/minidump_writer/linux_dumper.h
++++ b/src/client/linux/minidump_writer/linux_dumper.h
+@@ -60,7 +60,8 @@ namespace google_breakpad {
+  (defined(__mips__) && _MIPS_SIM == _ABIO32)
+ typedef Elf32_auxv_t elf_aux_entry;
+ #elif defined(__x86_64) || defined(__aarch64__) || \
+-     (defined(__mips__) && _MIPS_SIM != _ABIO32)
++     (defined(__mips__) && _MIPS_SIM != _ABIO32) || \
++     defined(__powerpc64__)
+ typedef Elf64_auxv_t elf_aux_entry;
+ #endif
+ 
+diff --git a/src/client/linux/minidump_writer/linux_dumper_unittest_helper.cc b/src/client/linux/minidump_writer/linux_dumper_unittest_helper.cc
+index 3ad48e50..1688c365 100644
+--- a/src/client/linux/minidump_writer/linux_dumper_unittest_helper.cc
++++ b/src/client/linux/minidump_writer/linux_dumper_unittest_helper.cc
+@@ -51,6 +51,8 @@
+ #define TID_PTR_REGISTER "rcx"
+ #elif defined(__mips__)
+ #define TID_PTR_REGISTER "$1"
++#elif defined(__powerpc64__)
++#define TID_PTR_REGISTER "r8"
+ #else
+ #error This test has not been ported to this platform.
+ #endif
+diff --git a/src/client/linux/minidump_writer/linux_ptrace_dumper.cc b/src/client/linux/minidump_writer/linux_ptrace_dumper.cc
+index e3ddb81a..fa28575e 100644
+--- a/src/client/linux/minidump_writer/linux_ptrace_dumper.cc
++++ b/src/client/linux/minidump_writer/linux_ptrace_dumper.cc
+@@ -149,19 +149,27 @@ bool LinuxPtraceDumper::CopyFromProcess(void* dest, pid_t child,
+   return true;
+ }
+ 
+-bool LinuxPtraceDumper::ReadRegisterSet(ThreadInfo* info, pid_t tid)
+-{
++bool LinuxPtraceDumper::ReadRegisterSet(ThreadInfo* info, pid_t tid) {
+ #ifdef PTRACE_GETREGSET
+   struct iovec io;
+   info->GetGeneralPurposeRegisters(&io.iov_base, &io.iov_len);
+-  if (sys_ptrace(PTRACE_GETREGSET, tid, (void*)NT_PRSTATUS, (void*)&io) == -1) {
++  if (ptrace(PTRACE_GETREGSET, tid, (void*)NT_PRSTATUS, (void*)&io) == -1) {
+     return false;
+   }
+ 
+   info->GetFloatingPointRegisters(&io.iov_base, &io.iov_len);
+-  if (sys_ptrace(PTRACE_GETREGSET, tid, (void*)NT_FPREGSET, (void*)&io) == -1) {
++  if (ptrace(PTRACE_GETREGSET, tid, (void*)NT_FPREGSET, (void*)&io) == -1) {
+     return false;
+   }
++
++#if defined(__powerpc64__)
++  // Grab the vector registers on PPC64 too
++  info->GetVectorRegisters(&io.iov_base, &io.iov_len);
++  if (ptrace(PTRACE_GETREGSET, tid, (void*)NT_PPC_VMX, (void*)&io) == -1) {
++    return false;
++  }
++#endif // defined(__powerpc64__)
++
+   return true;
+ #else
+   return false;
+@@ -298,6 +306,9 @@ bool LinuxPtraceDumper::GetThreadInfoByIndex(size_t index, ThreadInfo* info) {
+ #elif defined(__mips__)
+   stack_pointer =
+       reinterpret_cast<uint8_t*>(info->mcontext.gregs[MD_CONTEXT_MIPS_REG_SP]);
++#elif defined(__powerpc64__)
++  stack_pointer =
++      reinterpret_cast<uint8_t*>(info->mcontext.gp_regs[MD_CONTEXT_PPC64_REG_SP]);
+ #else
+ #error "This code hasn't been ported to your platform yet."
+ #endif
+diff --git a/src/client/linux/minidump_writer/linux_ptrace_dumper_unittest.cc b/src/client/linux/minidump_writer/linux_ptrace_dumper_unittest.cc
+index a4a0fd9b..52c15070 100644
+--- a/src/client/linux/minidump_writer/linux_ptrace_dumper_unittest.cc
++++ b/src/client/linux/minidump_writer/linux_ptrace_dumper_unittest.cc
+@@ -457,6 +457,9 @@ TEST(LinuxPtraceDumperTest, VerifyStackReadWithMultipleThreads) {
+ #elif defined(__mips__)
+     pid_t* process_tid_location =
+         reinterpret_cast<pid_t*>(one_thread.mcontext.gregs[1]);
++#elif defined(__powerpc64__)
++    pid_t* process_tid_location =
++        reinterpret_cast<pid_t*>(one_thread.mcontext.gp_regs[8]);
+ #else
+ #error This test has not been ported to this platform.
+ #endif
+@@ -553,6 +556,8 @@ TEST_F(LinuxPtraceDumperTest, SanitizeStackCopy) {
+   uintptr_t heap_addr = thread_info.regs.rcx;
+ #elif defined(__mips__)
+   uintptr_t heap_addr = thread_info.mcontext.gregs[1];
++#elif defined(__powerpc64__)
++  uintptr_t heap_addr = thread_info.mcontext.gp_regs[8];
+ #else
+ #error This test has not been ported to this platform.
+ #endif
+diff --git a/src/client/linux/minidump_writer/minidump_writer.cc b/src/client/linux/minidump_writer/minidump_writer.cc
+index cdf4bf65..ae0fccce 100644
+--- a/src/client/linux/minidump_writer/minidump_writer.cc
++++ b/src/client/linux/minidump_writer/minidump_writer.cc
+@@ -136,7 +136,9 @@ class MinidumpWriter {
+       : fd_(minidump_fd),
+         path_(minidump_path),
+         ucontext_(context ? &context->context : NULL),
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++        vector_state_(context ? &context->vector_state : NULL),
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+         float_state_(context ? &context->float_state : NULL),
+ #endif
+         dumper_(dumper),
+@@ -468,7 +470,9 @@ class MinidumpWriter {
+         if (!cpu.Allocate())
+           return false;
+         my_memset(cpu.get(), 0, sizeof(RawContextCPU));
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++        UContextReader::FillCPUContext(cpu.get(), ucontext_, vector_state_);
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+         UContextReader::FillCPUContext(cpu.get(), ucontext_, float_state_);
+ #else
+         UContextReader::FillCPUContext(cpu.get(), ucontext_);
+@@ -891,7 +895,7 @@ class MinidumpWriter {
+     dirent->location.rva = 0;
+   }
+ 
+-#if defined(__i386__) || defined(__x86_64__) || defined(__mips__)
++#if defined(__i386__) || defined(__x86_64__) || defined(__mips__) || defined(__powerpc64__)
+   bool WriteCPUInformation(MDRawSystemInfo* sys_info) {
+     char vendor_id[sizeof(sys_info->cpu.x86_cpu_info.vendor_id) + 1] = {0};
+     static const char vendor_id_name[] = "vendor_id";
+@@ -911,7 +915,9 @@ class MinidumpWriter {
+ 
+     // processor_architecture should always be set, do this first
+     sys_info->processor_architecture =
+-#if defined(__mips__)
++#if defined(__powerpc64__)
++        MD_CPU_ARCHITECTURE_PPC64;
++#elif defined(__mips__)
+ # if _MIPS_SIM == _ABIO32
+         MD_CPU_ARCHITECTURE_MIPS;
+ # elif _MIPS_SIM == _ABI64
+@@ -1327,7 +1333,9 @@ class MinidumpWriter {
+   const char* path_;  // Path to the file where the minidum should be written.
+ 
+   const ucontext_t* const ucontext_;  // also from the signal handler
+-#if !defined(__ARM_EABI__) && !defined(__mips__)
++#if defined(__powerpc64__)
++  const google_breakpad::vstate_t* const vector_state_;
++#elif !defined(__ARM_EABI__) && !defined(__mips__)
+   const google_breakpad::fpstate_t* const float_state_;  // ditto
+ #endif
+   LinuxDumper* dumper_;
+diff --git a/src/client/linux/minidump_writer/minidump_writer.h b/src/client/linux/minidump_writer/minidump_writer.h
+index d1dc3312..63d80592 100644
+--- a/src/client/linux/minidump_writer/minidump_writer.h
++++ b/src/client/linux/minidump_writer/minidump_writer.h
+@@ -47,6 +47,8 @@ class ExceptionHandler;
+ 
+ #if defined(__aarch64__)
+ typedef struct fpsimd_context fpstate_t;
++#elif defined(__powerpc64__)
++typedef struct _libc_vrstate vstate_t;
+ #elif !defined(__ARM_EABI__) && !defined(__mips__)
+ typedef struct _libc_fpstate fpstate_t;
+ #endif
+diff --git a/src/client/linux/minidump_writer/minidump_writer_unittest.cc b/src/client/linux/minidump_writer/minidump_writer_unittest.cc
+index 583ddda8..5e3deccf 100644
+--- a/src/client/linux/minidump_writer/minidump_writer_unittest.cc
++++ b/src/client/linux/minidump_writer/minidump_writer_unittest.cc
+@@ -710,6 +710,9 @@ TEST(MinidumpWriterTest, InvalidStackPointer) {
+ #elif defined(__mips__)
+   context.context.uc_mcontext.gregs[MD_CONTEXT_MIPS_REG_SP] =
+       invalid_stack_pointer;
++#elif defined(__powerpc64__)
++  context.context.uc_mcontext.gp_regs[MD_CONTEXT_PPC64_REG_SP] =
++      invalid_stack_pointer;
+ #else
+ # error "This code has not been ported to your platform yet."
+ #endif
+diff --git a/src/common/linux/memory_mapped_file.cc b/src/common/linux/memory_mapped_file.cc
+index 4e938269..f0ff15d9 100644
+--- a/src/common/linux/memory_mapped_file.cc
++++ b/src/common/linux/memory_mapped_file.cc
+@@ -65,8 +65,7 @@ bool MemoryMappedFile::Map(const char* path, size_t offset) {
+   }
+ 
+ #if defined(__x86_64__) || defined(__aarch64__) || \
+-   (defined(__mips__) && _MIPS_SIM == _ABI64)
+-
++   (defined(__mips__) && _MIPS_SIM == _ABI64) || defined(__powerpc64__)
+   struct kernel_stat st;
+   if (sys_fstat(fd, &st) == -1 || st.st_size < 0) {
+ #else
+diff --git a/src/common/linux/memory_mapped_file_unittest.cc b/src/common/linux/memory_mapped_file_unittest.cc
+index fad59f40..616496d6 100644
+--- a/src/common/linux/memory_mapped_file_unittest.cc
++++ b/src/common/linux/memory_mapped_file_unittest.cc
+@@ -176,9 +176,10 @@ TEST_F(MemoryMappedFileTest, RemapAfterMap) {
+ TEST_F(MemoryMappedFileTest, MapWithOffset) {
+   // Put more data in the test file this time. Offsets can only be
+   // done on page boundaries, so we need a two page file to test this.
+-  const int page_size = 4096;
+-  char data1[2 * page_size];
+-  size_t data1_size = sizeof(data1);
++  const int page_size = getpagesize();
++  char *data1 = static_cast<char*>(malloc(2 * page_size));
++  EXPECT_TRUE(data1 != NULL);
++  size_t data1_size = (2 * page_size);
+   for (size_t i = 0; i < data1_size; ++i) {
+     data1[i] = i & 0x7f;
+   }
+diff --git a/src/common/memory_allocator_unittest.cc b/src/common/memory_allocator_unittest.cc
+index 43c86314..27325b81 100644
+--- a/src/common/memory_allocator_unittest.cc
++++ b/src/common/memory_allocator_unittest.cc
+@@ -57,8 +57,9 @@ TEST(PageAllocatorTest, LargeObject) {
+ 
+   EXPECT_EQ(0U, allocator.pages_allocated());
+   uint8_t *p = reinterpret_cast<uint8_t*>(allocator.Alloc(10000));
++  uint64_t expected_pages = 1 + ((10000 - 1) / getpagesize());
+   ASSERT_FALSE(p == NULL);
+-  EXPECT_EQ(3U, allocator.pages_allocated());
++  EXPECT_EQ(expected_pages, allocator.pages_allocated());
+   for (unsigned i = 1; i < 10; ++i) {
+     uint8_t *p = reinterpret_cast<uint8_t*>(allocator.Alloc(i));
+     ASSERT_FALSE(p == NULL);
+diff --git a/src/processor/exploitability_linux.cc b/src/processor/exploitability_linux.cc
+index ccc9f145..debaed4d 100644
+--- a/src/processor/exploitability_linux.cc
++++ b/src/processor/exploitability_linux.cc
+@@ -202,12 +202,14 @@ bool ExploitabilityLinux::EndedOnIllegalWrite(uint64_t instruction_ptr) {
+   // Check architecture and set architecture variable to corresponding flag
+   // in objdump.
+   switch (context->GetContextCPU()) {
++#if defined(__i386) || defined(__x86_64)
+     case MD_CONTEXT_X86:
+       architecture = "i386";
+       break;
+     case MD_CONTEXT_AMD64:
+       architecture = "i386:x86-64";
+       break;
++#endif
+     default:
+       // Unsupported architecture. Note that ARM architectures are not
+       // supported because objdump does not support ARM.
+diff --git a/src/processor/exploitability_unittest.cc b/src/processor/exploitability_unittest.cc
+index 528ee5f2..72764d6c 100644
+--- a/src/processor/exploitability_unittest.cc
++++ b/src/processor/exploitability_unittest.cc
+@@ -104,6 +104,8 @@ ExploitabilityFor(const string& filename) {
+ }
+ 
+ TEST(ExploitabilityTest, TestWindowsEngine) {
++// The following tests are only executable on an x86-class linux machine.
++#if !defined(_WIN32) && (defined(__i386) || defined(__x86_64))
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_HIGH,
+             ExploitabilityFor("ascii_read_av.dmp"));
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_HIGH,
+@@ -136,9 +138,12 @@ TEST(ExploitabilityTest, TestWindowsEngine) {
+             ExploitabilityFor("read_av_clobber_write.dmp"));
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_LOW,
+             ExploitabilityFor("read_av_conditional.dmp"));
++#endif
+ }
+ 
+ TEST(ExploitabilityTest, TestLinuxEngine) {
++// The following tests are only executable on an x86-class linux machine.
++#if defined(__i386) || defined(__x86_64)
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_INTERESTING,
+             ExploitabilityFor("linux_null_read_av.dmp"));
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_HIGH,
+@@ -171,7 +176,8 @@ TEST(ExploitabilityTest, TestLinuxEngine) {
+             ExploitabilityFor("linux_executable_heap.dmp"));
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_HIGH,
+             ExploitabilityFor("linux_jmp_to_module_not_exe_region.dmp"));
+-#ifndef _WIN32
++#endif
++#if !defined(_WIN32) && (defined(__i386) || defined(__x86_64))
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_HIGH,
+             ExploitabilityFor("linux_write_to_nonwritable_module.dmp"));
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_HIGH,
+@@ -182,10 +188,10 @@ TEST(ExploitabilityTest, TestLinuxEngine) {
+             ExploitabilityFor("linux_write_to_outside_module_via_math.dmp"));
+   ASSERT_EQ(google_breakpad::EXPLOITABILITY_INTERESTING,
+             ExploitabilityFor("linux_write_to_under_4k.dmp"));
+-#endif  // _WIN32
++#endif  // !defined(_WIN32) && (!defined(__i386) && !defined(__x86_64))
+ }
+ 
+-#ifndef _WIN32
++#if !defined(_WIN32) && (defined(__i386) || defined(__x86_64))
+ TEST(ExploitabilityLinuxUtilsTest, DisassembleBytesTest) {
+   ASSERT_FALSE(ExploitabilityLinuxTest::DisassembleBytes("", NULL, 5, NULL));
+   uint8_t bytes[6] = {0xc7, 0x0, 0x5, 0x0, 0x0, 0x0};
+@@ -301,6 +307,7 @@ TEST(ExploitabilityLinuxUtilsTest, CalculateAddressTest) {
+                                                          context,
+                                                          &write_address));
+ }
+-#endif  // _WIN32
++#endif  // !defined(_WIN32) && (defined(__i386) || defined(__x86_64))
++
+ 
+ }  // namespace
+diff --git a/src/tools/linux/md2core/minidump-2-core.cc b/src/tools/linux/md2core/minidump-2-core.cc
+index 8cc07a6e..f6755691 100644
+--- a/src/tools/linux/md2core/minidump-2-core.cc
++++ b/src/tools/linux/md2core/minidump-2-core.cc
+@@ -76,6 +76,8 @@
+   #define ELF_ARCH  EM_MIPS
+ #elif defined(__aarch64__)
+   #define ELF_ARCH  EM_AARCH64
++#elif defined(__powerpc64__)
++  #define ELF_ARCH  EM_PPC64
+ #endif
+ 
+ #if defined(__arm__)
+@@ -86,6 +88,8 @@ typedef user_regs user_regs_struct;
+ #elif defined (__mips__)
+ // This file-local typedef simplifies the source code.
+ typedef gregset_t user_regs_struct;
++#elif defined(__powerpc64__)
++typedef struct pt_regs user_regs_struct;
+ #endif
+ 
+ using google_breakpad::MDTypeHelper;
+@@ -320,6 +324,9 @@ struct CrashedProcess {
+ #endif
+ #if defined(__aarch64__)
+     user_fpsimd_struct fpregs;
++#endif
++#if defined(__powerpc64__)
++    mcontext_t mcontext;
+ #endif
+     uintptr_t stack_addr;
+     const uint8_t* stack;
+@@ -523,6 +530,38 @@ ParseThreadRegisters(CrashedProcess::Thread* thread,
+   thread->mcontext.fpc_eir = rawregs->float_save.fir;
+ #endif
+ }
++#elif defined(__powerpc64__)
++static void
++ParseThreadRegisters(CrashedProcess::Thread* thread,
++                     const MinidumpMemoryRange& range) {
++  const MDRawContextPPC64* rawregs = range.GetData<MDRawContextPPC64>(0);
++
++  for (int i = 0; i < MD_CONTEXT_PPC64_GPR_COUNT; i++)
++    thread->mcontext.gp_regs[i] = rawregs->gpr[i];
++
++  thread->mcontext.gp_regs[PT_LNK] = rawregs->lr;
++  thread->mcontext.gp_regs[PT_NIP] = rawregs->srr0;
++  thread->mcontext.gp_regs[PT_MSR] = rawregs->srr1;
++  thread->mcontext.gp_regs[PT_CCR] = rawregs->cr;
++  thread->mcontext.gp_regs[PT_XER] = rawregs->xer;
++  thread->mcontext.gp_regs[PT_CTR] = rawregs->ctr;
++  thread->mcontext.v_regs->vrsave = rawregs->vrsave;
++
++  for (int i = 0; i < MD_FLOATINGSAVEAREA_PPC_FPR_COUNT; i++)
++      thread->mcontext.fp_regs[i] = rawregs->float_save.fpregs[i];
++
++  thread->mcontext.fp_regs[NFPREG-1] = rawregs->float_save.fpscr;
++
++  for (int i = 0; i < MD_VECTORSAVEAREA_PPC_VR_COUNT; i++) {
++      thread->mcontext.v_regs->vrregs[i][0] = rawregs->vector_save.save_vr[i].high >> 32;
++      thread->mcontext.v_regs->vrregs[i][1] = rawregs->vector_save.save_vr[i].high;
++      thread->mcontext.v_regs->vrregs[i][2] = rawregs->vector_save.save_vr[i].low >> 32;
++      thread->mcontext.v_regs->vrregs[i][3] = rawregs->vector_save.save_vr[i].low;
++  }
++
++  thread->mcontext.v_regs->vscr.vscr_word = rawregs->vector_save.save_vscr.low & 0xFFFFFFFF;
++}
++
+ #else
+ #error "This code has not been ported to your platform yet"
+ #endif
+@@ -611,6 +650,12 @@ ParseSystemInfo(const Options& options, CrashedProcess* crashinfo,
+ # else
+ #  error "This mips ABI is currently not supported (n32)"
+ # endif
++#elif defined(__powerpc64__)
++  if (sysinfo->processor_architecture != MD_CPU_ARCHITECTURE_PPC64) {
++    fprintf(stderr,
++            "This version of minidump-2-core only supports PPC64.\n");
++    exit(1);
++  }
+ #else
+ #error "This code has not been ported to your platform yet"
+ #endif
+-- 
+2.19.1
+

@@ -1,0 +1,64 @@
+From e4926e9575bca2e2e411a75d13ee569f2f88c7ed Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawn@anastas.io>
+Date: Sun, 11 Nov 2018 17:40:22 -0600
+Subject: [PATCH] webrtc: Add support for ppc64
+
+---
+ modules/desktop_capture/differ_block.cc | 10 +++++-----
+ rtc_base/system/arch.h                  | 12 ++++++++++++
+ 2 files changed, 17 insertions(+), 5 deletions(-)
+
+diff --git a/modules/desktop_capture/differ_block.cc b/modules/desktop_capture/differ_block.cc
+index e15211d7d2..73af5f91eb 100644
+--- a/modules/desktop_capture/differ_block.cc
++++ b/modules/desktop_capture/differ_block.cc
+@@ -30,11 +30,7 @@ bool VectorDifference(const uint8_t* image1, const uint8_t* image2) {
+   static bool (*diff_proc)(const uint8_t*, const uint8_t*) = nullptr;
+ 
+   if (!diff_proc) {
+-#if defined(WEBRTC_ARCH_ARM_FAMILY) || defined(WEBRTC_ARCH_MIPS_FAMILY)
+-    // For ARM and MIPS processors, always use C version.
+-    // TODO(hclam): Implement a NEON version.
+-    diff_proc = &VectorDifference_C;
+-#else
++#if defined(WEBRTC_ARCH_X86_FAMILY)
+     bool have_sse2 = WebRtc_GetCPUInfo(kSSE2) != 0;
+     // For x86 processors, check if SSE2 is supported.
+     if (have_sse2 && kBlockSize == 32) {
+@@ -44,6 +40,10 @@ bool VectorDifference(const uint8_t* image1, const uint8_t* image2) {
+     } else {
+       diff_proc = &VectorDifference_C;
+     }
++#else
++    // For other processors, always use C version.
++    // TODO(hclam): Implement a NEON version.
++    diff_proc = &VectorDifference_C;
+ #endif
+   }
+ 
+diff --git a/rtc_base/system/arch.h b/rtc_base/system/arch.h
+index a2a1180644..e5fad1f6fd 100644
+--- a/rtc_base/system/arch.h
++++ b/rtc_base/system/arch.h
+@@ -47,6 +47,18 @@
+ #elif defined(__pnacl__)
+ #define WEBRTC_ARCH_32_BITS
+ #define WEBRTC_ARCH_LITTLE_ENDIAN
++#elif defined(__PPC__)
++#define WEBRTC_ARCH_PPC_FAMILY
++#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
++#define WEBRTC_ARCH_LITTLE_ENDIAN
++#else
++#define WEBRTC_ARCH_BIG_ENDIAN
++#endif
++#if defined(__LP64__)
++#define WEBRTC_ARCH_64_BITS
++#else
++#define WEBRTC_ARCH_32_BITS
++#endif
+ #else
+ #error Please add support for your architecture in typedefs.h
+ #endif
+-- 
+2.19.1
+

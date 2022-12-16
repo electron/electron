@@ -1,0 +1,50 @@
+From 5de96108916f4a1441e88c710158bb5b6fdde7f0 Mon Sep 17 00:00:00 2001
+From: Shawn Anastasio <shawnanastasio@yahoo.com>
+Date: Fri, 14 Sep 2018 14:14:41 -0500
+Subject: [PATCH 1/2] base/allocator: Use 64k page sizes on ppc64
+
+---
+ .../partition_allocator/page_allocator_constants.h          | 6 +++++-
+ .../partition_allocator/partition_alloc_constants.h         | 2 ++
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/base/allocator/partition_allocator/page_allocator_constants.h b/base/allocator/partition_allocator/page_allocator_constants.h
+index 308d09979114..f6566e2f0b0a 100644
+--- a/base/allocator/partition_allocator/page_allocator_constants.h
++++ b/base/allocator/partition_allocator/page_allocator_constants.h
+@@ -10,7 +10,7 @@
+ #include "build/build_config.h"
+ 
+ namespace base {
+-#if defined(OS_WIN)
++#if defined(OS_WIN) || defined(ARCH_CPU_PPC64)
+ static constexpr size_t kPageAllocationGranularityShift = 16;  // 64KB
+ #elif defined(_MIPS_ARCH_LOONGSON)
+ static constexpr size_t kPageAllocationGranularityShift = 14;  // 16KB
+@@ -26,6 +26,10 @@ static constexpr size_t kPageAllocationGranularityBaseMask =
+ 
+ #if defined(_MIPS_ARCH_LOONGSON)
+ static constexpr size_t kSystemPageSize = 16384;
++#elif defined(ARCH_CPU_PPC64)
++// TODO: modern ppc64 can do 4k and 64k page sizes
++// for now, 64k is assumed
++static constexpr size_t kSystemPageSize = 65536;
+ #else
+ static constexpr size_t kSystemPageSize = 4096;
+ #endif
+diff --git a/base/allocator/partition_allocator/partition_alloc_constants.h b/base/allocator/partition_allocator/partition_alloc_constants.h
+index e0fb19ec6164..46fa755d685f 100644
+--- a/base/allocator/partition_allocator/partition_alloc_constants.h
++++ b/base/allocator/partition_allocator/partition_alloc_constants.h
+@@ -33,6 +33,8 @@ static const size_t kBucketShift = (kAllocationGranularity == 8) ? 3 : 2;
+ // up against the end of a system page.
+ #if defined(_MIPS_ARCH_LOONGSON)
+ static const size_t kPartitionPageShift = 16;  // 64KB
++#elif defined(ARCH_CPU_PPC64)
++static const size_t kPartitionPageShift = 18;  // 256KB
+ #else
+ static const size_t kPartitionPageShift = 14;  // 16KB
+ #endif
+-- 
+2.17.1
+
