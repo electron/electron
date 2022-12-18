@@ -1226,9 +1226,6 @@ content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
   return desktop_media_id;
 }
 
-NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
-  return [window_ contentView];
-}
 
 void NativeWindowMac::SetProgressBar(double progress,
                                      const NativeWindow::ProgressState state) {

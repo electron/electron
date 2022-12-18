@@ -1439,10 +1439,6 @@ gfx::AcceleratedWidget NativeWindowViews::GetAcceleratedWidget() const {
     return gfx::kNullAcceleratedWidget;
 }
 
-NativeWindowHandle NativeWindowViews::GetNativeWindowHandle() const {
-  return GetAcceleratedWidget();
-}
-
 gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
     const gfx::Rect& bounds) const {
   if (!has_frame())
