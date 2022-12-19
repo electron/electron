@@ -1,0 +1,119 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Corentin Wallez <cwallez@chromium.org>
+Date: Tue, 29 Nov 2022 14:07:46 +0000
+Subject: Keep a reference to the transfer buffer in Dawn read/write handles.
+
+Previously the Dawn read/write handles in the GPU process only contained
+a pointer to the inside of a shmem region owned by a gpu::Buffer that
+had a different lifetime. This could allow a renderer process to
+deallocate the memory from underneath the handle which is bad.
+
+Fix this by keepind a scoped_refptr to the gpu::Buffer inside the
+read/write handles to extend the lifetime of the shmem to be at least as
+big as the handle's.
+
+Fixed: chromium:1393177
+Change-Id: I9d9c18d5155a46e0e3a01d385d221a6370bd2bea
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4056276
+Reviewed-by: Austin Eng <enga@chromium.org>
+Commit-Queue: Corentin Wallez <cwallez@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1076828}
+
+diff --git a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
+index a15b6f9b3b345079d8cf8251ca5f77b6e7ef647a..10941d9f65c66e50303cf7293180c29fced8ffe2 100644
+--- a/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
++++ b/gpu/command_buffer/service/dawn_service_memory_transfer_service.cc
+@@ -6,6 +6,7 @@
+ 
+ #include "base/memory/raw_ptr.h"
+ #include "gpu/command_buffer/common/dawn_memory_transfer_handle.h"
++#include "gpu/command_buffer/service/command_buffer_service.h"
+ #include "gpu/command_buffer/service/common_decoder.h"
+ 
+ namespace gpu {
+@@ -16,8 +17,8 @@ namespace {
+ class ReadHandleImpl
+     : public dawn::wire::server::MemoryTransferService::ReadHandle {
+  public:
+-  ReadHandleImpl(void* ptr, uint32_t size)
+-      : ReadHandle(), ptr_(ptr), size_(size) {}
++  ReadHandleImpl(scoped_refptr<Buffer> buffer, void* ptr, uint32_t size)
++      : buffer_(std::move(buffer)), ptr_(ptr), size_(size) {}
+ 
+   ~ReadHandleImpl() override = default;
+ 
+@@ -44,6 +45,8 @@ class ReadHandleImpl
+   }
+ 
+  private:
++  scoped_refptr<gpu::Buffer> buffer_;
++  // Pointer to client-visible shared memory owned by buffer_.
+   raw_ptr<void> ptr_;
+   uint32_t size_;
+ };
+@@ -51,8 +54,8 @@ class ReadHandleImpl
+ class WriteHandleImpl
+     : public dawn::wire::server::MemoryTransferService::WriteHandle {
+  public:
+-  WriteHandleImpl(const void* ptr, uint32_t size)
+-      : WriteHandle(), ptr_(ptr), size_(size) {}
++  WriteHandleImpl(scoped_refptr<Buffer> buffer, const void* ptr, uint32_t size)
++      : buffer_(std::move(buffer)), ptr_(ptr), size_(size) {}
+ 
+   ~WriteHandleImpl() override = default;
+ 
+@@ -82,7 +85,9 @@ class WriteHandleImpl
+   }
+ 
+  private:
+-  raw_ptr<const void> ptr_;  // Pointer to client-visible shared memory.
++  scoped_refptr<gpu::Buffer> buffer_;
++  // Pointer to client-visible shared memory owned by buffer_.
++  raw_ptr<const void> ptr_;
+   uint32_t size_;
+ };
+ 
+@@ -111,13 +116,19 @@ bool DawnServiceMemoryTransferService::DeserializeReadHandle(
+   int32_t shm_id = handle->shm_id;
+   uint32_t shm_offset = handle->shm_offset;
+ 
+-  void* ptr = decoder_->GetAddressAndCheckSize(shm_id, shm_offset, size);
++  scoped_refptr<gpu::Buffer> buffer =
++      decoder_->command_buffer_service()->GetTransferBuffer(shm_id);
++  if (buffer == nullptr) {
++    return false;
++  }
++
++  void* ptr = buffer->GetDataAddress(shm_offset, size);
+   if (ptr == nullptr) {
+     return false;
+   }
+ 
+   DCHECK(read_handle);
+-  *read_handle = new ReadHandleImpl(ptr, size);
++  *read_handle = new ReadHandleImpl(std::move(buffer), ptr, size);
+ 
+   return true;
+ }
+@@ -139,13 +150,19 @@ bool DawnServiceMemoryTransferService::DeserializeWriteHandle(
+   int32_t shm_id = handle->shm_id;
+   uint32_t shm_offset = handle->shm_offset;
+ 
+-  void* ptr = decoder_->GetAddressAndCheckSize(shm_id, shm_offset, size);
++  scoped_refptr<gpu::Buffer> buffer =
++      decoder_->command_buffer_service()->GetTransferBuffer(shm_id);
++  if (buffer == nullptr) {
++    return false;
++  }
++
++  const void* ptr = buffer->GetDataAddress(shm_offset, size);
+   if (ptr == nullptr) {
+     return false;
+   }
+ 
+   DCHECK(write_handle);
+-  *write_handle = new WriteHandleImpl(ptr, size);
++  *write_handle = new WriteHandleImpl(std::move(buffer), ptr, size);
+ 
+   return true;
+ }
