@@ -202,7 +202,7 @@ Then, set up your `handle` listener in the main process. We do this _before_
 loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
-```js {1,11} title="main.js"
+```js {1,12} title="main.js"
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
