@@ -1,0 +1,59 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jakob Ivarsson <jakobi@webrtc.org>
+Date: Fri, 23 Sep 2022 22:03:09 +0200
+Subject: Fix crash when appending empty array to AudioMultiVector.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: webrtc:14442,chromium:1367993
+Change-Id: I9453e300a6d3d78571d08cc65770787e13d43885
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/276620
+Commit-Queue: Jakob Ivarsson‎ <jakobi@webrtc.org>
+Reviewed-by: Henrik Lundin <henrik.lundin@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#38208}
+
+diff --git a/modules/audio_coding/neteq/audio_multi_vector.cc b/modules/audio_coding/neteq/audio_multi_vector.cc
+index 220d5a17d7d1d4e1ed7577d4a044af29f358f88b..14ae94649b52278656eb73d91b1e73cb5307a92d 100644
+--- a/modules/audio_coding/neteq/audio_multi_vector.cc
++++ b/modules/audio_coding/neteq/audio_multi_vector.cc
+@@ -69,6 +69,9 @@ void AudioMultiVector::CopyTo(AudioMultiVector* copy_to) const {
+ void AudioMultiVector::PushBackInterleaved(
+     rtc::ArrayView<const int16_t> append_this) {
+   RTC_DCHECK_EQ(append_this.size() % num_channels_, 0);
++  if (append_this.empty()) {
++    return;
++  }
+   if (num_channels_ == 1) {
+     // Special case to avoid extra allocation and data shuffling.
+     channels_[0]->PushBack(append_this.data(), append_this.size());
+@@ -78,11 +81,8 @@ void AudioMultiVector::PushBackInterleaved(
+   int16_t* temp_array = new int16_t[length_per_channel];  // Temporary storage.
+   for (size_t channel = 0; channel < num_channels_; ++channel) {
+     // Copy elements to `temp_array`.
+-    // Set `source_ptr` to first element of this channel.
+-    const int16_t* source_ptr = &append_this[channel];
+     for (size_t i = 0; i < length_per_channel; ++i) {
+-      temp_array[i] = *source_ptr;
+-      source_ptr += num_channels_;  // Jump to next element of this channel.
++      temp_array[i] = append_this[channel + i * num_channels_];
+     }
+     channels_[channel]->PushBack(temp_array, length_per_channel);
+   }
+diff --git a/modules/audio_coding/neteq/audio_multi_vector_unittest.cc b/modules/audio_coding/neteq/audio_multi_vector_unittest.cc
+index 329377a18edc2259dfc24dbaf82218ff69180916..386c3d48a398521730afad6642df355e29550d79 100644
+--- a/modules/audio_coding/neteq/audio_multi_vector_unittest.cc
++++ b/modules/audio_coding/neteq/audio_multi_vector_unittest.cc
+@@ -309,6 +309,12 @@ TEST_P(AudioMultiVectorTest, CopyChannel) {
+   }
+ }
+ 
++TEST_P(AudioMultiVectorTest, PushBackEmptyArray) {
++  AudioMultiVector vec(num_channels_);
++  vec.PushBackInterleaved({});
++  EXPECT_TRUE(vec.Empty());
++}
++
+ INSTANTIATE_TEST_SUITE_P(TestNumChannels,
+                          AudioMultiVectorTest,
+                          ::testing::Values(static_cast<size_t>(1),
