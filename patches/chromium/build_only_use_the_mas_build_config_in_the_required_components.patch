@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 904eaff4687de97a637f310498837b3be2e74ffa..2360645cd6b33854043d32cb03346b4cdf221e7b 100644
+index 6e01657f9a364dc58774e3579a3fb1b1123543d9..c0381e39174035a29af2aa702f0d3cefe936fca4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1492,6 +1492,7 @@ component("base") {
+@@ -1494,6 +1494,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 480fc097887864f51eb95d660816bfe0a73793ec..491605fa0fb82e076ce33e018d4116648d695bdb 100644
+index 4a6863eeeff31d361c8629cb8cfcd560531670ad..1a50ac218374fa198e285b5cebe38d5b20d82fcc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -92,10 +92,10 @@ index 54df36f673af12688e0575664c44c30be0cb6584..d46322fd69858b0c7cab6f7ebf8321cc
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index e58c94c84f9f337137e7bfef9059115a65866163..5180fbe4a579cff4e30676812137337629be677d 100644
+index 2a2410d4a46c1c6280d38aa5646748433ca4b742..32468dc2c1a74acba5a56db44cfb00eb4df45266 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -218,6 +218,7 @@ target(link_target_type, "renderer") {
+@@ -216,6 +216,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e6cfaa6d322f9766ade654bf82484d9e8aa18ae4..c5e2c8736aa9f8f42495155d438702dea3770111 100644
+index b2ea994dcf4711b4bb73b475d2dd06120c9e48dc..9d44d02b96ddb5a6a59a83a401d45cbca333f798 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -280,6 +280,7 @@ component("core") {
@@ -245,10 +245,10 @@ index b379aa35ddfba8a43881a3b936f382dfdb92c9b5..fa965b8f1e7e05b4153f6e5d9ae0ac78
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 0f1747b8b5f562c22fad4d4a8bef20cf823f8bac..731af13b2e4a35d728372b9937aceba068684df7 100644
+index 5083ae8db931fa714f2d917c3c67a940fea6d39f..3a17e9e5eb4509e7aca548cae89e63770e114132 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -187,6 +187,7 @@ component("gfx") {
+@@ -188,6 +188,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]

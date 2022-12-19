@@ -93,18 +93,10 @@ index de753e5a941170d162132f2917b11672a50e833f..7e1fab06bf317758b731d56acb86ab0b
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index fa8995e7c65ac082ae1b6ddfe6f0a0c5e97a5460..518b21c9fc762f380cc4f131eb09d526106e3eba 100644
+index 011cdd1c418237b2309db4499bccd6d774b2f9cd..e72feca4cd2eb29b1134bad8e848f981d50ce26d 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -201,6 +201,7 @@
- #include "ui/base/ui_base_features.h"
- #include "ui/base/ui_base_switches.h"
- #include "ui/display/display_switches.h"
-+#include "ui/gfx/switches.h"
- #include "ui/gl/gl_switches.h"
- #include "url/gurl.h"
- #include "url/origin.h"
-@@ -3291,6 +3292,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3298,6 +3298,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -221,7 +213,7 @@ index c119ef410f437b27ae4d0ff76627af55a2679171..997558e36dc1aec86005d05a82433691
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index d497b6e3b8615d683589b2b9d43e810ed57e8eb8..873a084eeac8f50a1ce0be53bbdb47b4856e0bce 100644
+index a97bb1e7442c16a3f7659889e11ab51e431f1585..b0b882b5cea67a66faa9f7e40786f0d5f8c65b5d 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
