@@ -231,7 +231,7 @@ index b09785bfc8143c355e75d473a9a25b2e355c97a0..a6cd4e2399b1b17bad00c9e6f6520819
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..4857347fd0654a46be42fbda45036760eb51177d
+index 0000000000000000000000000000000000000000..28766c6a228d243065e363838a28b38ac2448332
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
 @@ -0,0 +1,160 @@
@@ -313,7 +313,7 @@ index 0000000000000000000000000000000000000000..4857347fd0654a46be42fbda45036760
 +
 +void SoftwareOutputDeviceProxy::OnSwapBuffers(
 +    SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
-+    gl::FrameData data) {
++    gfx::FrameData data) {
 +  DCHECK(swap_ack_callback_.is_null());
 +
 +  // We aren't waiting on DrawAck() and can immediately run the callback.
@@ -397,7 +397,7 @@ index 0000000000000000000000000000000000000000..4857347fd0654a46be42fbda45036760
 +}  // namespace viz
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.h b/components/viz/service/display_embedder/software_output_device_proxy.h
 new file mode 100644
-index 0000000000000000000000000000000000000000..3a60871d510b5c6272da191b6885596ac0e25f96
+index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c937cc4e9d1
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.h
 @@ -0,0 +1,98 @@
@@ -474,7 +474,7 @@ index 0000000000000000000000000000000000000000..3a60871d510b5c6272da191b6885596a
 +  // SoftwareOutputDevice implementation.
 +  void OnSwapBuffers(
 +      SoftwareOutputDevice::SwapBuffersCallback swap_ack_callback,
-+      gl::FrameData data) override;
++      gfx::FrameData data) override;
 +
 +  // SoftwareOutputDeviceBase implementation.
 +  void ResizeDelegated() override;
