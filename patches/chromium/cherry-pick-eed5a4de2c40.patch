@@ -1,0 +1,132 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Yeung <dayeung@chromium.org>
+Date: Thu, 8 Dec 2022 17:56:44 +0000
+Subject: Fix UaF in ui::DropTargetEvent::DropTargetEvent.
+
+There is an async operation in WebContentsViewAura that uses a ui::DropTargetEvent. DropTargetEvent has a pointer to OSExchangeData which gets destroyed before the async operation is called. This triggers the UaF because the operation attempts to reference a freed object (OSExchangeData).
+
+Fix is for WebContentsViewAura::DragUpdatedCallback to use a DropMetadata struct instead of a ui::DropTargetEvent. This is the same pattern used by other callbacks in WebContentsViewAura.
+
+(cherry picked from commit 9f4b5761c546a118b7187c0c7ddcb9ee5756f32c)
+
+Bug: 1392661
+Change-Id: I3c62a7473ef9b6cdd223f75fbda50671f539f9eb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4070787
+Reviewed-by: Avi Drissman <avi@chromium.org>
+Commit-Queue: David Yeung <dayeung@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1078218}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4085256
+Cr-Commit-Position: refs/branch-heads/5359@{#1125}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
+index 351bee9cfcc31dc6ca06f1fc502b70617105191a..d98e590beccfb19730528d598e32df4b4d00942b 100644
+--- a/content/browser/web_contents/web_contents_view_aura.cc
++++ b/content/browser/web_contents/web_contents_view_aura.cc
+@@ -365,6 +365,7 @@ aura::Window* GetHostWindow(aura::Window* window) {
+ WebContentsViewAura::DropMetadata::DropMetadata(
+     const ui::DropTargetEvent& event) {
+   localized_location = event.location_f();
++  root_location = event.root_location_f();
+   source_operations = event.source_operations();
+   flags = event.flags();
+ }
+@@ -1461,7 +1462,7 @@ void WebContentsViewAura::OnDragEntered(const ui::DropTargetEvent& event) {
+ }
+ 
+ void WebContentsViewAura::DragUpdatedCallback(
+-    ui::DropTargetEvent event,
++    DropMetadata drop_metadata,
+     std::unique_ptr<DropData> drop_data,
+     base::WeakPtr<RenderWidgetHostViewBase> target,
+     absl::optional<gfx::PointF> transformed_pt) {
+@@ -1482,24 +1483,23 @@ void WebContentsViewAura::DragUpdatedCallback(
+   aura::Window* root_window = GetNativeView()->GetRootWindow();
+   aura::client::ScreenPositionClient* screen_position_client =
+       aura::client::GetScreenPositionClient(root_window);
+-  gfx::PointF screen_pt = event.root_location_f();
++  gfx::PointF screen_pt = drop_metadata.root_location;
+   if (screen_position_client)
+     screen_position_client->ConvertPointToScreen(root_window, &screen_pt);
+ 
+   if (target_rwh != current_rwh_for_drag_.get()) {
+     if (current_rwh_for_drag_) {
+-      gfx::PointF transformed_leave_point = event.location_f();
++      gfx::PointF transformed_leave_point = drop_metadata.localized_location;
+       static_cast<RenderWidgetHostViewBase*>(
+           web_contents_->GetRenderWidgetHostView())
+           ->TransformPointToCoordSpaceForView(
+-              event.location_f(),
++              drop_metadata.localized_location,
+               static_cast<RenderWidgetHostViewBase*>(
+                   current_rwh_for_drag_->GetView()),
+               &transformed_leave_point);
+       current_rwh_for_drag_->DragTargetDragLeave(transformed_leave_point,
+                                                  screen_pt);
+     }
+-    DropMetadata drop_metadata(event);
+     DragEnteredCallback(drop_metadata, std::move(drop_data), target,
+                         transformed_pt);
+   }
+@@ -1510,10 +1510,11 @@ void WebContentsViewAura::DragUpdatedCallback(
+ 
+   DCHECK(transformed_pt.has_value());
+   blink::DragOperationsMask op_mask =
+-      ConvertToDragOperationsMask(event.source_operations());
++      ConvertToDragOperationsMask(drop_metadata.source_operations);
+   target_rwh->DragTargetDragOver(
+       transformed_pt.value(), screen_pt, op_mask,
+-      ui::EventFlagsToWebEventModifiers(event.flags()), base::DoNothing());
++      ui::EventFlagsToWebEventModifiers(drop_metadata.flags),
++      base::DoNothing());
+ 
+   if (drag_dest_delegate_)
+     drag_dest_delegate_->OnDragOver();
+@@ -1523,7 +1524,6 @@ aura::client::DragUpdateInfo WebContentsViewAura::OnDragUpdated(
+     const ui::DropTargetEvent& event) {
+   if (web_contents_->ShouldIgnoreInputEvents())
+     return aura::client::DragUpdateInfo();
+-
+   aura::client::DragUpdateInfo drag_info;
+   auto* focused_frame = web_contents_->GetFocusedFrame();
+   if (focused_frame && !web_contents_->GetBrowserContext()->IsOffTheRecord()) {
+@@ -1534,13 +1534,13 @@ aura::client::DragUpdateInfo WebContentsViewAura::OnDragUpdated(
+   std::unique_ptr<DropData> drop_data = std::make_unique<DropData>();
+   // Calling this here as event.data might become invalid inside the callback.
+   PrepareDropData(drop_data.get(), event.data());
+-
++  DropMetadata drop_metadata(event);
+   web_contents_->GetInputEventRouter()
+       ->GetRenderWidgetHostAtPointAsynchronously(
+           web_contents_->GetRenderViewHost()->GetWidget()->GetView(),
+           event.location_f(),
+           base::BindOnce(&WebContentsViewAura::DragUpdatedCallback,
+-                         weak_ptr_factory_.GetWeakPtr(), event,
++                         weak_ptr_factory_.GetWeakPtr(), drop_metadata,
+                          std::move(drop_data)));
+ 
+   drag_info.drag_operation = static_cast<int>(current_drag_op_);
+diff --git a/content/browser/web_contents/web_contents_view_aura.h b/content/browser/web_contents/web_contents_view_aura.h
+index 17745664eda9832da61ec0150fe5085776c9c7bc..aaa42c930ef04d8f0d20d65fbb22d5fd06ba2d48 100644
+--- a/content/browser/web_contents/web_contents_view_aura.h
++++ b/content/browser/web_contents/web_contents_view_aura.h
+@@ -84,6 +84,10 @@ class CONTENT_EXPORT WebContentsViewAura
+ 
+     // Location local to WebContentsViewAura.
+     gfx::PointF localized_location;
++
++    // Root location of the drop target event.
++    gfx::PointF root_location;
++
+     // The supported DnD operation of the source. A bitmask of
+     // ui::mojom::DragOperations.
+     int source_operations;
+@@ -263,7 +267,7 @@ class CONTENT_EXPORT WebContentsViewAura
+                            std::unique_ptr<DropData> drop_data,
+                            base::WeakPtr<RenderWidgetHostViewBase> target,
+                            absl::optional<gfx::PointF> transformed_pt);
+-  void DragUpdatedCallback(ui::DropTargetEvent event,
++  void DragUpdatedCallback(DropMetadata drop_metadata,
+                            std::unique_ptr<DropData> drop_data,
+                            base::WeakPtr<RenderWidgetHostViewBase> target,
+                            absl::optional<gfx::PointF> transformed_pt);
