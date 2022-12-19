@@ -128,6 +128,7 @@ fix_on-screen-keyboard_hides_on_input_blur_in_webview.patch
 build_allow_electron_to_use_exec_script.patch
 cherry-pick-67c9cbc784d6.patch
 cherry-pick-933cc81c6bad.patch
+cherry-pick-65d46507a0c9.patch
 cherry-pick-176c526846cb.patch
 cherry-pick-f46db6aac3e9.patch
 cherry-pick-9b3d0e2f1aab.patch
