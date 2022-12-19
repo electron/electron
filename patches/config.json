@@ -23,5 +23,7 @@
 
   "src/electron/patches/sqlite": "src/third_party/sqlite/src",
 
-  "src/electron/patches/skia": "src/third_party/skia"
+  "src/electron/patches/skia": "src/third_party/skia",
+
+  "src/electron/patches/libaom": "src/third_party/libaom/source/libaom"
 }
