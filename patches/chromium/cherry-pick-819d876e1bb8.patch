@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ted Meyer <tmathmeyer@chromium.org>
+Date: Sat, 3 Dec 2022 00:09:22 +0000
+Subject: Fix UAF caused by vector operations during iteration
+
+MediaInspectorContextImpl::CullPlayers iterates through dead_players_
+to remove their events, but this can cause a GC event which can
+end up adding more players to the |dead_players_| vector, causing
+it to get re-allocated and it's iterators invalidated.
+
+We can fix this simply by not using an iterator, and removing elements
+from the vector before we trigger any GC operations that might cause
+other changes to the vector.
+
+Bug: 1383991
+
+Change-Id: I59f5824c156ff58cf6b55ac9b942c8efdb1ed65a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4064295
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Commit-Queue: Ted (Chromium) Meyer <tmathmeyer@chromium.org>
+Reviewed-by: Thomas Guilbert <tguilbert@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1078842}
+
+diff --git a/third_party/blink/renderer/core/inspector/inspector_media_context_impl.cc b/third_party/blink/renderer/core/inspector/inspector_media_context_impl.cc
+index c0965693783d5cc0eade67fc78f026cec2942792..6e89262ca229b89407c3f6fff2ab5bf74be460e0 100644
+--- a/third_party/blink/renderer/core/inspector/inspector_media_context_impl.cc
++++ b/third_party/blink/renderer/core/inspector/inspector_media_context_impl.cc
+@@ -109,9 +109,13 @@ void MediaInspectorContextImpl::TrimPlayer(const WebString& playerId) {
+ 
+ void MediaInspectorContextImpl::CullPlayers(const WebString& prefer_keep) {
+   // Erase all the dead players, but only erase the required number of others.
+-  for (const auto& playerId : dead_players_)
++  while (!dead_players_.IsEmpty()) {
++    auto playerId = dead_players_.back();
++    // remove it first, since |RemovePlayer| can cause a GC event which can
++    // potentially caues more players to get added to |dead_players_|.
++    dead_players_.pop_back();
+     RemovePlayer(playerId);
+-  dead_players_.clear();
++  }
+ 
+   while (!expendable_players_.IsEmpty()) {
+     if (total_event_count_ <= kMaxCachedPlayerEvents)
