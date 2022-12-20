@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Daniel Cheng <dcheng@chromium.org>
 Date: Sat, 12 Nov 2022 00:27:56 +0000
-Subject: [mojo] Validate that a message is allowed to use the sync flag.
+Subject: Validate that a message is allowed to use the sync flag.
 
 This changes consists of several coordinated changes:
 - The C++ bindings generator now emits an array of method ordinals that
