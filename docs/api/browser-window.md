@@ -1837,8 +1837,8 @@ Adds a window as a tab on this window, after the tab for the window instance.
   * `animationDuration` number (optional) - if greater than zero, the change to vibrancy will be animated over the given duration (in milliseconds).
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
-will remove the vibrancy effect on the window. The `animate` parameter only
-aanimates fading in or fading out the vibrancy effect. Animating between
+will remove the vibrancy effect on the window. The `animationDuration` parameter only
+animates fading in or fading out the vibrancy effect. Animating between
 different types of vibrancy is not supported.
 
 Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
