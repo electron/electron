@@ -1833,9 +1833,8 @@ Adds a window as a tab on this window, after the tab for the window instance.
 * `type` string | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
   `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
-* `options` boolean (optional)
-  * `animate` boolean (optional) - Whether to animate or not the vibrancy toggle.
-  * `animationDuration` number (optional) - if nonzero, the change to vibrancy will be animated over the given duration (in milliseconds).
+* `options` Object (optional)
+  * `animationDuration` number (optional) - if greater than zero, the change to vibrancy will be animated over the given duration (in milliseconds).
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window. The `animate` parameter only

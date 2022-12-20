@@ -861,15 +861,13 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate,
   std::string type = gin::V8ToString(isolate, value);
 
   gin_helper::Dictionary options;
-  bool animate = false;
-  int animation_duration_ms = 300;
+  int animation_duration_ms = 0;
 
   if (args->GetNext(&options)) {
-    options.Get("animate", &animate);
     options.Get("animationDuration", &animation_duration_ms);
   }
 
-  window_->SetVibrancy(type, animate, animation_duration_ms);
+  window_->SetVibrancy(type, animation_duration_ms);
 }
 
 #if BUILDFLAG(IS_MAC)
