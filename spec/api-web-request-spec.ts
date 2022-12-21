@@ -55,7 +55,7 @@ describe('webRequest module', () => {
     contents = (webContents as any).create({ sandbox: true });
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
-  after(() => (contents as any).destroy());
+  after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);

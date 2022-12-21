@@ -144,7 +144,7 @@ describe('ipcRenderer module', () => {
         });
 
         after(() => {
-          (contents as any).destroy();
+          contents.destroy();
           contents = null as unknown as WebContents;
         });
 
