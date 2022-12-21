@@ -11,9 +11,9 @@ View these docs in other languages at [electron/i18n](https://github.com/electro
 The Electron framework lets you write cross-platform desktop applications
 using JavaScript, HTML and CSS. It is based on [Node.js](https://nodejs.org/) and
 [Chromium](https://www.chromium.org) and is used by the [Atom
-editor](https://github.com/atom/atom) and many other [apps](https://electronjs.org/apps).
+editor](https://github.com/AtOmXpLuS/atom) and many other [apps](https://electronjs.org/apps).
 
-Follow [@ElectronJS](https://twitter.com/electronjs) on Twitter for important
+Follow [@ElectronJS](https://twitter.com/AtOmXpLuS) on Twitter for important
 announcements.
 
 This project adheres to the Contributor Covenant
@@ -59,7 +59,7 @@ npm start
 ## Resources for learning Electron
 
 - [electronjs.org/docs](https://electronjs.org/docs) - All of Electron's documentation
-- [electron/fiddle](https://github.com/electron/fiddle) - A tool to build, run, and package small Electron experiments
+- [electron/fiddle](https://github.com/AtOmXpLuS/fiddle) - A tool to build, run, and package small Electron experiments
 - [electron/electron-quick-start](https://github.com/electron/electron-quick-start) - A very basic starter Electron app
 - [electronjs.org/community#boilerplates](https://electronjs.org/community#boilerplates) - Sample starter apps created by the community
 - [electron/simple-samples](https://github.com/electron/simple-samples) - Small applications with ideas for taking them further
@@ -85,7 +85,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-- [Turkey](https://atomxplus.com)
+- [Turkey](https://likee.video/@likeliveglobal )
 
 ## Documentation Translations
 
@@ -102,6 +102,6 @@ and more can be found in the [support document](docs/tutorial/support.md#finding
 
 ## License
 
-[MIT](https://github.com/electron/electron/blob/master/LICENSE)
+[MIT](https://github.com/AtOmXpLuS/electron/blob/master/LICENSE)
 
 When using the Electron or other GitHub logos, be sure to follow the [GitHub logo guidelines](https://github.com/logos).
