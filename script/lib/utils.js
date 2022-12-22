@@ -129,6 +129,7 @@ module.exports = {
   getElectronExec,
   getOutDir,
   getAbsoluteElectronExec,
+  handleGitCall,
   ELECTRON_DIR,
   SRC_DIR
 };

@@ -145,7 +145,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 
   [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
   // Make sure events can be pumped while the menu is up.
-  base::CurrentThread::ScopedNestableTaskAllower allow;
+  base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
 
   // One of the events that could be pumped is |window.close()|.
   // User-initiated event-tracking loops protect against this by

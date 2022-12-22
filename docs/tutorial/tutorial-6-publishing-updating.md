@@ -227,7 +227,7 @@ rest of our docs and happy developing! If you have questions, please stop by our
 [github actions]: https://github.com/features/actions
 [github publisher]: https://www.electronforge.io/config/publishers/github
 [github releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository
-[git tag]: https://git-scm.com/book/en/v2/Git-Basics-Tagging
+[git-tag]: https://git-scm.com/book/en/v2/Git-Basics-Tagging
 [new-pat]: https://github.com/settings/tokens/new
 [publish command]: https://www.electronforge.io/cli#publish
 [publisher]: https://www.electronforge.io/config/publishers

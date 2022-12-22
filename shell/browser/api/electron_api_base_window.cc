@@ -639,6 +639,10 @@ std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
+void BaseWindow::InvalidateShadow() {
+  window_->InvalidateShadow();
+}
+
 void BaseWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
@@ -1259,6 +1263,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if BUILDFLAG(IS_MAC)
+      .SetMethod("invalidateShadow", &BaseWindow::InvalidateShadow)
       .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif

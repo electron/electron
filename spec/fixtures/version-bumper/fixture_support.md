@@ -101,7 +101,7 @@ Native support for Apple Silicon (`arm64`) devices was added in Electron 11.0.0.
 
 ### Windows
 
-Windows 7 and later are supported, older operating systems are not supported
+Windows 10 and later are supported, older operating systems are not supported
 (and do not work).
 
 Both `ia32` (`x86`) and `x64` (`amd64`) binaries are provided for Windows.

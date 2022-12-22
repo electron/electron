@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 24 Nov 2022 12:29:41 +0100
+Subject: chore: patch out Profile methods in profile_selections.cc
+
+We do not support the concept of Profiles and profile->IsSystemProfile()
+is therefore not a method that will compile given we don't include
+relevant files.
+
+diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
+index 35c60a617a3d092b4ffbcc8652b7a80cc0d1f958..cd71486d98d5ade773f1d99bcec2215ac76e9c1d 100644
+--- a/chrome/browser/profiles/profile_selections.cc
++++ b/chrome/browser/profiles/profile_selections.cc
+@@ -23,6 +23,7 @@ BASE_FEATURE(kGuestProfileSelectionDefaultNone,
+              base::FeatureState::FEATURE_DISABLED_BY_DEFAULT);
+ 
+ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
++#if 0
+   if (profile && profile->IsSystemProfile()) {
+     // The default behavior of the system profile selection depends on the value
+     // of `kSystemProfileSelectionDefaultNone` feature flag.
+@@ -33,7 +34,7 @@ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
+ 
+     return system_profile_default == ProfileSelection::kNone;
+   }
+-
++#endif
+   return false;
+ }
+ 

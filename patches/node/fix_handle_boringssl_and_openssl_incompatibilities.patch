@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index a6ce4de49d9bf6962faddc99a3c5ed84046f0a13..678627d4ce460fc1519cd486a46eba1f78828a31 100644
+index b907e9e9cdc4e407ee8361cebce2dc168b8c0ed3..804baa633cd7d1a57a8248b30cb1c4f65d169bd9 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -27,7 +27,8 @@ using v8::Value;
@@ -31,7 +31,7 @@ index a6ce4de49d9bf6962faddc99a3c5ed84046f0a13..678627d4ce460fc1519cd486a46eba1f
    case EVP_CIPH_GCM_MODE:
  #ifndef OPENSSL_NO_OCB
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 3bf480f8f0c77d440324cf8847f4a214521f8162..40b6e311a14f5e824f8f0aff3121221eac94fd8a 100644
+index 9777737126551035430178a2e0956769865b9b1a..c13185c32a26ac9facb12106c4e756640e35fb93 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -164,7 +164,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -84,7 +84,7 @@ index 3bf480f8f0c77d440324cf8847f4a214521f8162..40b6e311a14f5e824f8f0aff3121221e
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
    const char* code = "UNSPECIFIED";
-@@ -1045,14 +1052,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1044,14 +1051,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -191,10 +191,10 @@ index dd69323b80076d7333b80453c9cc9ef5b680ce27..6431b768c83fa27b2287588e936f93ae
      UNREACHABLE();
    }
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42a461b689 100644
+index 862c091b05f5886479cedb8b95b756e4fd1547ee..c4cf3a59677ae9640e444f2649f89de3ab3c5c9e 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
-@@ -29,7 +29,7 @@ namespace crypto {
+@@ -40,7 +40,7 @@ namespace crypto {
  EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
    EVPKeyCtxPointer param_ctx(EVP_PKEY_CTX_new_id(EVP_PKEY_DSA, nullptr));
    EVP_PKEY* raw_params = nullptr;
@@ -203,7 +203,7 @@ index c7894baf00ee9ce4684f4c752f1c7c9b98163741..655895dbff8b88daa53c7b40a5feca42
    if (!param_ctx ||
        EVP_PKEY_paramgen_init(param_ctx.get()) <= 0 ||
        EVP_PKEY_CTX_set_dsa_paramgen_bits(
-@@ -49,7 +49,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
+@@ -55,7 +55,9 @@ EVPKeyCtxPointer DsaKeyGenTraits::Setup(DsaKeyPairGenConfig* params) {
        return EVPKeyCtxPointer();
      }
    }
@@ -228,10 +228,10 @@ index 2f9e9aacb1e652202d72c69b46f8e76d6c5405a8..5f19c38a78e37d3e8d92bcc20ae1357f
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index ec339e5635d419db76f78974941493e32e968e84..e4a842b66994d4599d513296dff7d1891a9264a8 100644
+index 4eacb1f142b6e04d6db17ca267d1fb6814666a01..79ad930c8bea22cf1ca645373438cc2706777c12 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
-@@ -621,10 +621,11 @@ Maybe<bool> GetRsaKeyDetail(
+@@ -610,10 +610,11 @@ Maybe<bool> GetRsaKeyDetail(
        }
  
        if (params->saltLength != nullptr) {
@@ -248,7 +248,7 @@ index ec339e5635d419db76f78974941493e32e968e84..e4a842b66994d4599d513296dff7d189
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index e878c5ea15d58fb5eb096197209bc7122a504ca9..51973d7cb15f0650f3e94a7b8c9811c550ee9b0f 100644
+index f1bb7a9c7aadbc061f3de4de72f13f45a2195bee..4ea6d851450c46659e7e19f50c614419a46b30c0 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -495,24 +495,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
@@ -277,7 +277,7 @@ index e878c5ea15d58fb5eb096197209bc7122a504ca9..51973d7cb15f0650f3e94a7b8c9811c5
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -671,7 +662,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -686,7 +677,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -286,7 +286,7 @@ index e878c5ea15d58fb5eb096197209bc7122a504ca9..51973d7cb15f0650f3e94a7b8c9811c5
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -682,7 +673,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -697,7 +688,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -295,7 +295,7 @@ index e878c5ea15d58fb5eb096197209bc7122a504ca9..51973d7cb15f0650f3e94a7b8c9811c5
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -690,10 +681,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -705,10 +696,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -335,7 +335,7 @@ index b7cacae4c3d430c888fa7b5c66d8ed822e18f59d..d3b2ba33b06e1ebe140a30c777907f2b
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index bd4ad2f6408ca8127fa7f03b73f441884af81aa2..0e59521ed5a43189a175417eab89fd9daee000be 100644
+index e2a051d03c7edefea4a2fc34e841f3ef59931c04..635b8f60806854e4e02be546c40824b9a95b88a2 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -5,7 +5,7 @@
@@ -348,7 +348,7 @@ index bd4ad2f6408ca8127fa7f03b73f441884af81aa2..0e59521ed5a43189a175417eab89fd9d
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index b20cfae141956a9817076e7a1fc7218a9ead6f0c..d7a0c84dd6de4811a371ef6615f3be470d39725c 100644
+index 7346fc7441eb3c3c6f8b0ea2d3cafa73308abe14..a13647f171f6e87b5be2f4863c87d981e12a09a2 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
