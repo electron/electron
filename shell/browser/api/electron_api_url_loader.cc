@@ -280,7 +280,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
   // raw headers in the URLLoader.
-  request->report_raw_headers = true;
+  request->trusted_params->report_raw_headers = true;
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request->request_body);
