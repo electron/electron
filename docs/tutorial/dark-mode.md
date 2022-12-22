@@ -13,7 +13,7 @@ from the OS.
 
 If your app has its own dark mode, you should toggle it on and off in sync with
 the system's dark mode setting. You can do this by using the
-[prefer-color-scheme] CSS media query.
+[prefers-color-scheme] CSS media query.
 
 ### Manually update your own interfaces
 

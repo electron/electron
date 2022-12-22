@@ -502,7 +502,7 @@ void Browser::ShowAboutPanel() {
 }
 
 void Browser::SetAboutPanelOptions(base::Value::Dict options) {
-  about_panel_options_.DictClear();
+  about_panel_options_.GetDict().clear();
 
   for (const auto pair : options) {
     std::string key = pair.first;

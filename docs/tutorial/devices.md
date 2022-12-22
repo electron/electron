@@ -115,3 +115,41 @@ when the `Test Web Serial` button is clicked.
 ```javascript fiddle='docs/fiddles/features/web-serial'
 
 ```
+
+## WebUSB API
+
+The [WebUSB API](https://web.dev/usb/) can be used to access USB devices.
+Electron provides several APIs for working with the WebUSB API:
+
+* The [`select-usb-device` event on the Session](../api/session.md#event-select-usb-device)
+  can be used to select a USB device when a call to
+  `navigator.usb.requestDevice` is made.  Additionally the [`usb-device-added`](../api/session.md#event-usb-device-added)
+  and [`usb-device-removed`](../api/session.md#event-usb-device-removed) events
+  on the Session can be used to handle devices being plugged in or unplugged
+  when handling the `select-usb-device` event.
+  **Note:** These two events only fire until the callback from `select-usb-device`
+  is called.  They are not intended to be used as a generic usb device listener.
+* The [`usb-device-revoked' event on the Session](../api/session.md#event-usb-device-revoked) can
+  be used to respond when [device.forget()](https://developer.chrome.com/articles/usb/#revoke-access)
+  is called on a USB device.
+* [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
+  can be used to provide default permissioning to devices without first calling
+  for permission to devices via `navigator.usb.requestDevice`.  Additionally,
+  the default behavior of Electron is to store granted device permission through
+  the lifetime of the corresponding WebContents.  If longer term storage is
+  needed, a developer can store granted device permissions (eg when handling
+  the `select-usb-device` event) and then read from that storage with
+  `setDevicePermissionHandler`.
+* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
+  can be used to disable USB access for specific origins.
+
+### Example
+
+This example demonstrates an Electron application that automatically selects
+USB devices (if they are attached) through [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
+and through [`select-usb-device` event on the Session](../api/session.md#event-select-usb-device)
+when the `Test WebUSB` button is clicked.
+
+```javascript fiddle='docs/fiddles/features/web-usb'
+
+```

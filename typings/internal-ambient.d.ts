@@ -145,6 +145,7 @@ declare namespace NodeJS {
     statusMessage: string;
     httpVersion: { major: number, minor: number };
     rawHeaders: { key: string, value: string }[];
+    headers: Record<string, string[]>;
   };
 
   type RedirectInfo = {

@@ -56,31 +56,14 @@ class IncomingMessage extends Readable {
 
   get headers () {
     const filteredHeaders: Record<string, string | string[]> = {};
-    const { rawHeaders } = this._responseHead;
-    rawHeaders.forEach(header => {
-      const keyLowerCase = header.key.toLowerCase();
-      if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase) &&
-          discardableDuplicateHeaders.has(keyLowerCase)) {
-        // do nothing with discardable duplicate headers
-      } else {
-        if (keyLowerCase === 'set-cookie') {
-          // keep set-cookie as an array per Node.js rules
-          // see https://nodejs.org/api/http.html#http_message_headers
-          if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase)) {
-            (filteredHeaders[keyLowerCase] as string[]).push(header.value);
-          } else {
-            filteredHeaders[keyLowerCase] = [header.value];
-          }
-        } else {
-          // for non-cookie headers, the values are joined together with ', '
-          if (Object.prototype.hasOwnProperty.call(filteredHeaders, keyLowerCase)) {
-            filteredHeaders[keyLowerCase] += `, ${header.value}`;
-          } else {
-            filteredHeaders[keyLowerCase] = header.value;
-          }
-        }
-      }
-    });
+    const { headers, rawHeaders } = this._responseHead;
+    for (const [name, values] of Object.entries(headers)) {
+      filteredHeaders[name] = discardableDuplicateHeaders.has(name) ? values[0] : values.join(', ');
+    }
+    const cookies = rawHeaders.filter(({ key }) => key.toLowerCase() === 'set-cookie').map(({ value }) => value);
+    // keep set-cookie as an array per Node.js rules
+    // see https://nodejs.org/api/http.html#http_message_headers
+    if (cookies.length) { filteredHeaders['set-cookie'] = cookies; }
     return filteredHeaders;
   }
 

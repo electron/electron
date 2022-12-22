@@ -1552,7 +1552,7 @@ describe('webContents module', () => {
         const contents = (webContents as any).create() as WebContents;
         const originalEmit = contents.emit.bind(contents);
         contents.emit = (...args) => { return originalEmit(...args); };
-        contents.once(e.name as any, () => (contents as any).destroy());
+        contents.once(e.name as any, () => contents.destroy());
         const destroyed = emittedOnce(contents, 'destroyed');
         contents.loadURL(serverUrl + e.url);
         await destroyed;

@@ -34,6 +34,14 @@
 #include "chrome/child/v8_crashpad_support_win.h"
 #endif
 
+#if BUILDFLAG(IS_LINUX)
+#include "base/environment.h"
+#include "base/posix/global_descriptors.h"
+#include "base/strings/string_number_conversions.h"
+#include "components/crash/core/app/crash_switches.h"  // nogncheck
+#include "content/public/common/content_descriptors.h"
+#endif
+
 #if !IS_MAS_BUILD()
 #include "components/crash/core/app/crashpad.h"  // nogncheck
 #include "shell/app/electron_crash_reporter_client.h"
@@ -110,15 +118,20 @@ int NodeMain(int argc, char* argv[]) {
   v8_crashpad_support::SetUp();
 #endif
 
-// TODO(deepak1556): Enable crashpad support on linux for
-// ELECTRON_RUN_AS_NODE processes.
-// Refs https://github.com/electron/electron/issues/36030
-#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
-  ElectronCrashReporterClient::Create();
-  crash_reporter::InitializeCrashpad(false, "node");
-  crash_keys::SetCrashKeysFromCommandLine(
-      *base::CommandLine::ForCurrentProcess());
-  crash_keys::SetPlatformCrashKey();
+#if BUILDFLAG(IS_LINUX)
+  auto os_env = base::Environment::Create();
+  std::string fd_string, pid_string;
+  if (os_env->GetVar("CRASHDUMP_SIGNAL_FD", &fd_string) &&
+      os_env->GetVar("CRASHPAD_HANDLER_PID", &pid_string)) {
+    int fd = -1, pid = -1;
+    DCHECK(base::StringToInt(fd_string, &fd));
+    DCHECK(base::StringToInt(pid_string, &pid));
+    base::GlobalDescriptors::GetInstance()->Set(kCrashDumpSignal, fd);
+    // Following API is unsafe in multi-threaded scenario, but at this point
+    // we are still single threaded.
+    os_env->UnSetVar("CRASHDUMP_SIGNAL_FD");
+    os_env->UnSetVar("CRASHPAD_HANDLER_PID");
+  }
 #endif
 
   int exit_code = 1;
@@ -141,12 +154,45 @@ int NodeMain(int argc, char* argv[]) {
     if (flags_exit_code != 0)
       exit(flags_exit_code);
 
-    node::InitializationSettingsFlags flags = node::kRunPlatformInit;
-    node::InitializationResult result =
-        node::InitializeOncePerProcess(argc, argv, flags);
+    // Hack around with the argv pointer. Used for process.title = "blah".
+    argv = uv_setup_args(argc, argv);
 
-    if (result.early_return)
-      exit(result.exit_code);
+    std::vector<std::string> args(argv, argv + argc);
+    std::unique_ptr<node::InitializationResult> result =
+        node::InitializeOncePerProcess(
+            args,
+            {node::ProcessInitializationFlags::kNoInitializeV8,
+             node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
+
+    for (const std::string& error : result->errors())
+      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+
+    if (result->early_return() != 0) {
+      return result->exit_code();
+    }
+
+#if BUILDFLAG(IS_LINUX)
+    // On Linux, initialize crashpad after Nodejs init phase so that
+    // crash and termination signal handlers can be set by the crashpad client.
+    if (!pid_string.empty()) {
+      auto* command_line = base::CommandLine::ForCurrentProcess();
+      command_line->AppendSwitchASCII(
+          crash_reporter::switches::kCrashpadHandlerPid, pid_string);
+      ElectronCrashReporterClient::Create();
+      crash_reporter::InitializeCrashpad(false, "node");
+      crash_keys::SetCrashKeysFromCommandLine(
+          *base::CommandLine::ForCurrentProcess());
+      crash_keys::SetPlatformCrashKey();
+      // Ensure the flags and env variable does not propagate to userland.
+      command_line->RemoveSwitch(crash_reporter::switches::kCrashpadHandlerPid);
+    }
+#elif BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
+    ElectronCrashReporterClient::Create();
+    crash_reporter::InitializeCrashpad(false, "node");
+    crash_keys::SetCrashKeysFromCommandLine(
+        *base::CommandLine::ForCurrentProcess());
+    crash_keys::SetPlatformCrashKey();
+#endif
 
     gin::V8Initializer::LoadV8Snapshot(
         gin::V8SnapshotFileType::kWithAdditionalContext);
@@ -159,7 +205,11 @@ int NodeMain(int argc, char* argv[]) {
     uv_loop_configure(loop, UV_METRICS_IDLE_TIME);
 
     // Initialize gin::IsolateHolder.
-    JavascriptEnvironment gin_env(loop);
+    bool setup_wasm_streaming =
+        node::per_process::cli_options->get_per_isolate_options()
+            ->get_per_env_options()
+            ->experimental_fetch;
+    JavascriptEnvironment gin_env(loop, setup_wasm_streaming);
 
     v8::Isolate* isolate = gin_env.isolate();
 
@@ -176,12 +226,11 @@ int NodeMain(int argc, char* argv[]) {
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
       env = node::CreateEnvironment(
-          isolate_data, gin_env.context(), result.args, result.exec_args,
+          isolate_data, gin_env.context(), result->args(), result->exec_args(),
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
-      node::IsolateSettings is;
-      node::SetIsolateUpForNode(isolate, is);
+      node::SetIsolateUpForNode(isolate);
 
       gin_helper::Dictionary process(isolate, env->process_object());
       process.SetMethod("crash", &ElectronBindings::Crash);

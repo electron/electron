@@ -21,7 +21,10 @@ namespace accelerator_util {
 bool StringToAccelerator(const std::string& shortcut,
                          ui::Accelerator* accelerator) {
   if (!base::IsStringASCII(shortcut)) {
-    LOG(ERROR) << "The accelerator string can only contain ASCII characters";
+    LOG(ERROR) << "The accelerator string can only contain ASCII characters, "
+                  "invalid string: "
+               << "\"" << shortcut << "\"";
+
     return false;
   }
 

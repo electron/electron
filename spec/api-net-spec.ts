@@ -623,6 +623,19 @@ describe('net module', () => {
       expect(response.headers['set-cookie']).to.have.same.members(cookie);
     });
 
+    it('should be able to receive content-type', async () => {
+      const contentType = 'mime/test; charset=test';
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('content-type', contentType);
+        response.end();
+      });
+      const urlRequest = net.request(serverUrl);
+      const response = await getResponse(urlRequest);
+      expect(response.headers['content-type']).to.equal(contentType);
+    });
+
     it('should not use the sessions cookie store by default', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200;

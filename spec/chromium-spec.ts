@@ -355,6 +355,30 @@ describe('web security', () => {
     });
   });
 
+  describe('csp in sandbox: false', () => {
+    it('is correctly applied', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { sandbox: false }
+      });
+      w.loadURL(`data:text/html,<head>
+          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+        </head>
+        <script>
+          try {
+            // We use console.log here because it is easier than making a
+            // preload script, and the behavior under test changes when
+            // contextIsolation: false
+            console.log(eval('failure'))
+          } catch (e) {
+            console.log('success')
+          }
+        </script>`);
+      const [,, message] = await emittedOnce(w.webContents, 'console-message');
+      expect(message).to.equal('success');
+    });
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
     const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);
@@ -1455,7 +1479,7 @@ describe('chromium features', () => {
       });
 
       afterEach(() => {
-        (contents as any).destroy();
+        contents.destroy();
         contents = null as any;
       });
 
@@ -1571,7 +1595,7 @@ describe('chromium features', () => {
 
       afterEach(async () => {
         if (contents) {
-          (contents as any).destroy();
+          contents.destroy();
           contents = null as any;
         }
         await closeAllWindows();
@@ -2849,6 +2873,167 @@ describe('navigator.hid', () => {
           })
         `);
         const grantedDevices2 = await w.webContents.executeJavaScript('navigator.hid.getDevices()');
+        expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
+        if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
+          expect(deletedDeviceFromEvent).to.include(deletedDevice);
+        }
+      }
+    }
+  });
+});
+
+describe('navigator.usb', () => {
+  let w: BrowserWindow;
+  let server: http.Server;
+  let serverUrl: string;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    server = http.createServer((req, res) => {
+      res.setHeader('Content-Type', 'text/html');
+      res.end('<body>');
+    });
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    serverUrl = `http://localhost:${(server.address() as any).port}`;
+  });
+
+  const requestDevices: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.usb.requestDevice({filters: []}).then(device => device.toString()).catch(err => err.toString());
+    `, true);
+  };
+
+  const notFoundError = 'NotFoundError: Failed to execute \'requestDevice\' on \'USB\': No device selected.';
+
+  after(() => {
+    server.close();
+    closeAllWindows();
+  });
+  afterEach(() => {
+    session.defaultSession.setPermissionCheckHandler(null);
+    session.defaultSession.setDevicePermissionHandler(null);
+    session.defaultSession.removeAllListeners('select-usb-device');
+  });
+
+  it('does not return a device if select-usb-device event is not defined', async () => {
+    w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+    const device = await requestDevices();
+    expect(device).to.equal(notFoundError);
+  });
+
+  it('does not return a device when permission denied', async () => {
+    let selectFired = false;
+    w.webContents.session.on('select-usb-device', (event, details, callback) => {
+      selectFired = true;
+      callback();
+    });
+    session.defaultSession.setPermissionCheckHandler(() => false);
+    const device = await requestDevices();
+    expect(selectFired).to.be.false();
+    expect(device).to.equal(notFoundError);
+  });
+
+  it('returns a device when select-usb-device event is defined', async () => {
+    let haveDevices = false;
+    let selectFired = false;
+    w.webContents.session.on('select-usb-device', (event, details, callback) => {
+      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      selectFired = true;
+      if (details.deviceList.length > 0) {
+        haveDevices = true;
+        callback(details.deviceList[0].deviceId);
+      } else {
+        callback();
+      }
+    });
+    const device = await requestDevices();
+    expect(selectFired).to.be.true();
+    if (haveDevices) {
+      expect(device).to.contain('[object USBDevice]');
+    } else {
+      expect(device).to.equal(notFoundError);
+    }
+    if (haveDevices) {
+      // Verify that navigation will clear device permissions
+      const grantedDevices = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
+      expect(grantedDevices).to.not.be.empty();
+      w.loadURL(serverUrl);
+      const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
+      const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+      expect(frame).to.not.be.empty();
+      if (frame) {
+        const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.usb.getDevices()');
+        expect(grantedDevicesOnNewPage).to.be.empty();
+      }
+    }
+  });
+
+  it('returns a device when DevicePermissionHandler is defined', async () => {
+    let haveDevices = false;
+    let selectFired = false;
+    let gotDevicePerms = false;
+    w.webContents.session.on('select-usb-device', (event, details, callback) => {
+      selectFired = true;
+      if (details.deviceList.length > 0) {
+        const foundDevice = details.deviceList.find((device) => {
+          if (device.productName && device.productName !== '' && device.serialNumber && device.serialNumber !== '') {
+            haveDevices = true;
+            return true;
+          }
+        });
+        if (foundDevice) {
+          callback(foundDevice.deviceId);
+          return;
+        }
+      }
+      callback();
+    });
+    session.defaultSession.setDevicePermissionHandler(() => {
+      gotDevicePerms = true;
+      return true;
+    });
+    await w.webContents.executeJavaScript('navigator.usb.getDevices();', true);
+    const device = await requestDevices();
+    expect(selectFired).to.be.true();
+    if (haveDevices) {
+      expect(device).to.contain('[object USBDevice]');
+      expect(gotDevicePerms).to.be.true();
+    } else {
+      expect(device).to.equal(notFoundError);
+    }
+  });
+
+  it('supports device.forget()', async () => {
+    let deletedDeviceFromEvent;
+    let haveDevices = false;
+    w.webContents.session.on('select-usb-device', (event, details, callback) => {
+      if (details.deviceList.length > 0) {
+        haveDevices = true;
+        callback(details.deviceList[0].deviceId);
+      } else {
+        callback();
+      }
+    });
+    w.webContents.session.on('usb-device-revoked', (event, details) => {
+      deletedDeviceFromEvent = details.device;
+    });
+    await requestDevices();
+    if (haveDevices) {
+      const grantedDevices = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
+      if (grantedDevices.length > 0) {
+        const deletedDevice = await w.webContents.executeJavaScript(`
+          navigator.usb.getDevices().then(devices => {
+            devices[0].forget();
+            return {
+              vendorId: devices[0].vendorId,
+              productId: devices[0].productId,
+              productName: devices[0].productName
+            }
+          })
+        `);
+        const grantedDevices2 = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
         if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
           expect(deletedDeviceFromEvent).to.include(deletedDevice);

@@ -20,7 +20,7 @@ work). Extensions are installed per-`session`. To load an extension, call
 ```js
 const { session } = require('electron')
 
-session.loadExtension('path/to/unpacked/extension').then(({ id }) => {
+session.defaultSession.loadExtension('path/to/unpacked/extension').then(({ id }) => {
   // ...
 })
 ```
