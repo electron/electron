@@ -43,7 +43,7 @@ describe('session.serviceWorkers', () => {
   });
 
   afterEach(async () => {
-    (w as any).destroy();
+    w.destroy();
     server.close();
     await ses.clearStorageData();
   });

@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Thu, 1 Dec 2022 16:05:49 +0100
+Subject: Fix DCHECKs in VisitSpillSlot
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+... to match new encoding of the forwarding pointers.
+
+Bug: v8:11880, chromium:1393256
+Change-Id: I8bc8183c22ef8933c02470d5c8ed77cf83489e0f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4069706
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Dominik Inführ <dinfuehr@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#84601}
+
+diff --git a/src/execution/frames.cc b/src/execution/frames.cc
+index 5065f5fe3bab7d8a9aca3db98754339ed86b0907..6dfdda7059cafb8a5bf597cd61b46fdb3177ddeb 100644
+--- a/src/execution/frames.cc
++++ b/src/execution/frames.cc
+@@ -1119,8 +1119,8 @@ void VisitSpillSlot(Isolate* isolate, RootVisitor* v,
+                                    ? map_word.ToForwardingAddress(raw)
+                                    : raw;
+         bool is_self_forwarded =
+-            forwarded.map_word(cage_base, kRelaxedLoad).ptr() ==
+-            forwarded.address();
++            forwarded.map_word(cage_base, kRelaxedLoad) ==
++            MapWord::FromForwardingAddress(forwarded, forwarded);
+         if (is_self_forwarded) {
+           // The object might be in a self-forwarding state if it's located
+           // in new large object space. GC will fix this at a later stage.
+diff --git a/src/objects/objects.h b/src/objects/objects.h
+index a40a169ce5d2b14e4b973cc1c5e6b4d986cbb314..2fa31a912c75a832cc0e051dfd54f4cd1ac50a79 100644
+--- a/src/objects/objects.h
++++ b/src/objects/objects.h
+@@ -904,7 +904,17 @@ class MapWord {
+   // View this map word as a forwarding address.
+   inline HeapObject ToForwardingAddress(HeapObject map_word_host);
+ 
+-  inline Address ptr() { return value_; }
++  constexpr inline Address ptr() const { return value_; }
++
++  // When pointer compression is enabled, MapWord is uniquely identified by
++  // the lower 32 bits. On the other hand full-value comparison is not correct
++  // because map word in a forwarding state might have corrupted upper part.
++  constexpr bool operator==(MapWord other) const {
++    return static_cast<Tagged_t>(ptr()) == static_cast<Tagged_t>(other.ptr());
++  }
++  constexpr bool operator!=(MapWord other) const {
++    return static_cast<Tagged_t>(ptr()) != static_cast<Tagged_t>(other.ptr());
++  }
+ 
+ #ifdef V8_MAP_PACKING
+   static constexpr Address Pack(Address map) {
+@@ -929,7 +939,7 @@ class MapWord {
+   template <typename TFieldType, int kFieldOffset, typename CompressionScheme>
+   friend class TaggedField;
+ 
+-  explicit MapWord(Address value) : value_(value) {}
++  explicit constexpr MapWord(Address value) : value_(value) {}
+ 
+   Address value_;
+ };

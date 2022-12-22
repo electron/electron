@@ -790,7 +790,7 @@ describe('node feature', () => {
               }
             })`))
             .then(() => {
-              (w as any).destroy();
+              w.destroy();
               child.send('plz-quit');
               done();
             });
