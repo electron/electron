@@ -526,6 +526,65 @@ export function request (options: ClientRequestConstructorOptions | string, call
   return new ClientRequest(options, callback);
 }
 
+function createDeferredPromise<T, E extends Error = Error> (): { promise: Promise<T>; resolve: (x: T) => void; reject: (e: E) => void; } {
+  let res: (x: T) => void;
+  let rej: (e: E) => void;
+  const promise = new Promise<T>((resolve, reject) => {
+    res = resolve;
+    rej = reject;
+  });
+
+  return { promise, resolve: res!, reject: rej! };
+}
+
+export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response> {
+  const p = createDeferredPromise<Response>();
+  let req: Request;
+  try {
+    req = new Request(input, init);
+  } catch (e: any) {
+    p.reject(e);
+    return p.promise;
+  }
+
+  // TODO: listen to the abort signal
+
+  const r = request({
+    // TODO: session
+    method: req.method,
+    url: req.url,
+    credentials: req.credentials as 'include' | 'omit' | undefined /* missing same-origin */,
+    redirect: req.redirect
+  });
+
+  for (const [k, v] of req.headers) {
+    r.setHeader(k, v);
+  }
+
+  // TODO: other stuff from init/input? mode? keepalive? referrer? etc
+
+  r.on('response', (resp: IncomingMessage) => {
+    const headers = new Headers();
+    for (const [k, v] of Object.entries(resp.headers)) { headers.set(k, Array.isArray(v) ? v.join(', ') : v); }
+    // TODO: this loses trailers and httpVersion info
+    const rResp = new Response(Readable.toWeb(resp) as ReadableStream, {
+      headers,
+      status: resp.statusCode,
+      statusText: resp.statusMessage
+    });
+    p.resolve(rResp);
+  });
+
+  r.on('error', (err) => {
+    // TODO: abort..?
+    p.reject(err);
+  });
+
+  r.end();
+
+  return p.promise;
+}
+
 exports.isOnline = isOnline;
 
 Object.defineProperty(exports, 'online', {
