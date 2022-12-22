@@ -1206,7 +1206,6 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
     browser_context =
         ElectronBrowserContext::From(partition, true, std::move(options));
   }
-
   return CreateFrom(isolate, browser_context);
 }
 
