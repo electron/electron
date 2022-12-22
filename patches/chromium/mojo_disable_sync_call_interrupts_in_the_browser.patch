@@ -49,7 +49,7 @@ index a3e5764a1920c8a6bf1ce21e02d0ac743b027a40..ce8b70cc792b2ae45624840e0f71270f
      const ContentMainDelegate::InvokedInBrowserProcess invoked_in_browser{
          .is_running_test = !main_params.ui_task.is_null()};
 diff --git a/ipc/ipc_mojo_bootstrap.cc b/ipc/ipc_mojo_bootstrap.cc
-index a0bd86951a20cf2d60c7805a3a7fa687d66ca329..f35570d245003e760d15d8f60419648e2ba60c5a 100644
+index eb8fa358b0a72eea2e294c531549da5fc81f394c..8c13ef236ba6f7cf05584cffba522a3cb54536c9 100644
 --- a/ipc/ipc_mojo_bootstrap.cc
 +++ b/ipc/ipc_mojo_bootstrap.cc
 @@ -16,13 +16,15 @@
@@ -168,7 +168,7 @@ index a0bd86951a20cf2d60c7805a3a7fa687d66ca329..f35570d245003e760d15d8f60419648e
      }
  
      void OnSyncMessageEventReady() {
-@@ -637,7 +681,7 @@ class ChannelAssociatedGroupController
+@@ -640,7 +684,7 @@ class ChannelAssociatedGroupController
        if (!sync_messages_.empty()) {
          MessageWrapper message_wrapper =
              std::move(sync_messages_.front().second);
@@ -177,7 +177,7 @@ index a0bd86951a20cf2d60c7805a3a7fa687d66ca329..f35570d245003e760d15d8f60419648e
  
          bool dispatch_succeeded;
          mojo::InterfaceEndpointClient* client = client_;
-@@ -685,6 +729,28 @@ class ChannelAssociatedGroupController
+@@ -688,6 +732,28 @@ class ChannelAssociatedGroupController
        return id;
      }
  
@@ -206,7 +206,7 @@ index a0bd86951a20cf2d60c7805a3a7fa687d66ca329..f35570d245003e760d15d8f60419648e
      const raw_ptr<ChannelAssociatedGroupController> controller_;
      const mojo::InterfaceId id_;
  
-@@ -696,7 +762,8 @@ class ChannelAssociatedGroupController
+@@ -699,7 +765,8 @@ class ChannelAssociatedGroupController
      raw_ptr<mojo::InterfaceEndpointClient> client_ = nullptr;
      scoped_refptr<base::SequencedTaskRunner> task_runner_;
      std::unique_ptr<mojo::SequenceLocalSyncEventWatcher> sync_watcher_;
@@ -216,7 +216,7 @@ index a0bd86951a20cf2d60c7805a3a7fa687d66ca329..f35570d245003e760d15d8f60419648e
      uint32_t next_sync_message_id_ = 0;
    };
  
-@@ -929,12 +996,15 @@ class ChannelAssociatedGroupController
+@@ -932,12 +999,15 @@ class ChannelAssociatedGroupController
          // sync message queue. If the endpoint was blocking, it will dequeue the
          // message and dispatch it. Otherwise the posted |AcceptSyncMessage()|
          // call will dequeue the message and dispatch it.
