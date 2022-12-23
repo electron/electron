@@ -19,7 +19,7 @@ Exposing APIs from your preload script to a loaded website in the renderer proce
 ```javascript title='preload.js'
 // preload with contextIsolation disabled
 window.myAPI = {
-  doAThing: () => {}
+  doAThing: () => ({})
 }
 ```
 
