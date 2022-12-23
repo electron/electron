@@ -39,7 +39,7 @@ There is a dedicated module in Electron to help you do this in a painless way. T
 const { contextBridge } = require('electron')
 
 contextBridge.exposeInMainWorld('myAPI', {
-  doAThing: () => {}
+  doAThing: () => ({})
 })
 ```
 
