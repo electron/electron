@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 8ad7cb314d8c02e352e6bcd5e5477920b95d5e10..f5e867b3386d8e779a72912e6377f890db125a98 100644
+index 6bae8bce2d5b14d12291774fd20042f9e5ee3d67..4e0ae6719069da886db193642df9f90d52a332d3 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -134,6 +134,11 @@
@@ -128,7 +128,7 @@ index 8ad7cb314d8c02e352e6bcd5e5477920b95d5e10..f5e867b3386d8e779a72912e6377f890
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2183,6 +2280,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2181,6 +2278,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -139,7 +139,7 @@ index 8ad7cb314d8c02e352e6bcd5e5477920b95d5e10..f5e867b3386d8e779a72912e6377f890
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 5853a39531060b28ced3b6f263b5fc56c5d03df6..a4761de728313be1f91ff748f572c42f08b35b72 100644
+index cca5788e85c849c0ea17edccf72b2bbfbf0e8f57..8b41b28c036837a35a732a63aa6e1ebeaf416970 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -103,6 +103,7 @@ class URLMatcher;
@@ -159,7 +159,7 @@ index 5853a39531060b28ced3b6f263b5fc56c5d03df6..a4761de728313be1f91ff748f572c42f
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -820,6 +823,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -819,6 +822,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  

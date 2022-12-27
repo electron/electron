@@ -70,7 +70,7 @@ index faddc7a513b0c36fb1ef1b109e412f1e02e5e9e4..7a58d41af76196ba8249bb4d2cd09f22
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index a3e04a976baf80cfa36ad14ddec29ccae543e398..a5f2f5ca05edd9d39c8bb5d6a29b54ff53a9640d 100644
+index d9a3feec1955ebfea5b1dcf707b804933a3b14ac..39bf5fbd7e19e13dfcdabcf5914003498dbcecb5 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -19,6 +19,8 @@
@@ -572,7 +572,7 @@ index 1e8f3994764a2b4e4efb87a08c522cc0e0103e18..83cc16ffbf484aa78b1c350d20a5a15f
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index f20c7697746d13d67057f2be8f72d9a494234061..658f9cb2c9ccc65273012c76128823f4c18b9471 100644
+index aac49f712187a62e2fd1f908420b1632a6c357b7..ca02e5c7c42c6a53bc8a74c11b3f03cbdf6ed55f 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -810,11 +810,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,

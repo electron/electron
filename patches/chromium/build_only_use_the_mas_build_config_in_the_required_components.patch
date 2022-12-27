@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4a6863eeeff31d361c8629cb8cfcd560531670ad..1a50ac218374fa198e285b5cebe38d5b20d82fcc 100644
+index c8668e8e831cc0e5e2ea96da2c87b4bd711a2e71..fa0eb1250d7ae8b0878bb00543911bd7aa9ee550 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -80,10 +80,10 @@ index 4a6863eeeff31d361c8629cb8cfcd560531670ad..1a50ac218374fa198e285b5cebe38d5b
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 54df36f673af12688e0575664c44c30be0cb6584..d46322fd69858b0c7cab6f7ebf8321cc287b5e32 100644
+index bc96005c80cec046e6a4ef27d006c06037c24cea..81b14ee5000549368454c18d2f47fabf831351fe 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -180,6 +180,7 @@ source_set("common") {
+@@ -178,6 +178,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index b2ea994dcf4711b4bb73b475d2dd06120c9e48dc..9d44d02b96ddb5a6a59a83a401d45cbca333f798 100644
+index c29495a7060d76a511ab5bac3fb972291038b97a..43056b04a8cef823484ce285c6f9e82405272134 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -280,6 +280,7 @@ component("core") {
@@ -206,22 +206,22 @@ index 1ca2843130e81f9ea6be7a71b6b2a8d68bd413ae..712e4428bc9417f114a695a5980c4888
  
  test("accelerated_widget_mac_unittests") {
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 9f1549e173f4133f24d299ce6aa52e8ccb8008eb..e904a22e916f45d1dacde0f566e31f3c4b4a252b 100644
+index dffa31d3a753b6bb261b90c832826a6820d171d4..1c22f03f23f7db0432cfd7ab78649d05c7461b7a 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -245,6 +245,7 @@ component("platform") {
-         "AppKit.framework",
-         "Foundation.framework",
+@@ -249,6 +249,7 @@ component("platform") {
+       weak_frameworks = [
+         "Accessibility.framework",  # macOS 11
        ]
 +      configs += ["//electron/build/config:mas_build"]
      }
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 37f25793bac3c6b025c0f7e6a3e16593f53f3b0b..3d60e80929236e6c4c3e233e699fa2a395fb614b 100644
+index 8ed2cd062b2e9531742835c61f015975c7d59d40..989005583f46879f6ed32aa121d9dc2d7af0d589 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -347,6 +347,7 @@ component("base") {
+@@ -348,6 +348,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
@@ -245,7 +245,7 @@ index b379aa35ddfba8a43881a3b936f382dfdb92c9b5..fa965b8f1e7e05b4153f6e5d9ae0ac78
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 5083ae8db931fa714f2d917c3c67a940fea6d39f..3a17e9e5eb4509e7aca548cae89e63770e114132 100644
+index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675cb22bf4e7 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -188,6 +188,7 @@ component("gfx") {
