@@ -33,14 +33,14 @@ class V8Serializer : public v8::ValueSerializer::Delegate {
   ~V8Serializer() override = default;
 
   bool Serialize(v8::Local<v8::Value> value, blink::CloneableMessage* out) {
+    auto context = isolate_->GetCurrentContext();
     gin_helper::MicrotasksScope microtasks_scope(
-        isolate_, v8::MicrotasksScope::kDoNotRunMicrotasks);
+        context, v8::MicrotasksScope::kDoNotRunMicrotasks);
     WriteBlinkEnvelope(19);
 
     serializer_.WriteHeader();
     bool wrote_value;
-    if (!serializer_.WriteValue(isolate_->GetCurrentContext(), value)
-             .To(&wrote_value)) {
+    if (!serializer_.WriteValue(context, value).To(&wrote_value)) {
       isolate_->ThrowException(v8::Exception::Error(
           gin::StringToV8(isolate_, "An object could not be cloned.")));
       return false;

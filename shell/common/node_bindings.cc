@@ -192,8 +192,6 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
 
   if (env) {
@@ -688,14 +686,23 @@ void NodeBindings::UvRunOnce() {
   DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(env->isolate()), 0);
   env->isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+  int r;  // uv_run result
 
-  // Deal with uv events.
-  int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+  {
+    // Create a microtask scope while the policy is different
+    gin_helper::MicrotasksScope microtasks_scope(env->context());
 
-  if (browser_env_ != BrowserEnvironment::kBrowser)
-    TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
+
+    // Deal with uv events.
+    r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+
+    if (browser_env_ != BrowserEnvironment::kBrowser)
+      TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
+
+    // (MicrotaskScope destructs)
+  }
 
   env->isolate()->SetMicrotasksPolicy(old_policy);
 

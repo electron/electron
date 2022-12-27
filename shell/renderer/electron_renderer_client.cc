@@ -13,6 +13,7 @@
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
@@ -46,7 +47,7 @@ void ElectronRendererClient::RunScriptsAtDocumentStart(
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
-    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+    gin_helper::EmitEvent(env->context(), env->process_object(),
                           "document-start");
 }
 
@@ -57,7 +58,7 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   node::Environment* env = GetEnvironment(render_frame);
   if (env)
-    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+    gin_helper::EmitEvent(env->context(), env->process_object(),
                           "document-end");
 }
 
@@ -85,6 +86,8 @@ void ElectronRendererClient::DidCreateScriptContext(
     node::tracing::TraceEventHelper::SetAgent(node::CreateAgent());
 
   // Setup node environment for each window.
+  gin_helper::MicrotasksScope microtasks_scope(
+      renderer_context, false, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
 
@@ -127,7 +130,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (environments_.erase(env) == 0)
     return;
 
-  gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
+  gin_helper::EmitEvent(env->context(), env->process_object(), "exit");
 
   // The main frame may be replaced.
   if (env == node_bindings_->uv_env())
