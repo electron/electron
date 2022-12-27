@@ -3756,8 +3756,8 @@ void WebContents::DevToolsAddFileSystem(
   base::Value::Dict file_system_value = CreateFileSystemValue(file_system);
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
-  DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->SetKey(path.AsUTF8Unsafe(), base::Value(type));
+  ScopedDictPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
+  update->Set(path.AsUTF8Unsafe(), type);
   std::string error = "";  // No error
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "fileSystemAdded", base::Value(error),
@@ -3774,8 +3774,8 @@ void WebContents::DevToolsRemoveFileSystem(
       file_system_path);
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
-  DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->RemoveKey(path);
+  ScopedDictPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
+  update->Remove(path);
 
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "fileSystemRemoved", base::Value(path));
