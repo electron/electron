@@ -230,7 +230,7 @@ index 8ed2cd062b2e9531742835c61f015975c7d59d40..989005583f46879f6ed32aa121d9dc2d
  
    if (is_chromeos_lacros) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index b379aa35ddfba8a43881a3b936f382dfdb92c9b5..fa965b8f1e7e05b4153f6e5d9ae0ac787dc808d3 100644
+index aadf9f2a52fd6bf4f027a070656c893b5025c714..445fa39d3676b80901ffb734bfb5ca1045dc4c41 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -56,6 +56,10 @@ component("display") {
