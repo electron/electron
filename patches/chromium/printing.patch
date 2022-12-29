@@ -34,7 +34,7 @@ index 449762d965145b882e84765e94dbfb16c1361dee..f38d5a3a3c028742a51894038d0e4832
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 796c7f06fa6063ac409f3fef53871e18d4c07838..2985e0f6d3de7ca0c8c3faec64f1bd1d83a96c55 100644
+index 796c7f06fa6063ac409f3fef53871e18d4c07838..6575e833388bcc3ac487a409027d984bf62db004 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -91,6 +91,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -45,14 +45,14 @@ index 796c7f06fa6063ac409f3fef53871e18d4c07838..2985e0f6d3de7ca0c8c3faec64f1bd1d
  PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
    // because `web_contents` was null. As a result, this section has many more
-@@ -99,6 +100,7 @@ PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
-       web_contents ? web_contents->GetBrowserContext() : nullptr;
-   return context ? Profile::FromBrowserContext(context)->GetPrefs() : nullptr;
+@@ -105,6 +106,7 @@ content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
+   auto* rfh = content::RenderFrameHost::FromID(rfh_id);
+   return rfh ? content::WebContents::FromRenderFrameHost(rfh) : nullptr;
  }
 +#endif
  
- content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
-   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+ #endif  // BUILDFLAG(IS_WIN)
+ 
 @@ -359,8 +361,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
