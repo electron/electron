@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Mon, 5 Dec 2022 14:28:40 -0800
+Subject: allow embedder to control CodeGenerationFromStringsCallback
+
+This is needed to blend Blink and Node's code generation policy.
+
+This should be upstreamed.
+
+diff --git a/src/api/environment.cc b/src/api/environment.cc
+index 93d85d46dc6b3b30795b88ffa8070253f62e51bd..05f8232c4b38f51e8059e8d01b0eb2475768c43f 100644
+--- a/src/api/environment.cc
++++ b/src/api/environment.cc
+@@ -256,11 +256,15 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+ void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+   isolate->SetMicrotasksPolicy(s.policy);
+ 
++  // Allow the embedder first chance at policy decisions.
++  // This is particularly important for embedders that combine Node and Blink,
++  // as Blink must be able to make Content Security Policy-based decisions.
+   auto* allow_wasm_codegen_cb = s.allow_wasm_code_generation_callback ?
+     s.allow_wasm_code_generation_callback : AllowWasmCodeGenerationCallback;
+   isolate->SetAllowWasmCodeGenerationCallback(allow_wasm_codegen_cb);
+-  isolate->SetModifyCodeGenerationFromStringsCallback(
+-      ModifyCodeGenerationFromStrings);
++  auto* modify_code_generation_from_strings_callback = s.modify_code_generation_from_strings_callback ?
++    s.modify_code_generation_from_strings_callback : ModifyCodeGenerationFromStrings;
++  isolate->SetModifyCodeGenerationFromStringsCallback(modify_code_generation_from_strings_callback);
+ 
+   if ((s.flags & SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK) == 0) {
+     auto* promise_reject_cb = s.promise_reject_callback ?
+diff --git a/src/node.h b/src/node.h
+index 38bbb20968772a4ba6bceddb04a83589f8582fc8..a5ee97ae83149a1924e9d6198ad4b2a7fd8b876d 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -374,6 +374,8 @@ struct IsolateSettings {
+   v8::PromiseRejectCallback promise_reject_callback = nullptr;
+   v8::AllowWasmCodeGenerationCallback
+       allow_wasm_code_generation_callback = nullptr;
++  v8::ModifyCodeGenerationFromStringsCallback2
++      modify_code_generation_from_strings_callback = nullptr;
+ };
+ 
+ // Overriding IsolateSettings may produce unexpected behavior

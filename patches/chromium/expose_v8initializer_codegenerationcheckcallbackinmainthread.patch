@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Mon, 5 Dec 2022 14:27:20 -0800
+Subject: expose V8Initializer::CodeGenerationCheckCallbackInMainThread
+
+This is needed to blend Blink and Node's policy for code generation policy.
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+index 04aa629a635a93decc7261e143587d92f78c1b09..b1a665cc887d735bd3db299439f11369d8265837 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
++++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+@@ -441,8 +441,9 @@ TrustedTypesCodeGenerationCheck(v8::Local<v8::Context> context,
+   return {true, V8String(context->GetIsolate(), stringified_source)};
+ }
+ 
+-static v8::ModifyCodeGenerationFromStringsResult
+-CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
++// static
++v8::ModifyCodeGenerationFromStringsResult
++V8Initializer::CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
+                                         v8::Local<v8::Value> source,
+                                         bool is_code_like) {
+   // The TC39 "Dynamic Code Brand Check" feature is currently behind a flag.
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
+index 39d1351a4a8bbc95097640be54affec426abe73e..30a36cf16d4a8f4692ec6a13be1217212390172a 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
++++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
+@@ -69,6 +69,10 @@ class CORE_EXPORT V8Initializer {
+                                          v8::Local<v8::Value>);
+   static void MessageHandlerInWorker(v8::Local<v8::Message>,
+                                      v8::Local<v8::Value>);
++  static v8::ModifyCodeGenerationFromStringsResult
++  CodeGenerationCheckCallbackInMainThread(v8::Local<v8::Context> context,
++                                          v8::Local<v8::Value> source,
++                                          bool is_code_like);
+   static bool WasmCodeGenerationCheckCallbackInMainThread(
+       v8::Local<v8::Context> context,
+       v8::Local<v8::String> source);
