@@ -81,7 +81,7 @@ contextBridge.exposeInMainWorld('versions', {
 To attach this script to your renderer process, pass its path to the
 `webPreferences.preload` option in the BrowserWindow constructor:
 
-```js {8-10} title="main.js"
+```js {2,8-10} title="main.js"
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
