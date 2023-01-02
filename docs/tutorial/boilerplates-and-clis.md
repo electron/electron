@@ -24,7 +24,7 @@ development and release. They are more helpful and supportive but enforce
 guidelines on how your code should be structured and built. *Especially for
 beginners, using a command line tool is likely to be helpful*.
 
-## electron-forge
+## Electron Forge
 
 Electron Forge is a tool for packaging and publishing Electron applications. It unifies Electron's tooling ecosystem
 into a single extensible interface so that anyone can jump right into making Electron apps.
