@@ -2494,6 +2494,54 @@ describe('navigator.serial', () => {
   });
 });
 
+describe('window.getScreenDetails', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  const getScreenDetails: any = () => {
+    return w.webContents.executeJavaScript('window.getScreenDetails().then(data => data.screens).catch(err => err.message)', true);
+  };
+
+  it('returns screens when a PermissionRequestHandler is not defined', async () => {
+    const screens = await getScreenDetails();
+    expect(screens).to.not.equal('Read permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'window-placement') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const screens = await getScreenDetails();
+    expect(screens).to.equal('Permission denied.');
+  });
+
+  it('returns screens when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'window-placement') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const screens = await getScreenDetails();
+    expect(screens).to.not.equal('Permission denied.');
+  });
+});
+
 describe('navigator.clipboard', () => {
   let w: BrowserWindow;
   before(async () => {
