@@ -39,7 +39,7 @@ class Archive : public node::ObjectWrap {
   Archive& operator=(const Archive&) = delete;
 
  protected:
-  explicit Archive(std::unique_ptr<asar::Archive> archive)
+  explicit Archive(std::shared_ptr<asar::Archive> archive)
       : archive_(std::move(archive)) {}
 
   static void New(const v8::FunctionCallbackInfo<v8::Value>& args) {
@@ -52,8 +52,8 @@ class Archive : public node::ObjectWrap {
       return;
     }
 
-    auto archive = std::make_unique<asar::Archive>(path);
-    if (!archive->Init()) {
+    std::shared_ptr<asar::Archive> archive = asar::GetOrCreateAsarArchive(path);
+    if (!archive) {
       isolate->ThrowException(v8::Exception::Error(node::FIXED_ONE_BYTE_STRING(
           isolate, "failed to initialize archive")));
       return;
@@ -190,7 +190,7 @@ class Archive : public node::ObjectWrap {
         isolate, wrap->archive_ ? wrap->archive_->GetUnsafeFD() : -1));
   }
 
-  std::unique_ptr<asar::Archive> archive_;
+  std::shared_ptr<asar::Archive> archive_;
 };
 
 static void InitAsarSupport(const v8::FunctionCallbackInfo<v8::Value>& args) {

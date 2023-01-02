@@ -45,9 +45,9 @@ class ElectronSerialDelegate : public content::SerialDelegate,
   device::mojom::SerialPortManager* GetPortManager(
       content::RenderFrameHost* frame) override;
   void AddObserver(content::RenderFrameHost* frame,
-                   Observer* observer) override;
+                   content::SerialDelegate::Observer* observer) override;
   void RemoveObserver(content::RenderFrameHost* frame,
-                      Observer* observer) override;
+                      content::SerialDelegate::Observer* observer) override;
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 

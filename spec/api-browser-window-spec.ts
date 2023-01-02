@@ -2206,7 +2206,7 @@ describe('BrowserWindow module', () => {
       w.setBrowserView(bv);
       defer(() => {
         w.removeBrowserView(bv);
-        (bv.webContents as any).destroy();
+        bv.webContents.destroy();
       });
       await bv.webContents.loadURL('about:blank');
       expect(BrowserWindow.fromWebContents(bv.webContents)!.id).to.equal(w.id);
@@ -2254,7 +2254,7 @@ describe('BrowserWindow module', () => {
       w.setBrowserView(bv);
       defer(() => {
         w.removeBrowserView(bv);
-        (bv.webContents as any).destroy();
+        bv.webContents.destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id);
     });
@@ -2268,8 +2268,8 @@ describe('BrowserWindow module', () => {
       defer(() => {
         w.removeBrowserView(bv1);
         w.removeBrowserView(bv2);
-        (bv1.webContents as any).destroy();
-        (bv2.webContents as any).destroy();
+        bv1.webContents.destroy();
+        bv2.webContents.destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv1)!.id).to.equal(w.id);
       expect(BrowserWindow.fromBrowserView(bv2)!.id).to.equal(w.id);
@@ -2278,7 +2278,7 @@ describe('BrowserWindow module', () => {
     it('returns undefined if not attached', () => {
       const bv = new BrowserView();
       defer(() => {
-        (bv.webContents as any).destroy();
+        bv.webContents.destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv)).to.be.null('BrowserWindow associated with bv');
     });
