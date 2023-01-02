@@ -981,6 +981,14 @@ Returns:
 
 Emitted when mouse moves over a link or the keyboard moves the focus to a link.
 
+### Event: 'devtools-open-in-new-tab'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
+
 ### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.

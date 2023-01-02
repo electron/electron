@@ -3823,6 +3823,10 @@ void WebContents::DevToolsStopIndexing(int request_id) {
   devtools_indexing_jobs_.erase(it);
 }
 
+void WebContents::DevToolsOpenInNewTab(const std::string& url) {
+  Emit("devtools-open-in-new-tab", url);
+}
+
 void WebContents::DevToolsSearchInPath(int request_id,
                                        const std::string& file_system_path,
                                        const std::string& query) {

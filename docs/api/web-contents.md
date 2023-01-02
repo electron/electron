@@ -492,6 +492,14 @@ The `focus` and `blur` events of `WebContents` should only be used to detect
 focus change between different `WebContents` and `BrowserView` in the same
 window.
 
+### Event: 'devtools-open-in-new-tab'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.

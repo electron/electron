@@ -9,6 +9,7 @@ export const webViewEvents: Record<string, readonly string[]> = {
   'dom-ready': [],
   'console-message': ['level', 'message', 'line', 'sourceId'],
   'context-menu': ['params'],
+  'devtools-open-in-new-tab': ['url'],
   'devtools-opened': [],
   'devtools-closed': [],
   'devtools-focused': [],
