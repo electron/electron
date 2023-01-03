@@ -127,7 +127,7 @@ documentation.
 
 ## Important: signing your code
 
-In order to distribute desktop applications to end users, we _highly recommended_ for you
+In order to distribute desktop applications to end users, we _highly recommend_ that you
 to **code sign** your Electron app. Code signing is an important part of shipping
 desktop applications, and is mandatory for the auto-update step in the final part
 of the tutorial.
