@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 6e01657f9a364dc58774e3579a3fb1b1123543d9..c0381e39174035a29af2aa702f0d3cefe936fca4 100644
+index 17a4e8e27513e1de63c414f3e894d28600d9eb08..669baf11be7b74ced39c91134cfdc0396829dbcc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1494,6 +1494,7 @@ component("base") {
+@@ -1499,6 +1499,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
