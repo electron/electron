@@ -17,10 +17,18 @@ headers, moving forward we should find a way in upstream to provide
 access to these headers for loader clients created on the browser process.
 
 diff --git a/services/network/public/cpp/resource_request.cc b/services/network/public/cpp/resource_request.cc
-index 65921550e62dbcd79f77192951b95991c3e904a1..067ef0d9f869402fb47e2a2cea77a5771ef9d75a 100644
+index 65921550e62dbcd79f77192951b95991c3e904a1..743e81c07052979dfb83cc0ed44a6653ddf52321 100644
 --- a/services/network/public/cpp/resource_request.cc
 +++ b/services/network/public/cpp/resource_request.cc
-@@ -139,6 +139,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
+@@ -119,6 +119,7 @@ ResourceRequest::TrustedParams& ResourceRequest::TrustedParams::operator=(
+   isolation_info = other.isolation_info;
+   disable_secure_dns = other.disable_secure_dns;
+   has_user_activation = other.has_user_activation;
++  report_raw_headers = other.report_raw_headers;
+   cookie_observer =
+       Clone(&const_cast<mojo::PendingRemote<mojom::CookieAccessObserver>&>(
+           other.cookie_observer));
+@@ -139,6 +140,7 @@ bool ResourceRequest::TrustedParams::EqualsForTesting(
      const TrustedParams& other) const {
    return isolation_info.IsEqualForTesting(other.isolation_info) &&
           disable_secure_dns == other.disable_secure_dns &&
