@@ -131,8 +131,6 @@ void ElectronSandboxedRendererClient::InitializeBindings(
     v8::Local<v8::Object> binding,
     v8::Local<v8::Context> context,
     content::RenderFrame* render_frame) {
-  gin_helper::MicrotasksScope microtasks_scope(
-      context, false, v8::MicrotasksScope::kDoNotRunMicrotasks);
   auto* isolate = context->GetIsolate();
   gin_helper::Dictionary b(isolate, binding);
   b.SetMethod("get", GetBinding);
@@ -164,12 +162,12 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
-  gin_helper::MicrotasksScope microtasks_scope(
-      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::Context::Scope context_scope(context);
 
   InvokeHiddenCallback(context, kLifecycleKey, "onDocumentStart");
@@ -182,12 +180,12 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
 
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
-  gin_helper::MicrotasksScope microtasks_scope(
-      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::Context::Scope context_scope(context);
 
   InvokeHiddenCallback(context, kLifecycleKey, "onDocumentEnd");
@@ -230,9 +228,10 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
   if (injected_frames_.erase(render_frame) == 0)
     return;
 
+  auto* isolate = context->GetIsolate();
   gin_helper::MicrotasksScope microtasks_scope(
-      context, v8::MicrotasksScope::kDoNotRunMicrotasks);
-  v8::HandleScope handle_scope(context->GetIsolate());
+      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+  v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");
 }

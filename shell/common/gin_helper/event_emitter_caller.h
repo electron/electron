@@ -21,10 +21,6 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
                                         const char* method,
                                         ValueVector* args);
-v8::Local<v8::Value> CallMethodWithArgs(v8::Local<v8::Context> context,
-                                        v8::Local<v8::Object> obj,
-                                        const char* method,
-                                        ValueVector* args);
 
 }  // namespace internal
 
@@ -53,17 +49,6 @@ v8::Local<v8::Value> EmitEvent(v8::Isolate* isolate,
       gin::ConvertToV8(isolate, std::forward<Args>(args))...,
   };
   return internal::CallMethodWithArgs(isolate, obj, "emit", &converted_args);
-}
-template <typename StringType, typename... Args>
-v8::Local<v8::Value> EmitEvent(v8::Local<v8::Context> context,
-                               v8::Local<v8::Object> obj,
-                               const StringType& name,
-                               Args&&... args) {
-  internal::ValueVector converted_args = {
-      gin::StringToV8(context->GetIsolate(), name),
-      gin::ConvertToV8(context->GetIsolate(), std::forward<Args>(args))...,
-  };
-  return internal::CallMethodWithArgs(context, obj, "emit", &converted_args);
 }
 
 // obj.custom_emit(args...)

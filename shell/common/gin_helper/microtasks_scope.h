@@ -19,10 +19,6 @@ class MicrotasksScope {
                            bool ignore_browser_checkpoint = false,
                            v8::MicrotasksScope::Type scope_type =
                                v8::MicrotasksScope::kRunMicrotasks);
-  explicit MicrotasksScope(v8::Local<v8::Context> context,
-                           bool ignore_browser_checkpoint = false,
-                           v8::MicrotasksScope::Type scope_type =
-                               v8::MicrotasksScope::kRunMicrotasks);
   ~MicrotasksScope();
 
   // disable copy

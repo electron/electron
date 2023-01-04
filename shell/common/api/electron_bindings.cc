@@ -251,10 +251,9 @@ void ElectronBindings::DidReceiveMemoryDump(
     std::unique_ptr<memory_instrumentation::GlobalMemoryDump> global_dump) {
   v8::Isolate* isolate = promise.isolate();
   v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> local_context =
-      v8::Local<v8::Context>::New(isolate, context);
-  gin_helper::MicrotasksScope microtasks_scope(local_context, true);
-  v8::Context::Scope context_scope(local_context);
+  gin_helper::MicrotasksScope microtasks_scope(isolate, true);
+  v8::Context::Scope context_scope(
+      v8::Local<v8::Context>::New(isolate, context));
 
   if (!success) {
     promise.RejectWithErrorMessage("Failed to create memory dump");
