@@ -195,8 +195,8 @@ Emitted when a HID device needs to be selected when a call to
 `navigator.hid.requestDevice` is made. `callback` should be called with
 `deviceId` to be selected; passing no arguments to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.hid` can
-be further managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
-and [ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
+be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
+and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
 ```javascript
 const { app, BrowserWindow } = require('electron')
@@ -444,8 +444,8 @@ Emitted when a USB device needs to be selected when a call to
 `navigator.usb.requestDevice` is made. `callback` should be called with
 `deviceId` to be selected; passing no arguments to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.usb` can
-be further managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
-and [ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
+be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
+and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
 ```javascript
 const { app, BrowserWindow } = require('electron')
