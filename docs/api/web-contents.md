@@ -492,7 +492,7 @@ The `focus` and `blur` events of `WebContents` should only be used to detect
 focus change between different `WebContents` and `BrowserView` in the same
 window.
 
-### Event: 'devtools-open-in-new-tab'
+#### Event: 'devtools-open-url'
 
 Returns:
 

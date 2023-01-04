@@ -3824,7 +3824,7 @@ void WebContents::DevToolsStopIndexing(int request_id) {
 }
 
 void WebContents::DevToolsOpenInNewTab(const std::string& url) {
-  Emit("devtools-open-in-new-tab", url);
+  Emit("devtools-open-url", url);
 }
 
 void WebContents::DevToolsSearchInPath(int request_id,

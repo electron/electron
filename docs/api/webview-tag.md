@@ -981,7 +981,7 @@ Returns:
 
 Emitted when mouse moves over a link or the keyboard moves the focus to a link.
 
-### Event: 'devtools-open-in-new-tab'
+### Event: 'devtools-open-url'
 
 Returns:
 
