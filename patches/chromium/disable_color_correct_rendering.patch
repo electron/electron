@@ -93,10 +93,10 @@ index de753e5a941170d162132f2917b11672a50e833f..7e1fab06bf317758b731d56acb86ab0b
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 011cdd1c418237b2309db4499bccd6d774b2f9cd..e72feca4cd2eb29b1134bad8e848f981d50ce26d 100644
+index 0602a370d017a0b82b9056fb53341a30becb7b58..5300f3d6f55a40bcfc75cafcf1b757c18bbfd650 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3298,6 +3298,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3302,6 +3302,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
