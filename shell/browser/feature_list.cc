@@ -16,7 +16,7 @@
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "services/network/public/cpp/features.h"
-#include "third_party/blink/renderer/platform/scheduler/common/features.h"
+#include "third_party/blink/renderer/platform/scheduler/common/features.h"  // nogncheck
 
 #if BUILDFLAG(IS_MAC)
 #include "device/base/features.h"  // nogncheck
