@@ -8,7 +8,7 @@ and src/out/testing/Electron.app/Contents/Frameworks/Electron Framework.framewor
 One of the two will be used. Which one is undefined.
 
 diff --git a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h
-index 7101cd271c07e604c6f5241d1a22f59f446c0033..98a89976f87e32a66bd504951698204fad938d57 100644
+index 783a3dff46f04ed07934e516a3c39b061402cc84..056b242ab72eba87b036fc3e56c38a89800f1cdd 100644
 --- a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h
 +++ b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h
 @@ -18,7 +18,7 @@ struct __IOSurface;
@@ -20,8 +20,8 @@ index 7101cd271c07e604c6f5241d1a22f59f446c0033..98a89976f87e32a66bd504951698204f
  
  namespace rx
  {
-@@ -89,7 +89,7 @@ class WindowSurfaceCGL : public SurfaceGL
-                                      gl::Framebuffer *framebuffer) override;
+@@ -87,7 +87,7 @@ class WindowSurfaceCGL : public SurfaceGL
+                                               const gl::FramebufferState &state) override;
  
    private:
 -    WebSwapCGLLayer *mSwapLayer;
@@ -30,7 +30,7 @@ index 7101cd271c07e604c6f5241d1a22f59f446c0033..98a89976f87e32a66bd504951698204f
      uint64_t mCurrentSwapId;
  
 diff --git a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm
-index 27990e9c2facbbe0e30f4b275e0778a6474fb9ce..84f9fa9b6d31fb0e85a4c4270dff4d935f855c26 100644
+index 21894682d4a16f6c4133c4919aba8631f022d1ea..4a4be7f38abbe8242756a6abf810da80e98763c2 100644
 --- a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm
 +++ b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm
 @@ -24,7 +24,7 @@
@@ -51,7 +51,7 @@ index 27990e9c2facbbe0e30f4b275e0778a6474fb9ce..84f9fa9b6d31fb0e85a4c4270dff4d93
  - (id)initWithSharedState:(rx::SharedSwapState *)swapState
                withContext:(CGLContextObj)displayContext
              withFunctions:(const rx::FunctionsGL *)functions
-@@ -220,9 +220,9 @@ - (void)drawInCGLContext:(CGLContextObj)glContext
+@@ -213,9 +213,9 @@ - (void)drawInCGLContext:(CGLContextObj)glContext
      mSwapState.lastRendered   = &mSwapState.textures[1];
      mSwapState.beingPresented = &mSwapState.textures[2];
  
