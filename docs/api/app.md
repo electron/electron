@@ -498,6 +498,10 @@ and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
 
+**Note:** `argv` will not be exactly the same list of arguments as those passed
+to the second instance. The order might change and additional arguments might be appended.
+If you need to maintain the exact same arguments, it's advised to use `additionalData` instead.
+
 **Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
 
 This event is guaranteed to be emitted after the `ready` event of `app`
