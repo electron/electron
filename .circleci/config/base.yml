@@ -575,7 +575,7 @@ step-electron-build: &step-electron-build
         ninja -C out/Default tools/v8_context_snapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
-        SEDOPTION=
+        SEDOPTION="-i"
         if [ "`uname`" == "Darwin" ]; then
           SEDOPTION="-i ''"
         fi
@@ -772,7 +772,7 @@ step-mksnapshot-build: &step-mksnapshot-build
         ninja -C out/Default electron:electron_mksnapshot -j $NUMBER_OF_NINJA_PROCESSES
         gn desc out/Default v8:run_mksnapshot_default args > out/Default/mksnapshot_args
         # Remove unused args from mksnapshot_args
-        SEDOPTION=
+        SEDOPTION="-i"
         if [ "`uname`" == "Darwin" ]; then
           SEDOPTION="-i ''"
         fi
@@ -2209,4 +2209,4 @@ workflows:
     jobs:
       - lint
 
-# VS Code Extension Version: 1.1.1
+# VS Code Extension Version: 1.4.0
