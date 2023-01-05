@@ -61,33 +61,34 @@ index 38c6a61bfdc050e1aa7876724b69c47115e088fe..380e65d2422f45076e9afabcb26bfa58
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->url_loader_network_observer = data.TakeUrlLoaderNetworkObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 1331e8d10571dfaa5681a82a6e51744332ec91b2..63550fcfe4b3113970b96c2637ea2f1b39b38603 100644
+index 1331e8d10571dfaa5681a82a6e51744332ec91b2..7e5be4a748fc68ebad2a9297e358364caa513428 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
-@@ -68,6 +68,9 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
-   static bool allow_cookies_from_browser(
+@@ -69,6 +69,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
        const network::ResourceRequest::TrustedParams& trusted_params) {
      return trusted_params.allow_cookies_from_browser;
+   }
 +  static bool report_raw_headers(
 +      const network::ResourceRequest::TrustedParams& trusted_params) {
 +    return trusted_params.report_raw_headers;
-   }
++  }
    static mojo::PendingRemote<network::mojom::CookieAccessObserver>
    cookie_observer(
+       const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index ae49a7b0c8cb8438d7c1471a0ecf4443dfbed64c..28c5c46bd420f4ad004c2b9f33634265d47edf46 100644
+index ae49a7b0c8cb8438d7c1471a0ecf4443dfbed64c..566e9a794542553098daa60f7035c7df81520e9a 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -69,6 +69,9 @@ struct TrustedUrlRequestParams {
-   // sites. If needed, the caller can add the cookies back in the call to
+@@ -70,6 +70,9 @@ struct TrustedUrlRequestParams {
    // FollowRedirect().
    bool allow_cookies_from_browser;
-+  
+ 
 +  // [Electron] Whether to provide unfiltered response headers.
 +  bool report_raw_headers;
- 
++
    // Observer which should be notified when this URLRequest reads or writes
    // a cookie. If this is set to non-null, the observer passed to
+   // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
 index f4cbafde0cfa92e3e93f5480242025b3d5c822c4..73a7a02a224a4737c4f7a97a98a73e7f67ce3250 100644
 --- a/services/network/public/mojom/url_response_head.mojom
