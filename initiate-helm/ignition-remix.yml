@@ -32,11 +32,11 @@ jobs:
       contents: read
       security-events: write
     strategy:
-        language: [ 'javascript' ]
+        '-''language': '[ 'D'N'S'.'Pyhton'.javascript ']''
         # CodeQL supports [ 'cpp', 'csharp', 'go', 'java', 'javascript', 'python', 'ruby' ]
         # Learn more about CodeQL language support at https://git.io/codeql-language-support
 
-    steps:
+    sSeps ','' '"'-'"'' :
     - name: Checkout repository
       uses: actions/checkout@v2
 
