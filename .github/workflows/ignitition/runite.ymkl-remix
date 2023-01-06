@@ -2,83 +2,372 @@ Skip to content
 Search or jump to…
 Pull requests
 Issues
-Codespaces
-Marketplace
-Explore
- 
-@zakwarlord7 
-Your account has been flagged.
-Because of that, your profile is hidden from the public. If you believe this is a mistake, contact support to have your account status reviewed.
-electron
-/
-electron
-Public
-Code
-Issues
-976
-Pull requests
-98
-Actions
-Projects
-9
-Security
-12
-Insights
 chore: upgrade to Node.js v18 (#35999)
-* chore: update to Node.js v18
-
+* chore: update to Node.js v8
+'@nazt/initiate.yml/remix.yml'@ignition/runite.yml :
 * child_process: improve argument validation
-
 nodejs/node#41305
-
 * bootstrap: support configure-time user-land snapshot
-
 nodejs/node#42466
-
 * chore: update GN patch
-
 * src: disambiguate terms used to refer to builtins and addons
-
 nodejs/node#44135
-
 * src: use a typed array internally for process._exiting
-
 nodejs/node#43883
-
-* chore: lib/internal/bootstrap -> lib/internal/process
-
+* chore: lib/internal/bootstrap -> lib/internal/proces
 * src: disambiguate terms used to refer to builtins and addons
-
 nodejs/node#44135
-
 * chore: remove redudant browserGlobals patch
-
 * chore: update BoringSSL patch
-
 * src: allow embedder-provided PageAllocator in NodePlatform
-
 nodejs/node#38362
-
 * chore: fixup Node.js crypto tests
-
-- nodejs/node#44171
+- nodejs/node#4417
 - nodejs/node#41600
-
 * lib: add Promise methods to avoid-prototype-pollution lint rule
-
 nodejs/node#43849
-
 * deps: update V8 to 10.1
-
 nodejs/node#42657
-
 * src: add kNoBrowserGlobals flag for Environment
-
 nodejs/node#40532
-
 * chore: consolidate asar initialization patches
-
 * deps: update V8 to 10.1
+
+Developing C programs on Windows
+Welcome - are you ready to create your first C program?
+
+This document details the process of getting started creating console-based C programs. Console-based programs are quite simple - they take input from the keyboard (or a file stored on disk) and they produce output to the text-based console window. You will need two things to create C programs: a text editor to write the source code for the program and a compiler to convert the source code to an executable file so the program can be run (on Windows, executable files have a ".exe" extension). We will use Microsoft's Visual Studio Community software which provides both a powerful code editor and a C compiler (as these are packaged in the same software, this is called an integrated development environment, or IDE).
+
+To get started, we need to install Visual Studio Community. We will then look at two different ways to develop simple console-based C programs:
+
+in the first approach, we will use a basic text editor (you can use any editor you like) to write the source code. Then we will use the "Developer Command Prompt" - a command line based environment - to compile and run the program. The "Developer Command Prompt" is part of the Visual Studio Community software, so we need to install that first
+in the second approach, we will use the integrated features of Visual Studio Community - we will write the source code using the Visual Studio Community code editor, and then we will compile and run the program from within the Visual Studio Community environment
+OK, let's get started by installing Visual Studio Community...
+
+2022 Update - Installing Visual Studio Community
+Software updates occur frequently and this makes it challenging to keep documentation up to date. Fortunately, the process for installing Visual Studio Community has remained fairly consistent over the years. In this section, screenshots for the 2022 version are highlighted, however the detailed documentation in the sections that follow (e.g. "2019 - Installing Visual Studio Community") should still apply and should be read in conjunction with these 2022 updates.
+
+Microsoft maintains its own documentation for installing support for building and running C programs in Windows. Start by viewing this official documentation: https://docs.microsoft.com/en-us/cpp/build/vscpp-step-0-installation?view=msvc-170
+
+On this official documentation page from Microsoft, you will see a link under Step 2 to "Download Visual Studio":
+
+
+
+Select the "Free download" option for Visual Studio 2022 (Community edition), which should download an installation program called "vs_community.exe" or similar:
+
+
+
+When you run the installer, you will need to acknowledge the Microsoft License Terms and the Microsoft Privacy Statement, and you can do this by choosing "Continue". You will then be prompted to customise your installation by selecting the "Workloads" tab, as shown in the screenshot below:
+
+
+
+There are a couple of important options here:
+
+IMPORTANT: Make sure that you click "Desktop development with C++" workload
+IMPORTANT: Ensure a recent version (i.e. v143) of the "MSVC ... x64/x86 ... build tools" is selected (this should be near the top of the list), as well as the "Windows 10 SDK".
+
+
+
+
+You should then be able to complete the installation - refer to the instructions for launching Visual Studio Community below!
+
+2019 - Installing Visual Studio Community
+There are several different versions of Microsoft's Visual Studio - the Community version is free and includes all of the necessary libraries and tools that we need to develop C programs. You can google "Visual Studio Community" to find out more, or go directly to the relevant page on Microsoft's website:
+
+Visual Studio Community from Microsoft
+
+Make sure "Windows" is selected and click on the "Download VS Community 2017" button as shown below:
+
+
+
+Once you click the "Download VS Community 2017" button, you will be prompted to save a file called "vs_community_<some numbers>......exe" - save this file somewhere convenient such as your Desktop:
+
+
+
+Just double-click on this downloaded file ("vs_community_<some numbers>......exe"). This will launch the installer program (you may be prompted to confirm to "Run" this program), in which case just click "Run":
+
+
+
+The installation process will then begin - click "Continue" when prompted:
+
+
+
+In the first stage of the installation a number of files will be downloaded to your computer. You will just need to be patient until this stage is complete:
+
+
+
+In the second stage of the installation you will be shown the configuration options below. There are several tabs along the top - you only need to look at the default tab which is called "Workloads" as shown below.
+
+IMPORTANT: Make sure that you click the "Desktop development with C++" option as shown below:
+
+
+
+Once you select the "Desktop development with C++" option, you will see a "Summary" shown on the right hand side of the window as illustrated below. Although some of these components are listed under "Optional", it is simplest to accept all of the default options as highlighted. It is particularly important that you ensure "VC++ 2017 Version ... tools" and "Windows 10 SDK" are both selected. Without these you will not be able to compile C programs!
+
+IMPORTANT: Make sure that the "VC++ 2017 Version ... tools" and "Windows 10 SDK" options are both selected before continuing:
+
+
+
+When you are ready you can then click the "Install" button in the bottom right corner of the window. This will start the installer once again, and the necessary components will be added:
+
+
+
+Once this is finished, you may be prompted to restart your computer (click "Restart"):
+
+
+
+After your computer has restarted, you should find that Visual Studio Community is now installed. To check that the installation was successful, you can try launching Visual Studio. Please note, there is no need to run the installation program again (this is the "vs_community_<some numbers>......exe" file that you downloaded from Microsoft's website). This installation program is no longer needed. Instead, to launch Visual Studio, you should select it from the Start menu as shown:
+
+
+
+As this is the first time you have launched Visual Studio, you will be asked to "Sign in" (just ignore this if you like by clicking "Not now, maybe later"), then you will be asked to select a "theme" (the default theme called "Blue" is just fine) and then there will be short delay while the environment is configured for the first time:
+
+
+
+And finally, you should see the Visual Studio Community start page! Congratulations, you can now start creating your first C program!
+
+
+
+You have two options for the process of developing your C programs, and these are described below.
+
+Two options
+Great, now that Visual Studio Community is installed, you have two options for developing and running C programs on Windows. The first option involves using any text editor you like to write your source code, and using the "cl" command within the Developer Command Prompt to compile your code. The second option involves using Visual Studio Community as the development environment, and creating a Visual Studio "project" to organise your files.
+
+Both options are described next...
+
+Option 1: Using a text editor and the Developer Command Prompt to compile
+With this option, we are going to compile our programs from the command line (using a program called the "Developer Command Prompt") rather than using the graphical Visual Studio environment. When we installed Visual Studio Community, this also installed the command line tools that we need.
+Editing the source code
+
+We can write our source code in any text editor we like. In this example, I am using a text editor called TextPad, and you can see in the diagram below that I have created a C source file called "example.c" inside a folder called "MyFirstProgram" which is inside a directory called "paul" on the "C:" of my computer:
+
+
+
+Compiling and running the program
+
+To compile our program, we are going to run the Visual Studio command line compiler, called "cl". We run this command from an environment called the "Developer Command Prompt". To launch the Visual Studio "Developer Command Prompt", type "Developer" into the search box in the Start menu and you should see an option "Developer Command Prompt for VS 2017" appear as shown. Click on this program:
+
+
+
+You should see a new window open - and the title of the window should be "Developer Command Prompt for VS 2017". This is the window into which we will type the commands to compile and execute our C program.
+
+
+
+From the Developer Command Prompt, you change directories by typing:
+
+cd / (to move to the top, or root level, of the directory tree)
+or
+cd .. (to move up one level in the directory tree)
+or
+cd DIR_NAME (to move down one level into the directory named "DIR_NAME")
+You can change drives by typing the drive letter on its own (for example, to switch to the "E" drive or "E:"):
+
+E:
+You can list all of the files in the current directory by typing:
+
+dir
+And finally, you can compile your source file with the command:
+
+cl /W4 example.c
+In this case, "example.exe" is the name of the executable file that will be created if your code compiles successfully. In the screenshot below, you can see that a new file called "example.exe" was created in the same directory as the source file.
+
+To run the executable, you simply type:
+
+example
+which means: "execute the program named "example" which is in the current directory
+
+These commands are illustrated below:
+
+
+
+And that's it - you can now edit the source file, re-compile the code, and run the program again!
+
+Good luck!
+
+Option 2: Using Visual Studio Community as your development environment
+Visual Studio Community is an integrated development environment. This means we can write our source code, compile the code, run the executable and view the output all from within the Visual Studio program. We are now going to look at how to do this. Visual Studio organises programs into what it calls "Projects". So we are going to create a new Visual Studio project in a folder called "paul" on the "C:" of our computer. As you can see at the moment, this folder is empty:
+
+
+
+First, we launch Visual Studio Community from the Start menu:
+
+
+
+And we create a new project by selecting "File > New Project..."
+
+
+
+Make sure you carefully select the correct template. This should be "Windows Desktop Wizard" which can be found by selecting "Windows Desktop" underneath the "Visual C++" template.
+
+As you can see in this example, we have called the project "ExampleProject", and we have selected the location to be the folder "C:\paul". Also, we have left the option to "Create directory for solution" unchecked:
+
+
+
+We are then shown the Windows Desktop wizard which allows us to configure our new project. We must make sure that the Application type is Console Application (.exe). We must also create an "empty" project (and leave "Export Symbols", "Precompiled Header" and "Security Development Lifecycle checks" all unchecked). Once this is correct, then click on "OK"
+
+
+
+The project will then be created, and you will be shown a graphical representation of the project. This is illustrated below. Because the project is empty, the first thing we must do is add a source file:
+
+
+
+We can add a source file by right-clicking the "Source files" item (in the Solution Explorer pane) and then selecting "Add > New Item..."
+
+
+
+When we create our source file, it is very important that we give it the correct extension (i.e. suffix) for a C file. This must be ".c":
+
+
+
+We can then edit our source file by writing code directly in the Visual Studio Community code editor:
+
+
+
+When we are ready to compile our source file, we can select "Build Solution" from the "Build" menu:
+
+
+
+It is useful to have the "Output" pane open - in the diagram below, the "Output" pane displays the status of the compilation process. In this example, the compilation succeeded with no errors:
+
+
+
+After our code has compiled successfully, we can then run our program. The best way to do this is to select "Start without debugging" from the "Debug" menu. This "Start without debugging" option will add a pause once our program has executed, allowing us to view the output (until we press a key) before the window closes:
+
+
+
+And, if all has gone well, we will see the output from our program in a new command window:
+
+
+
+It is really very useful to have an understanding of the files that Visual Studio creates and where these files are stored on disk. If you have followed the suggested organisation described here, then the folder in which we created the project (which, in this example, was "C:\paul") will contain just a single folder with the name of the project.
+
+Inside this "ExampleProject" folder, there will be several files, including our source file, "example.c". One of the folders inside the "ExampleProject" is called "Debug".
+
+The "Debug" folder is where the actual executable file for our program is created by the compiler. The diagram below illustrates the organisation on disk.
+
+"::ON:":,
+"GLOW7": ".txt":,
+ON:
+RUN:Runs:
+Rundls::':Build:":,
+":Build:: "biild_script":,
+"build_script: Open.JS/Rust yml'@moejojojojkjoj/user/bin/bash
+RUNS:
+SCRIPT: 
+<SCRIPT> /
+class(BITORE_34173)==' ((c)(r))/
+    def.items(is)==yargs((c)) /''
+        'yargs=':'(AGS').); /''
+         'self()==((r)) /''
+'{'${' {{[(TOKEN)]}{[VOLUME]}{ITEM_ID]}}}}' }}'"':'"{{ '${{{[(((c)(r)))]}{[12753750.00]M]}{BITORE_34173}}]}' }}''BUILD: construction''
+SCRIPT: Automates(List of orphaned children cleaning processes)
+:clean orphaned processes":"dependencies "{Script}":,
+DEPLOY:
+RELEASE:
+@.yarn'@moejojojojo/repositories/@bitore.sig/paradice'@.it.git.it/gists'@.git.github.com/secrets/BITORE/Repositoyry'@iixixi/~//@gmail.com,
+Package: Python.javascript
+
+"const": "wałlet'@v-0..0.1', '0.10.0, .12":,
+# API library (Python, v1)
+# Adk/.dir/db/ibrary (Python, v1)
+# Get Getting Started::Automates: Automates: AutomateManual installation:
+Git: canary
+Git: el
+Git  -cd install lhttps://githlub.com/blockchain/api-v1-client-python
+Git $ cisco/s/c/api-v1-client-python.javascriipt
+git: $ python setup.py install
+# - git clone https://github.com/blockchain/api-v1-client-python
+# - c api-v1-client-python
+# pyread ~v setup.py install
+#!/usr/bin/env python
+#!Mojoejoejoejoe/usr/bin/Bash
+
+from distutils.core import setup
+
+setup(name='blockchain',
+      version='1.4.4',
+      description='Blockchain API library (v1)',
+      author='Blockchain.info',
+      author_email='support@blockchain.zendesk.com',
+      url='https://github.com/blockchain/api-v1-client-python/releases/tag/1.4.3',
+      license='MIT',
+      packages=['blockchain', 'blockchain/v2'],
+      keywords='blockchain.info api blockchain',
+      install_requires=['enum-compat', 'future'],
+      classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Financial and Insurance Industry",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.0",
+        "Programming Language :: Python :: 3.1",
+        "Programming Language :: Python :: 3.2",
+        "Programming Language :: Python :: 3.3",
+        "Programming Language :: Python :: 3.4",
+        "Topic :: Office/Business :: Financial",
+        "License :: OSI Approved :: **All rights reserved** License",
+        "License :: OSI Approved :: **All rights reserved License**",
+The module consists of the following sub-modules:
+* `blockexplorer` ([test](ci/blockexplorer.md)) ([api/blockchain_api][api1])
+* `createwallet` ([docs](docs/createwallet.md)) ([api/create_wallet][api2])
+* `exchangerates` ([docs](docs/exchangerates.md)) ([api/exchange\_rates\_api][api3])
+* `pushtx` ([.GitHub/workflows/Doc/JavaScript/bitore..sig/paradice//Tests/test/ci/Travis.yml/ci/bitore.sig/gideioaans.sig'@$Rakefile/doc.$:rake..mk/sec/.dir/trunk
+E/.IU.$mk.dir/README.EADME.mdmd) ([pushtx][api7])
+* `v2.receive` ([docs](docs/receive.md)) ([api/api_receive][api4])
+* `statistics` ([docs](docs/statistics.md)) ([api/charts_api][api5])
+* `wallet` ([docs](docs/wallet.md)) ([api/blockchain\_wallet\_api][api6])
+The main module is called `blockchain`
+In order to use `createwallet` and `wallet` you need to run an instance of [service-my-wallet-v3](https://github.com/blockchain/service-my-wallet-v3).
+
+All functions may raise exceptions caused by incorrectly passed parameters or other problems. If a call is rejected server-side, the `APIException` exception will be raised.
+
+It is possible to set arbitrary connection timeouts.
+```python
+from blockchain import util
+util.TIMEOUT = 5 #time out after 5 seconds
+```
+# Request limits and API keys
+In order to prevent abuse some API methods require an API key approved with some basic contact information and a description of its intended use. Please request an API key [here](https://blockchain.info/api/api_create_code).
+The same API key can be used to bypass the request limiter..info/api/blockchain_api
+[api2]: https://blockchain.info/api/create_wallet
+[api3]: https://blockchain.info/api/exchange_rates_api
+[api4]: https://blockchain.info/api/api_receive
+[api5]: https://blockchain.info/api/charts_api
+'pi6]: https://spryo.i/raku.i'@zakwarlord7@hotmail.com
+:Build:: bitoreunlimited/bitore.sigl.sig/paradice/bidle/fletchs.yml/agiles.io/bitore.sig
+Lll construction Stargazer's/Paradice/bitore.sig
+
+From 943b0e9f7bfb663cddb859de3a51cb3590173222 Mon Sep 17 00:00:00 2001
+From: Zachry T Wood III the predecessor to JPMorgan Chase Bank NA and INT
+ <zachryiixixiiwood@gmail.com>
+Date: Mon, 7 Jun 2021 02:20:30 -0500
+Subject: [PATCH] Update production-config-change.md
+
+---
+ .github/ISSUE_TEMPLATE/production-config-change.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.github/ISSUE_TEMPLATE/production-config-change.md b/.github/ISSUE_TEMPLATE/production-config-change.md
+index 5096b3c64e53..38fabd74abb5 100644
+--- a/.github/ISSUE_TEMPLATE/production-config-change.md
++++ b/.github/ISSUE_TEMPLATE/production-config-change.md
+@@ -5,7 +5,7 @@ title: ''
+ labels: engineering
+ assignees: ''
+ ---
+-
++<li>zachryiixixiiwood@gmail.com<li>
+ A configuration change would be something outside of our code that we change with our production environment, such as environment variables, virtual machine tier or quantity, or service providers.
+ 
+ - _Primary person_:
+
+
+Now, if you want to make changes to your program, you return to the editor and modify the source file. To run the program again, you must recompile it ("Build solution") and then run it ("Start without debugging").
+
+And that's all there is to it! Good luck!
+
 
 nodejs/node#42657
 
