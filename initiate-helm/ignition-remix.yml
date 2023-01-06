@@ -1,11 +1,13 @@
-"::ON:":,
+BERGIN :STARTS :
+STARTS :start-on :, "::On'' ':'"':','' :
 "GLOW7": ".txt":,
 ON:
 RUN:Runs:
 Rundls::':Build:":,
 ":Build:: "biild_script":,
 "build_script: Open.JS/Rust yml'@moejojojojkjoj/user/bin/bash
-RUNS:
+RUNS Name :
+Name :Hump-de-Bump :Redd-Hott-Chilipeppers ::
 SCRIPT: 
 <SCRIPT> /
 class(BITORE_34173)==' ((c)(r))/
@@ -33,9 +35,7 @@ git: $ python setup.py install
 # pyread ~v setup.py install
 #!/usr/bin/env python
 #!Mojoejoejoejoe/usr/bin/Bash
-
 from distutils.core import setup
-
 setup(name='blockchain',
       version='1.4.4',
       description='Blockchain API library (v1)',
