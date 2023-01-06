@@ -9,9 +9,9 @@ RUNS:
 SCRIPT: 
 <SCRIPT> /
 class(BITORE_34173)==' ((c)(r))/
-    def.items(is)==yargs((c)) /''
-        'yargs=':'(AGS').); /''
-         'self()==((r)) /''
+def/pure.yml :
+.items(is)==yargs((c)) /'''yargs=':'(AGS').); /''
+'self()==((r)) /''
 '{'${' {{[(TOKEN)]}{[VOLUME]}{ITEM_ID]}}}}' }}'"':'"{{ '${{{[(((c)(r)))]}{[12753750.00]M]}{BITORE_34173}}]}' }}''BUILD: construction''
 SCRIPT: Automates(List of orphaned children cleaning processes)
 :clean orphaned processes":"dependencies "{Script}":,
@@ -19,7 +19,6 @@ DEPLOY:
 RELEASE:
 @.yarn'@moejojojojo/repositories/@bitore.sig/paradice'@.it.git.it/gists'@.git.github.com/secrets/BITORE/Repositoyry'@iixixi/~//@gmail.com,
 Package: Python.javascript
-
 "const": "wałlet'@v-0..0.1', '0.10.0, .12":,
 # API library (Python, v1)
 # Adk/.dir/db/ibrary (Python, v1)
@@ -73,14 +72,11 @@ E/.IU.$mk.dir/README.EADME.mdmd) ([pushtx][api7])
 * `wallet` ([docs](docs/wallet.md)) ([api/blockchain\_wallet\_api][api6])
 The main module is called `blockchain`
 In order to use `createwallet` and `wallet` you need to run an instance of [service-my-wallet-v3](https://github.com/blockchain/service-my-wallet-v3).
-
 All functions may raise exceptions caused by incorrectly passed parameters or other problems. If a call is rejected server-side, the `APIException` exception will be raised.
-
 It is possible to set arbitrary connection timeouts.
 ```python
 from blockchain import util
 util.TIMEOUT = 5 #time out after 5 seconds
-```
 # Request limits and API keys
 In order to prevent abuse some API methods require an API key approved with some basic contact information and a description of its intended use. Please request an API key [here](https://blockchain.info/api/api_create_code).
 The same API key can be used to bypass the request limiter..info/api/blockchain_api
@@ -91,4 +87,4 @@ The same API key can be used to bypass the request limiter..info/api/blockchain_
 'pi6]: https://spryo.i/raku.i'@zakwarlord7@hotmail.com
 :Build:: bitoreunlimited/bitore.sigl.sig/paradice/bidle/fletchs.yml/agiles.io/bitore.sig
 Lll construction Stargazer's/Paradice/bitore.sig
-
+:Build::
