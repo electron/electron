@@ -15,6 +15,8 @@ class StatusIconLinuxDbus;
 
 namespace electron {
 
+class StatusIconGtk;
+
 class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
  public:
   TrayIconLinux();
@@ -36,12 +38,14 @@ class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
  private:
   enum class StatusIconType {
     kDbus,
+    kGtk,
     kNone,
   };
 
   ui::StatusIconLinux* GetStatusIcon();
 
   scoped_refptr<StatusIconLinuxDbus> status_icon_dbus_;
+  std::unique_ptr<StatusIconGtk> status_icon_gtk_;
   StatusIconType status_icon_type_;
 
   gfx::ImageSkia image_;
