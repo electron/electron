@@ -57,8 +57,8 @@ void ZoomLevelDelegate::SetDefaultZoomLevelPref(double level) {
   if (blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel()))
     return;
 
-  DictionaryPrefUpdate update(pref_service_, kPartitionDefaultZoomLevel);
-  update->SetDoubleKey(partition_key_, level);
+  ScopedDictPrefUpdate update(pref_service_, kPartitionDefaultZoomLevel);
+  update->Set(partition_key_, level);
   host_zoom_map_->SetDefaultZoomLevel(level);
 }
 
@@ -76,10 +76,8 @@ void ZoomLevelDelegate::OnZoomLevelChanged(
     return;
 
   double level = change.zoom_level;
-  DictionaryPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
-  base::Value* host_zoom_update = update.Get();
-  DCHECK(host_zoom_update);
-  base::Value::Dict& host_zoom_dictionaries = host_zoom_update->GetDict();
+  ScopedDictPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
+  base::Value::Dict& host_zoom_dictionaries = update.Get();
 
   bool modification_is_removal =
       blink::PageZoomValuesEqual(level, host_zoom_map_->GetDefaultZoomLevel());
@@ -124,10 +122,8 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
   // Sanitize prefs to remove entries that match the default zoom level and/or
   // have an empty host.
   {
-    DictionaryPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
-    base::Value* host_zoom_dictionaries = update.Get();
-    base::Value* sanitized_host_zoom_dictionary =
-        host_zoom_dictionaries->FindDictKey(partition_key_);
+    ScopedDictPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
+    base::Value* sanitized_host_zoom_dictionary = update->Find(partition_key_);
     if (sanitized_host_zoom_dictionary) {
       for (const std::string& s : keys_to_remove)
         sanitized_host_zoom_dictionary->RemoveKey(s);

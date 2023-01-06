@@ -208,10 +208,10 @@ void PrintPreviewMessageHandler::PrintPreviewCancelled(int32_t document_cookie,
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
-    base::DictionaryValue options,
+    base::Value::Dict options,
     gin_helper::Promise<v8::Local<v8::Value>> promise) {
   int request_id;
-  options.GetInteger(printing::kPreviewRequestID, &request_id);
+  options.Get(printing::kPreviewRequestID, &request_id);
   promise_map_.emplace(request_id, std::move(promise));
 
   auto* focused_frame = web_contents_->GetFocusedFrame();

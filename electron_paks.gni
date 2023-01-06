@@ -94,7 +94,7 @@ template("electron_extra_paks") {
     # New paks should be added here by default.
     sources += [
       "$root_gen_dir/content/browser/devtools/devtools_resources.pak",
-      "$root_gen_dir/ui/resources/webui_generated_resources.pak",
+      "$root_gen_dir/ui/resources/webui_resources.pak",
     ]
     deps += [ "//content/browser/devtools:devtools_resources" ]
     if (enable_pdf_viewer) {

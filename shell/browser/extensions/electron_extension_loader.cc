@@ -14,7 +14,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/task/task_runner_util.h"
 #include "base/threading/thread_restrictions.h"
 #include "base/time/time.h"
 #include "extensions/browser/extension_file_task_runner.h"
@@ -104,9 +103,8 @@ void ElectronExtensionLoader::LoadExtension(
     const base::FilePath& extension_dir,
     int load_flags,
     base::OnceCallback<void(const Extension*, const std::string&)> cb) {
-  base::PostTaskAndReplyWithResult(
-      GetExtensionFileTaskRunner().get(), FROM_HERE,
-      base::BindOnce(&LoadUnpacked, extension_dir, load_flags),
+  GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&LoadUnpacked, extension_dir, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionLoad,
                      weak_factory_.GetWeakPtr(), std::move(cb)));
 }
@@ -206,9 +204,8 @@ void ElectronExtensionLoader::LoadExtensionForReload(
   // when loading this extension and retain it here. As is, reloading an
   // extension will cause the file access permission to be dropped.
   int load_flags = Extension::FOLLOW_SYMLINKS_ANYWHERE;
-  base::PostTaskAndReplyWithResult(
-      GetExtensionFileTaskRunner().get(), FROM_HERE,
-      base::BindOnce(&LoadUnpacked, path, load_flags),
+  GetExtensionFileTaskRunner()->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(&LoadUnpacked, path, load_flags),
       base::BindOnce(&ElectronExtensionLoader::FinishExtensionReload,
                      weak_factory_.GetWeakPtr(), extension_id));
   did_schedule_reload_ = true;
