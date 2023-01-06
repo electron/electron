@@ -6,7 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_UI_GTK_MENU_GTK_H_
 
 #include "base/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "ui/base/glib/glib_signal.h"
+#include "ui/base/glib/scoped_gobject.h"
 
 typedef struct _GtkMenu GtkMenu;
 typedef struct _GtkWidget GtkWidget;
@@ -33,12 +35,10 @@ class MenuGtk {
   // Callback for when a menu item is activated.
   CHROMEG_CALLBACK_0(MenuGtk, void, OnMenuItemActivated, GtkWidget*);
 
-  // Not owned.
-  ui::MenuModel* menu_model_;
+  raw_ptr<ui::MenuModel> menu_model_;  // not owned
+  ScopedGObject<GtkWidget> gtk_menu_;
 
-  GtkWidget* gtk_menu_;
-
-  bool block_activation_;
+  bool block_activation_ = false;
 };
 
 }  // namespace gtkui

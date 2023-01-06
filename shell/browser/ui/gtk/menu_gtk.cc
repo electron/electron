@@ -6,7 +6,6 @@
 
 #include <gtk/gtk.h>
 
-#include "base/bind.h"
 #include "shell/browser/ui/gtk/menu_util.h"
 #include "ui/base/models/menu_model.h"
 
@@ -15,9 +14,7 @@ namespace electron {
 namespace gtkui {
 
 MenuGtk::MenuGtk(ui::MenuModel* model)
-    : menu_model_(model), gtk_menu_(nullptr), block_activation_(false) {
-  gtk_menu_ = gtk_menu_new();
-  g_object_ref_sink(gtk_menu_);
+    : menu_model_(model), gtk_menu_(TakeGObject(gtk_menu_new())) {
   if (menu_model_) {
     BuildSubmenuFromModel(menu_model_, gtk_menu_,
                           G_CALLBACK(OnMenuItemActivatedThunk),
@@ -28,16 +25,15 @@ MenuGtk::MenuGtk(ui::MenuModel* model)
 
 MenuGtk::~MenuGtk() {
   gtk_widget_destroy(gtk_menu_);
-  g_object_unref(gtk_menu_);
 }
 
 void MenuGtk::Refresh() {
-  gtk_container_foreach(GTK_CONTAINER(gtk_menu_), SetMenuItemInfo,
+  gtk_container_foreach(GTK_CONTAINER(gtk_menu_.get()), SetMenuItemInfo,
                         &block_activation_);
 }
 
 GtkMenu* MenuGtk::GetGtkMenu() {
-  return GTK_MENU(gtk_menu_);
+  return GTK_MENU(gtk_menu_.get());
 }
 
 void MenuGtk::OnMenuItemActivated(GtkWidget* menu_item) {

@@ -14,15 +14,13 @@
 
 namespace electron {
 
-StatusIconGtk::StatusIconGtk() : icon_(gtk_status_icon_new()) {
+StatusIconGtk::StatusIconGtk() : icon_(TakeGObject(gtk_status_icon_new())) {
   g_signal_connect(icon_, "activate", G_CALLBACK(OnClickThunk), this);
   g_signal_connect(icon_, "popup_menu", G_CALLBACK(OnContextMenuRequestedThunk),
                    this);
 }
 
-StatusIconGtk::~StatusIconGtk() {
-  g_object_unref(icon_);
-}
+StatusIconGtk::~StatusIconGtk() = default;
 
 void StatusIconGtk::SetIcon(const gfx::ImageSkia& image) {
   if (image.isNull())
