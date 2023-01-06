@@ -1,0 +1,127 @@
+# Sample workflow for building and deploying a Hugo site to GitHub Pages
+name: Deploy Hugo site to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+# Default to bash
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # Build job
+  build:
+    runs-on: ubuntu-latest
+    env:
+      HUGO_VERSION: 0.108.0
+    steps:
+      - name: Install Hugo CLI
+        run: |
+          wget -O ${{ runner.temp }}/hugo.deb https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/hugo_extended_${HUGO_VERSION}_linux-amd64.deb \
+          && sudo dpkg -i ${{ runner.temp }}/hugo.deb
+      - name: Install Dart Sass Embedded
+        run: sudo snap install dart-sass-embedded
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v2
+      - name: Install Node.js dependencies
+        run: "[[ -f package-lock.json || -f npm-shrinkwrap.json ]] && npm ci || true"
+      - name: Build with Hugo
+        env:
+          # For maximum backward compatibility with Hugo modules
+          HUGO_ENVIRONMENT: production
+          HUGO_ENV: production
+        run: |
+          hugo \
+            --minify \
+            --baseURL "${{ steps.pages.outputs.base_url }}/"
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./public
+#!/bin/bash
+# Copyright (c) 2012 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# This program wraps around pkg-config to generate the correct include and
+# library paths when cross-compiling using a sysroot.
+# The assumption is that the sysroot contains the .pc files in usr/lib/pkgconfig
+# and usr/share/pkgconfig (relative to the sysroot) and that they output paths
+# relative to some parent path of the sysroot.
+# This assumption is valid for a range of sysroots, in particular: a
+# LSB-compliant root filesystem mounted at the sysroot, and a board build
+# directory of a Chromium OS chroot.
+# Additional directories containing .pc files may be specified by setting
+# the PKG_CONFIG_PATH environment variable- these will be prepended to the
+# generated paths.
+
+set -o nounset
+set -o errexit
+
+root="$1"
+shift
+target_arch="$1"
+shift
+libpath="$1"
+shift
+
+if [ -z "$root" -o -z "$target_arch" ]
+then
+  echo "usage: $0 /path/to/sysroot target_arch libdir [pkg-config-arguments] package" >&2
+  exit 1
+fi
+
+python2=$(which python2)
+if [ ! -x "$python2" ] ; then
+  python2=python
+fi
+
+rewrite=`dirname $0`/rewrite_dirs.py
+package=${!#}
+
+libdir=$root/usr/$libpath/pkgconfig:$root/usr/share/pkgconfig
+
+set -e
+# Some sysroots, like the Chromium OS ones, may generate paths that are not
+# relative to the sysroot. For example,
+# /path/to/chroot/build/x86-generic/usr/lib/pkgconfig/pkg.pc may have all paths
+# relative to /path/to/chroot (i.e. prefix=/build/x86-generic/usr) instead of
+# relative to /path/to/chroot/build/x86-generic (i.e prefix=/usr).
+# To support this correctly, it's necessary to extract the prefix to strip from
+# pkg-config's |prefix| variable.
+prefix=`PKG_CONFIG_LIBDIR=$libdir pkg-config --variable=prefix "$package" | sed -e 's|/usr$||'`
+result=`PKG_CONFIG_LIBDIR=$libdir pkg-config "$@"`
+echo "$result"| $python2 $rewrite --sysroot "$root" --strip-prefix "$prefix"
+  # Deployment job
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1
