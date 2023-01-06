@@ -875,18 +875,18 @@ void InspectableWebContents::GetPreference(DispatchCallback callback,
 
 void InspectableWebContents::SetPreference(const std::string& name,
                                            const std::string& value) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->SetKey(name, base::Value(value));
+  ScopedDictPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update->Set(name, base::Value(value));
 }
 
 void InspectableWebContents::RemovePreference(const std::string& name) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->RemoveKey(name);
+  ScopedDictPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update->Remove(name);
 }
 
 void InspectableWebContents::ClearPreferences() {
-  DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
-  unsynced_update->GetDict().clear();
+  ScopedDictPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
+  unsynced_update->clear();
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {

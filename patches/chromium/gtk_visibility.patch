@@ -18,7 +18,7 @@ index 355067ea178bee1466f9df5a3ed146e9f09f0768..1b385d12692deece9e10722fc70215e8
      # on GTK.
      "//examples:peerconnection_client",
 diff --git a/ui/ozone/platform/x11/BUILD.gn b/ui/ozone/platform/x11/BUILD.gn
-index bd3c0c8fac7038af2de4bb4a4fa0db8e872745e9..e359e2606759a4796190f6ab1ce038a2f87d16de 100644
+index 7689ed291431cee284bd56292d4306fe34919ae6..c60506e7b9cc6c8961449b3bb49c5f36ba86b7f2 100644
 --- a/ui/ozone/platform/x11/BUILD.gn
 +++ b/ui/ozone/platform/x11/BUILD.gn
 @@ -6,7 +6,7 @@ import("//build/config/chromeos/ui_mode.gni")
