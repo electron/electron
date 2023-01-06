@@ -10,7 +10,7 @@ can be reverted when those failures are addressed. It's unlikely
 that this patch will be upstreamed.
 
 diff --git a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-index 29d2c92f103958c419294119e35c87be18f8118e..27fa9161a2d23f5b60de42ab1cf5faa4154917f7 100644
+index 01abaf8086c8a0eee581516ce1b9c5748f41d1e8..a1798e40df8797f56d4113de84e3e9ab252b9b7c 100644
 --- a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 +++ b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 @@ -293,26 +293,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
@@ -42,10 +42,10 @@ index 29d2c92f103958c419294119e35c87be18f8118e..27fa9161a2d23f5b60de42ab1cf5faa4
    RunGetLanguageListTest();
  }
 diff --git a/chrome/browser/spellchecker/spellcheck_service_unittest.cc b/chrome/browser/spellchecker/spellcheck_service_unittest.cc
-index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811ff720c41b 100644
+index 42c96836486ad0b8d8a436c44f0989e981b1be36..4140c914223a56f300688023a931ac32628b7777 100644
 --- a/chrome/browser/spellchecker/spellcheck_service_unittest.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service_unittest.cc
-@@ -341,18 +341,9 @@ const std::vector<std::string> SpellcheckServiceHybridUnitTestBase::
+@@ -335,18 +335,9 @@ const std::vector<std::string> SpellcheckServiceHybridUnitTestBase::
                               // dictionaries.
  };
  
@@ -66,7 +66,7 @@ index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811f
  
  static const TestCase kHybridGetDictionariesParams[] = {
      // Galician (gl) has only Windows support, no Hunspell dictionary. Croatian
-@@ -407,10 +398,10 @@ static const TestCase kHybridGetDictionariesParams[] = {
+@@ -401,10 +392,10 @@ static const TestCase kHybridGetDictionariesParams[] = {
  };
  
  INSTANTIATE_TEST_SUITE_P(TestCases,
@@ -79,7 +79,7 @@ index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811f
    RunGetDictionariesTest(GetParam().accept_languages,
                           GetParam().spellcheck_dictionaries,
                           GetParam().expected_dictionaries);
-@@ -440,16 +431,7 @@ std::ostream& operator<<(std::ostream& out,
+@@ -434,16 +425,7 @@ std::ostream& operator<<(std::ostream& out,
  
  class SpellcheckServiceWindowsDictionaryMappingUnitTest
      : public SpellcheckServiceHybridUnitTestBase,
@@ -98,10 +98,10 @@ index f528150f455103828c463c28b302f671f100d533..18566653b1cdca9a4db1657f3e4b811f
  static const DictionaryMappingTestCase kHybridDictionaryMappingsParams[] = {
      DictionaryMappingTestCase({"en-CA", "en-CA", "en-CA", "en", "en"}),
 diff --git a/components/spellcheck/common/spellcheck_features.cc b/components/spellcheck/common/spellcheck_features.cc
-index 0f17118a967852309b42c74d5c41516df3288d73..5be8a0b6a4472eee426c1af1342c86158630ac37 100644
+index 9942d3a72004b75161579f4cda252a88b32459b4..3b7bb204a54da11bcf5404b8214d7c4da851227e 100644
 --- a/components/spellcheck/common/spellcheck_features.cc
 +++ b/components/spellcheck/common/spellcheck_features.cc
-@@ -34,7 +34,7 @@ BASE_FEATURE(kWinUseBrowserSpellChecker,
+@@ -29,7 +29,7 @@ BASE_FEATURE(kWinUseBrowserSpellChecker,
  
  BASE_FEATURE(kWinDelaySpellcheckServiceInit,
               "WinDelaySpellcheckServiceInit",

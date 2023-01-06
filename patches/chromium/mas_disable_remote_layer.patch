@@ -16,12 +16,12 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c55fa4467 100644
+index 4b5f79a2331d491c1f05306dc45540aa7477abfc..61204fc4dc789936f7e5f3582917076ba1999330 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -18,7 +18,9 @@
- #include "ui/gl/gl_surface_egl.h"
  #include "ui/gl/gpu_switching_observer.h"
+ #include "ui/gl/presenter.h"
  
 +#if !IS_MAS_BUILD()
  @class CAContext;
@@ -29,7 +29,7 @@ index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c
  @class CALayer;
  
  namespace ui {
-@@ -109,7 +111,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
+@@ -81,7 +83,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
@@ -40,7 +40,7 @@ index 9666bbab1fc8e046e2702aef9e78028252e984ed..6a26e3cd714b0cfa65f696bea63d238c
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 320e3b9377b4f4255dc368480d94130b3936b931..9b03f2e13c91dc2b281b9e3d35676cf023207fa5 100644
+index 70ce56dbfdad32012bfa25101eecd2ed2a3cafe2..75ec71f9a0437e3ded62f4e30e0a30f0a4906791 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -71,12 +71,14 @@
@@ -58,7 +58,7 @@ index 320e3b9377b4f4255dc368480d94130b3936b931..9b03f2e13c91dc2b281b9e3d35676cf0
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -174,7 +176,9 @@
+@@ -171,7 +173,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {

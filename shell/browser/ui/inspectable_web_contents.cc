@@ -290,20 +290,21 @@ class InspectableWebContents::NetworkResourceLoader
           stream_id_, bindings_, resource_request_, traffic_annotation_,
           std::move(url_loader_factory_), std::move(callback_), delay);
     } else {
-      base::DictionaryValue response;
-      response.SetInteger("statusCode", response_headers_
-                                            ? response_headers_->response_code()
-                                            : net::HTTP_OK);
+      base::Value response(base::Value::Type::DICT);
+      response.GetDict().Set(
+          "statusCode", response_headers_ ? response_headers_->response_code()
+                                          : net::HTTP_OK);
 
-      auto headers = std::make_unique<base::DictionaryValue>();
+      base::Value::Dict headers;
       size_t iterator = 0;
       std::string name;
       std::string value;
       while (response_headers_ &&
              response_headers_->EnumerateHeaderLines(&iterator, &name, &value))
-        headers->SetString(name, value);
+        headers.Set(name, value);
 
-      response.Set("headers", std::move(headers));
+      response.GetDict().Set("headers", std::move(headers));
+
       std::move(callback_).Run(&response);
     }
 
@@ -654,8 +655,8 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
                                                  int stream_id) {
   GURL gurl(url);
   if (!gurl.is_valid()) {
-    base::DictionaryValue response;
-    response.SetInteger("statusCode", net::HTTP_NOT_FOUND);
+    base::Value response(base::Value::Type::DICT);
+    response.GetDict().Set("statusCode", net::HTTP_NOT_FOUND);
     std::move(callback).Run(&response);
     return;
   }
@@ -875,18 +876,18 @@ void InspectableWebContents::GetPreference(DispatchCallback callback,
 
 void InspectableWebContents::SetPreference(const std::string& name,
                                            const std::string& value) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->SetKey(name, base::Value(value));
+  ScopedDictPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update->Set(name, base::Value(value));
 }
 
 void InspectableWebContents::RemovePreference(const std::string& name) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->RemoveKey(name);
+  ScopedDictPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update->Remove(name);
 }
 
 void InspectableWebContents::ClearPreferences() {
-  DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
-  unsynced_update->GetDict().clear();
+  ScopedDictPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
+  unsynced_update->clear();
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
