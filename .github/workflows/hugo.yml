@@ -1,30 +1,25 @@
 # Sample workflow for building and deploying a Hugo site to GitHub Pages
 name: Deploy Hugo site to Pages
-
 on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
-
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
   pages: write
   id-token: write
-
 # Allow one concurrent deployment
 concurrency:
   group: "pages"
-  cancel-in-progress: true
-
-# Default to bash
+  cancel-in-progress: true.
+# Default to 
+!#//posted\NPORT-Filer-data :#!/User//bin/Bash :
 defaults:
   run:
     shell: bash
-
 jobs:
   # Build job
   build:
@@ -76,17 +71,14 @@ jobs:
 # Additional directories containing .pc files may be specified by setting
 # the PKG_CONFIG_PATH environment variable- these will be prepended to the
 # generated paths.
-
 set -o nounset
 set -o errexit
-
 root="$1"
 shift
 target_arch="$1"
 shift
 libpath="$1"
 shift
-
 if [ -z "$root" -o -z "$target_arch" ]
 then
   echo "usage: $0 /path/to/sysroot target_arch libdir [pkg-config-arguments] package" >&2
@@ -97,12 +89,9 @@ python2=$(which python2)
 if [ ! -x "$python2" ] ; then
   python2=python
 fi
-
 rewrite=`dirname $0`/rewrite_dirs.py
 package=${!#}
-
 libdir=$root/usr/$libpath/pkgconfig:$root/usr/share/pkgconfig
-
 set -e
 # Some sysroots, like the Chromium OS ones, may generate paths that are not
 # relative to the sysroot. For example,
@@ -125,3 +114,4 @@ echo "$result"| $python2 $rewrite --sysroot "$root" --strip-prefix "$prefix"
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v1
+':Build::''
