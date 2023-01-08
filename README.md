@@ -105,6 +105,7 @@ If you are interested in reporting/fixing issues and contributing directly to th
 
 ## Community
 
+It's a community of people with great ideas and thoughts. And have a dream to transform the world of open source. 
 Info on reporting bugs, getting help, finding third-party tools and sample apps,
 and more can be found on the [Community page](https://www.electronjs.org/community).
 
