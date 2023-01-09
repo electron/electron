@@ -7,7 +7,7 @@ Subject: feat: allow embedders to add observers on created hunspell
 This patch is used by Electron to implement spellchecker events.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
-index 9718d5fbe6837e476e5d44bc6ed7b1eab26293ea..5b7eb05223cff26c2307db98370572501658ee49 100644
+index 809410c3c7337e0ac62e8ce0697469ebaaa3f8d1..1ace5ce22749e87a873cadb912276fd1c9ba09b1 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.cc
 +++ b/chrome/browser/spellchecker/spellcheck_service.cc
 @@ -468,6 +468,9 @@ void SpellcheckService::LoadDictionaries() {
@@ -42,7 +42,7 @@ index 9718d5fbe6837e476e5d44bc6ed7b1eab26293ea..5b7eb05223cff26c2307db9837057250
                                  const content::NotificationSource& source,
                                  const content::NotificationDetails& details) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index 1527b8f76ad0de4b8d7d9f056147c45723bf30d8..67aeacd26eaef3f878fbcb12cfa0355f88b523d8 100644
+index 17b0aaeb05bcb1f8dadc6551c6b688c7b084c1ff..1e1060f348bc9c5ee23ecf6cbffddad27a80af18 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -138,6 +138,8 @@ class SpellcheckService : public KeyedService,

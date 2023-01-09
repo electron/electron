@@ -6,7 +6,7 @@ Subject: Re-register status item when owner of status watcher is changed
 https://chromium-review.googlesource.com/c/chromium/src/+/4022621
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 166f6cf06cba791e14851b35a785200f1a5f5549..88289caa2518a2888de596fd65b7dfb6efa3e1ab 100644
+index 0199c79abfb7f38affd37f2f39eae76bd29697e3..52959c54bba240eef77e54dd4d2eaea4bc5d79b6 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 @@ -380,6 +380,13 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
@@ -39,7 +39,7 @@ index 166f6cf06cba791e14851b35a785200f1a5f5549..88289caa2518a2888de596fd65b7dfb6
      dbus::MethodCall* method_call,
      dbus::ExportedObject::ResponseSender sender) {
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index e7628de42f980fa3535cab9dfffd0deab30f8812..eae1c332a0972aefb8843cac947aeb2f4c48d360 100644
+index 8b2dd07d387ab6c3ae449e0770d6fd784b58e1c8..a1f7ad9a03b1bda752cc31ac5a554200e1a8762f 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -74,10 +74,16 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,

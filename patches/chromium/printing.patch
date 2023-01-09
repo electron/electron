@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 449762d965145b882e84765e94dbfb16c1361dee..f38d5a3a3c028742a51894038d0e48325a2d58d8 100644
+index 545f306c0e9348f4e3cb4e5c219adb32dc244034..e73dc5ba7ecb4521f5a5719d58fb11028980184b 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -965,7 +965,6 @@ if (is_win) {
@@ -34,7 +34,7 @@ index 449762d965145b882e84765e94dbfb16c1361dee..f38d5a3a3c028742a51894038d0e4832
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 796c7f06fa6063ac409f3fef53871e18d4c07838..6575e833388bcc3ac487a409027d984bf62db004 100644
+index e1ddd8fc237f61ceb86115d66087a6f89940609f..3631a378c2829a6007d86a2b934ee0f4fd055156 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -91,6 +91,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -78,7 +78,7 @@ index 796c7f06fa6063ac409f3fef53871e18d4c07838..6575e833388bcc3ac487a409027d984b
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 017e421d0ca3e6154b849373abbcb8d75b369e60..aaadfba1735b21e17b66e8efe69f8a5ab4a312b0 100644
+index 34d6001efd674bd49031845e8257c468d894258e..b048047d4ece64d1293809589f2a824ea7123d58 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -415,7 +415,7 @@ index 017e421d0ca3e6154b849373abbcb8d75b369e60..aaadfba1735b21e17b66e8efe69f8a5a
    for (auto& observer : GetObservers())
      observer.OnPrintNow(rfh);
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 25d415022a331721ac356a55e1d23da00e494162..dad283702062c210e2306854bc346c6ab0fe6a22 100644
+index e2823c4985fcf7701dc6cae6ee003f9bdc9556b8..486e4e84478e270cc03f9af906584180118bdd04 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -42,6 +42,8 @@ namespace printing {
@@ -486,7 +486,7 @@ index 25d415022a331721ac356a55e1d23da00e494162..dad283702062c210e2306854bc346c6a
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index b9f35e43b41501a8a921a6c694f3824e8b9fcaa1..43b64d07a214f44228a5e193751cc81fe28b2f02 100644
+index d01d616c3b1ea5965bcc0dafc63ca757d991f975..632207f53dfac75ed7e963836fe03f8317933b76 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -298,17 +298,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -783,10 +783,10 @@ index 97151dfd451fc847472fa82d418ab1f5abd8d853..e8e963aca6c1ab0360c55da0ad0845b9
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index aff547e8e5ed0fcafb2fe5cdd5dec0c0ec7ef7d0..c8668e8e831cc0e5e2ea96da2c87b4bd711a2e71 100644
+index 5d93830611a5391c1553675b994a7d5b8cb335ef..8eb1f96e42f158d38d68a247643be414c450bfea 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2820,8 +2820,9 @@ source_set("browser") {
+@@ -2813,8 +2813,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

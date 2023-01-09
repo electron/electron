@@ -43,7 +43,7 @@ index e89237f4efe157298cffa8d7baaff4008d438f2d..67a54f4ee4c370bf0d1530fb5b0fc69e
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ebb60f0c70f309f753682cf32049a5683541f26a..edfa75775225bf877d10df4ac867064f8d73d007 100644
+index 12106dffa614ccf14d82795a5401c4a11cee9b5e..9c6dccfd8b19f26ce71d30237ef29846c6046c59 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4713,6 +4713,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
@@ -71,7 +71,7 @@ index 3f0ecf8749e44638f27ae6a5484fed7fac1c808b..52e3c3774d1c4258af44596716df2932
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index d89d18e8d2509629c0d43c199c9a4ae3a302c062..283a8f88eb46fa75dc4e5ddd396b79cb3d936259 100644
+index 7038d90583a22a2ab7efa09903a231559b8d9c40..75ec515affa87960c323eaf60c6b636c7e066083 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -13,6 +13,7 @@
@@ -82,7 +82,7 @@ index d89d18e8d2509629c0d43c199c9a4ae3a302c062..283a8f88eb46fa75dc4e5ddd396b79cb
  #include "content/public/browser/allow_service_worker_result.h"
  #include "content/public/browser/reload_type.h"
  #include "content/public/browser/render_frame_host.h"
-@@ -546,6 +547,9 @@ class CONTENT_EXPORT WebContentsObserver {
+@@ -539,6 +540,9 @@ class CONTENT_EXPORT WebContentsObserver {
    // Invoked when the primary main frame changes size.
    virtual void PrimaryMainFrameWasResized(bool width_changed) {}
  

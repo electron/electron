@@ -513,7 +513,7 @@ index 8a3e46bacb0c97edc5f5ad4d106e4daf2f0189cb..3692dee6a0df67af876c44e90312783c
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 4fabf6628f41dd06adffbf652edc9ddfb6ff07c6..1e80c8a8ef7072ca2b4751f7a5b9d48302227c5a 100644
+index f9dd844cd6b665a5566cf6f46830287cffedc0ca..5b74259b2650fc4a525ba3a1be61d3d92131eac7 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -85,7 +85,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -527,7 +527,7 @@ index 4fabf6628f41dd06adffbf652edc9ddfb6ff07c6..1e80c8a8ef7072ca2b4751f7a5b9d483
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 3b44531f2618f5642c8b1fcd4b96085333185d9d..6893355c693edde1d7d4a80378aeda1053e1dc91 100644
+index 3ee0cc958b4b93be478cdd79961a80c036e23d23..223032434631fe04ad2999e90439b080d847b54d 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -399,8 +399,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -548,10 +548,10 @@ index 3b44531f2618f5642c8b1fcd4b96085333185d9d..6893355c693edde1d7d4a80378aeda10
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 52f44a31de4a8df838622886581052dcd86072e9..65b938d76e43021bbab565a97d0645cb9c35a4ff 100644
+index 83c153d99c1e2be2b139330cd4eedf129fcac2ce..14466dd30eb6b63638d351dcf7caf93a8d30e2fb 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -103,7 +103,6 @@ interface DisplayClient {
+@@ -107,7 +107,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -583,10 +583,10 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 50cea82c6b47769b27b44a487f1ef08cc81040e6..f024e6013bfb9c9240885a66b46631099ff5d50c 100644
+index 4bd8c466869f19ddf579ad748369802646541870..ade93f8abb68af4f129468ddbc69d7b945764e3a 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -87,6 +87,7 @@ class DisplayPrivate;
+@@ -88,6 +88,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -594,7 +594,7 @@ index 50cea82c6b47769b27b44a487f1ef08cc81040e6..f024e6013bfb9c9240885a66b4663109
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -143,6 +144,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -144,6 +145,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -611,7 +611,7 @@ index 50cea82c6b47769b27b44a487f1ef08cc81040e6..f024e6013bfb9c9240885a66b4663109
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -186,6 +197,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -187,6 +198,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -621,7 +621,7 @@ index 50cea82c6b47769b27b44a487f1ef08cc81040e6..f024e6013bfb9c9240885a66b4663109
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -503,6 +517,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -510,6 +524,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  

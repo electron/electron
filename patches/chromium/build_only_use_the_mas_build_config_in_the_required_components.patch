@@ -43,7 +43,7 @@ index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 43713a7eef20efc7bdf2a78f8d126d43ff09ffff..44e7ec5c621ab17851dffe6ad42f7b561576731c 100644
+index 1adfddd0fa65aac18e4bc98a38e52dfd62701ff4..6ac3d77d7259970394537e164097cd8dbefec6b0 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -68,10 +68,10 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c8668e8e831cc0e5e2ea96da2c87b4bd711a2e71..fa0eb1250d7ae8b0878bb00543911bd7aa9ee550 100644
+index 8eb1f96e42f158d38d68a247643be414c450bfea..28af8c56ad85a40acfda42469f853d20ecd5f197 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -53,6 +53,7 @@ source_set("browser") {
+@@ -56,6 +56,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -80,10 +80,10 @@ index c8668e8e831cc0e5e2ea96da2c87b4bd711a2e71..fa0eb1250d7ae8b0878bb00543911bd7
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index bc96005c80cec046e6a4ef27d006c06037c24cea..81b14ee5000549368454c18d2f47fabf831351fe 100644
+index bbe6c2e2386f515e01486e030d571bcbb9f99228..0b522349947592a33e8c37e36a38cb33fb21b4f1 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -178,6 +178,7 @@ source_set("common") {
+@@ -172,6 +172,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -92,10 +92,10 @@ index bc96005c80cec046e6a4ef27d006c06037c24cea..81b14ee5000549368454c18d2f47fabf
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 2a2410d4a46c1c6280d38aa5646748433ca4b742..32468dc2c1a74acba5a56db44cfb00eb4df45266 100644
+index a1f691c0d3452b440210190c467f96c727b3ec58..2c4808ec4b7018165947c311816d113067e8542c 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -216,6 +216,7 @@ target(link_target_type, "renderer") {
+@@ -220,6 +220,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e38505d2b17428428defa0ebab06845374b7fe7c..a9812fa4abff04e5415c2315d5db7e0b6ec8673f 100644
+index 59048ca463e1450efeb519b5100363c481cf89af..0426035c4545d5669d7b7285dce32f7957882605 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -286,6 +286,7 @@ component("core") {
@@ -206,7 +206,7 @@ index 1ca2843130e81f9ea6be7a71b6b2a8d68bd413ae..712e4428bc9417f114a695a5980c4888
  
  test("accelerated_widget_mac_unittests") {
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index dffa31d3a753b6bb261b90c832826a6820d171d4..1c22f03f23f7db0432cfd7ab78649d05c7461b7a 100644
+index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9b487e4b6 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -249,6 +249,7 @@ component("platform") {

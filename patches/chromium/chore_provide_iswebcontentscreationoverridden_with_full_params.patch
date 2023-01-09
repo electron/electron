@@ -7,7 +7,7 @@ Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index 5d7675b25b9180405e1ca7c3fe88e34af8806591..a0edfe2efc4e5f4f3a21fb4e8d8e06ab66a99be7 100644
+index 3205aa98621b855a8e1dcea19daf5c4bf660dc09..54a994670a6ce84baf74e1939aba88ca8f1648b3 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
 @@ -285,8 +285,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
@@ -66,7 +66,7 @@ index 1af9377f917f4659149698593dbe85d98ed3409e..52771e9703663e60ed8ac77fff5abf9c
        content::WebContents* source,
        const content::OpenURLParams& params) override;
 diff --git a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
-index 0e9e41382300d6bb5fc6fa47cd5ed2ed4181ce46..e65a9bb5b9909e16f5a7dd2e73defa850795c9c4 100644
+index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685ab623bf7 100644
 --- a/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 +++ b/chrome/browser/ui/ash/keyboard/chrome_keyboard_web_contents.cc
 @@ -74,8 +74,7 @@ class ChromeKeyboardContentsDelegate : public content::WebContentsDelegate,
@@ -80,10 +80,10 @@ index 0e9e41382300d6bb5fc6fa47cd5ed2ed4181ce46..e65a9bb5b9909e16f5a7dd2e73defa85
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 3490be7e0fd125099fb0a14cfdd6578982862138..4dee48d17171b98dcf1f0b773f4e1bd878ef0a90 100644
+index 990b8a062b578a30e64914a0d808c936e837ec81..231c4b4c1720be8df872ae2c8d3ccf1ed6b03faf 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1840,12 +1840,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1839,12 +1839,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,7 +99,7 @@ index 3490be7e0fd125099fb0a14cfdd6578982862138..4dee48d17171b98dcf1f0b773f4e1bd8
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 25a4953e4c1994b37b6425913526c64c24307bcb..cb17cb1f023b9bdbc0df8d53bd7694895984c856 100644
+index c1fcaf3c2bc23ac1087b43e3754fa60f73a76a22..b3b39f4824a33b1a923bd282044855f80500b770 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -851,8 +851,7 @@ class Browser : public TabStripModelObserver,
@@ -113,7 +113,7 @@ index 25a4953e4c1994b37b6425913526c64c24307bcb..cb17cb1f023b9bdbc0df8d53bd769489
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
-index c76254dab42cb4761401dacc0587d74393eedf67..2ae0911e8ead5fae1c34f8981a97c1d829fb6e12 100644
+index 114e765ae7780922b0db688e381447c2e4b73cd3..c187ddf65418f4f3068593c6d4165d50524e1bfc 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.cc
 @@ -202,8 +202,7 @@ bool PresentationReceiverWindowController::IsWebContentsCreationOverridden(
@@ -127,7 +127,7 @@ index c76254dab42cb4761401dacc0587d74393eedf67..2ae0911e8ead5fae1c34f8981a97c1d8
    // uses this to spawn new windows/tabs, which is also not allowed for
    // local presentations.
 diff --git a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
-index 9f36b1721b154ebd31a593800d5eb1f5930314cc..5c0f9cb89b675b58d7334c71c6546afb58498c03 100644
+index 0c8f72c7e6cbe38c2e05381e97c58a3a6c991f8e..2afc5dc73d6e23555faf39bf144b43a19a7c1118 100644
 --- a/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 +++ b/chrome/browser/ui/media_router/presentation_receiver_window_controller.h
 @@ -105,8 +105,7 @@ class PresentationReceiverWindowController final
@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index edfa75775225bf877d10df4ac867064f8d73d007..ee65f87d7ba7e11dc75fbf1acd1ae2b813d3c5f8 100644
+index 9c6dccfd8b19f26ce71d30237ef29846c6046c59..0803873b4704e3389dc057a36444c41c897df004 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4029,8 +4029,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -288,7 +288,7 @@ index e7ca270c9e95c539c5379e09302ae43256e193d2..9c2de6f9992e4630fa8b4359607973d5
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 50a583c2bc96aaf04b9dd76c40fb56a3b7be792b..3e8331cb95254076a47f1ec0a259c747e2fa302d 100644
+index 69b595a14927aa566fb2f7a0091c3d5b22ed552f..61975c2f73a2f337a41d50c271fd0aef48a1c3f2 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -390,8 +390,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
