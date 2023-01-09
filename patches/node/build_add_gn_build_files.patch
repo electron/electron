@@ -896,7 +896,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..9abde472d88923db835b12982b7f2ccb1f260196
 --- /dev/null
 +++ b/deps/nghttp2/BUILD.gn
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,48 @@
 +config("nghttp2_config") {
 +  defines = [ "NGHTTP2_STATICLIB" ]
 +  include_dirs = [ "lib/includes" ]
@@ -923,6 +923,7 @@ index 0000000000000000000000000000000000000000..9abde472d88923db835b12982b7f2ccb
 +    "lib/nghttp2_buf.c",
 +    "lib/nghttp2_callbacks.c",
 +    "lib/nghttp2_debug.c",
++    "lib/nghttp2_extpri.c",
 +    "lib/nghttp2_frame.c",
 +    "lib/nghttp2_hd.c",
 +    "lib/nghttp2_hd_huffman.c",
