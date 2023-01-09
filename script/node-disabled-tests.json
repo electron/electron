@@ -121,6 +121,7 @@
   "parallel/test-trace-events-none",
   "parallel/test-trace-events-process-exit",
   "parallel/test-trace-events-promises",
+  "parallel/test-trace-events-threadpool",
   "parallel/test-trace-events-v8",
   "parallel/test-trace-events-vm",
   "parallel/test-trace-events-worker-metadata",
