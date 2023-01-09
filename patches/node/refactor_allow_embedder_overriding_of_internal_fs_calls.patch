@@ -22,10 +22,10 @@ index cbca692e0ef458aad9beea30d04e1152e1fed5e5..9cf2c2d71208ad960f54965ddefa98be
  // release cycle, remove the Proxy and setter and update the
  // getter to either return a read-only object or always return
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 7d780ed13412bb307435d98d4a8830a86dd72da1..5ea58cdbf5b1caa41ff3d1c7f4569d112974425f 100644
+index eb73c774118653c0746f78d4b72b31cb7c4f41f2..44e4c22ebf39fc9c52f789173a2cc50300bcd181 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -92,7 +92,7 @@ const fs = require('fs');
+@@ -94,7 +94,7 @@ const fs = require('fs');
  const internalFS = require('internal/fs/utils');
  const path = require('path');
  const { sep } = path;
@@ -34,7 +34,7 @@ index 7d780ed13412bb307435d98d4a8830a86dd72da1..5ea58cdbf5b1caa41ff3d1c7f4569d11
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -168,7 +168,7 @@ function stat(filename) {
+@@ -171,7 +171,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }
