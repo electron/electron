@@ -27,7 +27,7 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624
    args = [...execArgv, modulePath, ...args];
  
    if (typeof options.stdio === 'string') {
-@@ -613,6 +613,21 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -624,6 +624,21 @@ function normalizeSpawnArguments(file, args, options) {
                      'options.windowsVerbatimArguments');
    }
  
@@ -47,5 +47,5 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624
 +  }
 +
    if (options.shell) {
+     validateArgumentNullCheck(options.shell, 'options.shell');
      const command = ArrayPrototypeJoin([file, ...args], ' ');
-     // Set the shell, switches, and commands.
