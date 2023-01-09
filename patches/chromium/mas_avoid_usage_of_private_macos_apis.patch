@@ -14,7 +14,7 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2ee3295d68 100644
+index 91a65a1e700cf..323b9b48214aa 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
 @@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
@@ -39,7 +39,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7d6375d90 100644
+index 74d1351a7a3c4..fb6529038b41f 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@
@@ -47,7 +47,7 @@ index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7
  CFTypeID SecKeyGetTypeID();
  #if !BUILDFLAG(IS_IOS)
 -// The NSFont/CTFont toll-free bridging is broken before 10.15.
--// http://www.openradar.me/15341349 rdar://15341349
+-// https://openradar.appspot.com/15341349
 -//
 -// TODO(https://crbug.com/1076527): This is fixed in 10.15. When 10.15 is the
 -// minimum OS for Chromium, remove this SPI declaration.
@@ -55,7 +55,7 @@ index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7
  #endif
  }  // extern "C"
  
-@@ -315,8 +309,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+@@ -315,8 +309,7 @@ NSFont* CFToNSCast(CTFontRef cf_val) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -65,7 +65,7 @@ index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7
    return ns_val;
  }
  
-@@ -387,9 +380,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -387,9 +380,6 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
      return (CTFontRef)(cf_val);
    }
  
@@ -76,7 +76,7 @@ index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c479b8f03 100644
+index f860be6fbb6ca..d1b588346e106 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -19,14 +19,19 @@
@@ -142,7 +142,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
    std::vector<char*> argv_cstr;
    argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index fa83b9cd51c1d3ad1ccee49772424390ef05e46f..604bc712f14283282253bd88580123160483f530 100644
+index fa83b9cd51c1d..604bc712f1428 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -170,7 +170,7 @@ index fa83b9cd51c1d3ad1ccee49772424390ef05e46f..604bc712f14283282253bd8858012316
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
+index f52f1d1da4d43..2406f5d4342da 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
@@ -198,7 +198,7 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
+index 92b84121da46b..8de2556bb59c7 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
