@@ -170,7 +170,7 @@ requires unsafe mode), so Electron is unable to support this feature on Linux.
 
 The handler invoked when `session.setDevicePermissionHandler(handler)` is used
 has a change to its arguments.  This handler no longer is passed a frame
-`[WebFrameMain](api/web-frame-main.md)`, but instead is passed the `origin`, which
+[`WebFrameMain`](api/web-frame-main.md), but instead is passed the `origin`, which
 is the origin that is checking for device permission.
 
 ## Planned Breaking API Changes (19.0)
