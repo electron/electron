@@ -149,4 +149,4 @@ GNOME, KDE.
 [notification-spec]: https://developer-old.gnome.org/notification-spec/
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [set-app-user-model-id]: ../api/app.md#appsetappusermodelidid-windows
-[squirrel-events]: https://github.com/electron/windows-installer/blob/master/README.md#handling-squirrel-events
+[squirrel-events]: https://github.com/electron/windows-installer/blob/main/README.md#handling-squirrel-events
