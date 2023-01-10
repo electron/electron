@@ -965,6 +965,32 @@ describe('asar package', function () {
         const err = await new Promise<any>(resolve => fs.readdir(p, resolve));
         expect(err.code).to.equal('ENOENT');
       });
+
+      it('handles null for options', function (done) {
+        const p = path.join(asarDir, 'a.asar', 'dir1');
+        fs.readdir(p, null, function (err, dirs) {
+          try {
+            expect(err).to.be.null();
+            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+      });
+
+      it('handles undefined for options', function (done) {
+        const p = path.join(asarDir, 'a.asar', 'dir1');
+        fs.readdir(p, undefined, function (err, dirs) {
+          try {
+            expect(err).to.be.null();
+            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+      });
     });
 
     describe('fs.promises.readdir', function () {
