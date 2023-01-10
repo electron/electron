@@ -63,7 +63,7 @@ into end users' hands.
 <!-- Link labels -->
 
 [discord]: https://discord.gg/electronjs
-[github]: https://github.com/electron/electronjs.org-new/issues/new
+[github]: https://github.com/electron/website/issues/new
 [how-to]: ./examples.md
 [node-platform]: https://nodejs.org/api/process.html#process_process_platform
 
