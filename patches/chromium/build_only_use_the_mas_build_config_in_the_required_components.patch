@@ -181,10 +181,10 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 59048ca463e1450efeb519b5100363c481cf89af..0426035c4545d5669d7b7285dce32f7957882605 100644
+index b5d2ef2b91a6605ec084a53d52ed27f92a9b9435..3dcfd6f493f16caf4ae3061155da8d65fcb2af56 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -286,6 +286,7 @@ component("core") {
+@@ -280,6 +280,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]

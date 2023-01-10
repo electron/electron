@@ -37,10 +37,10 @@ index 5e4c2ae71d002b3e246fa921ff4208df457df4aa..44fadd42ee5d1ac8fb8ffded7d1af654
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 23163e9c46c28f7b8f81a9044eee224504905b64..0d5774853b273275f879a454ceec3eb399d70b39 100644
+index ef16e391968706e22f0e1d158043322720b0910d..75b08290bc4777f6713a95bf726d24afd518d0bf 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2774,6 +2774,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2779,6 +2779,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
      user_activation_state_.Activate(notification_type);
    }
  
@@ -58,7 +58,7 @@ index 23163e9c46c28f7b8f81a9044eee224504905b64..0d5774853b273275f879a454ceec3eb3
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3090,17 +3101,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3095,17 +3106,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
