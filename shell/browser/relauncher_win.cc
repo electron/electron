@@ -5,6 +5,7 @@
 #include "shell/browser/relauncher.h"
 
 #include <windows.h>
+#include <winternl.h>  // PROCESS_BASIC_INFORMATION
 
 #include "base/logging.h"
 #include "base/process/launch.h"
