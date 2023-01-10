@@ -623,11 +623,11 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { readdir } = fs;
-  fs.readdir = function (pathArgument: string, options: { encoding?: string | null; withFileTypes?: boolean } = {}, callback?: Function) {
+  fs.readdir = function (pathArgument: string, options?: { encoding?: string | null; withFileTypes?: boolean } | null, callback?: Function) {
     const pathInfo = splitPath(pathArgument);
     if (typeof options === 'function') {
       callback = options;
-      options = {};
+      options = undefined;
     }
     if (!pathInfo.isAsar) return readdir.apply(this, arguments);
     const { asarPath, filePath } = pathInfo;
@@ -646,7 +646,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    if (options.withFileTypes) {
+    if (options?.withFileTypes) {
       const dirents = [];
       for (const file of files) {
         const childPath = path.join(filePath, file);
