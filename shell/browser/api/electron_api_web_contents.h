@@ -625,8 +625,6 @@ class WebContents : public ExclusiveAccessContext,
       content::RenderWidgetHost* render_widget_host) override;
   void OnWebContentsLostFocus(
       content::RenderWidgetHost* render_widget_host) override;
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
 
   // InspectableWebContentsDelegate:
   void DevToolsReloadPage() override;

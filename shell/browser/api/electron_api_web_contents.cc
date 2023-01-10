@@ -1605,6 +1605,13 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
                                          content::RenderFrameHost* new_host) {
+  if (new_host->IsInPrimaryMainFrame()) {
+    if (old_host)
+      old_host->GetRenderWidgetHost()->RemoveInputEventObserver(this);
+    if (new_host)
+      new_host->GetRenderWidgetHost()->AddInputEventObserver(this);
+  }
+
   // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
@@ -1700,14 +1707,6 @@ void WebContents::OnWebContentsFocused(
 void WebContents::OnWebContentsLostFocus(
     content::RenderWidgetHost* render_widget_host) {
   Emit("blur");
-}
-
-void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                        content::RenderViewHost* new_host) {
-  if (old_host)
-    old_host->GetWidget()->RemoveInputEventObserver(this);
-  if (new_host)
-    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void WebContents::DOMContentLoaded(

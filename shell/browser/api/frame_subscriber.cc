@@ -72,11 +72,16 @@ void FrameSubscriber::RenderViewDeleted(content::RenderViewHost* host) {
   }
 }
 
-void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                            content::RenderViewHost* new_host) {
-  if ((old_host && old_host->GetWidget() == host_) || (!old_host && !host_)) {
+void FrameSubscriber::RenderFrameHostChanged(
+    content::RenderFrameHost* old_host,
+    content::RenderFrameHost* new_host) {
+  if (!new_host->IsInPrimaryMainFrame()) {
+    return;
+  }
+
+  if (auto* host = new_host->GetRenderWidgetHost(); host_ != host) {
     DetachFromHost();
-    AttachToHost(new_host->GetWidget());
+    AttachToHost(host);
   }
 }
 
