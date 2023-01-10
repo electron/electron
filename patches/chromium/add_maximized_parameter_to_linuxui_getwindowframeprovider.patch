@@ -58,7 +58,7 @@ index ebc31db3dad9ba7904fbd345c6a1ba31ed6fd813..1d2ffc82bb67ed80f508631c8c7d045b
  
  }  // namespace gtk
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index e866f32a06abd8b9ee70f2972822b37756878259..52ef4cd7618fe2d94f3c9c82d08066a371a1c911 100644
+index e866f32a06abd8b9ee70f2972822b37756878259..d55229238fed1fedba65a969495c9b5c9f1b94fa 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
 @@ -39,16 +39,18 @@ std::string GetThemeName() {
@@ -105,6 +105,15 @@ index e866f32a06abd8b9ee70f2972822b37756878259..52ef4cd7618fe2d94f3c9c82d08066a3
    ApplyCssToContext(context, R"(window, headerbar {
      background-image: none;
      background-color: black;
+@@ -145,7 +147,7 @@ int ComputeTopCornerRadius() {
+ bool HeaderIsTranslucent() {
+   // The arbitrary square size to render a sample header.
+   constexpr int kHeaderSize = 32;
+-  auto context = HeaderContext(false, false);
++  auto context = HeaderContext(false, false, false);
+   ApplyCssToContext(context, R"(window, headerbar {
+     box-shadow: none;
+     border: none;
 @@ -197,8 +199,8 @@ void WindowFrameProviderGtk::Asset::CloneFrom(
    unfocused_bitmap = src.unfocused_bitmap;
  }
