@@ -78,8 +78,9 @@ contextBridge.exposeInMainWorld('versions', {
 })
 ```
 
-To attach this script to your renderer process, pass its path to the
-`webPreferences.preload` option in the BrowserWindow constructor:
+To attach this script to your renderer process, you need to add Node.js "path" module, 
+it provides a set of functions for working with paths in the file system `const path = require('path')`, 
+also pass its path to the `webPreferences.preload` option in the BrowserWindow constructor.
 
 ```js {2,8-10} title="main.js"
 const { app, BrowserWindow } = require('electron')
