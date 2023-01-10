@@ -5,7 +5,6 @@
 #include "shell/browser/relauncher.h"
 
 #include <windows.h>
-#include <winternl.h>  // PROCESS_BASIC_INFORMATION
 
 #include "base/logging.h"
 #include "base/process/launch.h"
@@ -20,6 +19,27 @@ namespace relauncher::internal {
 namespace {
 
 const CharType* kWaitEventName = L"ElectronRelauncherWaitEvent";
+
+struct PROCESS_BASIC_INFORMATION {
+  union {
+    NTSTATUS ExitStatus;
+    PVOID padding_for_x64_0;
+  };
+  PPEB PebBaseAddress;
+  KAFFINITY AffinityMask;
+  union {
+    KPRIORITY BasePriority;
+    PVOID padding_for_x64_1;
+  };
+  union {
+    DWORD UniqueProcessId;
+    PVOID padding_for_x64_2;
+  };
+  union {
+    DWORD InheritedFromUniqueProcessId;
+    PVOID padding_for_x64_3;
+  };
+};
 
 HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
   NtQueryInformationProcessFunction NtQueryInformationProcess = nullptr;
