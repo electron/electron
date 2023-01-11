@@ -1053,6 +1053,22 @@ describe('session module', () => {
 
   describe('ses.setPermissionRequestHandler(handler)', () => {
     afterEach(closeAllWindows);
+    // These tests are done on an http server because navigator.userAgentData
+    // requires a secure context.
+    let server: http.Server;
+    let serverUrl: string;
+    before(async () => {
+      server = http.createServer((req, res) => {
+        res.setHeader('Content-Type', 'text/html');
+        res.end('');
+      });
+      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      serverUrl = `http://localhost:${(server.address() as any).port}`;
+    });
+    after(() => {
+      server.close();
+    });
+
     it('cancels any pending requests when cleared', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -1084,6 +1100,43 @@ describe('session module', () => {
 
       const [, name] = await result;
       expect(name).to.deep.equal('SecurityError');
+    });
+
+    it('successfully resolves when calling legacy getUserMedia', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setPermissionRequestHandler(
+        (_webContents, _permission, callback) => {
+          callback(true);
+        }
+      );
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      const { ok, message } = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => navigator.getUserMedia({
+          video: true,
+          audio: true,
+        }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
+      `);
+      expect(ok).to.be.true(message);
+    });
+
+    it('successfully rejects when calling legacy getUserMedia', async () => {
+      const ses = session.fromPartition('' + Math.random());
+      ses.setPermissionRequestHandler(
+        (_webContents, _permission, callback) => {
+          callback(false);
+        }
+      );
+
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      await w.loadURL(serverUrl);
+      await expect(w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => navigator.getUserMedia({
+          video: true,
+          audio: true,
+        }, x => resolve({ok: x instanceof MediaStream}), e => reject({ok: false, message: e.message})))
+      `)).to.eventually.be.rejectedWith('Permission denied');
     });
   });
 
