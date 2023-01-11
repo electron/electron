@@ -6,8 +6,8 @@
   "devDependencies": {
     "@azure/storage-blob": "^12.9.0",
     "@electron/docs-parser": "^1.0.0",
+    "@electron/github-app-auth": "^1.5.0",
     "@electron/typescript-definitions": "^8.10.0",
-    "@octokit/auth-app": "^2.10.0",
     "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
