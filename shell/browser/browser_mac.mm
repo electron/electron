@@ -8,12 +8,14 @@
 #include <string>
 #include <utility>
 
+#include "base/i18n/rtl.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "chrome/browser/browser_process.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/mac/dict_util.h"
@@ -35,6 +37,13 @@
 namespace electron {
 
 namespace {
+
+bool IsAppRTL() {
+  const std::string& locale = g_browser_process->GetApplicationLocale();
+  base::i18n::TextDirection text_direction =
+      base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
+  return text_direction == base::i18n::RIGHT_TO_LEFT;
+}
 
 NSString* GetAppPathForProtocol(const GURL& url) {
   NSURL* ns_url = [NSURL
@@ -304,6 +313,32 @@ bool Browser::UpdateUserActivityState(const std::string& type,
     observer.OnUpdateUserActivityState(&prevent_default, type,
                                        user_info.Clone());
   return prevent_default;
+}
+
+// Modified from chrome/browser/ui/cocoa/l10n_util.mm.
+void Browser::ApplyForcedRTL() {
+  NSUserDefaults* defaults = NSUserDefaults.standardUserDefaults;
+
+  auto dir = base::i18n::GetForcedTextDirection();
+
+  // An Electron app should respect RTL behavior of application locale over
+  // system locale.
+  auto should_be_rtl = dir == base::i18n::RIGHT_TO_LEFT || IsAppRTL();
+  auto should_be_ltr = dir == base::i18n::LEFT_TO_RIGHT || !IsAppRTL();
+
+  // -registerDefaults: won't do the trick here because these defaults exist
+  // (in the global domain) to reflect the system locale. They need to be set
+  // in Chrome's domain to supersede the system value.
+  if (should_be_rtl) {
+    [defaults setBool:YES forKey:@"AppleTextDirection"];
+    [defaults setBool:YES forKey:@"NSForceRightToLeftWritingDirection"];
+  } else if (should_be_ltr) {
+    [defaults setBool:YES forKey:@"AppleTextDirection"];
+    [defaults setBool:NO forKey:@"NSForceRightToLeftWritingDirection"];
+  } else {
+    [defaults removeObjectForKey:@"AppleTextDirection"];
+    [defaults removeObjectForKey:@"NSForceRightToLeftWritingDirection"];
+  }
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
