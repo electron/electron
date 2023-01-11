@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8eb1f96e42f158d38d68a247643be414c450bfea..28af8c56ad85a40acfda42469f853d20ecd5f197 100644
+index 3ca5efab5b270babbe83bab024c54094fee4a4ff..2c2125cc962e636b415621dacceb0586af28a95d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {

@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 5e4c2ae71d002b3e246fa921ff4208df457df4aa..44fadd42ee5d1ac8fb8ffded7d1af6540c682bf7 100644
+index 0106a5da5ddf74a051c464b39cf355b5caf573a7..449caabef33ca01b9cf07e7ea792a3f9973f524b 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6886,10 +6886,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -6903,10 +6903,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,7 +37,7 @@ index 5e4c2ae71d002b3e246fa921ff4208df457df4aa..44fadd42ee5d1ac8fb8ffded7d1af654
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index ef16e391968706e22f0e1d158043322720b0910d..75b08290bc4777f6713a95bf726d24afd518d0bf 100644
+index 55bd643e12160e796c6b5473159f940d860b897f..c8d1cd66c1de351c231c5a8220b0bd4845f6e03d 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
 @@ -2779,6 +2779,17 @@ class CONTENT_EXPORT RenderFrameHostImpl

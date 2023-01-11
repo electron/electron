@@ -79,10 +79,10 @@ index 1c1a95953c6c216b378c2ab0bfbef6eeb19cc184..2f0ce853dbb28163aa30914b5bc31be7
  
    scoped_refptr<ServiceWorkerContextWrapper> service_worker_context_;
 diff --git a/content/browser/notifications/blink_notification_service_impl_unittest.cc b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-index b07eaabb5f2914b160edbfd38091c1b9b24e9564..aba444e8e8f4973056ebe5a88ed1b7939d2d7def 100644
+index a8e229e734fc7a8363f609a5a9b881729b04ca65..bd4b9173c48f4638423142aebd54998f1b65fc85 100644
 --- a/content/browser/notifications/blink_notification_service_impl_unittest.cc
 +++ b/content/browser/notifications/blink_notification_service_impl_unittest.cc
-@@ -136,7 +136,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
+@@ -135,7 +135,7 @@ class BlinkNotificationServiceImplTest : public ::testing::Test {
      notification_service_ = std::make_unique<BlinkNotificationServiceImpl>(
          notification_context_.get(), &browser_context_,
          embedded_worker_helper_->context_wrapper(), &render_process_host_,
@@ -92,10 +92,10 @@ index b07eaabb5f2914b160edbfd38091c1b9b24e9564..aba444e8e8f4973056ebe5a88ed1b793
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 76e711cf9e1aee95ca7d10d268e02b41447ed986..5e46ea38736ec5ba820485212abd6c99bec0ef40 100644
+index 6e44c3b7b0e0eb9a999a19fad5a9e9606e2a26d0..19f17edaa395b8f2bd69f9c59bb0d3c490b7044d 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -282,6 +282,7 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -283,6 +283,7 @@ void PlatformNotificationContextImpl::Shutdown() {
  
  void PlatformNotificationContextImpl::CreateService(
      RenderProcessHost* render_process_host,
@@ -103,7 +103,7 @@ index 76e711cf9e1aee95ca7d10d268e02b41447ed986..5e46ea38736ec5ba820485212abd6c99
      const blink::StorageKey& storage_key,
      const GURL& document_url,
      const WeakDocumentPtr& weak_document_ptr,
-@@ -290,7 +291,7 @@ void PlatformNotificationContextImpl::CreateService(
+@@ -291,7 +292,7 @@ void PlatformNotificationContextImpl::CreateService(
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
        this, browser_context_, service_worker_context_, render_process_host,

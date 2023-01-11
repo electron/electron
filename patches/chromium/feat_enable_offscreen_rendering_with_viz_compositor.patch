@@ -8,10 +8,10 @@ rendering with the viz compositor by way of a custom HostDisplayClient
 and LayeredWindowUpdater.
 
 diff --git a/components/viz/host/host_display_client.cc b/components/viz/host/host_display_client.cc
-index 6d905b62e62582e72d5ea7ef74a3992e35c6fe8f..c0af9ee7459d29f18aa2972cd43e3a1a6a52798d 100644
+index 0c63e0d59b6b005059d59415bb3dde57a8c1314d..863f1974eb76dc0860362445e48b3064837e5b44 100644
 --- a/components/viz/host/host_display_client.cc
 +++ b/components/viz/host/host_display_client.cc
-@@ -47,9 +47,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
+@@ -48,9 +48,9 @@ void HostDisplayClient::OnDisplayReceivedCALayerParams(
  }
  #endif
  
@@ -22,7 +22,7 @@ index 6d905b62e62582e72d5ea7ef74a3992e35c6fe8f..c0af9ee7459d29f18aa2972cd43e3a1a
    if (!NeedsToUseLayerWindow(widget_)) {
      DLOG(ERROR) << "HWND shouldn't be using a layered window";
      return;
-@@ -57,7 +57,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
+@@ -58,7 +58,15 @@ void HostDisplayClient::CreateLayeredWindowUpdater(
  
    layered_window_updater_ =
        std::make_unique<LayeredWindowUpdaterImpl>(widget_, std::move(receiver));
@@ -176,10 +176,10 @@ index d8f25c1435d4b83031d18b6367041a18a23454fb..7233299c32ba4600f7708ca2fd0deadb
    return CreateSoftwareOutputDeviceWin(surface_handle, &output_device_backing_,
                                         display_client);
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.h b/components/viz/service/display_embedder/output_surface_provider_impl.h
-index 5c4d03a4d268bf96eb6521e94848a8aef479bf25..6719cd6b369f1694f7c7cf8d4ca37fe583b7992f 100644
+index e82717d5167e13e2926bcaf6c0ad66c1502e66f6..783c4d6ed399120e026bbf18baab40929daf8fc1 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.h
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.h
-@@ -49,12 +49,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
+@@ -50,12 +50,14 @@ class VIZ_SERVICE_EXPORT OutputSurfaceProviderImpl
        mojom::DisplayClient* display_client,
        DisplayCompositorMemoryAndTaskController* gpu_dependency,
        const RendererSettings& renderer_settings,
@@ -197,10 +197,10 @@ index 5c4d03a4d268bf96eb6521e94848a8aef479bf25..6719cd6b369f1694f7c7cf8d4ca37fe5
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index c04eb117a5ec8796bc1ad11eb21340688a7601a0..fcfcea5ddd28596935dffbfca52bfcd75dc264c1 100644
+index a8fcbf5149efa95ec5ec01f4571428053a10bbdb..9fa132fd8dd984e65e53ef6298c09a7d2f358988 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
-@@ -105,6 +105,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
+@@ -106,6 +106,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
  
  SkCanvas* SoftwareOutputDeviceMac::BeginPaint(
      const gfx::Rect& new_damage_rect) {
@@ -209,7 +209,7 @@ index c04eb117a5ec8796bc1ad11eb21340688a7601a0..fcfcea5ddd28596935dffbfca52bfcd7
    // Record the previous paint buffer.
    Buffer* previous_paint_buffer =
        buffer_queue_.empty() ? nullptr : buffer_queue_.back().get();
-@@ -190,6 +192,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
+@@ -191,6 +193,7 @@ void SoftwareOutputDeviceMac::EndPaint() {
      ca_layer_params.is_empty = false;
      ca_layer_params.scale_factor = scale_factor_;
      ca_layer_params.pixel_size = pixel_size_;
@@ -218,10 +218,10 @@ index c04eb117a5ec8796bc1ad11eb21340688a7601a0..fcfcea5ddd28596935dffbfca52bfcd7
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index b09785bfc8143c355e75d473a9a25b2e355c97a0..a6cd4e2399b1b17bad00c9e6f6520819e035744e 100644
+index fd787775ccd27c85ebd1e36157a095d4a871d8c4..5a55149fc5ef8d2ea7136b92f67546155232c377 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
-@@ -60,6 +60,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
+@@ -61,6 +61,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
    void UpdateAndCopyBufferDamage(Buffer* previous_paint_buffer,
                                   const SkRegion& new_damage_rect);
  

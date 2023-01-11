@@ -40,10 +40,10 @@ index 4b5f79a2331d491c1f05306dc45540aa7477abfc..61204fc4dc789936f7e5f3582917076b
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 70ce56dbfdad32012bfa25101eecd2ed2a3cafe2..75ec71f9a0437e3ded62f4e30e0a30f0a4906791 100644
+index 9395c60c054e05fd2d326e32882a60e6f7d4a1c9..a355de7984b4d4d6f93c84d7f675f49781264ee2 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -71,12 +71,14 @@
+@@ -72,12 +72,14 @@
  
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
@@ -58,7 +58,7 @@ index 70ce56dbfdad32012bfa25101eecd2ed2a3cafe2..75ec71f9a0437e3ded62f4e30e0a30f0
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -171,7 +173,9 @@
+@@ -172,7 +174,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
