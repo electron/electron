@@ -15,60 +15,60 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 7dbbcc13901dcd8b7a9ca9c9bdce4f924c1c6a55..5de44c5c20c92a1793060492f925519d6b8befe5 100644
+index 7dbbcc13901dcd8b7a9ca9c9bdce4f924c1c6a55..f4def7e347aafe30485fd1e6055c97d471b44776 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
-@@ -92,10 +92,13 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -56,7 +56,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
+ void MediaStreamDevicesController::RequestPermissions(
+     const content::MediaStreamRequest& request,
+     MediaStreamDeviceEnumerator* enumerator,
+-    ResultCallback callback) {
++    ResultCallback callback,
++    bool previously_approved) {
+   content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+       request.render_process_id, request.render_frame_id);
+   // The RFH may have been destroyed by the time the request is processed.
+@@ -92,6 +93,7 @@ void MediaStreamDevicesController::RequestPermissions(
  
    std::vector<blink::PermissionType> permission_types;
  
 +#if 0
    content::PermissionController* permission_controller =
        web_contents->GetBrowserContext()->GetPermissionController();
-+#endif
  
-   if (controller->ShouldRequestAudio()) {
-+#if 0
-     content::PermissionResult permission_status =
-         permission_controller->GetPermissionResultForCurrentDocument(
-             blink::PermissionType::AUDIO_CAPTURE, rfh);
-@@ -110,10 +113,12 @@ void MediaStreamDevicesController::RequestPermissions(
-               content::PermissionStatusSource::FENCED_FRAME);
-       return;
-     }
-+#endif
- 
-     permission_types.push_back(blink::PermissionType::AUDIO_CAPTURE);
-   }
-   if (controller->ShouldRequestVideo()) {
-+#if 0
-     content::PermissionResult permission_status =
-         permission_controller->GetPermissionResultForCurrentDocument(
-             blink::PermissionType::VIDEO_CAPTURE, rfh);
-@@ -128,6 +133,7 @@ void MediaStreamDevicesController::RequestPermissions(
-               content::PermissionStatusSource::FENCED_FRAME);
-       return;
-     }
-+#endif
- 
-     permission_types.push_back(blink::PermissionType::VIDEO_CAPTURE);
- 
-@@ -139,6 +145,7 @@ void MediaStreamDevicesController::RequestPermissions(
-     // pan-tilt-zoom permission and there are suitable PTZ capable devices
-     // available.
-     if (request.request_pan_tilt_zoom_permission && has_pan_tilt_zoom_camera) {
-+#if 0
-       permission_status =
-           permission_controller->GetPermissionResultForCurrentDocument(
-               blink::PermissionType::CAMERA_PAN_TILT_ZOOM, rfh);
-@@ -148,6 +155,7 @@ void MediaStreamDevicesController::RequestPermissions(
-         controller->RunCallback(/*blocked_by_permissions_policy=*/false);
-         return;
-       }
-+#endif
- 
+@@ -152,19 +154,25 @@ void MediaStreamDevicesController::RequestPermissions(
        permission_types.push_back(blink::PermissionType::CAMERA_PAN_TILT_ZOOM);
      }
+   }
++#endif
+ 
+   // It is OK to ignore `request.security_origin` because it will be calculated
+   // from `render_frame_host` and we always ignore `requesting_origin` for
+   // `AUDIO_CAPTURE` and `VIDEO_CAPTURE`.
+   // `render_frame_host->GetMainFrame()->GetLastCommittedOrigin()` will be used
+   // instead.
+-  rfh->GetBrowserContext()
+-      ->GetPermissionController()
+-      ->RequestPermissionsFromCurrentDocument(
+-          permission_types, rfh, request.user_gesture,
+-          base::BindOnce(
+-              &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
+-              std::move(controller)));
++  if (previously_approved) {
++    controller->PromptAnsweredGroupedRequest({blink::mojom::PermissionStatus::GRANTED /*audio*/,
++                                              blink::mojom::PermissionStatus::GRANTED /*video*/});
++  } else {
++    rfh->GetBrowserContext()
++    ->GetPermissionController()
++    ->RequestPermissionsFromCurrentDocument(
++        permission_types, rfh, request.user_gesture,
++        base::BindOnce(
++            &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
++            std::move(controller)));
++  }
+ }
+ 
+ MediaStreamDevicesController::~MediaStreamDevicesController() {
 @@ -434,6 +442,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
@@ -84,4 +84,18 @@ index 7dbbcc13901dcd8b7a9ca9c9bdce4f924c1c6a55..5de44c5c20c92a1793060492f925519d
 +#endif
    return false;
  }
+ 
+diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
+index b9cf3f6ad047fa16594393134eae5fc5349e7430..5de5e0bf9b455872f69de47d58dda929f00df12c 100644
+--- a/components/webrtc/media_stream_devices_controller.h
++++ b/components/webrtc/media_stream_devices_controller.h
+@@ -48,7 +48,8 @@ class MediaStreamDevicesController {
+   // synchronously or asynchronously returned via |callback|.
+   static void RequestPermissions(const content::MediaStreamRequest& request,
+                                  MediaStreamDeviceEnumerator* enumerator,
+-                                 ResultCallback callback);
++                                 ResultCallback callback,
++                                 bool previously_approved = false);
+ 
+   ~MediaStreamDevicesController();
  
