@@ -7,10 +7,10 @@ Refs https://chromium-review.googlesource.com/c/v8/v8/+/3702449
 Should be upstreamed.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 14311237384c023ce6759d31c1db7c09eb521ab7..8f82a61a4345bdd4ffcab7ba93019ad23fbd3259 100644
+index 1abf6801e0544b14dd26f0b96536bd78c5b01679..93e339602800a21726c9414bf2ebe9a2e5517a3b 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -217,7 +217,8 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
+@@ -219,7 +219,8 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,
                         bool prevent_shutdown)
        : delegate_(std::move(delegate)), prevent_shutdown_(prevent_shutdown),
          retaining_context_(false) {

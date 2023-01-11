@@ -5,34 +5,13 @@ Subject: feat: initialize asar support
 
 This patch initializes asar support in Node.js.
 
-diff --git a/lib/internal/main/worker_thread.js b/lib/internal/main/worker_thread.js
-index f7ead4084ed4ed6a682bc62e7ad6fc350381d3b9..cd9ca227b9cac4ff021ce1643000ea4b45163df6 100644
---- a/lib/internal/main/worker_thread.js
-+++ b/lib/internal/main/worker_thread.js
-@@ -31,6 +31,7 @@ const {
-   initializeReport,
-   initializeSourceMapsHandlers,
-   loadPreloadModules,
-+  setupAsarSupport,
-   setupTraceCategoryState,
-   markBootstrapComplete
- } = require('internal/process/pre_execution');
-@@ -164,6 +165,8 @@ port.on('message', (message) => {
-     };
-     workerIo.sharedCwdCounter = cwdCounter;
- 
-+    setupAsarSupport();
-+
-     const CJSLoader = require('internal/modules/cjs/loader');
-     assert(!CJSLoader.hasLoadedAnyUserCJSModule);
-     loadPreloadModules();
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 23d4dbcf6cd8e1e3e4a509672e203323d81e736c..db8bf724af5f113c7c86350a210d5eee82879d13 100644
+index 73ccca1c6c9d4da7600e216fd53eec82426d892d..1c529f062cd3ec79643ae8c946e2ed0faac336fb 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -103,12 +103,17 @@ function prepareMainThreadExecution(expandArgv1 = false,
-   assert(!CJSLoader.hasLoadedAnyUserCJSModule);
+@@ -125,12 +125,17 @@ function setupUserModules() {
    loadPreloadModules();
+   // Need to be done after --require setup.
    initializeFrozenIntrinsics();
 +  setupAsarSupport();
  }
@@ -48,11 +27,3 @@ index 23d4dbcf6cd8e1e3e4a509672e203323d81e736c..db8bf724af5f113c7c86350a210d5eee
  function patchProcessObject(expandArgv1) {
    const binding = internalBinding('process_methods');
    binding.patchProcessObject(process);
-@@ -620,6 +625,7 @@ module.exports = {
-   loadPreloadModules,
-   setupTraceCategoryState,
-   setupInspectorHooks,
-+  setupAsarSupport,
-   initializeReport,
-   initializeCJSLoader,
-   initializeWASI,

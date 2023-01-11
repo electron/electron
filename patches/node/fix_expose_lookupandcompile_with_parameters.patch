@@ -10,10 +10,10 @@ parameters.
 This should be upstreamed.
 
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 3bc9d113b6b818dcda332966f09f17248b421263..549339b5b677fa242a7b60ae716789c2a11ab18d 100644
+index 6e1a55adbd0b01383f3e54e924864dfeb6a57f0b..25b02f9904127780c68db9b451a7dfcf02a6fc5e 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
-@@ -397,6 +397,22 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(
+@@ -438,6 +438,22 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(
    return maybe;
  }
  
@@ -37,10 +37,10 @@ index 3bc9d113b6b818dcda332966f09f17248b421263..549339b5b677fa242a7b60ae716789c2
    BuiltinLoader* loader = GetInstance();
    std::vector<std::string> ids = loader->GetBuiltinIds();
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 7f0a25af306ffefbc51ac43689ed208d4cd94f0b..a32a7a990082ea3dad73511f91a9c70c72f6fe31 100644
+index 8228e57d27b2f883d87ec12274f2745628caa6e1..b07c34a6d247a050f4f307940c9e157fb14d6166 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
-@@ -49,6 +49,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+@@ -53,6 +53,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
        v8::Local<v8::Context> context,
        const char* id,
        Environment* optional_env);
