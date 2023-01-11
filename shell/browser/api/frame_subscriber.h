@@ -46,8 +46,7 @@ class FrameSubscriber : public content::WebContentsObserver,
   void DetachFromHost();
 
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
-  void RenderFrameHostChanged(content::RenderFrameHost* old_host,
-                              content::RenderFrameHost* new_host) override;
+  void PrimaryPageChanged(content::Page& page) override;
   void RenderViewDeleted(content::RenderViewHost* host) override;
 
   // viz::mojom::FrameSinkVideoConsumer implementation.
