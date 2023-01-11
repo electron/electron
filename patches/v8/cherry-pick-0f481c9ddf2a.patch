@@ -1,7 +1,7 @@
-From 0f481c9ddf2a0ca4eaaa9e729003cc2956f779da Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Thu, 15 Dec 2022 11:58:50 +0100
-Subject: [PATCH] Merged: [wasm][turbofan] Load 32-bit values more efficiently
+Subject: Merged: [wasm][turbofan] Load 32-bit values more efficiently
 
 When loading a 32-bit value from the stack, just load 32 bit and
 zero-extend them into the target register, instead of loading the full
@@ -25,13 +25,12 @@ Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.8@{#46}
 Cr-Branched-From: f1bc03fd6b4c201abd9f0fd9d51fb989150f97b9-refs/heads/10.8.168@{#1}
 Cr-Branched-From: 237de893e1c0a0628a57d0f5797483d3add7f005-refs/heads/main@{#83672}
----
 
 diff --git a/src/compiler/backend/x64/code-generator-x64.cc b/src/compiler/backend/x64/code-generator-x64.cc
-index 6a29cb3..e3f759f 100644
+index 6a29cb308e593aa54267d325ec031d30f9e5a776..e3f759f570050c183d133854f83d02d9b442d8f9 100644
 --- a/src/compiler/backend/x64/code-generator-x64.cc
 +++ b/src/compiler/backend/x64/code-generator-x64.cc
-@@ -5295,7 +5295,22 @@
+@@ -5295,7 +5295,22 @@ void CodeGenerator::AssembleMove(InstructionOperand* source,
      case MoveType::kStackToRegister: {
        Operand src = g.ToOperand(source);
        if (source->IsStackSlot()) {
@@ -56,10 +55,10 @@ index 6a29cb3..e3f759f 100644
          DCHECK(source->IsFPStackSlot());
          XMMRegister dst = g.ToDoubleRegister(destination);
 diff --git a/src/wasm/graph-builder-interface.cc b/src/wasm/graph-builder-interface.cc
-index fb1f19c..abf68f8 100644
+index fb1f19c2b13604b9286880b4b084f441f5adb609..abf68f80dd7148b1828b49378dd8693fa9152faf 100644
 --- a/src/wasm/graph-builder-interface.cc
 +++ b/src/wasm/graph-builder-interface.cc
-@@ -2106,7 +2106,7 @@
+@@ -2106,7 +2106,7 @@ class WasmGraphBuildingInterface {
        }
        if (exception_value != nullptr) {
          *exception_value = builder_->LoopExitValue(
