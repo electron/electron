@@ -1,7 +1,7 @@
-From 28b9c1c04e782d527b5dedf0214de7b3a456f5f9 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Tue, 13 Dec 2022 22:37:27 +0100
-Subject: [PATCH] Merged: [arm] Do not emit the constant pool before a branch
+Subject: Merged: [arm] Do not emit the constant pool before a branch
 
 After computing the branch offset but before emitting the actual branch,
 we should not emit a constant pool. Otherwise the previously computed
@@ -23,13 +23,12 @@ Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Cr-Commit-Position: refs/branch-heads/10.8@{#48}
 Cr-Branched-From: f1bc03fd6b4c201abd9f0fd9d51fb989150f97b9-refs/heads/10.8.168@{#1}
 Cr-Branched-From: 237de893e1c0a0628a57d0f5797483d3add7f005-refs/heads/main@{#83672}
----
 
 diff --git a/src/codegen/arm/assembler-arm.cc b/src/codegen/arm/assembler-arm.cc
-index b2d7cad..3fe769a0 100644
+index b2d7cad0963cd762beb18e5fc085fdb80a4c8ee1..3fe769a0ecc7d28c3ffb96117b2c6527cc1b7f9d 100644
 --- a/src/codegen/arm/assembler-arm.cc
 +++ b/src/codegen/arm/assembler-arm.cc
-@@ -1444,10 +1444,6 @@
+@@ -1444,10 +1444,6 @@ int Assembler::branch_offset(Label* L) {
      L->link_to(pc_offset());
    }
  
@@ -40,7 +39,7 @@ index b2d7cad..3fe769a0 100644
    return target_pos - (pc_offset() + Instruction::kPcLoadDelta);
  }
  
-@@ -1458,6 +1454,11 @@
+@@ -1458,6 +1454,11 @@ void Assembler::b(int branch_offset, Condition cond, RelocInfo::Mode rmode) {
    int imm24 = branch_offset >> 2;
    const bool b_imm_check = is_int24(imm24);
    CHECK(b_imm_check);
@@ -52,7 +51,7 @@ index b2d7cad..3fe769a0 100644
    emit(cond | B27 | B25 | (imm24 & kImm24Mask));
  
    if (cond == al) {
-@@ -1472,6 +1473,11 @@
+@@ -1472,6 +1473,11 @@ void Assembler::bl(int branch_offset, Condition cond, RelocInfo::Mode rmode) {
    int imm24 = branch_offset >> 2;
    const bool bl_imm_check = is_int24(imm24);
    CHECK(bl_imm_check);
@@ -64,7 +63,7 @@ index b2d7cad..3fe769a0 100644
    emit(cond | B27 | B25 | B24 | (imm24 & kImm24Mask));
  }
  
-@@ -1481,6 +1487,11 @@
+@@ -1481,6 +1487,11 @@ void Assembler::blx(int branch_offset) {
    int imm24 = branch_offset >> 2;
    const bool blx_imm_check = is_int24(imm24);
    CHECK(blx_imm_check);
