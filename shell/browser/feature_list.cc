@@ -16,7 +16,6 @@
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "services/network/public/cpp/features.h"
-#include "third_party/blink/renderer/platform/scheduler/common/features.h"  // nogncheck
 
 #if BUILDFLAG(IS_MAC)
 #include "device/base/features.h"  // nogncheck
@@ -36,12 +35,6 @@ void InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
-
-  // Microtask queues per WindowAgent causes issues with Node, so disable
-  // this feature for now.  See
-  // https://chromium-review.googlesource.com/c/chromium/src/+/4003663
-  disable_features +=
-      std::string(",") + blink::scheduler::kMicrotaskQueuePerWindowAgent.name;
 
 #if BUILDFLAG(IS_MAC)
   // Needed for WebUSB implementation

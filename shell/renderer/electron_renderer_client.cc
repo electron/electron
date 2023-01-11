@@ -138,10 +138,10 @@ void ElectronRendererClient::WillReleaseScriptContext(
   // checkpoints after every call into JavaScript. Since we use a different
   // policy in the renderer - switch to `kExplicit` and then drop back to the
   // previous policy value.
-  v8::Isolate* isolate = context->GetIsolate();
-  auto old_policy = isolate->GetMicrotasksPolicy();
-  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(isolate), 0);
-  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  v8::MicrotaskQueue* microtask_queue = context->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
   node::FreeEnvironment(env);
   if (node_bindings_->uv_env() == nullptr) {
@@ -149,7 +149,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
     node_bindings_->set_isolate_data(nullptr);
   }
 
-  isolate->SetMicrotasksPolicy(old_policy);
+  microtask_queue->set_microtasks_policy(old_policy);
 
   // ElectronBindings is tracking node environments.
   electron_bindings_->EnvironmentDestroyed(env);
