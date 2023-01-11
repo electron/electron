@@ -390,7 +390,7 @@ index 35514afbea92562a81c163b1e4d918b4ab609f71..13098e1acf12c309f2ed6f6143a2c2ee
    txt += decipher.final('utf-16le');
    assert.strictEqual(txt, plaintext);
 diff --git a/test/parallel/test-crypto-cipheriv-decipheriv.js b/test/parallel/test-crypto-cipheriv-decipheriv.js
-index 87f3641fb188bd322e7c256e9548c6af85dc9a14..1e803bc33ba4642065bf1897c56f65fc92bd2a50 100644
+index 3e3632203af72c54f2795d8de0cf345862a043bb..a066bbb803d41d9d1f26a02e41115b71233988d6 100644
 --- a/test/parallel/test-crypto-cipheriv-decipheriv.js
 +++ b/test/parallel/test-crypto-cipheriv-decipheriv.js
 @@ -60,6 +60,10 @@ function testCipher2(key, iv) {
@@ -715,10 +715,10 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8b83df8c3 100644
+index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64098ddc6a 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -109,7 +109,7 @@ const der = Buffer.from(
+@@ -110,7 +110,7 @@ const der = Buffer.from(
      '5A:42:63:E0:21:2F:D6:70:63:07:96:6F:27:A7:78:12:08:02:7A:8B'
    );
    assert.strictEqual(x509.keyUsage, undefined);
@@ -727,7 +727,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -195,6 +195,16 @@ const der = Buffer.from(
+@@ -209,6 +209,16 @@ const der = Buffer.from(
    });
    mc.port2.postMessage(x509);
  
@@ -744,7 +744,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: Object.assign(Object.create(null), {
-@@ -219,16 +229,8 @@ const der = Buffer.from(
+@@ -233,16 +243,8 @@ const der = Buffer.from(
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -762,7 +762,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
      valid_to: 'Jun 17 21:40:37 2296 GMT',
-@@ -240,7 +242,7 @@ const der = Buffer.from(
+@@ -254,7 +256,7 @@ const der = Buffer.from(
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
        '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
@@ -771,7 +771,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -249,7 +251,7 @@ const der = Buffer.from(
+@@ -263,7 +265,7 @@ const der = Buffer.from(
    assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -780,7 +780,7 @@ index 510e3183cf3ce367aa6e9cf21ee653feb106a9ba..afb2e07d9e8d60cb37dd07714c810fb8
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -258,7 +260,7 @@ const der = Buffer.from(
+@@ -272,7 +274,7 @@ const der = Buffer.from(
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -932,7 +932,7 @@ index aa685ca9e09cf0d17ff4d5480089e9977dd51f72..ccafa427433922155c1afd5d95ba69d8
    }));
    socket.end('Hello');
 diff --git a/test/parallel/test-tls-getprotocol.js b/test/parallel/test-tls-getprotocol.js
-index 02c683c71c8775e84d5d125a4f05560b8206677d..4c6dd20ca0a8d0acdf9f8d1b7153087de9305196 100644
+index d45287d671d8afb1be391d391efc4d098d0b77c9..86f1a12528b535eefeb8c263581f1240f3df5771 100644
 --- a/test/parallel/test-tls-getprotocol.js
 +++ b/test/parallel/test-tls-getprotocol.js
 @@ -18,7 +18,7 @@ const clientConfigs = [
@@ -991,7 +991,7 @@ index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index f8eb996000ec899abafbfd558f4f49bad2c69c9a..0bf5c7811eeccff6194d8df41887df0a86a53823 100644
+index b819b998d217e0c71e9b41f175de6802d3ac7d90..2afaa9918d7ebd156061094a055dbf076f9965f5 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
 @@ -46,6 +46,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
@@ -1010,7 +1010,7 @@ index f8eb996000ec899abafbfd558f4f49bad2c69c9a..0bf5c7811eeccff6194d8df41887df0a
  
  // Test PBKDF2 key derivation
  {
-@@ -151,6 +153,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -174,6 +176,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    })().then(common.mustCall());
  }
  
@@ -1018,7 +1018,7 @@ index f8eb996000ec899abafbfd558f4f49bad2c69c9a..0bf5c7811eeccff6194d8df41887df0a
  // Test X25519 and X448 key derivation
  {
    async function test(name) {
-@@ -185,3 +188,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -208,3 +211,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
@@ -1073,7 +1073,7 @@ index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c
  
  function generateWrappingKeys() {
 diff --git a/test/parallel/test-x509-escaping.js b/test/parallel/test-x509-escaping.js
-index c31a6d21351dc97054daf6276454e2cd98263e26..e339fcc3f9af9c55a9000bb1b836b553ef1bf795 100644
+index 170103fd9c973d64a30ee319a45c7e11c72a19d4..c19118146269651e4fe7d5591360876ce66bb1f6 100644
 --- a/test/parallel/test-x509-escaping.js
 +++ b/test/parallel/test-x509-escaping.js
 @@ -447,7 +447,7 @@ const { hasOpenSSL3 } = common;

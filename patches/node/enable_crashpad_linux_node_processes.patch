@@ -8,10 +8,10 @@ to child processes spawned with `ELECTRON_RUN_AS_NODE` which is used
 by the crashpad client to connect with the handler process.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624b7d7e2a0 100644
+index 1bc5f92181a48e1ee37e59220ad11a755b20c9f4..d9d6a39f113151a489a3521ca8512f8ea5b1843c 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
-@@ -59,6 +59,7 @@ let debug = require('internal/util/debuglog').debuglog(
+@@ -60,6 +60,7 @@ let debug = require('internal/util/debuglog').debuglog(
  );
  const { Buffer } = require('buffer');
  const { Pipe, constants: PipeConstants } = internalBinding('pipe_wrap');
@@ -19,7 +19,7 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624
  
  const {
    AbortError,
-@@ -159,7 +160,6 @@ function fork(modulePath, args = [], options) {
+@@ -163,7 +164,6 @@ function fork(modulePath, args = [], options) {
        ArrayPrototypeSplice(execArgv, index - 1, 2);
      }
    }
@@ -27,7 +27,7 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624
    args = [...execArgv, modulePath, ...args];
  
    if (typeof options.stdio === 'string') {
-@@ -613,6 +613,21 @@ function normalizeSpawnArguments(file, args, options) {
+@@ -625,6 +625,21 @@ function normalizeSpawnArguments(file, args, options) {
                      'options.windowsVerbatimArguments');
    }
  
@@ -47,5 +47,5 @@ index 73c1dc769542865bdf7a2a03c16cef141d3f4b05..76151c75ef7ad420d2642c1cd11c8624
 +  }
 +
    if (options.shell) {
+     validateArgumentNullCheck(options.shell, 'options.shell');
      const command = ArrayPrototypeJoin([file, ...args], ' ');
-     // Set the shell, switches, and commands.

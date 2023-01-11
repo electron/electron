@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 9 Jan 2023 13:53:36 +0100
+Subject: chore: remove errant semicolons
+
+- https://github.com/nodejs/node/pull/44179
+- https://github.com/nodejs/node/pull/44193
+
+This should be upstreamed.
+
+diff --git a/src/node_realm.h b/src/node_realm.h
+index 9ece8cb38958c364c6177118a5e7443c3a6bdf1a..0d3259a149e94b7d9657959c0ccac25a146978b4 100644
+--- a/src/node_realm.h
++++ b/src/node_realm.h
+@@ -55,7 +55,7 @@ class Realm : public MemoryRetainer {
+   Realm& operator=(Realm&&) = delete;
+ 
+   SET_MEMORY_INFO_NAME(Realm)
+-  SET_SELF_SIZE(Realm);
++  SET_SELF_SIZE(Realm)
+   void MemoryInfo(MemoryTracker* tracker) const override;
+ 
+   void CreateProperties();
+diff --git a/src/node_util.h b/src/node_util.h
+index 616b8c003b2d0dd80e01297ca3fe7e4926220ad7..9590842ae4764dd3363a4d74038d3351f0061177 100644
+--- a/src/node_util.h
++++ b/src/node_util.h
+@@ -12,7 +12,7 @@ namespace util {
+ 
+ class WeakReference : public SnapshotableObject {
+  public:
+-  SERIALIZABLE_OBJECT_METHODS();
++  SERIALIZABLE_OBJECT_METHODS()
+ 
+   static constexpr FastStringKey type_name{"node::util::WeakReference"};
+   static constexpr EmbedderObjectType type_int =
