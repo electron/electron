@@ -13,7 +13,7 @@ can either use specialized tooling or manual approaches.
 There are a couple tools out there that exist to package and distribute your Electron app.
 We recommend using [Electron Forge](./forge-overview.md). You can check out
 its [documentation](https://www.electronforge.io) directly, or refer to the [Packaging and Distribution](./tutorial-5-packaging.md)
-part of the Electron tutorial.
+part of the Electron tutorial. There's also [Conveyor](https://www.hydraulic.software/electron.html) which can cross-build/sign packages for all platforms at once and which comes with commercial support.
 
 ## Manual packaging
 
