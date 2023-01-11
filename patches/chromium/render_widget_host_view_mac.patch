@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index d89c11d6727b019e9c339e1bd9e943e5451a8501..6fc595a674d7d8f0bb630ea7471ad9c09a5f9ac9 100644
+index 8b8bb3226542f7c15d394b13d7fd993e530bb077..97c45bd507900f87cd1289c2c7d431fd791942cd 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -161,6 +161,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -61,7 +61,7 @@ index d89c11d6727b019e9c339e1bd9e943e5451a8501..6fc595a674d7d8f0bb630ea7471ad9c0
    // We only handle key down events and just simply forward other events.
    if (eventType != NSEventTypeKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1819,9 +1839,11 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -1827,9 +1847,11 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //
@@ -73,7 +73,7 @@ index d89c11d6727b019e9c339e1bd9e943e5451a8501..6fc595a674d7d8f0bb630ea7471ad9c0
  
  - (NSArray*)validAttributesForMarkedText {
    // This code is just copied from WebKit except renaming variables.
-@@ -1830,7 +1852,10 @@ - (NSArray*)validAttributesForMarkedText {
+@@ -1838,7 +1860,10 @@ - (NSArray*)validAttributesForMarkedText {
          initWithObjects:NSUnderlineStyleAttributeName,
                          NSUnderlineColorAttributeName,
                          NSMarkedClauseSegmentAttributeName,
