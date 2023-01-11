@@ -2,13 +2,14 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "shell/browser/ui/drag_util.h"
+
 #import <Cocoa/Cocoa.h>
 
 #include <vector>
 
 #include "base/files/file_path.h"
-#include "base/strings/sys_string_conversions.h"
-#include "shell/browser/ui/drag_util.h"
+#include "base/mac/foundation_util.h"
 
 // Contents largely copied from
 // chrome/browser/download/drag_download_item_mac.mm.
@@ -40,9 +41,10 @@ namespace electron {
 void DragFileItems(const std::vector<base::FilePath>& files,
                    const gfx::Image& icon,
                    gfx::NativeView view) {
+  DCHECK(view);
   auto* native_view = view.GetNativeNSView();
   NSPoint current_position =
-      [[native_view window] mouseLocationOutsideOfEventStream];
+      native_view.window.mouseLocationOutsideOfEventStream;
   current_position =
       [native_view backingAlignedRect:NSMakeRect(current_position.x,
                                                  current_position.y, 0, 0)
@@ -51,8 +53,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
 
   NSMutableArray* file_items = [NSMutableArray array];
   for (auto const& file : files) {
-    NSURL* file_url =
-        [NSURL fileURLWithPath:base::SysUTF8ToNSString(file.value())];
+    NSURL* file_url = base::mac::FilePathToNSURL(file);
     NSDraggingItem* file_item = [[[NSDraggingItem alloc]
         initWithPasteboardWriter:file_url] autorelease];
     NSImage* file_image = icon.ToNSImage();
@@ -66,14 +67,12 @@ void DragFileItems(const std::vector<base::FilePath>& files,
 
   // Synthesize a drag event, since we don't have access to the actual event
   // that initiated a drag (possibly consumed by the Web UI, for example).
-  NSPoint position = [[native_view window] mouseLocationOutsideOfEventStream];
-  NSTimeInterval eventTime = [[NSApp currentEvent] timestamp];
   NSEvent* dragEvent =
       [NSEvent mouseEventWithType:NSEventTypeLeftMouseDragged
-                         location:position
+                         location:current_position
                     modifierFlags:0
-                        timestamp:eventTime
-                     windowNumber:[[native_view window] windowNumber]
+                        timestamp:NSApp.currentEvent.timestamp
+                     windowNumber:native_view.window.windowNumber
                           context:nil
                       eventNumber:0
                        clickCount:1

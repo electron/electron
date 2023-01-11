@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 3424f7d348a38abacff0bad5db8f744c042f5ca1..880e1483a3412c0737725ff5b76766c42856dc42 100644
+index 179ef51773f5b8dfd9b6c1d78978d2dba87c75c2..01d9d597c8f09b8712ec72c762af1ea0056b988c 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -234,6 +234,7 @@ vs-chromium-project.txt
+@@ -235,6 +235,7 @@ vs-chromium-project.txt
  /delegate_execute
  /device/serial/device_serial_mojo.xml
  /docs/website
@@ -18,30 +18,30 @@ index 3424f7d348a38abacff0bad5db8f744c042f5ca1..880e1483a3412c0737725ff5b76766c4
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index bb50e8dd9c06049dbebc9952d5f49c7dea57b8f7..f11bec886fe4cc25cded88efd7d5ffef27fb82c8 100644
+index e756eab113a9690aef7772b39a70c6c2a96f47f7..025f59c12655706d6ec031f3af7166ccc97ab1e5 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -85,6 +85,7 @@
+@@ -86,6 +86,7 @@
  /directxsdk
  /dom_distiller_js/dist
  /eigen3/src
 +/electron_node
  /elfutils/src
- /emoji-segmenter/src
  /emoji-metadata/src
-@@ -183,6 +184,7 @@
- /js_code_coverage/node_modules
+ /emoji-segmenter/src
+@@ -185,6 +186,7 @@
+ /mocha
  /mockito/src
  /nacl_sdk_binaries/
 +/nan
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -246,6 +248,7 @@
+@@ -248,6 +250,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/
 +/squirrel.mac
  /subresource-filter-ruleset/data/UnindexedRules
  /swift-format
- /swiftshader/
+ /swift-toolchain

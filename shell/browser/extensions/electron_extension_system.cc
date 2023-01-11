@@ -13,6 +13,7 @@
 #include "base/files/file_util.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
+#include "base/values.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/browser_resources.h"
 #include "components/value_store/value_store_factory_impl.h"
@@ -93,23 +94,23 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
-std::unique_ptr<base::DictionaryValue> ParseManifest(
+std::unique_ptr<base::Value::Dict> ParseManifest(
     base::StringPiece manifest_contents) {
   JSONStringValueDeserializer deserializer(manifest_contents);
   std::unique_ptr<base::Value> manifest = deserializer.Deserialize(NULL, NULL);
 
   if (!manifest.get() || !manifest->is_dict()) {
     LOG(ERROR) << "Failed to parse extension manifest.";
-    return std::unique_ptr<base::DictionaryValue>();
+    return std::unique_ptr<base::Value::Dict>();
   }
-  return base::DictionaryValue::From(std::move(manifest));
+  return std::make_unique<base::Value::Dict>(std::move(manifest->GetDict()));
 }
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
   std::string utf8_error;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
-  std::unique_ptr<base::DictionaryValue> pdf_manifest =
+  std::unique_ptr<base::Value::Dict> pdf_manifest =
       ParseManifest(pdf_manifest_string);
   if (pdf_manifest) {
     base::FilePath root_directory;

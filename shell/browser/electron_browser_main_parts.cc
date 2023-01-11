@@ -382,6 +382,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
 #if BUILDFLAG(IS_MAC)
   ui::InitIdleMonitor();
+  Browser::Get()->ApplyForcedRTL();
 #endif
 
   fake_browser_process_->PreCreateThreads();

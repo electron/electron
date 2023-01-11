@@ -278,8 +278,7 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
       download::DownloadItem::INTERRUPTED,
       download::DOWNLOAD_DANGER_TYPE_NOT_DANGEROUS,
       download::DOWNLOAD_INTERRUPT_REASON_NETWORK_TIMEOUT, false, base::Time(),
-      false, std::vector<download::DownloadItem::ReceivedSlice>(),
-      download::DownloadItemRerouteInfo());
+      false, std::vector<download::DownloadItem::ReceivedSlice>());
 }
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
