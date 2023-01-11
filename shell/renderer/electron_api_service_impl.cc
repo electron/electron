@@ -87,7 +87,7 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
 
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
-  v8::MicrotasksScope script_scope(isolate,
+  v8::MicrotasksScope script_scope(isolate, context->GetMicrotaskQueue(),
                                    v8::MicrotasksScope::kRunMicrotasks);
 
   std::vector<v8::Local<v8::Value>> argv = {
