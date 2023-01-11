@@ -193,11 +193,10 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
   node::Environment* env = node::Environment::GetCurrent(isolate);
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, env->context()->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
-
   if (env) {
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, env->context()->GetMicrotaskQueue(),
+        v8::MicrotasksScope::kDoNotRunMicrotasks);
     // Emit the after() hooks now that the exception has been handled.
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
