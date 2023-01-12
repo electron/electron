@@ -31,6 +31,6 @@ template and submit a new issue.
 [(package)]: https://www.electronforge.io/cli#package
 [(make)]: https://www.electronforge.io/cli#make
 [(publish)]: https://www.electronforge.io/cli#publish
-[GitHub issue tracker]: https://github.com/electron-userland/electron-forge/issues
+[GitHub issue tracker]: https://github.com/electron/forge/issues
 [discord]: https://discord.gg/APGC3k5yaH
 [tutorial]: https://www.electronjs.org/docs/latest/tutorial/tutorial-prerequisites

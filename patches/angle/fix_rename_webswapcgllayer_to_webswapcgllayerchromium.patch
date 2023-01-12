@@ -1,0 +1,66 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Mon, 10 Oct 2022 15:11:08 +0400
+Subject: fix: rename WebSwapCGLLayer to WebSwapCGLLayerChromium
+
+Class WebSwapCGLLayer is implemented in both /System/Library/Frameworks/WebKit.framework/Versions/A/Frameworks/WebCore.framework/Versions/A/Frameworks/libANGLE-shared.dylib (0x23c589b50)
+and src/out/testing/Electron.app/Contents/Frameworks/Electron Framework.framework/Versions/A/Libraries/libGLESv2.dylib (0x1123f8488).
+One of the two will be used. Which one is undefined.
+
+diff --git a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h
+index 7101cd271c07e604c6f5241d1a22f59f446c0033..98a89976f87e32a66bd504951698204fad938d57 100644
+--- a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h
++++ b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.h
+@@ -18,7 +18,7 @@ struct __IOSurface;
+ typedef __IOSurface *IOSurfaceRef;
+ 
+ // WebKit's build process requires that every Objective-C class name has the prefix "Web".
+-@class WebSwapCGLLayer;
++@class WebSwapCGLLayerChromium;
+ 
+ namespace rx
+ {
+@@ -89,7 +89,7 @@ class WindowSurfaceCGL : public SurfaceGL
+                                      gl::Framebuffer *framebuffer) override;
+ 
+   private:
+-    WebSwapCGLLayer *mSwapLayer;
++    WebSwapCGLLayerChromium *mSwapLayer;
+     SharedSwapState mSwapState;
+     uint64_t mCurrentSwapId;
+ 
+diff --git a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm
+index 27990e9c2facbbe0e30f4b275e0778a6474fb9ce..84f9fa9b6d31fb0e85a4c4270dff4d935f855c26 100644
+--- a/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm
++++ b/src/libANGLE/renderer/gl/cgl/WindowSurfaceCGL.mm
+@@ -24,7 +24,7 @@
+ #    include "libANGLE/renderer/gl/StateManagerGL.h"
+ #    include "libANGLE/renderer/gl/cgl/DisplayCGL.h"
+ 
+-@interface WebSwapCGLLayer : CAOpenGLLayer {
++@interface WebSwapCGLLayerChromium : CAOpenGLLayer {
+     CGLContextObj mDisplayContext;
+ 
+     bool initialized;
+@@ -38,7 +38,7 @@ - (id)initWithSharedState:(rx::SharedSwapState *)swapState
+             withFunctions:(const rx::FunctionsGL *)functions;
+ @end
+ 
+-@implementation WebSwapCGLLayer
++@implementation WebSwapCGLLayerChromium
+ - (id)initWithSharedState:(rx::SharedSwapState *)swapState
+               withContext:(CGLContextObj)displayContext
+             withFunctions:(const rx::FunctionsGL *)functions
+@@ -220,9 +220,9 @@ - (void)drawInCGLContext:(CGLContextObj)glContext
+     mSwapState.lastRendered   = &mSwapState.textures[1];
+     mSwapState.beingPresented = &mSwapState.textures[2];
+ 
+-    mSwapLayer = [[WebSwapCGLLayer alloc] initWithSharedState:&mSwapState
+-                                                  withContext:mContext
+-                                                withFunctions:mFunctions];
++    mSwapLayer = [[WebSwapCGLLayerChromium alloc] initWithSharedState:&mSwapState
++                                                          withContext:mContext
++                                                        withFunctions:mFunctions];
+     [mLayer addSublayer:mSwapLayer];
+     [mSwapLayer setContentsScale:[mLayer contentsScale]];
+ 

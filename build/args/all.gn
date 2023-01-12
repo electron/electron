@@ -48,3 +48,5 @@ is_cfi = false
 
 # TODO: fix this once sysroots have been updated.
 use_qt = false
+
+v8_builtins_profiling_log_file = ""

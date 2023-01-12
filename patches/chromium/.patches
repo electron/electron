@@ -125,3 +125,4 @@ fix_tray_icon_gone_on_lock_screen.patch
 cherry-pick-2611772cf0a0.patch
 cherry-pick-3235c1d1955b.patch
 expose_v8initializer_codegenerationcheckcallbackinmainthread.patch
+cherry-pick-43637378b14e.patch
