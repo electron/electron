@@ -135,9 +135,7 @@ the list of versions in the [electron/releases] repository.
 [node-guide]: https://nodejs.dev/en/learn/
 [node-download]: https://nodejs.org/en/download/
 [nvm]: https://github.com/nvm-sh/nvm
-[process-model]: ./process-model.md
 [`process.versions`]: https://nodejs.org/api/process.html#processversions
-[github]: https://github.com/
 [git guides]: https://github.com/git-guides/
 [github desktop]: https://desktop.github.com/
 [visual studio code]: https://code.visualstudio.com/

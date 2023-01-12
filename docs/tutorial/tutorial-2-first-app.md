@@ -445,14 +445,12 @@ privileged APIs and how to communicate between processes.
 <!-- Links -->
 
 [activate]: ../api/app.md#event-activate-macos
-[advanced-installation]: installation.md
 [app]: ../api/app.md
 [app-quit]: ../api/app.md#appquit
 [app-ready]: ../api/app.md#event-ready
 [app-when-ready]: ../api/app.md#appwhenready
 [application debugging]: ./application-debugging.md
 [browser-window]: ../api/browser-window.md
-[commonjs]: https://nodejs.org/docs/../api/modules.html#modules_modules_commonjs_modules
 [compound task]: https://code.visualstudio.com/Docs/editor/tasks#_compound-tasks
 [devtools extension]: ./devtools-extension.md
 [event emitters]: https://nodejs.org/api/events.html#events
@@ -465,7 +463,6 @@ privileged APIs and how to communicate between processes.
 [process-model]: process-model.md
 [react]: https://reactjs.org
 [repl]: ./repl.md
-[sandbox]: ./sandbox.md
 [webpack]: https://webpack.js.org
 [window-all-closed]: ../api/app.md#event-window-all-closed
 [wsl]: https://docs.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2

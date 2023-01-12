@@ -268,7 +268,6 @@ behave correctly on all platforms, you should never use a custom context menu on
 draggable areas.
 
 [`blur()`]: https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function/blur()
-[`BrowserWindow`]: ../api/browser-window.md
 [chrome]: https://developer.mozilla.org/en-US/docs/Glossary/Chrome
 [ignore-mouse-events]: ../api/browser-window.md#winsetignoremouseeventsignore-options
 [overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables

@@ -271,8 +271,6 @@ By default inspector websocket url is available in stderr and under /json/list e
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
-[ready]: app.md#event-ready
-[play-silent-audio]: https://github.com/atom/atom/pull/9485/files
 [debugging-main-process]: ../tutorial/debugging-main-process.md
 [logging]: https://source.chromium.org/chromium/chromium/src/+/main:base/logging.h
 [node-cli]: https://nodejs.org/api/cli.html

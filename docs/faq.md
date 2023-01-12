@@ -154,7 +154,6 @@ Notice that just setting the background in the CSS does not have the desired eff
 
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
 [variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
-[electron-module]: https://www.npmjs.com/package/electron
 [storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
 [local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
 [session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage
