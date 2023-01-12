@@ -120,20 +120,20 @@ static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
 #endif
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
                                 "display-added", new_display));
 }
 
 void Screen::OnDisplayRemoved(const display::Display& old_display) {
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
                                 "display-removed", old_display));
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE, base::BindOnce(&DelayEmitWithMetrics, base::Unretained(this),
                                 "display-metrics-changed", display,
                                 MetricsToArray(changed_metrics)));

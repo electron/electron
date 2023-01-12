@@ -77,7 +77,7 @@ namespace electron {
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
     : isolate_(Initialize(event_loop, setup_wasm_streaming)),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
+      isolate_holder_(base::SingleThreadTaskRunner::GetCurrentDefault(),
                       gin::IsolateHolder::kSingleThread,
                       gin::IsolateHolder::kAllowAtomicsWait,
                       gin::IsolateHolder::IsolateType::kUtility,

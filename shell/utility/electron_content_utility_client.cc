@@ -102,7 +102,7 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
 #if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
     binders->Add<printing::mojom::PdfToEmfConverterFactory>(
         base::BindRepeating(printing::PdfToEmfConverterFactory::Create),
-        base::ThreadTaskRunnerHandle::Get());
+        base::SingleThreadTaskRunner::GetCurrentDefault());
 #endif
   }
 }

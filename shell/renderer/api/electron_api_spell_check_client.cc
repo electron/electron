@@ -106,7 +106,7 @@ void SpellCheckClient::RequestCheckingOfText(
   pending_request_param_ =
       std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
 
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
       base::BindOnce(&SpellCheckClient::SpellCheckText, AsWeakPtr()));
 }

@@ -54,7 +54,7 @@ void GPUInfoManager::OnGpuInfoUpdate() {
   // Ignore if called when not asked for complete GPUInfo
   if (NeedsCompleteGpuInfoCollection())
     return;
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::ProcessCompleteInfo,
                                 base::Unretained(this)));
 }

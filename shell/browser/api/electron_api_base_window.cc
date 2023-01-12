@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_browser_view.h"
@@ -116,7 +117,7 @@ BaseWindow::~BaseWindow() {
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
-  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(FROM_HERE, window_.release());
 
   // Remove global reference so the JS object can be garbage collected.
   self_ref_.Reset();
@@ -164,7 +165,7 @@ void BaseWindow::OnWindowClosed() {
   BaseWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE, GetDestroyClosure());
 }
 
 void BaseWindow::OnWindowEndSession() {

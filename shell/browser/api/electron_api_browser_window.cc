@@ -402,7 +402,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
 
   window_unresponsive_closure_.Reset(base::BindRepeating(
       &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
-  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
       base::Milliseconds(ms));
 }

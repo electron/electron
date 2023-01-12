@@ -660,7 +660,7 @@ void NodeBindings::StartPolling() {
   initialized_ = true;
 
   // The MessageLoop should have been created, remember the one in main thread.
-  task_runner_ = base::ThreadTaskRunnerHandle::Get();
+  task_runner_ = base::SingleThreadTaskRunner::GetCurrentDefault();
 
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
   UvRunOnce();
