@@ -37,7 +37,8 @@ namespace {
 void RunQuitClosure(base::OnceClosure quit) {
   // On Linux/Windows the "ready" event is emitted in "PreMainMessageLoopRun",
   // make sure we quit after message loop has run for once.
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE, std::move(quit));
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
+                                                              std::move(quit));
 }
 
 }  // namespace
