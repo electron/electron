@@ -117,7 +117,8 @@ BaseWindow::~BaseWindow() {
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
-  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(FROM_HERE, window_.release());
+  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(
+      FROM_HERE, window_.release());
 
   // Remove global reference so the JS object can be garbage collected.
   self_ref_.Reset();
@@ -165,7 +166,8 @@ void BaseWindow::OnWindowClosed() {
   BaseWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void BaseWindow::OnWindowEndSession() {

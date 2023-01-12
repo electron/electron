@@ -219,7 +219,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
       context_factory->AllocateFrameSinkId(), context_factory,
-      base::SingleThreadTaskRunner::GetCurrentDefault(), false /* enable_pixel_canvas */,
+      base::SingleThreadTaskRunner::GetCurrentDefault(),
+      false /* enable_pixel_canvas */,
       false /* use_external_begin_frame_control */);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetDelegate(this);
