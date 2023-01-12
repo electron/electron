@@ -6,11 +6,6 @@ const path = require('path');
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
-const RELEASE_BRANCH_PATTERN = /(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))/;
-// TODO(main-migration): Simplify once main branch is renamed
-const MAIN_BRANCH_PATTERN = /^(main|master)$/;
-const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/(main|master)$/;
-
 require('colors');
 const pass = '✓'.green;
 const fail = '✗'.red;
@@ -76,6 +71,10 @@ async function handleGitCall (args, gitDir) {
 }
 
 async function getCurrentBranch (gitDir) {
+  const RELEASE_BRANCH_PATTERN = /^\d+-x-y$/;
+  const MAIN_BRANCH_PATTERN = /^main$/;
+  const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/main$/;
+
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir);
   if (!MAIN_BRANCH_PATTERN.test(branch) && !RELEASE_BRANCH_PATTERN.test(branch)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir);
