@@ -85,7 +85,7 @@ const getAllBranches = async () => {
 };
 
 const getStabilizationBranches = async () => {
-  return (await getAllBranches()).filter(branch => /^origin\/\d+-\d+-x$/.test(branch));
+  return (await getAllBranches()).filter(branch => /^origin\/\d+-x-y$/.test(branch));
 };
 
 const getPreviousStabilizationBranch = async (current) => {

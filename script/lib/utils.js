@@ -71,7 +71,7 @@ async function handleGitCall (args, gitDir) {
 }
 
 async function getCurrentBranch (gitDir) {
-  const RELEASE_BRANCH_PATTERN = /^\d+-\d+-x$/;
+  const RELEASE_BRANCH_PATTERN = /^\d+-x-y$/;
   const MAIN_BRANCH_PATTERN = /^main$/;
   const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/main$/;
 
