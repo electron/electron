@@ -235,4 +235,3 @@ there is need to fork a child process from the main process.
 [context-bridge]: ../api/context-bridge.md
 [ipcrenderer]: ../api/ipc-renderer.md
 [UtilityProcess]: ../api/utility-process.md
-[tutorial]: ./tutorial-1-prerequisites.md
