@@ -8,7 +8,7 @@ v8::Value instead of base::Value.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index bbeec904936d05ef76a9e5de1dcd7159e5c0f364..4be3de364630e989f4ac956944362800d535ef73 100644
+index 43fd5ef20228479f3090af0806df19baf65b963c..72062ab628af1eb3faac6337c4ce757c3e378d46 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
 @@ -331,6 +331,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
@@ -98,10 +98,10 @@ index f62e0cbf131cef047754db0023cccdf3ce3fe57b..5986d67c72bed37d5ba1be8571149d52
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 84d506b956931465cdffc2d5526847a61f6b87f7..bc5fba399c701f2498829153ee617bf601414d69 100644
+index bfcbde0c276512f2b2a0ae66d3e728785156a202..ddd620c8ca1b63f8c828365e50dd9bd8b7ecc076 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-@@ -1039,6 +1039,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
+@@ -1041,6 +1041,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
              std::move(callback).Run(value ? std::move(*value) : base::Value());
            },
            std::move(callback)),
@@ -205,10 +205,10 @@ index 1e4d9e098463d61dcab787afcc46fea63b27e012..3f1ebf493ddd7d1c209acee2fb1255a0
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 851f1cc0e4ae15bddc5d478b5a28739563091cd6..2d232192cbeacff649377b094ab6766130c2255c 100644
+index 809639442fad0d004c59f4733580079b893d5b73..6abcc2e0c1b8fa5cc142735ce4b88d1488a18101 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-@@ -1113,14 +1113,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
+@@ -1114,14 +1114,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,

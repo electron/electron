@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3ca5efab5b270babbe83bab024c54094fee4a4ff..2c2125cc962e636b415621dacceb0586af28a95d 100644
+index 818082b8bcf9b77779cfb0938f146324379bd2f0..e3d2995ae2516edb68946a5d88b714191941d64c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index b5d2ef2b91a6605ec084a53d52ed27f92a9b9435..3dcfd6f493f16caf4ae3061155da8d65fcb2af56 100644
+index 115cbc26330f0392488736cebc87bef1b4e0d4f6..96ae7d9f40ab4486aab6561e1bdda4c9a7a838c2 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -280,6 +280,7 @@ component("core") {

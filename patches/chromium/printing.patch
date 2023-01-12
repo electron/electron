@@ -562,7 +562,7 @@ index 42d9af1e278f6c3e09bb7e54a7c4de0f17d064bf..96112222530e63f911d866884eca03cc
    // Tells the browser that there are invalid printer settings.
    ShowInvalidPrinterSettingsError();
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 5b0ba913e94a3132a3d3a6c71cfe08f940b97fc1..dfcd383c5242752a6b3751da417e81749e09ca71 100644
+index f97675b7abe9553a4ea11ba7faa91f042e133448..0b269b93206c07befdb12d0a0e7f796605026976 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -43,6 +43,7 @@
@@ -742,7 +742,7 @@ index 5b0ba913e94a3132a3d3a6c71cfe08f940b97fc1..dfcd383c5242752a6b3751da417e8174
              std::move(quit_closure).Run();
            },
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 97151dfd451fc847472fa82d418ab1f5abd8d853..e8e963aca6c1ab0360c55da0ad0845b92f6ca95a 100644
+index 3f82c0cdfd11a8d0c3cbcba9cc74b0e3e1a41b0f..36c1df7e3346f51945721ababf12dc3424f17686 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -253,7 +253,7 @@ class PrintRenderFrameHelper
@@ -783,10 +783,10 @@ index 97151dfd451fc847472fa82d418ab1f5abd8d853..e8e963aca6c1ab0360c55da0ad0845b9
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ee145b2767f2174c16543f958ecd6822a4075ede..3ca5efab5b270babbe83bab024c54094fee4a4ff 100644
+index 50a7a0b282426e76cc660c9871e2c5c8ab883b7a..818082b8bcf9b77779cfb0938f146324379bd2f0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2812,8 +2812,9 @@ source_set("browser") {
+@@ -2817,8 +2817,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

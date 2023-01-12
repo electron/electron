@@ -11,7 +11,7 @@ needs to think it's coming from the PWA process). I think it can just be chopped
 out -- if there are any side-effects, we should be able to work around them.
 
 diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
-index 89b9323c08cfed0d3ea3a0ec1beaa0bdfabe343e..69ae95eb8537bab751d27749d6cf392a8419f317 100644
+index 447bc6bfb54484b30686db7fd9df0454f48316c8..a1b3140858ae9a456f1c07fbe60cf9ca55e78bb0 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
 +++ b/components/remote_cocoa/app_shim/application_bridge.mm
 @@ -51,6 +51,7 @@
@@ -44,7 +44,7 @@ index 89b9323c08cfed0d3ea3a0ec1beaa0bdfabe343e..69ae95eb8537bab751d27749d6cf392a
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index a125a37f64776bea1bd39d6aa182793535dded93..eabe1eb5b9253472162f5118c043422d38e8022c 100644
+index d03381595648552f993cdcfa761824c7e42fe8ff..847819cfdbb3da85cec494c523028cdff8342571 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -567,10 +567,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {

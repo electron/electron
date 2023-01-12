@@ -19,10 +19,10 @@ index aed571451f1c24b6b5e57b8f0e57b771ced85e92..a38b2752f76194de52685a4cefa17756
                                     aspect_ratio.height());
  }
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 6ba506fc896bc165007ee9ec43faeb3e95ac9d97..1db500b4d7f685dc54d3b782de42ba6fe1aabf41 100644
+index 2fda18fa44a8b3766473652f128e374a9b8ff3ea..53c9ee773cf696b2afbbba900cd77e85e4a056f7 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -1020,8 +1020,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
+@@ -1012,8 +1012,11 @@ void HWNDMessageHandler::SetFullscreen(bool fullscreen,
  }
  
  void HWNDMessageHandler::SetAspectRatio(float aspect_ratio) {

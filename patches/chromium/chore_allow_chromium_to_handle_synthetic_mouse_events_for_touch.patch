@@ -34,10 +34,10 @@ index b23ba1bf3a49f72d1cd0f0ae4b0f316e7c15fa76..bf0a4869af4aaca15074fae42508b54a
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 631393000c825ab953014b82b342d323d87c28bc..a15abb9c3b295185852cc2641c1ee3e653548d29 100644
+index 4e587d3fdf2d9676541d0e2d0c6eddd67ff81be5..e3db63d5cdfee7cd5827ed9ed99378bb27e8ecbc 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3131,15 +3131,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3100,15 +3100,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
        SetMsgHandled(FALSE);
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.
