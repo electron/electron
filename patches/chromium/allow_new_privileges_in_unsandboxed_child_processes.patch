@@ -6,11 +6,11 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed child process to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 8c5cc2b157f6e2894216a003256a9ef3b6dbf5f7..008ba5bef67adbd166919ca4708452faa4bb85b5 100644
+index d7ec619540ec8..520192776febc 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -56,6 +56,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
-     options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));
+     options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
    }
  
 +  // (For Electron), if we're launching without zygote, that means we're
