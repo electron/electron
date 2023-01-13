@@ -272,7 +272,7 @@ WebContents.prototype.printToPDF = async function (options) {
 
   if (options.pageRanges !== undefined) {
     if (typeof options.pageRanges !== 'string') {
-      return Promise.reject(new Error('printBackground must be a String'));
+      return Promise.reject(new Error('pageRanges must be a String'));
     }
     printSettings.pageRanges = options.pageRanges;
   }
