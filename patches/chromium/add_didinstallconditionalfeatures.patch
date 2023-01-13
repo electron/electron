@@ -23,10 +23,10 @@ index 7eaed5e4ce1f8a46d1e25f8838cf52b3676a7fb5..8f2bd75d29acfc212f2e680caf63c428
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index aaee42d131e4bae00f1ad207b85cc59aa893b0e3..4ed8f2f1e4f81b22e3fec8eec463d842519e9487 100644
+index 1f07bcc4d35bc05e2df7839d2edaa183bf7e9287..6858e683384fd2d198a46e2db62fd032dbfbca14 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4391,6 +4391,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4394,6 +4394,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,7 +40,7 @@ index aaee42d131e4bae00f1ad207b85cc59aa893b0e3..4ed8f2f1e4f81b22e3fec8eec463d842
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 6b705468189704725c78806456efc72792db1ca2..d0d0ef3cc648b11a2cb7683da793d16c5603f2e7 100644
+index c0d24c1715b4714c5f179dbba4f0d91cddef1946..c819e1429630342cb34476847b3c25b140dfc593 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
 @@ -603,6 +603,8 @@ class CONTENT_EXPORT RenderFrameImpl
@@ -53,7 +53,7 @@ index 6b705468189704725c78806456efc72792db1ca2..d0d0ef3cc648b11a2cb7683da793d16c
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index c27c7cd30b0e069f9c679c5c5c63ff7595e47f79..2f4d84d18d7fd64409578064c636b4b0049d22ef 100644
+index 9fa27d4f1c63599d5cfeb095e74a72a88db1d8a2..0d37864c44495615103f5c1dca623c1e181a6460 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
 @@ -592,6 +592,9 @@ class BLINK_EXPORT WebLocalFrameClient {

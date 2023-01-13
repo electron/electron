@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 16bc334f392d5c8b83cc497889893227e1e91fdd..767432485873396589d71cbb1a5e1208031a4588 100644
+index 825186c4dada2bd52380bb4b24b9bcd0b76ab90d..65f836b07b2432553d088347f33bac662b5d6ed2 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1499,6 +1499,7 @@ component("base") {
+@@ -1498,6 +1498,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 818082b8bcf9b77779cfb0938f146324379bd2f0..e3d2995ae2516edb68946a5d88b714191941d64c 100644
+index 71f7cd6c694f633c97689ef6bc36051c62e3c355..c38c553cabf652099a10636077c9bf8928791935 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 115cbc26330f0392488736cebc87bef1b4e0d4f6..96ae7d9f40ab4486aab6561e1bdda4c9a7a838c2 100644
+index ab35f50c11ced2a0ea307441489aa4d0a8eb8d97..195c5ba69d654e4d9ebe349e5ed384fb2f5578a8 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -280,6 +280,7 @@ component("core") {
@@ -257,10 +257,10 @@ index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675c
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 75070cd98a76b2d74f1038d5492660ffe0b76168..47503aae619cc61dbd48ea711ee737ef9f80d15b 100644
+index 3fb3721c81e6dac5d4eab04966915b81691f0c7e..65c7c1e69a5a4f1d29a47825f1e04724951270fc 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -661,6 +661,7 @@ component("views") {
+@@ -663,6 +663,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

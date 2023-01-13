@@ -99,10 +99,10 @@ index 72be4d5c4840bd75ff27bb78dd04ced4b7853e70..de25e834c7fc5025a3a79045b19d5288
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index c1fcaf3c2bc23ac1087b43e3754fa60f73a76a22..b3b39f4824a33b1a923bd282044855f80500b770 100644
+index 7623254f8d8362fcb461d078c9b3013e287f2ed1..5c0a599f86add8f0825a25ca1bcc4fcd63264690 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -851,8 +851,7 @@ class Browser : public TabStripModelObserver,
+@@ -852,8 +852,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a70dc3d36864215b39156f8bfeb0c005728f81fc..a326e6824e243ceb0d95f89e09240304f562a132 100644
+index 30d6e553893186f078b98c0d4ee2887f9d67b132..e3a492564480f370d82a0fd3f2c0e714556c57ce 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4023,8 +4023,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -246,7 +246,7 @@ index eec7f60003267f91f856dc347b31ab8d637fc674..68e739a2b6dfb58593c29cde177c27c7
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index c81dd661c5773f23d4e91d0e867d76206fb555e7..bd3967c3d8141692289a21b7e7f99424a42ef583 100644
+index 225a2ed4f55bbc5d35127057bea44c4fdffe5d1d..b9206469f56dde4f2d0b554832b4873f3593afed 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -321,8 +321,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -344,7 +344,7 @@ index 69e45b758a48fd2a117715869861d70294b334b3..5e36410b91e92b399a7179e14dd18fca
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index 010ff2c94287e6b9ef37fd21f959670775a03dbf..f2392c90f91db631837495809290b4f77ac1243b 100644
+index 2bb690e05876c497abd1ad7d2c600b78532df1e6..c595d97a478a7475c8a56f322112006ae9117cd3 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
 @@ -183,8 +183,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {

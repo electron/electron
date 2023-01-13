@@ -61,7 +61,7 @@ index d03381595648552f993cdcfa761824c7e42fe8ff..847819cfdbb3da85cec494c523028cdf
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..8c69b989882084946bb821e1d64d75657f17ab26 100644
+index 5fbbb7a1d56640a2bf540ecb148f358ef88c4ad2..7eb3433b6561bba527d9c69b4819e7c26388eb2d 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -77,6 +77,7 @@ explicit RenderWidgetHostNSViewBridgeOwner(
@@ -105,7 +105,7 @@ index abd19b8613e52a6f4c9404f509ab7ed5a61046a6..8c69b989882084946bb821e1d64d7565
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index af40af18152d184b9235e412ab053a9674a1b498..54de20661940542fb6565aefa6117966b5968ca0 100644
+index c3dc8382d3a8bdfd1bf10f982d32fcfd8b317d71..9c98fd3003073f60377b69d3932445ca1e618fd8 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -22,7 +22,9 @@
@@ -162,7 +162,7 @@ index c1f2725cf74fe8845843461518a849f2cbf2c024..c9f489a8603a63dc2641fbd435c4ab1d
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index f33cfd5ae9e9f1c6c73cf936cc956f032ffe9f5d..7403ddc725a8135a91fe65e5888ef064c567111d 100644
+index 62799f01f9f3e5df7e1a058fec47150e5d060654..48438072cce2ddc5f559df91b8dc7eb98098e14b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -261,8 +261,10 @@

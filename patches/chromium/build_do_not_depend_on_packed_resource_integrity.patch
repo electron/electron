@@ -33,10 +33,10 @@ index d0c84ffdca6b264b4ca35e4692ff1353d4e68c7c..e88a3b8d424eba41017d9b4e3b013c95
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 27b94d54cc1c7fcfe156a6298bb4562fab3530ae..91c3ae4c1ea1d77daab6da21b70ec2ff8ae2f58b 100644
+index 1891cf9c16eaf1472830fa91e4efcffe268ef8de..e9f74d9085c48c3a5acdaa11548575c86453beb4 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4563,7 +4563,7 @@ static_library("browser") {
+@@ -4561,7 +4561,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,10 +46,10 @@ index 27b94d54cc1c7fcfe156a6298bb4562fab3530ae..91c3ae4c1ea1d77daab6da21b70ec2ff
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index a3e99760ec371d6e699bd1a67837d00cfb842ef4..0b08416dacd2ba826f83af79f6a61cd1f1155460 100644
+index 422b4c8baaeaa128ff78485cd43cfe0ab0f1c452..c24d50cd314ad55e67f4e8332a1174699b317b54 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6254,7 +6254,6 @@ test("unit_tests") {
+@@ -6246,7 +6246,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index a3e99760ec371d6e699bd1a67837d00cfb842ef4..0b08416dacd2ba826f83af79f6a61cd1
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:crash_reporter_client_win_unit_tests",
-@@ -6280,6 +6279,10 @@ test("unit_tests") {
+@@ -6272,6 +6271,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index a3e99760ec371d6e699bd1a67837d00cfb842ef4..0b08416dacd2ba826f83af79f6a61cd1
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7206,7 +7209,7 @@ test("unit_tests") {
+@@ -7194,7 +7197,7 @@ test("unit_tests") {
      }
  
      deps += [
@@ -77,7 +77,7 @@ index a3e99760ec371d6e699bd1a67837d00cfb842ef4..0b08416dacd2ba826f83af79f6a61cd1
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
        "//chrome/browser/enterprise/connectors/analysis:features",
-@@ -7337,6 +7340,10 @@ test("unit_tests") {
+@@ -7325,6 +7328,10 @@ test("unit_tests") {
      }
    }
  

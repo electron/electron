@@ -527,7 +527,7 @@ index f9dd844cd6b665a5566cf6f46830287cffedc0ca..5b74259b2650fc4a525ba3a1be61d3d9
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 3ee0cc958b4b93be478cdd79961a80c036e23d23..223032434631fe04ad2999e90439b080d847b54d 100644
+index 0b0c6d676f83f49eb3c846ee79430089b5a5bc0f..3427494a6b6d1df803d9b6bdae81ceaf296028ae 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -399,8 +399,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -583,7 +583,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 4bd8c466869f19ddf579ad748369802646541870..ade93f8abb68af4f129468ddbc69d7b945764e3a 100644
+index 92c12cdb1e116340542406579d99c1be12e919cf..259ffc0e4ab0bbd982255c0900c57a0843a0f4f0 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -88,6 +88,7 @@ class DisplayPrivate;

@@ -783,7 +783,7 @@ index 3f82c0cdfd11a8d0c3cbcba9cc74b0e3e1a41b0f..36c1df7e3346f51945721ababf12dc34
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 50a7a0b282426e76cc660c9871e2c5c8ab883b7a..818082b8bcf9b77779cfb0938f146324379bd2f0 100644
+index d7659374bc8e76fe66add0cfdcb41b073b45c84e..71f7cd6c694f633c97689ef6bc36051c62e3c355 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2817,8 +2817,9 @@ source_set("browser") {
@@ -811,7 +811,7 @@ index 3a9e75c229f028dcbfb2d7b9294bc42989cb4c1e..a890c5517c0708034bbc6b9b606c990a
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 42095172d1406860249601537648fe22790ba744..361c20ef66d5c7acd34528711c52714d4c62a456 100644
+index 7582c73418e7478e7a91622089ec555e3e1e7113..d0e164b2748f2f078a2ace5bd46bbdc431cb6947 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -171,6 +171,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
