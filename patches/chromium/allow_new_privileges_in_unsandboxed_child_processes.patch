@@ -6,25 +6,22 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed child process to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index d7ec619540ec8615ab7846da37fb7a810552634b..520192776febc631f255ea9ca781fc459937dccb 100644
+index f866050502592..e77f9b5ef02a5 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -56,6 +56,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
-     options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
-   }
+@@ -62,6 +62,15 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+       options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
+     }
  
-+  // (For Electron), if we're launching without zygote, that means we're
-+  // launching an unsandboxed process (since all sandboxed processes are
-+  // forked from the zygote). Relax the allow_new_privs option to permit
-+  // launching suid processes from unsandboxed child processes.
-+  ZygoteHandle zygote_handle =
-+      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
-+          ? nullptr
-+          : delegate_->GetZygote();
-+  if (!zygote_handle) {
-+    options->allow_new_privs = true;
-+  }
++    // (For Electron), if we're launching without zygote, that means we're
++    // launching an unsandboxed process (since all sandboxed processes are
++    // forked from the zygote). Relax the allow_new_privs option to permit
++    // launching suid processes from unsandboxed child processes.
++    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote) &&
++        delegate_->GetZygote() == nullptr) {
++      options->allow_new_privs = true;
++    }
 +
-   for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
-     options->fds_to_remap.emplace_back(remapped_fd.second.get(),
-                                        remapped_fd.first);
+     options->environment = delegate_->GetEnvironment();
+   } else {
+     DCHECK(GetZygoteHandle());
