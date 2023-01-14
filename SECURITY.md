@@ -1,4 +1,5 @@
-# Reporting Security Issues
+# Reporting Security Issues  all isues of any change of policys in or ideas of will be confirmed first by  who who wrtes this piece.  and all in is subject to chang allowed or permissions or grant to change is not allowed as of right now pease take note we are working on it.
+
 
 The Electron team and community take security bugs in Electron seriously. We appreciate your efforts to responsibly disclose your findings, and will make every effort to acknowledge your contributions.
 
