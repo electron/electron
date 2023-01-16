@@ -15,7 +15,7 @@ native API from your UI or triggering changes in your web contents from native m
 ## IPC channels
 
 In Electron, processes communicate by passing messages through developer-defined "channels"
-with the [`ipcMain`] and [`ipcRenderer`] modules. These channels are
+with the [`ipcMain`][] and [`ipcRenderer`][] modules. These channels are
 **arbitrary** (you can name them anything you want) and **bidirectional** (you can use the
 same channel name for both modules).
 
@@ -25,16 +25,16 @@ you can use as a reference for your app code.
 ## Understanding context-isolated processes
 
 Before proceeding to implementation details, you should be familiar with the idea of using a
-[preload script] to import Node.js and Electron modules in a context-isolated renderer process.
+[preload script][] to import Node.js and Electron modules in a context-isolated renderer process.
 
-* For a full overview of Electron's process model, you can read the [process model docs].
+* For a full overview of Electron's process model, you can read the [process model docs][].
 * For a primer into exposing APIs from your preload script using the `contextBridge` module, check
-out the [context isolation tutorial].
+out the [context isolation tutorial][].
 
 ## Pattern 1: Renderer to main (one-way)
 
 To fire a one-way IPC message from a renderer process to the main process, you can use the
-[`ipcRenderer.send`] API to send a message that is then received by the [`ipcMain.on`] API.
+[`ipcRenderer.send`][] API to send a message that is then received by the [`ipcMain.on`][] API.
 
 You usually use this pattern to call a main process API from your web contents. We'll demonstrate
 this pattern by creating a simple app that can programmatically change its window title.
@@ -78,7 +78,7 @@ app.whenReady().then(() => {
 //...
 ```
 
-The above `handleSetTitle` callback has two parameters: an [IpcMainEvent] structure and a
+The above `handleSetTitle` callback has two parameters: an [IpcMainEvent][] structure and a
 `title` string. Whenever a message comes through the `set-title` channel, this function will
 find the BrowserWindow instance attached to the message sender and use the `win.setTitle`
 API on it.
@@ -108,7 +108,7 @@ At this point, you'll be able to use the `window.electronAPI.setTitle()` functio
 process.
 
 :::caution Security warning
-We don't directly expose the whole `ipcRenderer.send` API for [security reasons]. Make sure to
+We don't directly expose the whole `ipcRenderer.send` API for [security reasons][]. Make sure to
 limit the renderer's access to Electron APIs as much as possible.
 :::
 
@@ -153,8 +153,8 @@ to your BrowserWindow title!
 ## Pattern 2: Renderer to main (two-way)
 
 A common application for two-way IPC is calling a main process module from your renderer process
-code and waiting for a result. This can be done by using [`ipcRenderer.invoke`] paired with
-[`ipcMain.handle`].
+code and waiting for a result. This can be done by using [`ipcRenderer.invoke`][] paired with
+[`ipcMain.handle`][].
 
 In the following example, we'll be opening a native file dialog from the renderer process and
 returning the selected file's path.
@@ -236,7 +236,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 ```
 
 :::caution Security warning
-We don't directly expose the whole `ipcRenderer.invoke` API for [security reasons]. Make sure to
+We don't directly expose the whole `ipcRenderer.invoke` API for [security reasons][]. Make sure to
 limit the renderer's access to Electron APIs as much as possible.
 :::
 
@@ -359,7 +359,7 @@ renderer process until a reply is received.
 
 When sending a message from the main process to a renderer process, you need to specify which
 renderer is receiving the message. Messages need to be sent to a renderer process
-via its [`WebContents`] instance. This WebContents instance contains a [`send`][webcontents-send] method
+via its [`WebContents`][] instance. This WebContents instance contains a [`send`][webcontents-send] method
 that can be used in the same way as `ipcRenderer.send`.
 
 To demonstrate this pattern, we'll be building a number counter controlled by the native operating
@@ -440,7 +440,7 @@ After loading the preload script, your renderer process should have access to th
 `window.electronAPI.onUpdateCounter()` listener function.
 
 :::caution Security warning
-We don't directly expose the whole `ipcRenderer.on` API for [security reasons]. Make sure to
+We don't directly expose the whole `ipcRenderer.on` API for [security reasons][]. Make sure to
 limit the renderer's access to Electron APIs as much as possible.
 :::
 
@@ -540,7 +540,7 @@ and `ipcRenderer` modules. To achieve this, you have two options:
 
 * Use the main process as a message broker between renderers. This would involve sending a message
 from one renderer to the main process, which would forward the message to the other renderer.
-* Pass a [MessagePort] from the main process to both renderers. This will allow direct communication
+* Pass a [MessagePort][] from the main process to both renderers. This will allow direct communication
 between renderers after the initial setup.
 
 ## Object serialization

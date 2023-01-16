@@ -31,7 +31,7 @@ at [https://update.electronjs.org](https://update.electronjs.org). Its requireme
 
 - Your app runs on macOS or Windows
 - Your app has a public GitHub repository
-- Builds are published to [GitHub releases]
+- Builds are published to [GitHub releases][]
 - Builds are [code signed][code-signed]
 
 At this point, we'll assume that you have already pushed all your
@@ -47,7 +47,7 @@ you need to keep your code repository private, please refer to our
 
 ## Publishing a GitHub release
 
-Electron Forge has [Publisher] plugins that can automate the distribution
+Electron Forge has [Publisher][] plugins that can automate the distribution
 of your packaged application to various sources. In this tutorial, we will
 be using the GitHub Publisher, which will allow us to publish
 our code to GitHub releases.
@@ -65,7 +65,7 @@ with the `public_repo` scope, which gives write access to your public repositori
 
 #### Installing the module
 
-Forge's [GitHub Publisher] is a plugin that
+Forge's [GitHub Publisher][] is a plugin that
 needs to be installed in your project's `devDependencies`:
 
 ```sh npm2yarn
@@ -76,7 +76,7 @@ npm install --save-dev @electron-forge/publisher-github
 
 Once you have it installed, you need to set it up in your Forge
 configuration. A full list of options is documented in the Forge's
-[`PublisherGitHubConfig`] API docs.
+[`PublisherGitHubConfig`][] API docs.
 
 ```js title='forge.config.js'
 module.exports = {
@@ -114,7 +114,7 @@ variable.
 
 ### Running the publish command
 
-Add Forge's [publish command] to your npm scripts.
+Add Forge's [publish command][] to your npm scripts.
 
 ```json {6} title='package.json'
   //...
@@ -155,8 +155,8 @@ Publishing locally can be painful, especially because you can only create distri
 for your host operating system (i.e. you can't publish a Window `.exe` file from macOS).
 
 A solution for this would be to publish your app via automation workflows
-such as [GitHub Actions], which can run tasks in the
-cloud on Ubuntu, macOS, and Windows. This is the exact approach taken by [Electron Fiddle].
+such as [GitHub Actions][], which can run tasks in the
+cloud on Ubuntu, macOS, and Windows. This is the exact approach taken by [Electron Fiddle][].
 You can refer to Fiddle's [Build and Release pipeline][fiddle-build]
 and [Forge configuration][fiddle-forge-config]
 for more details.
@@ -165,7 +165,7 @@ for more details.
 
 Now that we have a functional release system via GitHub releases, we now need to tell our
 Electron app to download an update whenever a new release is out. Electron apps do this
-via the [autoUpdater] module, which reads from an update server feed to check if a new version
+via the [autoUpdater][] module, which reads from an update server feed to check if a new version
 is available for download.
 
 The update.electronjs.org service provides an updater-compatible feed. For example, Electron
@@ -175,7 +175,7 @@ to see if a newer GitHub release is available.
 After your release is published to GitHub, the update.electronjs.org service should work
 for your application. The only step left is to configure the feed with the autoUpdater module.
 
-To make this process easier, the Electron team maintains the [`update-electron-app`] module,
+To make this process easier, the Electron team maintains the [`update-electron-app`][] module,
 which sets up the autoUpdater boilerplate for update.electronjs.org in one function
 call — no configuration required. This module will search for the update.electronjs.org
 feed that matches your project's package.json `"repository"` field.
@@ -214,7 +214,7 @@ own update server and configure the autoUpdater module yourself.
 
 From here, you have officially completed our tutorial to Electron. Feel free to explore the
 rest of our docs and happy developing! If you have questions, please stop by our community
-[Discord server].
+[Discord server][].
 
 :::
 
