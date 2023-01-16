@@ -18,7 +18,7 @@ An example demonstrating how you can create a file on the fly to be dragged out 
 
 ### Preload.js
 
-In `preload.js` use the [`contextBridge`] to inject a method `window.electron.startDrag(...)` that will send an IPC message to the main process.
+In `preload.js` use the [`contextBridge`][] to inject a method `window.electron.startDrag(...)` that will send an IPC message to the main process.
 
 ```js
 const { contextBridge, ipcRenderer } = require('electron')
@@ -41,7 +41,7 @@ Add a draggable element to `index.html`, and reference your renderer script:
 
 ### Renderer.js
 
-In `renderer.js` set up the renderer process to handle drag events by calling the method you added via the [`contextBridge`] above.
+In `renderer.js` set up the renderer process to handle drag events by calling the method you added via the [`contextBridge`][] above.
 
 ```javascript
 document.getElementById('drag').ondragstart = (event) => {

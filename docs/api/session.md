@@ -659,7 +659,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match URLs which are IP address literals.
 
    Examples:
-     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+     "127.0.1", "\[0:0::1]", "\[::1]", "http://\[::1]:99"
 
 * `IP_LITERAL "/" PREFIX_LENGTH_IN_BITS`
 

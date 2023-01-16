@@ -16,7 +16,7 @@ process, it handles asynchronous and synchronous messages sent from a renderer
 process (web page). Messages sent from a renderer will be emitted to this
 module.
 
-For usage examples, check out the [IPC tutorial].
+For usage examples, check out the [IPC tutorial][].
 
 ## Sending messages
 

@@ -609,7 +609,7 @@ examples.
 
 ### `<webview>.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` [number, number] - `[processId, frameId]`
+* `frameId` \[number, number] - `[processId, frameId]`
 * `channel` string
 * `...args` any[]
 
@@ -909,7 +909,7 @@ webview.addEventListener('close', () => {
 
 Returns:
 
-* `frameId` [number, number] - pair of `[processId, frameId]`.
+* `frameId` \[number, number] - pair of `[processId, frameId]`.
 * `channel` string
 * `args` any[]
 
