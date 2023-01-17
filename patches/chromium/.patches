@@ -137,7 +137,9 @@ cherry-pick-2ef09109c0ec.patch
 cherry-pick-f98adc846aad.patch
 cherry-pick-eed5a4de2c40.patch
 cherry-pick-d1d654d73222.patch
+cherry-pick-77208afba04d.patch
 cherry-pick-65ad70274d4b.patch
 cherry-pick-819d876e1bb8.patch
 mojo_disable_sync_call_interrupts_in_the_browser.patch
 mojo_validate_that_a_message_is_allowed_to_use_the_sync_flag.patch
+cherry-pick-43637378b14e.patch

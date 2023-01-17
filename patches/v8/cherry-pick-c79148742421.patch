@@ -15,6 +15,19 @@ Cr-Commit-Position: refs/branch-heads/10.8@{#34}
 Cr-Branched-From: f1bc03fd6b4c201abd9f0fd9d51fb989150f97b9-refs/heads/10.8.168@{#1}
 Cr-Branched-From: 237de893e1c0a0628a57d0f5797483d3add7f005-refs/heads/main@{#83672}
 
+diff --git a/include/v8-version.h b/include/v8-version.h
+index 40515772ef03946510aee70bb5f2d5cca4c74818..aa72539443e9ad05f56bfe10002632e621a09b43 100644
+--- a/include/v8-version.h
++++ b/include/v8-version.h
+@@ -11,7 +11,7 @@
+ #define V8_MAJOR_VERSION 10
+ #define V8_MINOR_VERSION 6
+ #define V8_BUILD_NUMBER 194
+-#define V8_PATCH_LEVEL 26
++#define V8_PATCH_LEVEL 27
+ 
+ // Use 1 for candidates and 0 otherwise.
+ // (Boolean macro values are not supported by all preprocessors.)
 diff --git a/src/builtins/promise-any.tq b/src/builtins/promise-any.tq
 index ffb285a06a83557d8657aef6c04acc5c65513a62..7e707e649f11bc946a6d1173180d7293fe94d8ce 100644
 --- a/src/builtins/promise-any.tq

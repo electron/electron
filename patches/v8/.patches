@@ -11,3 +11,5 @@ revert_runtime_dhceck_terminating_exception_in_microtasks.patch
 chore_disable_is_execution_terminating_dcheck.patch
 cherry-pick-27fa951ae4a3.patch
 cherry-pick-c79148742421.patch
+cherry-pick-0f481c9ddf2a.patch
+cherry-pick-28b9c1c04e78.patch

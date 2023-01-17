@@ -202,6 +202,8 @@ class Browser : public WindowListObserver {
   bool UpdateUserActivityState(const std::string& type,
                                base::Value::Dict user_info);
 
+  void ApplyForcedRTL();
+
   // Bounce the dock icon.
   enum class BounceType{
       kCritical = 0,        // NSCriticalRequest

@@ -1,0 +1,104 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maks Orlovich <morlovich@chromium.org>
+Date: Tue, 22 Nov 2022 22:18:55 +0000
+Subject: Align NetworkContext::SetNetworkConditions better with devtools
+ emulateNetworkConditions
+
+The former used values of 0 to disable particular throttles, while the
+later documents -1, and looks to be pretty much a direct client, and the
+only one. So make NetworkService handle everything <= 0 as a disable,
+clamping at intake of config.
+
+Bug: 1382033
+
+(cherry picked from commit ce463c2c939818a12bbcec5e2c91c35f2a0a1f0e)
+
+Change-Id: I2fd3f075d5071cb0cf647838782115b5c00405bf
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4035891
+Reviewed-by: Ken Buchanan <kenrb@chromium.org>
+Reviewed-by: Eric Orth <ericorth@chromium.org>
+Commit-Queue: Maks Orlovich <morlovich@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1073566}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4048289
+Cr-Commit-Position: refs/branch-heads/5414@{#188}
+Cr-Branched-From: 4417ee59d7bf6df7a9c9ea28f7722d2ee6203413-refs/heads/main@{#1070088}
+
+diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
+index 105011c25861fe00cc8e72fe8f310ee5118725c3..86535284fedeb875b4958322fdddaa52507cfbaa 100644
+--- a/services/network/public/mojom/network_context.mojom
++++ b/services/network/public/mojom/network_context.mojom
+@@ -561,11 +561,11 @@ struct NetworkConditions {
+   // response received.
+   mojo_base.mojom.TimeDelta latency;
+ 
+-  // Maximal aggregated download throughput (bytes/sec). 0 disables download
++  // Maximal aggregated download throughput (bytes/sec). <=0 disables download
+   // throttling.
+   double download_throughput;
+ 
+-  // Maximal aggregated upload throughput (bytes/sec). 0 disables upload
++  // Maximal aggregated upload throughput (bytes/sec). <=0 disables upload
+   // throttling.
+   double upload_throughput;
+ };
+diff --git a/services/network/throttling/network_conditions.cc b/services/network/throttling/network_conditions.cc
+index 71cd4ac0e52cc1f262c5b58caf20448b57b6b64f..18b2b6e0efdc2e17dbbbfaa411b4ab49ec787bc4 100644
+--- a/services/network/throttling/network_conditions.cc
++++ b/services/network/throttling/network_conditions.cc
+@@ -4,6 +4,8 @@
+ 
+ #include "services/network/throttling/network_conditions.h"
+ 
++#include <algorithm>
++
+ namespace network {
+ 
+ NetworkConditions::NetworkConditions() : NetworkConditions(false) {}
+@@ -16,9 +18,9 @@ NetworkConditions::NetworkConditions(bool offline,
+                                      double download_throughput,
+                                      double upload_throughput)
+     : offline_(offline),
+-      latency_(latency),
+-      download_throughput_(download_throughput),
+-      upload_throughput_(upload_throughput) {}
++      latency_(std::max(latency, 0.0)),
++      download_throughput_(std::max(download_throughput, 0.0)),
++      upload_throughput_(std::max(upload_throughput, 0.0)) {}
+ 
+ NetworkConditions::~NetworkConditions() {}
+ 
+diff --git a/services/network/throttling/network_conditions.h b/services/network/throttling/network_conditions.h
+index f8c8214b34bafcb1f656dd3a39a0cf17fea821ea..c5232231d308b09105234101f4bc575491505372 100644
+--- a/services/network/throttling/network_conditions.h
++++ b/services/network/throttling/network_conditions.h
+@@ -28,6 +28,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkConditions {
+   bool IsThrottling() const;
+ 
+   bool offline() const { return offline_; }
++
++  // These are 0 if the corresponding throttle is disabled, >0 otherwise.
+   double latency() const { return latency_; }
+   double download_throughput() const { return download_throughput_; }
+   double upload_throughput() const { return upload_throughput_; }
+diff --git a/services/network/throttling/throttling_controller_unittest.cc b/services/network/throttling/throttling_controller_unittest.cc
+index fbe2c6d20d1d5362a77bd951e87b3fe41be13098..e834f8bdc13b5691b1e458dcafead482a0537e14 100644
+--- a/services/network/throttling/throttling_controller_unittest.cc
++++ b/services/network/throttling/throttling_controller_unittest.cc
+@@ -297,7 +297,7 @@ TEST(ThrottlingControllerTest, DownloadOnly) {
+   ThrottlingControllerTestHelper helper;
+   TestCallback* callback = helper.callback();
+ 
+-  helper.SetNetworkState(false, 10000000, 0);
++  helper.SetNetworkState(false, 10000000, -1);
+   int rv = helper.Start(false);
+   EXPECT_EQ(rv, net::ERR_IO_PENDING);
+   helper.FastForwardUntilNoTasksRemain();
+@@ -316,7 +316,7 @@ TEST(ThrottlingControllerTest, UploadOnly) {
+   ThrottlingControllerTestHelper helper;
+   TestCallback* callback = helper.callback();
+ 
+-  helper.SetNetworkState(false, 0, 1000000);
++  helper.SetNetworkState(false, -2, 1000000);
+   int rv = helper.Start(true);
+   EXPECT_EQ(rv, net::OK);
+   helper.FastForwardUntilNoTasksRemain();
