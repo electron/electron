@@ -2027,7 +2027,8 @@ describe('chromium features', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'win32' && process.platform !== 'linux')('webgl', () => {
+  // This is intentionally disabled on arm macs: https://chromium-review.googlesource.com/c/chromium/src/+/4143761
+  ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('webgl', () => {
     it('can be gotten as context in canvas', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
