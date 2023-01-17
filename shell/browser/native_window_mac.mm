@@ -1122,9 +1122,12 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
     is_kiosk_ = true;
     SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
-    [NSApp setPresentationOptions:kiosk_options_];
     is_kiosk_ = false;
     SetFullScreen(false);
+
+    // Set presentation options *after* asynchronously exiting
+    // fullscreen to ensure they take effect.
+    [NSApp setPresentationOptions:kiosk_options_];
   }
 }
 
