@@ -24,8 +24,6 @@ const circleCIPublishIndividualArches = {
   'linux-publish': ['arm', 'arm64', 'x64']
 };
 
-const GHAJobs = ['electron-woa-testing'];
-
 let jobRequestedCount = 0;
 
 async function makeRequest ({ auth, username, password, url, headers, body, method }) {
@@ -250,31 +248,6 @@ function buildCircleCI (targetBranch, options) {
   }
 }
 
-async function buildGHA (targetBranch, options) {
-  const { GHA_TOKEN } = process.env;
-  assert(GHA_TOKEN, `${options.ci} requires the $GHA_TOKEN environment variable to be provided`);
-
-  const octokit = new Octokit({ auth: GHA_TOKEN });
-
-  assert(GHAJobs.includes(options.job), `Unknown GitHub Actions arm test job name: ${options.job}. Valid values are: ${GHAJobs}.`);
-  assert(options.commit !== null, 'commit is a required option for GitHub Actions');
-
-  console.log(`Triggering GitHub Actions to run build on branch: ${targetBranch}.`);
-
-  jobRequestedCount++;
-
-  try {
-    const response = await octokit.request('POST /repos/electron/electron/actions/workflows/electron_woa_testing.yml/dispatches', {
-      ref: targetBranch,
-      inputs: {
-        appveyor_job_id: `${options.appveyorJobId}`
-      }
-    });
-  } catch (err) {
-    console.log('Problem calling GitHub Actions to get build definitions: ', err);
-  }
-}
-
 function runRelease (targetBranch, options) {
   if (options.ci) {
     switch (options.ci) {
@@ -284,10 +257,6 @@ function runRelease (targetBranch, options) {
       }
       case 'AppVeyor': {
         buildAppVeyor(targetBranch, options);
-        break;
-      }
-      case 'GHA': {
-        buildGHA(targetBranch, options);
         break;
       }
       default: {
@@ -311,7 +280,7 @@ if (require.main === module) {
   const targetBranch = args._[0];
   if (args._.length < 1) {
     console.log(`Trigger CI to build release builds of electron.
-    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=CircleCI|AppVeyor|GHA]
+    Usage: ci-release-build.js [--job=CI_JOB_NAME] [--arch=INDIVIDUAL_ARCH] [--ci=CircleCI|AppVeyor]
     [--ghRelease] [--circleBuildNum=xxx] [--appveyorJobId=xxx] [--commit=sha] TARGET_BRANCH
     `);
     process.exit(0);
