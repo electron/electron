@@ -65,7 +65,7 @@ async function main () {
   if (args.electronVersion) {
     const versions = await ElectronVersions.create();
     if (!versions.isVersion(args.electronVersion)) {
-      console.log(`${fail} ${args.electronVersion} is not a supported Electron version`);
+      console.log(`${fail} '${args.electronVersion}' is not a recognized Electron version`);
       process.exit(1);
     }
   }
