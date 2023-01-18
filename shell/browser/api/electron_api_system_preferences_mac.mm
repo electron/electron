@@ -425,9 +425,10 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 
 bool SystemPreferences::CanPromptTouchID() {
   base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-  if (![context
-          canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                      error:nil])
+  LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+  if (@available(macOS 10.15, *))
+    auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+  if (![context canEvaluatePolicy:auth_policy error:nil])
     return false;
   if (@available(macOS 10.13.2, *))
     return [context biometryType] == LABiometryTypeTouchID;
