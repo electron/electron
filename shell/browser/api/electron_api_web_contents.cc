@@ -1520,13 +1520,15 @@ void WebContents::HandleNewRenderFrame(
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
-    absl::optional<SkColor> maybe_color = web_preferences->GetBackgroundColor();
-    web_contents()->SetPageBaseBackgroundColor(maybe_color);
-
+    auto maybe_color = web_preferences->GetBackgroundColor();
     bool guest = IsGuest() || type_ == Type::kBrowserView;
-    SkColor color =
+
+    // If webPreferences has no color stored we need to explicitly set guest
+    // webContents background color to transparent.
+    auto bg_color =
         maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
-    SetBackgroundColor(rwhv, color);
+    web_contents()->SetPageBaseBackgroundColor(bg_color);
+    SetBackgroundColor(rwhv, bg_color);
   }
 
   if (!background_throttling_)
