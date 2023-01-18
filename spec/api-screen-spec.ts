@@ -34,6 +34,7 @@ describe('screen module', () => {
 
       expect(display).to.have.property('scaleFactor').that.is.a('number');
       expect(display).to.have.property('id').that.is.a('number');
+      expect(display).to.have.property('label').that.is.a('string');
       expect(display).to.have.property('rotation').that.is.a('number');
       expect(display).to.have.property('touchSupport').that.is.a('string');
       expect(display).to.have.property('accelerometerSupport').that.is.a('string');
