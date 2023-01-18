@@ -3071,7 +3071,7 @@ describe('navigator.usb', () => {
     if (haveDevices) {
       const grantedDevices = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
       if (grantedDevices.length > 0) {
-        const deletedDevice = await w.webContents.executeJavaScript(`
+        const deletedDevice: Electron.USBDevice = await w.webContents.executeJavaScript(`
           navigator.usb.getDevices().then(devices => {
             devices[0].forget();
             return {
@@ -3083,7 +3083,7 @@ describe('navigator.usb', () => {
         `);
         const grantedDevices2 = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
-        if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
+        if (deletedDevice.productName !== '' && deletedDevice.productId && deletedDevice.vendorId) {
           expect(deletedDeviceFromEvent).to.include(deletedDevice);
         }
       }
