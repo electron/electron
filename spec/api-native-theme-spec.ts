@@ -36,6 +36,7 @@ describe('nativeTheme module', () => {
     });
 
     it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', async () => {
+      nativeTheme.themeSource = 'light';
       let updatedEmitted = emittedOnce(nativeTheme, 'updated');
       nativeTheme.themeSource = 'dark';
       await updatedEmitted;
