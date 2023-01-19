@@ -18,7 +18,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 989b59b0274796e0021b115413f3eedc73a6aa26..93915d2ac32f00887e58b3d8da8c28fbb1ef3c2c 100644
+index 989b59b0274796e0021b115413f3eedc73a6aa26..157c82b1c23ab1f411cdb0411855f5bf5388a064 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -32,6 +32,7 @@
@@ -41,11 +41,39 @@ index 989b59b0274796e0021b115413f3eedc73a6aa26..93915d2ac32f00887e58b3d8da8c28fb
    // Files opened by the browser and passed as corresponding file descriptors
    // in the child process. If a FilePath is provided, the file will be opened
    // and the descriptor cached for future process launches. If a ScopedFD is
+@@ -178,6 +182,15 @@ struct ChildProcessLauncherFileData {
+   std::map<std::string, absl::variant<base::FilePath, base::ScopedFD>>
+       files_to_preload;
+ #endif
++
++#if BUILDFLAG(IS_POSIX)
++  // Map of file descriptors to pass. This is used instead of
++  // `files_to_preload` when the data needs to be installed at an exact FD
++  // number in the new process.
++  //
++  // Currently only supported on POSIX platforms.
++  std::map<int, base::ScopedFD> additional_remapped_fds;
++#endif
+ };
+ 
+ // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index e77f9b5ef02a56fffaa46a1fb5f8b06fae6b0df5..75cee649a5ed7605995e5386e27f208eea993578 100644
+index e77f9b5ef02a56fffaa46a1fb5f8b06fae6b0df5..4c9f138c8cb40576fd1ca5a89627d2f5e6588f6f 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -71,7 +71,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -62,6 +62,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+       options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
+     }
+ 
++    for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
++      options->fds_to_remap.emplace_back(remapped_fd.second.get(),
++                                         remapped_fd.first);
++    }
++
+     // (For Electron), if we're launching without zygote, that means we're
+     // launching an unsandboxed process (since all sandboxed processes are
+     // forked from the zygote). Relax the allow_new_privs option to permit
+@@ -71,7 +76,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->allow_new_privs = true;
      }
  
@@ -56,7 +84,7 @@ index e77f9b5ef02a56fffaa46a1fb5f8b06fae6b0df5..75cee649a5ed7605995e5386e27f208e
      DCHECK(GetZygoteHandle());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..e955381cf6e7d27df444aeadb6e0fe5fd5ff39ce 100644
+index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..8d2c204e4cbc5f0657adc554f43f5faa822a3e60 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -121,7 +121,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -69,6 +97,18 @@ index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..e955381cf6e7d27df444aeadb6e0fe5f
    options->disclaim_responsibility = delegate_->DisclaimResponsibility();
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
+@@ -180,6 +181,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+     // communication FD to the helper executable.
+     command_line_->AppendArg(
+         base::StringPrintf("%s%d", sandbox::switches::kSeatbeltClient, pipe));
++
++    for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
++      options->fds_to_remap.emplace_back(remapped_fd.second.get(),
++                                         remapped_fd.first);
++    }
+   }
+ 
+   return true;
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
 index d4c9e420ce93414e4f73de6a4e195052eb523ca4..03a620bbf906678ec6c923f0e3285687da791f7c 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
