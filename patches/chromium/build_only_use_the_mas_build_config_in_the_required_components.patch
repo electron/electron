@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 825186c4dada2bd52380bb4b24b9bcd0b76ab90d..65f836b07b2432553d088347f33bac662b5d6ed2 100644
+index f2bc86fd3da3aab8a8dc0311977535d845d819f8..72031a8c974e812cfbf54722f997fb8ca8603d83 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1498,6 +1498,7 @@ component("base") {
+@@ -1496,6 +1496,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 71f7cd6c694f633c97689ef6bc36051c62e3c355..c38c553cabf652099a10636077c9bf8928791935 100644
+index be39decd9123145a5484cd5886209ce1a2184d85..5f78142eb38bf8c8d0693c8722e91155a522f3cc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index ab35f50c11ced2a0ea307441489aa4d0a8eb8d97..195c5ba69d654e4d9ebe349e5ed384fb2f5578a8 100644
+index 7a734ccec0e6d29df81ab10fc514624a7af41932..f401b343b0cf6cb02709711b49da5c1d9cf53543 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -280,6 +280,7 @@ component("core") {
@@ -257,7 +257,7 @@ index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675c
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 3fb3721c81e6dac5d4eab04966915b81691f0c7e..65c7c1e69a5a4f1d29a47825f1e04724951270fc 100644
+index f445c837fd3b9814336349f78a1f30a6f9416cc5..4ebf81a2e182555d8dbff155b7c1cdfa3a363428 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -663,6 +663,7 @@ component("views") {

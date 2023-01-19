@@ -783,10 +783,10 @@ index 3f82c0cdfd11a8d0c3cbcba9cc74b0e3e1a41b0f..36c1df7e3346f51945721ababf12dc34
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d7659374bc8e76fe66add0cfdcb41b073b45c84e..71f7cd6c694f633c97689ef6bc36051c62e3c355 100644
+index f72f60e3ce8c363ff896a50d0c8d92cee1de6189..be39decd9123145a5484cd5886209ce1a2184d85 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2817,8 +2817,9 @@ source_set("browser") {
+@@ -2815,8 +2815,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -835,18 +835,10 @@ index 7582c73418e7478e7a91622089ec555e3e1e7113..d0e164b2748f2f078a2ace5bd46bbdc4
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index d709edc697f1390a3eb086c4be16a8185bf6e66c..e6f4cdf018bb9a1cdf140a3b80eaca9accd289d8 100644
+index 99a89b0334b703b021e40baafe7fb1184405e072..28b74e85619368703cde82ed7caeca438d596d36 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -25,7 +25,6 @@
- #include "sandbox/policy/mac/nacl_loader.sb.h"
- #include "sandbox/policy/mac/network.sb.h"
- #include "sandbox/policy/mac/ppapi.sb.h"
--#include "sandbox/policy/mac/print_backend.sb.h"
- #include "sandbox/policy/mac/print_compositor.sb.h"
- #include "sandbox/policy/mac/renderer.sb.h"
- #if BUILDFLAG(ENABLE_SCREEN_AI_SERVICE)
-@@ -35,6 +34,10 @@
+@@ -37,6 +37,10 @@
  #include "sandbox/policy/mac/utility.sb.h"
  #include "sandbox/policy/mojom/sandbox.mojom.h"
  
