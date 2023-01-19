@@ -21,6 +21,9 @@ def run_node_configure(target_cpu):
   # Work around "No acceptable ASM compiler found" error on some System,
   # it breaks nothing since Electron does not use OpenSSL.
   args += ['--openssl-no-asm']
+
+  # Enable whole-program optimization for electron native modules.
+  args += ['--with-ltcg']
   subprocess.check_call([sys.executable, configure] + args)
 
 def read_node_config_gypi():
@@ -57,8 +60,6 @@ def main(target_file, target_cpu):
   v['node_module_version'] = int(args['node_module_version'])
   # Used by certain versions of node-gyp.
   v['build_v8_with_gn'] = 'false'
-  # Enable whole-program optimization for electron native modules.
-  v['node-with-ltcg'] = 'true'
 
   with open(target_file, 'w+') as f:
     f.write(pprint.pformat(config, indent=2))
