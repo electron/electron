@@ -15,7 +15,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "build/build_config.h"
 #include "components/content_settings/core/common/content_settings.h"
@@ -259,7 +259,7 @@ void UsbChooserContext::GetDevices(
   for (const auto& pair : devices_) {
     device_list.push_back(pair.second->Clone());
   }
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(std::move(callback), std::move(device_list)));
 }
 

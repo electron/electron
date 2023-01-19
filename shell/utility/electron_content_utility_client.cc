@@ -8,7 +8,6 @@
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "content/public/utility/utility_thread.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
 #include "sandbox/policy/mojom/sandbox.mojom.h"

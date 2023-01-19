@@ -13,7 +13,7 @@
 
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/task/single_thread_task_runner.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template.h"

@@ -20,8 +20,6 @@
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
-#include "base/threading/sequenced_task_runner_handle.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
