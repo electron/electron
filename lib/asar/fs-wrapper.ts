@@ -646,7 +646,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       return;
     }
 
-    if (options?.withFileTypes) {
+    if (options && options.withFileTypes) {
       const dirents = [];
       for (const file of files) {
         const childPath = path.join(filePath, file);
