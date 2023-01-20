@@ -84,7 +84,7 @@ index e77f9b5ef02a56fffaa46a1fb5f8b06fae6b0df5..4c9f138c8cb40576fd1ca5a89627d2f5
      DCHECK(GetZygoteHandle());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..8d2c204e4cbc5f0657adc554f43f5faa822a3e60 100644
+index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..9ade30e64841a27e4bb174df3ff94514fbdcef8f 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -121,7 +121,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -97,18 +97,18 @@ index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..8d2c204e4cbc5f0657adc554f43f5faa
    options->disclaim_responsibility = delegate_->DisclaimResponsibility();
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
-@@ -180,6 +181,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
-     // communication FD to the helper executable.
-     command_line_->AppendArg(
+@@ -182,6 +183,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
          base::StringPrintf("%s%d", sandbox::switches::kSeatbeltClient, pipe));
-+
-+    for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
-+      options->fds_to_remap.emplace_back(remapped_fd.second.get(),
-+                                         remapped_fd.first);
-+    }
    }
  
++  for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
++    options->fds_to_remap.emplace_back(remapped_fd.second.get(),
++                                       remapped_fd.first);
++  }
++
    return true;
+ }
+ 
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
 index d4c9e420ce93414e4f73de6a4e195052eb523ca4..03a620bbf906678ec6c923f0e3285687da791f7c 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
