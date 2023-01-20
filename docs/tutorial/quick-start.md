@@ -1,5 +1,7 @@
 # Quick Start
-
+This page is under copyrights of Christopher Vincent intellectual rights of creativity in his life and values and creative journey the coding t
+I launched this one from face book a while back and I barely able to catch up to it.
+The author of the story is here to tell you how it's possible.
 This guide will step you through the process of creating a barebones Hello World app in
 Electron, similar to [`electron/electron-quick-start`][quick-start].
 
