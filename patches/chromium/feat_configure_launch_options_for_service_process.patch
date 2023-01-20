@@ -403,7 +403,7 @@ index 41d93b41e7fff8ba4a7138d05035e4bc24b7a85b..20cb410fc71994e26cff6ac9801d42eb
  }  // namespace content
  
 diff --git a/content/common/sandbox_init_win.cc b/content/common/sandbox_init_win.cc
-index 498f60227d13eb2e476413f88eaa58cc0babf461..b2d7a009477293bf73f3ae4a0c8452d1b1bf1dd8 100644
+index 498f60227d13eb2e476413f88eaa58cc0babf461..619639ad5d22a1121b0e0d5f2c9e3c10394cdbd7 100644
 --- a/content/common/sandbox_init_win.cc
 +++ b/content/common/sandbox_init_win.cc
 @@ -23,7 +23,7 @@ namespace content {
@@ -411,7 +411,7 @@ index 498f60227d13eb2e476413f88eaa58cc0babf461..b2d7a009477293bf73f3ae4a0c8452d1
      SandboxedProcessLauncherDelegate* delegate,
      const base::CommandLine& target_command_line,
 -    const base::HandlesToInheritVector& handles_to_inherit,
-+    const base::LaunchOptions& options,
++    const base::LaunchOptions* options,
      base::Process* process) {
    std::string type_str =
        target_command_line.GetSwitchValueASCII(switches::kProcessType);
@@ -546,7 +546,7 @@ index c46ee10e6e02b7c48cf0bcdfdcf6d6096a4dbd32..2b0be74c55b711faab774a55e39748ed
  
    // An interface which can be implemented and registered/unregistered with
 diff --git a/content/public/common/sandbox_init_win.h b/content/public/common/sandbox_init_win.h
-index 9bb4b30ba0f5d37ec2b28f0848d94f34c24f9423..c19cceae4215d74ae74f6e6005125f326453f955 100644
+index 9bb4b30ba0f5d37ec2b28f0848d94f34c24f9423..b614fef01ee5cdf81b7112be721b851c454756a2 100644
 --- a/content/public/common/sandbox_init_win.h
 +++ b/content/public/common/sandbox_init_win.h
 @@ -29,7 +29,7 @@ class SandboxedProcessLauncherDelegate;
@@ -554,7 +554,7 @@ index 9bb4b30ba0f5d37ec2b28f0848d94f34c24f9423..c19cceae4215d74ae74f6e6005125f32
      SandboxedProcessLauncherDelegate* delegate,
      const base::CommandLine& target_command_line,
 -    const base::HandlesToInheritVector& handles_to_inherit,
-+    const base::LaunchOptions& options,
++    const base::LaunchOptions* options,
      base::Process* process);
  
  }  // namespace content
@@ -612,7 +612,7 @@ index 1e8f3994764a2b4e4efb87a08c522cc0e0103e18..83cc16ffbf484aa78b1c350d20a5a15f
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe202d2599 100644
+index c13f67764a05e30a59ae863c4ad2b37ee2221528..4078090487eb62e299cb9da880724ffd8759d04f 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -748,11 +748,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
@@ -633,7 +633,7 @@ index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe
      const base::CommandLine& cmd_line,
      const std::string& process_type,
 -    const base::HandlesToInheritVector& handles_to_inherit,
-+    const base::LaunchOptions& options,
++    const base::LaunchOptions* options,
      SandboxDelegate* delegate,
      TargetPolicy* policy) {
    const base::CommandLine& launcher_process_command_line =
@@ -642,7 +642,7 @@ index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe
  
    // Add any handles to be inherited to the policy.
 -  for (HANDLE handle : handles_to_inherit)
-+  for (HANDLE handle : options.handles_to_inherit)
++  for (HANDLE handle : options->handles_to_inherit)
      policy->AddHandleToShare(handle);
  
    if (!policy->GetConfig()->IsConfigured()) {
@@ -651,11 +651,11 @@ index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe
    policy->SetStdoutHandle(GetStdHandle(STD_OUTPUT_HANDLE));
    policy->SetStderrHandle(GetStdHandle(STD_ERROR_HANDLE));
 +#else
-+  if (options.stdout_handle != nullptr && options.stdout_handle != INVALID_HANDLE_VALUE) {
-+    policy->SetStdoutHandle(options.stdout_handle);
++  if (options->stdout_handle != nullptr && options->stdout_handle != INVALID_HANDLE_VALUE) {
++    policy->SetStdoutHandle(options->stdout_handle);
 +  }
-+  if (options.stderr_handle != nullptr && options.stderr_handle != INVALID_HANDLE_VALUE) {
-+    policy->SetStderrHandle(options.stderr_handle);
++  if (options->stderr_handle != nullptr && options->stderr_handle != INVALID_HANDLE_VALUE) {
++    policy->SetStderrHandle(options->stderr_handle);
 +  }
  #endif
  
@@ -665,7 +665,7 @@ index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe
      const base::CommandLine& cmd_line,
      const std::string& process_type,
 -    const base::HandlesToInheritVector& handles_to_inherit,
-+    const base::LaunchOptions& options,
++    const base::LaunchOptions* options,
      SandboxDelegate* delegate,
      base::Process* process) {
    const base::ElapsedTimer timer;
@@ -674,7 +674,7 @@ index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe
    if (IsUnsandboxedProcess(delegate->GetSandboxType(), cmd_line,
                             *base::CommandLine::ForCurrentProcess())) {
 -    return LaunchWithoutSandbox(cmd_line, handles_to_inherit, delegate,
-+    return LaunchWithoutSandbox(cmd_line, options, delegate,
++    return LaunchWithoutSandbox(cmd_line, *options, delegate,
                                  process);
    }
  
@@ -688,7 +688,7 @@ index c13f67764a05e30a59ae863c4ad2b37ee2221528..7be842a7fcbc7c4242190133a1cd2efe
      return result;
    auto time_policy_generated = timer.Elapsed();
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
-index d8842ebdd1bd4ebd2ba9e33b8bcf390033dbf4d4..e864cc445595e0387b41e4c1e7b0a01d2316aff1 100644
+index d8842ebdd1bd4ebd2ba9e33b8bcf390033dbf4d4..771c6f366559641544f775c3b45eba617923ebdb 100644
 --- a/sandbox/policy/win/sandbox_win.h
 +++ b/sandbox/policy/win/sandbox_win.h
 @@ -50,7 +50,7 @@ class SANDBOX_POLICY_EXPORT SandboxWin {
@@ -696,7 +696,7 @@ index d8842ebdd1bd4ebd2ba9e33b8bcf390033dbf4d4..e864cc445595e0387b41e4c1e7b0a01d
        const base::CommandLine& cmd_line,
        const std::string& process_type,
 -      const base::HandlesToInheritVector& handles_to_inherit,
-+      const base::LaunchOptions& options,
++      const base::LaunchOptions* options,
        SandboxDelegate* delegate,
        base::Process* process);
  
@@ -705,7 +705,7 @@ index d8842ebdd1bd4ebd2ba9e33b8bcf390033dbf4d4..e864cc445595e0387b41e4c1e7b0a01d
        const base::CommandLine& cmd_line,
        const std::string& process_type,
 -      const base::HandlesToInheritVector& handles_to_inherit,
-+      const base::LaunchOptions& options,
++      const base::LaunchOptions* options,
        SandboxDelegate* delegate,
        TargetPolicy* policy);
  
