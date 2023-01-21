@@ -15,7 +15,6 @@
 #include "base/strings/sys_string_conversions.h"
 #include "content/common/mac_helpers.h"
 #include "content/public/common/content_paths.h"
-#include "ppapi/buildflags/buildflags.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/application_info.h"
 #include "shell/common/mac/main_application_bundle.h"
@@ -41,11 +40,9 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
   } else if (base::EndsWith(path.value(), content::kMacHelperSuffix_gpu,
                             base::CompareCase::SENSITIVE)) {
     helper_name += content::kMacHelperSuffix_gpu;
-#if BUILDFLAG(ENABLE_PLUGINS)
   } else if (base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
                             base::CompareCase::SENSITIVE)) {
     helper_name += content::kMacHelperSuffix_plugin;
-#endif
   }
 
   return frameworks_path.Append(name + " " + helper_name + ".app")
