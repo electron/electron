@@ -14,7 +14,6 @@ By default the `webview` tag is disabled in Electron >= 5.  You need to enable t
 setting the `webviewTag` webPreferences option when constructing your `BrowserWindow`.
 webview's new-window event will not be triggered when you click a new url with the latest update,
 As new-window event on webview is deprecated, [Web View Content](web-contents.md).
-"If you need new-window event you can switch back to ELECTRON VERSION:10.4.7"
 For more information see the [BrowserWindow constructor docs](browser-window.md).
 
 
