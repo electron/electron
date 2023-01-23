@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/electron_api_event_emitter.h"
 
-#include "base/bind.h"
-#include "base/callback.h"
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "base/no_destructor.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/callback_converter.h"

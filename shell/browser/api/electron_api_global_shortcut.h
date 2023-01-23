@@ -8,7 +8,7 @@
 #include <map>
 #include <vector>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 #include "chrome/browser/extensions/global_shortcut_listener.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"

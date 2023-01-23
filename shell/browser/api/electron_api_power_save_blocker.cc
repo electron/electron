@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "base/callback_helpers.h"
+#include "base/functional/callback_helpers.h"
 #include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"

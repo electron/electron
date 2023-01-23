@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/i18n/rtl.h"
 #include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_view_host.h"

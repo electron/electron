@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "shell/browser/browser.h"
