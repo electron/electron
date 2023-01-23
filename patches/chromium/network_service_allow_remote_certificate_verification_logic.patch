@@ -169,10 +169,10 @@ index eb77d029e308a06b3dd9d41d9f270a3cd89ce406..98c33a3048f1a10e8293c51213a99089
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 59b6a7fbdd3dcd7c572a9ec4e3ce65e0bcc45ab9..da793d4b933d8d915b47669f7da5fbff65a707bc 100644
+index b2254b765c313a0fa552c82944f9b69e97df432b..a9e7ccf5676cf72fddfd882d7582cc8f6f3162da 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -290,6 +290,17 @@ struct NetworkContextFilePaths {
+@@ -291,6 +291,17 @@ struct NetworkContextFilePaths {
    bool trigger_migration = false;
  };
  
@@ -190,7 +190,7 @@ index 59b6a7fbdd3dcd7c572a9ec4e3ce65e0bcc45ab9..da793d4b933d8d915b47669f7da5fbff
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -848,6 +859,9 @@ interface NetworkContext {
+@@ -852,6 +863,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

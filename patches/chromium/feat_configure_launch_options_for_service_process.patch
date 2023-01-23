@@ -58,7 +58,7 @@ index 989b59b0274796e0021b115413f3eedc73a6aa26..157c82b1c23ab1f411cdb0411855f5bf
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index e77f9b5ef02a56fffaa46a1fb5f8b06fae6b0df5..4c9f138c8cb40576fd1ca5a89627d2f5e6588f6f 100644
+index 7f6a4197aa7da2ba6a16cd83b78243e49ec1f2f4..a4b0ad5a63f39a4c4ff8301fe2a9ba131149a9bd 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -62,6 +62,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -81,7 +81,7 @@ index e77f9b5ef02a56fffaa46a1fb5f8b06fae6b0df5..4c9f138c8cb40576fd1ca5a89627d2f5
      options->environment = delegate_->GetEnvironment();
 +    options->clear_environment = !delegate_->ShouldInheritEnvironment();
    } else {
-     DCHECK(GetZygoteHandle());
+     DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
 index a4be170a8c66e32f9913a34f31e5cfe29593e9b4..9ade30e64841a27e4bb174df3ff94514fbdcef8f 100644
@@ -323,7 +323,7 @@ index a218d9b1f6f68759982b70d4bd0948cf4ac22db6..0c16c55c5cb9de4ef212bda618354707
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index ce7d3a9db5de2725d78af502f5a1cead4f3e4b36..85d8b62aaa75caf0e726014b838568c14f2a7c31 100644
+index 9669810387c486b9c286a455f9a84655207d55f9..22eb5fa3c169ecdb685338a160471fdb751352a4 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -364,10 +364,10 @@ index ce7d3a9db5de2725d78af502f5a1cead4f3e4b36..85d8b62aaa75caf0e726014b838568c1
 +  return current_directory_;
 +}
  
- #if BUILDFLAG(USE_ZYGOTE_HANDLE)
- ZygoteHandle UtilitySandboxedProcessLauncherDelegate::GetZygote() {
+ #if BUILDFLAG(USE_ZYGOTE)
+ ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index 41d93b41e7fff8ba4a7138d05035e4bc24b7a85b..20cb410fc71994e26cff6ac9801d42ebd11d9fee 100644
+index 4da14059da6f660e070dff99b33b013b19fe9146..be14c0c507522fc0b3c45caa42e44bb579268201 100644
 --- a/content/browser/utility_sandbox_delegate.h
 +++ b/content/browser/utility_sandbox_delegate.h
 @@ -26,7 +26,9 @@ class UtilitySandboxedProcessLauncherDelegate
@@ -382,8 +382,8 @@ index 41d93b41e7fff8ba4a7138d05035e4bc24b7a85b..20cb410fc71994e26cff6ac9801d42eb
  
    sandbox::mojom::Sandbox GetSandboxType() override;
 @@ -45,16 +47,16 @@ class UtilitySandboxedProcessLauncherDelegate
-   ZygoteHandle GetZygote() override;
- #endif  // BUILDFLAG(USE_ZYGOTE_HANDLE)
+   ZygoteCommunication* GetZygote() override;
+ #endif  // BUILDFLAG(USE_ZYGOTE)
  
 -#if BUILDFLAG(IS_POSIX)
    base::EnvironmentMap GetEnvironment() override;
@@ -559,12 +559,12 @@ index 9bb4b30ba0f5d37ec2b28f0848d94f34c24f9423..b614fef01ee5cdf81b7112be721b851c
  
  }  // namespace content
 diff --git a/content/public/common/sandboxed_process_launcher_delegate.cc b/content/public/common/sandboxed_process_launcher_delegate.cc
-index ee7cdddba192f151346b74b68ef1eabe5f46e84a..4378d5ac7f455eb54f9f39364184649d7a63666f 100644
+index 422613b73a9c3ef8d1d82914bd9425392b00d566..1e443457b3ddd245c82f95d0369ed9ed7d9fc43d 100644
 --- a/content/public/common/sandboxed_process_launcher_delegate.cc
 +++ b/content/public/common/sandboxed_process_launcher_delegate.cc
-@@ -53,11 +53,17 @@ ZygoteHandle SandboxedProcessLauncherDelegate::GetZygote() {
+@@ -53,11 +53,17 @@ ZygoteCommunication* SandboxedProcessLauncherDelegate::GetZygote() {
  }
- #endif  // BUILDFLAG(USE_ZYGOTE_HANDLE)
+ #endif  // BUILDFLAG(USE_ZYGOTE)
  
 -#if BUILDFLAG(IS_POSIX)
  base::EnvironmentMap SandboxedProcessLauncherDelegate::GetEnvironment() {
@@ -583,7 +583,7 @@ index ee7cdddba192f151346b74b68ef1eabe5f46e84a..4378d5ac7f455eb54f9f39364184649d
  #if BUILDFLAG(IS_MAC)
  
 diff --git a/content/public/common/sandboxed_process_launcher_delegate.h b/content/public/common/sandboxed_process_launcher_delegate.h
-index 1e8f3994764a2b4e4efb87a08c522cc0e0103e18..83cc16ffbf484aa78b1c350d20a5a15ffd0dd0e8 100644
+index ea5342394f2aaf6d612f58ab886440473ed12647..0a5a4fbdcebbb2ec5d06206f1854de5870b3096c 100644
 --- a/content/public/common/sandboxed_process_launcher_delegate.h
 +++ b/content/public/common/sandboxed_process_launcher_delegate.h
 @@ -6,6 +6,7 @@
@@ -595,8 +595,8 @@ index 1e8f3994764a2b4e4efb87a08c522cc0e0103e18..83cc16ffbf484aa78b1c350d20a5a15f
  #include "base/process/process.h"
  #include "build/build_config.h"
 @@ -48,10 +49,14 @@ class CONTENT_EXPORT SandboxedProcessLauncherDelegate
-   virtual ZygoteHandle GetZygote();
- #endif  // BUILDFLAG(USE_ZYGOTE_HANDLE)
+   virtual ZygoteCommunication* GetZygote();
+ #endif  // BUILDFLAG(USE_ZYGOTE)
  
 -#if BUILDFLAG(IS_POSIX)
    // Override this if the process needs a non-empty environment map.
@@ -612,10 +612,10 @@ index 1e8f3994764a2b4e4efb87a08c522cc0e0103e18..83cc16ffbf484aa78b1c350d20a5a15f
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index c13f67764a05e30a59ae863c4ad2b37ee2221528..4078090487eb62e299cb9da880724ffd8759d04f 100644
+index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff30c32cec 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
-@@ -748,11 +748,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
+@@ -742,11 +742,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
  // command line flag.
  ResultCode LaunchWithoutSandbox(
      const base::CommandLine& cmd_line,

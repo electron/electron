@@ -7,7 +7,7 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 8072ae6caed9cd28efcd0c4b21d1a0c0a6b714ab..60b84334fcf82c8408af06bc2ff7f5e5f4f978e6 100644
+index 39d85278026f2a625a593d75f5c7bd0166c6110c..72546797930ddade55d71d0a47e6702072acad8b 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
 @@ -197,6 +197,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
@@ -133,7 +133,7 @@ index bbd2aa78722fc0a14ac815ca0243b83965ad8d7c..b6e0a2fce3a0fb9c449aa1bef6a0f970
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 00ffcb295ba29269f8261b550a014fc5c5975d95..81f1ac23041419bd6e15e909f3274ed620fc8418 100644
+index 0009a87d3063f638c8f5eb2ad9b501ab29307155..b2d4fb24196e2cd3cc00529423f0406da69bda10 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2120,7 +2120,7 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -176,7 +176,7 @@ index d9e36712dc3fbc6a9043e2c33660090ca2f7367b..7d910583eb22fc315eb0619febe518d5
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index a282b3cce7a310e57a9030fcb955ce292041d301..a343f523201868da2bca1beefbbc5d7539acee8d 100644
+index b3ef5af4450b3f96787bc3f9935dfdf19ebaaa94..6a4309070e0f6eaa743deefb0aeb2d0be558a787 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(

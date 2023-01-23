@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 2c98401ecb9691f2d869b4bb23ff2d0e6bd54ba3..7f4fc1b307facbaeb4b9cbf696ce41422afb7d14 100644
+index 125fe6e8f461f9f5fbea98fca598ce30f2967024..bc1f0a3ab0c5592eaa14f70d5513c502af3c435b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1496,6 +1496,7 @@ component("base") {
+@@ -1485,6 +1485,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -18,7 +18,7 @@ index 2c98401ecb9691f2d869b4bb23ff2d0e6bd54ba3..7f4fc1b307facbaeb4b9cbf696ce4142
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 6cd73d404b27058ba45e1c32a29ddd707d1b0adb..50cb31fcac0b960b98693b6f63d5580780d24c43 100644
+index 5a4570c4699cde1376c21fb50954b6562acd999f..7172c144eacccf8efce6cc85545599ecf14c5d4a 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ad4c6d2782bd56c97c970596c1a6f3517c6bda26..49c539392115cb6745dbb44801d5352937c0cf6c 100644
+index 220eb6bf9dd3eec729cba95e49b9eacff5c2726e..2e9cd5b638b0368dacfe49e005ea82caee3a9d0d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -80,7 +80,7 @@ index ad4c6d2782bd56c97c970596c1a6f3517c6bda26..49c539392115cb6745dbb44801d53529
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index bbe6c2e2386f515e01486e030d571bcbb9f99228..0b522349947592a33e8c37e36a38cb33fb21b4f1 100644
+index 86b7baf217021c397f7b33fbb87b5faf686a4e09..a92ea28e42b78dde516cbd238b1725471e19bd87 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -172,6 +172,7 @@ source_set("common") {
@@ -128,7 +128,7 @@ index e5bc3c86e07873f5ad5a54fba950e3105049ab2b..6774273357a7b6a465a9918f81b4cee9
    if (is_android) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 3cc3a2de26e0988ab23245f4b6019b80585a50c3..cc6df0a804ce9e35dd71014519ef00db59236199 100644
+index 44635f13048890b20c74870d26c4e74bab363ddb..33ad7650832b7572949fb6f362bef02879f4c31b 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -188,6 +188,7 @@ source_set("audio") {
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 7a734ccec0e6d29df81ab10fc514624a7af41932..f401b343b0cf6cb02709711b49da5c1d9cf53543 100644
+index fabf49654cebc659348e3505487b2be583647fed..58efb9cfe6e4ed44a8e3753ef4af8e4db84617cd 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -280,6 +280,7 @@ component("core") {

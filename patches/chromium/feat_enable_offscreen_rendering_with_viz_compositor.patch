@@ -583,10 +583,10 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 92c12cdb1e116340542406579d99c1be12e919cf..259ffc0e4ab0bbd982255c0900c57a0843a0f4f0 100644
+index 2d296b025ec172d895512e58cfefe9bb156b5675..4cb3b9b6afde1484d5bdf4da4640c7d7604b77dc 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -88,6 +88,7 @@ class DisplayPrivate;
+@@ -89,6 +89,7 @@ class DisplayPrivate;
  class ExternalBeginFrameController;
  }  // namespace mojom
  class ContextProvider;
@@ -594,7 +594,7 @@ index 92c12cdb1e116340542406579d99c1be12e919cf..259ffc0e4ab0bbd982255c0900c57a08
  class HostFrameSinkManager;
  class LocalSurfaceId;
  class RasterContextProvider;
-@@ -144,6 +145,16 @@ class COMPOSITOR_EXPORT ContextFactory {
+@@ -145,6 +146,16 @@ class COMPOSITOR_EXPORT ContextFactory {
    virtual viz::HostFrameSinkManager* GetHostFrameSinkManager() = 0;
  };
  
@@ -611,7 +611,7 @@ index 92c12cdb1e116340542406579d99c1be12e919cf..259ffc0e4ab0bbd982255c0900c57a08
  // Compositor object to take care of GPU painting.
  // A Browser compositor object is responsible for generating the final
  // displayable form of pixels comprising a single widget's contents. It draws an
-@@ -187,6 +198,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -188,6 +199,9 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // Schedules a redraw of the layer tree associated with this compositor.
    void ScheduleDraw();
  
@@ -621,7 +621,7 @@ index 92c12cdb1e116340542406579d99c1be12e919cf..259ffc0e4ab0bbd982255c0900c57a08
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -510,6 +524,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -513,6 +527,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
