@@ -166,10 +166,10 @@ index dced377388d22f825ce228dd615056ba0548986d..00724d8e6e597441d93c8a2c9b2f9415
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 83540722ab1b7b0cb6b74456f2dfc9fc680747cb..8ed81a36306f6dfae965ee90781e5bb79067fa92 100644
+index 855b1e004a82d21a79d7278d957c391e87def2be..3cc3a2de26e0988ab23245f4b6019b80585a50c3 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -178,6 +178,12 @@ source_set("audio") {
+@@ -176,6 +176,12 @@ source_set("audio") {
        "mac/scoped_audio_unit.cc",
        "mac/scoped_audio_unit.h",
      ]
@@ -218,30 +218,32 @@ index a8a223d1d9ea6de51a27f148c008ee8be38af29a..328200858bd7aa4077bf6824bfc1367b
    }
  
 diff --git a/sandbox/mac/sandbox_compiler.cc b/sandbox/mac/sandbox_compiler.cc
-index 5db411212b62b583ae26e9ecd0a87ad5fc5504e8..2778852a1573ca5d573018171caeadf1e89f3b9e 100644
+index f35d9ef2a2df3db8ecbf1d7b909c7b1cf33f3cd9..a710b8b4f851666fd65bb37f69ec2fa70259697b 100644
 --- a/sandbox/mac/sandbox_compiler.cc
 +++ b/sandbox/mac/sandbox_compiler.cc
-@@ -28,6 +28,7 @@ bool SandboxCompiler::InsertStringParam(const std::string& key,
+@@ -47,6 +47,7 @@ bool SandboxCompiler::SetParameter(const std::string& key,
  }
  
- bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
+ bool SandboxCompiler::CompileAndApplyProfile(std::string& error) {
 +#if !IS_MAS_BUILD()
-   char* error_internal = nullptr;
-   std::vector<const char*> params;
+   if (mode_ == Target::kSource) {
+     std::vector<const char*> params;
  
-@@ -44,6 +45,7 @@ bool SandboxCompiler::CompileAndApplyProfile(std::string* error) {
-     sandbox::Seatbelt::FreeError(error_internal);
-     return false;
+@@ -67,6 +68,9 @@ bool SandboxCompiler::CompileAndApplyProfile(std::string& error) {
+     }
    }
+   return false;
++#else
++  return true;
 +#endif
-   return true;
  }
  
+ bool SandboxCompiler::CompilePolicyToProto(mac::SandboxPolicy& policy,
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 1e75790d60789746073828cc22d3863b35ab6f95..08fa6b16d09e2ceb73094639fa81570202123178 100644
+index 15c835e118456394c0a00ac98c11241c14ca75bd..49332a94219fc3e64ab05baa04681325edddfeb0 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
-@@ -64,7 +64,11 @@ void Seatbelt::FreeError(char* errorbuf) {
+@@ -175,7 +175,11 @@ void Seatbelt::FreeError(char* errorbuf) {
  
  // static
  bool Seatbelt::IsSandboxed() {

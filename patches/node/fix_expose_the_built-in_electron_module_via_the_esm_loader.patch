@@ -18,10 +18,10 @@ index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc71
  
  /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index bfee280212fc4d85b2b0a92ac79d898de3cb5ab3..a79cec8d82b439202ecf40b3d55b75706d3aaf29 100644
+index 7cec4e9a3e3675ba75d66a44ed4e142d13ca1821..0c7aad193442a7e5cab62638441969a7d4983ef9 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -795,6 +795,8 @@ function parsePackageName(specifier, base) {
+@@ -824,6 +824,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
@@ -30,7 +30,7 @@ index bfee280212fc4d85b2b0a92ac79d898de3cb5ab3..a79cec8d82b439202ecf40b3d55b7570
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -807,6 +809,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -836,6 +838,10 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -41,7 +41,7 @@ index bfee280212fc4d85b2b0a92ac79d898de3cb5ab3..a79cec8d82b439202ecf40b3d55b7570
    const { packageName, packageSubpath, isScoped } =
      parsePackageName(specifier, base);
  
-@@ -1005,7 +1011,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
+@@ -1034,7 +1040,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
  
  function throwIfUnsupportedURLProtocol(url) {
    if (url.protocol !== 'file:' && url.protocol !== 'data:' &&
@@ -73,10 +73,10 @@ index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..d1527b859bbea15fdf30622fc8f2700b
            exportName === 'default')
          continue;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 2a4ffefe2450708af61e09d7a9530bec1c15d922..9a1c49df14e8b3cef7e66789242a625c6afb3ca9 100644
+index 40b25f6890b5db721923ba2e9cc351e514ca22bc..288f3253b4c686d1b061dfcdf18dc95794943d87 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1483,6 +1483,8 @@ function fileURLToPath(path) {
+@@ -1488,6 +1488,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURLInstance(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

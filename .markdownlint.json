@@ -25,6 +25,5 @@
   "single-h1": false,
   "no-inline-html": false,
   "emphasis-style": false,
-  "strong-style": false,
-  "link-image-reference-definitions": false
+  "strong-style": false
 }

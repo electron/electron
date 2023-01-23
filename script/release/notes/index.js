@@ -76,8 +76,7 @@ const getAllBranches = async () => {
     return branches.split('\n')
       .map(branch => branch.trim())
       .filter(branch => !!branch)
-      // TODO(main-migration): Simplify once branch rename is complete.
-      .filter(branch => branch !== 'origin/HEAD -> origin/master' && branch !== 'origin/HEAD -> origin/main')
+      .filter(branch => branch !== 'origin/HEAD -> origin/main')
       .sort();
   } catch (err) {
     console.error('Failed to fetch all branches');
@@ -86,8 +85,7 @@ const getAllBranches = async () => {
 };
 
 const getStabilizationBranches = async () => {
-  return (await getAllBranches())
-    .filter(branch => /^origin\/\d+-\d+-x$/.test(branch) || /^origin\/\d+-x-y$/.test(branch));
+  return (await getAllBranches()).filter(branch => /^origin\/\d+-x-y$/.test(branch));
 };
 
 const getPreviousStabilizationBranch = async (current) => {

@@ -26,10 +26,6 @@
 
 class SkRegion;
 
-namespace base {
-class DictionaryValue;
-}
-
 namespace content {
 struct NativeWebKeyboardEvent;
 }

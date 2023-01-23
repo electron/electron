@@ -6,11 +6,11 @@ Subject: Pass all globals through "require"
 (cherry picked from commit 7d015419cb7a0ecfe6728431a4ed2056cd411d62)
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 68edd781e33a3e8a451ece8191b918ca70e756eb..7d780ed13412bb307435d98d4a8830a86dd72da1 100644
+index 33bc7f28a41c6c40face8f493d07d3c0061608a7..eb73c774118653c0746f78d4b72b31cb7c4f41f2 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -134,6 +134,13 @@ const {
-   CHAR_COLON
+@@ -137,6 +137,13 @@ const {
+   CHAR_FORWARD_SLASH,
  } = require('internal/constants');
  
 +// Store the "global" variable from global scope into a local scope, so we can
@@ -23,7 +23,7 @@ index 68edd781e33a3e8a451ece8191b918ca70e756eb..7d780ed13412bb307435d98d4a8830a8
  const {
    isProxy
  } = require('internal/util/types');
-@@ -1154,10 +1161,12 @@ Module.prototype._compile = function(content, filename) {
+@@ -1213,10 +1220,12 @@ Module.prototype._compile = function(content, filename) {
    if (requireDepth === 0) statCache = new SafeMap();
    if (inspectorWrapper) {
      result = inspectorWrapper(compiledWrapper, thisValue, exports,

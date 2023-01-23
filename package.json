@@ -7,8 +7,9 @@
     "@azure/storage-blob": "^12.9.0",
     "@electron/asar": "^3.2.1",
     "@electron/docs-parser": "^1.0.0",
+    "@electron/fiddle-core": "^1.0.4",
+    "@electron/github-app-auth": "^1.5.0",
     "@electron/typescript-definitions": "^8.10.0",
-    "@octokit/auth-app": "^2.10.0",
     "@octokit/rest": "^18.0.3",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
@@ -21,7 +22,7 @@
     "@types/klaw": "^3.0.1",
     "@types/minimist": "^1.2.0",
     "@types/mocha": "^7.0.2",
-    "@types/node": "^18.11.17",
+    "@types/node": "^18.11.18",
     "@types/semver": "^7.3.3",
     "@types/send": "^0.14.5",
     "@types/split": "^1.0.0",
@@ -54,8 +55,7 @@
     "klaw": "^3.0.0",
     "lint": "^1.1.2",
     "lint-staged": "^10.2.11",
-    "markdownlint": "^0.26.2",
-    "markdownlint-cli": "^0.32.2",
+    "markdownlint-cli": "^0.33.0",
     "minimist": "^1.2.6",
     "null-loader": "^4.0.0",
     "pre-flight": "^1.1.0",
@@ -90,7 +90,7 @@
     "lint:gn": "node ./script/lint.js --gn",
     "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:markdownlint",
     "lint:docs-relative-links": "python3 ./script/check-relative-doc-links.py",
-    "lint:markdownlint": "markdownlint \"*.md\" \"docs/**/*.md\"",
+    "lint:markdownlint": "markdownlint -r ./script/markdownlint-emd001.js \"*.md\" \"docs/**/*.md\"",
     "lint:js-in-markdown": "standard-markdown docs",
     "create-api-json": "node script/create-api-json.js",
     "create-typescript-definitions": "npm run create-api-json && electron-typescript-definitions --api=electron-api.json && node spec/ts-smoke/runner.js",
@@ -143,7 +143,8 @@
       "ts-node script/check-patch-diff.ts"
     ],
     "DEPS": [
-      "node script/gen-hunspell-filenames.js"
+      "node script/gen-hunspell-filenames.js",
+      "node script/gen-libc++-filenames.js"
     ]
   },
   "resolutions": {

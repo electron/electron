@@ -7,7 +7,7 @@ macOS, Windows, and Linux.
 
 ## Create frameless windows
 
-A frameless window is a window that has no [chrome]. Not to be confused with the Google
+A frameless window is a window that has no [chrome][]. Not to be confused with the Google
 Chrome browser, window _chrome_ refers to the parts of the window (e.g. toolbars, controls)
 that are not a part of the web page.
 
@@ -93,7 +93,7 @@ win.setWindowButtonVisibility(false)
 
 ## Window Controls Overlay _macOS_ _Windows_
 
-The [Window Controls Overlay API] is a web standard that gives web apps the ability to
+The [Window Controls Overlay API][] is a web standard that gives web apps the ability to
 customize their title bar region when installed on desktop. Electron exposes this API
 through the `BrowserWindow` constructor option `titleBarOverlay`.
 
@@ -155,7 +155,7 @@ const win = new BrowserWindow({ transparent: true })
   [#1335](https://github.com/electron/electron/issues/1335) for details.
 * Transparent windows are not resizable. Setting `resizable` to `true` may make
   a transparent window stop working on some platforms.
-* The CSS [`blur()`] filter only applies to the window's web contents, so there is no way to apply
+* The CSS [`blur()`][] filter only applies to the window's web contents, so there is no way to apply
   blur effect to the content below the window (i.e. other applications open on
   the user's system).
 * The window will not be transparent when DevTools is opened.
@@ -268,7 +268,6 @@ behave correctly on all platforms, you should never use a custom context menu on
 draggable areas.
 
 [`blur()`]: https://developer.mozilla.org/en-US/docs/Web/CSS/filter-function/blur()
-[`BrowserWindow`]: ../api/browser-window.md
 [chrome]: https://developer.mozilla.org/en-US/docs/Glossary/Chrome
 [ignore-mouse-events]: ../api/browser-window.md#winsetignoremouseeventsignore-options
 [overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables

@@ -6,10 +6,10 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 989e7686f61acc18244801b0f8e52e779c8ac856..60182bd144295be0a7f4f05525246dd203d81ad4 100644
+index 6b36af5ca7c104e070287c5a7bf26ee71444ce51..6643eb7ea989de249bfe9bea4179392bc94d7943 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
-@@ -690,6 +690,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
+@@ -691,6 +691,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
    GetWidget()->GetAssociatedFrameWidget()->SetBackgroundOpaque(opaque);
  }
  
@@ -48,10 +48,10 @@ index 9979c25ecd57e68331b628a518368635db5c2027..32733bf951af3eff7da5fd5758bbcbaa
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index 0cfe109e1ee4ac59dc8ddc68dff3ab929fcf480b..398be46c71fb9ea42ea655b204aaff31501d48c9 100644
+index 5f6a6f538fb8e21279d99b3dbe74a583f1592967..18837dceef7a197d0984b5363595ee1131553c5f 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
-@@ -131,4 +131,7 @@ interface PageBroadcast {
+@@ -133,4 +133,7 @@ interface PageBroadcast {
      mojo_base.mojom.UnguessableToken devtools_frame_token,
      RemoteFrameInterfacesFromBrowser remote_frame_interfaces,
      RemoteMainFrameInterfaces remote_main_frame_interfaces);
@@ -72,7 +72,7 @@ index c8655d9270b812df04f27025ff29a2fb6d2a4066..2f83e5ce40f8217ff5d53f7205299ad7
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 5953f73697187280dacc4a77aec646a670983f5d..db53f78f371f5d7e76ce0844d7b3cb3c912af4e8 100644
+index 2e8500ac411bec392ec85c798b8379140917792b..490a381e1afd0a175cd1ca12926a21278c051712 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -3827,13 +3827,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
@@ -99,10 +99,10 @@ index 5953f73697187280dacc4a77aec646a670983f5d..db53f78f371f5d7e76ce0844d7b3cb3c
    if (!is_initial_state) {
      for (auto& observer : observers_)
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
-index f283bfde9e43dd38a8cf769d8ac7cec643fe5222..fef7875a7eb323c37730bb80227c40c31edae44e 100644
+index ac623b8bd6c06a2a1def5d9761f8d0d3f845fc95..c420285f1fafff4af090a9dbe38debddaea57dfd 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.h
-@@ -439,6 +439,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -440,6 +440,7 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    LocalDOMWindow* PagePopupWindow() const;
  
    PageScheduler* Scheduler() const override;
@@ -110,7 +110,7 @@ index f283bfde9e43dd38a8cf769d8ac7cec643fe5222..fef7875a7eb323c37730bb80227c40c3
    void SetVisibilityState(mojom::blink::PageVisibilityState visibility_state,
                            bool is_initial_state) override;
    mojom::blink::PageVisibilityState GetVisibilityState() override;
-@@ -895,6 +896,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
+@@ -896,6 +897,8 @@ class CORE_EXPORT WebViewImpl final : public WebView,
    // If true, we send IPC messages when |preferred_size_| changes.
    bool send_preferred_size_changes_ = false;
  

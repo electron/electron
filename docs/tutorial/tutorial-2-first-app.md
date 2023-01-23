@@ -126,7 +126,7 @@ console.log(`Hello from Electron 👋`)
 ```
 
 Because Electron's main process is a Node.js runtime, you can execute arbitrary Node.js code
-with the `electron` command (you can even use it as a [REPL]). To execute this script,
+with the `electron` command (you can even use it as a [REPL][]). To execute this script,
 add `electron .` to the `start` command in the [`scripts`][package-scripts]
 field of your package.json. This command will tell the Electron executable to look for the main
 script in the current directory and run it in dev mode.
@@ -258,7 +258,7 @@ app.whenReady().then(() => {
 })
 ```
 
-Many of Electron's core modules are Node.js [event emitters] that adhere to Node's asynchronous
+Many of Electron's core modules are Node.js [event emitters][] that adhere to Node's asynchronous
 event-driven architecture. The app module is one of these emitters.
 
 In Electron, BrowserWindows can only be created after the app module's [`ready`][app-ready] event
@@ -288,7 +288,7 @@ open a window that displays your web page!
 Each web page your app displays in a window will run in a separate process called a
 **renderer** process (or simply _renderer_ for short). Renderer processes have access
 to the same JavaScript APIs and tooling you use for typical front-end web
-development, such as using [webpack] to bundle and minify your code or [React][react]
+development, such as using [webpack][] to bundle and minify your code or [React][react]
 to build your user interfaces.
 
 ## Managing your app's window lifecycle
@@ -403,7 +403,7 @@ What we have done in the `launch.json` file is to create 3 configurations:
   that creates the process, we have to "attach" to it (`"request": "attach"`) instead of
   creating a new one.
   The renderer process is a web one, so the debugger we have to use is `chrome`.
-- `Main + renderer` is a [compound task] that executes the previous ones simultaneously.
+- `Main + renderer` is a [compound task][] that executes the previous ones simultaneously.
 
 :::caution
 
@@ -419,7 +419,7 @@ in development mode.
 
 If you want to dig deeper in the debugging area, the following guides provide more information:
 
-- [Application Debugging]
+- [Application Debugging][]
 - [DevTools Extensions][devtools extension]
 
 :::
@@ -445,14 +445,12 @@ privileged APIs and how to communicate between processes.
 <!-- Links -->
 
 [activate]: ../api/app.md#event-activate-macos
-[advanced-installation]: installation.md
 [app]: ../api/app.md
 [app-quit]: ../api/app.md#appquit
 [app-ready]: ../api/app.md#event-ready
 [app-when-ready]: ../api/app.md#appwhenready
 [application debugging]: ./application-debugging.md
 [browser-window]: ../api/browser-window.md
-[commonjs]: https://nodejs.org/docs/../api/modules.html#modules_modules_commonjs_modules
 [compound task]: https://code.visualstudio.com/Docs/editor/tasks#_compound-tasks
 [devtools extension]: ./devtools-extension.md
 [event emitters]: https://nodejs.org/api/events.html#events
@@ -465,7 +463,6 @@ privileged APIs and how to communicate between processes.
 [process-model]: process-model.md
 [react]: https://reactjs.org
 [repl]: ./repl.md
-[sandbox]: ./sandbox.md
 [webpack]: https://webpack.js.org
 [window-all-closed]: ../api/app.md#event-window-all-closed
 [wsl]: https://docs.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2

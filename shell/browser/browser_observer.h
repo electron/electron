@@ -12,10 +12,6 @@
 #include "build/build_config.h"
 #include "shell/browser/login_handler.h"
 
-namespace base {
-class DictionaryValue;
-}
-
 namespace electron {
 
 class BrowserObserver : public base::CheckedObserver {

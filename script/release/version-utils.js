@@ -73,8 +73,7 @@ async function nextNightly (v) {
   const pre = `nightly.${getCurrentDate()}`;
 
   const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR)).stdout.trim();
-  // TODO(main-migration): Simplify once main branch is renamed
-  if (branch === 'master' || branch === 'main') {
+  if (branch === 'main') {
     next = semver.inc(await getLastMajorForMain(), 'major');
   } else if (isStable(v)) {
     next = semver.inc(next, 'patch');
