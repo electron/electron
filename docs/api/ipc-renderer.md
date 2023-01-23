@@ -142,7 +142,7 @@ Returns `any` - The value sent back by the [`ipcMain`](./ipc-main.md) handler.
 
 Send a message to the main process via `channel` and expect a result
 synchronously. Arguments will be serialized with the [Structured Clone
-Algorithm][SCA], just like [`window.postMessage`], so prototype chains will not be
+Algorithm][SCA], just like [`window.postMessage`][], so prototype chains will not be
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 

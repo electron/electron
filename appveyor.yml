@@ -1,3 +1,7 @@
+# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor-woa.yml 
+# IF APPLICABLE!!!! 
+#
+#
 # The config expects the following environment variables to be set:
 #  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
 #  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
@@ -25,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-110.0.5451.0
+image: e-111.0.5518.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -54,12 +58,6 @@ for:
   - matrix:
       only:
         - job_name: Build
-
-    init:
-      - ps: >-
-          if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-            Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-          }
 
     build_script:
       - ps: |
@@ -185,8 +183,6 @@ for:
               Write-Output "Uploading Electron release distribution to github releases"
               & python3 script\release\uploaders\upload.py --verbose
             }
-          } elseif (Test-Path Env:\TEST_WOA) {
-            node script/release/ci-release-build.js --job=electron-woa-testing --ci=GHA --appveyorJobId=$env:APPVEYOR_JOB_ID $env:APPVEYOR_REPO_BRANCH
           }
     on_finish:
       # Uncomment this lines to enable RDP
@@ -213,9 +209,6 @@ for:
       - ps: |
           if ($env:RUN_TESTS -ne 'true') {
             Write-warning "Skipping tests for $env:APPVEYOR_PROJECT_NAME"; Exit-AppveyorBuild
-          }
-          if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-            Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
           }
     build_script:
       - ps: |
@@ -276,8 +269,8 @@ for:
       - echo "Done verifying mksnapshot"
       - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
-
-    # Uncomment these lines to enable RDP
-    # on_finish:
+    
+    on_finish:
+      # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
       - if exist electron\electron.log ( appveyor-retry appveyor PushArtifact electron\electron.log )

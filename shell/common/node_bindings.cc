@@ -158,29 +158,45 @@ void V8FatalErrorCallback(const char* location, const char* message) {
 }
 
 bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
-                                     v8::Local<v8::String>) {
+                                     v8::Local<v8::String> source) {
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
-  v8::Isolate* isolate = context->GetIsolate();
-  if (node::Environment::GetCurrent(isolate) == nullptr) {
+  if (node::Environment::GetCurrent(context) == nullptr) {
     if (gin_helper::Locker::IsBrowserProcess())
       return false;
     return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
-        context, v8::String::Empty(isolate));
+        context, source);
   }
 
-  return node::AllowWasmCodeGenerationCallback(context,
-                                               v8::String::Empty(isolate));
+  return node::AllowWasmCodeGenerationCallback(context, source);
+}
+
+v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Value> source,
+    bool is_code_like) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  if (node::Environment::GetCurrent(context) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess()) {
+      NOTREACHED();
+      return {false, {}};
+    }
+    return blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
+        context, source, is_code_like);
+  }
+
+  return node::ModifyCodeGenerationFromStrings(context, source, is_code_like);
 }
 
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
-
   if (env) {
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, env->context()->GetMicrotaskQueue(),
+        v8::MicrotasksScope::kDoNotRunMicrotasks);
     // Emit the after() hooks now that the exception has been handled.
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
@@ -543,6 +559,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Use a custom callback here to allow us to leverage Blink's logic in the
   // renderer process.
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+  is.modify_code_generation_from_strings_callback =
+      ModifyCodeGenerationFromStrings;
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kUtility) {
@@ -666,9 +684,10 @@ void NodeBindings::UvRunOnce() {
   // checkpoints after every call into JavaScript. Since we use a different
   // policy in the renderer - switch to `kExplicit` and then drop back to the
   // previous policy value.
-  auto old_policy = env->isolate()->GetMicrotasksPolicy();
-  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(env->isolate()), 0);
-  env->isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  v8::MicrotaskQueue* microtask_queue = env->context()->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
   if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
@@ -679,7 +698,7 @@ void NodeBindings::UvRunOnce() {
   if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
-  env->isolate()->SetMicrotasksPolicy(old_policy);
+  microtask_queue->set_microtasks_policy(old_policy);
 
   if (r == 0)
     base::RunLoop().QuitWhenIdle();  // Quit from uv.

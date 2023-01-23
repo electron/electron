@@ -355,6 +355,30 @@ describe('web security', () => {
     });
   });
 
+  describe('csp in sandbox: false', () => {
+    it('is correctly applied', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: { sandbox: false }
+      });
+      w.loadURL(`data:text/html,<head>
+          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+        </head>
+        <script>
+          try {
+            // We use console.log here because it is easier than making a
+            // preload script, and the behavior under test changes when
+            // contextIsolation: false
+            console.log(eval('failure'))
+          } catch (e) {
+            console.log('success')
+          }
+        </script>`);
+      const [,, message] = await emittedOnce(w.webContents, 'console-message');
+      expect(message).to.equal('success');
+    });
+  });
+
   it('does not crash when multiple WebContent are created with web security disabled', () => {
     const options = { show: false, webPreferences: { webSecurity: false } };
     const w1 = new BrowserWindow(options);
@@ -1455,7 +1479,7 @@ describe('chromium features', () => {
       });
 
       afterEach(() => {
-        (contents as any).destroy();
+        contents.destroy();
         contents = null as any;
       });
 
@@ -1571,7 +1595,7 @@ describe('chromium features', () => {
 
       afterEach(async () => {
         if (contents) {
-          (contents as any).destroy();
+          contents.destroy();
           contents = null as any;
         }
         await closeAllWindows();
@@ -2472,6 +2496,54 @@ describe('navigator.serial', () => {
   });
 });
 
+describe('window.getScreenDetails', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  const getScreenDetails: any = () => {
+    return w.webContents.executeJavaScript('window.getScreenDetails().then(data => data.screens).catch(err => err.message)', true);
+  };
+
+  it('returns screens when a PermissionRequestHandler is not defined', async () => {
+    const screens = await getScreenDetails();
+    expect(screens).to.not.equal('Read permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'window-management') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const screens = await getScreenDetails();
+    expect(screens).to.equal('Permission denied.');
+  });
+
+  it('returns screens when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'window-management') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const screens = await getScreenDetails();
+    expect(screens).to.not.equal('Permission denied.');
+  });
+});
+
 describe('navigator.clipboard', () => {
   let w: BrowserWindow;
   before(async () => {
@@ -2999,7 +3071,7 @@ describe('navigator.usb', () => {
     if (haveDevices) {
       const grantedDevices = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
       if (grantedDevices.length > 0) {
-        const deletedDevice = await w.webContents.executeJavaScript(`
+        const deletedDevice: Electron.USBDevice = await w.webContents.executeJavaScript(`
           navigator.usb.getDevices().then(devices => {
             devices[0].forget();
             return {
@@ -3011,7 +3083,7 @@ describe('navigator.usb', () => {
         `);
         const grantedDevices2 = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
-        if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
+        if (deletedDevice.productName !== '' && deletedDevice.productId && deletedDevice.vendorId) {
           expect(deletedDeviceFromEvent).to.include(deletedDevice);
         }
       }

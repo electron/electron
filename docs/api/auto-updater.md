@@ -32,9 +32,9 @@ This is a requirement of `Squirrel.Mac`.
 
 On Windows, you have to install your app into a user's machine before you can
 use the `autoUpdater`, so it is recommended that you use the
-[electron-winstaller][installer-lib], [electron-forge][electron-forge-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
+[electron-winstaller][installer-lib], [Electron Forge][electron-forge-lib] or the [grunt-electron-installer][installer] package to generate a Windows installer.
 
-When using [electron-winstaller][installer-lib] or [electron-forge][electron-forge-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
+When using [electron-winstaller][installer-lib] or [Electron Forge][electron-forge-lib] make sure you do not try to update your app [the first time it runs](https://github.com/electron/windows-installer#handling-squirrel-events) (Also see [this issue for more info](https://github.com/electron/electron/issues/7155)). It's also recommended to use [electron-squirrel-startup](https://github.com/mongodb-js/electron-squirrel-startup) to get desktop shortcuts for your app.
 
 The installer generated with Squirrel will create a shortcut icon with an
 [Application User Model ID][app-user-model-id] in the format of
@@ -139,6 +139,6 @@ application starts.
 [squirrel-windows]: https://github.com/Squirrel/Squirrel.Windows
 [installer]: https://github.com/electron/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
-[electron-forge-lib]: https://github.com/electron-userland/electron-forge
+[electron-forge-lib]: https://github.com/electron/forge
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

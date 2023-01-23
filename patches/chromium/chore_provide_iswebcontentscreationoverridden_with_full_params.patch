@@ -35,10 +35,10 @@ index 155296ba7ee5495be62045bc620bb1cd31d3ceb3..954efde9e7a58f8b556c6ceabb81643f
        content::RenderFrameHost* requesting_frame,
        const blink::mojom::FullscreenOptions& options) final;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.cc b/chrome/browser/ui/ash/ash_web_view_impl.cc
-index 7d14473e1c042767de834f6734a7667d9c8bdb81..b9c1e56e8f6d528aaf92e27c7fc7e0bd6a174e81 100644
+index a3add3e3811f5f31d615800b1852f56afde63edc..2f3132e450f883460e0325c4a0bb91f01591f10d 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.cc
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.cc
-@@ -95,10 +95,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
+@@ -96,10 +96,9 @@ bool AshWebViewImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -52,10 +52,10 @@ index 7d14473e1c042767de834f6734a7667d9c8bdb81..b9c1e56e8f6d528aaf92e27c7fc7e0bd
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index e30587e0fd1c42342a767ac281916e960c5a220d..4b9a924748d2ba89a5418818fad85cc4e0491976 100644
+index 1af9377f917f4659149698593dbe85d98ed3409e..52771e9703663e60ed8ac77fff5abf9c85e21f4f 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
-@@ -47,8 +47,7 @@ class AshWebViewImpl : public ash::AshWebView,
+@@ -48,8 +48,7 @@ class AshWebViewImpl : public ash::AshWebView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -80,10 +80,10 @@ index 0e9e41382300d6bb5fc6fa47cd5ed2ed4181ce46..e65a9bb5b9909e16f5a7dd2e73defa85
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 924ab1bc6dd5fd26e18e7b713d69a100c1693fed..17241f757380285f14869f56afa512e5a250e5bd 100644
+index 3490be7e0fd125099fb0a14cfdd6578982862138..4dee48d17171b98dcf1f0b773f4e1bd878ef0a90 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1809,12 +1809,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1840,12 +1840,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 924ab1bc6dd5fd26e18e7b713d69a100c1693fed..17241f757380285f14869f56afa512e5
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index b50337f317a66e6d182cfb39fbb7182660872837..df62f66ce6a89579998e1f6a11876be48433cefb 100644
+index 25a4953e4c1994b37b6425913526c64c24307bcb..cb17cb1f023b9bdbc0df8d53bd7694895984c856 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -843,8 +843,7 @@ class Browser : public TabStripModelObserver,
+@@ -851,8 +851,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 01fc65db762e2ee2e8bac8ab03f6bfa32068cfd7..9d742125434674f832daf7abd0c19fadcf8fcf24 100644
+index edfa75775225bf877d10df4ac867064f8d73d007..ee65f87d7ba7e11dc75fbf1acd1ae2b813d3c5f8 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3957,8 +3957,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4029,8 +4029,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -246,7 +246,7 @@ index eec7f60003267f91f856dc347b31ab8d637fc674..68e739a2b6dfb58593c29cde177c27c7
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index a082d41de24f963fe170108e80601946a25fa5f9..6236ff3116fc7064cfcf8d35e41eaa3a43a8a2cf 100644
+index c81dd661c5773f23d4e91d0e867d76206fb555e7..bd3967c3d8141692289a21b7e7f99424a42ef583 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -321,8 +321,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -288,7 +288,7 @@ index e7ca270c9e95c539c5379e09302ae43256e193d2..9c2de6f9992e4630fa8b4359607973d5
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 98bc3a82d40f840044a58bcc4b047cf58ea40b09..e11a0a0b8b113c694f9d3fcc284205305d6ba20e 100644
+index 50a583c2bc96aaf04b9dd76c40fb56a3b7be792b..3e8331cb95254076a47f1ec0a259c747e2fa302d 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 @@ -390,8 +390,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
@@ -316,10 +316,10 @@ index 06d3ed32b65708d91b220cdd4991fd377d84217c..bc942580c1bfb16bc5a8e9168f55626d
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/fuchsia_web/webengine/browser/frame_impl.cc b/fuchsia_web/webengine/browser/frame_impl.cc
-index 4e0a30932581feebd8877eca025961704fa10267..299a64bd0f7a493d1698c71641bf94197d016269 100644
+index 1d5e4398a08fef2346aa4c9325858b340eee942d..5dec54ab24ed4fe0d1a0840cdc500d107b06ebb0 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.cc
 +++ b/fuchsia_web/webengine/browser/frame_impl.cc
-@@ -527,8 +527,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
+@@ -564,8 +564,7 @@ bool FrameImpl::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -330,10 +330,10 @@ index 4e0a30932581feebd8877eca025961704fa10267..299a64bd0f7a493d1698c71641bf9419
    // can catch bad client behavior while not interfering with normal operation.
    constexpr size_t kMaxPendingWebContentsCount = 10;
 diff --git a/fuchsia_web/webengine/browser/frame_impl.h b/fuchsia_web/webengine/browser/frame_impl.h
-index 957eef3cbc48c820680b929423bf70a1001c9dc6..6891a43dd610e8f719b5efa2200dafb3d1ffffa7 100644
+index 69e45b758a48fd2a117715869861d70294b334b3..5e36410b91e92b399a7179e14dd18fca16d17268 100644
 --- a/fuchsia_web/webengine/browser/frame_impl.h
 +++ b/fuchsia_web/webengine/browser/frame_impl.h
-@@ -302,8 +302,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
+@@ -300,8 +300,7 @@ class WEB_ENGINE_EXPORT FrameImpl : public fuchsia::web::Frame,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -344,10 +344,10 @@ index 957eef3cbc48c820680b929423bf70a1001c9dc6..6891a43dd610e8f719b5efa2200dafb3
                            int opener_render_process_id,
                            int opener_render_frame_id,
 diff --git a/headless/lib/browser/headless_web_contents_impl.cc b/headless/lib/browser/headless_web_contents_impl.cc
-index b97e92ed1eedca8a4d76f39e2e948508dc94a17e..106b6d744468c0f28dcc6ba987a93e22835729bd 100644
+index 010ff2c94287e6b9ef37fd21f959670775a03dbf..f2392c90f91db631837495809290b4f77ac1243b 100644
 --- a/headless/lib/browser/headless_web_contents_impl.cc
 +++ b/headless/lib/browser/headless_web_contents_impl.cc
-@@ -182,8 +182,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
+@@ -183,8 +183,7 @@ class HeadlessWebContentsImpl::Delegate : public content::WebContentsDelegate {
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,

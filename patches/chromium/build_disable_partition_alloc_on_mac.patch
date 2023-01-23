@@ -9,10 +9,10 @@ and can be removed when the crash in fork is resolved.
 Related issue: https://github.com/electron/electron/issues/32718
 
 diff --git a/build_overrides/partition_alloc.gni b/build_overrides/partition_alloc.gni
-index f621d80f9ce1909519a4a158b779117f3906383e..d190ac74157e69dd8bc9851a9b1ede9fe59c575e 100644
+index e1fa5fe9f6da68451d364fadbc021239a8c3e19a..4850698ef66776333fad27812a5414a9aa55fe08 100644
 --- a/build_overrides/partition_alloc.gni
 +++ b/build_overrides/partition_alloc.gni
-@@ -41,7 +41,7 @@ _disable_partition_alloc_everywhere = is_component_build || (is_win && is_debug)
+@@ -42,7 +42,7 @@ _disable_partition_alloc_everywhere = is_component_build || (is_win && is_debug)
  
  # - NaCl: No plans to support it.
  # - iOS: not done yet.

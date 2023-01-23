@@ -41,11 +41,14 @@ WebWorkerObserver::~WebWorkerObserver() {
   // Node.js expects `kExplicit` microtasks policy and will run microtasks
   // checkpoints after every call into JavaScript. Since we use a different
   // policy in the renderer - switch to `kExplicit`
-  v8::Isolate* isolate = node_bindings_->uv_env()->isolate();
-  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(isolate), 0);
-  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  v8::MicrotaskQueue* microtask_queue =
+      node_bindings_->uv_env()->context()->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
   node::FreeEnvironment(node_bindings_->uv_env());
   node::FreeIsolateData(node_bindings_->isolate_data());
+  microtask_queue->set_microtasks_policy(old_policy);
 }
 
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
@@ -53,7 +56,8 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   v8::Context::Scope context_scope(worker_context);
   auto* isolate = worker_context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      isolate, worker_context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();

@@ -80,7 +80,6 @@ static_library("chrome") {
     "//chrome/browser/ui/exclusive_access/mouse_lock_controller.h",
     "//chrome/browser/ui/frame/window_frame_util.cc",
     "//chrome/browser/ui/frame/window_frame_util.h",
-    "//chrome/browser/ui/native_window_tracker.h",
     "//chrome/browser/ui/ui_features.cc",
     "//chrome/browser/ui/ui_features.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.cc",
@@ -89,6 +88,7 @@ static_library("chrome") {
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
+    "//ui/views/native_window_tracker.h",
   ]
 
   if (is_posix) {
@@ -138,9 +138,9 @@ static_library("chrome") {
   if (use_aura) {
     sources += [
       "//chrome/browser/platform_util_aura.cc",
-      "//chrome/browser/ui/aura/native_window_tracker_aura.cc",
-      "//chrome/browser/ui/aura/native_window_tracker_aura.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_aura.cc",
+      "//ui/views/native_window_tracker_aura.cc",
+      "//ui/views/native_window_tracker_aura.h",
     ]
   }
 
@@ -228,6 +228,8 @@ static_library("chrome") {
       "//chrome/browser/printing/print_view_manager_base.h",
       "//chrome/browser/printing/printer_query.cc",
       "//chrome/browser/printing/printer_query.h",
+      "//chrome/browser/printing/printer_query_oop.cc",
+      "//chrome/browser/printing/printer_query_oop.h",
       "//chrome/browser/printing/printing_service.cc",
       "//chrome/browser/printing/printing_service.h",
       "//components/printing/browser/print_to_pdf/pdf_print_job.cc",
@@ -287,14 +289,14 @@ static_library("chrome") {
       "//chrome/browser/ui/views/overlay/playback_image_button.h",
       "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
       "//chrome/browser/ui/views/overlay/resize_handle_button.h",
+      "//chrome/browser/ui/views/overlay/simple_overlay_window_image_button.cc",
+      "//chrome/browser/ui/views/overlay/simple_overlay_window_image_button.h",
       "//chrome/browser/ui/views/overlay/skip_ad_label_button.cc",
       "//chrome/browser/ui/views/overlay/skip_ad_label_button.h",
       "//chrome/browser/ui/views/overlay/toggle_camera_button.cc",
       "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
       "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
       "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
-      "//chrome/browser/ui/views/overlay/track_image_button.cc",
-      "//chrome/browser/ui/views/overlay/track_image_button.h",
       "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
       "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     ]

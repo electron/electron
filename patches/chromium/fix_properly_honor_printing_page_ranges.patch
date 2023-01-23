@@ -100,7 +100,7 @@ index 07847521e7217c78480205812a73cc89503c00d2..586e866ca7ec0eb0b573d23e3bd95792
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 5f6ee7ded85f4e7a0de03c080d950acdc6a43162..da2f2d5a526c0aec6f6cd7a18da26571709f1329 100644
+index d282ef0b825ac2dd7c2b23aec14f401e4a68af7b..9cc8e4bbab87ea52387f08673e6b3e2f73c4335a 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -247,6 +247,24 @@ void PrintDialogGtk::UpdateSettings(
