@@ -1,0 +1,57 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Valerie Young <spectranaut@igalia.com>
+Date: Mon, 14 Nov 2022 19:53:31 +0000
+Subject: AXSelectedTextMarkerRange should not be backwards
+
+AXSelectedTextMarkerRange was changed to backwards in this commit:
+https://chromium-review.googlesource.com/c/chromium/src/+/2330812
+In response to this bug:
+https://bugs.chromium.org/p/chromium/issues/detail?id=1110480
+After switching the range back to forward, the bug above is not
+repeatable.
+
+Fixed: 1172956
+Change-Id: I8f32e807e91514e3d74393b1ec54960ffdfacdcb
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3994770
+Reviewed-by: Aaron Leventhal <aleventhal@chromium.org>
+Commit-Queue: Valerie Young <spectranaut@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#1071150}
+
+diff --git a/content/browser/accessibility/ax_tree_formatter_mac_browsertest.mm b/content/browser/accessibility/ax_tree_formatter_mac_browsertest.mm
+index 46426469b3728f470c102812c454fd838b3f006f..250180222304766ca2b25d1dcd5df248f3087833 100644
+--- a/content/browser/accessibility/ax_tree_formatter_mac_browsertest.mm
++++ b/content/browser/accessibility/ax_tree_formatter_mac_browsertest.mm
+@@ -206,7 +206,7 @@ AccessibilityNotificationWaiter waiter(shell()->web_contents(),
+                     </script>)~~",
+              {":3;AXSelectedTextMarkerRange=*"}, R"~~(AXWebArea
+ ++AXGroup
+-++++AXStaticText AXSelectedTextMarkerRange={anchor: {:2, -1, down}, focus: {:3, 0, down}}
++++++AXStaticText AXSelectedTextMarkerRange={anchor: {:3, 0, down}, focus: {:2, -1, down}}
+ )~~");
+ }
+ 
+diff --git a/content/browser/accessibility/browser_accessibility_cocoa.mm b/content/browser/accessibility/browser_accessibility_cocoa.mm
+index 55cce7ff53b355cea2787abca6140f122f6a0369..202923773d7adb2fad5c15be4558bfd548ec6c7d 100644
+--- a/content/browser/accessibility/browser_accessibility_cocoa.mm
++++ b/content/browser/accessibility/browser_accessibility_cocoa.mm
+@@ -1347,9 +1347,7 @@ - (id)selectedTextMarkerRange {
+   if (ax_range.IsNull())
+     return nil;
+ 
+-  // Voiceover expects this range to be backwards in order to read the selected
+-  // words correctly.
+-  return AXRangeToAXTextMarkerRange(ax_range.AsBackwardRange());
++  return AXRangeToAXTextMarkerRange(std::move(ax_range));
+ }
+ 
+ - (NSString*)sortDirection {
+diff --git a/content/test/data/accessibility/mac/selection/selectall-textarea-expected.txt b/content/test/data/accessibility/mac/selection/selectall-textarea-expected.txt
+index f2638c5d03b16266e781bb74cfc08c65f7c0a60d..34036471ad01d0fcfc7bd9b7213f1b4edcded719 100644
+--- a/content/test/data/accessibility/mac/selection/selectall-textarea-expected.txt
++++ b/content/test/data/accessibility/mac/selection/selectall-textarea-expected.txt
+@@ -1,4 +1,4 @@
+ textarea_range={anchor: {:3, 0, down}, focus: {:3, 19, down}}
+ textarea.AXSelectedTextMarkerRange={anchor: {:3, 0, down}, focus: {:3, 19, down}}
+ AXSelectedTextChanged on AXTextArea AXValue='The quick brown fox' AXTextSelectionDirection=AXTextSelectionDirectionUnknown AXTextSelectionGranularity=AXTextSelectionGranularityUnknown AXTextStateChangeType=AXTextStateChangeTypeSelectionMove
+-textarea.AXSelectedTextMarkerRange={anchor: {:3, 19, down}, focus: {:3, 0, down}}
++textarea.AXSelectedTextMarkerRange={anchor: {:3, 0, down}, focus: {:3, 19, down}}
