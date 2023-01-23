@@ -190,8 +190,12 @@ void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   // Make sure the userData directory is created.
   ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath user_data;
-  if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data))
+  if (base::PathService::Get(chrome::DIR_USER_DATA, &user_data)) {
     base::CreateDirectoryAndGetError(user_data, nullptr);
+#if BUILDFLAG(IS_WIN)
+    base::SetExtraNoExecuteAllowedPath(chrome::DIR_USER_DATA);
+#endif
+  }
 
   is_ready_ = true;
   if (ready_promise_) {
