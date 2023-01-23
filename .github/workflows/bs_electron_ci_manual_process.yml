@@ -1,5 +1,7 @@
 name: 'BrightSign Manual Build Process'
-on: 
+on:
+  push:
+  
   workflow_dispatch:
     inputs:
       build_type:
