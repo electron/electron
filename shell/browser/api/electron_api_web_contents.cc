@@ -3547,8 +3547,10 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   ScopedAllowBlockingForElectron allow_blocking;
-  base::File file(file_path,
-                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  uint32_t flags = base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE;
+  // The snapshot file is passed to an untrusted process.
+  flags = base::File::AddFlagsForPassingToUntrustedProcess(flags);
+  base::File file(file_path, flags);
   if (!file.IsValid()) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;
