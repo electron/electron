@@ -152,8 +152,10 @@ struct Converter<electron::api::DesktopCapturer::Source> {
       v8::Isolate* isolate,
       const electron::api::DesktopCapturer::Source& source) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-    content::DesktopMediaID id = source.media_list_source.id;
     dict.Set("name", base::UTF16ToUTF8(source.media_list_source.name));
+    content::DesktopMediaID id = source.media_list_source.id;
+    if (id.window_id == id.id)
+      id.window_id = content::DesktopMediaID::kNullId;
     dict.Set("id", id.ToString());
     dict.Set("thumbnail",
              electron::api::NativeImage::Create(
