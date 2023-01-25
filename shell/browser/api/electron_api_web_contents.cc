@@ -3279,9 +3279,7 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
-  const ui::Cursor& cursor = webcursor.cursor();
-
+void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(cursor),
          gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),

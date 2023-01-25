@@ -418,7 +418,7 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
   Show();
 }
 
-void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor&) {}
+void OffScreenRenderWidgetHostView::UpdateCursor(const ui::Cursor&) {}
 
 content::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
   return cursor_manager_.get();
