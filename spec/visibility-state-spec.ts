@@ -3,9 +3,9 @@ import * as cp from 'child_process';
 import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron/main';
 import * as path from 'path';
 
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
-import { ifdescribe, delay } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { ifdescribe, delay } from './lib/spec-helpers';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass

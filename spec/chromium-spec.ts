@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeAllWindows } from './window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 import * as https from 'https';
 import * as http from 'http';
 import * as path from 'path';
@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, defer, delay, itremote } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay, itremote } from './lib/spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
