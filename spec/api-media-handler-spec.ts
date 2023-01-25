@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 import * as http from 'http';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 

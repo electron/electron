@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { expect, assert } from 'chai';
-import { closeAllWindows } from './window-helpers';
-const { emittedOnce } = require('./events-helpers');
+import { closeAllWindows } from './lib/window-helpers';
+const { emittedOnce } = require('./lib/events-helpers');
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;

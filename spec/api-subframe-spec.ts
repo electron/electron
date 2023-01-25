@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import * as http from 'http';
-import { emittedNTimes, emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedNTimes, emittedOnce } from './lib/events-helpers';
+import { closeWindow } from './lib/window-helpers';
 import { app, BrowserWindow, ipcMain } from 'electron/main';
 import { AddressInfo } from 'net';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {

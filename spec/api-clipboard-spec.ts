@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { Buffer } from 'buffer';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 import { clipboard, nativeImage } from 'electron/common';
 
 // FIXME(zcbenz): Clipboard tests are failing on WOA.

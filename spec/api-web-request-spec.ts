@@ -6,7 +6,7 @@ import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { AddressInfo, Socket } from 'net';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './lib/events-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 

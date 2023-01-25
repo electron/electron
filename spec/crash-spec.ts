@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ifit } from './spec-helpers';
+import { ifit } from './lib/spec-helpers';
 
 const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 

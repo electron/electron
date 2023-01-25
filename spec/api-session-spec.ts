@@ -7,9 +7,9 @@ import * as ChildProcess from 'child_process';
 import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFrameMain } from 'electron/main';
 import * as send from 'send';
 import * as auth from 'basic-auth';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { defer, delay } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { defer, delay } from './lib/spec-helpers';
 import { AddressInfo } from 'net';
 
 /* The whole session API doesn't use standard callbacks */

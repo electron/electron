@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { nativeImage } from 'electron/common';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 import * as path from 'path';
 
 describe('nativeImage module', () => {

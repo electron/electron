@@ -1,8 +1,8 @@
 import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { ifdescribe, ifit } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 import * as http from 'http';
 import * as fs from 'fs-extra';
 import * as os from 'os';

@@ -1,8 +1,8 @@
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
-import { delay } from './spec-helpers';
+import { delay } from './lib/spec-helpers';
 import { expect } from 'chai';
-import { closeAllWindows } from './window-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
