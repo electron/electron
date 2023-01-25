@@ -59,10 +59,11 @@ struct Converter<network::mojom::CredentialsMode> {
       *out = network::mojom::CredentialsMode::kOmit;
     else if (mode == "include")
       *out = network::mojom::CredentialsMode::kInclude;
+    else if (mode == "same-origin")
+      // Note: This only makes sense if the request specifies the "origin"
+      // option.
+      *out = network::mojom::CredentialsMode::kSameOrigin;
     else
-      // "same-origin" is technically a member of this enum as well, but it
-      // doesn't make sense in the context of `net.request()`, so don't convert
-      // it.
       return false;
     return true;
   }

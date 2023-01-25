@@ -547,7 +547,51 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
     return p.promise;
   }
 
-  // TODO: listen to the abort signal
+  if (req.signal.aborted) {
+    // 1. Abort the fetch() call with p, request, null, and
+    //    requestObject’s signal’s abort reason.
+    const error = (req.signal as any).reason ?? new DOMException('The operation was aborted.', 'AbortError');
+    p.reject(error);
+
+    if (req.body != null /* && isReadable(req.body) */) {
+      req.body.cancel(error).catch((err) => {
+        if (err.code === 'ERR_INVALID_STATE') {
+          // Node bug?
+          return;
+        }
+        throw err;
+      });
+    }
+
+    // 2. Return p.
+    return p.promise;
+  }
+
+  let locallyAborted = false;
+  req.signal.addEventListener(
+    'abort',
+    () => {
+      // 1. Set locallyAborted to true.
+      locallyAborted = true;
+
+      // 2. Abort the fetch() call with p, request, responseObject,
+      //    and requestObject’s signal’s abort reason.
+      const error = (req.signal as any).reason ?? new DOMException('The operation was aborted.', 'AbortError');
+      p.reject(error);
+      if (req.body != null /* && isReadable(req.body) */) {
+        req.body.cancel(error).catch((err) => {
+          if (err.code === 'ERR_INVALID_STATE') {
+            // Node bug?
+            return;
+          }
+          throw err;
+        });
+      }
+
+      r.abort(error);
+    },
+    { once: true }
+  );
 
   const r = request({
     // TODO: session
@@ -564,10 +608,13 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
   // TODO: other stuff from init/input? mode? keepalive? referrer? etc
 
   r.on('response', (resp: IncomingMessage) => {
+    if (locallyAborted) return;
     const headers = new Headers();
     for (const [k, v] of Object.entries(resp.headers)) { headers.set(k, Array.isArray(v) ? v.join(', ') : v); }
     // TODO: this loses trailers and httpVersion info
-    const rResp = new Response(Readable.toWeb(resp) as ReadableStream, {
+    const nullBodyStatus = [101, 204, 205, 304];
+    const body = nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD' ? null : Readable.toWeb(resp) as ReadableStream;
+    const rResp = new Response(body, {
       headers,
       status: resp.statusCode,
       statusText: resp.statusMessage
@@ -580,7 +627,7 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
     p.reject(err);
   });
 
-  r.end();
+  if (!req.body?.pipeTo(Writable.toWeb(r)).then(() => r.end())) { r.end(); }
 
   return p.promise;
 }
