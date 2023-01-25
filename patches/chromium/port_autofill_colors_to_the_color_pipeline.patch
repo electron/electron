@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 9307a2c5b05f685b2e90f44d4bac6996a8586204..a9a303c891eb016d325ad421e88e78b1eeb86efd 100644
+index c8727dcac4d1440f7aef0b32e5ac7569b02f177e..4b6cd9afd7d224198c704e4a45f2f13c07e1fc81 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -289,6 +289,10 @@
@@ -22,7 +22,7 @@ index 9307a2c5b05f685b2e90f44d4bac6996a8586204..a9a303c891eb016d325ad421e88e78b1
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -343,6 +347,7 @@
+@@ -344,6 +348,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \

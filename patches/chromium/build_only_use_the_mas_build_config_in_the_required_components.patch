@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 125fe6e8f461f9f5fbea98fca598ce30f2967024..bc1f0a3ab0c5592eaa14f70d5513c502af3c435b 100644
+index 29344e62d32b50cceef20c5c869c77f992880667..90dbf4ad6f38f6380aa65679d8114fd8cb230444 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1485,6 +1485,7 @@ component("base") {
@@ -68,10 +68,10 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 220eb6bf9dd3eec729cba95e49b9eacff5c2726e..2e9cd5b638b0368dacfe49e005ea82caee3a9d0d 100644
+index e7d271241de3172538eae5e20017dc807118c1e5..d487b5bf2fc566ea753d7a780a5b28d23e65e492 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -56,6 +56,7 @@ source_set("browser") {
+@@ -57,6 +57,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -80,7 +80,7 @@ index 220eb6bf9dd3eec729cba95e49b9eacff5c2726e..2e9cd5b638b0368dacfe49e005ea82ca
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 86b7baf217021c397f7b33fbb87b5faf686a4e09..a92ea28e42b78dde516cbd238b1725471e19bd87 100644
+index 18cc96c4021b58c90c2fc96e1011c621bfc57096..f41b39e7da39fab9465bc25b41101ce69ed67fe1 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -172,6 +172,7 @@ source_set("common") {
@@ -257,10 +257,10 @@ index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675c
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index f445c837fd3b9814336349f78a1f30a6f9416cc5..4ebf81a2e182555d8dbff155b7c1cdfa3a363428 100644
+index 36bc22a122193bf5ccd7e86df08cce7e5451a035..6d64206ee17042b6eef9ba15977eba0458903c75 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -663,6 +663,7 @@ component("views") {
+@@ -664,6 +664,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

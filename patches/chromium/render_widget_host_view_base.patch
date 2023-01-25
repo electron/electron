@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 1a30c72e694ac0b123fb45758e26379cd7c698ee..896d54884012b2118335f39c06d5d0fe7321d266 100644
+index 9a942b2b4dd39dc969803f7c5f20e343200b43cf..7fe07c3c491c998730770cdd72ca283fca589103 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -699,6 +699,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableFor(
@@ -24,7 +24,7 @@ index 1a30c72e694ac0b123fb45758e26379cd7c698ee..896d54884012b2118335f39c06d5d0fe
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index d46c8e1c1853dce837f4c9340fe3dc274c641f3d..12d5360c9c66e2e5b97362cb5ceb865e9510663c 100644
+index 1425fc2e82e485f6f31eb9ffba3bda30a8568b5c..5d5ffb5f5b9e84734e3173c61ba8c9ecb17f433b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -25,8 +25,11 @@
@@ -48,16 +48,7 @@ index d46c8e1c1853dce837f4c9340fe3dc274c641f3d..12d5360c9c66e2e5b97362cb5ceb865e
  
  namespace ui {
  class Compositor;
-@@ -62,7 +65,7 @@ enum class DomCode;
- class LatencyInfo;
- class TouchEvent;
- struct DidOverscrollParams;
--}
-+}  // namespace ui
- 
- namespace content {
- 
-@@ -70,9 +73,11 @@ class CursorManager;
+@@ -71,9 +74,11 @@ class CursorManager;
  class MouseWheelPhaseHandler;
  class RenderWidgetHostImpl;
  class RenderWidgetHostViewBaseObserver;
@@ -66,9 +57,9 @@ index d46c8e1c1853dce837f4c9340fe3dc274c641f3d..12d5360c9c66e2e5b97362cb5ceb865e
  class TextInputManager;
  class TouchSelectionControllerClientManager;
 +class WebContentsView;
- class WebCursor;
  class WebContentsAccessibility;
  class DelegatedFrameHost;
+ 
 @@ -148,6 +153,9 @@ class CONTENT_EXPORT RenderWidgetHostViewBase : public RenderWidgetHostView {
        const gfx::Rect& keyboard_rect) override {}
    bool IsHTMLFormPopup() const override;
