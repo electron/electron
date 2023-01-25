@@ -1,7 +1,7 @@
-From 57c54ae221d60e9f9394d7ee69634d66c9cd26f3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Victor Vasiliev <vasilvv@chromium.org>
 Date: Wed, 21 Dec 2022 17:26:42 +0000
-Subject: [PATCH] Ensure clean destruction of network::WebTransport
+Subject: Ensure clean destruction of network::WebTransport
 
 Once the destruction of the object begins, we should not process any
 callbacks, nor should we attempt to reset the streams on a connection
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4117501
 Reviewed-by: Eric Orth <ericorth@chromium.org>
 Commit-Queue: Victor Vasiliev <vasilvv@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1085965}
----
 
 diff --git a/services/network/web_transport.cc b/services/network/web_transport.cc
-index 2ccb558..e8b4772 100644
+index 8ddbeb9473cb94ebcc64286797ae574ca08d1001..cd92d0f26b23229aeb1e415b81165b2ebf05452f 100644
 --- a/services/network/web_transport.cc
 +++ b/services/network/web_transport.cc
-@@ -176,7 +176,7 @@
+@@ -177,7 +177,7 @@ class WebTransport::Stream final {
  
    ~Stream() {
      auto* stream = incoming_ ? incoming_.get() : outgoing_.get();
@@ -28,7 +27,7 @@ index 2ccb558..e8b4772 100644
        return;
      }
      stream->MaybeResetDueToStreamObjectGone();
-@@ -398,7 +398,10 @@
+@@ -399,7 +399,10 @@ WebTransport::WebTransport(
    transport_->Connect();
  }
  
@@ -41,10 +40,10 @@ index 2ccb558..e8b4772 100644
  void WebTransport::SendDatagram(base::span<const uint8_t> data,
                                  base::OnceCallback<void(bool)> callback) {
 diff --git a/services/network/web_transport_unittest.cc b/services/network/web_transport_unittest.cc
-index e18298a..6d0e65a 100644
+index 81bf26f9e0509e8c56160042519f9ea9034c68df..1a9e6bcfef8b5f7cb642412cb59381c5082e2c19 100644
 --- a/services/network/web_transport_unittest.cc
 +++ b/services/network/web_transport_unittest.cc
-@@ -611,6 +611,51 @@
+@@ -610,6 +610,51 @@ TEST_F(WebTransportTest, EchoOnUnidirectionalStreams) {
    EXPECT_EQ(0u, resets_sent.size());
  }
  
