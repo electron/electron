@@ -2,7 +2,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import { screen, desktopCapturer, NativeImage } from 'electron';
 
-const fixtures = path.resolve(__dirname, 'fixtures');
+const fixtures = path.resolve(__dirname, '..', 'fixtures');
 
 export enum HexColors {
   GREEN = '#00b140',

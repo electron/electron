@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';

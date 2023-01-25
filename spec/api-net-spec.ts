@@ -4,8 +4,8 @@ import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOpt
 import * as http from 'http';
 import * as url from 'url';
 import { AddressInfo, Socket } from 'net';
-import { emittedOnce } from './events-helpers';
-import { defer, delay } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { defer, delay } from './lib/spec-helpers';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');

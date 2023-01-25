@@ -7,9 +7,9 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, waitUntil } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');

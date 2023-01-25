@@ -9,10 +9,10 @@ import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as stream from 'stream';
 import { EventEmitter } from 'events';
-import { closeAllWindows, closeWindow } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { WebmGenerator } from './video-helpers';
-import { delay } from './spec-helpers';
+import { closeAllWindows, closeWindow } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { WebmGenerator } from './lib/video-helpers';
+import { delay } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
