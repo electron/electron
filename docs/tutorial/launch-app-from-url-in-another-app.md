@@ -77,6 +77,9 @@ if (!gotTheLock) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     }
+    // the commandLine is array of strings in which last element is deep link url
+    // the url str ends with /
+     dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop().slice(0,-1)}`)
   })
 
   // Create mainWindow, load the rest of the app, etc...
@@ -84,10 +87,6 @@ if (!gotTheLock) {
     createWindow()
   })
 
-  // Handle the protocol. In this case, we choose to show an Error Box.
-  app.on('open-url', (event, url) => {
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
-  })
 }
 ```
 
