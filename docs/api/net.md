@@ -68,7 +68,7 @@ requests according to the specified protocol scheme in the `options` object.
 * `input` string | [Request](https://nodejs.org/api/globals.html#request)
 * `init` [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/fetch#options) (optional)
 
-Returns `Promise<Response>`.
+Returns `Promise<GlobalResponse>`.
 
 Sends a request, similarly to how `fetch()` works in the renderer, using
 Chrome's network stack. This differs from Node's `fetch()`, which uses an
