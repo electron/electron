@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/ui/tray_icon_gtk.h"
+#include "shell/browser/ui/tray_icon_linux.h"
 
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
@@ -29,48 +29,48 @@ gfx::ImageSkia GetBestImageRep(const gfx::ImageSkia& image) {
 
 }  // namespace
 
-TrayIconGtk::TrayIconGtk()
-    : status_icon_(new StatusIconLinuxDbus),
+TrayIconLinux::TrayIconLinux()
+    : status_icon_dbus_(new StatusIconLinuxDbus),
       status_icon_type_(StatusIconType::kDbus) {
-  status_icon_->SetDelegate(this);
+  status_icon_dbus_->SetDelegate(this);
 }
 
-TrayIconGtk::~TrayIconGtk() = default;
+TrayIconLinux::~TrayIconLinux() = default;
 
-void TrayIconGtk::SetImage(const gfx::Image& image) {
+void TrayIconLinux::SetImage(const gfx::Image& image) {
   image_ = GetBestImageRep(image.AsImageSkia());
-  if (status_icon_)
-    status_icon_->SetIcon(image_);
+  if (auto* status_icon = GetStatusIcon())
+    status_icon->SetIcon(image_);
 }
 
-void TrayIconGtk::SetToolTip(const std::string& tool_tip) {
+void TrayIconLinux::SetToolTip(const std::string& tool_tip) {
   tool_tip_ = base::UTF8ToUTF16(tool_tip);
-  if (status_icon_)
-    status_icon_->SetToolTip(tool_tip_);
+  if (auto* status_icon = GetStatusIcon())
+    status_icon->SetToolTip(tool_tip_);
 }
 
-void TrayIconGtk::SetContextMenu(ElectronMenuModel* menu_model) {
+void TrayIconLinux::SetContextMenu(ElectronMenuModel* menu_model) {
   menu_model_ = menu_model;
-  if (status_icon_)
-    status_icon_->UpdatePlatformContextMenu(menu_model_);
+  if (auto* status_icon = GetStatusIcon())
+    status_icon->UpdatePlatformContextMenu(menu_model_);
 }
 
-const gfx::ImageSkia& TrayIconGtk::GetImage() const {
+const gfx::ImageSkia& TrayIconLinux::GetImage() const {
   return image_;
 }
 
-const std::u16string& TrayIconGtk::GetToolTip() const {
+const std::u16string& TrayIconLinux::GetToolTip() const {
   return tool_tip_;
 }
 
-ui::MenuModel* TrayIconGtk::GetMenuModel() const {
+ui::MenuModel* TrayIconLinux::GetMenuModel() const {
   return menu_model_;
 }
 
-void TrayIconGtk::OnImplInitializationFailed() {
+void TrayIconLinux::OnImplInitializationFailed() {
   switch (status_icon_type_) {
     case StatusIconType::kDbus:
-      status_icon_ = nullptr;
+      status_icon_dbus_.reset();
       status_icon_type_ = StatusIconType::kNone;
       return;
     case StatusIconType::kNone:
@@ -78,19 +78,28 @@ void TrayIconGtk::OnImplInitializationFailed() {
   }
 }
 
-void TrayIconGtk::OnClick() {
+void TrayIconLinux::OnClick() {
   NotifyClicked();
 }
 
-bool TrayIconGtk::HasClickAction() {
+bool TrayIconLinux::HasClickAction() {
   // Returning true will make the tooltip show as an additional context menu
   // item, which makes sense in Chrome but not in most Electron apps.
   return false;
 }
 
+ui::StatusIconLinux* TrayIconLinux::GetStatusIcon() {
+  switch (status_icon_type_) {
+    case StatusIconType::kDbus:
+      return status_icon_dbus_.get();
+    case StatusIconType::kNone:
+      return nullptr;
+  }
+}
+
 // static
 TrayIcon* TrayIcon::Create(absl::optional<UUID> guid) {
-  return new TrayIconGtk;
+  return new TrayIconLinux;
 }
 
 }  // namespace electron
