@@ -611,7 +611,8 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
     redirect: req.redirect
   });
 
-  if (req.mode) {
+  // cors is the default mode, but we can't set mode=cors without an origin.
+  if (req.mode && (req.mode !== 'cors' || origin)) {
     r.setHeader('Sec-Fetch-Mode', req.mode);
   }
 

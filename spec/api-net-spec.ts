@@ -1974,4 +1974,60 @@ describe('net module', () => {
       await collectStreamBody(await getResponse(urlRequest));
     });
   });
+
+  describe('net.fetch', () => {
+    // NB. there exist much more comprehensive tests for fetch() in the form of
+    // the WPT: https://github.com/web-platform-tests/wpt/tree/master/fetch
+    // It's possible to run these tests against net.fetch(), but the test
+    // harness to do so is quite complex and hasn't been munged to smoothly run
+    // inside the Electron test runner yet.
+    //
+    // In the meantime, here are some tests for basic functionality and
+    // Electron-specific behavior.
+
+    describe('basic', () => {
+      it('can fetch http urls', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.end('test');
+        });
+        const resp = await net.fetch(serverUrl);
+        expect(resp.ok).to.be.true();
+        expect(await resp.text()).to.equal('test');
+      });
+
+      it('can upload a string body', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          request.on('data', chunk => response.write(chunk));
+          request.on('end', () => response.end());
+        });
+        const resp = await net.fetch(serverUrl, {
+          method: 'POST',
+          body: 'anchovies'
+        });
+        expect(await resp.text()).to.equal('anchovies');
+      });
+
+      it('can read response as an array buffer', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          request.on('data', chunk => response.write(chunk));
+          request.on('end', () => response.end());
+        });
+        const resp = await net.fetch(serverUrl, {
+          method: 'POST',
+          body: 'anchovies'
+        });
+        expect(new TextDecoder().decode(new Uint8Array(await resp.arrayBuffer()))).to.equal('anchovies');
+      });
+
+      it('can read response as form data', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.setHeader('content-type', 'application/x-www-form-urlencoded');
+          response.end('foo=bar');
+        });
+        const resp = await net.fetch(serverUrl);
+        const result = await resp.formData();
+        expect(result.get('foo')).to.equal('bar');
+      });
+    });
+  });
 });
