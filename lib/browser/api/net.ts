@@ -255,7 +255,9 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     body: null as any,
     useSessionCookies: options.useSessionCookies,
     credentials: options.credentials,
-    origin: options.origin
+    origin: options.origin,
+    referrerPolicy: options.referrerPolicy,
+    cache: options.cache
   };
   const headers: Record<string, string | string[]> = options.headers || {};
   for (const [name, value] of Object.entries(headers)) {
@@ -594,7 +596,7 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
     { once: true }
   );
 
-  const origin = req.headers.get('origin') ?? (globalThis as any).getGlobalOrigin()?.toString();
+  const origin = req.headers.get('origin') ?? undefined;
   // We can't set credentials to same-origin unless there's an origin set.
   const credentials = req.credentials === 'same-origin' && !origin ? 'include' : req.credentials;
 
@@ -604,14 +606,18 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
     url: req.url,
     origin,
     credentials,
+    cache: req.cache,
+    referrerPolicy: req.referrerPolicy,
     redirect: req.redirect
   });
+
+  if (req.mode) {
+    r.setHeader('Sec-Fetch-Mode', req.mode);
+  }
 
   for (const [k, v] of req.headers) {
     r.setHeader(k, v);
   }
-
-  // TODO: other stuff from init/input? mode? keepalive? referrer? etc
 
   r.on('response', (resp: IncomingMessage) => {
     if (locallyAborted) return;

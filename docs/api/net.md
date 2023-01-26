@@ -63,6 +63,28 @@ Creates a [`ClientRequest`](./client-request.md) instance using the provided
 The `net.request` method would be used to issue both secure and insecure HTTP
 requests according to the specified protocol scheme in the `options` object.
 
+### `net.fetch(input[, init])`
+
+* `input` RequestInfo
+* `init` RequestInit (optional)
+
+Returns `Promise<Response>`.
+
+Sends a request, similarly to how `fetch()` works in the renderer, using
+Chrome's network stack. This differs from Node's `fetch()`, which uses an
+entirely separate HTTP stack, with different limitations.
+
+See the MDN documentation for
+[`fetch()`](https://developer.mozilla.org/en-US/docs/Web/API/fetch) for more
+details.
+
+Limitations:
+
+* `net.fetch()` does not support the `data:` or `blob:` schemes.
+* The value of the `integrity` option is ignored.
+* The `.type` and `.url` values of the returned `Response` object are
+  incorrect.
+
 ### `net.isOnline()`
 
 Returns `boolean` - Whether there is currently internet connection.

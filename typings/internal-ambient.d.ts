@@ -135,6 +135,8 @@ declare namespace NodeJS {
     session?: Electron.Session;
     partition?: string;
     referrer?: string;
+    referrerPolicy?: string;
+    cache?: string;
     origin?: string;
     hasUserActivation?: boolean;
     mode?: string;
