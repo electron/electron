@@ -310,6 +310,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     }
 
     const { redirectPolicy, ...urlLoaderOptions } = parseOptions(options);
+    if (urlLoaderOptions.credentials === 'same-origin' && !urlLoaderOptions.origin) { throw new Error('credentials: same-origin requires origin to be set'); }
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;
   }
@@ -588,16 +589,21 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
         });
       }
 
-      r.abort(error);
+      r.abort();
     },
     { once: true }
   );
+
+  const origin = req.headers.get('origin') ?? (globalThis as any).getGlobalOrigin()?.toString();
+  // We can't set credentials to same-origin unless there's an origin set.
+  const credentials = req.credentials === 'same-origin' && !origin ? 'include' : req.credentials;
 
   const r = request({
     // TODO: session
     method: req.method,
     url: req.url,
-    credentials: req.credentials as 'include' | 'omit' | undefined /* missing same-origin */,
+    origin,
+    credentials,
     redirect: req.redirect
   });
 

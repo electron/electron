@@ -23,12 +23,14 @@ following properties:
     with which the request is associated. Defaults to the empty string. The
     `session` option supersedes `partition`. Thus if a `session` is explicitly
     specified, `partition` is ignored.
-  * `credentials` string (optional) - Can be `include` or `omit`. Whether to
-    send [credentials](https://fetch.spec.whatwg.org/#credentials) with this
+  * `credentials` string (optional) - Can be `include`, `omit` or
+    `same-origin`. Whether to send
+    [credentials](https://fetch.spec.whatwg.org/#credentials) with this
     request. If set to `include`, credentials from the session associated with
     the request will be used. If set to `omit`, credentials will not be sent
     with the request (and the `'login'` event will not be triggered in the
-    event of a 401). This matches the behavior of the
+    event of a 401). If set to `same-origin`, `origin` must also be specified.
+    This matches the behavior of the
     [fetch](https://fetch.spec.whatwg.org/#concept-request-credentials-mode)
     option of the same name. If this option is not specified, authentication
     data from the session will be sent, and cookies will not be sent (unless
