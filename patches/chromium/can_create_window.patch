@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index b30cd63e1a5d48ca4653af6fccf9d86cb48b59d5..2dff4347bb157abd2cf6333861138cb734c31c3b 100644
+index 337aab0addc0a0e31df71b5dce3b62626b7f9504..080c99e23a4a81a4ddbf8a7689c8c10b66f9e039 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7527,6 +7527,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7474,6 +7474,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index b30cd63e1a5d48ca4653af6fccf9d86cb48b59d5..2dff4347bb157abd2cf6333861138cb7
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 59d601531e8e4a38bf84325fcfea62bed1937010..9f72737d6528a9f59b53d1b9ed28f8b09550306f 100644
+index 720156a65fe9804834aa943dbcad975076d99193..03082815e5c4de60da566176af10bc972cff0072 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4128,6 +4128,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4127,6 +4127,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 59d601531e8e4a38bf84325fcfea62bed1937010..9f72737d6528a9f59b53d1b9ed28f8b0
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4169,12 +4175,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4168,12 +4174,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,10 +66,10 @@ index d2f710218b4fb7c24be02ea1cc78abcfb5718fc9..4d6f86e5674cf4f419061a0f67f3700f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 8b9c7cb60db64ffc5969f28bd7da589f81da1063..40f7008f9fed02cb93f58813b43a68214088d62a 100644
+index 28afdb7d6f13a0a7331048197762acb44381bc57..b8712563ca3804872a6aab6b6f0fd170f21bbcd6 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -633,6 +633,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -634,6 +634,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index 8b9c7cb60db64ffc5969f28bd7da589f81da1063..40f7008f9fed02cb93f58813b43a6821
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0daa50aa779201fa12a966d29fbef8df5cd7c464..14acfb393f8347bd9718d069a3d080e11868de70 100644
+index 174a8d9197876cc7167407560fa011ed2e9d6adf..b1e3179eae105e29a360cc5a92c475e7c545704d 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -164,6 +164,7 @@ class NetworkService;
@@ -148,7 +148,7 @@ index 2717fd39b99c6c3f8b0cb8278fc5011dfb6d34a8..fae93468160463c098b5b115ef293989
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 30ee6980416a48141de952c91aaca34af1ba57f6..7f54d8c17ed2324b5fe15c47d20583a838d11207 100644
+index b5feb7b1c89954409c18f2a8d348ff1ca2f6389c..a0123eac7193282dbfba9712f0d88b2b87fccd9f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -6290,6 +6290,10 @@ WebView* RenderFrameImpl::CreateNewWindow(

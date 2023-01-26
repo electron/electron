@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index a6718b04573258f24ec208324feeed979ec7cb2f..e51a8ab7ffc41727ff5bb2200a7be4dc1c8a81ab 100644
+index c2ef1da09511b9314298b4e55a23bd521ba17969..d95b992daae050ea601da86008823bbd41df9b6d 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -18,7 +18,7 @@ index a6718b04573258f24ec208324feeed979ec7cb2f..e51a8ab7ffc41727ff5bb2200a7be4dc
  #include "base/strings/string_number_conversions.h"
  #include "base/strings/string_util.h"
  #include "base/task/single_thread_task_runner.h"
-@@ -250,8 +251,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
+@@ -251,8 +252,13 @@ std::string GetSnapshotDataDescriptor(const base::CommandLine& command_line) {
  
  #endif
  
@@ -33,7 +33,7 @@ index a6718b04573258f24ec208324feeed979ec7cb2f..e51a8ab7ffc41727ff5bb2200a7be4dc
  #if BUILDFLAG(IS_POSIX) && !BUILDFLAG(IS_MAC)
    base::FileDescriptorStore& file_descriptor_store =
        base::FileDescriptorStore::GetInstance();
-@@ -280,11 +286,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
+@@ -281,11 +287,12 @@ bool ShouldLoadV8Snapshot(const base::CommandLine& command_line,
  
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  
@@ -48,7 +48,7 @@ index a6718b04573258f24ec208324feeed979ec7cb2f..e51a8ab7ffc41727ff5bb2200a7be4dc
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -959,7 +966,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -965,7 +972,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  

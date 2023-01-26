@@ -55,7 +55,7 @@ index 1adfddd0fa65aac18e4bc98a38e52dfd62701ff4..6ac3d77d7259970394537e164097cd8d
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5f238ecec 100644
+index c320ce10cfcd8b62dc516871bae900f6da9600f5..c9347d61c76098c9df5e0142872b5078017e6270 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -306,6 +306,8 @@ viz_component("service") {
@@ -68,7 +68,7 @@ index 97a4fa63593ca119501dcf76468052b33041cf27..be10275cdcd7bacae4ab24608ad840c5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e7d271241de3172538eae5e20017dc807118c1e5..d487b5bf2fc566ea753d7a780a5b28d23e65e492 100644
+index 9ba992e9ce8e107949db8dfc928a478b50fea35a..564467c1dda1210085488aed47d64052c457bd8a 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -57,6 +57,7 @@ source_set("browser") {
@@ -80,10 +80,10 @@ index e7d271241de3172538eae5e20017dc807118c1e5..d487b5bf2fc566ea753d7a780a5b28d2
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 18cc96c4021b58c90c2fc96e1011c621bfc57096..f41b39e7da39fab9465bc25b41101ce69ed67fe1 100644
+index d01ad9dbeabeef8a5679823d8b1678d0a46c3865..2c4d34bc40aec5de7603ada2777e532be4416fce 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -172,6 +172,7 @@ source_set("common") {
+@@ -170,6 +170,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
