@@ -79,14 +79,13 @@ if (!gotTheLock) {
     }
     // the commandLine is array of strings in which last element is deep link url
     // the url str ends with /
-     dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop().slice(0,-1)}`)
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop().slice(0, -1)}`)
   })
 
   // Create mainWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     createWindow()
   })
-
 }
 ```
 
