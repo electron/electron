@@ -6,6 +6,7 @@
 
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h"
+#include "shell/browser/ui/status_icon_gtk.h"
 #include "ui/gfx/image/image_skia_rep.h"
 
 namespace electron {
@@ -71,7 +72,14 @@ void TrayIconLinux::OnImplInitializationFailed() {
   switch (status_icon_type_) {
     case StatusIconType::kDbus:
       status_icon_dbus_.reset();
+      status_icon_gtk_ = std::make_unique<StatusIconGtk>();
+      status_icon_type_ = StatusIconType::kGtk;
+      status_icon_gtk_->SetDelegate(this);
+      return;
+    case StatusIconType::kGtk:
+      status_icon_gtk_.reset();
       status_icon_type_ = StatusIconType::kNone;
+      menu_model_ = nullptr;
       return;
     case StatusIconType::kNone:
       NOTREACHED();
@@ -92,6 +100,8 @@ ui::StatusIconLinux* TrayIconLinux::GetStatusIcon() {
   switch (status_icon_type_) {
     case StatusIconType::kDbus:
       return status_icon_dbus_.get();
+    case StatusIconType::kGtk:
+      return status_icon_gtk_.get();
     case StatusIconType::kNone:
       return nullptr;
   }
