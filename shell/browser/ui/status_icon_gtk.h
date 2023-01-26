@@ -9,6 +9,7 @@
 
 #include "ui/base/glib/glib_integers.h"
 #include "ui/base/glib/glib_signal.h"
+#include "ui/base/glib/scoped_gobject.h"
 #include "ui/linux/status_icon_linux.h"
 
 typedef struct _GtkStatusIcon GtkStatusIcon;
@@ -43,7 +44,7 @@ class StatusIconGtk : public ui::StatusIconLinux {
                      guint);
 
   std::unique_ptr<gtkui::MenuGtk> menu_;
-  GtkStatusIcon* icon_;
+  ScopedGObject<GtkStatusIcon> icon_;
 };
 
 }  // namespace electron
