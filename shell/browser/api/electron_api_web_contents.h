@@ -704,6 +704,7 @@ class WebContents : public ExclusiveAccessContext,
   void DevToolsIndexPath(int request_id,
                          const std::string& file_system_path,
                          const std::string& excluded_folders_message) override;
+  void DevToolsOpenInNewTab(const std::string& url) override;
   void DevToolsStopIndexing(int request_id) override;
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,
