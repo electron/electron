@@ -1,0 +1,97 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Vasiliev <vasilvv@chromium.org>
+Date: Wed, 21 Dec 2022 17:26:42 +0000
+Subject: Ensure clean destruction of network::WebTransport
+
+Once the destruction of the object begins, we should not process any
+callbacks, nor should we attempt to reset the streams on a connection
+that is already being closed.
+
+Bug: 1376354
+Change-Id: Ib49e0ce0b177062cccd0e52368782e291cf8166c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4117501
+Reviewed-by: Eric Orth <ericorth@chromium.org>
+Commit-Queue: Victor Vasiliev <vasilvv@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1085965}
+
+diff --git a/services/network/web_transport.cc b/services/network/web_transport.cc
+index fd62b83d43052d9d588a211b59e46a6c25ffeb76..534954181abcd7c4cf11eade64a2aa97c62785cc 100644
+--- a/services/network/web_transport.cc
++++ b/services/network/web_transport.cc
+@@ -177,7 +177,7 @@ class WebTransport::Stream final {
+ 
+   ~Stream() {
+     auto* stream = incoming_ ? incoming_.get() : outgoing_.get();
+-    if (!stream) {
++    if (!stream || transport_->closing_ || transport_->torn_down_) {
+       return;
+     }
+     stream->MaybeResetDueToStreamObjectGone();
+@@ -399,7 +399,10 @@ WebTransport::WebTransport(
+   transport_->Connect();
+ }
+ 
+-WebTransport::~WebTransport() = default;
++WebTransport::~WebTransport() {
++  // Ensure that we ignore all callbacks while mid-destruction.
++  torn_down_ = true;
++}
+ 
+ void WebTransport::SendDatagram(base::span<const uint8_t> data,
+                                 base::OnceCallback<void(bool)> callback) {
+diff --git a/services/network/web_transport_unittest.cc b/services/network/web_transport_unittest.cc
+index ffac5c19f9d154b91eb6aeac1e19a62277e4e7e8..46deb561091232fe64950be01e9157c8d891f111 100644
+--- a/services/network/web_transport_unittest.cc
++++ b/services/network/web_transport_unittest.cc
+@@ -611,6 +611,51 @@ TEST_F(WebTransportTest, EchoOnUnidirectionalStreams) {
+   EXPECT_EQ(0u, resets_sent.size());
+ }
+ 
++TEST_F(WebTransportTest, DeleteClientWithStreamsOpen) {
++  base::RunLoop run_loop_for_handshake;
++  mojo::PendingRemote<mojom::WebTransportHandshakeClient> handshake_client;
++  TestHandshakeClient test_handshake_client(
++      handshake_client.InitWithNewPipeAndPassReceiver(),
++      run_loop_for_handshake.QuitClosure());
++
++  CreateWebTransport(GetURL("/echo"),
++                     url::Origin::Create(GURL("https://example.org/")),
++                     std::move(handshake_client));
++
++  run_loop_for_handshake.Run();
++
++  ASSERT_TRUE(test_handshake_client.has_seen_connection_establishment());
++
++  TestClient client(test_handshake_client.PassClientReceiver());
++  mojo::Remote<mojom::WebTransport> transport_remote(
++      test_handshake_client.PassTransport());
++
++  constexpr int kNumStreams = 10;
++  auto writable_for_outgoing =
++      std::make_unique<mojo::ScopedDataPipeProducerHandle[]>(kNumStreams);
++  for (int i = 0; i < kNumStreams; i++) {
++    const MojoCreateDataPipeOptions options = {
++        sizeof(options), MOJO_CREATE_DATA_PIPE_FLAG_NONE, 1, 4 * 1024};
++    mojo::ScopedDataPipeConsumerHandle readable_for_outgoing;
++    ASSERT_EQ(MOJO_RESULT_OK,
++              mojo::CreateDataPipe(&options, writable_for_outgoing[i],
++                                   readable_for_outgoing));
++    base::RunLoop run_loop_for_stream_creation;
++    bool stream_created;
++    transport_remote->CreateStream(
++        std::move(readable_for_outgoing),
++        /*writable=*/{},
++        base::BindLambdaForTesting([&](bool b, uint32_t /*id*/) {
++          stream_created = b;
++          run_loop_for_stream_creation.Quit();
++        }));
++    run_loop_for_stream_creation.Run();
++    ASSERT_TRUE(stream_created);
++  }
++
++  // Keep the streams open so that they are closed via destructor.
++}
++
+ // crbug.com/1129847: disabled because it is flaky.
+ TEST_F(WebTransportTest, DISABLED_EchoOnBidirectionalStream) {
+   base::RunLoop run_loop_for_handshake;
