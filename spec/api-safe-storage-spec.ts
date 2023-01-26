@@ -2,8 +2,8 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
-import { emittedOnce } from './events-helpers';
-import { ifdescribe } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 import * as fs from 'fs-extra';
 
 /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops

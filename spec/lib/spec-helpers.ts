@@ -72,7 +72,7 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp (extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, 'fixtures', 'apps', 'remote-control');
+  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
   const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
   appProcess.stderr.on('data', d => {
     process.stderr.write(d);

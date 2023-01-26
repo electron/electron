@@ -1,7 +1,7 @@
 import { autoUpdater } from 'electron/main';
 import { expect } from 'chai';
-import { ifit, ifdescribe } from './spec-helpers';
-import { emittedOnce } from './events-helpers';
+import { ifit, ifdescribe } from './lib/spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
 
 ifdescribe(!process.mas)('autoUpdater module', function () {
   describe('checkForUpdates', function () {

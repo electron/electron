@@ -1,9 +1,9 @@
 import { EventEmitter } from 'events';
 import { expect } from 'chai';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { defer } from './lib/spec-helpers';
 import * as path from 'path';
 import * as http from 'http';
 import { AddressInfo } from 'net';

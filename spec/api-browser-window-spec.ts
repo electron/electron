@@ -7,10 +7,10 @@ import * as http from 'http';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
-import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
-import { ifit, ifdescribe, defer, delay } from './spec-helpers';
-import { closeWindow, closeAllWindows } from './window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './screen-helpers';
+import { emittedOnce, emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { ifit, ifdescribe, defer, delay } from './lib/spec-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');

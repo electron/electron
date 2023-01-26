@@ -6,8 +6,8 @@ import * as path from 'path';
 import * as ChildProcess from 'child_process';
 import { session, net } from 'electron/main';
 import { Socket, AddressInfo } from 'net';
-import { ifit } from './spec-helpers';
-import { emittedOnce } from './events-helpers';
+import { ifit } from './lib/spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
 
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');

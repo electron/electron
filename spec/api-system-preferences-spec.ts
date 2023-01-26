@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { systemPreferences } from 'electron/main';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 
 describe('systemPreferences module', () => {
   ifdescribe(process.platform === 'win32')('systemPreferences.getAccentColor', () => {

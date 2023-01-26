@@ -1,6 +1,6 @@
 import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
 import { expect } from 'chai';
-import { closeAllWindows } from './window-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 const { roleList, execute } = require('../lib/browser/api/menu-item-roles');
 
 describe('MenuItems', () => {
