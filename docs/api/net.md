@@ -65,8 +65,8 @@ requests according to the specified protocol scheme in the `options` object.
 
 ### `net.fetch(input[, init])`
 
-* `input` RequestInfo
-* `init` RequestInit (optional)
+* `input` string | [Request](https://nodejs.org/api/globals.html#request)
+* `init` [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/fetch#options) (optional)
 
 Returns `Promise<Response>`.
 
