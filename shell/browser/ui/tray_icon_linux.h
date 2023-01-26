@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
-#define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
+#ifndef ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_LINUX_H_
+#define ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_LINUX_H_
 
 #include <memory>
 #include <string>
@@ -15,10 +15,12 @@ class StatusIconLinuxDbus;
 
 namespace electron {
 
-class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
+class StatusIconGtk;
+
+class TrayIconLinux : public TrayIcon, public ui::StatusIconLinux::Delegate {
  public:
-  TrayIconGtk();
-  ~TrayIconGtk() override;
+  TrayIconLinux();
+  ~TrayIconLinux() override;
 
   // TrayIcon:
   void SetImage(const gfx::Image& image) override;
@@ -28,20 +30,22 @@ class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
   // ui::StatusIconLinux::Delegate
   void OnClick() override;
   bool HasClickAction() override;
-  // The following four methods are only used by StatusIconLinuxDbus, which we
-  // aren't yet using, so they are given stub implementations.
   const gfx::ImageSkia& GetImage() const override;
   const std::u16string& GetToolTip() const override;
   ui::MenuModel* GetMenuModel() const override;
   void OnImplInitializationFailed() override;
 
  private:
-  enum StatusIconType {
-    kTypeDbus,
-    kTypeNone,
+  enum class StatusIconType {
+    kDbus,
+    kGtk,
+    kNone,
   };
 
-  scoped_refptr<StatusIconLinuxDbus> status_icon_;
+  ui::StatusIconLinux* GetStatusIcon();
+
+  scoped_refptr<StatusIconLinuxDbus> status_icon_dbus_;
+  std::unique_ptr<StatusIconGtk> status_icon_gtk_;
   StatusIconType status_icon_type_;
 
   gfx::ImageSkia image_;
@@ -51,4 +55,4 @@ class TrayIconGtk : public TrayIcon, public ui::StatusIconLinux::Delegate {
 
 }  // namespace electron
 
-#endif  // ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_GTK_H_
+#endif  // ELECTRON_SHELL_BROWSER_UI_TRAY_ICON_LINUX_H_
