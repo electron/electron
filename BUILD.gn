@@ -631,8 +631,6 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/certificate_manager_model.cc",
       "shell/browser/certificate_manager_model.h",
-      "shell/browser/ui/gtk/menu_util.cc",
-      "shell/browser/ui/gtk/menu_util.h",
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",
     ]
