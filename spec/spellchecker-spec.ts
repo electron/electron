@@ -5,9 +5,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { closeWindow } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { ifit, ifdescribe, delay } from './spec-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifit, ifdescribe, delay } from './lib/spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');

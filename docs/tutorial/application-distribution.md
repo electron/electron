@@ -55,7 +55,7 @@ will then be your distribution to deliver to users.
 ### With an app source code archive (asar)
 
 Instead of shipping your app by copying all of its source files, you can
-package your app into an [asar] archive to improve the performance of reading
+package your app into an [asar][] archive to improve the performance of reading
 files on platforms like Windows, if you are not already using a bundler such
 as Parcel or Webpack.
 

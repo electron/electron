@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('ipcRenderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures');

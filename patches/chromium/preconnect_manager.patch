@@ -10,7 +10,7 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 48b500a8ead699ef9d30d3219f41a913711bc4a0..f3e9c87c5ce29a4e9dc8204413f47a761408a373 100644
+index de39505b1e515559182b6b3f25ffbe96f0b8262b..a040d30dd35f3f6c4dda58fb9d2e3e537ecbb9f7 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -10,9 +10,11 @@
@@ -46,7 +46,7 @@ index 48b500a8ead699ef9d30d3219f41a913711bc4a0..f3e9c87c5ce29a4e9dc8204413f47a76
  PreconnectedRequestStats::PreconnectedRequestStats(const url::Origin& origin,
                                                     bool was_preconnected)
      : origin(origin), was_preconnected(was_preconnected) {}
-@@ -83,11 +99,14 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
+@@ -83,12 +99,15 @@ PreconnectManager::PreconnectManager(base::WeakPtr<Delegate> delegate,
  PreconnectManager::~PreconnectManager() = default;
  
  bool PreconnectManager::IsEnabled() {
@@ -55,7 +55,8 @@ index 48b500a8ead699ef9d30d3219f41a913711bc4a0..f3e9c87c5ce29a4e9dc8204413f47a76
    if (!profile) {
      return false;
    }
-   return prefetch::IsSomePreloadingEnabled(*profile->GetPrefs());
+   return prefetch::IsSomePreloadingEnabled(*profile->GetPrefs()) ==
+          content::PreloadingEligibility::kEligible;
 +#endif
 +  return true;
  }

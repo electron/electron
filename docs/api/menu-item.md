@@ -25,7 +25,7 @@ See [`Menu`](menu.md) for examples.
   * `icon` ([NativeImage](native-image.md) | string) (optional)
   * `enabled` boolean (optional) - If false, the menu item will be greyed out and
     unclickable.
-  * `acceleratorWorksWhenHidden` boolean (optional) _macOS_ - default is `true`, and when `false` will prevent the accelerator from triggering the item if the item is not visible`.
+  * `acceleratorWorksWhenHidden` boolean (optional) _macOS_ - default is `true`, and when `false` will prevent the accelerator from triggering the item if the item is not visible.
   * `visible` boolean (optional) - If false, the menu item will be entirely hidden.
   * `checked` boolean (optional) - Should only be specified for `checkbox` or `radio` type
     menu items.

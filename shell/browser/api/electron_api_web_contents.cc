@@ -641,6 +641,7 @@ WebContents::Type GetTypeFromViewType(extensions::mojom::ViewType view_type) {
     case extensions::mojom::ViewType::kExtensionGuest:
     case extensions::mojom::ViewType::kTabContents:
     case extensions::mojom::ViewType::kOffscreenDocument:
+    case extensions::mojom::ViewType::kExtensionSidePanel:
     case extensions::mojom::ViewType::kInvalid:
       return WebContents::Type::kRemote;
   }
@@ -1522,13 +1523,15 @@ void WebContents::HandleNewRenderFrame(
   // Set the background color of RenderWidgetHostView.
   auto* web_preferences = WebContentsPreferences::From(web_contents());
   if (web_preferences) {
-    absl::optional<SkColor> maybe_color = web_preferences->GetBackgroundColor();
-    web_contents()->SetPageBaseBackgroundColor(maybe_color);
-
+    auto maybe_color = web_preferences->GetBackgroundColor();
     bool guest = IsGuest() || type_ == Type::kBrowserView;
-    SkColor color =
+
+    // If webPreferences has no color stored we need to explicitly set guest
+    // webContents background color to transparent.
+    auto bg_color =
         maybe_color.value_or(guest ? SK_ColorTRANSPARENT : SK_ColorWHITE);
-    SetBackgroundColor(rwhv, color);
+    web_contents()->SetPageBaseBackgroundColor(bg_color);
+    SetBackgroundColor(rwhv, bg_color);
   }
 
   if (!background_throttling_)
@@ -3755,8 +3758,8 @@ void WebContents::DevToolsAddFileSystem(
   base::Value::Dict file_system_value = CreateFileSystemValue(file_system);
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
-  DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->SetKey(path.AsUTF8Unsafe(), base::Value(type));
+  ScopedDictPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
+  update->Set(path.AsUTF8Unsafe(), type);
   std::string error = "";  // No error
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "fileSystemAdded", base::Value(error),
@@ -3773,8 +3776,8 @@ void WebContents::DevToolsRemoveFileSystem(
       file_system_path);
 
   auto* pref_service = GetPrefService(GetDevToolsWebContents());
-  DictionaryPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
-  update.Get()->RemoveKey(path);
+  ScopedDictPrefUpdate update(pref_service, prefs::kDevToolsFileSystemPaths);
+  update->Remove(path);
 
   inspectable_web_contents_->CallClientFunction(
       "DevToolsAPI", "fileSystemRemoved", base::Value(path));
@@ -3794,8 +3797,7 @@ void WebContents::DevToolsIndexPath(
   std::unique_ptr<base::Value> parsed_excluded_folders =
       base::JSONReader::ReadDeprecated(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
-    for (const base::Value& folder_path :
-         parsed_excluded_folders->GetListDeprecated()) {
+    for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
       if (folder_path.is_string())
         excluded_folders.push_back(folder_path.GetString());
     }
@@ -3821,6 +3823,10 @@ void WebContents::DevToolsStopIndexing(int request_id) {
     return;
   it->second->Stop();
   devtools_indexing_jobs_.erase(it);
+}
+
+void WebContents::DevToolsOpenInNewTab(const std::string& url) {
+  Emit("devtools-open-url", url);
 }
 
 void WebContents::DevToolsSearchInPath(int request_id,

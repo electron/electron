@@ -132,13 +132,8 @@ new Promise((resolve, reject) => {
     const currentBranch = await getCurrentBranch();
 
     if (isNightlyElectronVersion) {
-      // TODO(main-migration): Simplify once main branch is renamed.
-      if (currentBranch === 'master' || currentBranch === 'main') {
-        // Nightlies get published to their own module, so they should be tagged as latest
-        npmTag = 'latest';
-      } else {
-        npmTag = `nightly-${currentBranch}`;
-      }
+      // Nightlies get published to their own module, so they should be tagged as latest
+      npmTag = currentBranch === 'main' ? 'latest' : `nightly-${currentBranch}`;
 
       const currentJson = JSON.parse(fs.readFileSync(path.join(tempDir, 'package.json'), 'utf8'));
       currentJson.name = 'electron-nightly';
@@ -149,7 +144,7 @@ new Promise((resolve, reject) => {
         JSON.stringify(currentJson, null, 2)
       );
     } else {
-      if (currentBranch === 'master' || currentBranch === 'main') {
+      if (currentBranch === 'main') {
         // This should never happen, main releases should be nightly releases
         // this is here just-in-case
         throw new Error('Unreachable release phase, can\'t tag a non-nightly release on the main branch');

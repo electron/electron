@@ -61,6 +61,10 @@ class ElectronHidDelegate : public content::HidDelegate,
   void OnDeviceChanged(const device::mojom::HidDeviceInfo&) override;
   void OnHidManagerConnectionError() override;
   void OnHidChooserContextShutdown() override;
+  void IncrementConnectionCount(content::BrowserContext* browser_context,
+                                const url::Origin& origin) override {}
+  void DecrementConnectionCount(content::BrowserContext* browser_context,
+                                const url::Origin& origin) override {}
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 

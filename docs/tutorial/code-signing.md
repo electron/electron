@@ -40,9 +40,9 @@ your app isn't doing anything to endanger its users.
 To start the process, ensure that you fulfill the requirements for signing and
 notarizing your app:
 
-1. Enroll in the [Apple Developer Program] (requires an annual fee)
-2. Download and install [Xcode] - this requires a computer running macOS
-3. Generate, download, and install [signing certificates]
+1. Enroll in the [Apple Developer Program][] (requires an annual fee)
+2. Download and install [Xcode][] - this requires a computer running macOS
+3. Generate, download, and install [signing certificates][]
 
 Electron's ecosystem favors configuration and freedom, so there are multiple
 ways to get your application signed and notarized.
@@ -51,8 +51,8 @@ ways to get your application signed and notarized.
 
 If you're using Electron's favorite build tool, getting your application signed
 and notarized requires a few additions to your configuration. [Forge](https://electronforge.io) is a
-collection of the official Electron tools, using [`electron-packager`],
-[`@electron/osx-sign`], and [`@electron/notarize`] under the hood.
+collection of the official Electron tools, using [`electron-packager`][],
+[`@electron/osx-sign`][], and [`@electron/notarize`][] under the hood.
 
 Detailed instructions on how to configure your application can be found in the
 [Signing macOS Apps](https://www.electronforge.io/guides/code-signing/code-signing-macos) guide in
@@ -61,8 +61,8 @@ the Electron Forge docs.
 ### Using Electron Packager
 
 If you're not using an integrated build pipeline like Forge, you
-are likely using [`electron-packager`], which includes [`@electron/osx-sign`] and
-[`@electron/notarize`].
+are likely using [`electron-packager`][], which includes [`@electron/osx-sign`][] and
+[`@electron/notarize`][].
 
 If you're using Packager's API, you can pass [in configuration that both signs
 and notarizes your application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
@@ -82,7 +82,7 @@ packager({
 
 ### Signing Mac App Store applications
 
-See the [Mac App Store Guide].
+See the [Mac App Store Guide][].
 
 ## Signing Windows builds
 
@@ -110,7 +110,7 @@ Electron Forge is the recommended way to sign your `Squirrel.Windows` and `WiX M
 
 ### Using electron-winstaller (Squirrel.Windows)
 
-[`electron-winstaller`] is a package that can generate Squirrel.Windows installers for your
+[`electron-winstaller`][] is a package that can generate Squirrel.Windows installers for your
 Electron app. This is the tool used under the hood by Electron Forge's
 [Squirrel.Windows Maker][maker-squirrel]. If you're not using Electron Forge and want to use
 `electron-winstaller` directly, use the `certificateFile` and `certificatePassword` configuration
@@ -135,16 +135,16 @@ try {
 }
 ```
 
-For full configuration options, check out the [`electron-winstaller`] repository!
+For full configuration options, check out the [`electron-winstaller`][] repository!
 
 ### Using electron-wix-msi (WiX MSI)
 
-[`electron-wix-msi`] is a package that can generate MSI installers for your
+[`electron-wix-msi`][] is a package that can generate MSI installers for your
 Electron app. This is the tool used under the hood by Electron Forge's [MSI Maker][maker-msi].
 
 If you're not using Electron Forge and want to use `electron-wix-msi` directly, use the
 `certificateFile` and `certificatePassword` configuration options
-or pass in parameters directly to [SignTool.exe] with the `signWithParams` option.
+or pass in parameters directly to [SignTool.exe][] with the `signWithParams` option.
 
 ```js {12-13}
 import { MSICreator } from 'electron-wix-msi'
@@ -177,7 +177,7 @@ supportBinaries.forEach(async (binary) => {
 await msiCreator.compile()
 ```
 
-For full configuration options, check out the [`electron-wix-msi`] repository!
+For full configuration options, check out the [`electron-wix-msi`][] repository!
 
 ### Using Electron Builder
 
@@ -186,10 +186,9 @@ can find [its documentation here](https://www.electron.build/code-signing).
 
 ### Signing Windows Store applications
 
-See the [Windows Store Guide].
+See the [Windows Store Guide][].
 
 [apple developer program]: https://developer.apple.com/programs/
-[`electron-forge`]: https://github.com/electron/forge
 [`@electron/osx-sign`]: https://github.com/electron/osx-sign
 [`electron-packager`]: https://github.com/electron/electron-packager
 [`@electron/notarize`]: https://github.com/electron/notarize

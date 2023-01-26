@@ -3,10 +3,10 @@ import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce, emittedNTimes } from './events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce, emittedNTimes } from './lib/events-helpers';
 import { AddressInfo } from 'net';
-import { defer, ifit, waitUntil } from './spec-helpers';
+import { defer, ifit, waitUntil } from './lib/spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

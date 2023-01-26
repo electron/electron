@@ -68,7 +68,7 @@ app.whenReady().then(async () => {
   // 1. test completes,
   // 2. `defer()`-ed methods run, in reverse order,
   // 3. regular `afterEach` hooks run.
-  const { runCleanupFunctions } = require('./spec-helpers');
+  const { runCleanupFunctions } = require('./lib/spec-helpers');
   mocha.suite.on('suite', function attach (suite) {
     suite.afterEach('cleanup', runCleanupFunctions);
     suite.on('suite', attach);

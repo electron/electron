@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeAllWindows } from './window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 import * as https from 'https';
 import * as http from 'http';
 import * as path from 'path';
@@ -10,7 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, defer, delay, itremote } from './spec-helpers';
+import { ifit, ifdescribe, defer, delay, itremote } from './lib/spec-helpers';
 import { AddressInfo } from 'net';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
@@ -2496,6 +2496,54 @@ describe('navigator.serial', () => {
   });
 });
 
+describe('window.getScreenDetails', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow({
+      show: false
+    });
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  const getScreenDetails: any = () => {
+    return w.webContents.executeJavaScript('window.getScreenDetails().then(data => data.screens).catch(err => err.message)', true);
+  };
+
+  it('returns screens when a PermissionRequestHandler is not defined', async () => {
+    const screens = await getScreenDetails();
+    expect(screens).to.not.equal('Read permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'window-management') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const screens = await getScreenDetails();
+    expect(screens).to.equal('Permission denied.');
+  });
+
+  it('returns screens when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'window-management') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const screens = await getScreenDetails();
+    expect(screens).to.not.equal('Permission denied.');
+  });
+});
+
 describe('navigator.clipboard', () => {
   let w: BrowserWindow;
   before(async () => {
@@ -3023,7 +3071,7 @@ describe('navigator.usb', () => {
     if (haveDevices) {
       const grantedDevices = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
       if (grantedDevices.length > 0) {
-        const deletedDevice = await w.webContents.executeJavaScript(`
+        const deletedDevice: Electron.USBDevice = await w.webContents.executeJavaScript(`
           navigator.usb.getDevices().then(devices => {
             devices[0].forget();
             return {
@@ -3035,7 +3083,7 @@ describe('navigator.usb', () => {
         `);
         const grantedDevices2 = await w.webContents.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevices2.length).to.be.lessThan(grantedDevices.length);
-        if (deletedDevice.name !== '' && deletedDevice.productId && deletedDevice.vendorId) {
+        if (deletedDevice.productName !== '' && deletedDevice.productId && deletedDevice.vendorId) {
           expect(deletedDeviceFromEvent).to.include(deletedDevice);
         }
       }

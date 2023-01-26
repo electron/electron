@@ -4,9 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeAllWindows } from './window-helpers';
-import { ifdescribe, delay, defer, waitUntil } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, delay, defer, waitUntil } from './lib/spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');

@@ -13,7 +13,7 @@ This patch can be removed should we choose to support chrome.fileSystem
 or support it enough to fix the crash.
 
 diff --git a/chrome/browser/resources/pdf/pdf_viewer.ts b/chrome/browser/resources/pdf/pdf_viewer.ts
-index cedb526bf10aa6ad93baa79be0f49cde2b0fdae4..d22e9014af110d927489c93140f21f07bf03c6c1 100644
+index 6d2e7f812c5ac05153fdaa3634470c7e2e22cc82..8d7fe24747984e1ac2a2b74c180f18df1427535f 100644
 --- a/chrome/browser/resources/pdf/pdf_viewer.ts
 +++ b/chrome/browser/resources/pdf/pdf_viewer.ts
 @@ -879,26 +879,12 @@ export class PdfViewerElement extends PdfViewerBaseElement {

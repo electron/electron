@@ -1,5 +1,5 @@
 import type { WebViewImpl } from '@electron/internal/renderer/web-view/web-view-impl';
-import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
+import { WEB_VIEW_ATTRIBUTES, WEB_VIEW_ERROR_MESSAGES } from '@electron/internal/renderer/web-view/web-view-constants';
 
 const resolveURL = function (url?: string | null) {
   return url ? new URL(url, location.href).href : '';
@@ -76,7 +76,7 @@ export class PartitionAttribute extends WebViewAttribute {
   public validPartitionId = true
 
   constructor (public webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.PARTITION, webViewImpl);
   }
 
   public handleMutation = (oldValue: any, newValue: any) => {
@@ -84,13 +84,13 @@ export class PartitionAttribute extends WebViewAttribute {
 
     // The partition cannot change if the webview has already navigated.
     if (!this.webViewImpl.beforeFirstNavigation) {
-      console.error(WEB_VIEW_CONSTANTS.ERROR_MSG_ALREADY_NAVIGATED);
+      console.error(WEB_VIEW_ERROR_MESSAGES.ALREADY_NAVIGATED);
       this.setValueIgnoreMutation(oldValue);
       return;
     }
     if (newValue === 'persist:') {
       this.validPartitionId = false;
-      console.error(WEB_VIEW_CONSTANTS.ERROR_MSG_INVALID_PARTITION_ATTRIBUTE);
+      console.error(WEB_VIEW_ERROR_MESSAGES.INVALID_PARTITION_ATTRIBUTE);
     }
   }
 }
@@ -100,7 +100,7 @@ export class SrcAttribute extends WebViewAttribute {
   public observer!: MutationObserver;
 
   constructor (public webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.SRC, webViewImpl);
     this.setupMutationObserver();
   }
 
@@ -162,7 +162,7 @@ export class SrcAttribute extends WebViewAttribute {
   }
 
   public parse () {
-    if (!this.webViewImpl.elementAttached || !(this.webViewImpl.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION) as PartitionAttribute).validPartitionId || !this.getValue()) {
+    if (!this.webViewImpl.elementAttached || !(this.webViewImpl.attributes.get(WEB_VIEW_ATTRIBUTES.PARTITION) as PartitionAttribute).validPartitionId || !this.getValue()) {
       return;
     }
     if (this.webViewImpl.guestInstanceId == null) {
@@ -176,12 +176,12 @@ export class SrcAttribute extends WebViewAttribute {
     // Navigate to |this.src|.
     const opts: Record<string, string> = {};
 
-    const httpreferrer = this.webViewImpl.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER)!.getValue();
+    const httpreferrer = this.webViewImpl.attributes.get(WEB_VIEW_ATTRIBUTES.HTTPREFERRER)!.getValue();
     if (httpreferrer) {
       opts.httpReferrer = httpreferrer;
     }
 
-    const useragent = this.webViewImpl.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT)!.getValue();
+    const useragent = this.webViewImpl.attributes.get(WEB_VIEW_ATTRIBUTES.USERAGENT)!.getValue();
     if (useragent) {
       opts.userAgent = useragent;
     }
@@ -196,21 +196,21 @@ export class SrcAttribute extends WebViewAttribute {
 // Attribute specifies HTTP referrer.
 class HttpReferrerAttribute extends WebViewAttribute {
   constructor (webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.HTTPREFERRER, webViewImpl);
   }
 }
 
 // Attribute specifies user agent
 class UserAgentAttribute extends WebViewAttribute {
   constructor (webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.USERAGENT, webViewImpl);
   }
 }
 
 // Attribute that set preload script.
 class PreloadAttribute extends WebViewAttribute {
   constructor (webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.PRELOAD, webViewImpl);
   }
 
   public getValue () {
@@ -222,7 +222,7 @@ class PreloadAttribute extends WebViewAttribute {
     const protocol = preload.substr(0, 5);
 
     if (protocol !== 'file:') {
-      console.error(WEB_VIEW_CONSTANTS.ERROR_MSG_INVALID_PRELOAD_ATTRIBUTE);
+      console.error(WEB_VIEW_ERROR_MESSAGES.INVALID_PRELOAD_ATTRIBUTE);
       preload = '';
     }
 
@@ -233,39 +233,39 @@ class PreloadAttribute extends WebViewAttribute {
 // Attribute that specifies the blink features to be enabled.
 class BlinkFeaturesAttribute extends WebViewAttribute {
   constructor (webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.BLINKFEATURES, webViewImpl);
   }
 }
 
 // Attribute that specifies the blink features to be disabled.
 class DisableBlinkFeaturesAttribute extends WebViewAttribute {
   constructor (webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.DISABLEBLINKFEATURES, webViewImpl);
   }
 }
 
 // Attribute that specifies the web preferences to be enabled.
 class WebPreferencesAttribute extends WebViewAttribute {
   constructor (webViewImpl: WebViewImpl) {
-    super(WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES, webViewImpl);
+    super(WEB_VIEW_ATTRIBUTES.WEBPREFERENCES, webViewImpl);
   }
 }
 
 // Sets up all of the webview attributes.
 export function setupWebViewAttributes (self: WebViewImpl) {
   return new Map<string, WebViewAttribute>([
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION, new PartitionAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC, new SrcAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER, new HttpReferrerAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT, new UserAgentAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION, self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES, self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS, self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY, self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, new BooleanAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS, self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD, new PreloadAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES, new BlinkFeaturesAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(self)],
-    [WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES, new WebPreferencesAttribute(self)]
+    [WEB_VIEW_ATTRIBUTES.PARTITION, new PartitionAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.SRC, new SrcAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.HTTPREFERRER, new HttpReferrerAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.USERAGENT, new UserAgentAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.NODEINTEGRATION, new BooleanAttribute(WEB_VIEW_ATTRIBUTES.NODEINTEGRATION, self)],
+    [WEB_VIEW_ATTRIBUTES.NODEINTEGRATIONINSUBFRAMES, new BooleanAttribute(WEB_VIEW_ATTRIBUTES.NODEINTEGRATIONINSUBFRAMES, self)],
+    [WEB_VIEW_ATTRIBUTES.PLUGINS, new BooleanAttribute(WEB_VIEW_ATTRIBUTES.PLUGINS, self)],
+    [WEB_VIEW_ATTRIBUTES.DISABLEWEBSECURITY, new BooleanAttribute(WEB_VIEW_ATTRIBUTES.DISABLEWEBSECURITY, self)],
+    [WEB_VIEW_ATTRIBUTES.ALLOWPOPUPS, new BooleanAttribute(WEB_VIEW_ATTRIBUTES.ALLOWPOPUPS, self)],
+    [WEB_VIEW_ATTRIBUTES.PRELOAD, new PreloadAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.BLINKFEATURES, new BlinkFeaturesAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.DISABLEBLINKFEATURES, new DisableBlinkFeaturesAttribute(self)],
+    [WEB_VIEW_ATTRIBUTES.WEBPREFERENCES, new WebPreferencesAttribute(self)]
   ]);
 }

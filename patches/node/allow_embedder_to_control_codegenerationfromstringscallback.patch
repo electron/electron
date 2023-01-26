@@ -8,10 +8,10 @@ This is needed to blend Blink and Node's code generation policy.
 This should be upstreamed.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index b6981c37d5b286e22f24d11751eb05f72ca27619..c4a3a54753767e7686a0e32996bcda0c90f659a7 100644
+index c0c422e969543dcd570dabfd8ff0755abe37face..4f14b308d14f3653c8646345a5b375014a51851f 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -259,11 +259,15 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -267,11 +267,15 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
  void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
    isolate->SetMicrotasksPolicy(s.policy);
  
@@ -30,10 +30,10 @@ index b6981c37d5b286e22f24d11751eb05f72ca27619..c4a3a54753767e7686a0e32996bcda0c
    Mutex::ScopedLock lock(node::per_process::cli_options_mutex);
    if (per_process::cli_options->get_per_isolate_options()
 diff --git a/src/node.h b/src/node.h
-index bee494f9da8470530ee9ec58958f8f2c7ce6a302..387ce8e5edf6524db170e2d46ef501a1cd956d98 100644
+index 6ff7527d4fe4d126bda80615ffed75f77f700b86..5a849f047feca5d4d101c21c125e1c0500150077 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -461,6 +461,8 @@ struct IsolateSettings {
+@@ -463,6 +463,8 @@ struct IsolateSettings {
    v8::PromiseRejectCallback promise_reject_callback = nullptr;
    v8::AllowWasmCodeGenerationCallback
        allow_wasm_code_generation_callback = nullptr;

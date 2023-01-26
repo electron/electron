@@ -4,7 +4,7 @@ This page defines some terminology that is commonly used in Electron development
 
 ### ASAR
 
-ASAR stands for Atom Shell Archive Format. An [asar] archive is a simple
+ASAR stands for Atom Shell Archive Format. An [asar][] archive is a simple
 `tar`-like format that concatenates files into a single file. Electron can read
 arbitrary files from it without unpacking the whole file.
 
@@ -20,7 +20,7 @@ macOS implement their own version of code signing. As a desktop app developer,
 it's important that you sign your code if you plan on distributing it to the
 general public.
 
-For more information, read the [Code Signing] tutorial.
+For more information, read the [Code Signing][] tutorial.
 
 ### context isolation
 
@@ -30,7 +30,7 @@ contents in your renderer process. With context isolation enabled, the
 only way to expose APIs from your preload script is through the
 `contextBridge` API.
 
-For more information, read the [Context Isolation] tutorial.
+For more information, read the [Context Isolation][] tutorial.
 
 See also: [preload script](#preload-script), [renderer process](#renderer-process)
 
@@ -83,7 +83,7 @@ See also: [process](#process), [renderer process](#renderer-process)
 ### MAS
 
 Acronym for Apple's Mac App Store. For details on submitting your app to the
-MAS, see the [Mac App Store Submission Guide].
+MAS, see the [Mac App Store Submission Guide][].
 
 ### Mojo
 
@@ -105,7 +105,7 @@ More information can be found in [Microsoft's documentation][msi].
 
 ### native modules
 
-Native modules (also called [addons] in
+Native modules (also called [addons][] in
 Node.js) are modules written in C or C++ that can be loaded into Node.js or
 Electron using the require() function, and used as if they were an
 ordinary Node.js module. They are used primarily to provide an interface
@@ -116,7 +116,7 @@ likely to use a different V8 version from the Node binary installed in your
 system, you have to manually specify the location of Electron’s headers when
 building native modules.
 
-For more information, read the [Native Node Modules] tutorial.
+For more information, read the [Native Node Modules][] tutorial.
 
 ### notarization
 
@@ -132,7 +132,7 @@ OSR (offscreen rendering) can be used for loading heavy page in
 background and then displaying it after (it will be much faster).
 It allows you to render page without showing it on screen.
 
-For more information, read the [Offscreen Rendering] tutorial.
+For more information, read the [Offscreen Rendering][] tutorial.
 
 ### preload script
 
@@ -146,7 +146,7 @@ See also: [renderer process](#renderer-process), [context isolation](#context-is
 ### process
 
 A process is an instance of a computer program that is being executed. Electron
-apps that make use of the [main] and one or many [renderer] process are
+apps that make use of the [main][] and one or many [renderer][] process are
 actually running several programs simultaneously.
 
 In Node.js and Electron, each running process has a `process` object. This
@@ -169,14 +169,14 @@ See also: [process](#process), [main process](#main-process)
 The sandbox is a security feature inherited from Chromium that restricts
 your renderer processes to a limited set of permissions.
 
-For more information, read the [Process Sandboxing] tutorial.
+For more information, read the [Process Sandboxing][] tutorial.
 
 See also: [process](#process)
 
 ### Squirrel
 
 Squirrel is an open-source framework that enables Electron apps to update
-automatically as new versions are released. See the [autoUpdater] API for
+automatically as new versions are released. See the [autoUpdater][] API for
 info about getting started with Squirrel.
 
 ### userland
@@ -239,6 +239,4 @@ embedded content.
 [offscreen rendering]: tutorial/offscreen-rendering.md
 [process sandboxing]: tutorial/sandbox.md
 [renderer]: #renderer-process
-[userland]: #userland
 [UtilityProcess]: api/utility-process.md
-[v8]: #v8

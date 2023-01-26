@@ -217,7 +217,9 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   template <typename ReturnType>
   void DispatchToCallback(
       base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope(args_->isolate(), true);
+    gin_helper::MicrotasksScope microtasks_scope(
+        args_->isolate(),
+        args_->GetHolderCreationContext()->GetMicrotaskQueue(), true);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -226,7 +228,9 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope(args_->isolate(), true);
+    gin_helper::MicrotasksScope microtasks_scope(
+        args_->isolate(),
+        args_->GetHolderCreationContext()->GetMicrotaskQueue(), true);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 

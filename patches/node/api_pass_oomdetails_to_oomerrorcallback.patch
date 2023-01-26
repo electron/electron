@@ -25,7 +25,7 @@ index 323fc7d4ff635ca287ee241cee234da0600340a2..36ab78f739f3faecab47eead99f9aa3c
    if (location) {
      FPrintF(stderr, "FATAL ERROR: %s %s\n", location, message);
 diff --git a/src/node_errors.h b/src/node_errors.h
-index 5587c2348626102febe33a20ff45748a6eec61ad..6dbba32858dc82bc04171da7ee2a33a0b4dee791 100644
+index 926f54286ec72fda98a9a477ac8e22feef522291..f926cc1c70dd6f883c0729c46f09e10972ce6385 100644
 --- a/src/node_errors.h
 +++ b/src/node_errors.h
 @@ -21,7 +21,7 @@ void AppendExceptionLine(Environment* env,
