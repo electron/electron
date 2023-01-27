@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import * as dns from 'dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
