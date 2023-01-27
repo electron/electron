@@ -57,6 +57,8 @@ def main(target_file, target_cpu):
   v['node_module_version'] = int(args['node_module_version'])
   # Used by certain versions of node-gyp.
   v['build_v8_with_gn'] = 'false'
+  # Enable whole-program optimization for electron native modules.
+  v['node-with-ltcg'] = 'true'
 
   with open(target_file, 'w+') as f:
     f.write(pprint.pformat(config, indent=2))
