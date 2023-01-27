@@ -23,7 +23,8 @@ def run_node_configure(target_cpu):
   args += ['--openssl-no-asm']
 
   # Enable whole-program optimization for electron native modules.
-  args += ['--with-ltcg']
+  if sys.platform == "win32":
+    args += ['--with-ltcg']
   subprocess.check_call([sys.executable, configure] + args)
 
 def read_node_config_gypi():
