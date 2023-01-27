@@ -7,8 +7,7 @@ import { AddressInfo, Socket } from 'net';
 import { emittedOnce } from './lib/events-helpers';
 import { defer, delay } from './lib/spec-helpers';
 
-// See https://github.com/nodejs/node/issues/40702.
-dns.setDefaultResultOrder('ipv4first');
+net.setDefaultAutoSelectFamily(true);
 
 const kOneKiloByte = 1024;
 const kOneMegaByte = kOneKiloByte * kOneKiloByte;
