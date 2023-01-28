@@ -1,7 +1,7 @@
-From ca2b108a0f1ffed3efc69b0dcb5b6dd5020ec7cf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Harald Alvestrand <hta@chromium.org>
 Date: Wed, 18 Jan 2023 08:02:48 +0000
-Subject: [PATCH] [Merge M110] Delete PeerConnectionHandler in PeerConnection finalizer
+Subject: Delete PeerConnectionHandler in PeerConnection finalizer
 
 Also guard against removal of PC during PeerConnectionHandler
 call that may cause garbage collection.
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4176372
 Auto-Submit: Harald Alvestrand <hta@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5481@{#418}
 Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
----
 
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
-index 4445b80..5790ab64 100644
+index bcb9e9f13cfa525499023e369cefe0ed23f47abc..cf01e7144fc2901c88f320ea7b1c093dfb6ab8b1 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
-@@ -666,10 +666,11 @@
+@@ -819,10 +819,11 @@ RTCPeerConnection::~RTCPeerConnection() {
  }
  
  void RTCPeerConnection::Dispose() {
@@ -40,10 +39,10 @@ index 4445b80..5790ab64 100644
  }
  
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
-index 711b523b..a2317ac19 100644
+index 7662f2cda29b6265705a4f83dbf76ccaf50ab576..48bd8a4eee90b07a38c7f09f260da30c9e7e34bc 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
-@@ -706,6 +706,8 @@
+@@ -771,6 +771,8 @@ class RTCPeerConnectionHandler::WebRtcSetDescriptionObserverImpl
      if (handler_) {
        handler_->OnModifySctpTransport(std::move(states.sctp_transport_state));
      }
@@ -52,7 +51,7 @@ index 711b523b..a2317ac19 100644
      if (handler_) {
        handler_->OnModifyTransceivers(
            states.signaling_state, std::move(states.transceiver_states),
-@@ -1057,6 +1059,8 @@
+@@ -1128,6 +1130,8 @@ bool RTCPeerConnectionHandler::Initialize(
    CHECK(!initialize_called_);
    initialize_called_ = true;
  
@@ -61,9 +60,9 @@ index 711b523b..a2317ac19 100644
    peer_connection_tracker_ = PeerConnectionTracker::From(*frame);
  
    configuration_ = server_configuration;
-@@ -1098,8 +1102,8 @@
+@@ -1165,8 +1169,8 @@ bool RTCPeerConnectionHandler::Initialize(
      peer_connection_tracker_->RegisterPeerConnection(this, configuration_,
-                                                      frame_);
+                                                      options, frame_);
    }
 -
 -  return true;
@@ -72,7 +71,7 @@ index 711b523b..a2317ac19 100644
  }
  
  bool RTCPeerConnectionHandler::InitializeForTest(
-@@ -2061,9 +2065,11 @@
+@@ -2229,9 +2233,11 @@ void RTCPeerConnectionHandler::OnSessionDescriptionsUpdated(
          pending_remote_description,
      std::unique_ptr<webrtc::SessionDescriptionInterface>
          current_remote_description) {
@@ -85,7 +84,7 @@ index 711b523b..a2317ac19 100644
        pending_local_description
            ? CreateWebKitSessionDescription(pending_local_description.get())
            : nullptr,
-@@ -2254,8 +2260,12 @@
+@@ -2552,8 +2558,12 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
                                                int sdp_mline_index,
                                                int component,
                                                int address_family) {
@@ -98,16 +97,16 @@ index 711b523b..a2317ac19 100644
    auto* platform_candidate = MakeGarbageCollected<RTCIceCandidatePlatform>(
        sdp, sdp_mid, sdp_mline_index);
    if (peer_connection_tracker_) {
-@@ -2264,7 +2274,7 @@
+@@ -2573,7 +2583,7 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
+     }
    }
- 
    if (!is_closed_)
 -    client_->DidGenerateICECandidate(platform_candidate);
 +    client_on_stack->DidGenerateICECandidate(platform_candidate);
  }
  
  void RTCPeerConnectionHandler::OnIceCandidateError(
-@@ -2276,7 +2286,6 @@
+@@ -2585,7 +2595,6 @@ void RTCPeerConnectionHandler::OnIceCandidateError(
      const String& error_text) {
    DCHECK(task_runner_->RunsTasksInCurrentSequence());
    TRACE_EVENT0("webrtc", "RTCPeerConnectionHandler::OnIceCandidateError");
