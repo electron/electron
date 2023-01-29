@@ -168,6 +168,9 @@ export const roleList: Record<RoleId, Role> = {
       window.setFullScreen(!window.isFullScreen());
     }
   },
+  showAllTabs: {
+    label: 'Show All Tabs'
+  },
   undo: {
     label: 'Undo',
     accelerator: 'CommandOrControl+Z',
@@ -286,7 +289,8 @@ export const roleList: Record<RoleId, Role> = {
       { role: 'zoomIn' },
       { role: 'zoomOut' },
       { type: 'separator' },
-      { role: 'togglefullscreen' }
+      { role: 'togglefullscreen' },
+      { role: 'ShowAllTabs' }
     ]
   },
   // Window submenu

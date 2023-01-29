@@ -393,6 +393,7 @@ describe('MenuItems', () => {
       expect(item.submenu!.items[6].role).to.equal('zoomout');
       expect(item.submenu!.items[7].type).to.equal('separator');
       expect(item.submenu!.items[8].role).to.equal('togglefullscreen');
+      expect(item.submenu!.items[9].role).to.equal('showAllTabs');
     });
 
     it('overrides default layout when submenu is specified', () => {
