@@ -49,6 +49,8 @@ environment:
 
 clone_folder: C:\projects\src\electron
 
+skip_branch_with_pr: true
+
 # the first failed job cancels other jobs and fails entire build
 matrix:
   fast_finish: true
@@ -128,6 +130,7 @@ for:
           }
       - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
       - cd src
+      - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
       - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
       - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
       - gn check out/Default //electron:electron_lib
