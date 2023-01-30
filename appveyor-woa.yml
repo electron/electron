@@ -51,6 +51,8 @@ environment:
 
 clone_folder: C:\projects\src\electron
 
+skip_branch_with_pr: true
+
 # the first failed job cancels other jobs and fails entire build
 matrix:
   fast_finish: true
@@ -60,12 +62,6 @@ for:
   - matrix:
       only:
         - job_name: Build Arm on X64 Windows
-
-    init:
-      - ps: >-
-          if(($env:APPVEYOR_PULL_REQUEST_HEAD_REPO_NAME -split "/")[0] -eq ($env:APPVEYOR_REPO_NAME -split "/")[0]) {
-            Write-warning "Skipping PR build for branch"; Exit-AppveyorBuild
-          }
 
     build_script:
       - ps: |
@@ -86,7 +82,14 @@ for:
           if (Test-Path -Path "$pwd\build-tools") {
             Remove-Item -Recurse -Force $pwd\build-tools
           }
-      - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: | 
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          cd depot_tools
+          git fetch --depth 1 origin b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
+          git checkout b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
+          New-Item -Name .disable_auto_update -ItemType File
+          bootstrap\win_tools.bat
+          cd ..
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {
@@ -136,6 +139,7 @@ for:
           }
       - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
       - cd src
+      - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
       - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
       - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
       - gn check out/Default //electron:electron_lib
