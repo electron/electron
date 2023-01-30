@@ -49,6 +49,8 @@ environment:
 
 clone_folder: C:\projects\src\electron
 
+skip_branch_with_pr: true
+
 # the first failed job cancels other jobs and fails entire build
 matrix:
   fast_finish: true
@@ -78,7 +80,14 @@ for:
           if (Test-Path -Path "$pwd\build-tools") {
             Remove-Item -Recurse -Force $pwd\build-tools
           }
-      - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: |
+          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+          cd depot_tools
+          git fetch --depth 1 origin b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
+          git checkout b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
+          New-Item -Name .disable_auto_update -ItemType File
+          bootstrap\win_tools.bat
+          cd ..
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {
