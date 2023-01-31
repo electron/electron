@@ -1040,6 +1040,8 @@ height areas you have within the overall content view.
 The aspect ratio is not respected when window is resized programmatically with
 APIs like `win.setSize`.
 
+To reset an aspect ratio, pass 0 as the `aspectRatio` value: `win.setAspectRatio(0)`.
+
 #### `win.setBackgroundColor(backgroundColor)`
 
 * `backgroundColor` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is optional for the hex type.
