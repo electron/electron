@@ -235,6 +235,11 @@ step-depot-tools-get: &step-depot-tools-get
     name: Get depot tools
     command: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      cd depot_tools
+      git fetch --depth 1 origin b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
+      git checkout b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
+      touch .disable_auto_update
+      cd ..
       if [ "`uname`" == "Darwin" ]; then
         # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
         sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
@@ -483,7 +488,9 @@ step-fix-sync: &step-fix-sync
   run:
     name: Fix Sync
     command: |
+      SEDOPTION="-i"
       if [ "`uname`" == "Darwin" ]; then
+        SEDOPTION="-i ''"
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python3 src/tools/clang/scripts/update.py
@@ -2209,4 +2216,4 @@ workflows:
     jobs:
       - lint
 
-# VS Code Extension Version: 1.1.1
+# VS Code Extension Version: 1.5.1
