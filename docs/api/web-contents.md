@@ -209,6 +209,11 @@ Returns:
 
 * `event` Event
 * `url` string
+* `isInPlace` boolean
+* `isMainFrame` boolean
+* `frameProcessId` Integer
+* `frameRoutingId` Integer
+* `initiator` WebFrameMain
 
 Emitted when a user or the page wants to start navigation. It can happen when
 the `window.location` object is changed or a user clicks a link in the page.
@@ -232,6 +237,7 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `initiator` WebFrameMain
 
 Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
@@ -246,6 +252,7 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `initiator` WebFrameMain
 
 Emitted when a server side redirect occurs during navigation.  For example a 302
 redirect.
@@ -266,6 +273,7 @@ Returns:
 * `isMainFrame` boolean
 * `frameProcessId` Integer
 * `frameRoutingId` Integer
+* `initiator` WebFrameMain
 
 Emitted after a server side redirect occurs during navigation.  For example a 302
 redirect.
