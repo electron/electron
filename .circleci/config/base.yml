@@ -505,6 +505,9 @@ step-fix-sync: &step-fix-sync
       sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
       cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
 
+      # Explicitly add ninja to the path
+      echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $BASH_ENV
+
       cd src/third_party/angle
       rm .git/objects/info/alternates
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
