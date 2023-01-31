@@ -1758,8 +1758,64 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
+// TODO: move this to gin_helper/constructible.h, replace Constructible, and
+// refactor other users for the T::BuildPrototype style.
+template <typename T>
+class Constructible2 {
+ public:
+  static v8::Local<v8::Function> GetConstructor(
+      v8::Local<v8::Context> context) {
+    v8::Isolate* isolate = context->GetIsolate();
+    gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
+    auto* wrapper_info = &T::kWrapperInfo;
+    v8::Local<v8::FunctionTemplate> constructor =
+        data->GetFunctionTemplate(wrapper_info);
+    if (constructor.IsEmpty()) {
+      constructor = gin::CreateConstructorFunctionTemplate(
+          isolate, base::BindRepeating(&T::New));
+      constructor->InstanceTemplate()->SetInternalFieldCount(
+          gin::kNumberOfInternalFields);
+      T::BuildPrototype(isolate, constructor);
+      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
+      data->SetFunctionTemplate(wrapper_info, constructor);
+    }
+    return constructor->GetFunction(context).ToLocalChecked();
+  }
+};
+
+class PreventableEvent : public gin::Wrappable<PreventableEvent>,
+                         public Constructible2<PreventableEvent> {
+ public:
+  // gin_helper::Constructible
+  static gin::Handle<PreventableEvent> New(v8::Isolate* isolate) {
+    return gin::CreateHandle(isolate, new PreventableEvent());
+  }
+  static void BuildPrototype(v8::Isolate* isolate,
+                             v8::Local<v8::FunctionTemplate> prototype) {
+    gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
+        .SetMethod("preventDefault", &PreventableEvent::PreventDefault)
+        .SetProperty("defaultPrevented",
+                     &PreventableEvent::GetDefaultPrevented);
+  }
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  ~PreventableEvent() override = default;
+
+  void PreventDefault() { default_prevented_ = true; }
+
+  bool GetDefaultPrevented() { return default_prevented_; }
+
+ private:
+  PreventableEvent() = default;
+
+  bool default_prevented_ = false;
+};
+
+gin::WrapperInfo PreventableEvent::kWrapperInfo = {gin::kEmbedderNativeGin};
+
 bool WebContents::EmitNavigationEvent(
-    const std::string& event,
+    const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -1789,24 +1845,20 @@ bool WebContents::EmitNavigationEvent(
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  std::shared_ptr<bool> default_prevented(new bool(false));
-  v8::Local<v8::Object> nh =
-      gin::DataObjectBuilder(isolate)
-          .Set("url", url)
-          .Set("isSameDocument", is_same_document)
-          .Set("isMainFrame", is_main_frame)
-          .Set("frame", frame_host)
-          .Set("initiator", initiator_frame_host)
-          .Set("preventDefault",
-               base::BindRepeating(
-                   [](std::shared_ptr<bool> default_prevented) {
-                     *default_prevented = true;
-                   },
-                   default_prevented))
-          .Build();
-  EmitWithoutCustomEvent(event, nh, url, is_same_document, is_main_frame,
-                         frame_process_id, frame_routing_id);
-  return *default_prevented;
+
+  gin::Handle<PreventableEvent> event = PreventableEvent::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin::Dictionary dict(isolate, event_object);
+  dict.Set("url", url);
+  dict.Set("isSameDocument", is_same_document);
+  dict.Set("isMainFrame", is_main_frame);
+  dict.Set("frame", frame_host);
+  dict.Set("initiator", initiator_frame_host);
+
+  EmitWithoutCustomEvent(event_name, event, url, is_same_document,
+                         is_main_frame, frame_process_id, frame_routing_id);
+  return event->GetDefaultPrevented();
 }
 
 void WebContents::Message(bool internal,
@@ -4307,6 +4359,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
+
+  electron::api::PreventableEvent::GetConstructor(context);
+
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
   dict.SetMethod("fromFrame", &WebContentsFromFrame);
