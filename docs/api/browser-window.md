@@ -659,9 +659,9 @@ Emitted when scroll wheel event phase has begun.
 
 > **Note**
 > This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
+> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
 > for details of how to migrate to using the [WebContents
-> `input-event`](api/web-contents.md#event-input-event) event.
+> `input-event`](./web-contents.md#event-input-event) event.
 
 #### Event: 'scroll-touch-end' _macOS_ _Deprecated_
 
@@ -669,9 +669,9 @@ Emitted when scroll wheel event phase has ended.
 
 > **Note**
 > This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
+> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
 > for details of how to migrate to using the [WebContents
-> `input-event`](api/web-contents.md#event-input-event) event.
+> `input-event`](./web-contents.md#event-input-event) event.
 
 #### Event: 'scroll-touch-edge' _macOS_ _Deprecated_
 
@@ -679,9 +679,9 @@ Emitted when scroll wheel event phase filed upon reaching the edge of element.
 
 > **Note**
 > This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
+> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
 > for details of how to migrate to using the [WebContents
-> `input-event`](api/web-contents.md#event-input-event) event.
+> `input-event`](./web-contents.md#event-input-event) event.
 
 #### Event: 'swipe' _macOS_
 
@@ -1052,16 +1052,16 @@ Examples of valid `backgroundColor` values:
   * #ffffff (RGB)
   * #ffffffff (ARGB)
 * RGB
-  * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
+  * rgb\((\[\d]+),\s*(\[\d]+),\s*(\[\d]+)\)
     * e.g. rgb(255, 255, 255)
 * RGBA
-  * rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)
+  * rgba\((\[\d]+),\s*(\[\d]+),\s*(\[\d]+),\s*(\[\d.]+)\)
     * e.g. rgba(255, 255, 255, 1.0)
 * HSL
-  * hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)
+  * hsl\((-?\[\d.]+),\s*(\[\d.]+)%,\s*(\[\d.]+)%\)
     * e.g. hsl(200, 20%, 50%)
 * HSLA
-  * hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)
+  * hsla\((-?\[\d.]+),\s*(\[\d.]+)%,\s*(\[\d.]+)%,\s*(\[\d.]+)\)
     * e.g. hsla(200, 20%, 50%, 0.5)
 * Color name
   * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
@@ -1545,7 +1545,7 @@ Remove the window's menu bar.
 * `options` Object (optional)
   * `mode` string _Windows_ - Mode for the progress bar. Can be `none`, `normal`, `indeterminate`, `error` or `paused`.
 
-Sets progress value in progress bar. Valid range is [0, 1.0].
+Sets progress value in progress bar. Valid range is \[0, 1.0].
 
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
@@ -1569,6 +1569,13 @@ screen readers
 Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
 convey some sort of application status or to passively notify the user.
 
+#### `win.invalidateShadow()` _macOS_
+
+Invalidates the window shadow so that it is recomputed based on the current window shape.
+
+`BrowserWindows` that are transparent can sometimes leave behind visual artifacts on macOS.
+This method can be used to clear these artifacts when, for example, performing an animation.
+
 #### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` boolean
@@ -1584,7 +1591,7 @@ Returns `boolean` - Whether the window has a shadow.
 * `opacity` number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
 Sets the opacity of the window. On Linux, does nothing. Out of bound number
-values are clamped to the [0, 1] range.
+values are clamped to the \[0, 1] range.
 
 #### `win.getOpacity()`
 

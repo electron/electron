@@ -1,9 +1,9 @@
 import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce, emittedUntil } from './events-helpers';
-import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce, emittedUntil } from './lib/events-helpers';
+import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext } from './lib/spec-helpers';
 import { expect } from 'chai';
 import * as http from 'http';
 import { AddressInfo } from 'net';

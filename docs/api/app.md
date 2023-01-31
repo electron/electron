@@ -498,6 +498,10 @@ and `workingDirectory` is its current working directory. Usually
 applications respond to this by making their primary window focused and
 non-minimized.
 
+**Note:** `argv` will not be exactly the same list of arguments as those passed
+to the second instance. The order might change and additional arguments might be appended.
+If you need to maintain the exact same arguments, it's advised to use `additionalData` instead.
+
 **Note:** If the second instance is started by a different user than the first, the `argv` array will not include the arguments.
 
 This event is guaranteed to be emitted after the `ready` event of `app`
@@ -1509,7 +1513,6 @@ dock on macOS.
 
 A `boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 
-[dock-menu]:https://developer.apple.com/macos/human-interface-guidelines/menus/dock-menus/
 [tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
 [app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
 [electron-forge]: https://www.electronforge.io/
@@ -1563,5 +1566,4 @@ an ARM64 translator (like the macOS
 or Windows [WOW](https://en.wikipedia.org/wiki/Windows_on_Windows)).
 
 You can use this property to prompt users to download the arm64 version of
-your application when they are running the x64 version under Rosetta
-incorrectly.
+your application when they are mistakenly running the x64 version under Rosetta or WOW.

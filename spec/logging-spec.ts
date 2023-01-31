@@ -1,7 +1,7 @@
 import { app } from 'electron';
 import { expect } from 'chai';
-import { emittedOnce } from './events-helpers';
-import { startRemoteControlApp, ifdescribe } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';

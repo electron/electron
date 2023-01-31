@@ -24,6 +24,10 @@
 #include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"
 
+#if !BUILDFLAG(IS_MAC)
+#include "shell/browser/ui/views/frameless_view.h"
+#endif
+
 #if BUILDFLAG(IS_WIN)
 #include "ui/base/win/shell.h"
 #include "ui/display/win/screen_win.h"
@@ -177,7 +181,11 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   int max_width = max_size.width() > 0 ? max_size.width() : INT_MAX;
   int max_height = max_size.height() > 0 ? max_size.height() : INT_MAX;
   bool have_max_width = options.Get(options::kMaxWidth, &max_width);
+  if (have_max_width && max_width <= 0)
+    max_width = INT_MAX;
   bool have_max_height = options.Get(options::kMaxHeight, &max_height);
+  if (have_max_height && max_height <= 0)
+    max_height = INT_MAX;
 
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
@@ -418,6 +426,8 @@ void NativeWindow::SetMenu(ElectronMenuModel* menu) {}
 void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
+
+void NativeWindow::InvalidateShadow() {}
 
 void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
@@ -689,6 +699,17 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 #endif
 
 int NativeWindow::NonClientHitTest(const gfx::Point& point) {
+#if !BUILDFLAG(IS_MAC)
+  // We need to ensure we account for resizing borders on Windows and Linux.
+  if ((!has_frame() || has_client_frame()) && IsResizable()) {
+    auto* frame =
+        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
+    int border_hit = frame->ResizingBorderHitTest(point);
+    if (border_hit != HTNOWHERE)
+      return border_hit;
+  }
+#endif
+
   for (auto* provider : draggable_region_providers_) {
     int hit = provider->NonClientHitTest(point);
     if (hit != HTNOWHERE)

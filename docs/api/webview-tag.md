@@ -610,7 +610,7 @@ examples.
 
 ### `<webview>.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` [number, number] - `[processId, frameId]`
+* `frameId` \[number, number] - `[processId, frameId]`
 * `channel` string
 * `...args` any[]
 
@@ -910,7 +910,7 @@ webview.addEventListener('close', () => {
 
 Returns:
 
-* `frameId` [number, number] - pair of `[processId, frameId]`.
+* `frameId` \[number, number] - pair of `[processId, frameId]`.
 * `channel` string
 * `args` any[]
 
@@ -981,6 +981,14 @@ Returns:
 * `url` string
 
 Emitted when mouse moves over a link or the keyboard moves the focus to a link.
+
+### Event: 'devtools-open-url'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
 ### Event: 'devtools-opened'
 

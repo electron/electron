@@ -25,6 +25,10 @@ const char kSecureProtocolDescription[] =
     "The connection to this site is using a strong protocol version "
     "and cipher suite.";
 
+const char kDeviceVendorIdKey[] = "vendorId";
+const char kDeviceProductIdKey[] = "productId";
+const char kDeviceSerialNumberKey[] = "serialNumber";
+
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
 #endif

@@ -45,14 +45,6 @@ bool ElectronDesktopWindowTreeHostWin::ShouldPaintAsActive() const {
   return false;
 }
 
-bool ElectronDesktopWindowTreeHostWin::HasNativeFrame() const {
-  // Since we never use chromium's titlebar implementation, we can just say
-  // that we use a native titlebar. This will disable the repaint locking when
-  // DWM composition is disabled.
-  // See also https://github.com/electron/electron/issues/1821.
-  return !ui::win::IsAeroGlassEnabled();
-}
-
 bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
     gfx::Insets* insets) const {
   // Set DWMFrameInsets to prevent maximized frameless window from bleeding

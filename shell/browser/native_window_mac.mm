@@ -225,8 +225,8 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
 
   NSUInteger styleMask = NSWindowStyleMaskTitled;
 
-  // Removing NSWindowStyleMaskTitled removes window title, which removes
-  // rounded corners of window.
+  // The NSWindowStyleMaskFullSizeContentView style removes rounded corners
+  // for frameless window.
   bool rounded_corner = true;
   options.Get(options::kRoundedCorners, &rounded_corner);
   if (!rounded_corner && !has_frame())
@@ -1030,9 +1030,12 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
     is_kiosk_ = true;
     SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
-    [NSApp setPresentationOptions:kiosk_options_];
     is_kiosk_ = false;
     SetFullScreen(false);
+
+    // Set presentation options *after* asynchronously exiting
+    // fullscreen to ensure they take effect.
+    [NSApp setPresentationOptions:kiosk_options_];
   }
 }
 
@@ -1059,6 +1062,10 @@ void NativeWindowMac::SetHasShadow(bool has_shadow) {
 
 bool NativeWindowMac::HasShadow() {
   return [window_ hasShadow];
+}
+
+void NativeWindowMac::InvalidateShadow() {
+  [window_ invalidateShadow];
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {

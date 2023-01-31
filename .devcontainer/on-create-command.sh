@@ -10,6 +10,7 @@ export PATH="$PATH:$buildtools/src"
 
 # Create the persisted buildtools config folder
 mkdir -p $buildtools_configs
+mkdir -p $gclient_root/.git-cache
 rm -f $buildtools/configs
 ln -s $buildtools_configs $buildtools/configs
 

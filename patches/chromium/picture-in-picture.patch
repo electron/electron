@@ -8,10 +8,10 @@ chrome's generated resources for our own. This updates the #include so that we
 don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
-diff --git a/chrome/browser/ui/views/overlay/overlay_window_views.cc b/chrome/browser/ui/views/overlay/overlay_window_views.cc
-index 7d91ecafdfc2b977aeb73c764cee6bb65f80b5a3..e7c1795151244be863d12193fc4eff8a20eae019 100644
---- a/chrome/browser/ui/views/overlay/overlay_window_views.cc
-+++ b/chrome/browser/ui/views/overlay/overlay_window_views.cc
+diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
+index 4c83c6a6685490ce1899b119742fa25b6b9a50cd..23d7bf23e13af2c0bb10a9b58bf20f1f763d547c 100644
+--- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
++++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -14,9 +14,11 @@
  #include "base/time/time.h"
  #include "base/timer/timer.h"
@@ -21,35 +21,10 @@ index 7d91ecafdfc2b977aeb73c764cee6bb65f80b5a3..e7c1795151244be863d12193fc4eff8a
  #include "chrome/browser/ui/browser.h"
  #include "chrome/browser/ui/browser_finder.h"
 +#endif
- #include "chrome/grit/generated_resources.h"
- #include "chromeos/ui/base/chromeos_ui_constants.h"
- #include "components/vector_icons/vector_icons.h"
-@@ -36,7 +38,7 @@
- #include "ui/aura/window.h"
- #endif
- 
--#if BUILDFLAG(IS_WIN)
-+#if 0
- #include "chrome/browser/shell_integration_win.h"
- #include "ui/aura/window.h"
- #include "ui/aura/window_tree_host.h"
-diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 09819a589cf7f7a619a38a66188206dc56b9f5d6..b2c887710dafb9615739b625ad29229387fdb758 100644
---- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-+++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-@@ -15,9 +15,11 @@
- #include "base/timer/timer.h"
- #include "build/build_config.h"
- #include "chrome/app/vector_icons/vector_icons.h"
-+#if 0
- #include "chrome/browser/profiles/profile.h"
- #include "chrome/browser/ui/browser.h"
- #include "chrome/browser/ui/browser_finder.h"
-+#endif
  #include "chrome/browser/ui/color/chrome_color_id.h"
- #include "chrome/browser/ui/views/overlay/back_to_tab_image_button.h"
  #include "chrome/browser/ui/views/overlay/back_to_tab_label_button.h"
-@@ -56,7 +58,7 @@
+ #include "chrome/browser/ui/views/overlay/close_image_button.h"
+@@ -53,7 +55,7 @@
  #include "ui/aura/window.h"
  #endif
  
@@ -58,7 +33,7 @@ index 09819a589cf7f7a619a38a66188206dc56b9f5d6..b2c887710dafb9615739b625ad292293
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -166,7 +168,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -279,7 +281,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

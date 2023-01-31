@@ -22,6 +22,7 @@
 #include "shell/browser/bluetooth/electron_bluetooth_delegate.h"
 #include "shell/browser/hid/electron_hid_delegate.h"
 #include "shell/browser/serial/electron_serial_delegate.h"
+#include "shell/browser/usb/electron_usb_delegate.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom-forward.h"
 
 namespace content {
@@ -103,6 +104,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   content::BluetoothDelegate* GetBluetoothDelegate() override;
 
   content::HidDelegate* GetHidDelegate() override;
+  content::UsbDelegate* GetUsbDelegate() override;
 
   content::WebAuthenticationDelegate* GetWebAuthenticationDelegate() override;
 
@@ -240,11 +242,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       const url::Origin& origin,
       bool is_for_isolated_world,
       network::mojom::URLLoaderFactoryParams* factory_params) override;
-#if BUILDFLAG(IS_WIN)
-  bool PreSpawnChild(sandbox::TargetPolicy* policy,
-                     sandbox::mojom::Sandbox sandbox_type,
-                     ChildSpawnFlags flags) override;
-#endif
   void RegisterAssociatedInterfaceBindersForRenderFrameHost(
       content::RenderFrameHost& render_frame_host,
       blink::AssociatedInterfaceRegistry& associated_registry) override;
@@ -326,6 +323,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   std::unique_ptr<ElectronSerialDelegate> serial_delegate_;
   std::unique_ptr<ElectronBluetoothDelegate> bluetooth_delegate_;
+  std::unique_ptr<ElectronUsbDelegate> usb_delegate_;
   std::unique_ptr<ElectronHidDelegate> hid_delegate_;
   std::unique_ptr<ElectronWebAuthenticationDelegate>
       web_authentication_delegate_;

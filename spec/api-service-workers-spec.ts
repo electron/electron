@@ -5,7 +5,7 @@ import { session, webContents, WebContents } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { AddressInfo } from 'net';
-import { emittedOnce, emittedNTimes } from './events-helpers';
+import { emittedOnce, emittedNTimes } from './lib/events-helpers';
 
 const partition = 'service-workers-spec';
 
@@ -43,7 +43,7 @@ describe('session.serviceWorkers', () => {
   });
 
   afterEach(async () => {
-    (w as any).destroy();
+    w.destroy();
     server.close();
     await ses.clearStorageData();
   });

@@ -8,10 +8,10 @@ Allow registering custom protocols to handle service worker main script fetching
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
 
 diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
-index 4e650c2e6dc0bda6785d9317fbe01c8a368f9751..077084b7df7506a477574d598a7fb0f1ac25a1e8 100644
+index bd15ed3dffe9ad3b8f5fe7478d7f9b5864f2da08..83015cb512c418087c24ce021f00be15276f9711 100644
 --- a/content/browser/service_worker/service_worker_context_wrapper.cc
 +++ b/content/browser/service_worker/service_worker_context_wrapper.cc
-@@ -1689,6 +1689,28 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+@@ -1726,6 +1726,26 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
        loader_factory_bundle_info =
            context()->loader_factory_bundle_for_update_check()->Clone();
  
@@ -21,33 +21,42 @@ index 4e650c2e6dc0bda6785d9317fbe01c8a368f9751..077084b7df7506a477574d598a7fb0f1
 +  // ServiceWorkerContextWrapper::CreateNonNetworkPendingURLLoaderFactoryBundleForUpdateCheck
 +  // happens early on browser startup before the JS in the main process
 +  // is run by the embedder.
-+  auto* factory_bundle = static_cast<blink::PendingURLLoaderFactoryBundle*>(
-+          loader_factory_bundle_info.get());
++  auto& pending_scheme_specific_factories =
++      static_cast<blink::PendingURLLoaderFactoryBundle*>(
++      loader_factory_bundle_info.get())
++      ->pending_scheme_specific_factories();
 +  ContentBrowserClient::NonNetworkURLLoaderFactoryMap non_network_factories;
 +  GetContentClient()
 +      ->browser()
 +      ->RegisterNonNetworkServiceWorkerUpdateURLLoaderFactories(
 +          storage_partition_->browser_context(), &non_network_factories);
-+  for (auto& pair : non_network_factories) {
-+    const std::string& scheme = pair.first;
-+    mojo::PendingRemote<network::mojom::URLLoaderFactory>& factory_remote =
-+        pair.second;
-+
-+    factory_bundle->pending_scheme_specific_factories().emplace(
++  for (auto& [scheme, factory_remote] : non_network_factories) {
++    pending_scheme_specific_factories.emplace(
 +        scheme, std::move(factory_remote));
 +  }
 +
-   if (base::FeatureList::IsEnabled(
-           features::kEnableServiceWorkersForChromeUntrusted) &&
-       scope.scheme_piece() == kChromeUIUntrustedScheme) {
-@@ -1709,9 +1731,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
-             browser_context(), scope_origin)) {
+   if (auto* config = content::WebUIConfigMap::GetInstance().GetConfig(
+           browser_context(), scope_origin)) {
+     // If this is a Service Worker for a WebUI, the WebUI's URLDataSource
+@@ -1745,9 +1765,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+             features::kEnableServiceWorkersForChromeScheme) &&
+         scope.scheme_piece() == kChromeUIScheme) {
        config->RegisterURLDataSource(browser_context());
- 
 -      static_cast<blink::PendingURLLoaderFactoryBundle*>(
 -          loader_factory_bundle_info.get())
 -          ->pending_scheme_specific_factories()
-+      factory_bundle->pending_scheme_specific_factories()
++      pending_scheme_specific_factories
+           .emplace(kChromeUIScheme, CreateWebUIServiceWorkerLoaderFactory(
+                                         browser_context(), kChromeUIScheme,
+                                         base::flat_set<std::string>()));
+@@ -1755,9 +1773,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
+                    features::kEnableServiceWorkersForChromeUntrusted) &&
+                scope.scheme_piece() == kChromeUIUntrustedScheme) {
+       config->RegisterURLDataSource(browser_context());
+-      static_cast<blink::PendingURLLoaderFactoryBundle*>(
+-          loader_factory_bundle_info.get())
+-          ->pending_scheme_specific_factories()
++      pending_scheme_specific_factories
            .emplace(kChromeUIUntrustedScheme,
                     CreateWebUIServiceWorkerLoaderFactory(
                         browser_context(), kChromeUIUntrustedScheme,

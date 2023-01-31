@@ -120,10 +120,6 @@
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "sandbox/win/src/sandbox_policy.h"
-#endif
-
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
 #elif BUILDFLAG(IS_WIN)
@@ -474,15 +470,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_GPU);
-#if BUILDFLAG(ENABLE_PLUGINS)
     auto plugin_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_PLUGIN);
-#endif
-    if (program != renderer_child_path && program != gpu_child_path
-#if BUILDFLAG(ENABLE_PLUGINS)
-        && program != plugin_child_path
-#endif
-    ) {
+    if (program != renderer_child_path && program != gpu_child_path &&
+        program != plugin_child_path) {
       child_path = content::ChildProcessHost::GetChildPath(
           content::ChildProcessHost::CHILD_NORMAL);
       CHECK_EQ(program, child_path)
@@ -1440,19 +1431,6 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
 }
 
-#if BUILDFLAG(IS_WIN)
-bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
-                                          sandbox::mojom::Sandbox sandbox_type,
-                                          ChildSpawnFlags flags) {
-  sandbox::ResultCode result = policy->GetConfig()->AddRule(
-      sandbox::SubSystem::kFiles, sandbox::Semantics::kFilesAllowAny,
-      L"\\??\\pipe\\crashpad_*");
-  if (result != sandbox::SBOX_ALL_OK)
-    return false;
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
-
 void ElectronBrowserClient::
     RegisterAssociatedInterfaceBindersForRenderFrameHost(
         content::RenderFrameHost&
@@ -1713,6 +1691,12 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   if (!bluetooth_delegate_)
     bluetooth_delegate_ = std::make_unique<ElectronBluetoothDelegate>();
   return bluetooth_delegate_.get();
+}
+
+content::UsbDelegate* ElectronBrowserClient::GetUsbDelegate() {
+  if (!usb_delegate_)
+    usb_delegate_ = std::make_unique<ElectronUsbDelegate>();
+  return usb_delegate_.get();
 }
 
 void BindBadgeServiceForServiceWorker(

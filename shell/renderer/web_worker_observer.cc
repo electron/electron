@@ -4,7 +4,9 @@
 
 #include "shell/renderer/web_worker_observer.h"
 
-#include "base/lazy_instance.h"
+#include <utility>
+
+#include "base/no_destructor.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -15,37 +17,43 @@ namespace electron {
 
 namespace {
 
-static base::LazyInstance<
-    base::ThreadLocalPointer<WebWorkerObserver>>::DestructorAtExit lazy_tls =
-    LAZY_INSTANCE_INITIALIZER;
+static base::NoDestructor<base::ThreadLocalOwnedPointer<WebWorkerObserver>>
+    lazy_tls;
 
 }  // namespace
 
 // static
 WebWorkerObserver* WebWorkerObserver::GetCurrent() {
-  WebWorkerObserver* self = lazy_tls.Pointer()->Get();
-  return self ? self : new WebWorkerObserver;
+  return lazy_tls->Get();
+}
+
+// static
+WebWorkerObserver* WebWorkerObserver::Create() {
+  auto obs = std::make_unique<WebWorkerObserver>();
+  auto* obs_raw = obs.get();
+  lazy_tls->Set(std::move(obs));
+  return obs_raw;
 }
 
 WebWorkerObserver::WebWorkerObserver()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
       electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
-  lazy_tls.Pointer()->Set(this);
-}
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 
 WebWorkerObserver::~WebWorkerObserver() {
-  lazy_tls.Pointer()->Set(nullptr);
   // Destroying the node environment will also run the uv loop,
   // Node.js expects `kExplicit` microtasks policy and will run microtasks
   // checkpoints after every call into JavaScript. Since we use a different
   // policy in the renderer - switch to `kExplicit`
-  v8::Isolate* isolate = node_bindings_->uv_env()->isolate();
-  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(isolate), 0);
-  isolate->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  v8::MicrotaskQueue* microtask_queue =
+      node_bindings_->uv_env()->context()->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
   node::FreeEnvironment(node_bindings_->uv_env());
   node::FreeIsolateData(node_bindings_->isolate_data());
+  microtask_queue->set_microtasks_policy(old_policy);
 }
 
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
@@ -53,7 +61,8 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   v8::Context::Scope context_scope(worker_context);
   auto* isolate = worker_context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      isolate, worker_context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   // Start the embed thread.
   node_bindings_->PrepareEmbedThread();
@@ -86,7 +95,8 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   if (env)
     gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
 
-  delete this;
+  if (lazy_tls->Get())
+    lazy_tls->Set(nullptr);
 }
 
 }  // namespace electron

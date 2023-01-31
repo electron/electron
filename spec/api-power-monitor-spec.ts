@@ -8,7 +8,7 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe, delay } from './spec-helpers';
+import { ifdescribe, delay } from './lib/spec-helpers';
 import { promisify } from 'util';
 
 describe('powerMonitor', () => {

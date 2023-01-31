@@ -104,26 +104,6 @@ bool IsWidevineAvailable(
 }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
 
-#if BUILDFLAG(ENABLE_PLUGINS)
-void ComputeBuiltInPlugins(std::vector<content::ContentPluginInfo>* plugins) {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // TODO(upstream/thestig): Figure out how to make the PDF Viewer work without
-  // this PPAPI plugin registration.
-  content::ContentPluginInfo pdf_info;
-  pdf_info.is_internal = true;
-  pdf_info.is_out_of_process = true;
-  pdf_info.name = kPDFInternalPluginName;
-  pdf_info.description = "Portable Document Format";
-  // This isn't a real file path; it's just used as a unique identifier.
-  pdf_info.path = base::FilePath(kPdfPluginPath);
-  content::WebPluginMimeType pdf_mime_type(pdf::kInternalPluginMimeType, "pdf",
-                                           "Portable Document Format");
-  pdf_info.mime_types.push_back(pdf_mime_type);
-  plugins->push_back(pdf_info);
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-}
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
-
 void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
                                    std::vector<std::string>* append_me) {
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -204,9 +184,22 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
 
 void ElectronContentClient::AddPlugins(
     std::vector<content::ContentPluginInfo>* plugins) {
-#if BUILDFLAG(ENABLE_PLUGINS)
-  ComputeBuiltInPlugins(plugins);
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
+#if BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_PDF_VIEWER)
+  static constexpr char kPDFPluginExtension[] = "pdf";
+  static constexpr char kPDFPluginDescription[] = "Portable Document Format";
+
+  content::ContentPluginInfo pdf_info;
+  pdf_info.is_internal = true;
+  pdf_info.is_out_of_process = true;
+  pdf_info.name = kPDFInternalPluginName;
+  pdf_info.description = kPDFPluginDescription;
+  // This isn't a real file path; it's just used as a unique identifier.
+  pdf_info.path = base::FilePath(kPdfPluginPath);
+  content::WebPluginMimeType pdf_mime_type(
+      pdf::kInternalPluginMimeType, kPDFPluginExtension, kPDFPluginDescription);
+  pdf_info.mime_types.push_back(pdf_mime_type);
+  plugins->push_back(pdf_info);
+#endif  // BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 void ElectronContentClient::AddContentDecryptionModules(

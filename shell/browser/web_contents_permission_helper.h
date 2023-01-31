@@ -29,7 +29,8 @@ class WebContentsPermissionHelper
     FULLSCREEN,
     OPEN_EXTERNAL,
     SERIAL,
-    HID
+    HID,
+    USB
   };
 
   // Asynchronous Requests

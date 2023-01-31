@@ -6,7 +6,7 @@ import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { AddressInfo, Socket } from 'net';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './lib/events-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -55,7 +55,7 @@ describe('webRequest module', () => {
     contents = (webContents as any).create({ sandbox: true });
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
-  after(() => (contents as any).destroy());
+  after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
     return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);

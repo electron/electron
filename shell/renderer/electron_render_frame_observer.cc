@@ -67,9 +67,10 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
       !web_frame->IsOnInitialEmptyDocument()) {
     v8::Isolate* isolate = blink::MainThreadIsolate();
     v8::HandleScope handle_scope(isolate);
-    v8::MicrotasksScope microtasks_scope(
-        isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
     v8::Handle<v8::Context> context = web_frame->MainWorldScriptContext();
+    v8::MicrotasksScope microtasks_scope(
+        isolate, context->GetMicrotaskQueue(),
+        v8::MicrotasksScope::kDoNotRunMicrotasks);
     v8::Context::Scope context_scope(context);
     // DidClearWindowObject only emits for the main world.
     DidInstallConditionalFeatures(context, MAIN_WORLD_ID);
@@ -112,7 +113,8 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
 
   auto* isolate = context->GetIsolate();
   v8::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      isolate, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   if (ShouldNotifyClient(world_id))
     renderer_client_->DidCreateScriptContext(context, render_frame_);

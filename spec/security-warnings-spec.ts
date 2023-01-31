@@ -6,10 +6,10 @@ import * as url from 'url';
 
 import { BrowserWindow, WebPreferences } from 'electron/main';
 
-import { closeWindow } from './window-helpers';
+import { closeWindow } from './lib/window-helpers';
 import { AddressInfo } from 'net';
-import { emittedUntil } from './events-helpers';
-import { delay } from './spec-helpers';
+import { emittedUntil } from './lib/events-helpers';
+import { delay } from './lib/spec-helpers';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;

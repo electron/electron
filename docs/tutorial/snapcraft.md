@@ -13,7 +13,7 @@ system modification.
 
 There are three ways to create a `.snap` file:
 
-1) Using [`electron-forge`][electron-forge] or
+1) Using [Electron Forge][electron-forge] or
    [`electron-builder`][electron-builder], both tools that come with `snap`
    support out of the box. This is the easiest option.
 2) Using `electron-installer-snap`, which takes `electron-packager`'s output.
@@ -162,7 +162,7 @@ building blocks.
 
 If you do not already have a `.deb` package, using `electron-installer-snap`
 might be an easier path to create snap packages. However, multiple solutions
-for creating Debian packages exist, including [`electron-forge`][electron-forge],
+for creating Debian packages exist, including [Electron Forge][electron-forge],
 [`electron-builder`][electron-builder] or
 [`electron-installer-debian`][electron-installer-debian].
 
@@ -239,7 +239,7 @@ apps:
 
 [snapcraft-syntax]: https://docs.snapcraft.io/build-snaps/syntax
 [electron-packager]: https://github.com/electron/electron-packager
-[electron-forge]: https://github.com/electron-userland/electron-forge
+[electron-forge]: https://github.com/electron/forge
 [electron-builder]: https://github.com/electron-userland/electron-builder
 [electron-installer-debian]: https://github.com/unindented/electron-installer-debian
 [electron-winstaller]: https://github.com/electron/windows-installer

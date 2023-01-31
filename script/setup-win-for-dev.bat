@@ -1,7 +1,6 @@
 REM Parameters vs_buildtools.exe download link and wsdk version
 @ECHO OFF
 
-SET wsdk10_link=https://go.microsoft.com/fwlink/?linkid=2164145
 SET wsdk=10SDK.20348
 
 REM Check for disk space
@@ -54,16 +53,17 @@ REM Install Visual Studio Toolchain
 choco install visualstudio2019buildtools --package-parameters "--quiet --wait --norestart --nocache  --installPath ""%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community"" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.VC.ATLMFC --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 --add Microsoft.VisualStudio.Component.Windows%wsdk% --includeRecommended"
 
 REM Install Windows SDK
-powershell -command "& { iwr %wsdk10_link% -OutFile C:\TEMP\wsdk10.exe }"
-C:\TEMP\wsdk10.exe /features /quiet
+choco install windows-sdk-10-version-2104-all
 
 REM Install nodejs python git and yarn needed dependencies
 choco install -y nodejs-lts python2 git yarn
 choco install python --version 3.7.9
-choco install windows-sdk-10-version-2004-windbg
 call C:\ProgramData\chocolatey\bin\RefreshEnv.cmd
 SET PATH=C:\Python27\;C:\Python27\Scripts;C:\Python39\;C:\Python39\Scripts;%PATH%
 
 REM Setup Depot Tools
 git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git C:\depot_tools
 SET PATH=%PATH%;C:\depot_tools\
+
+REM Add symstore to PATH permanently
+setx path "%%path%%;C:\Program Files (x86)\Windows Kits\10\Debuggers\x64"

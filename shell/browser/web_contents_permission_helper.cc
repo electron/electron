@@ -119,7 +119,8 @@ void MediaAccessAllowed(const content::MediaStreamRequest& request,
                    blink::mojom::MediaStreamType::DEVICE_AUDIO_CAPTURE) {
       webrtc::MediaStreamDevicesController::RequestPermissions(
           request, MediaCaptureDevicesDispatcher::GetInstance(),
-          base::BindOnce(&OnMediaStreamRequestResponse, std::move(callback)));
+          base::BindOnce(&OnMediaStreamRequestResponse, std::move(callback)),
+          allowed);
     } else if (request.video_type ==
                    blink::mojom::MediaStreamType::DISPLAY_VIDEO_CAPTURE ||
                request.video_type == blink::mojom::MediaStreamType::

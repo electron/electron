@@ -1,15 +1,11 @@
 const { GitProcess } = require('dugite');
 const fs = require('fs');
+const klaw = require('klaw');
 const os = require('os');
 const path = require('path');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
-
-const RELEASE_BRANCH_PATTERN = /(\d)+-(?:(?:[0-9]+-x$)|(?:x+-y$))/;
-// TODO(main-migration): Simplify once main branch is renamed
-const MAIN_BRANCH_PATTERN = /^(main|master)$/;
-const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/(main|master)$/;
 
 require('colors');
 const pass = '✓'.green;
@@ -76,6 +72,10 @@ async function handleGitCall (args, gitDir) {
 }
 
 async function getCurrentBranch (gitDir) {
+  const RELEASE_BRANCH_PATTERN = /^\d+-x-y$/;
+  const MAIN_BRANCH_PATTERN = /^main$/;
+  const ORIGIN_MAIN_BRANCH_PATTERN = /^origin\/main$/;
+
   let branch = await handleGitCall(['rev-parse', '--abbrev-ref', 'HEAD'], gitDir);
   if (!MAIN_BRANCH_PATTERN.test(branch) && !RELEASE_BRANCH_PATTERN.test(branch)) {
     const lastCommit = await handleGitCall(['rev-parse', 'HEAD'], gitDir);
@@ -123,8 +123,29 @@ function chunkFilenames (filenames, offset = 0) {
   );
 }
 
+/**
+ * @param {string} top
+ * @param {(filename: string) => boolean} test
+ * @returns {Promise<string[]>}
+*/
+async function findMatchingFiles (top, test) {
+  return new Promise((resolve, reject) => {
+    const matches = [];
+    klaw(top, {
+      filter: f => path.basename(f) !== '.bin'
+    })
+      .on('end', () => resolve(matches))
+      .on('data', item => {
+        if (test(item.path)) {
+          matches.push(item.path);
+        }
+      });
+  });
+}
+
 module.exports = {
   chunkFilenames,
+  findMatchingFiles,
   getCurrentBranch,
   getElectronExec,
   getOutDir,

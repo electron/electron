@@ -224,6 +224,9 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
   if (!popup_)
     return;
 
+  // Clamp popup_bounds_ to ensure it's never zero-width.
+  popup_->popup_bounds_.Union(
+      gfx::Rect(popup_->popup_bounds_.origin(), gfx::Size(1, 1)));
   GetWidget()->SetBounds(popup_->popup_bounds_);
 #if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {

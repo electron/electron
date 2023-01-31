@@ -2,9 +2,9 @@ import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { ifit } from './spec-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifit } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';

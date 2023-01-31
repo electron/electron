@@ -12,7 +12,7 @@ By moving some functions out of the the arm64-assembler header file,
 this error no longer seems to happen.
 
 diff --git a/src/codegen/arm64/assembler-arm64.cc b/src/codegen/arm64/assembler-arm64.cc
-index dc06c743a02d30340c00e96a3320735827ac45b7..37fd007ebb435cdcd33f8e40612e38233e2a711c 100644
+index e3ca3f9535c23a0182e84abac97b67f699151509..e7c24033ab388f31c753ac891468233823650ded 100644
 --- a/src/codegen/arm64/assembler-arm64.cc
 +++ b/src/codegen/arm64/assembler-arm64.cc
 @@ -3616,6 +3616,22 @@ void Assembler::MoveWide(const Register& rd, uint64_t imm, int shift,
@@ -39,7 +39,7 @@ index dc06c743a02d30340c00e96a3320735827ac45b7..37fd007ebb435cdcd33f8e40612e3823
                         const Operand& operand, FlagsUpdate S, AddSubOp op) {
    DCHECK_EQ(rd.SizeInBits(), rn.SizeInBits());
 diff --git a/src/codegen/arm64/assembler-arm64.h b/src/codegen/arm64/assembler-arm64.h
-index 68f773a92436c3696c257cf16a6cd90ebe190472..ff7111971fd4614994419fcf1f211a0f1752338f 100644
+index 1377e68ec9dda7e94bce532aee6feebda5e72e14..8b8ff183495fce2d9eeafed215031fb828521b7f 100644
 --- a/src/codegen/arm64/assembler-arm64.h
 +++ b/src/codegen/arm64/assembler-arm64.h
 @@ -2115,11 +2115,7 @@ class V8_EXPORT_PRIVATE Assembler : public AssemblerBase {

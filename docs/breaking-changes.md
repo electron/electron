@@ -14,6 +14,12 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (23.0)
 
+### Removed: Windows 7 / 8 / 8.1 support
+
+[Windows 7, Windows 8, and Windows 8.1 are no longer supported](https://www.electronjs.org/blog/windows-7-to-8-1-deprecation-notice). Electron follows the planned Chromium deprecation policy, which will [deprecate Windows 7 support beginning in Chromium 109](https://support.google.com/chrome/thread/185534985/sunsetting-support-for-windows-7-8-8-1-in-early-2023?hl=en).
+
+Older versions of Electron will continue to run on these operating systems, but Windows 10 or later will be required to run Electron v23.0.0 and higher.
+
 ### Removed: BrowserWindow `scroll-touch-*` events
 
 The deprecated `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge`
@@ -254,7 +260,7 @@ requires unsafe mode), so Electron is unable to support this feature on Linux.
 
 The handler invoked when `session.setDevicePermissionHandler(handler)` is used
 has a change to its arguments.  This handler no longer is passed a frame
-`[WebFrameMain](api/web-frame-main.md)`, but instead is passed the `origin`, which
+[`WebFrameMain`](api/web-frame-main.md), but instead is passed the `origin`, which
 is the origin that is checking for device permission.
 
 ## Planned Breaking API Changes (19.0)
@@ -1427,7 +1433,7 @@ When building native modules for windows, the `win_delay_load_hook` variable in
 the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
-guide](/docs/tutorial/using-native-node-modules.md) for more.
+guide](./tutorial/using-native-node-modules.md) for more.
 
 ### Removed: IA32 Linux support
 

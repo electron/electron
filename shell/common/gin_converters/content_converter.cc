@@ -194,6 +194,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "window-management");
     case blink::PermissionType::DISPLAY_CAPTURE:
       return StringToV8(isolate, "display-capture");
+    case blink::PermissionType::TOP_LEVEL_STORAGE_ACCESS:
+      return StringToV8(isolate, "top-level-storage-access");
     case blink::PermissionType::NUM:
       break;
   }
@@ -209,6 +211,8 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
       return StringToV8(isolate, "serial");
     case PermissionType::HID:
       return StringToV8(isolate, "hid");
+    case PermissionType::USB:
+      return StringToV8(isolate, "usb");
     default:
       return StringToV8(isolate, "unknown");
   }

@@ -4,9 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeAllWindows } from './window-helpers';
-import { ifdescribe, delay, defer, waitUntil } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, delay, defer, waitUntil } from './lib/spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -1552,7 +1552,7 @@ describe('webContents module', () => {
         const contents = (webContents as any).create() as WebContents;
         const originalEmit = contents.emit.bind(contents);
         contents.emit = (...args) => { return originalEmit(...args); };
-        contents.once(e.name as any, () => (contents as any).destroy());
+        contents.once(e.name as any, () => contents.destroy());
         const destroyed = emittedOnce(contents, 'destroyed');
         contents.loadURL(serverUrl + e.url);
         await destroyed;

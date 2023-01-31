@@ -211,7 +211,7 @@
 
 - (void)popUpContextMenu:(electron::ElectronMenuModel*)menu_model {
   // Make sure events can be pumped while the menu is up.
-  base::CurrentThread::ScopedNestableTaskAllower allow;
+  base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
 
   // Show a custom menu.
   if (menu_model) {
