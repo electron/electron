@@ -36,9 +36,7 @@ Returns `Session` - A session instance from `partition` string. When there is an
 If `partition` starts with `persist:`, the page will use a persistent session
 available to all pages in the app with the same `partition`. if there is no
 `persist:` prefix, the page will use an in-memory session. If the `partition` is
-empty then default session of the app will be returned. If the `partition` is
-an absolute path, this absolute path will be used. When an invalid absolute path
-is provided, an in-memory session is then used.
+empty then default session of the app will be returned.
 
 To create a `Session` with `options`, you have to ensure the `Session` with the
 `partition` has never been used before. There is no way to change the `options`
@@ -54,7 +52,7 @@ Returns `Session` - A session instance from the absolute path as specified by th
 string. When there is an existing `Session` with the same absolute path (irrespective of
 the API used to create the partition eg: fromAbsolutePartition, or, fromPartition ), it
 will be returned; otherwise a new `Session` instance will be created with `options`. The
-call will throw an error if the path cannnot be accessed or cannot be written to.
+call will throw an error if the path is not an absolute path or an empty string.
 
 To create a `Session` with `options`, you have to ensure the `Session` with the
 `partition` has never been used before. There is no way to change the `options`

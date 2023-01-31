@@ -97,11 +97,6 @@ std::string MakePartitionName(const std::string& input) {
   return base::EscapePath(base::ToLowerASCII(input));
 }
 
-// base::escape a path based partition string.
-// std::string MakePathBasedPartitionName(const std::string& input) {
-//  return base::EscapePath(input);
-//}
-
 }  // namespace
 
 // static
