@@ -78,7 +78,7 @@ index e1ddd8fc237f61ceb86115d66087a6f89940609f..3631a378c2829a6007d86a2b934ee0f4
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 34d6001efd674bd49031845e8257c468d894258e..b048047d4ece64d1293809589f2a824ea7123d58 100644
+index 34d6001efd674bd49031845e8257c468d894258e..4f29c2ac96e50cdfe49669802edfd9ab6a293880 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
