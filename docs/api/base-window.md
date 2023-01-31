@@ -738,16 +738,16 @@ Examples of valid `backgroundColor` values:
   * #ffffff (RGB)
   * #ffffffff (ARGB)
 * RGB
-  * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
+  * `rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)`
     * e.g. rgb(255, 255, 255)
 * RGBA
-  * rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)
+  * `rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)`
     * e.g. rgba(255, 255, 255, 1.0)
 * HSL
-  * hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)
+  * `hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)`
     * e.g. hsl(200, 20%, 50%)
 * HSLA
-  * hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)
+  * `hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)`
     * e.g. hsla(200, 20%, 50%, 0.5)
 * Color name
   * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)
@@ -1129,7 +1129,7 @@ Remove the window's menu bar.
 * `options` Object (optional)
   * `mode` string _Windows_ - Mode for the progress bar. Can be `none`, `normal`, `indeterminate`, `error` or `paused`.
 
-Sets progress value in progress bar. Valid range is [0, 1.0].
+Sets progress value in progress bar. Valid range is \[0, 1.0\].
 
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
@@ -1168,7 +1168,7 @@ Returns `boolean` - Whether the window has a shadow.
 * `opacity` number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
 Sets the opacity of the window. On Linux, does nothing. Out of bound number
-values are clamped to the [0, 1] range.
+values are clamped to the \[0, 1\] range.
 
 #### `win.getOpacity()`
 
@@ -1449,12 +1449,9 @@ removed in future Electron releases.
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.
 
-[runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
-[page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
 [window-levels]: https://developer.apple.com/documentation/appkit/nswindow/level
-[chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [overlay-javascript-apis]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#javascript-apis
 [overlay-css-env-vars]: https://github.com/WICG/window-controls-overlay/blob/main/explainer.md#css-environment-variables

@@ -767,4 +767,3 @@ function validateSender(frame) {
 [window-open-handler]: ../api/web-contents.md#contentssetwindowopenhandlerhandler
 [will-navigate]: ../api/web-contents.md#event-will-navigate
 [open-external]: ../api/shell.md#shellopenexternalurl-options
-[responsible-disclosure]: https://en.wikipedia.org/wiki/Responsible_disclosure
