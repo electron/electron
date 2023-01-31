@@ -100,7 +100,7 @@ class ElectronBrowserContext : public content::BrowserContext {
                                       bool in_memory,
                                       base::Value::Dict options = {});
 
-  // Get or create the BrowserContext using the |absolute_path|.
+  // Get or create the BrowserContext using the |path|.
   // The |options| will be passed to constructor when there is no
   // existing BrowserContext.
   static ElectronBrowserContext* FromPath(base::FilePath path,
