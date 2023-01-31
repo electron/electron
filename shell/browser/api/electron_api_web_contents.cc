@@ -1786,8 +1786,27 @@ bool WebContents::EmitNavigationEvent(
                 navigation_handle->GetInitiatorProcessID(),
                 navigation_handle->GetInitiatorFrameToken().value())
           : nullptr;
-  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
-              frame_routing_id, initiator_frame_host);
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  std::shared_ptr<bool> default_prevented(new bool(false));
+  v8::Local<v8::Object> nh =
+      gin::DataObjectBuilder(isolate)
+          .Set("url", url)
+          .Set("isSameDocument", is_same_document)
+          .Set("isMainFrame", is_main_frame)
+          .Set("frame", frame_host)
+          .Set("initiator", initiator_frame_host)
+          .Set("preventDefault",
+               base::BindRepeating(
+                   [](std::shared_ptr<bool> default_prevented) {
+                     *default_prevented = true;
+                   },
+                   default_prevented))
+          .Build();
+  EmitWithoutCustomEvent(event, nh, url, is_same_document, is_main_frame,
+                         frame_process_id, frame_routing_id);
+  return *default_prevented;
 }
 
 void WebContents::Message(bool internal,

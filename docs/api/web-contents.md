@@ -207,13 +207,12 @@ See [`window.open()`](window-open.md) for more details and how to use this in co
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
-* `initiator` WebFrameMain
+* `details` [NavigationEvent](structures/navigation-event.md)
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when a user or the page wants to start navigation. It can happen when
 the `window.location` object is changed or a user clicks a link in the page.
@@ -231,13 +230,12 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
-* `initiator` WebFrameMain
+* `details` [NavigationEvent](structures/navigation-event.md)
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when any frame (including main) starts navigating. `isInPlace` will be
 `true` for in-page navigations.
@@ -246,13 +244,12 @@ Emitted when any frame (including main) starts navigating. `isInPlace` will be
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
-* `initiator` WebFrameMain
+* `details` [NavigationEvent](structures/navigation-event.md)
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when a server side redirect occurs during navigation.  For example a 302
 redirect.
@@ -267,13 +264,12 @@ redirect).
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
-* `initiator` WebFrameMain
+* `details` [NavigationEvent](structures/navigation-event.md)
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted after a server side redirect occurs during navigation.  For example a 302
 redirect.
