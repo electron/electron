@@ -78,7 +78,7 @@ index 796c7f06fa6063ac409f3fef53871e18d4c07838..6575e833388bcc3ac487a409027d984b
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 017e421d0ca3e6154b849373abbcb8d75b369e60..463f743af273b0f2f5afe6904ed77e7e99a91f46 100644
+index 017e421d0ca3e6154b849373abbcb8d75b369e60..aaadfba1735b21e17b66e8efe69f8a5ab4a312b0 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -264,6 +264,15 @@ index 017e421d0ca3e6154b849373abbcb8d75b369e60..463f743af273b0f2f5afe6904ed77e7e
  
    auto callback_wrapper =
        base::BindOnce(&PrintViewManagerBase::UpdatePrintSettingsReply,
+@@ -630,7 +664,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+ void PrintViewManagerBase::IsPrintingEnabled(
+     IsPrintingEnabledCallback callback) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  std::move(callback).Run(printing_enabled_.GetValue());
++  std::move(callback).Run(true);
+ }
+ 
+ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
 @@ -646,14 +680,14 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
      // didn't happen for some reason.
      bad_message::ReceivedBadMessage(
