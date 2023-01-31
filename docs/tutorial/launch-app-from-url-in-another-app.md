@@ -61,7 +61,7 @@ const createWindow = () => {
 
 In this next step, we will create our  `BrowserWindow` and tell our application how to handle an event in which an external protocol is clicked.
 
-This code will be different in Windows compared to MacOS and Linux. This is due to Windows requiring additional code in order to open the contents of the protocol link within the same Electron instance. Read more about this [here](https://www.electronjs.org/docs/api/app#apprequestsingleinstancelock).
+This code will be different in Windows compared to MacOS and Linux. This is due to Windows requiring additional code in order to open the contents of the protocol link within the same Electron instance. Read more about this [here](../api/app.md#apprequestsingleinstancelockadditionaldata).
 
 #### Windows code:
 
@@ -77,16 +77,14 @@ if (!gotTheLock) {
       if (mainWindow.isMinimized()) mainWindow.restore()
       mainWindow.focus()
     }
+    // the commandLine is array of strings in which last element is deep link url
+    // the url str ends with /
+    dialog.showErrorBox('Welcome Back', `You arrived from: ${commandLine.pop().slice(0, -1)}`)
   })
 
   // Create mainWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
     createWindow()
-  })
-
-  // Handle the protocol. In this case, we choose to show an Error Box.
-  app.on('open-url', (event, url) => {
-    dialog.showErrorBox('Welcome Back', `You arrived from: ${url}`)
   })
 }
 ```
