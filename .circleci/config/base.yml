@@ -484,7 +484,9 @@ step-fix-sync: &step-fix-sync
   run:
     name: Fix Sync
     command: |
+      SEDOPTION="-i"
       if [ "`uname`" == "Darwin" ]; then
+        SEDOPTION="-i ''"
         # Fix Clang Install (wrong binary)
         rm -rf src/third_party/llvm-build
         python3 src/tools/clang/scripts/update.py
@@ -494,12 +496,15 @@ step-fix-sync: &step-fix-sync
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
         sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
-
-        # Fix ninja (wrong binary)
-        echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
-        sed -i '' "s/Updating depot_tools... //g" ninja_ensure_file
-        cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
       fi
+
+      # Make sure we are using the right ninja
+      echo 'infra/3pp/tools/ninja/${platform}' `gclient getdep --deps-file=src/DEPS -r 'src/third_party/ninja:infra/3pp/tools/ninja/${platform}'` > ninja_ensure_file
+      sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
+      cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
+
+      # Explicitly add ninja to the path
+      echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $BASH_ENV
 
       cd src/third_party/angle
       rm .git/objects/info/alternates
