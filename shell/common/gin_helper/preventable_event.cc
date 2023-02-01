@@ -9,8 +9,10 @@
 namespace gin_helper::internal {
 
 // static
-gin::Handle<PreventableEvent> PreventableEvent::New(v8::Isolate* isolate) {
-  return gin::CreateHandle(isolate, new PreventableEvent());
+gin::Handle<PreventableEvent> PreventableEvent::New(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> sender) {
+  return gin::CreateHandle(isolate, new PreventableEvent(isolate, sender));
 }
 // static
 v8::Local<v8::ObjectTemplate> PreventableEvent::FillObjectTemplate(
@@ -19,20 +21,25 @@ v8::Local<v8::ObjectTemplate> PreventableEvent::FillObjectTemplate(
   return gin::ObjectTemplateBuilder(isolate, "Event", templ)
       .SetMethod("preventDefault", &PreventableEvent::PreventDefault)
       .SetProperty("defaultPrevented", &PreventableEvent::GetDefaultPrevented)
+      .SetProperty("sender", &PreventableEvent::GetSender)
       .Build();
 }
 
+PreventableEvent::PreventableEvent(v8::Isolate* isolate,
+                                   v8::Local<v8::Object> sender)
+    : sender_(isolate, sender) {}
+
 PreventableEvent::~PreventableEvent() = default;
+
+v8::Local<v8::Object> PreventableEvent::GetSender(v8::Isolate* isolate) {
+  return sender_.Get(isolate);
+}
 
 gin::WrapperInfo PreventableEvent::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 gin::Handle<PreventableEvent> CreateCustomEvent(v8::Isolate* isolate,
                                                 v8::Local<v8::Object> sender) {
-  auto event = PreventableEvent::New(isolate);
-  if (!sender.IsEmpty())
-    gin::Dictionary(isolate, event.ToV8().As<v8::Object>())
-        .Set("sender", sender);
-  return event;
+  return PreventableEvent::New(isolate, sender);
 }
 
 }  // namespace gin_helper::internal
