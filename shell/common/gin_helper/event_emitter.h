@@ -36,14 +36,6 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     return Base::GetWrapper(isolate);
   }
 
-  // this.emit(name, event, args...);
-  template <typename... Args>
-  bool EmitCustomEvent(base::StringPiece name, Args&&... args) {
-    return EmitWithEvent(name,
-                         internal::CreateCustomEvent(isolate(), GetWrapper()),
-                         std::forward<Args>(args)...);
-  }
-
   // this.emit(name, new Event(), args...);
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
