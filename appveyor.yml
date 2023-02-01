@@ -1,5 +1,5 @@
-# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor-woa.yml 
-# IF APPLICABLE!!!! 
+# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor-woa.yml
+# IF APPLICABLE!!!!
 #
 #
 # The config expects the following environment variables to be set:
@@ -117,7 +117,7 @@ for:
             $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
           }
       - gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
-      # Patches are applied in the image bake. Check depshash to see if patches have changed. 
+      # Patches are applied in the image bake. Check depshash to see if patches have changed.
       - ps: $env:RUN_GCLIENT_SYNC="false"
       - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
       - ps: cd src\electron
@@ -272,7 +272,7 @@ for:
       - echo "Done verifying mksnapshot"
       - echo Verifying chromedriver & python electron\script\verify-chromedriver.py --build-dir out\Default --source-root %cd%
       - echo "Done verifying chromedriver"
-    
+
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
