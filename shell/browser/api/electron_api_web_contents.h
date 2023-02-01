@@ -21,12 +21,14 @@
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
+#include "content/public/browser/render_process_host.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -38,8 +40,10 @@
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
 #include "ui/base/models/image_model.h"
@@ -356,7 +360,7 @@ class WebContents : public ExclusiveAccessContext,
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
   bool EmitWithSender(base::StringPiece name,
-                      content::RenderFrameHost* sender,
+                      content::RenderFrameHost* frame,
                       electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -365,8 +369,16 @@ class WebContents : public ExclusiveAccessContext,
     v8::Local<v8::Object> wrapper;
     if (!GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    v8::Local<v8::Object> event = gin_helper::internal::CreateNativeEvent(
-        isolate, wrapper, sender, std::move(callback));
+    gin::Handle<gin_helper::internal::PreventableEvent> event =
+        gin_helper::internal::CreateCustomEvent(isolate, wrapper);
+    gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+    if (callback)
+      dict.Set("sendReply", gin::ConvertToV8(isolate, std::move(callback)));
+    if (frame) {
+      dict.Set("frameId", frame->GetRoutingID());
+      dict.Set("processId", frame->GetProcess()->GetID());
+    }
+
     return EmitCustomEvent(name, event, std::forward<Args>(args)...);
   }
 

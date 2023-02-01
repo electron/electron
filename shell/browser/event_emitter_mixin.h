@@ -7,15 +7,13 @@
 
 #include <utility>
 
+#include "gin/handle.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event_emitter.h"
+#include "shell/common/gin_helper/preventable_event.h"
 
 namespace gin_helper {
-
-namespace internal {
-v8::Local<v8::FunctionTemplate> GetEventEmitterTemplate(v8::Isolate* isolate);
-}  // namespace internal
 
 template <typename T>
 class EventEmitterMixin {
@@ -33,7 +31,8 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    v8::Local<v8::Object> event = internal::CreateCustomEvent(isolate, wrapper);
+    gin::Handle<internal::PreventableEvent> event =
+        internal::CreateCustomEvent(isolate, wrapper);
     return EmitWithEvent(isolate, wrapper, name, event,
                          std::forward<Args>(args)...);
   }
@@ -51,16 +50,13 @@ class EventEmitterMixin {
 
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitCustomEvent(base::StringPiece name,
-                       v8::Local<v8::Object> custom_event,
-                       Args&&... args) {
+  bool EmitCustomEvent(base::StringPiece name, Args&&... args) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    return EmitWithEvent(isolate, wrapper, name, custom_event,
-                         std::forward<Args>(args)...);
+    return EmitWithEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
 
  protected:
@@ -86,20 +82,15 @@ class EventEmitterMixin {
  private:
   // this.emit(name, event, args...);
   template <typename... Args>
-  static bool EmitWithEvent(v8::Isolate* isolate,
-                            v8::Local<v8::Object> wrapper,
-                            base::StringPiece name,
-                            v8::Local<v8::Object> event,
-                            Args&&... args) {
-    auto context = isolate->GetCurrentContext();
+  static bool EmitWithEvent(
+      v8::Isolate* isolate,
+      v8::Local<v8::Object> wrapper,
+      base::StringPiece name,
+      gin::Handle<gin_helper::internal::PreventableEvent> event,
+      Args&&... args) {
     gin_helper::EmitEvent(isolate, wrapper, name, event,
                           std::forward<Args>(args)...);
-    v8::Local<v8::Value> defaultPrevented;
-    if (event->Get(context, gin::StringToV8(isolate, "defaultPrevented"))
-            .ToLocal(&defaultPrevented)) {
-      return defaultPrevented->BooleanValue(isolate);
-    }
-    return false;
+    return event->GetDefaultPrevented();
   }
 };
 

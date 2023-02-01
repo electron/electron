@@ -9,8 +9,9 @@
 
 namespace {
 
-v8::Local<v8::Object> CreateWithSender(v8::Isolate* isolate,
-                                       v8::Local<v8::Object> sender) {
+gin::Handle<gin_helper::internal::PreventableEvent> CreateWithSender(
+    v8::Isolate* isolate,
+    v8::Local<v8::Object> sender) {
   return gin_helper::internal::CreateCustomEvent(isolate, sender);
 }
 

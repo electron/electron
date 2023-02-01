@@ -10,7 +10,9 @@
 
 #include "content/public/browser/browser_thread.h"
 #include "electron/shell/common/api/api.mojom.h"
+#include "gin/handle.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
+#include "shell/common/gin_helper/preventable_event.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 namespace content {
@@ -20,11 +22,11 @@ class RenderFrameHost;
 namespace gin_helper {
 
 namespace internal {
+class PreventableEvent;
 
-v8::Local<v8::Object> CreateCustomEvent(
+gin::Handle<PreventableEvent> CreateCustomEvent(
     v8::Isolate* isolate,
-    v8::Local<v8::Object> sender = v8::Local<v8::Object>(),
-    v8::Local<v8::Object> custom_event = v8::Local<v8::Object>());
+    v8::Local<v8::Object> sender = v8::Local<v8::Object>());
 v8::Local<v8::Object> CreateNativeEvent(
     v8::Isolate* isolate,
     v8::Local<v8::Object> sender,
@@ -50,12 +52,10 @@ class EventEmitter : public gin_helper::Wrappable<T> {
 
   // this.emit(name, event, args...);
   template <typename... Args>
-  bool EmitCustomEvent(base::StringPiece name,
-                       v8::Local<v8::Object> event,
-                       Args&&... args) {
-    return EmitWithEvent(
-        name, internal::CreateCustomEvent(isolate(), GetWrapper(), event),
-        std::forward<Args>(args)...);
+  bool EmitCustomEvent(base::StringPiece name, Args&&... args) {
+    return EmitWithEvent(name,
+                         internal::CreateCustomEvent(isolate(), GetWrapper()),
+                         std::forward<Args>(args)...);
   }
 
   // this.emit(name, new Event(), args...);
@@ -65,7 +65,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    v8::Local<v8::Object> event =
+    gin::Handle<gin_helper::internal::PreventableEvent> event =
         internal::CreateCustomEvent(isolate(), wrapper);
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
@@ -81,20 +81,14 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, event, args...);
   template <typename... Args>
   bool EmitWithEvent(base::StringPiece name,
-                     v8::Local<v8::Object> event,
+                     gin::Handle<gin_helper::internal::PreventableEvent> event,
                      Args&&... args) {
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
     auto* isolate = this->isolate();
-    auto context = isolate->GetCurrentContext();
     gin_helper::EmitEvent(isolate, GetWrapper(), name, event,
                           std::forward<Args>(args)...);
-    v8::Local<v8::Value> defaultPrevented;
-    if (event->Get(context, gin::StringToV8(isolate, "defaultPrevented"))
-            .ToLocal(&defaultPrevented)) {
-      return defaultPrevented->BooleanValue(isolate);
-    }
-    return false;
+    return event->GetDefaultPrevented();
   }
 };
 
