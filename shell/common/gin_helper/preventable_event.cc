@@ -13,11 +13,13 @@ gin::Handle<PreventableEvent> PreventableEvent::New(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, new PreventableEvent());
 }
 // static
-void PreventableEvent::FillObjectTemplate(v8::Isolate* isolate,
-                                          v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Event", templ)
+v8::Local<v8::ObjectTemplate> PreventableEvent::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Event", templ)
       .SetMethod("preventDefault", &PreventableEvent::PreventDefault)
-      .SetProperty("defaultPrevented", &PreventableEvent::GetDefaultPrevented);
+      .SetProperty("defaultPrevented", &PreventableEvent::GetDefaultPrevented)
+      .Build();
 }
 
 PreventableEvent::~PreventableEvent() = default;

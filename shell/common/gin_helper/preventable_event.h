@@ -23,8 +23,9 @@ class PreventableEvent : public gin::Wrappable<PreventableEvent>,
  public:
   // gin_helper::Constructible
   static gin::Handle<PreventableEvent> New(v8::Isolate* isolate);
-  static void FillObjectTemplate(v8::Isolate* isolate,
-                                 v8::Local<v8::ObjectTemplate> prototype);
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate* isolate,
+      v8::Local<v8::ObjectTemplate> prototype);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
