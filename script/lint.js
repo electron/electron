@@ -86,11 +86,8 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
-    }
+    const clangFormatFlags = opts.fix ? ['--fix'] : [];
+    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
     const filter = [
       '-readability/braces',
       '-readability/casting',

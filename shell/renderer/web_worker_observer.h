@@ -17,8 +17,13 @@ class NodeBindings;
 // Watches for WebWorker and insert node integration to it.
 class WebWorkerObserver {
  public:
+  WebWorkerObserver();
+  ~WebWorkerObserver();
+
   // Returns the WebWorkerObserver for current worker thread.
   static WebWorkerObserver* GetCurrent();
+  // Creates a new WebWorkerObserver for a given context.
+  static WebWorkerObserver* Create();
 
   // disable copy
   WebWorkerObserver(const WebWorkerObserver&) = delete;
@@ -28,9 +33,6 @@ class WebWorkerObserver {
   void ContextWillDestroy(v8::Local<v8::Context> context);
 
  private:
-  WebWorkerObserver();
-  ~WebWorkerObserver();
-
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;
 };
