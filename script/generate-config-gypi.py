@@ -21,6 +21,10 @@ def run_node_configure(target_cpu):
   # Work around "No acceptable ASM compiler found" error on some System,
   # it breaks nothing since Electron does not use OpenSSL.
   args += ['--openssl-no-asm']
+
+  # Enable whole-program optimization for electron native modules.
+  if sys.platform == "win32":
+    args += ['--with-ltcg']
   subprocess.check_call([sys.executable, configure] + args)
 
 def read_node_config_gypi():
