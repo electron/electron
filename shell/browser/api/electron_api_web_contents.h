@@ -366,21 +366,18 @@ class WebContents : public ExclusiveAccessContext,
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Object> wrapper;
-    if (!GetWrapper(isolate).ToLocal(&wrapper))
-      return false;
-    gin::Handle<gin_helper::internal::PreventableEvent> event =
-        gin_helper::internal::CreateCustomEvent(isolate, wrapper);
-    gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
-    if (callback)
-      dict.Set("sendReply", gin::ConvertToV8(isolate, std::move(callback)));
-    if (frame) {
-      dict.Set("frameId", frame->GetRoutingID());
-      dict.Set("processId", frame->GetProcess()->GetID());
-    }
 
+    gin::Handle<gin_helper::internal::PreventableEvent> event =
+        MakeEventWithSender(isolate, frame, std::move(callback));
+    if (event.IsEmpty())
+      return false;
     return EmitCustomEvent(name, event, std::forward<Args>(args)...);
   }
+
+  gin::Handle<gin_helper::internal::PreventableEvent> MakeEventWithSender(
+      v8::Isolate* isolate,
+      content::RenderFrameHost* frame,
+      electron::mojom::ElectronApiIPC::InvokeCallback callback);
 
   WebContents* embedder() { return embedder_; }
 

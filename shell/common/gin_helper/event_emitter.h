@@ -21,20 +21,6 @@ class RenderFrameHost;
 
 namespace gin_helper {
 
-namespace internal {
-class PreventableEvent;
-
-gin::Handle<PreventableEvent> CreateCustomEvent(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> sender = v8::Local<v8::Object>());
-v8::Local<v8::Object> CreateNativeEvent(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> sender,
-    content::RenderFrameHost* frame,
-    electron::mojom::ElectronApiIPC::MessageSyncCallback callback);
-
-}  // namespace internal
-
 // Provide helperers to emit event in JavaScript.
 template <typename T>
 class EventEmitter : public gin_helper::Wrappable<T> {
