@@ -1783,37 +1783,6 @@ class Constructible2 {
   }
 };
 
-class PreventableEvent : public gin::Wrappable<PreventableEvent>,
-                         public Constructible2<PreventableEvent> {
- public:
-  // gin_helper::Constructible
-  static gin::Handle<PreventableEvent> New(v8::Isolate* isolate) {
-    return gin::CreateHandle(isolate, new PreventableEvent());
-  }
-  static void BuildPrototype(v8::Isolate* isolate,
-                             v8::Local<v8::FunctionTemplate> prototype) {
-    gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-        .SetMethod("preventDefault", &PreventableEvent::PreventDefault)
-        .SetProperty("defaultPrevented",
-                     &PreventableEvent::GetDefaultPrevented);
-  }
-
-  // gin::Wrappable
-  static gin::WrapperInfo kWrapperInfo;
-  ~PreventableEvent() override = default;
-
-  void PreventDefault() { default_prevented_ = true; }
-
-  bool GetDefaultPrevented() { return default_prevented_; }
-
- private:
-  PreventableEvent() = default;
-
-  bool default_prevented_ = false;
-};
-
-gin::WrapperInfo PreventableEvent::kWrapperInfo = {gin::kEmbedderNativeGin};
-
 bool WebContents::EmitNavigationEvent(
     const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
@@ -1846,7 +1815,9 @@ bool WebContents::EmitNavigationEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<PreventableEvent> event = PreventableEvent::New(isolate);
+  gin::Handle<gin_helper::internal::PreventableEvent> event =
+      gin_helper::internal::CreateCustomEvent(
+          isolate, GetWrapper(isolate).ToLocalChecked());
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
 
   gin::Dictionary dict(isolate, event_object);
@@ -4431,8 +4402,6 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-
-  electron::api::PreventableEvent::GetConstructor(context);
 
   dict.Set("WebContents", WebContents::GetConstructor(context));
   dict.SetMethod("fromId", &WebContentsFromID);
