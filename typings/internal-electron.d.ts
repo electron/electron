@@ -148,8 +148,6 @@ declare namespace Electron {
 
   interface IpcMainInvokeEvent {
     _replySender: ReplySender;
-    _reply(value: any): void;
-    _throw(error: Error | string): void;
   }
 
   class View {}

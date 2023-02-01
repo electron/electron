@@ -588,10 +588,10 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke' as any, function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-invoke' as any, async function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
-    event._reply = (result: any) => event._replySender.sendReply({ result });
-    event._throw = (error: Error) => {
+    const replyWithResult = (result: any) => event._replySender.sendReply({ result });
+    const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event._replySender.sendReply({ error: error.toString() });
     };
@@ -599,9 +599,14 @@ WebContents.prototype._init = function () {
     const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
     const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
     if (target) {
-      (target as any)._invokeHandlers.get(channel)(event, ...args);
+      const handler = (target as any)._invokeHandlers.get(channel);
+      try {
+        replyWithResult(await Promise.resolve(handler(event, ...args)));
+      } catch (err) {
+        replyWithError(err as Error);
+      }
     } else {
-      event._throw(`No handler registered for '${channel}'`);
+      replyWithError(new Error(`No handler registered for '${channel}'`));
     }
   });
 
