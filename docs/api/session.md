@@ -561,7 +561,7 @@ Clears the session’s HTTP cache.
   * `origin` string (optional) - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` string[] (optional) - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can contain:
