@@ -129,8 +129,8 @@ class NativeWindowMac : public NativeWindow,
   void SetVibrancy(const std::string& type) override;
   void SetWindowButtonVisibility(bool visible) override;
   bool GetWindowButtonVisibility() const override;
-  void SetTrafficLightPosition(absl::optional<gfx::Point> position) override;
-  absl::optional<gfx::Point> GetTrafficLightPosition() const override;
+  void SetWindowButtonPosition(absl::optional<gfx::Point> position) override;
+  absl::optional<gfx::Point> GetWindowButtonPosition() const override;
   void RedrawTrafficLights() override;
   void UpdateFrame() override;
   void SetTouchBar(

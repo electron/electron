@@ -1474,7 +1474,7 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
          ![window_ standardWindowButton:NSWindowCloseButton].hidden;
 }
 
-void NativeWindowMac::SetTrafficLightPosition(
+void NativeWindowMac::SetWindowButtonPosition(
     absl::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
   if (buttons_proxy_) {
@@ -1483,7 +1483,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   }
 }
 
-absl::optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
+absl::optional<gfx::Point> NativeWindowMac::GetWindowButtonPosition() const {
   return traffic_light_position_;
 }
 
