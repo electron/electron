@@ -55,9 +55,8 @@ class Constructible {
       }
       constructor->InstanceTemplate()->SetInternalFieldCount(
           gin::kNumberOfInternalFields);
-      v8::Local<v8::ObjectTemplate> obj_templ =
-          T::FillObjectTemplate(isolate, constructor->InstanceTemplate());
-      data->SetObjectTemplate(wrapper_info, obj_templ);
+      T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
+      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
       data->SetFunctionTemplate(wrapper_info, constructor);
     }
     return constructor->GetFunction(context).ToLocalChecked();
