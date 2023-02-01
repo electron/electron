@@ -11,19 +11,9 @@ template <typename T>
 class Local;
 }  // namespace v8
 
-namespace gin_helper::internal {
-class PreventableEvent;
-}
-
-namespace gin {
-template <typename T>
-class Handle;
-}
-
 namespace electron::api {
 
-gin::Handle<gin_helper::internal::PreventableEvent> CreateEventFromFlags(
-    int flags);
+v8::Local<v8::Object> CreateEventFromFlags(int flags);
 
 }  // namespace electron::api
 
