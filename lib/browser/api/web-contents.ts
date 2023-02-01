@@ -534,7 +534,7 @@ const addSenderFrameToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainIn
 
 const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
   Object.defineProperty(event, 'returnValue', {
-    set: (value) => event.sendReply(value),
+    set: (value) => event._replySender.sendReply(value),
     get: () => {}
   });
 };
@@ -588,20 +588,25 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke' as any, function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
+  this.on('-ipc-invoke' as any, async function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
-    event._reply = (result: any) => event.sendReply({ result });
-    event._throw = (error: Error) => {
+    const replyWithResult = (result: any) => event._replySender.sendReply({ result });
+    const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
-      event.sendReply({ error: error.toString() });
+      event._replySender.sendReply({ error: error.toString() });
     };
     const maybeWebFrame = getWebFrameForEvent(event);
     const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
     const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
     if (target) {
-      (target as any)._invokeHandlers.get(channel)(event, ...args);
+      const handler = (target as any)._invokeHandlers.get(channel);
+      try {
+        replyWithResult(await Promise.resolve(handler(event, ...args)));
+      } catch (err) {
+        replyWithError(err as Error);
+      }
     } else {
-      event._throw(`No handler registered for '${channel}'`);
+      replyWithError(new Error(`No handler registered for '${channel}'`));
     }
   });
 
@@ -792,8 +797,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  const event = process._linkedBinding('electron_browser_event').createEmpty();
-  app.emit('web-contents-created', event, this);
+  app.emit('web-contents-created', { preventDefault () {} }, this);
 
   // Properties
 

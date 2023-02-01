@@ -34,6 +34,7 @@
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
+#include "shell/common/gin_helper/preventable_event.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
@@ -50,7 +51,6 @@
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
-  V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
   V(electron_browser_in_app_purchase)    \
@@ -441,6 +441,10 @@ void NodeBindings::Initialize() {
       env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin_helper::internal::PreventableEvent::GetConstructor(
+      isolate->GetCurrentContext());
 
   g_is_initialized = true;
 }

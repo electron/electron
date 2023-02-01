@@ -68,8 +68,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
   });
 
   // Notify the creation of the window.
-  const event = process._linkedBinding('electron_browser_event').createEmpty();
-  app.emit('browser-window-created', event, this);
+  app.emit('browser-window-created', { preventDefault () {} }, this);
 
   Object.defineProperty(this, 'devToolsWebContents', {
     enumerable: true,

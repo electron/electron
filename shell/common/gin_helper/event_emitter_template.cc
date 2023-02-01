@@ -1,11 +1,14 @@
-// Copyright (c) 2019 Slack Technologies, Inc.
+// Copyright (c) 2023 Salesforce, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 
-#include "gin/public/wrapper_info.h"
+#include "gin/converter.h"
+#include "gin/per_isolate_data.h"
 #include "shell/browser/api/electron_api_event_emitter.h"
+#include "v8/include/v8-function.h"
+#include "v8/include/v8-template.h"
 
 namespace gin_helper::internal {
 

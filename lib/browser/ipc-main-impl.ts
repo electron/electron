@@ -18,13 +18,7 @@ export class IpcMainImpl extends EventEmitter {
     if (typeof fn !== 'function') {
       throw new Error(`Expected handler to be a function, but found type '${typeof fn}'`);
     }
-    this._invokeHandlers.set(method, async (e, ...args) => {
-      try {
-        e._reply(await Promise.resolve(fn(e, ...args)));
-      } catch (err) {
-        e._throw(err as Error);
-      }
-    });
+    this._invokeHandlers.set(method, fn);
   }
 
   handleOnce: Electron.IpcMain['handleOnce'] = (method, fn) => {
