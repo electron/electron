@@ -1,4 +1,5 @@
 // tslint:disable:ordered-imports curly no-console no-angle-bracket-type-assertion object-literal-sort-keys only-arrow-functions
+/* eslint-disable */
 
 import {
   app,
@@ -23,7 +24,6 @@ import {
   session,
   systemPreferences,
   webContents,
-  Event,
   TouchBar
 } from 'electron'
 
@@ -328,7 +328,7 @@ app.whenReady().then(() => {
 })
 app.on('accessibility-support-changed', (_, enabled) => console.log('accessibility: ' + enabled))
 
-ipcMain.on('online-status-changed', (event: any, status: any) => {
+ipcMain.on('online-status-changed', (event, status: any) => {
   console.log(status)
 })
 
