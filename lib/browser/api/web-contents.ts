@@ -412,14 +412,14 @@ WebContents.prototype.loadURL = function (url, options) {
     const finishListener = () => {
       resolveAndCleanup();
     };
-    const failListener = (event: Electron.Event, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
+    const failListener = (event: Electron.Event<{}, Electron.WebContents>, errorCode: number, errorDescription: string, validatedURL: string, isMainFrame: boolean) => {
       if (isMainFrame) {
         rejectAndCleanup(errorCode, errorDescription, validatedURL);
       }
     };
 
     let navigationStarted = false;
-    const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
+    const navigationListener = (event: Electron.Event<{}, Electron.WebContents>, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
       if (isMainFrame) {
         if (navigationStarted && !isSameDocument) {
           // the webcontents has started another unrelated navigation in the
@@ -473,7 +473,7 @@ WebContents.prototype.setWindowOpenHandler = function (handler: (details: Electr
   this._windowOpenHandler = handler;
 };
 
-WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
+WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event<{}, Electron.WebContents>, details: Electron.HandlerDetails): {browserWindowConstructorOptions: BrowserWindowConstructorOptions | null, outlivesOpener: boolean} {
   const defaultResponse = {
     browserWindowConstructorOptions: null,
     outlivesOpener: false
@@ -657,7 +657,7 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window' as any, (event: ElectronInternal.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
+    this.on('-new-window' as any, (event: Electron.Event<{}, Electron.WebContents>, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
       rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
@@ -696,7 +696,7 @@ WebContents.prototype._init = function () {
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
-    this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
+    this.on('-will-add-new-contents' as any, (event: Electron.Event<{}, Electron.WebContents>, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
         ...parseContentTypeFormat(postData)
@@ -744,7 +744,7 @@ WebContents.prototype._init = function () {
     });
 
     // Create a new browser window for "window.open"
-    this.on('-add-new-contents' as any, (event: ElectronInternal.Event, webContents: Electron.WebContents, disposition: string,
+    this.on('-add-new-contents' as any, (event: Electron.Event<{}, Electron.WebContents>, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;

@@ -1,4 +1,4 @@
-import { BaseWindow, WebContents, Event, BrowserView, TouchBar } from 'electron/main';
+import { BaseWindow, WebContents, BrowserView, TouchBar } from 'electron/main';
 import type { BrowserWindow as BWT } from 'electron/main';
 import * as deprecate from '@electron/internal/common/deprecate';
 const { BrowserWindow } = process._linkedBinding('electron_browser_window') as { BrowserWindow: typeof BWT };
@@ -22,10 +22,10 @@ BrowserWindow.prototype._init = function (this: BWT) {
   };
 
   // Redirect focus/blur event to app instance too.
-  this.on('blur', (event: Event) => {
+  this.on('blur', (event: Electron.Event<{}, BWT>) => {
     app.emit('browser-window-blur', event, this);
   });
-  this.on('focus', (event: Event) => {
+  this.on('focus', (event: Electron.Event<{}, BWT>) => {
     app.emit('browser-window-focus', event, this);
   });
 
