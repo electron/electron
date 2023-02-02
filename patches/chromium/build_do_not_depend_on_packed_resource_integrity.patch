@@ -33,10 +33,10 @@ index d78fad5f8e4549c605c9d2e5b5265fba987d6794..1239a4d5eb849455e0fe739fb32a1d78
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 8ba5a90740a059ce265d5e7690921f18a636f674..791a9f7a1e567fc7e855b466e710ea00fd2a06b7 100644
+index 21547000bf9097320825919238a3ad3e2979f4b4..fe6b4b52417c9c276c4f0a0ec4e8a453fa346cad 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4604,7 +4604,7 @@ static_library("browser") {
+@@ -4603,7 +4603,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
