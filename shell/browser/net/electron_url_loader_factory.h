@@ -145,8 +145,8 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       network::mojom::URLResponseHeadPtr head,
       const network::ResourceRequest& original_request,
-      base::FilePath path,
-      gin_helper::Dictionary opts);
+      const base::FilePath& path,
+      const gin_helper::Dictionary& opts);
   static void StartLoadingHttp(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
