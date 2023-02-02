@@ -5,7 +5,7 @@
   "version": "0.1.0",
   "devDependencies": {
     "@electron-ci/echo": "file:./fixtures/native-addon/echo",
-    "@electron-ci/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen/",
+    "@electron-ci/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen",
     "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
     "basic-auth": "^2.0.1",
