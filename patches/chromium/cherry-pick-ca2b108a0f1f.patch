@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Harald Alvestrand <hta@chromium.org>
+Date: Wed, 18 Jan 2023 08:02:48 +0000
+Subject: Delete PeerConnectionHandler in PeerConnection finalizer
+
+Also guard against removal of PC during PeerConnectionHandler
+call that may cause garbage collection.
+
+(cherry picked from commit 5066dd66309d884762e5fb9be04b59582893d09a)
+
+Bug: chromium:1405256
+Change-Id: I9adf7b219e2026e07ccc0868c1a85f3b35cd9d26
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4154578
+Commit-Queue: Harald Alvestrand <hta@chromium.org>
+Reviewed-by: Guido Urdaneta <guidou@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1091801}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4176372
+Auto-Submit: Harald Alvestrand <hta@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5481@{#418}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+index 6da9e3f038869f204074aabfd8ec8a0dbc659ab6..ec4b8985b5fb072ea98f4c36a3d0b341000d96ad 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+@@ -741,10 +741,11 @@ RTCPeerConnection::~RTCPeerConnection() {
+ }
+ 
+ void RTCPeerConnection::Dispose() {
+-  // Promptly clears the handler's pointer to |this|
++  // Promptly clears the handler
+   // so that content/ doesn't access it in a lazy sweeping phase.
++  // Other references to the handler use a weak pointer, preventing access.
+   if (peer_handler_) {
+-    peer_handler_->CloseAndUnregister();
++    peer_handler_.reset();
+   }
+ }
+ 
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+index 8166a6fa6c9aff9d724200cbbfac189d3f887735..ee694f5820b4947dc5815a5dd2f41ecfd1c9cb4c 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection_handler.cc
+@@ -806,6 +806,8 @@ class RTCPeerConnectionHandler::WebRtcSetDescriptionObserverImpl
+     if (handler_) {
+       handler_->OnModifySctpTransport(std::move(states.sctp_transport_state));
+     }
++    // Since OnSessionDescriptionsUpdated can fire events, it may cause
++    // garbage collection. Ensure that handler_ is still valid.
+     if (handler_) {
+       handler_->OnModifyTransceivers(
+           states.signaling_state, std::move(states.transceiver_states),
+@@ -1160,6 +1162,8 @@ bool RTCPeerConnectionHandler::Initialize(
+   CHECK(!initialize_called_);
+   initialize_called_ = true;
+ 
++  // Prevent garbage collection of client_ during processing.
++  auto* client_on_stack = client_;
+   peer_connection_tracker_ = PeerConnectionTracker::From(*frame);
+ 
+   configuration_ = server_configuration;
+@@ -1198,8 +1202,8 @@ bool RTCPeerConnectionHandler::Initialize(
+     peer_connection_tracker_->RegisterPeerConnection(this, configuration_,
+                                                      frame_);
+   }
+-
+-  return true;
++  // Gratuitous usage of client_on_stack to prevent compiler errors.
++  return !!client_on_stack;
+ }
+ 
+ bool RTCPeerConnectionHandler::InitializeForTest(
+@@ -2259,9 +2263,11 @@ void RTCPeerConnectionHandler::OnSessionDescriptionsUpdated(
+         pending_remote_description,
+     std::unique_ptr<webrtc::SessionDescriptionInterface>
+         current_remote_description) {
++  // Prevent garbage collection of client_ during processing.
++  auto* client_on_stack = client_;
+   if (!client_ || is_closed_)
+     return;
+-  client_->DidChangeSessionDescriptions(
++  client_on_stack->DidChangeSessionDescriptions(
+       pending_local_description
+           ? CreateWebKitSessionDescription(pending_local_description.get())
+           : nullptr,
+@@ -2573,8 +2579,12 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
+                                               int sdp_mline_index,
+                                               int component,
+                                               int address_family) {
++  // In order to ensure that the RTCPeerConnection is not garbage collected
++  // from under the function, we keep a pointer to it on the stack.
++  auto* client_on_stack = client_;
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+   TRACE_EVENT0("webrtc", "RTCPeerConnectionHandler::OnIceCandidateImpl");
++  // This line can cause garbage collection.
+   auto* platform_candidate = MakeGarbageCollected<RTCIceCandidatePlatform>(
+       sdp, sdp_mid, sdp_mline_index);
+   if (peer_connection_tracker_) {
+@@ -2594,7 +2604,7 @@ void RTCPeerConnectionHandler::OnIceCandidate(const String& sdp,
+     }
+   }
+   if (!is_closed_)
+-    client_->DidGenerateICECandidate(platform_candidate);
++    client_on_stack->DidGenerateICECandidate(platform_candidate);
+ }
+ 
+ void RTCPeerConnectionHandler::OnIceCandidateError(
+@@ -2606,7 +2616,6 @@ void RTCPeerConnectionHandler::OnIceCandidateError(
+     const String& error_text) {
+   DCHECK(task_runner_->RunsTasksInCurrentSequence());
+   TRACE_EVENT0("webrtc", "RTCPeerConnectionHandler::OnIceCandidateError");
+-
+   if (peer_connection_tracker_) {
+     peer_connection_tracker_->TrackIceCandidateError(
+         this, address, port, host_candidate, url, error_code, error_text);
