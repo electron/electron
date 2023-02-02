@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bienvenu <davidbienvenu@chromium.org>
+Date: Fri, 10 Jun 2022 23:41:51 +0000
+Subject: win: Fix touch mode detection DCHECK in canary
+
+Remove the DCHECK that the ConvertibleSlateMode key exists. If it does
+exist, and is set to 1 (physical keyboard available), then we're not
+in touch mode. If the key doesn't exist, or is set to the default (0),
+use IsDeviceUsedAsATablet() to determine if we're in touch mode.
+
+Bug: 1330848
+Change-Id: Ic2d02979c4eb2d318fcc08b37a56163bb7cce55b
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/3696127
+Commit-Queue: David Bienvenu <davidbienvenu@chromium.org>
+Reviewed-by: Jesse McKenna <jessemckenna@google.com>
+Cr-Commit-Position: refs/heads/main@{#1013189}
+
+diff --git a/base/win/win_util.cc b/base/win/win_util.cc
+index a5c20144f6b512ad5d3e2d6f911ab9ad5570bece..ba489fc83d4cc3e91a3c7c8938bf95de46ebe33c 100644
+--- a/base/win/win_util.cc
++++ b/base/win/win_util.cc
+@@ -253,16 +253,19 @@ bool IsWindows10OrGreaterTabletMode(HWND hwnd) {
+     // instead we check if we're in slate mode or not - 0 value means slate
+     // mode. See
+     // https://docs.microsoft.com/en-us/windows-hardware/customize/desktop/unattend/microsoft-windows-gpiobuttons-convertibleslatemode
++
++    constexpr int kKeyboardPresent = 1;
+     base::win::RegKey registry_key(
+         HKEY_LOCAL_MACHINE,
+         L"System\\CurrentControlSet\\Control\\PriorityControl", KEY_READ);
+     DWORD slate_mode = 0;
+     bool value_exists = registry_key.ReadValueDW(L"ConvertibleSlateMode",
+                                                  &slate_mode) == ERROR_SUCCESS;
+-    DCHECK(value_exists) << "ConvertibleSlateMode value not in registry";
+-    // Some devices don't set the reg key to 0 for non touch devices, so also
+-    // check if the device is used as a tablet.
+-    return value_exists && slate_mode == 0 &&
++    // Some devices don't set the reg key to 1 for keyboard-only devices, so
++    // also check if the device is used as a tablet if it is not 1. Some devices
++    // don't set the registry key at all; fall back to checking if the device
++    // is used as a tablet for them as well.
++    return !(value_exists && slate_mode == kKeyboardPresent) &&
+            IsDeviceUsedAsATablet(/*reason=*/nullptr);
+   }
+ 

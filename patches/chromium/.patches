@@ -158,4 +158,5 @@ mojo_disable_sync_call_interrupts_in_the_browser.patch
 mojo_validate_that_a_message_is_allowed_to_use_the_sync_flag.patch
 cherry-pick-819d876e1bb8.patch
 cherry-pick-43637378b14e.patch
+win_fix_touch_mode_detection_dcheck_in_canary.patch
 cherry-pick-ca2b108a0f1f.patch
