@@ -33,8 +33,8 @@ declare namespace Electron {
     _refreshTouchBarItem: (itemID: string) => void;
     _getWindowButtonVisibility: () => boolean;
     frameName: string;
-    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
-    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    on(event: '-touch-bar-interaction', listener: (event: Event<{}, this>, itemID: string, details: any) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event<{}, this>, itemID: string, details: any) => void): this;
   }
 
   interface BrowserWindowConstructorOptions {
@@ -110,7 +110,7 @@ declare namespace Electron {
     _shouldRegisterAcceleratorForCommandId(id: string): boolean;
     _getSharingItemForCommandId(id: string): SharingItem | null;
     _callMenuWillShow(): void;
-    _executeCommand(event: any, id: number): void;
+    _executeCommand(event: KeyboardEvent, id: number): void;
     _menuWillShow(): void;
     commandsMap: Record<string, MenuItem>;
     groupsMap: Record<string, MenuItem[]>;
@@ -222,10 +222,6 @@ declare namespace ElectronInternal {
     handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any): void;
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
-  }
-
-  interface Event extends Electron.Event {
-    sender: WebContents;
   }
 
   interface LoadURLOptions extends Electron.LoadURLOptions {
