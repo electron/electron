@@ -21,8 +21,9 @@ global.module = new Module('electron/js2c/worker_init');
 global.require = makeRequireFunction(global.module);
 
 // Set the __filename to the path of html file if it is file: protocol.
-if (self.location.protocol === 'file:') {
-  const pathname = process.platform === 'win32' && self.location.pathname[0] === '/' ? self.location.pathname.substr(1) : self.location.pathname;
+// NB. 'self' isn't defined in an AudioWorklet.
+if (typeof self !== 'undefined' && self.location.protocol === 'file:') {
+  const pathname = process.platform === 'win32' && self?.location.pathname[0] === '/' ? self?.location.pathname.substr(1) : self?.location.pathname;
   global.__filename = path.normalize(decodeURIComponent(pathname));
   global.__dirname = path.dirname(global.__filename);
 
