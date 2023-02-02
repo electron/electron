@@ -1,5 +1,5 @@
 import * as url from 'url';
-import { Readable, Writable } from 'stream';
+import { Readable, Writable, isReadable } from 'stream';
 import { app } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 
@@ -556,7 +556,7 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
     const error = (req.signal as any).reason ?? new DOMException('The operation was aborted.', 'AbortError');
     p.reject(error);
 
-    if (req.body != null /* && isReadable(req.body) */) {
+    if (req.body != null && isReadable(req.body as unknown as NodeJS.ReadableStream)) {
       req.body.cancel(error).catch((err) => {
         if (err.code === 'ERR_INVALID_STATE') {
           // Node bug?
@@ -581,7 +581,7 @@ export function fetch (input: RequestInfo, init?: RequestInit): Promise<Response
       //    and requestObject’s signal’s abort reason.
       const error = (req.signal as any).reason ?? new DOMException('The operation was aborted.', 'AbortError');
       p.reject(error);
-      if (req.body != null /* && isReadable(req.body) */) {
+      if (req.body != null && isReadable(req.body as unknown as NodeJS.ReadableStream)) {
         req.body.cancel(error).catch((err) => {
           if (err.code === 'ERR_INVALID_STATE') {
             // Node bug?
