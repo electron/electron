@@ -163,7 +163,7 @@ describe('asar package', function () {
       fs = require('fs')
       path = require('path')
       asarDir = ${JSON.stringify(asarDir)}
-    
+
       // This is used instead of util.promisify for some tests to dodge the
       // util.promisify.custom behavior.
       promisify = (f) => {
@@ -174,7 +174,7 @@ describe('asar package', function () {
           })
         })
       }
-    
+
       null
     `
   });
