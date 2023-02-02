@@ -45,6 +45,9 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
 
  private:
+  void EmitProcessEvent(content::RenderFrame* render_frame,
+                        const char* event_name);
+
   std::unique_ptr<base::ProcessMetrics> metrics_;
 
   // Getting main script context from web frame would lazily initializes
