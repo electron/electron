@@ -1549,7 +1549,15 @@ describe('net module', () => {
         response.statusMessage = 'OK';
         response.end();
       });
-      const urlRequest = net.request(serverUrl);
+      // The referrerPolicy must be unsafe-url because the referrer's origin
+      // doesn't match the loaded page. With the default referrer policy
+      // (strict-origin-when-cross-origin), the request will be canceled by the
+      // network service when the referrer header is invalid.
+      // See:
+      // - https://source.chromium.org/chromium/chromium/src/+/main:net/url_request/url_request.cc;l=682-683;drc=ae587fa7cd2e5cc308ce69353ee9ce86437e5d41
+      // - https://source.chromium.org/chromium/chromium/src/+/main:services/network/public/mojom/network_context.mojom;l=316-318;drc=ae5c7fcf09509843c1145f544cce3a61874b9698
+      // - https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer
+      const urlRequest = net.request({ url: serverUrl, referrerPolicy: 'unsafe-url' });
       urlRequest.setHeader('referer', referrerURL);
       urlRequest.end();
 
