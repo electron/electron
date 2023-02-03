@@ -20,8 +20,6 @@
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
-#include "base/threading/sequenced_task_runner_handle.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
@@ -1605,6 +1603,13 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
                                          content::RenderFrameHost* new_host) {
+  if (new_host->IsInPrimaryMainFrame()) {
+    if (old_host)
+      old_host->GetRenderWidgetHost()->RemoveInputEventObserver(this);
+    if (new_host)
+      new_host->GetRenderWidgetHost()->AddInputEventObserver(this);
+  }
+
   // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
@@ -1700,14 +1705,6 @@ void WebContents::OnWebContentsFocused(
 void WebContents::OnWebContentsLostFocus(
     content::RenderWidgetHost* render_widget_host) {
   Emit("blur");
-}
-
-void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                        content::RenderViewHost* new_host) {
-  if (old_host)
-    old_host->GetWidget()->RemoveInputEventObserver(this);
-  if (new_host)
-    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void WebContents::DOMContentLoaded(
@@ -3282,9 +3279,7 @@ bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
-  const ui::Cursor& cursor = webcursor.cursor();
-
+void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(cursor),
          gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
@@ -3550,8 +3545,10 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   ScopedAllowBlockingForElectron allow_blocking;
-  base::File file(file_path,
-                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  uint32_t flags = base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE;
+  // The snapshot file is passed to an untrusted process.
+  flags = base::File::AddFlagsForPassingToUntrustedProcess(flags);
+  base::File file(file_path, flags);
   if (!file.IsValid()) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;

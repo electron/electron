@@ -10,7 +10,7 @@
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
-#include "content/common/mac_helpers.h"
+#include "content/browser/mac_helpers.h"
 
 namespace electron {
 

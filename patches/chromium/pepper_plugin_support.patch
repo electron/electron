@@ -7,13 +7,13 @@ This tweaks Chrome's pepper flash and PDF plugin support to make it
 usable from Electron.
 
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2d7e270a9 100644
+index 7004be59929ebe573e304c7e4dfb529f54889b80..99f0edae518ad00c04ce2120eca30d6cd53e7a20 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.cc
-@@ -6,17 +6,21 @@
- 
+@@ -7,17 +7,21 @@
  #include <stddef.h>
  
+ #include "base/task/sequenced_task_runner.h"
 +#if 0
  #include "chrome/browser/browser_process.h"
  #include "chrome/browser/profiles/profile.h"
@@ -32,7 +32,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  #include "ppapi/c/pp_errors.h"
  #include "ppapi/host/dispatch_host_message.h"
  #include "ppapi/host/host_message_context.h"
-@@ -25,12 +29,11 @@
+@@ -26,12 +30,11 @@
  #include "ppapi/shared_impl/file_system_util.h"
  #include "storage/browser/file_system/isolated_context.h"
  
@@ -46,7 +46,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  
  namespace {
  
-@@ -40,6 +43,7 @@ const char* kPredefinedAllowedCrxFsOrigins[] = {
+@@ -41,6 +44,7 @@ const char* kPredefinedAllowedCrxFsOrigins[] = {
  };
  
  }  // namespace
@@ -54,7 +54,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  
  // static
  PepperIsolatedFileSystemMessageFilter*
-@@ -63,11 +67,16 @@ PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
+@@ -64,11 +68,16 @@ PepperIsolatedFileSystemMessageFilter::PepperIsolatedFileSystemMessageFilter(
      const base::FilePath& profile_directory,
      const GURL& document_url,
      ppapi::host::PpapiHost* ppapi_host)
@@ -71,7 +71,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  }
  
  PepperIsolatedFileSystemMessageFilter::
-@@ -92,6 +101,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
+@@ -93,6 +102,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnResourceMessageReceived(
    return PP_ERROR_FAILED;
  }
  
@@ -79,7 +79,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  Profile* PepperIsolatedFileSystemMessageFilter::GetProfile() {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    ProfileManager* profile_manager = g_browser_process->profile_manager();
-@@ -116,6 +126,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
+@@ -117,6 +127,7 @@ PepperIsolatedFileSystemMessageFilter::CreateCrxFileSystem(Profile* profile) {
    return storage::IsolatedContext::ScopedFSHandle();
  #endif
  }
@@ -87,7 +87,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  
  int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      ppapi::host::HostMessageContext* context,
-@@ -124,7 +135,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -125,7 +136,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_INVALID:
        break;
      case PP_ISOLATEDFILESYSTEMTYPE_PRIVATE_CRX:
@@ -96,7 +96,7 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
    }
    NOTREACHED();
    context->reply_msg =
-@@ -132,6 +143,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
+@@ -133,6 +144,7 @@ int32_t PepperIsolatedFileSystemMessageFilter::OnOpenFileSystem(
    return PP_ERROR_FAILED;
  }
  
@@ -104,16 +104,16 @@ index f25790df4c705bbe1bf2da86ef1261633034fd3f..8ae719107d88ebe53f98f167630c70a2
  int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
      ppapi::host::HostMessageContext* context) {
  #if BUILDFLAG(ENABLE_EXTENSIONS)
-@@ -172,3 +184,4 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
+@@ -173,3 +185,4 @@ int32_t PepperIsolatedFileSystemMessageFilter::OpenCrxFileSystem(
    return PP_ERROR_NOTSUPPORTED;
  #endif
  }
 +#endif
 diff --git a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-index 946bbba987594769d371dbdb2ab22582a5d86d9f..01657a210c53c432acee1ba26916b1a6e610a260 100644
+index 716f5f9abe27a4411f7cc47c37d80d9a72099369..77a5cd69317db2c02a4ca75b91cea9405ea99de5 100644
 --- a/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
 +++ b/chrome/browser/renderer_host/pepper/pepper_isolated_file_system_message_filter.h
-@@ -19,7 +19,9 @@
+@@ -20,7 +20,9 @@
  #include "storage/browser/file_system/isolated_context.h"
  #include "url/gurl.h"
  
@@ -123,7 +123,7 @@ index 946bbba987594769d371dbdb2ab22582a5d86d9f..01657a210c53c432acee1ba26916b1a6
  
  namespace content {
  class BrowserPpapiHost;
-@@ -58,6 +60,7 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -59,6 +61,7 @@ class PepperIsolatedFileSystemMessageFilter
  
    ~PepperIsolatedFileSystemMessageFilter() override;
  
@@ -131,7 +131,7 @@ index 946bbba987594769d371dbdb2ab22582a5d86d9f..01657a210c53c432acee1ba26916b1a6
    Profile* GetProfile();
  
    // Returns filesystem id of isolated filesystem if valid, or empty string
-@@ -65,18 +68,23 @@ class PepperIsolatedFileSystemMessageFilter
+@@ -66,18 +69,23 @@ class PepperIsolatedFileSystemMessageFilter
    // allows access on that thread.
    storage::IsolatedContext::ScopedFSHandle CreateCrxFileSystem(
        Profile* profile);

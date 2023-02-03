@@ -16,8 +16,8 @@
 #include "base/feature_list.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/thread_pool_instance.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "content/public/common/content_switches.h"
 #include "electron/electron_version.h"
 #include "gin/array_buffer.h"
@@ -139,7 +139,7 @@ int NodeMain(int argc, char* argv[]) {
     // Feed gin::PerIsolateData with a task runner.
     uv_loop_t* loop = uv_default_loop();
     auto uv_task_runner = base::MakeRefCounted<UvTaskRunner>(loop);
-    base::ThreadTaskRunnerHandle handle(uv_task_runner);
+    base::SingleThreadTaskRunner::CurrentDefaultHandle handle(uv_task_runner);
 
     // Initialize feature list.
     auto feature_list = std::make_unique<base::FeatureList>();

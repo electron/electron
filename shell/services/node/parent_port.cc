@@ -33,7 +33,7 @@ void ParentPort::Initialize(blink::MessagePortDescriptor port) {
   connector_ = std::make_unique<mojo::Connector>(
       port_.TakeHandleToEntangleWithEmbedder(),
       mojo::Connector::SINGLE_THREADED_SEND,
-      base::ThreadTaskRunnerHandle::Get());
+      base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->PauseIncomingMethodCallProcessing();
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(

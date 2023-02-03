@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "base/memory/singleton.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/task/single_thread_task_runner.h"
 #include "content/public/browser/browser_thread.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
@@ -54,7 +54,7 @@ void GPUInfoManager::OnGpuInfoUpdate() {
   // Ignore if called when not asked for complete GPUInfo
   if (NeedsCompleteGpuInfoCollection())
     return;
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::ProcessCompleteInfo,
                                 base::Unretained(this)));
 }
@@ -74,7 +74,7 @@ void GPUInfoManager::CompleteInfoFetcher(
 
 void GPUInfoManager::FetchCompleteInfo(
     gin_helper::Promise<base::Value> promise) {
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::CompleteInfoFetcher,
                                 base::Unretained(this), std::move(promise)));
 }
