@@ -9,7 +9,7 @@
     "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
     "basic-auth": "^2.0.1",
-    "busboy": "^0.3.1",
+    "busboy": "^1.6.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coffeescript": "^2.4.1",
@@ -36,6 +36,7 @@
     "yargs": "^16.0.3"
   },
   "resolutions": {
-    "nan": "github:jkleinsc/nan#remove_accessor_signature"
+    "nan": "github:jkleinsc/nan#remove_accessor_signature",
+    "dbus-native/optimist/minimist": "1.2.7"
   }
 }
