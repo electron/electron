@@ -16,7 +16,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 29b75456a779ff9c36bb0cc2cdc4a1b2a1aa5966..4157e90fdbc265ab34405e4e9c1efbff06c26d70 100644
+index 71c48ed69f2ee9586620966333c744a6d1533cad..25d80eda83182936548d6098a3875f4292e35f6f 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -18,7 +18,9 @@
@@ -29,45 +29,39 @@ index 29b75456a779ff9c36bb0cc2cdc4a1b2a1aa5966..4157e90fdbc265ab34405e4e9c1efbff
  @class CALayer;
  
  namespace ui {
-@@ -89,7 +91,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
+@@ -88,7 +90,7 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
+ 
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(IS_MAC) && !IS_MAS_BUILD()
    bool use_remote_layer_api_;
-+#if !IS_MAS_BUILD()
+ #endif
    base::scoped_nsobject<CAContext> ca_context_;
-+#endif
-   std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
- 
-   gfx::Size pixel_size_;
+
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index e2b4368c08ba9e30cb46218988c6212a46c98217..02db1e7041f18bae8c90539fee0e768b353fa523 100644
+index b8b3ab18cdf1d9e3b3a125965362044a806ba0de..11f79cea3261889d6e4d5f3ea2828128a4a9a672 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -74,12 +74,14 @@
+@@ -74,7 +74,7 @@
+            ->workarounds()
+            .disable_av_sample_buffer_display_layer;
  
-   // Create the CAContext to send this to the GPU process, and the layer for
-   // the context.
-+#if !IS_MAS_BUILD()
-   if (use_remote_layer_api_) {
-     CGSConnectionID connection_id = CGSMainConnectionID();
-     ca_context_.reset([[CAContext contextWithCGSConnection:connection_id
-                                                    options:@{}] retain]);
-     [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
-   }
-+#endif
- }
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(IS_MAC) && !IS_MAS_BUILD()
+   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
+       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
- ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -174,7 +176,9 @@
+@@ -183,7 +183,7 @@
+     TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(IS_MAC) && !IS_MAS_BUILD()
      if (use_remote_layer_api_) {
-+#if !IS_MAS_BUILD()
        params.ca_context_id = [ca_context_ contextId];
-+#endif
      } else {
-       IOSurfaceRef io_surface =
-           ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
+
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 index 2c4821b34f71d30ce814bd1f3cf9a7a76bbaac66..c7dc371c780a405f502a84c77e92251ae08f66e0 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
