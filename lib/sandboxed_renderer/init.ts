@@ -41,24 +41,14 @@ const loadableModules = new Map<string, Function>([
   ['url', () => require('url')]
 ]);
 
-// ElectronSandboxedRendererClient will look for the "lifecycle" hidden object when
-v8Util.setHiddenValue(global, 'lifecycle', {
-  onLoaded () {
-    (process as events.EventEmitter).emit('loaded');
-  },
-  onExit () {
-    (process as events.EventEmitter).emit('exit');
-  },
-  onDocumentStart () {
-    (process as events.EventEmitter).emit('document-start');
-  },
-  onDocumentEnd () {
-    (process as events.EventEmitter).emit('document-end');
-  }
-});
-
 // Pass different process object to the preload script.
 const preloadProcess: NodeJS.Process = new EventEmitter() as any;
+
+// InvokeEmitProcessEvent in ElectronSandboxedRendererClient will look for this
+v8Util.setHiddenValue(global, 'emit-process-event', (event: string) => {
+  (process as events.EventEmitter).emit(event);
+  (preloadProcess as events.EventEmitter).emit(event);
+});
 
 Object.assign(preloadProcess, binding.process);
 Object.assign(preloadProcess, processProps);
@@ -78,11 +68,6 @@ Object.defineProperty(preloadProcess, 'noDeprecation', {
     process.noDeprecation = value;
   }
 });
-
-process.on('loaded', () => (preloadProcess as events.EventEmitter).emit('loaded'));
-process.on('exit', () => (preloadProcess as events.EventEmitter).emit('exit'));
-(process as events.EventEmitter).on('document-start', () => (preloadProcess as events.EventEmitter).emit('document-start'));
-(process as events.EventEmitter).on('document-end', () => (preloadProcess as events.EventEmitter).emit('document-end'));
 
 // This is the `require` function that will be visible to the preload script
 function preloadRequire (module: string) {
