@@ -116,7 +116,7 @@ index 0b526044dcc7cbc21cc25cfdd7be8e4cdd8f06eb..c5c61601a684ea08e2279b4fc6b77d81
  
    if (is_win) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index e5bc3c86e07873f5ad5a54fba950e3105049ab2b..6774273357a7b6a465a9918f81b4cee90c0859a4 100644
+index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff65e17bd9 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -119,6 +119,7 @@ component("service") {
@@ -125,7 +125,7 @@ index e5bc3c86e07873f5ad5a54fba950e3105049ab2b..6774273357a7b6a465a9918f81b4cee9
      defines += [ "GL_SILENCE_DEPRECATION" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
-   if (is_android) {
+   if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
 index 44635f13048890b20c74870d26c4e74bab363ddb..33ad7650832b7572949fb6f362bef02879f4c31b 100644
@@ -193,18 +193,18 @@ index fabf49654cebc659348e3505487b2be583647fed..58efb9cfe6e4ed44a8e3753ef4af8e4d
    public_deps = [
      ":core_generated",
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 1ca2843130e81f9ea6be7a71b6b2a8d68bd413ae..712e4428bc9417f114a695a5980c488801007b77 100644
+index 161a304180a4a580efa7e8a8bb634a84594b857a..fd7e4f714655f8679e4e6dc2d87cff2c7090afdb 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -53,6 +53,8 @@ component("accelerated_widget_mac") {
-     "OpenGL.framework",
+@@ -30,6 +30,8 @@ component("accelerated_widget_mac") {
      "QuartzCore.framework",
    ]
-+
-+  configs += ["//electron/build/config:mas_build"]
- }
  
- test("accelerated_widget_mac_unittests") {
++  configs += ["//electron/build/config:mas_build"]
++
+   if (is_ios) {
+     sources += [ "ca_layer_frame_sink_provider.h" ]
+   }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
 index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9b487e4b6 100644
 --- a/ui/accessibility/platform/BUILD.gn
