@@ -66,7 +66,7 @@ index 3c2fc1707e38345c114e140104ffc5a93d704918..40dac9fd7beb7a1a589a479a8035391d
  
    bool is_listening_ = false;
 diff --git a/chrome/browser/extensions/global_shortcut_listener_win.cc b/chrome/browser/extensions/global_shortcut_listener_win.cc
-index 51cc1dd4f3452c18a4b4cc0634509ab4faa9dcd7..bb5f937d59617f323e829c5259a33028822f585a 100644
+index 943168e2c72c0aeb59f1ea21b14f2dc8e6cfd7e0..db3ca2ed0ba0994caa4d26436b942166a2d4b1a4 100644
 --- a/chrome/browser/extensions/global_shortcut_listener_win.cc
 +++ b/chrome/browser/extensions/global_shortcut_listener_win.cc
 @@ -62,6 +62,8 @@ void GlobalShortcutListenerWin::OnWndProc(HWND hwnd,

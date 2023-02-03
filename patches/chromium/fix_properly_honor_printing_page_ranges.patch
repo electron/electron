@@ -25,10 +25,10 @@ index 53b106a1522a04d596d6ec833b00aa2170c760d9..3b5ca717d48cdade667fda8ce113f3f6
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 9dd650de9a9a372eba11854aa48695d5bdbff8aa..561ac4a781432a974ec6e5d131859863c0d5ad28 100644
+index 844c3befb928c1e7509f3af4be22ef7b9a131af8..dce986be7a16b6ecbcddbd33cedae69fb935d09e 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -199,7 +199,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -200,7 +200,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index 9dd650de9a9a372eba11854aa48695d5bdbff8aa..561ac4a781432a974ec6e5d131859863
        return OnError();
      }
    }
-@@ -352,6 +353,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -353,6 +354,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -100,7 +100,7 @@ index 07847521e7217c78480205812a73cc89503c00d2..586e866ca7ec0eb0b573d23e3bd95792
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index d282ef0b825ac2dd7c2b23aec14f401e4a68af7b..9cc8e4bbab87ea52387f08673e6b3e2f73c4335a 100644
+index afa936ce95602d5e66189303a73d7824611187b3..89371a4f0d3216f21761adc51bdd2accec0c74a1 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -247,6 +247,24 @@ void PrintDialogGtk::UpdateSettings(

@@ -9,7 +9,7 @@ don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index 4c83c6a6685490ce1899b119742fa25b6b9a50cd..23d7bf23e13af2c0bb10a9b58bf20f1f763d547c 100644
+index 1ef7adec61a6b5f85177bb035f2534a319cd8f4f..dcb329f794e7a579e37eb370db4378b8cded3d69 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -14,9 +14,11 @@

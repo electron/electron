@@ -308,6 +308,18 @@ index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960a
  }
  }  // namespace
  
+diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
+index 716b40be50cdc2ebbd249e5a9d562385169f77ad..43247cf3d70b78a1e332d55336c2a5175a155e93 100644
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -15,6 +15,7 @@
+ #include <openssl/err.h>
+ #include <openssl/evp.h>
+ #include <openssl/ec.h>
++#include <openssl/hmac.h>
+ #include <openssl/kdf.h>
+ #include <openssl/rsa.h>
+ #include <openssl/dsa.h>
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
 index d4c8ccde21d3973f3099ee3075dc3c11d55cb514..d57435a73e17c21dad2a7c8fb2c6e8a356630d88 100644
 --- a/src/node_metadata.cc

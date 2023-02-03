@@ -6,8 +6,8 @@
 #define ELECTRON_SHELL_COMMON_MOUSE_UTIL_H_
 
 #include <string>
-#include "content/common/cursors/webcursor.h"
 #include "ipc/ipc_message_macros.h"
+#include "ui/base/cursor/cursor.h"
 
 // IPC macros similar to the already existing ones in the chromium source.
 // We need these to listen to the cursor change IPC message while still

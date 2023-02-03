@@ -4,6 +4,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
+import * as os from 'os';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
@@ -3939,13 +3940,24 @@ describe('BrowserWindow module', () => {
     });
 
     it('should save page to disk with MHTML', async () => {
+      /* Use temp directory for saving MHTML file since the write handle
+       * gets passed to untrusted process and chromium will deny exec access to
+       * the path. To perform this task, chromium requires that the path is one
+       * of the browser controlled paths, refs https://chromium-review.googlesource.com/c/chromium/src/+/3774416
+       */
+      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-mhtml-save-'));
+      const savePageMHTMLPath = path.join(tmpDir, 'save_page.html');
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
-      await w.webContents.savePage(savePageHtmlPath, 'MHTML');
+      await w.webContents.savePage(savePageMHTMLPath, 'MHTML');
 
-      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('html path');
       expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
       expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+      try {
+        await fs.promises.unlink(savePageMHTMLPath);
+        await fs.promises.rmdir(tmpDir);
+      } catch {}
     });
 
     it('should save page to disk with HTMLComplete', async () => {

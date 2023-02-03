@@ -4,7 +4,7 @@
 
 #include "shell/browser/cookie_change_notifier.h"
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "net/cookies/canonical_cookie.h"
