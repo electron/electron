@@ -237,7 +237,7 @@ index 6f6a5eee43f3f5ecc89f907b825451d1bb833836..457cf0f6a5c254afca6148038b951391
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -135,8 +135,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
      SiteInstance* source_site_instance,
-     content::mojom::WindowContainerType window_container_type,
+     mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
 -    const std::string& frame_name,
 -    const GURL& target_url) {
@@ -251,7 +251,7 @@ index fae93468160463c098b5b115ef293989bbc1f38c..3d6bcc0c6a21f318b76607c6fa25a3aa
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -321,8 +321,7 @@ class CONTENT_EXPORT WebContentsDelegate {
        SiteInstance* source_site_instance,
-       content::mojom::WindowContainerType window_container_type,
+       mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
 -      const std::string& frame_name,
 -      const GURL& target_url);
