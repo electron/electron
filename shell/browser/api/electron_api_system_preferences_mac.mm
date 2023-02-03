@@ -17,7 +17,7 @@
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/task/single_thread_task_runner.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
 #include "net/base/mac/url_conversions.h"
@@ -448,7 +448,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
               nullptr));
 
   scoped_refptr<base::SequencedTaskRunner> runner =
-      base::SingleThreadTaskRunner::GetCurrentDefault();
+      base::SequencedTaskRunner::GetCurrentDefault();
 
   __block gin_helper::Promise<void> p = std::move(promise);
   [context
