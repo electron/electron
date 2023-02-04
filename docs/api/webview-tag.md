@@ -1,6 +1,7 @@
 # `<webview>` Tag
 
 ## Warning
+Event: 'new-window' has been deprecated.
 
 Electron's `webview` tag is based on [Chromium's `webview`][chrome-webview], which
 is undergoing dramatic architectural changes. This impacts the stability of `webviews`,
