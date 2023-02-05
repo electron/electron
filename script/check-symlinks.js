@@ -2,13 +2,14 @@ const fs = require('fs');
 const path = require('path');
 
 const utils = require('./lib/utils');
+const branding = require('../shell/app/BRANDING.json');
 
 if (process.platform !== 'darwin') {
   console.log('Not checking symlinks on non-darwin platform');
   process.exit(0);
 }
 
-const appPath = path.resolve(__dirname, '..', '..', 'out', utils.getOutDir(), 'Electron.app');
+const appPath = path.resolve(__dirname, '..', '..', 'out', utils.getOutDir(), `${branding.product_name}.app`);
 const visited = new Set();
 const traverse = (p) => {
   if (visited.has(p)) return;

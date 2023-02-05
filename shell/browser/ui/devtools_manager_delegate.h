@@ -29,7 +29,8 @@ class DevToolsManagerDelegate : public content::DevToolsManagerDelegate {
                      base::span<const uint8_t> message,
                      NotHandledCallback callback) override;
   scoped_refptr<content::DevToolsAgentHost> CreateNewTarget(
-      const GURL& url) override;
+      const GURL& url,
+      bool for_tab) override;
   std::string GetDiscoveryPageHTML() override;
   bool HasBundledFrontendResources() override;
 };

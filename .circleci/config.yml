@@ -13,7 +13,7 @@ parameters:
   run-docs-only:
     type: boolean
     default: false
-  
+
   upload-to-storage:
     type: string
     default: '1'

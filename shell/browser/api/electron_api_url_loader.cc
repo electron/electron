@@ -280,7 +280,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
   // raw headers in the URLLoader.
-  request->report_raw_headers = true;
+  request->trusted_params->report_raw_headers = true;
   // SimpleURLLoader wants to control the request body itself. We have other
   // ideas.
   auto request_body = std::move(request->request_body);
@@ -577,9 +577,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
-  // Note that |response_head.headers| are filtered by Chromium and should not
-  // be used here.
-  DCHECK(!response_head.raw_response_headers.empty());
+  dict.Set("headers", response_head.headers.get());
   dict.Set("rawHeaders", response_head.raw_response_headers);
   Emit("response-started", final_url, dict);
 }

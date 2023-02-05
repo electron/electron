@@ -52,7 +52,14 @@ For more information on how to use asar integrity validation please read the [As
 **Default:** Disabled
 **@electron/fuses:** `FuseV1Options.OnlyLoadAppFromAsar`
 
-The onlyLoadAppFromAsar fuse changes the search system that Electron uses to locate your app code.  By default Electron will search in the following order `app.asar` -> `app` -> `default_app.asasr`.  When this fuse is enabled the search order becomes a single entry `app.asar` thus ensuring that when combined with the `embeddedAsarIntegrityValidation` fuse it is impossible to load non-validated code.
+The onlyLoadAppFromAsar fuse changes the search system that Electron uses to locate your app code.  By default Electron will search in the following order `app.asar` -> `app` -> `default_app.asar`.  When this fuse is enabled the search order becomes a single entry `app.asar` thus ensuring that when combined with the `embeddedAsarIntegrityValidation` fuse it is impossible to load non-validated code.
+
+### `loadBrowserProcessSpecificV8Snapshot`
+
+**Default:** Disabled
+**@electron/fuses:** `FuseV1Options.LoadBrowserProcessSpecificV8Snapshot`
+
+The loadBrowserProcessSpecificV8Snapshot fuse changes which V8 snapshot file is used for the browser process.  By default Electron's processes will all use the same V8 snapshot file.  When this fuse is enabled the browser process uses the file called `browser_v8_context_snapshot.bin` for its V8 snapshot. The other processes will use the V8 snapshot file that they normally do.
 
 ## How do I flip the fuses?
 

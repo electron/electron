@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 describe('ipcRenderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -74,7 +74,7 @@ describe('ipcRenderer module', () => {
     it('can send objects that both reference the same object', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
-        
+
         const child = { hello: 'world' }
         const foo = { name: 'foo', child: child }
         const bar = { name: 'bar', child: child }
@@ -144,7 +144,7 @@ describe('ipcRenderer module', () => {
         });
 
         after(() => {
-          (contents as any).destroy();
+          contents.destroy();
           contents = null as unknown as WebContents;
         });
 

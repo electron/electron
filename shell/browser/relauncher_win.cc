@@ -20,6 +20,27 @@ namespace {
 
 const CharType* kWaitEventName = L"ElectronRelauncherWaitEvent";
 
+struct PROCESS_BASIC_INFORMATION {
+  union {
+    NTSTATUS ExitStatus;
+    PVOID padding_for_x64_0;
+  };
+  PPEB PebBaseAddress;
+  KAFFINITY AffinityMask;
+  union {
+    KPRIORITY BasePriority;
+    PVOID padding_for_x64_1;
+  };
+  union {
+    DWORD UniqueProcessId;
+    PVOID padding_for_x64_2;
+  };
+  union {
+    DWORD InheritedFromUniqueProcessId;
+    PVOID padding_for_x64_3;
+  };
+};
+
 HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
   NtQueryInformationProcessFunction NtQueryInformationProcess = nullptr;
   ResolveNTFunctionPtr("NtQueryInformationProcess", &NtQueryInformationProcess);

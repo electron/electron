@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "base/scoped_observation.h"
 #include "content/public/browser/serial_delegate.h"
 #include "shell/browser/serial/serial_chooser_context.h"
 #include "shell/browser/serial/serial_chooser_controller.h"
@@ -35,18 +36,18 @@ class ElectronSerialDelegate : public content::SerialDelegate,
   bool CanRequestPortPermission(content::RenderFrameHost* frame) override;
   bool HasPortPermission(content::RenderFrameHost* frame,
                          const device::mojom::SerialPortInfo& port) override;
-  device::mojom::SerialPortManager* GetPortManager(
-      content::RenderFrameHost* frame) override;
-  void AddObserver(content::RenderFrameHost* frame,
-                   Observer* observer) override;
-  void RemoveObserver(content::RenderFrameHost* frame,
-                      Observer* observer) override;
   void RevokePortPermissionWebInitiated(
       content::RenderFrameHost* frame,
       const base::UnguessableToken& token) override;
   const device::mojom::SerialPortInfo* GetPortInfo(
       content::RenderFrameHost* frame,
       const base::UnguessableToken& token) override;
+  device::mojom::SerialPortManager* GetPortManager(
+      content::RenderFrameHost* frame) override;
+  void AddObserver(content::RenderFrameHost* frame,
+                   content::SerialDelegate::Observer* observer) override;
+  void RemoveObserver(content::RenderFrameHost* frame,
+                      content::SerialDelegate::Observer* observer) override;
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 
@@ -66,9 +67,7 @@ class ElectronSerialDelegate : public content::SerialDelegate,
       content::SerialChooser::Callback callback);
 
   base::ScopedObservation<SerialChooserContext,
-                          SerialChooserContext::PortObserver,
-                          &SerialChooserContext::AddPortObserver,
-                          &SerialChooserContext::RemovePortObserver>
+                          SerialChooserContext::PortObserver>
       port_observation_{this};
   base::ObserverList<content::SerialDelegate::Observer> observer_list_;
 
@@ -80,5 +79,25 @@ class ElectronSerialDelegate : public content::SerialDelegate,
 };
 
 }  // namespace electron
+
+namespace base {
+
+template <>
+struct base::ScopedObservationTraits<
+    electron::SerialChooserContext,
+    electron::SerialChooserContext::PortObserver> {
+  static void AddObserver(
+      electron::SerialChooserContext* source,
+      electron::SerialChooserContext::PortObserver* observer) {
+    source->AddPortObserver(observer);
+  }
+  static void RemoveObserver(
+      electron::SerialChooserContext* source,
+      electron::SerialChooserContext::PortObserver* observer) {
+    source->RemovePortObserver(observer);
+  }
+};
+
+}  // namespace base
 
 #endif  // ELECTRON_SHELL_BROWSER_SERIAL_ELECTRON_SERIAL_DELEGATE_H_

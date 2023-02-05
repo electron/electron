@@ -9,10 +9,10 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index ff5ee1d7a0f4e333498bf25acbbf49d1ce53b7a1..e98084036c04e9910779670497b1a431d4fee48a 100644
+index 27f5a789f39c3ac896e3d4b8fd9fedcb562ef8c4..cf73bd941d82d54cbd6fab95123672439a652f0e 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-@@ -51,6 +51,9 @@ namespace {
+@@ -49,6 +49,9 @@ namespace {
  base::LazyInstance<GURL>::Leaky g_download_url_for_testing =
      LAZY_INSTANCE_INITIALIZER;
  
@@ -22,7 +22,7 @@ index ff5ee1d7a0f4e333498bf25acbbf49d1ce53b7a1..e98084036c04e9910779670497b1a431
  // Close the file.
  void CloseDictionary(base::File file) {
    base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-@@ -271,6 +274,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
+@@ -269,6 +272,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
    g_download_url_for_testing.Get() = url;
  }
  
@@ -33,7 +33,7 @@ index ff5ee1d7a0f4e333498bf25acbbf49d1ce53b7a1..e98084036c04e9910779670497b1a431
  GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    if (g_download_url_for_testing.Get() != GURL())
      return g_download_url_for_testing.Get();
-@@ -278,6 +285,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+@@ -276,6 +283,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
    DCHECK(!bdict_file.empty());
  
@@ -44,7 +44,7 @@ index ff5ee1d7a0f4e333498bf25acbbf49d1ce53b7a1..e98084036c04e9910779670497b1a431
        "https://redirector.gvt1.com/edgedl/chrome/dict/";
  
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
-index 4df6fc23f0e51e3279208a9331c9e55d7d4cb0ac..f4ddb557f6c04ede0caf5029b3dfb877a02ea721 100644
+index 386d321eb07ec1cda9475e7c502aac0eb99d19ba..23983aa547a8f4355f33c97fb6218bf00b791702 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h
 @@ -93,6 +93,8 @@ class SpellcheckHunspellDictionary

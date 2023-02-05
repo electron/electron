@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_WRAPPABLE_H_
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "gin/per_isolate_data.h"
 #include "shell/common/gin_helper/constructor.h"
 

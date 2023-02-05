@@ -43,7 +43,6 @@
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
-#include "content/public/browser/plugin_service.h"
 #include "content/public/common/content_plugin_info.h"
 #include "ppapi/shared_impl/ppapi_permissions.h"
 #include "ppapi/shared_impl/ppapi_switches.h"  // nogncheck crbug.com/1125897
@@ -104,40 +103,6 @@ bool IsWidevineAvailable(
   return false;
 }
 #endif  // BUILDFLAG(ENABLE_WIDEVINE)
-
-#if BUILDFLAG(ENABLE_PLUGINS)
-void ComputeBuiltInPlugins(std::vector<content::ContentPluginInfo>* plugins) {
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  // TODO(upstream/thestig): Figure out how to make the PDF Viewer work without
-  // this PPAPI plugin registration.
-  content::ContentPluginInfo pdf_info;
-  pdf_info.is_internal = true;
-  pdf_info.is_out_of_process = true;
-  pdf_info.name = kPDFInternalPluginName;
-  pdf_info.description = "Portable Document Format";
-  // This isn't a real file path; it's just used as a unique identifier.
-  pdf_info.path = base::FilePath(kPdfPluginPath);
-  content::WebPluginMimeType pdf_mime_type(pdf::kInternalPluginMimeType, "pdf",
-                                           "Portable Document Format");
-  pdf_info.mime_types.push_back(pdf_mime_type);
-  plugins->push_back(pdf_info);
-
-  // NB. in Chrome, this plugin isn't registered until the PDF extension is
-  // loaded. However, in Electron, we load the PDF extension unconditionally
-  // when it is enabled in the build, so we're OK to load the plugin eagerly
-  // here.
-  content::WebPluginInfo info;
-  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  info.name = base::ASCIIToUTF16(kPDFExtensionPluginName);
-  // This isn't a real file path; it's just used as a unique identifier.
-  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
-  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-  info.mime_types.emplace_back(kPDFMimeType, "pdf", "Portable Document Format");
-  content::PluginService::GetInstance()->RefreshPlugins();
-  content::PluginService::GetInstance()->RegisterInternalPlugin(info, true);
-#endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
-}
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
 
 void AppendDelimitedSwitchToVector(const base::StringPiece cmd_switch,
                                    std::vector<std::string>* append_me) {
@@ -219,9 +184,22 @@ void ElectronContentClient::AddAdditionalSchemes(Schemes* schemes) {
 
 void ElectronContentClient::AddPlugins(
     std::vector<content::ContentPluginInfo>* plugins) {
-#if BUILDFLAG(ENABLE_PLUGINS)
-  ComputeBuiltInPlugins(plugins);
-#endif  // BUILDFLAG(ENABLE_PLUGINS)
+#if BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_PDF_VIEWER)
+  static constexpr char kPDFPluginExtension[] = "pdf";
+  static constexpr char kPDFPluginDescription[] = "Portable Document Format";
+
+  content::ContentPluginInfo pdf_info;
+  pdf_info.is_internal = true;
+  pdf_info.is_out_of_process = true;
+  pdf_info.name = kPDFInternalPluginName;
+  pdf_info.description = kPDFPluginDescription;
+  // This isn't a real file path; it's just used as a unique identifier.
+  pdf_info.path = base::FilePath(kPdfPluginPath);
+  content::WebPluginMimeType pdf_mime_type(
+      pdf::kInternalPluginMimeType, kPDFPluginExtension, kPDFPluginDescription);
+  pdf_info.mime_types.push_back(pdf_mime_type);
+  plugins->push_back(pdf_info);
+#endif  // BUILDFLAG(ENABLE_PLUGINS) && BUILDFLAG(ENABLE_PDF_VIEWER)
 }
 
 void ElectronContentClient::AddContentDecryptionModules(

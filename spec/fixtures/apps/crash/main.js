@@ -51,11 +51,22 @@ app.whenReady().then(() => {
     w.loadURL(`about:blank?set_extra=${setExtraParameters ? 1 : 0}`);
     w.webContents.on('render-process-gone', () => process.exit(0));
   } else if (crashType === 'node') {
-    const crashesDir = path.join(app.getPath('temp'), `${app.name} Crashes`);
-    const version = app.getVersion();
     const crashPath = path.join(__dirname, 'node-crash.js');
-    const child = childProcess.fork(crashPath, [url, version, crashesDir], { silent: true });
+    const child = childProcess.fork(crashPath, { silent: true });
     child.on('exit', () => process.exit(0));
+  } else if (crashType === 'node-fork') {
+    const scriptPath = path.join(__dirname, 'fork.js');
+    const child = childProcess.fork(scriptPath, { silent: true });
+    child.on('exit', () => process.exit(0));
+  } else if (crashType === 'node-extra-args') {
+    let exitcode = -1;
+    const crashPath = path.join(__dirname, 'node-extra-args.js');
+    const child = childProcess.fork(crashPath, ['--enable-logging'], { silent: true });
+    child.send('message');
+    child.on('message', (forkedArgs) => {
+      if (JSON.stringify(forkedArgs) !== JSON.stringify(child.spawnargs)) { exitcode = 1; } else { exitcode = 0; }
+      process.exit(exitcode);
+    });
   } else {
     console.error(`Unrecognized crash type: '${crashType}'`);
     process.exit(1);

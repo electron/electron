@@ -15,9 +15,9 @@
 #include "shell/common/platform_util.h"
 
 #if BUILDFLAG(IS_WIN)
-#include "base/threading/thread_restrictions.h"
 #include "base/win/scoped_com_initializer.h"
 #include "base/win/shortcut.h"
+#include "shell/common/thread_restrictions.h"
 
 namespace gin {
 
@@ -106,10 +106,6 @@ v8::Local<v8::Promise> TrashItem(v8::Isolate* isolate,
 }
 
 #if BUILDFLAG(IS_WIN)
-// The use of the ForTesting flavors is a hack workaround to avoid having to
-// patch these as friends into the associated guard classes.
-class ShortcutAccessScopedAllowBlocking
-    : public base::ScopedAllowBlockingForTesting {};
 
 bool WriteShortcutLink(const base::FilePath& shortcut_path,
                        gin_helper::Arguments* args) {
@@ -142,7 +138,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   if (options.Get("toastActivatorClsid", &toastActivatorClsid))
     properties.set_toast_activator_clsid(toastActivatorClsid);
 
-  ShortcutAccessScopedAllowBlocking allow_blocking;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   return base::win::CreateOrUpdateShortcutLink(shortcut_path, properties,
                                                operation);
@@ -152,7 +148,7 @@ v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
                                       const base::FilePath& path) {
   using base::win::ShortcutProperties;
   gin::Dictionary options = gin::Dictionary::CreateEmpty(thrower.isolate());
-  ShortcutAccessScopedAllowBlocking allow_blocking;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   base::win::ShortcutProperties properties;
   if (!base::win::ResolveShortcutProperties(

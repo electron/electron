@@ -22,7 +22,7 @@ There are a few ways that you can set up testing using WebDriver.
 Node.js package for testing with WebDriver. Its ecosystem also includes various plugins
 (e.g. reporter and services) that can help you put together your test setup.
 
-#### Install the testrunner
+#### Install the test runner
 
 First you need to run the WebdriverIO starter toolkit in your project root directory:
 
@@ -117,9 +117,9 @@ driver.quit()
 ## Using Playwright
 
 [Microsoft Playwright](https://playwright.dev) is an end-to-end testing framework built
-using browser-specific remote debugging protocols, similar to the [Puppeteer] headless
+using browser-specific remote debugging protocols, similar to the [Puppeteer][] headless
 Node.js API but geared towards end-to-end testing. Playwright has experimental Electron
-support via Electron's support for the [Chrome DevTools Protocol] (CDP).
+support via Electron's support for the [Chrome DevTools Protocol][] (CDP).
 
 ### Install dependencies
 

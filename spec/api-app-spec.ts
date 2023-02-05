@@ -7,9 +7,9 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeWindow, closeAllWindows } from './window-helpers';
-import { ifdescribe, ifit, waitUntil } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -115,6 +115,25 @@ describe('app module', () => {
   describe('app.getLocale()', () => {
     it('should not be empty', () => {
       expect(app.getLocale()).to.not.equal('');
+    });
+  });
+
+  describe('app.getSystemLocale()', () => {
+    it('should not be empty', () => {
+      expect(app.getSystemLocale()).to.not.equal('');
+    });
+  });
+
+  describe('app.getPreferredSystemLanguages()', () => {
+    ifit(process.platform !== 'linux')('should not be empty', () => {
+      expect(app.getPreferredSystemLanguages().length).to.not.equal(0);
+    });
+
+    ifit(process.platform === 'linux')('should be empty or contain C entry', () => {
+      const languages = app.getPreferredSystemLanguages();
+      if (languages.length) {
+        expect(languages).to.not.include('C');
+      }
     });
   });
 
@@ -1497,6 +1516,7 @@ describe('app module', () => {
         // to the Docker invocation allows the syscalls that Chrome needs, but
         // are probably more permissive than we'd like.
         this.skip();
+        return;
       }
       fs.unlink(socketPath, () => {
         server = net.createServer();
@@ -1508,13 +1528,17 @@ describe('app module', () => {
     afterEach(done => {
       if (appProcess != null) appProcess.kill();
 
-      server.close(() => {
-        if (process.platform === 'win32') {
-          done();
-        } else {
-          fs.unlink(socketPath, () => done());
-        }
-      });
+      if (server) {
+        server.close(() => {
+          if (process.platform === 'win32') {
+            done();
+          } else {
+            fs.unlink(socketPath, () => done());
+          }
+        });
+      } else {
+        done();
+      }
     });
 
     describe('when app.enableSandbox() is called', () => {

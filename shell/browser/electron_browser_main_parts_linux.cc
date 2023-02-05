@@ -12,7 +12,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/nix/xdg_util.h"
-#include "base/threading/thread_restrictions.h"
+#include "shell/common/thread_restrictions.h"
 #endif
 
 #if BUILDFLAG(OZONE_PLATFORM_WAYLAND)
@@ -36,7 +36,7 @@ bool HasWaylandDisplay(base::Environment* env) {
         base::FilePath(xdg_runtime_dir).Append("wayland-0");
     // Normally, this should happen exactly once, at the startup of the main
     // process.
-    base::ScopedAllowBlocking allow_blocking;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     return base::PathExists(wayland_server_pipe);
   }
 

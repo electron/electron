@@ -8,11 +8,12 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
+#include "base/values.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/grit/browser_resources.h"
 #include "components/value_store/value_store_factory_impl.h"
@@ -35,7 +36,6 @@
 #include "extensions/common/constants.h"
 #include "extensions/common/file_util.h"
 #include "shell/browser/extensions/electron_extension_loader.h"
-#include "ui/base/resource/resource_bundle.h"
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/pdf_extension_util.h"  // nogncheck
@@ -45,18 +45,6 @@ using content::BrowserContext;
 using content::BrowserThread;
 
 namespace extensions {
-
-namespace {
-
-std::string GetCryptoTokenManifest() {
-  std::string manifest_contents(
-      ui::ResourceBundle::GetSharedInstance().GetRawDataResource(
-          IDR_CRYPTOTOKEN_MANIFEST));
-
-  return manifest_contents;
-}
-
-}  // namespace
 
 ElectronExtensionSystem::ElectronExtensionSystem(
     BrowserContext* browser_context)
@@ -106,23 +94,23 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
   management_policy_ = std::make_unique<ManagementPolicy>();
 }
 
-std::unique_ptr<base::DictionaryValue> ParseManifest(
+std::unique_ptr<base::Value::Dict> ParseManifest(
     base::StringPiece manifest_contents) {
   JSONStringValueDeserializer deserializer(manifest_contents);
   std::unique_ptr<base::Value> manifest = deserializer.Deserialize(NULL, NULL);
 
   if (!manifest.get() || !manifest->is_dict()) {
     LOG(ERROR) << "Failed to parse extension manifest.";
-    return std::unique_ptr<base::DictionaryValue>();
+    return std::unique_ptr<base::Value::Dict>();
   }
-  return base::DictionaryValue::From(std::move(manifest));
+  return std::make_unique<base::Value::Dict>(std::move(manifest->GetDict()));
 }
 
 void ElectronExtensionSystem::LoadComponentExtensions() {
   std::string utf8_error;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
   std::string pdf_manifest_string = pdf_extension_util::GetManifest();
-  std::unique_ptr<base::DictionaryValue> pdf_manifest =
+  std::unique_ptr<base::Value::Dict> pdf_manifest =
       ParseManifest(pdf_manifest_string);
   if (pdf_manifest) {
     base::FilePath root_directory;
@@ -135,22 +123,6 @@ void ElectronExtensionSystem::LoadComponentExtensions() {
     extension_loader_->registrar()->AddExtension(pdf_extension);
   }
 #endif
-
-  std::string cryptotoken_manifest_string = GetCryptoTokenManifest();
-  std::unique_ptr<base::DictionaryValue> cryptotoken_manifest =
-      ParseManifest(cryptotoken_manifest_string);
-  DCHECK(cryptotoken_manifest);
-  if (cryptotoken_manifest) {
-    base::FilePath root_directory;
-    CHECK(base::PathService::Get(chrome::DIR_RESOURCES, &root_directory));
-    root_directory = root_directory.Append(FILE_PATH_LITERAL("cryptotoken"));
-    scoped_refptr<const Extension> cryptotoken_extension =
-        extensions::Extension::Create(
-            root_directory, extensions::mojom::ManifestLocation::kComponent,
-            *cryptotoken_manifest, extensions::Extension::REQUIRE_KEY,
-            &utf8_error);
-    extension_loader_->registrar()->AddExtension(cryptotoken_extension);
-  }
 }
 
 ExtensionService* ElectronExtensionSystem::extension_service() {

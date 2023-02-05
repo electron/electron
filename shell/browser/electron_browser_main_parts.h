@@ -8,7 +8,8 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
@@ -38,6 +39,10 @@ class Screen;
 
 namespace device {
 class GeolocationManager;
+}
+
+namespace ui {
+class LinuxUiGetter;
 }
 
 namespace electron {
@@ -130,6 +135,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   void FreeAppDelegate();
   void RegisterURLHandler();
   void InitializeMainNib();
+  static std::string GetCurrentSystemLocale();
 #endif
 
 #if BUILDFLAG(IS_MAC)
@@ -146,6 +152,8 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #if BUILDFLAG(IS_LINUX)
   // Used to notify the native theme of changes to dark mode.
   std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
+
+  std::unique_ptr<ui::LinuxUiGetter> linux_ui_getter_;
 #endif
 
   std::unique_ptr<views::LayoutProvider> layout_provider_;

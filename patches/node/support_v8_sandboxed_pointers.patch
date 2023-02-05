@@ -7,10 +7,10 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253f62e51bd 100644
+index 2e6f4a5c4b894a7425db110b3aadbe734f137327..c0c422e969543dcd570dabfd8ff0755abe37face 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -80,6 +80,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
+@@ -86,6 +86,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
    return result;
  }
  
@@ -26,10 +26,10 @@ index 9cbe99596b1b8c148ac076acf8a9623d6989d505..93d85d46dc6b3b30795b88ffa8070253
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7becacaa28d 100644
+index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a3077ed03 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -344,10 +344,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -324,10 +324,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -66,7 +66,7 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -359,10 +384,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -339,10 +364,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -79,10 +79,10 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -692,6 +718,16 @@ CryptoJobMode GetCryptoJobMode(v8::Local<v8::Value> args) {
- }
- 
- namespace {
+@@ -671,6 +697,16 @@ namespace {
+ // in which case this has the same semantics as
+ // using OPENSSL_malloc. However, if the secure heap is
+ // initialized, SecureBuffer will automatically use it.
 +#if defined(V8_ENABLE_SANDBOX)
 +// When V8 sandboxed pointers are enabled, the secure heap cannot be used as
 +// all ArrayBuffers must be allocated inside the V8 memory cage.
@@ -93,10 +93,10 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
 +  args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
 +}
 +#else
- // SecureBuffer uses openssl to allocate a Uint8Array using
- // OPENSSL_secure_malloc. Because we do not yet actually
- // make use of secure heap, this has the same semantics as
-@@ -719,6 +755,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+   CHECK(args[0]->IsUint32());
+   Environment* env = Environment::GetCurrent(args);
+@@ -692,6 +728,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -105,10 +105,10 @@ index 77af0661dbd056a38a8d7599b9e4f067f6b79f64..642bb2a012b4d96b46b0658223fbd7be
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 07ea8e44da3e54b8c24fd2d57b3922d6ddd35781..6d0d93b5b7c0bd1d8342e81024712df029d7e618 100644
+index 43247cf3d70b78a1e332d55336c2a5175a155e93..b9066b4b0fb9a529c4cbf774e5aacfd8a7aa99c8 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -254,7 +254,7 @@ class ByteSource {
+@@ -280,7 +280,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -118,7 +118,7 @@ index 07ea8e44da3e54b8c24fd2d57b3922d6ddd35781..6d0d93b5b7c0bd1d8342e81024712df0
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef77245243e 100644
+index 808f1fa8d77718e0d44033203485fb2c2796d8e1..56ea735e74fe6d4296d3b179ccb9792daac568b5 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {
@@ -131,10 +131,10 @@ index c537a247f55ff070da1988fc8b7309b5692b5c18..59bfb597849cd5a94800d6c83b238ef7
      return ret;
  
 diff --git a/src/node_internals.h b/src/node_internals.h
-index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e1436cc40 100644
+index efbdbeabf5a6afb658cbdc7888f94952e55f4f71..8b37639361e8902d7e1481071d3ec24be30339e0 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
-@@ -97,7 +97,9 @@ bool InitializePrimordials(v8::Local<v8::Context> context);
+@@ -99,7 +99,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
  
  class NodeArrayBufferAllocator : public ArrayBufferAllocator {
   public:
@@ -145,7 +145,7 @@ index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e
  
    void* Allocate(size_t size) override;  // Defined in src/node.cc
    void* AllocateUninitialized(size_t size) override;
-@@ -116,7 +118,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
+@@ -118,7 +120,7 @@ class NodeArrayBufferAllocator : public ArrayBufferAllocator {
    }
  
   private:
@@ -155,7 +155,7 @@ index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f7320629bf9f926 100644
+index 45a16d9de43703c2115dde85c9faae3a04be2a88..97917c91c06dc47dfa6be2c194944cdc93e6bd7f 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;
@@ -219,17 +219,32 @@ index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f732062
  Maybe<bool> SerializerContext::WriteHostObject(Isolate* isolate,
                                                 Local<Object> input) {
    MaybeLocal<Value> ret;
-@@ -211,7 +240,12 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -209,9 +238,14 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+   // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
+   // as the underlying allocator.
    std::pair<uint8_t*, size_t> ret = ctx->serializer_.Release();
-   auto buf = Buffer::New(ctx->env(),
-                          reinterpret_cast<char*>(ret.first),
+-  auto buf = Buffer::New(ctx->env(),
+-                         reinterpret_cast<char*>(ret.first),
 -                         ret.second);
-+                         ret.second,
-+                         [](char* data, void* hint){
-+                           if (data)
-+                             GetAllocator()->Free(data, reinterpret_cast<size_t>(hint));
-+                         },
-+                         reinterpret_cast<void*>(ctx->last_length_));
++  std::unique_ptr<v8::BackingStore> bs =
++      v8::ArrayBuffer::NewBackingStore(reinterpret_cast<char*>(ret.first), ret.second,
++        [](void* data, size_t length, void* deleter_data) {
++          if (data) GetAllocator()->Free(reinterpret_cast<char*>(data), length);
++        }, nullptr);
++  Local<ArrayBuffer> ab = v8::ArrayBuffer::New(ctx->env()->isolate(), std::move(bs));
++
++  auto buf = Buffer::New(ctx->env(), ab, 0, ret.second);
  
    if (!buf.IsEmpty()) {
      args.GetReturnValue().Set(buf.ToLocalChecked());
+diff --git a/test/parallel/test-v8-serialize-leak.js b/test/parallel/test-v8-serialize-leak.js
+index a90c398adcdaf30491a0fecdcf00895038d62e69..f5b8a1430ad2033eae06ca0157af2fb51d3f36a5 100644
+--- a/test/parallel/test-v8-serialize-leak.js
++++ b/test/parallel/test-v8-serialize-leak.js
+@@ -23,5 +23,5 @@ const after = process.memoryUsage.rss();
+ if (process.config.variables.asan) {
+   assert(after < before * 10, `asan: before=${before} after=${after}`);
+ } else {
+-  assert(after < before * 2, `before=${before} after=${after}`);
++  assert(after < before * 3, `before=${before} after=${after}`);
+ }

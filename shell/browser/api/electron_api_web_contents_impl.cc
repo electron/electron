@@ -27,7 +27,7 @@ void WebContents::DetachFromOuterFrame() {
   if (frame_tree_node_id != content::FrameTreeNode::kFrameTreeNodeInvalidId) {
     auto* node = content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
     DCHECK(node->parent());
-    node->frame_tree()->RemoveFrame(node);
+    node->frame_tree().RemoveFrame(node);
   }
 }
 

@@ -25,6 +25,11 @@ extern const char kValidCertificateDescription[];
 extern const char kSecureProtocol[];
 extern const char kSecureProtocolDescription[];
 
+// Keys for Device APIs
+extern const char kDeviceVendorIdKey[];
+extern const char kDeviceProductIdKey[];
+extern const char kDeviceSerialNumberKey[];
+
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
 extern const char kRunAsNode[];
 #endif

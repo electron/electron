@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/scoped_observation.h"
 #include "content/public/browser/bluetooth_delegate.h"
@@ -91,6 +92,12 @@ class ElectronBluetoothDelegate : public content::BluetoothDelegate {
   void AddFramePermissionObserver(FramePermissionObserver* observer) override;
   void RemoveFramePermissionObserver(
       FramePermissionObserver* observer) override;
+
+ private:
+  void OnDevicePairPromptResponse(PairPromptCallback callback,
+                                  base::Value::Dict response);
+
+  base::WeakPtrFactory<ElectronBluetoothDelegate> weak_factory_{this};
 };
 
 }  // namespace electron

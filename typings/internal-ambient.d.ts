@@ -145,6 +145,7 @@ declare namespace NodeJS {
     statusMessage: string;
     httpVersion: { major: number, minor: number };
     rawHeaders: { key: string, value: string }[];
+    headers: Record<string, string[]>;
   };
 
   type RedirectInfo = {
@@ -237,7 +238,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_web_frame_main'): {
       WebFrameMain: typeof Electron.WebFrameMain;
       fromId(processId: number, routingId: number): Electron.WebFrameMain;
-      fromIdOrNull(processId: number, routingId: number): Electron.WebFrameMain;
+      fromIdOrNull(processId: number, routingId: number): Electron.WebFrameMain | null;
     }
     _linkedBinding(name: 'electron_renderer_crash_reporter'): Electron.CrashReporter;
     _linkedBinding(name: 'electron_renderer_ipc'): { ipc: IpcRendererBinding };
@@ -251,6 +252,7 @@ declare namespace NodeJS {
 
     // Additional properties
     _firstFileName?: string;
+    _serviceStartupScript: string;
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;

@@ -4,7 +4,7 @@
 
 #include "shell/browser/fake_location_provider.h"
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 #include "base/time/time.h"
 
 namespace electron {

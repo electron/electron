@@ -1,4 +1,4 @@
-import { closeWindow } from './window-helpers';
+import { closeWindow } from './lib/window-helpers';
 import { BaseWindow, View } from 'electron/main';
 
 describe('View', () => {

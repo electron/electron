@@ -3,9 +3,9 @@ import * as path from 'path';
 import * as url from 'url';
 import { Worker } from 'worker_threads';
 import { BrowserWindow, ipcMain } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { getRemoteContext, ifdescribe, itremote, useRemoteContext } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { getRemoteContext, ifdescribe, itremote, useRemoteContext } from './lib/spec-helpers';
 import * as importedFs from 'fs';
 
 const features = process._linkedBinding('electron_common_features');
@@ -163,7 +163,7 @@ describe('asar package', function () {
       fs = require('fs')
       path = require('path')
       asarDir = ${JSON.stringify(asarDir)}
-    
+
       // This is used instead of util.promisify for some tests to dodge the
       // util.promisify.custom behavior.
       promisify = (f) => {
@@ -174,7 +174,7 @@ describe('asar package', function () {
           })
         })
       }
-    
+
       null
     `
   });
@@ -964,6 +964,32 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
         const err = await new Promise<any>(resolve => fs.readdir(p, resolve));
         expect(err.code).to.equal('ENOENT');
+      });
+
+      it('handles null for options', function (done) {
+        const p = path.join(asarDir, 'a.asar', 'dir1');
+        fs.readdir(p, null, function (err, dirs) {
+          try {
+            expect(err).to.be.null();
+            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
+      });
+
+      it('handles undefined for options', function (done) {
+        const p = path.join(asarDir, 'a.asar', 'dir1');
+        fs.readdir(p, undefined, function (err, dirs) {
+          try {
+            expect(err).to.be.null();
+            expect(dirs).to.deep.equal(['file1', 'file2', 'file3', 'link1', 'link2']);
+            done();
+          } catch (e) {
+            done(e);
+          }
+        });
       });
     });
 

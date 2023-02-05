@@ -10,11 +10,12 @@ An example of implementing a protocol that has the same effect as the
 ```javascript
 const { app, protocol } = require('electron')
 const path = require('path')
+const url = require('url')
 
 app.whenReady().then(() => {
   protocol.registerFileProtocol('atom', (request, callback) => {
-    const url = request.url.substr(7)
-    callback({ path: path.normalize(`${__dirname}/${url}`) })
+    const filePath = url.fileURLToPath('file://' + request.url.slice('atom://'.length))
+    callback(filePath)
   })
 })
 ```
@@ -175,7 +176,7 @@ property.
 * `handler` Function
   * `request` [ProtocolRequest](structures/protocol-request.md)
   * `callback` Function
-    * `response` ProtocolResponse
+    * `response` [ProtocolResponse](structures/protocol-response.md)
 
 Returns `boolean` - Whether the protocol was successfully registered
 

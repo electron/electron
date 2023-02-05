@@ -35,6 +35,9 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     options.icon = icon;
     options.silent = audio_muted ? true : data.silent;
     options.has_reply = false;
+    if (data.require_interaction)
+      options.timeout_type = u"never";
+
     notification->Show(options);
   } else {
     notification->Destroy();

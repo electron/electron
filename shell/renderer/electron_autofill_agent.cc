@@ -4,6 +4,7 @@
 
 #include "shell/renderer/electron_autofill_agent.h"
 
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -20,9 +21,23 @@
 namespace electron {
 
 namespace {
-const size_t kMaxDataLength = 1024;
+const size_t kMaxStringLength = 1024;
 const size_t kMaxListSize = 512;
 
+// Copied from components/autofill/content/renderer/form_autofill_util.cc
+void TrimStringVectorForIPC(std::vector<std::u16string>* strings) {
+  // Limit the size of the vector.
+  if (strings->size() > kMaxListSize)
+    strings->resize(kMaxListSize);
+
+  // Limit the size of the strings in the vector.
+  for (auto& string : *strings) {
+    if (string.length() > kMaxStringLength)
+      string.resize(kMaxStringLength);
+  }
+}
+
+// Copied from components/autofill/content/renderer/form_autofill_util.cc.
 void GetDataListSuggestions(const blink::WebInputElement& element,
                             std::vector<std::u16string>* values,
                             std::vector<std::u16string>* labels) {
@@ -33,19 +48,11 @@ void GetDataListSuggestions(const blink::WebInputElement& element,
     else
       labels->push_back(std::u16string());
   }
+
+  TrimStringVectorForIPC(values);
+  TrimStringVectorForIPC(labels);
 }
 
-void TrimStringVectorForIPC(std::vector<std::u16string>* strings) {
-  // Limit the size of the vector.
-  if (strings->size() > kMaxListSize)
-    strings->resize(kMaxListSize);
-
-  // Limit the size of the strings in the vector.
-  for (auto& str : *strings) {
-    if (str.length() > kMaxDataLength)
-      str.resize(kMaxDataLength);
-  }
-}
 }  // namespace
 
 AutofillAgent::AutofillAgent(content::RenderFrame* frame,
@@ -53,18 +60,26 @@ AutofillAgent::AutofillAgent(content::RenderFrame* frame,
     : content::RenderFrameObserver(frame) {
   render_frame()->GetWebFrame()->SetAutofillClient(this);
   registry->AddInterface<mojom::ElectronAutofillAgent>(base::BindRepeating(
-      &AutofillAgent::BindReceiver, base::Unretained(this)));
+      &AutofillAgent::BindPendingReceiver, base::Unretained(this)));
 }
 
 AutofillAgent::~AutofillAgent() = default;
 
-void AutofillAgent::BindReceiver(
-    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillAgent> receiver) {
-  receiver_.Bind(std::move(receiver));
+void AutofillAgent::BindPendingReceiver(
+    mojo::PendingAssociatedReceiver<mojom::ElectronAutofillAgent>
+        pending_receiver) {
+  receiver_.Bind(std::move(pending_receiver));
 }
 
 void AutofillAgent::OnDestruct() {
-  delete this;
+  Shutdown();
+  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(FROM_HERE,
+                                                                this);
+}
+
+void AutofillAgent::Shutdown() {
+  receiver_.reset();
+  weak_ptr_factory_.InvalidateWeakPtrs();
 }
 
 void AutofillAgent::DidChangeScrollOffset() {
@@ -87,16 +102,14 @@ void AutofillAgent::TextFieldDidChange(
     return;
 
   weak_ptr_factory_.InvalidateWeakPtrs();
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&AutofillAgent::TextFieldDidChangeImpl,
                                 weak_ptr_factory_.GetWeakPtr(), element));
 }
 
 void AutofillAgent::TextFieldDidChangeImpl(
     const blink::WebFormControlElement& element) {
-  ShowSuggestionsOptions options;
-  options.requires_caret_at_end = true;
-  ShowSuggestions(element, options);
+  ShowSuggestions(element, {.requires_caret_at_end = true});
 }
 
 void AutofillAgent::TextFieldDidReceiveKeyDown(
@@ -104,18 +117,14 @@ void AutofillAgent::TextFieldDidReceiveKeyDown(
     const blink::WebKeyboardEvent& event) {
   if (event.windows_key_code == ui::VKEY_DOWN ||
       event.windows_key_code == ui::VKEY_UP) {
-    ShowSuggestionsOptions options;
-    options.autofill_on_empty_values = true;
-    options.requires_caret_at_end = true;
-    ShowSuggestions(element, options);
+    ShowSuggestions(element, {.autofill_on_empty_values = true,
+                              .requires_caret_at_end = true});
   }
 }
 
 void AutofillAgent::OpenTextDataListChooser(
     const blink::WebInputElement& element) {
-  ShowSuggestionsOptions options;
-  options.autofill_on_empty_values = true;
-  ShowSuggestions(element, options);
+  ShowSuggestions(element, {.autofill_on_empty_values = true});
 }
 
 void AutofillAgent::DataListOptionsChanged(
@@ -123,31 +132,35 @@ void AutofillAgent::DataListOptionsChanged(
   if (!element.Focused())
     return;
 
-  ShowSuggestionsOptions options;
-  options.requires_caret_at_end = true;
-  ShowSuggestions(element, options);
+  ShowSuggestions(element, {.requires_caret_at_end = true});
 }
-
-AutofillAgent::ShowSuggestionsOptions::ShowSuggestionsOptions()
-    : autofill_on_empty_values(false), requires_caret_at_end(false) {}
 
 void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
                                     const ShowSuggestionsOptions& options) {
   if (!element.IsEnabled() || element.IsReadOnly())
     return;
+  if (!element.SuggestedValue().IsEmpty())
+    return;
+
   const blink::WebInputElement input_element =
       element.DynamicTo<blink::WebInputElement>();
   if (!input_element.IsNull()) {
     if (!input_element.IsTextField())
       return;
+    if (!input_element.SuggestedValue().IsEmpty())
+      return;
   }
 
+  // Don't attempt to autofill with values that are too large or if filling
+  // criteria are not met. Keyboard Accessory may still be shown when the
+  // |value| is empty, do not attempt to hide it.
   blink::WebString value = element.EditingValue();
-  if (value.length() > kMaxDataLength ||
+  if (value.length() > kMaxStringLength ||
       (!options.autofill_on_empty_values && value.IsEmpty()) ||
       (options.requires_caret_at_end &&
        (element.SelectionStart() != element.SelectionEnd() ||
         element.SelectionEnd() != static_cast<int>(value.length())))) {
+    // Any popup currently showing is obsolete.
     HidePopup();
     return;
   }
@@ -156,8 +169,6 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
   std::vector<std::u16string> data_list_labels;
   if (!input_element.IsNull()) {
     GetDataListSuggestions(input_element, &data_list_values, &data_list_labels);
-    TrimStringVectorForIPC(&data_list_values);
-    TrimStringVectorForIPC(&data_list_labels);
   }
 
   ShowPopup(element, data_list_values, data_list_labels);
@@ -165,11 +176,12 @@ void AutofillAgent::ShowSuggestions(const blink::WebFormControlElement& element,
 
 void AutofillAgent::DidReceiveLeftMouseDownOrGestureTapInNode(
     const blink::WebNode& node) {
-  focused_node_was_last_clicked_ = !node.IsNull() && node.Focused();
+  DCHECK(!node.IsNull());
+  focused_node_was_last_clicked_ = node.Focused();
 }
 
 void AutofillAgent::DidCompleteFocusChangeInFrame() {
-  DoFocusChangeComplete();
+  HandleFocusChangeComplete();
 }
 
 bool AutofillAgent::IsUserGesture() const {
@@ -197,18 +209,16 @@ void AutofillAgent::AcceptDataListSuggestion(const std::u16string& suggestion) {
   }
 }
 
-void AutofillAgent::DoFocusChangeComplete() {
+void AutofillAgent::HandleFocusChangeComplete() {
   auto element = render_frame()->GetWebFrame()->GetDocument().FocusedElement();
   if (element.IsNull() || !element.IsFormControlElement())
     return;
 
   if (focused_node_was_last_clicked_ && was_focused_before_now_) {
-    ShowSuggestionsOptions options;
-    options.autofill_on_empty_values = true;
     blink::WebInputElement input_element =
         element.DynamicTo<blink::WebInputElement>();
     if (!input_element.IsNull())
-      ShowSuggestions(input_element, options);
+      ShowSuggestions(input_element, {.autofill_on_empty_values = true});
   }
 
   was_focused_before_now_ = true;

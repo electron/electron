@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 import * as http from 'http';
-import { ifdescribe, ifit } from './spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -55,7 +55,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: false,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(mediaRequest.videoRequested).to.be.true();
     expect(mediaRequest.audioRequested).to.be.false();
@@ -78,7 +78,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(message).to.equal('Could not start video source');
@@ -104,7 +104,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
       navigator.mediaDevices.getDisplayMedia({
         video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
@@ -131,7 +131,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(callbackError?.message).to.equal('Video was requested, but no video stream was provided');
@@ -154,7 +154,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true();
   });
@@ -178,7 +178,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.false();
     expect(callbackError.message).to.equal('Video was requested, but no video stream was provided');
@@ -200,7 +200,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     // This is a little surprising... apparently chrome will generate a stream
     // for this non-existent web contents?
@@ -238,7 +238,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -259,7 +259,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -277,7 +277,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
       navigator.mediaDevices.getDisplayMedia({
         video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);
   });
@@ -354,7 +354,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
       navigator.mediaDevices.getDisplayMedia({
         video: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
-    `);
+    `, true);
     expect(ok).to.be.false();
     expect(message).to.equal('Not supported');
   });

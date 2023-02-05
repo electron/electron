@@ -8,20 +8,8 @@ rate-limiting, compression and global annotations.
 
 This should be upstreamed.
 
-diff --git a/components/crash/core/app/breakpad_linux.cc b/components/crash/core/app/breakpad_linux.cc
-index 6aa864db880408bf7021ac58673f4d8d489426b4..1fa85302da7a64abc42fd9558ddbcaf68b387517 100644
---- a/components/crash/core/app/breakpad_linux.cc
-+++ b/components/crash/core/app/breakpad_linux.cc
-@@ -113,6 +113,7 @@ void SetUploadURL(const std::string& url) {
- }
- #endif
- 
-+bool g_is_node = false;
- bool g_is_crash_reporter_enabled = false;
- uint64_t g_process_start_time = 0;
- pid_t g_pid = 0;
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 463f92a6e547006a46119f52203482dd6695a84a..34e6f087613d76947ae463fda2b107fad6ec14e9 100644
+index 284dd099122df85d2cebf467cdb3a54b45a343eb..bb21ddbd2ee4d2952a4b753a5c553005f8dc46db 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
 @@ -145,6 +145,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
@@ -43,7 +31,7 @@ index 463f92a6e547006a46119f52203482dd6695a84a..34e6f087613d76947ae463fda2b107fa
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 2532e99f00b39777cd9640c76704f7430d39502e..323e039e4591a4099b187f7a0097b4ee8be11a9f 100644
+index 9f8f20dfa65068a13ce3b035a7e3ce062d767161..9b45c7276e97253f79f4555ee692687b040afa67 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
 @@ -5,6 +5,7 @@
@@ -75,7 +63,7 @@ index 2532e99f00b39777cd9640c76704f7430d39502e..323e039e4591a4099b187f7a0097b4ee
    // Used by WebView to sample crashes without generating the unwanted dumps. If
    // the returned value is less than 100, crash dumping will be sampled to that
 diff --git a/components/crash/core/app/crashpad_linux.cc b/components/crash/core/app/crashpad_linux.cc
-index a80a792f1cb2c996b77443a3383663b4687ae044..2b1453353ce93632b378d4b25295b5cb14df9b2c 100644
+index 99efa6b245b9944710b76a342ec9a37947078a48..e55df93f17560a566e1dd2a63c560054edd772a5 100644
 --- a/components/crash/core/app/crashpad_linux.cc
 +++ b/components/crash/core/app/crashpad_linux.cc
 @@ -170,6 +170,7 @@ bool PlatformCrashpadInitialization(
@@ -101,7 +89,7 @@ index a80a792f1cb2c996b77443a3383663b4687ae044..2b1453353ce93632b378d4b25295b5cb
                                annotations, arguments, false, false));
    } else {
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a59bf46b96 100644
+index cab2c95eee53e6c406d6867b0a6e53a3a9fb5ce3..46935fcbf84cf1472214904cf96b03aa0e57be8f 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
 @@ -85,6 +85,8 @@
@@ -128,7 +116,7 @@ index dc041c43371fd58e3121ef6bc423aadb644bb8d0..a1fa566775724b4a1662a939fda3f0a5
          arguments.push_back("--monitor-self");
        }
 diff --git a/components/crash/core/app/crashpad_win.cc b/components/crash/core/app/crashpad_win.cc
-index ae8801a7fc877241313de84a6ae0698d4f2adf69..9ae249bfe41da9743adc7f60d69be0f003ca31e2 100644
+index 9ab5fb1c822752854fc88ba0ee3d24ddca4dd107..11ae602ccc58cb2728911b28d6637079d2dcb359 100644
 --- a/components/crash/core/app/crashpad_win.cc
 +++ b/components/crash/core/app/crashpad_win.cc
 @@ -91,6 +91,7 @@ bool PlatformCrashpadInitialization(

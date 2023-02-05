@@ -46,6 +46,7 @@ class ElectronDesktopWindowTreeHostLinux
   void OnBoundsChanged(const BoundsChange& change) override;
   void OnWindowStateChanged(ui::PlatformWindowState old_state,
                             ui::PlatformWindowState new_state) override;
+  void OnWindowTiledStateChanged(ui::WindowTiledEdges new_tiled_edges) override;
 
   // ui::NativeThemeObserver:
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
@@ -62,10 +63,7 @@ class ElectronDesktopWindowTreeHostLinux
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       theme_observation_{this};
-  base::ScopedObservation<ui::LinuxUi,
-                          ui::DeviceScaleFactorObserver,
-                          &ui::LinuxUi::AddDeviceScaleFactorObserver,
-                          &ui::LinuxUi::RemoveDeviceScaleFactorObserver>
+  base::ScopedObservation<ui::LinuxUi, ui::DeviceScaleFactorObserver>
       scale_observation_{this};
   ui::PlatformWindowState window_state_ = ui::PlatformWindowState::kUnknown;
 };

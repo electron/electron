@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <utility>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/path_service.h"
 #include "build/build_config.h"
@@ -20,9 +20,9 @@
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/render_frame_host.h"
 #include "content/public/common/user_agent.h"
+#include "extensions/browser/api/core_extensions_browser_api_provider.h"
 #include "extensions/browser/api/extensions_api_client.h"
 #include "extensions/browser/component_extension_resource_manager.h"
-#include "extensions/browser/core_extensions_browser_api_provider.h"
 #include "extensions/browser/event_router.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extensions_browser_interface_binders.h"
@@ -118,6 +118,29 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
   } else {
     return context;
   }
+}
+
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetRedirectedContextInIncognito(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return GetOriginalContext(context);
+}
+
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetContextForRegularAndIncognito(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return context;
+}
+
+content::BrowserContext* ElectronExtensionsBrowserClient::GetRegularProfile(
+    content::BrowserContext* context,
+    bool force_guest_profile,
+    bool force_system_profile) {
+  return context->IsOffTheRecord() ? nullptr : context;
 }
 
 bool ElectronExtensionsBrowserClient::IsGuestSession(

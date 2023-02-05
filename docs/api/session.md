@@ -195,8 +195,8 @@ Emitted when a HID device needs to be selected when a call to
 `navigator.hid.requestDevice` is made. `callback` should be called with
 `deviceId` to be selected; passing no arguments to `callback` will
 cancel the request.  Additionally, permissioning on `navigator.hid` can
-be further managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
-and [ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
+be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
+and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
 ```javascript
 const { app, BrowserWindow } = require('electron')
@@ -239,7 +239,7 @@ app.whenReady().then(() => {
     const selectedDevice = details.deviceList.find((device) => {
       return device.vendorId === '9025' && device.productId === '67'
     })
-    callback(selectedPort?.deviceId)
+    callback(selectedDevice?.deviceId)
   })
 })
 ```
@@ -385,6 +385,162 @@ callback from `select-serial-port` is called.  This event is intended for use
 when using a UI to ask users to pick a port so that the UI can be updated
 to remove the specified port.
 
+#### Event: 'serial-port-revoked'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `port` [SerialPort](structures/serial-port.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+  * `origin` string - The origin that the device has been revoked from.
+
+Emitted after `SerialPort.forget()` has been called.  This event can be used
+to help maintain persistent storage of permissions when `setDevicePermissionHandler` is used.
+
+```js
+// Browser Process
+const { app, BrowserWindow } = require('electron')
+
+app.whenReady().then(() => {
+  const win = new BrowserWindow({
+    width: 800,
+    height: 600
+  })
+
+  win.webContents.session.on('serial-port-revoked', (event, details) => {
+    console.log(`Access revoked for serial device from origin ${details.origin}`)
+  })
+})
+```
+
+```js
+// Renderer Process
+
+const portConnect = async () => {
+  // Request a port.
+  const port = await navigator.serial.requestPort()
+
+  // Wait for the serial port to open.
+  await port.open({ baudRate: 9600 })
+
+  // ...later, revoke access to the serial port.
+  await port.forget()
+}
+```
+
+#### Event: 'select-usb-device'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `deviceList` [USBDevice[]](structures/usb-device.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+* `callback` Function
+  * `deviceId` string (optional)
+
+Emitted when a USB device needs to be selected when a call to
+`navigator.usb.requestDevice` is made. `callback` should be called with
+`deviceId` to be selected; passing no arguments to `callback` will
+cancel the request.  Additionally, permissioning on `navigator.usb` can
+be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
+and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
+
+```javascript
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+
+app.whenReady().then(() => {
+  win = new BrowserWindow()
+
+  win.webContents.session.setPermissionCheckHandler((webContents, permission, requestingOrigin, details) => {
+    if (permission === 'usb') {
+      // Add logic here to determine if permission should be given to allow USB selection
+      return true
+    }
+    return false
+  })
+
+  // Optionally, retrieve previously persisted devices from a persistent store (fetchGrantedDevices needs to be implemented by developer to fetch persisted permissions)
+  const grantedDevices = fetchGrantedDevices()
+
+  win.webContents.session.setDevicePermissionHandler((details) => {
+    if (new URL(details.origin).hostname === 'some-host' && details.deviceType === 'usb') {
+      if (details.device.vendorId === 123 && details.device.productId === 345) {
+        // Always allow this type of device (this allows skipping the call to `navigator.usb.requestDevice` first)
+        return true
+      }
+
+      // Search through the list of devices that have previously been granted permission
+      return grantedDevices.some((grantedDevice) => {
+        return grantedDevice.vendorId === details.device.vendorId &&
+              grantedDevice.productId === details.device.productId &&
+              grantedDevice.serialNumber && grantedDevice.serialNumber === details.device.serialNumber
+      })
+    }
+    return false
+  })
+
+  win.webContents.session.on('select-usb-device', (event, details, callback) => {
+    event.preventDefault()
+    const selectedDevice = details.deviceList.find((device) => {
+      return device.vendorId === '9025' && device.productId === '67'
+    })
+    if (selectedDevice) {
+      // Optionally, add this to the persisted devices (updateGrantedDevices needs to be implemented by developer to persist permissions)
+      grantedDevices.push(selectedDevice)
+      updateGrantedDevices(grantedDevices)
+    }
+    callback(selectedDevice?.deviceId)
+  })
+})
+```
+
+#### Event: 'usb-device-added'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `device` [USBDevice](structures/usb-device.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+
+Emitted after `navigator.usb.requestDevice` has been called and
+`select-usb-device` has fired if a new device becomes available before
+the callback from `select-usb-device` is called.  This event is intended for
+use when using a UI to ask users to pick a device so that the UI can be updated
+with the newly added device.
+
+#### Event: 'usb-device-removed'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `device` [USBDevice](structures/usb-device.md)
+  * `frame` [WebFrameMain](web-frame-main.md)
+
+Emitted after `navigator.usb.requestDevice` has been called and
+`select-usb-device` has fired if a device has been removed before the callback
+from `select-usb-device` is called.  This event is intended for use when using
+a UI to ask users to pick a device so that the UI can be updated to remove the
+specified device.
+
+#### Event: 'usb-device-revoked'
+
+Returns:
+
+* `event` Event
+* `details` Object
+  * `device` [USBDevice[]](structures/usb-device.md)
+  * `origin` string (optional) - The origin that the device has been revoked from.
+
+Emitted after `USBDevice.forget()` has been called.  This event can be used
+to help maintain persistent storage of permissions when
+`setDevicePermissionHandler` is used.
+
 ### Instance Methods
 
 The following methods are available on instances of `Session`:
@@ -405,11 +561,11 @@ Clears the session’s HTTP cache.
   * `origin` string (optional) - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` string[] (optional) - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can contain:
-    `temporary`, `persistent`, `syncable`. If not specified, clear all quotas.
+    `temporary`, `syncable`. If not specified, clear all quotas.
 
 Returns `Promise<void>` - resolves when the storage data has been cleared.
 
@@ -503,7 +659,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match URLs which are IP address literals.
 
    Examples:
-     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+     "127.0.1", "\[0:0::1]", "\[::1]", "http://\[::1]:99"
 
 * `IP_LITERAL "/" PREFIX_LENGTH_IN_BITS`
 
@@ -638,6 +794,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more. These requests always appear to originate from the main frame.
     * `fullscreen` - Request for the app to enter fullscreen mode.
     * `openExternal` - Request to open links in external applications.
+    * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.
@@ -670,7 +827,7 @@ session.fromPartition('some-partition').setPermissionRequestHandler((webContents
 
 * `handler` Function\<boolean> | null
   * `webContents` ([WebContents](web-contents.md) | null) - WebContents checking the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.  All cross origin sub frames making permission checks will pass a `null` webContents to this handler, while certain other permission checks such as `notifications` checks will always pass `null`.  You should use `embeddingOrigin` and `requestingOrigin` to determine what origin the owning frame and the requesting frame are on respectively.
-  * `permission` string - Type of permission check.  Valid values are `midiSysex`, `notifications`, `geolocation`, `media`,`mediaKeySystem`,`midi`, `pointerLock`, `fullscreen`, `openExternal`, `hid`, or `serial`.
+  * `permission` string - Type of permission check.  Valid values are `midiSysex`, `notifications`, `geolocation`, `media`,`mediaKeySystem`,`midi`, `pointerLock`, `fullscreen`, `openExternal`, `hid`, `serial`, or `usb`.
   * `requestingOrigin` string - The origin URL of the permission check
   * `details` Object - Some properties are only available on certain permission types.
     * `embeddingOrigin` string (optional) - The origin of the frame embedding the frame that made the permission check.  Only set for cross-origin sub frames making permission checks.
@@ -756,7 +913,7 @@ Passing `null` instead of a function resets the handler to its default state.
 
 * `handler` Function\<boolean> | null
   * `details` Object
-    * `deviceType` string - The type of device that permission is being requested on, can be `hid` or `serial`.
+    * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
     * `origin` string - The origin URL of the device permission check.
     * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md)- the device that permission is being requested for.
 
@@ -784,6 +941,8 @@ app.whenReady().then(() => {
       return true
     } else if (permission === 'serial') {
       // Add logic here to determine if permission should be given to allow serial port selection
+    } else if (permission === 'usb') {
+      // Add logic here to determine if permission should be given to allow USB device selection
     }
     return false
   })
@@ -820,6 +979,71 @@ app.whenReady().then(() => {
     })
     callback(selectedPort?.deviceId)
   })
+})
+```
+
+#### `ses.setBluetoothPairingHandler(handler)` _Windows_ _Linux_
+
+* `handler` Function | null
+  * `details` Object
+    * `deviceId` string
+    * `pairingKind` string - The type of pairing prompt being requested.
+      One of the following values:
+      * `confirm`
+        This prompt is requesting confirmation that the Bluetooth device should
+        be paired.
+      * `confirmPin`
+        This prompt is requesting confirmation that the provided PIN matches the
+        pin displayed on the device.
+      * `providePin`
+        This prompt is requesting that a pin be provided for the device.
+    * `frame` [WebFrameMain](web-frame-main.md)
+    * `pin` string (optional) - The pin value to verify if `pairingKind` is `confirmPin`.
+  * `callback` Function
+    * `response` Object
+      * `confirmed` boolean - `false` should be passed in if the dialog is canceled.
+        If the `pairingKind` is `confirm` or `confirmPin`, this value should indicate
+        if the pairing is confirmed.  If the `pairingKind` is `providePin` the value
+        should be `true` when a value is provided.
+      * `pin` string | null (optional) - When the `pairingKind` is `providePin`
+        this value should be the required pin for the Bluetooth device.
+
+Sets a handler to respond to Bluetooth pairing requests. This handler
+allows developers to handle devices that require additional validation
+before pairing.  When a handler is not defined, any pairing on Linux or Windows
+that requires additional validation will be automatically cancelled.
+macOS does not require a handler because macOS handles the pairing
+automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
+
+```javascript
+
+const { app, BrowserWindow, ipcMain, session } = require('electron')
+
+let bluetoothPinCallback = null
+
+function createWindow () {
+  const mainWindow = new BrowserWindow({
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js')
+    }
+  })
+}
+
+// Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
+ipcMain.on('bluetooth-pairing-response', (event, response) => {
+  bluetoothPinCallback(response)
+})
+
+mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+  bluetoothPinCallback = callback
+  // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+  // Note that this will require logic in the renderer to handle this message and
+  // display a prompt to the user.
+  mainWindow.webContents.send('bluetooth-pairing-request', details)
+})
+
+app.whenReady().then(() => {
+  createWindow()
 })
 ```
 
@@ -986,7 +1210,7 @@ Returns `string[]` - An array of language codes the spellchecker is enabled for.
 will fallback to using `en-US`.  By default on launch if this setting is an empty list Electron will try to populate this
 setting with the current OS locale.  This setting is persisted across restarts.
 
-**Note:** On macOS the OS spellchecker is used and has its own list of languages.  This API is a no-op on macOS.
+**Note:** On macOS the OS spellchecker is used and has its own list of languages. On macOS, this API will return whichever languages have been configured by the OS.
 
 #### `ses.setSpellCheckerDictionaryDownloadURL(url)`
 

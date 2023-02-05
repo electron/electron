@@ -84,16 +84,16 @@ Examples of valid `color` values:
   * #ffffff (RRGGBB)
   * #ffffffff (AARRGGBB)
 * RGB
-  * rgb\(([\d]+),\s*([\d]+),\s*([\d]+)\)
+  * rgb\((\[\d]+),\s*(\[\d]+),\s*(\[\d]+)\)
     * e.g. rgb(255, 255, 255)
 * RGBA
-  * rgba\(([\d]+),\s*([\d]+),\s*([\d]+),\s*([\d.]+)\)
+  * rgba\((\[\d]+),\s*(\[\d]+),\s*(\[\d]+),\s*(\[\d.]+)\)
     * e.g. rgba(255, 255, 255, 1.0)
 * HSL
-  * hsl\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%\)
+  * hsl\((-?\[\d.]+),\s*(\[\d.]+)%,\s*(\[\d.]+)%\)
     * e.g. hsl(200, 20%, 50%)
 * HSLA
-  * hsla\((-?[\d.]+),\s*([\d.]+)%,\s*([\d.]+)%,\s*([\d.]+)\)
+  * hsla\((-?\[\d.]+),\s*(\[\d.]+)%,\s*(\[\d.]+)%,\s*(\[\d.]+)\)
     * e.g. hsla(200, 20%, 50%, 0.5)
 * Color name
   * Options are listed in [SkParseColor.cpp](https://source.chromium.org/chromium/chromium/src/+/main:third_party/skia/src/utils/SkParseColor.cpp;l=11-152;drc=eea4bf52cb0d55e2a39c828b017c80a5ee054148)

@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { AddressInfo } from 'net';
@@ -63,7 +63,7 @@ const startServer = async () => {
   }
 
   const server = http.createServer((req, res) => {
-    const busboy = new Busboy({ headers: req.headers });
+    const busboy = Busboy({ headers: req.headers });
     const fields = {} as Record<string, any>;
     const files = {} as Record<string, Buffer>;
     busboy.on('file', (fieldname, file) => {
@@ -175,6 +175,33 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       expect(crash.rendererSpecific).to.be.undefined();
     });
 
+    ifit(!isLinuxOnArm)('when a node process inside a node process crashes', async () => {
+      const { port, waitForCrash } = await startServer();
+      runCrashApp('node-fork', port);
+      const crash = await waitForCrash();
+      checkCrash('node', crash);
+      expect(crash.mainProcessSpecific).to.be.undefined();
+      expect(crash.rendererSpecific).to.be.undefined();
+    });
+
+    // Ensures that passing in crashpadHandlerPID flag for Linx child processes
+    // does not affect child proocess args.
+    ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
+      const { port, waitForCrash } = await startServer();
+      let exitCode: number | null = null;
+      const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+      const crashType = 'node-extra-args';
+      const crashProcess = childProcess.spawn(process.execPath, [appPath,
+        `--crash-type=${crashType}`,
+        `--crash-reporter-url=http://127.0.0.1:${port}`
+      ], { stdio: 'inherit' });
+      crashProcess.once('close', (code) => {
+        exitCode = code;
+      });
+      await waitForCrash();
+      expect(exitCode).to.equal(0);
+    });
+
     describe('with guid', () => {
       for (const processType of ['main', 'renderer', 'sandboxed-renderer']) {
         it(`when ${processType} crashes`, async () => {
@@ -279,7 +306,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         setTimeout(() => process.crash());
       }, port);
       const crash = await waitForCrash();
-      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127 + (process.platform === 'linux' ? 159 : 0), 'crash should have truncated longParam');
+      expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
     });
 
     it('should omit extra keys with names longer than the maximum', async () => {

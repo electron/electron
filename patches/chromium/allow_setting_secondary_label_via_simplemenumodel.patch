@@ -6,10 +6,10 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5bab8214e 100644
+index c058edaf6ea40746228da569a8739c50f958500d..2d4306d16ce8e354dcdf3da8c5afce8546349fcd 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
-@@ -53,6 +53,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
+@@ -52,6 +52,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
    return std::u16string();
  }
  
@@ -21,7 +21,7 @@ index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5
  ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
      int command_id) const {
    return ImageModel();
-@@ -311,6 +316,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
+@@ -310,6 +315,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
    MenuItemsChanged();
  }
  
@@ -33,7 +33,7 @@ index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5
  void SimpleMenuModel::SetMinorText(size_t index,
                                     const std::u16string& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -404,6 +414,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -403,6 +413,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -47,7 +47,7 @@ index 6e1ed6b05b9358a46c796ac175a6556703477a1f..f138d6dc153694c2c3fbb8c98d9557e5
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index 7ecb2f6cae709af8c512cfb6cac71d449a9b39c4..b7781d44125c1d66dba90bc39f9f17b194a85665 100644
+index 3f2ae4cb1347a8bac7df6d993d5b70b4212fdc66..72d70e3f94f990f8f9f5e4268f6186762e409d15 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -50,6 +50,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {

@@ -343,11 +343,11 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
 
   if (role == u"services") {
     std::u16string title = u"Services";
-    NSString* label = l10n_util::FixUpWindowsStyleLabel(title);
+    NSString* sub_label = l10n_util::FixUpWindowsStyleLabel(title);
 
     [item setTarget:nil];
     [item setAction:nil];
-    NSMenu* submenu = [[[NSMenu alloc] initWithTitle:label] autorelease];
+    NSMenu* submenu = [[[NSMenu alloc] initWithTitle:sub_label] autorelease];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
   } else if (role == u"sharemenu") {

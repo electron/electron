@@ -11,7 +11,7 @@
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
 
-#if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
 #include <mach-o/dyld.h>
 #include <cstdio>
 
@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
   }
 #endif
 
-#if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
   uint32_t exec_path_size = 0;
   int rv = _NSGetExecutablePath(NULL, &exec_path_size);
   if (rv != -1) {
@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
       abort();
     }
   }
-#endif  // defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#endif  // defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD
 
   return ElectronMain(argc, argv);
 }

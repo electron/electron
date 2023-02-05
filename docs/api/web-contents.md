@@ -75,6 +75,13 @@ returns `null`.
 Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
+### `webContents.fromFrame(frame)`
+
+* `frame` WebFrameMain
+
+Returns `WebContents` | undefined - A WebContents instance with the given WebFrameMain, or
+`undefined` if there is no WebContents associated with the given WebFrameMain.
+
 ### `webContents.fromDevToolsTargetId(targetId)`
 
 * `targetId` string - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
@@ -160,10 +167,6 @@ Corresponds to the points in time when the spinner of the tab stopped spinning.
 
 #### Event: 'dom-ready'
 
-Returns:
-
-* `event` Event
-
 Emitted when the document in the top-level frame is loaded.
 
 #### Event: 'page-title-updated'
@@ -185,6 +188,18 @@ Returns:
 * `favicons` string[] - Array of URLs.
 
 Emitted when page receives favicon urls.
+
+#### Event: 'content-bounds-updated'
+
+Returns:
+
+* `event` Event
+* `bounds` [Rectangle](structures/rectangle.md) - requested new content bounds
+
+Emitted when the page calls `window.moveTo`, `window.resizeTo` or related APIs.
+
+By default, this will move the window. To prevent that behavior, call
+`event.preventDefault()`.
 
 #### Event: 'did-create-window'
 
@@ -450,6 +465,16 @@ Emitted when a plugin process has crashed.
 
 Emitted when `webContents` is destroyed.
 
+#### Event: 'input-event'
+
+Returns:
+
+* `event` Event
+* `inputEvent` [InputEvent](structures/input-event.md)
+
+Emitted when an input event is sent to the WebContents. See
+[InputEvent](structures/input-event.md) for details.
+
 #### Event: 'before-input-event'
 
 Returns:
@@ -520,6 +545,14 @@ changed.
 The `focus` and `blur` events of `WebContents` should only be used to detect
 focus change between different `WebContents` and `BrowserView` in the same
 window.
+
+#### Event: 'devtools-open-url'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
 #### Event: 'devtools-opened'
 
@@ -599,7 +632,7 @@ Returns:
   * `finalUpdate` boolean
 
 Emitted when a result is available for
-[`webContents.findInPage`] request.
+[`webContents.findInPage`](#contentsfindinpagetext-options) request.
 
 #### Event: 'media-started-playing'
 
@@ -980,6 +1013,21 @@ Returns `string` - The title of the current web page.
 
 Returns `boolean` - Whether the web page is destroyed.
 
+#### `contents.close([opts])`
+
+* `opts` Object (optional)
+  * `waitForBeforeUnload` boolean - if true, fire the `beforeunload` event
+    before closing the page. If the page prevents the unload, the WebContents
+    will not be closed. The [`will-prevent-unload`](#event-will-prevent-unload)
+    will be fired if the page requests prevention of unload.
+
+Closes the page, as if the web content had called `window.close()`.
+
+If the page is successfully closed (i.e. the unload is not prevented by the
+page, or `waitForBeforeUnload` is false or unspecified), the WebContents will
+be destroyed and no longer usable. The [`destroyed`](#event-destroyed) event
+will be emitted.
+
 #### `contents.focus()`
 
 Focuses the web page.
@@ -1169,7 +1217,7 @@ Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setWindowOpenHandler(handler)`
 
-* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+* `handler` Function<{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
   * `details` Object
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
@@ -1184,8 +1232,11 @@ Ignore application menu shortcuts while this web contents is focused.
       be set. If no post data is to be sent, the value will be `null`. Only defined
       when the window is being created by a form that set `target=_blank`.
 
-  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  Returns `{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
   window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  By default, child windows are closed when their opener is closed. This can be
+  changed by specifying `outlivesOpener: true`, in which case the opened window
+  will not be closed when its opener is closed.
   Returning an unrecognized value such as a null, undefined, or an object
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
@@ -1335,7 +1386,7 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 #### `contents.stopFindInPage(action)`
 
 * `action` string - Specifies the action to take place when ending
-  [`webContents.findInPage`] request.
+  [`webContents.findInPage`](#contentsfindinpagetext-options) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -1352,20 +1403,25 @@ const requestId = webContents.findInPage('api')
 console.log(requestId)
 ```
 
-#### `contents.capturePage([rect])`
+#### `contents.capturePage([rect, opts])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
+* `opts` Object (optional)
+  * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
+  * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
+The page is considered visible when its browser window is hidden and the capturer count is non-zero.
+If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 #### `contents.isBeingCaptured()`
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
+#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])` _Deprecated_
 
 * `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
 * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible.
@@ -1376,7 +1432,9 @@ hidden and the capturer count is non-zero. If you would like the page to stay hi
 
 This also affects the Page Visibility API.
 
-#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
+**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`. See [breaking changes](../breaking-changes.md).
+
+#### `contents.decrementCapturerCount([stayHidden, stayAwake])` _Deprecated_
 
 * `stayHidden` boolean (optional) -  Keep the page in hidden state instead of visible.
 * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
@@ -1384,6 +1442,9 @@ This also affects the Page Visibility API.
 Decrease the capturer count by one. The page will be set to hidden or occluded state when its
 browser window is hidden or occluded and the capturer count reaches zero. If you want to
 decrease the hidden capturer count instead you should set `stayHidden` to true.
+
+**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`.
+See [breaking changes](../breaking-changes.md).
 
 #### `contents.getPrinters()` _Deprecated_
 
@@ -1713,7 +1774,7 @@ app.whenReady().then(() => {
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` Integer | [number, number] - the ID of the frame to send to, or a
+* `frameId` Integer | \[number, number] - the ID of the frame to send to, or a
   pair of `[processId, frameId]` if the frame is in a different process to the
   main frame.
 * `channel` string
@@ -2075,7 +2136,13 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
 
+#### `contents.opener` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the frame that opened this WebContents, either
+with open(), or by navigating a link with a target attribute.
+
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+[`MessagePortMain`]: message-port-main.md

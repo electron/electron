@@ -3,8 +3,8 @@ import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as util from 'util';
-import { emittedOnce } from './events-helpers';
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { webContents, WebContents } from 'electron/main';
 import { EventEmitter } from 'stream';
 
@@ -341,7 +341,7 @@ describe('node feature', () => {
   describe('Buffer', () => {
     useRemoteContext();
 
-    itremote('can be created from WebKit external string', () => {
+    itremote('can be created from Blink external string', () => {
       const p = document.createElement('p');
       p.innerText = '闲云潭影日悠悠，物换星移几度秋';
       const b = Buffer.from(p.innerText);
@@ -790,7 +790,7 @@ describe('node feature', () => {
               }
             })`))
             .then(() => {
-              (w as any).destroy();
+              w.destroy();
               child.send('plz-quit');
               done();
             });

@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
 #define ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 #include "base/mac/scoped_nsobject.h"
 #include "base/mac/scoped_sending_event.h"
 

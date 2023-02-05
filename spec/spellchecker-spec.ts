@@ -5,9 +5,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { AddressInfo } from 'net';
-import { closeWindow } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { ifit, ifdescribe, delay } from './spec-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifit, ifdescribe, delay } from './lib/spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -209,6 +209,44 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
             const tempSes = session.fromPartition('temporary');
             const result = tempSes.addWordToSpellCheckerDictionary('foobar');
             expect(result).to.equal(false);
+          });
+        });
+
+        describe('ses.setSpellCheckerLanguages', () => {
+          const isMac = process.platform === 'darwin';
+
+          ifit(isMac)('should be a no-op when setSpellCheckerLanguages is called on macOS', () => {
+            expect(() => {
+              w.webContents.session.setSpellCheckerLanguages(['i-am-a-nonexistent-language']);
+            }).to.not.throw();
+          });
+
+          ifit(!isMac)('should throw when a bad language is passed', () => {
+            expect(() => {
+              w.webContents.session.setSpellCheckerLanguages(['i-am-a-nonexistent-language']);
+            }).to.throw(/Invalid language code provided: "i-am-a-nonexistent-language" is not a valid language code/);
+          });
+
+          ifit(!isMac)('should not throw when a recognized language is passed', () => {
+            expect(() => {
+              w.webContents.session.setSpellCheckerLanguages(['es']);
+            }).to.not.throw();
+          });
+        });
+
+        describe('SetSpellCheckerDictionaryDownloadURL', () => {
+          const isMac = process.platform === 'darwin';
+
+          ifit(isMac)('should be a no-op when a bad url is passed on macOS', () => {
+            expect(() => {
+              w.webContents.session.setSpellCheckerDictionaryDownloadURL('i-am-not-a-valid-url');
+            }).to.not.throw();
+          });
+
+          ifit(!isMac)('should throw when a bad url is passed', () => {
+            expect(() => {
+              w.webContents.session.setSpellCheckerDictionaryDownloadURL('i-am-not-a-valid-url');
+            }).to.throw(/The URL you provided to setSpellCheckerDictionaryDownloadURL is not a valid URL/);
           });
         });
 

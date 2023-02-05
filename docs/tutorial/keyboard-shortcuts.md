@@ -10,8 +10,8 @@ for your Electron application.
 ### Local Shortcuts
 
 Local keyboard shortcuts are triggered only when the application is focused.
-To configure a local keyboard shortcut, you need to specify an [`accelerator`]
-property when creating a [MenuItem] within the [Menu] module.
+To configure a local keyboard shortcut, you need to specify an [`accelerator`][]
+property when creating a [MenuItem][] within the [Menu][] module.
 
 Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
@@ -48,7 +48,7 @@ generated after triggering the `click` event: "Electron rocks!".
 
 ### Global Shortcuts
 
-To configure a global keyboard shortcut, you need to use the [globalShortcut]
+To configure a global keyboard shortcut, you need to use the [globalShortcut][]
 module to detect keyboard events even when the application does not have
 keyboard focus.
 
@@ -77,7 +77,7 @@ you will see that Electron loves global shortcuts!
 
 #### Using web APIs
 
-If you want to handle keyboard shortcuts within a [BrowserWindow], you can
+If you want to handle keyboard shortcuts within a [BrowserWindow][], you can
 listen for the `keyup` and `keydown` [DOM events][dom-events] inside the
 renderer process using the [addEventListener() API][addEventListener-api].
 
@@ -128,7 +128,7 @@ see that this key combination was successfully intercepted.
 #### Using third-party libraries
 
 If you don't want to do manual shortcut parsing, there are libraries that do
-advanced key detection, such as [mousetrap]. Below are examples of usage of the
+advanced key detection, such as [mousetrap][]. Below are examples of usage of the
 `mousetrap` running in the Renderer process:
 
 ```js

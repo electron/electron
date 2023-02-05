@@ -6,10 +6,12 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
+#include <vector>
 
 #include "base/compiler_specific.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "third_party/skia/include/core/SkRegion.h"
 #include "ui/views/view.h"
 
 namespace views {
@@ -19,8 +21,6 @@ class WidgetDelegate;
 }  // namespace views
 
 namespace electron {
-
-class InspectableWebContents;
 
 class InspectableWebContentsViewViews : public InspectableWebContentsView,
                                         public views::View {
@@ -44,16 +44,9 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   // views::View:
   void Layout() override;
 
-  InspectableWebContents* inspectable_web_contents() {
-    return inspectable_web_contents_;
-  }
-
   const std::u16string& GetTitle() const { return title_; }
 
  private:
-  // Owns us.
-  InspectableWebContents* inspectable_web_contents_;
-
   std::unique_ptr<views::Widget> devtools_window_;
   views::WebView* devtools_window_web_view_ = nullptr;
   views::View* contents_web_view_ = nullptr;

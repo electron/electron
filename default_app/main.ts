@@ -83,7 +83,7 @@ function loadApplicationPackage (packagePath: string) {
   });
 
   try {
-    // Override app name and version.
+    // Override app's package.json data.
     packagePath = path.resolve(packagePath);
     const packageJsonPath = path.join(packagePath, 'package.json');
     let appPath;
@@ -103,6 +103,16 @@ function loadApplicationPackage (packagePath: string) {
         app.name = packageJson.productName;
       } else if (packageJson.name) {
         app.name = packageJson.name;
+      }
+      if (packageJson.desktopName) {
+        app.setDesktopName(packageJson.desktopName);
+      } else {
+        app.setDesktopName(`${app.name}.desktop`);
+      }
+      // Set v8 flags, deliberately lazy load so that apps that do not use this
+      // feature do not pay the price
+      if (packageJson.v8Flags) {
+        require('v8').setFlagsFromString(packageJson.v8Flags);
       }
       appPath = packagePath;
     }

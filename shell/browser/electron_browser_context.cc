@@ -16,8 +16,6 @@
 #include "base/path_service.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_util.h"
-#include "base/threading/sequenced_task_runner_handle.h"
-#include "base/threading/thread_restrictions.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -45,7 +43,6 @@
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
-#include "shell/browser/pref_store_delegate.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -53,10 +50,12 @@
 #include "shell/browser/web_view_manager.h"
 #include "shell/browser/zoom_level_delegate.h"
 #include "shell/common/application_info.h"
+#include "shell/common/electron_constants.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/gin_converters/frame_converter.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
+#include "shell/common/thread_restrictions.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -110,7 +109,8 @@ ElectronBrowserContext::browser_context_map() {
 ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
                                                bool in_memory,
                                                base::Value::Dict options)
-    : storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
+    : in_memory_pref_store_(new ValueMapPrefStore),
+      storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
       in_memory_(in_memory),
       ssl_config_(network::mojom::SSLConfig::New()) {
@@ -164,12 +164,13 @@ ElectronBrowserContext::~ElectronBrowserContext() {
 
 void ElectronBrowserContext::InitPrefs() {
   auto prefs_path = GetPath().Append(FILE_PATH_LITERAL("Preferences"));
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
   PrefServiceFactory prefs_factory;
   scoped_refptr<JsonPrefStore> pref_store =
       base::MakeRefCounted<JsonPrefStore>(prefs_path);
   pref_store->ReadPrefs();  // Synchronous.
   prefs_factory.set_user_prefs(pref_store);
+  prefs_factory.set_command_line_prefs(in_memory_pref_store());
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   if (!in_memory_) {
@@ -210,10 +211,7 @@ void ElectronBrowserContext::InitPrefs() {
   language::LanguagePrefs::RegisterProfilePrefs(registry.get());
 #endif
 
-  prefs_ = prefs_factory.Create(
-      registry.get(),
-      std::make_unique<PrefStoreDelegate>(weak_factory_.GetWeakPtr()));
-  prefs_->UpdateCommandLinePrefStore(new ValueMapPrefStore);
+  prefs_ = prefs_factory.Create(registry.get());
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS) || \
     BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   user_prefs::UserPrefs::Set(this, prefs_.get());
@@ -221,7 +219,7 @@ void ElectronBrowserContext::InitPrefs() {
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
   base::Value::List current_dictionaries =
-      prefs()->GetValueList(spellcheck::prefs::kSpellCheckDictionaries).Clone();
+      prefs()->GetList(spellcheck::prefs::kSpellCheckDictionaries).Clone();
   // No configured dictionaries, the default will be en-US
   if (current_dictionaries.empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
@@ -585,19 +583,22 @@ bool ElectronBrowserContext::DoesDeviceMatch(
     const base::Value* device_to_compare,
     blink::PermissionType permission_type) {
   if (permission_type ==
-      static_cast<blink::PermissionType>(
-          WebContentsPermissionHelper::PermissionType::HID)) {
-    if (device.GetDict().FindInt(kHidVendorIdKey) !=
-            device_to_compare->GetDict().FindInt(kHidVendorIdKey) ||
-        device.GetDict().FindInt(kHidProductIdKey) !=
-            device_to_compare->GetDict().FindInt(kHidProductIdKey)) {
+          static_cast<blink::PermissionType>(
+              WebContentsPermissionHelper::PermissionType::HID) ||
+      permission_type ==
+          static_cast<blink::PermissionType>(
+              WebContentsPermissionHelper::PermissionType::USB)) {
+    if (device.GetDict().FindInt(kDeviceVendorIdKey) !=
+            device_to_compare->GetDict().FindInt(kDeviceVendorIdKey) ||
+        device.GetDict().FindInt(kDeviceProductIdKey) !=
+            device_to_compare->GetDict().FindInt(kDeviceProductIdKey)) {
       return false;
     }
 
     const auto* serial_number =
-        device_to_compare->GetDict().FindString(kHidSerialNumberKey);
+        device_to_compare->GetDict().FindString(kDeviceSerialNumberKey);
     const auto* device_serial_number =
-        device.GetDict().FindString(kHidSerialNumberKey);
+        device.GetDict().FindString(kDeviceSerialNumberKey);
 
     if (serial_number && device_serial_number &&
         *device_serial_number == *serial_number)

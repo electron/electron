@@ -15,10 +15,10 @@
 #include <shlobj.h>
 #include <wrl/client.h>
 
-#include "base/bind.h"
-#include "base/callback_helpers.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/stl_util.h"
 #include "base/strings/escape.h"
@@ -331,23 +331,21 @@ void ShowItemInFolder(const base::FilePath& full_path) {
 void OpenPath(const base::FilePath& full_path, OpenCallback callback) {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
 
-  base::PostTaskAndReplyWithResult(
-      base::ThreadPool::CreateCOMSTATaskRunner(
-          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-          .get(),
-      FROM_HERE, base::BindOnce(&OpenPathOnThread, full_path),
-      std::move(callback));
+  base::ThreadPool::CreateCOMSTATaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      ->PostTaskAndReplyWithResult(FROM_HERE,
+                                   base::BindOnce(&OpenPathOnThread, full_path),
+                                   std::move(callback));
 }
 
 void OpenExternal(const GURL& url,
                   const OpenExternalOptions& options,
                   OpenCallback callback) {
-  base::PostTaskAndReplyWithResult(
-      base::ThreadPool::CreateCOMSTATaskRunner(
-          {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
-          .get(),
-      FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
-      std::move(callback));
+  base::ThreadPool::CreateCOMSTATaskRunner(
+      {base::MayBlock(), base::TaskPriority::USER_BLOCKING})
+      ->PostTaskAndReplyWithResult(
+          FROM_HERE, base::BindOnce(&OpenExternalOnWorkerThread, url, options),
+          std::move(callback));
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& path,
@@ -363,23 +361,11 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
   // Elevation prompt enabled for UAC protected files.  This overrides the
   // SILENT, NO_UI and NOERRORUI flags.
 
-  if (base::win::GetVersion() >= base::win::Version::WIN8) {
-    // Windows 8 introduces the flag RECYCLEONDELETE and deprecates the
-    // ALLOWUNDO in favor of ADDUNDORECORD.
-    if (FAILED(pfo->SetOperationFlags(
-            FOF_NO_UI | FOFX_ADDUNDORECORD | FOF_NOERRORUI | FOF_SILENT |
-            FOFX_SHOWELEVATIONPROMPT | FOFX_RECYCLEONDELETE))) {
-      *error = "Failed to set operation flags";
-      return false;
-    }
-  } else {
-    // For Windows 7 and Vista, RecycleOnDelete is the default behavior.
-    if (FAILED(pfo->SetOperationFlags(FOF_NO_UI | FOF_ALLOWUNDO |
-                                      FOF_NOERRORUI | FOF_SILENT |
-                                      FOFX_SHOWELEVATIONPROMPT))) {
-      *error = "Failed to set operation flags";
-      return false;
-    }
+  if (FAILED(pfo->SetOperationFlags(
+          FOF_NO_UI | FOFX_ADDUNDORECORD | FOF_NOERRORUI | FOF_SILENT |
+          FOFX_SHOWELEVATIONPROMPT | FOFX_RECYCLEONDELETE))) {
+    *error = "Failed to set operation flags";
+    return false;
   }
 
   // Create an IShellItem from the supplied source path.

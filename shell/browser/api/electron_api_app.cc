@@ -9,12 +9,12 @@
 #include <utility>
 #include <vector>
 
-#include "base/callback_helpers.h"
 #include "base/command_line.h"
 #include "base/containers/span.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/callback_helpers.h"
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
@@ -45,8 +45,10 @@
 #include "shell/app/command_line_args.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/api/electron_api_utility_process.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/api/gpuinfo_manager.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/javascript_environment.h"
@@ -65,9 +67,11 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
+#include "shell/common/language_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "shell/common/v8_value_serializer.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image.h"
@@ -529,7 +533,7 @@ bool NotificationCallbackWrapper(
     callback.Run(cmd, cwd, std::move(additional_data));
   } else {
     scoped_refptr<base::SingleThreadTaskRunner> task_runner(
-        base::ThreadTaskRunnerHandle::Get());
+        base::SingleThreadTaskRunner::GetCurrentDefault());
 
     // Make a copy of the span so that the data isn't lost.
     task_runner->PostTask(FROM_HERE,
@@ -921,6 +925,12 @@ void App::BrowserChildProcessCrashedOrKilled(
   if (!data.name.empty()) {
     details.Set("name", data.name);
   }
+  if (data.process_type == content::PROCESS_TYPE_UTILITY) {
+    base::ProcessId pid = data.GetProcess().Pid();
+    auto utility_process_wrapper = UtilityProcessWrapper::FromProcessId(pid);
+    if (utility_process_wrapper)
+      utility_process_wrapper->Shutdown(info.exit_code);
+  }
   Emit("child-process-gone", details);
 }
 
@@ -969,7 +979,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ScopedAllowBlockingForElectron allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -977,7 +987,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     if (base::PathService::Get(chrome::DIR_USER_DATA, &path)) {
       path = path.Append(base::FilePath::FromUTF8Unsafe("logs"));
       {
-        base::ThreadRestrictions::ScopedAllowIO allow_io;
+        ScopedAllowBlockingForElectron allow_blocking;
         base::PathService::Override(DIR_APP_LOGS, path);
       }
     }
@@ -1037,6 +1047,16 @@ void App::SetDesktopName(const std::string& desktop_name) {
 
 std::string App::GetLocale() {
   return g_browser_process->GetApplicationLocale();
+}
+
+std::string App::GetSystemLocale(gin_helper::ErrorThrower thrower) const {
+  if (!Browser::Get()->is_ready()) {
+    thrower.ThrowError(
+        "app.getSystemLocale() can only be called "
+        "after app is ready");
+    return std::string();
+  }
+  return static_cast<BrowserProcessImpl*>(g_browser_process)->GetSystemLocale();
 }
 
 std::string App::GetLocaleCountryCode() {
@@ -1785,6 +1805,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("setAppLogsPath", &App::SetAppLogsPath)
       .SetMethod("setDesktopName", &App::SetDesktopName)
       .SetMethod("getLocale", &App::GetLocale)
+      .SetMethod("getPreferredSystemLanguages", &GetPreferredLanguages)
+      .SetMethod("getSystemLocale", &App::GetSystemLocale)
       .SetMethod("getLocaleCountryCode", &App::GetLocaleCountryCode)
 #if BUILDFLAG(USE_NSS_CERTS)
       .SetMethod("importCertificate", &App::ImportCertificate)
@@ -1805,7 +1827,7 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetMethod("getAppMetrics", &App::GetAppMetrics)
       .SetMethod("getGPUFeatureStatus", &App::GetGPUFeatureStatus)
       .SetMethod("getGPUInfo", &App::GetGPUInfo)
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
       .SetMethod("startAccessingSecurityScopedResource",
                  &App::StartAccessingSecurityScopedResource)
 #endif

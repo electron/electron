@@ -15,11 +15,11 @@
 #include "base/logging.h"
 #include "base/pickle.h"
 #include "base/strings/string_number_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "base/values.h"
 #include "electron/fuses.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/asar/scoped_temporary_file.h"
+#include "shell/common/thread_restrictions.h"
 
 #if BUILDFLAG(IS_WIN)
 #include <io.h>
@@ -167,7 +167,7 @@ Archive::FileInfo::~FileInfo() = default;
 
 Archive::Archive(const base::FilePath& path)
     : initialized_(false), path_(path), file_(base::File::FILE_OK) {
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   file_.Initialize(path_, base::File::FLAG_OPEN | base::File::FLAG_READ);
 #if BUILDFLAG(IS_WIN)
   fd_ = _open_osfhandle(reinterpret_cast<intptr_t>(file_.GetPlatformFile()), 0);
@@ -184,7 +184,7 @@ Archive::~Archive() {
     file_.TakePlatformFile();
   }
 #endif
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  electron::ScopedAllowBlockingForElectron allow_blocking;
   file_.Close();
 }
 
@@ -206,7 +206,7 @@ bool Archive::Init() {
 
   buf.resize(8);
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     len = file_.ReadAtCurrentPos(buf.data(), buf.size());
   }
   if (len != static_cast<int>(buf.size())) {
@@ -223,7 +223,7 @@ bool Archive::Init() {
 
   buf.resize(size);
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     len = file_.ReadAtCurrentPos(buf.data(), buf.size());
   }
   if (len != static_cast<int>(buf.size())) {

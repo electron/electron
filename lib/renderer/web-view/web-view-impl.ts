@@ -1,5 +1,5 @@
 import type * as guestViewInternalModule from '@electron/internal/renderer/web-view/guest-view-internal';
-import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
+import { WEB_VIEW_ATTRIBUTES } from '@electron/internal/renderer/web-view/web-view-constants';
 import { syncMethods, asyncMethods, properties } from '@electron/internal/common/web-view-methods';
 import type { WebViewAttribute, PartitionAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 import { setupWebViewAttributes } from '@electron/internal/renderer/web-view/web-view-attributes';
@@ -24,7 +24,6 @@ export class WebViewImpl {
   public guestInstanceId?: number
   public hasFocus = false
   public internalInstanceId?: number;
-  public resizeObserver?: ResizeObserver;
   public viewInstanceId: number
 
   // on* Event handlers.
@@ -76,7 +75,7 @@ export class WebViewImpl {
     }
 
     this.beforeFirstNavigation = true;
-    (this.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION) as PartitionAttribute).validPartitionId = true;
+    (this.attributes.get(WEB_VIEW_ATTRIBUTES.PARTITION) as PartitionAttribute).validPartitionId = true;
 
     // Since attachment swaps a local frame for a remote frame, we need our
     // internal iframe element to be local again before we can reattach.
@@ -101,14 +100,6 @@ export class WebViewImpl {
 
     // Let the changed attribute handle its own mutation
     this.attributes.get(attributeName)!.handleMutation(oldValue, newValue);
-  }
-
-  onElementResize () {
-    const props = {
-      newWidth: this.webviewNode.clientWidth,
-      newHeight: this.webviewNode.clientHeight
-    };
-    this.dispatchEvent('resize', props);
   }
 
   createGuest () {
@@ -154,13 +145,13 @@ export class WebViewImpl {
 
   // Updates state upon loadcommit.
   onLoadCommit (props: Record<string, any>) {
-    const oldValue = this.webviewNode.getAttribute(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC);
+    const oldValue = this.webviewNode.getAttribute(WEB_VIEW_ATTRIBUTES.SRC);
     const newValue = props.url;
     if (props.isMainFrame && (oldValue !== newValue)) {
       // Touching the src attribute triggers a navigation. To avoid
       // triggering a page reload on every guest-initiated navigation,
       // we do not handle this mutation.
-      this.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC)!.setValueIgnoreMutation(newValue);
+      this.attributes.get(WEB_VIEW_ATTRIBUTES.SRC)!.setValueIgnoreMutation(newValue);
     }
   }
 
@@ -174,7 +165,7 @@ export class WebViewImpl {
   }
 
   onAttach (storagePartitionId: number) {
-    return this.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION)!.setValue(storagePartitionId);
+    return this.attributes.get(WEB_VIEW_ATTRIBUTES.PARTITION)!.setValue(storagePartitionId);
   }
 
   buildParams () {
@@ -203,10 +194,6 @@ export class WebViewImpl {
     }
 
     this.guestInstanceId = guestInstanceId;
-    // TODO(zcbenz): Should we deprecate the "resize" event? Wait, it is not
-    // even documented.
-    this.resizeObserver = new ResizeObserver(this.onElementResize.bind(this));
-    this.resizeObserver.observe(this.internalElement);
   }
 }
 

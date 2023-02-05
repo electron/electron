@@ -8,14 +8,13 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe, delay } from './spec-helpers';
+import { ifdescribe, delay } from './lib/spec-helpers';
 import { promisify } from 'util';
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
 
-  // TODO(deepak1556): Enable on arm64 after upgrade, it crashes at the moment.
-  ifdescribe(process.platform === 'linux' && process.arch !== 'arm64' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
+  ifdescribe(process.platform === 'linux' && process.env.DBUS_SYSTEM_BUS_ADDRESS != null)('when powerMonitor module is loaded with dbus mock', () => {
     before(async () => {
       const systemBus = dbus.systemBus();
       const loginService = systemBus.getService('org.freedesktop.login1');

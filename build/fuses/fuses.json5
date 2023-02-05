@@ -7,5 +7,6 @@
   "node_options": "1",
   "node_cli_inspect": "1",
   "embedded_asar_integrity_validation": "0",
-  "only_load_app_from_asar": "0"
+  "only_load_app_from_asar": "0",
+  "load_browser_process_specific_v8_snapshot": "0"
 }

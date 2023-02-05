@@ -4,13 +4,14 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
+import * as os from 'os';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents } from 'electron/main';
 
-import { emittedOnce, emittedUntil, emittedNTimes } from './events-helpers';
-import { ifit, ifdescribe, defer, delay } from './spec-helpers';
-import { closeWindow, closeAllWindows } from './window-helpers';
-import { areColorsSimilar, captureScreen, CHROMA_COLOR_HEX, getPixelColor } from './screen-helpers';
+import { emittedOnce, emittedUntil, emittedNTimes } from './lib/events-helpers';
+import { ifit, ifdescribe, defer, delay } from './lib/spec-helpers';
+import { closeWindow, closeAllWindows } from './lib/window-helpers';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -567,6 +568,10 @@ describe('BrowserWindow module', () => {
             targetId: iframeTarget.targetId,
             flatten: true
           });
+          let willNavigateEmitted = false;
+          w.webContents.on('will-navigate', () => {
+            willNavigateEmitted = true;
+          });
           await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
             type: 'mousePressed',
             x: 10,
@@ -581,10 +586,6 @@ describe('BrowserWindow module', () => {
             clickCount: 1,
             button: 'left'
           }, sessionId);
-          let willNavigateEmitted = false;
-          w.webContents.on('will-navigate', () => {
-            willNavigateEmitted = true;
-          });
           await emittedOnce(w.webContents, 'did-navigate');
           expect(willNavigateEmitted).to.be.true();
         });
@@ -1936,6 +1937,36 @@ describe('BrowserWindow module', () => {
       expect(image.isEmpty()).to.equal(true);
     });
 
+    ifit(process.platform === 'darwin')('honors the stayHidden argument', async () => {
+      const w = new BrowserWindow({
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+        expect(visibilityState).to.equal('visible');
+        expect(hidden).to.be.false('hidden');
+      }
+
+      w.hide();
+
+      {
+        const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+        expect(visibilityState).to.equal('hidden');
+        expect(hidden).to.be.true('hidden');
+      }
+
+      await w.capturePage({ x: 0, y: 0, width: 0, height: 0 }, { stayHidden: true });
+
+      const visible = await w.webContents.executeJavaScript('document.visibilityState');
+      expect(visible).to.equal('hidden');
+    });
+
     it('resolves after the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
@@ -2239,15 +2270,7 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('BrowserWindow.setVibrancy(type)', () => {
-    let appProcess: childProcess.ChildProcessWithoutNullStreams | childProcess.ChildProcess | undefined;
-
-    afterEach(() => {
-      if (appProcess && !appProcess.killed) {
-        appProcess.kill();
-        appProcess = undefined;
-      }
-      closeAllWindows();
-    });
+    afterEach(closeAllWindows);
 
     it('allows setting, changing, and removing the vibrancy', () => {
       const w = new BrowserWindow({ show: false });
@@ -2265,18 +2288,6 @@ describe('BrowserWindow module', () => {
       expect(() => {
         w.setVibrancy('i-am-not-a-valid-vibrancy-type' as any);
       }).to.not.throw();
-    });
-
-    // TODO(nornagon): disabled due to flakiness.
-    it.skip('Allows setting a transparent window via CSS', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'background-color-transparent');
-
-      appProcess = childProcess.spawn(process.execPath, [appPath], {
-        stdio: 'inherit'
-      });
-
-      const [code] = await emittedOnce(appProcess, 'exit');
-      expect(code).to.equal(0);
     });
   });
 
@@ -2395,7 +2406,7 @@ describe('BrowserWindow module', () => {
       w.setBrowserView(bv);
       defer(() => {
         w.removeBrowserView(bv);
-        (bv.webContents as any).destroy();
+        bv.webContents.destroy();
       });
       await bv.webContents.loadURL('about:blank');
       expect(BrowserWindow.fromWebContents(bv.webContents)!.id).to.equal(w.id);
@@ -2443,7 +2454,7 @@ describe('BrowserWindow module', () => {
       w.setBrowserView(bv);
       defer(() => {
         w.removeBrowserView(bv);
-        (bv.webContents as any).destroy();
+        bv.webContents.destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv)!.id).to.equal(w.id);
     });
@@ -2457,8 +2468,8 @@ describe('BrowserWindow module', () => {
       defer(() => {
         w.removeBrowserView(bv1);
         w.removeBrowserView(bv2);
-        (bv1.webContents as any).destroy();
-        (bv2.webContents as any).destroy();
+        bv1.webContents.destroy();
+        bv2.webContents.destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv1)!.id).to.equal(w.id);
       expect(BrowserWindow.fromBrowserView(bv2)!.id).to.equal(w.id);
@@ -2467,7 +2478,7 @@ describe('BrowserWindow module', () => {
     it('returns undefined if not attached', () => {
       const bv = new BrowserView();
       defer(() => {
-        (bv.webContents as any).destroy();
+        bv.webContents.destroy();
       });
       expect(BrowserWindow.fromBrowserView(bv)).to.be.null('BrowserWindow associated with bv');
     });
@@ -3167,6 +3178,26 @@ describe('BrowserWindow module', () => {
           ? 'file:///' + htmlPath.replace(/\\/g, '/')
           : pageUrl;
         expect(url).to.equal(expectedUrl);
+      });
+
+      it('exposes full EventEmitter object to preload script', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            sandbox: true,
+            preload: path.join(fixtures, 'module', 'preload-eventemitter.js')
+          }
+        });
+        w.loadURL('about:blank');
+        const [, rendererEventEmitterProperties] = await emittedOnce(ipcMain, 'answer');
+        const { EventEmitter } = require('events');
+        const emitter = new EventEmitter();
+        const browserEventEmitterProperties = [];
+        let currentObj = emitter;
+        do {
+          browserEventEmitterProperties.push(...Object.getOwnPropertyNames(currentObj));
+        } while ((currentObj = Object.getPrototypeOf(currentObj)));
+        expect(rendererEventEmitterProperties).to.deep.equal(browserEventEmitterProperties);
       });
 
       it('should open windows in same domain with cross-scripting enabled', async () => {
@@ -4108,13 +4139,24 @@ describe('BrowserWindow module', () => {
     });
 
     it('should save page to disk with MHTML', async () => {
+      /* Use temp directory for saving MHTML file since the write handle
+       * gets passed to untrusted process and chromium will deny exec access to
+       * the path. To perform this task, chromium requires that the path is one
+       * of the browser controlled paths, refs https://chromium-review.googlesource.com/c/chromium/src/+/3774416
+       */
+      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-mhtml-save-'));
+      const savePageMHTMLPath = path.join(tmpDir, 'save_page.html');
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
-      await w.webContents.savePage(savePageHtmlPath, 'MHTML');
+      await w.webContents.savePage(savePageMHTMLPath, 'MHTML');
 
-      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('html path');
       expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
       expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+      try {
+        await fs.promises.unlink(savePageMHTMLPath);
+        await fs.promises.rmdir(tmpDir);
+      } catch {}
     });
 
     it('should save page to disk with HTMLComplete', async () => {
@@ -4953,6 +4995,24 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
+      it('with functions', () => {
+        it('can be set with ignoreMissionControl constructor option', () => {
+          const w = new BrowserWindow({ show: false, hiddenInMissionControl: true });
+          expect(w.isHiddenInMissionControl()).to.be.true('isHiddenInMissionControl');
+        });
+
+        it('can be changed', () => {
+          const w = new BrowserWindow({ show: false });
+          expect(w.isHiddenInMissionControl()).to.be.false('isHiddenInMissionControl');
+          w.setHiddenInMissionControl(true);
+          expect(w.isHiddenInMissionControl()).to.be.true('isHiddenInMissionControl');
+          w.setHiddenInMissionControl(false);
+          expect(w.isHiddenInMissionControl()).to.be.false('isHiddenInMissionControl');
+        });
+      });
+    });
+
     // fullscreen events are dispatched eagerly and twiddling things too fast can confuse poor Electron
 
     ifdescribe(process.platform === 'darwin')('kiosk state', () => {
@@ -5670,13 +5730,13 @@ describe('BrowserWindow module', () => {
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform !== 'linux' && process.arch !== 'arm64')('should not display a visible background', async () => {
+    ifit(process.platform === 'darwin' && process.arch !== 'x64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: CHROMA_COLOR_HEX,
+        backgroundColor: HexColors.GREEN,
         hasShadow: false
       });
 
@@ -5690,9 +5750,10 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html'));
-      await emittedOnce(foregroundWindow, 'ready-to-show');
+      const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
+      await foregroundWindow.loadFile(colorFile);
 
+      await delay(1000);
       const screenCapture = await captureScreen();
       const leftHalfColor = getPixelColor(screenCapture, {
         x: display.size.width / 4,
@@ -5703,8 +5764,44 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(leftHalfColor, CHROMA_COLOR_HEX)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, '#ff0000')).to.be.true();
+      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+    });
+
+    ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      const backgroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        backgroundColor: HexColors.PURPLE,
+        hasShadow: false
+      });
+
+      await backgroundWindow.loadURL('about:blank');
+
+      const foregroundWindow = new BrowserWindow({
+        ...display.bounds,
+        frame: false,
+        transparent: true,
+        hasShadow: false,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true
+        }
+      });
+
+      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
+      await emittedOnce(ipcMain, 'set-transparent');
+
+      await delay();
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
     });
   });
 
@@ -5712,13 +5809,13 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     // Linux/WOA doesn't return any capture sources.
-    ifit(process.platform !== 'linux' && (process.platform !== 'win32' || process.arch !== 'arm64'))('should display the set color', async () => {
+    ifit(process.platform === 'darwin')('should display the set color', async () => {
       const display = screen.getPrimaryDisplay();
 
       const w = new BrowserWindow({
         ...display.bounds,
         show: true,
-        backgroundColor: CHROMA_COLOR_HEX
+        backgroundColor: HexColors.BLUE
       });
 
       w.loadURL('about:blank');
@@ -5730,7 +5827,7 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, CHROMA_COLOR_HEX)).to.be.true();
+      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
     });
   });
 });

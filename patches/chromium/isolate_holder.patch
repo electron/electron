@@ -15,10 +15,10 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349bb8aee3b1 100644
+index 6268851494a0bbc0b3e693782dae6171f6347657..87ae3db7aec96577856804aa3718e53e3ccf66d3 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -73,7 +73,8 @@ IsolateHolder::IsolateHolder(
+@@ -72,7 +72,8 @@ IsolateHolder::IsolateHolder(
      IsolateType isolate_type,
      IsolateCreationMode isolate_creation_mode,
      v8::CreateHistogramCallback create_histogram_callback,
@@ -28,7 +28,7 @@ index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349b
      : IsolateHolder(task_runner,
                      access_mode,
                      isolate_type,
-@@ -81,14 +82,16 @@ IsolateHolder::IsolateHolder(
+@@ -80,14 +81,16 @@ IsolateHolder::IsolateHolder(
                                               atomics_wait_mode,
                                               create_histogram_callback,
                                               add_histogram_sample_callback),
@@ -47,7 +47,7 @@ index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349b
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
        << "You need to invoke gin::IsolateHolder::Initialize first";
-@@ -99,7 +102,7 @@ IsolateHolder::IsolateHolder(
+@@ -98,7 +101,7 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
    DCHECK(allocator);
  
@@ -57,7 +57,7 @@ index c254b045494936eca14ce947e1c2de3327820aa2..63c9b9681fcc4e1e9a9590d59d74349b
                                                     access_mode_, task_runner);
    //  TODO(https://crbug.com/1347092): Refactor such that caller need not
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index f8e5d0246b92fd2f1316313e13ccda7ef6c57495..196e030be4ba5bb5f04aaef0acf8cabe0de93a67 100644
+index c9bc6e5dd7e1cf8d198afcd21cbb24970337a50f..688f10fa48511818848f6177a1a20a19ebd54f99 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -83,13 +83,15 @@ class GIN_EXPORT IsolateHolder {

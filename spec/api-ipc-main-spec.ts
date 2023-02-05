@@ -1,9 +1,9 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import * as cp from 'child_process';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { defer } from './lib/spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
 
 describe('ipc main module', () => {

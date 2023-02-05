@@ -1,0 +1,18 @@
+{
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "paths": [
+          "electron",
+          "electron/main"
+        ],
+        "patterns": [
+          "./*",
+          "../*",
+          "@electron/internal/browser/*"
+        ]
+      }
+    ]
+  }
+}

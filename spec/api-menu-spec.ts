@@ -3,9 +3,9 @@ import * as path from 'path';
 import { expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
-import { emittedOnce } from './events-helpers';
-import { ifit, delay } from './spec-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifit, delay } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 

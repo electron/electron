@@ -15,11 +15,9 @@
 #import <Security/Security.h>
 
 #include "base/mac/scoped_cftyperef.h"
-#include "base/mac/sdk_forward_declarations.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
 #include "net/base/mac/url_conversions.h"
@@ -294,14 +292,14 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 }
 
 void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
-  base::Value::Dict value;
+  base::Value::Dict dict_value;
 
-  if (!args->GetNext(&value)) {
+  if (!args->GetNext(&dict_value)) {
     args->ThrowError();
     return;
   }
   @try {
-    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(value));
+    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(dict_value));
     for (id key in dict) {
       id value = [dict objectForKey:key];
       if ([value isKindOfClass:[NSNull class]] || value == nil) {
@@ -425,9 +423,10 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 
 bool SystemPreferences::CanPromptTouchID() {
   base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-  if (![context
-          canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                      error:nil])
+  LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+  if (@available(macOS 10.15, *))
+    auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+  if (![context canEvaluatePolicy:auth_policy error:nil])
     return false;
   if (@available(macOS 10.13.2, *))
     return [context biometryType] == LABiometryTypeTouchID;
@@ -449,7 +448,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
               nullptr));
 
   scoped_refptr<base::SequencedTaskRunner> runner =
-      base::SequencedTaskRunnerHandle::Get();
+      base::SequencedTaskRunner::GetCurrentDefault();
 
   __block gin_helper::Promise<void> p = std::move(promise);
   [context

@@ -14,12 +14,19 @@
 #include "content/public/browser/web_contents_user_data.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_features.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
+#include "third_party/skia/include/core/SkRegion.h"
+#include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"
+
+#if !BUILDFLAG(IS_MAC)
+#include "shell/browser/ui/views/frameless_view.h"
+#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/base/win/shell.h"
@@ -65,7 +72,7 @@ namespace {
 
 #if BUILDFLAG(IS_WIN)
 gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
-  if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
+  if (!window->transparent())
     return size;
 
   gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
@@ -172,7 +179,11 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   int max_width = max_size.width() > 0 ? max_size.width() : INT_MAX;
   int max_height = max_size.height() > 0 ? max_size.height() : INT_MAX;
   bool have_max_width = options.Get(options::kMaxWidth, &max_width);
+  if (have_max_width && max_width <= 0)
+    max_width = INT_MAX;
   bool have_max_height = options.Get(options::kMaxHeight, &max_height);
+  if (have_max_height && max_height <= 0)
+    max_height = INT_MAX;
 
   // By default the window has a default maximum size that prevents it
   // from being resized larger than the screen, so we should only set this
@@ -414,6 +425,8 @@ void NativeWindow::SetParentWindow(NativeWindow* parent) {
   parent_ = parent;
 }
 
+void NativeWindow::InvalidateShadow() {}
+
 void NativeWindow::SetAutoHideCursor(bool auto_hide) {}
 
 void NativeWindow::SelectPreviousTab() {}
@@ -603,16 +616,6 @@ void NativeWindow::NotifyWindowEnterFullScreen() {
     observer.OnWindowEnterFullScreen();
 }
 
-void NativeWindow::NotifyWindowScrollTouchBegin() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchBegin();
-}
-
-void NativeWindow::NotifyWindowScrollTouchEnd() {
-  for (NativeWindowObserver& observer : observers_)
-    observer.OnWindowScrollTouchEnd();
-}
-
 void NativeWindow::NotifyWindowSwipe(const std::string& direction) {
   for (NativeWindowObserver& observer : observers_)
     observer.OnWindowSwipe(direction);
@@ -692,6 +695,41 @@ void NativeWindow::NotifyWindowMessage(UINT message,
     observer.OnWindowMessage(message, w_param, l_param);
 }
 #endif
+
+int NativeWindow::NonClientHitTest(const gfx::Point& point) {
+#if !BUILDFLAG(IS_MAC)
+  // We need to ensure we account for resizing borders on Windows and Linux.
+  if ((!has_frame() || has_client_frame()) && IsResizable()) {
+    auto* frame =
+        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
+    int border_hit = frame->ResizingBorderHitTest(point);
+    if (border_hit != HTNOWHERE)
+      return border_hit;
+  }
+#endif
+
+  for (auto* provider : draggable_region_providers_) {
+    int hit = provider->NonClientHitTest(point);
+    if (hit != HTNOWHERE)
+      return hit;
+  }
+  return HTNOWHERE;
+}
+
+void NativeWindow::AddDraggableRegionProvider(
+    DraggableRegionProvider* provider) {
+  if (std::find(draggable_region_providers_.begin(),
+                draggable_region_providers_.end(),
+                provider) == draggable_region_providers_.end()) {
+    draggable_region_providers_.push_back(provider);
+  }
+}
+
+void NativeWindow::RemoveDraggableRegionProvider(
+    DraggableRegionProvider* provider) {
+  draggable_region_providers_.remove_if(
+      [&provider](DraggableRegionProvider* p) { return p == provider; });
+}
 
 views::Widget* NativeWindow::GetWidget() {
   return widget();

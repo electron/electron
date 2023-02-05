@@ -11,6 +11,7 @@
 
 #include "base/scoped_observation.h"
 #include "shell/browser/ui/views/frameless_view.h"
+#include "ui/base/ui_base_types.h"
 #include "ui/linux/linux_ui.h"
 #include "ui/linux/nav_button_provider.h"
 #include "ui/linux/window_button_order_observer.h"
@@ -39,6 +40,11 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
+  // Returns which edges of the frame are tiled.
+  const ui::WindowTiledEdges& tiled_edges() const { return tiled_edges_; }
+  void set_tiled_edges(ui::WindowTiledEdges tiled_edges) {
+    tiled_edges_ = tiled_edges;
+  }
 
  protected:
   // ui::NativeThemeObserver:
@@ -130,13 +136,12 @@ class ClientFrameViewLinux : public FramelessView,
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};
-  base::ScopedObservation<ui::LinuxUi,
-                          ui::WindowButtonOrderObserver,
-                          &ui::LinuxUi::AddWindowButtonOrderObserver,
-                          &ui::LinuxUi::RemoveWindowButtonOrderObserver>
+  base::ScopedObservation<ui::LinuxUi, ui::WindowButtonOrderObserver>
       window_button_order_observer_{this};
 
   base::CallbackListSubscription paint_as_active_changed_subscription_;
+
+  ui::WindowTiledEdges tiled_edges_;
 };
 
 }  // namespace electron

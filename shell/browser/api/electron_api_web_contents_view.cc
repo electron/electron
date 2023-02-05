@@ -14,6 +14,8 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "third_party/skia/include/core/SkRegion.h"
+#include "ui/base/hit_test.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
@@ -48,6 +50,15 @@ WebContentsView::~WebContentsView() {
 
 gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
   return gin::CreateHandle(isolate, api_web_contents_);
+}
+
+int WebContentsView::NonClientHitTest(const gfx::Point& point) {
+  gfx::Point local_point(point);
+  views::View::ConvertPointFromWidget(view(), &local_point);
+  SkRegion* region = api_web_contents_->draggable_region();
+  if (region && region->contains(local_point.x(), local_point.y()))
+    return HTCAPTION;
+  return HTNOWHERE;
 }
 
 void WebContentsView::WebContentsDestroyed() {

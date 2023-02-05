@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron';
+import { ipcRenderer } from 'electron/renderer';
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 
 import type * as webViewInitModule from '@electron/internal/renderer/web-view/web-view-init';

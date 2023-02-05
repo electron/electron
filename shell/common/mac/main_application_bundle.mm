@@ -10,8 +10,7 @@
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
-#include "content/common/mac_helpers.h"
-#include "ppapi/buildflags/buildflags.h"
+#include "content/browser/mac_helpers.h"
 
 namespace electron {
 
@@ -33,10 +32,8 @@ base::FilePath MainApplicationBundlePath() {
   // Up to Contents.
   if (!HasMainProcessKey() &&
       (base::EndsWith(path.value(), " Helper", base::CompareCase::SENSITIVE) ||
-#if BUILDFLAG(ENABLE_PLUGINS)
        base::EndsWith(path.value(), content::kMacHelperSuffix_plugin,
                       base::CompareCase::SENSITIVE) ||
-#endif
        base::EndsWith(path.value(), content::kMacHelperSuffix_renderer,
                       base::CompareCase::SENSITIVE) ||
        base::EndsWith(path.value(), content::kMacHelperSuffix_gpu,

@@ -126,7 +126,7 @@ console.log(`Hello from Electron 👋`)
 ```
 
 Because Electron's main process is a Node.js runtime, you can execute arbitrary Node.js code
-with the `electron` command (you can even use it as a [REPL]). To execute this script,
+with the `electron` command (you can even use it as a [REPL][]). To execute this script,
 add `electron .` to the `start` command in the [`scripts`][package-scripts]
 field of your package.json. This command will tell the Electron executable to look for the main
 script in the current directory and run it in dev mode.
@@ -186,7 +186,7 @@ by creating a barebones web page in an `index.html` file in the root folder of y
 ```
 
 Now that you have a web page, you can load it into an Electron [BrowserWindow][browser-window].
-Replace the contents your `main.js` file with the following code. We will explain each
+Replace the contents of your `main.js` file with the following code. We will explain each
 highlighted block separately.
 
 ```js {1,3-10,12-14} title='main.js' showLineNumbers
@@ -258,7 +258,7 @@ app.whenReady().then(() => {
 })
 ```
 
-Many of Electron's core modules are Node.js [event emitters] that adhere to Node's asynchronous
+Many of Electron's core modules are Node.js [event emitters][] that adhere to Node's asynchronous
 event-driven architecture. The app module is one of these emitters.
 
 In Electron, BrowserWindows can only be created after the app module's [`ready`][app-ready] event
@@ -288,7 +288,7 @@ open a window that displays your web page!
 Each web page your app displays in a window will run in a separate process called a
 **renderer** process (or simply _renderer_ for short). Renderer processes have access
 to the same JavaScript APIs and tooling you use for typical front-end web
-development, such as using [webpack] to bundle and minify your code or [React][react]
+development, such as using [webpack][] to bundle and minify your code or [React][react]
 to build your user interfaces.
 
 ## Managing your app's window lifecycle
@@ -369,12 +369,12 @@ run. Create a launch.json configuration in a new `.vscode` folder in your projec
       "name": "Renderer",
       "port": 9222,
       "request": "attach",
-      "type": "pwa-chrome",
+      "type": "chrome",
       "webRoot": "${workspaceFolder}"
     },
     {
       "name": "Main",
-      "type": "pwa-node",
+      "type": "node",
       "request": "launch",
       "cwd": "${workspaceFolder}",
       "runtimeExecutable": "${workspaceFolder}/node_modules/.bin/electron",
@@ -398,12 +398,12 @@ What we have done in the `launch.json` file is to create 3 configurations:
 - `Main` is used to start the main process and also expose port 9222 for remote debugging
   (`--remote-debugging-port=9222`). This is the port that we will use to attach the debugger
   for the `Renderer`. Because the main process is a Node.js process, the type is set to
-  `pwa-node` (`pwa-` is the prefix that tells VS Code to use the latest JavaScript debugger).
+  `node`.
 - `Renderer` is used to debug the renderer process. Because the main process is the one
   that creates the process, we have to "attach" to it (`"request": "attach"`) instead of
   creating a new one.
-  The renderer process is a web one, so the debugger we have to use is `pwa-chrome`.
-- `Main + renderer` is a [compound task] that executes the previous ones simultaneously.
+  The renderer process is a web one, so the debugger we have to use is `chrome`.
+- `Main + renderer` is a [compound task][] that executes the previous ones simultaneously.
 
 :::caution
 
@@ -419,7 +419,7 @@ in development mode.
 
 If you want to dig deeper in the debugging area, the following guides provide more information:
 
-- [Application Debugging]
+- [Application Debugging][]
 - [DevTools Extensions][devtools extension]
 
 :::
@@ -435,7 +435,7 @@ This file controls Electron's **main process**, which runs an instance of Node.j
 responsible for your app's lifecycle, displaying native interfaces, performing privileged operations,
 and managing renderer processes.
 
-**Renderer processes** (or renderers for short) are responsible for display graphical content. You can
+**Renderer processes** (or renderers for short) are responsible for displaying graphical content. You can
 load a web page into a renderer by pointing it to either a web address or a local HTML file.
 Renderers behave very similarly to regular web pages and have access to the same web APIs.
 
@@ -445,14 +445,12 @@ privileged APIs and how to communicate between processes.
 <!-- Links -->
 
 [activate]: ../api/app.md#event-activate-macos
-[advanced-installation]: installation.md
 [app]: ../api/app.md
 [app-quit]: ../api/app.md#appquit
 [app-ready]: ../api/app.md#event-ready
 [app-when-ready]: ../api/app.md#appwhenready
 [application debugging]: ./application-debugging.md
 [browser-window]: ../api/browser-window.md
-[commonjs]: https://nodejs.org/docs/../api/modules.html#modules_modules_commonjs_modules
 [compound task]: https://code.visualstudio.com/Docs/editor/tasks#_compound-tasks
 [devtools extension]: ./devtools-extension.md
 [event emitters]: https://nodejs.org/api/events.html#events
@@ -465,7 +463,6 @@ privileged APIs and how to communicate between processes.
 [process-model]: process-model.md
 [react]: https://reactjs.org
 [repl]: ./repl.md
-[sandbox]: ./sandbox.md
 [webpack]: https://webpack.js.org
 [window-all-closed]: ../api/app.md#event-window-all-closed
 [wsl]: https://docs.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2

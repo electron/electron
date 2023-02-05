@@ -16,78 +16,41 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 506ff3c2b9a14a725d13e3933bc281d05c0b6b13..9726e2d34d6d123ad3e62d843d21b755788fc062 100644
+index 29b75456a779ff9c36bb0cc2cdc4a1b2a1aa5966..4157e90fdbc265ab34405e4e9c1efbff06c26d70 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -21,7 +21,9 @@
- #include "ui/gl/gl_surface_egl.h"
- #endif
+@@ -18,7 +18,9 @@
+ #include "ui/gl/gpu_switching_observer.h"
+ #include "ui/gl/presenter.h"
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  @class CAContext;
 +#endif
  @class CALayer;
  
  namespace ui {
-@@ -113,7 +115,9 @@ class ImageTransportSurfaceOverlayMac : public gl::GLSurface,
+@@ -89,7 +91,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
    bool use_remote_layer_api_;
-+#ifndef MAS_BUILD
-   base::scoped_nsobject<CAContext> ca_context_;
-+#endif
-   std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
- 
-   gfx::Size pixel_size_;
-@@ -204,7 +208,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::GLSurfaceEGL,
-   base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
- 
-   bool use_remote_layer_api_;
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    base::scoped_nsobject<CAContext> ca_context_;
 +#endif
    std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 27b0c985b119095bd92ac021db10731a917dfa0c..83bd23a7ed0a5870f226442a6335b26de7676206 100644
+index e2b4368c08ba9e30cb46218988c6212a46c98217..02db1e7041f18bae8c90539fee0e768b353fa523 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -60,6 +60,7 @@
-   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
+@@ -74,12 +74,14 @@
  
-+#ifndef MAS_BUILD
    // Create the CAContext to send this to the GPU process, and the layer for
    // the context.
++#if !IS_MAS_BUILD()
    if (use_remote_layer_api_) {
-@@ -68,6 +69,7 @@
-                                                    options:@{}] retain]);
-     [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
-   }
-+#endif
- }
- 
- ImageTransportSurfaceOverlayMac::~ImageTransportSurfaceOverlayMac() {
-@@ -145,7 +147,9 @@
-                          "GLImpl", static_cast<int>(gl::GetGLImplementation()),
-                          "width", pixel_size_.width());
-     if (use_remote_layer_api_) {
-+#ifndef MAS_BUILD
-       params.ca_context_id = [ca_context_ contextId];
-+#endif
-     } else {
-       IOSurfaceRef io_surface =
-           ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
-@@ -379,6 +383,7 @@
-   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
- 
-+#ifndef MAS_BUILD
-   // Create the CAContext to send this to the GPU process, and the layer for
-   // the context.
-   if (use_remote_layer_api_) {
-@@ -387,6 +392,7 @@
+     CGSConnectionID connection_id = CGSMainConnectionID();
+     ca_context_.reset([[CAContext contextWithCGSConnection:connection_id
                                                     options:@{}] retain]);
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
@@ -95,25 +58,25 @@ index 27b0c985b119095bd92ac021db10731a917dfa0c..83bd23a7ed0a5870f226442a6335b26d
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -465,7 +471,9 @@
+@@ -174,7 +176,9 @@
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
      if (use_remote_layer_api_) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
        params.ca_context_id = [ca_context_ contextId];
 +#endif
      } else {
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index a55934320e475af475f7169a5b30954c7e98d775..78d626f2c5be20106ebd54b71a9b0663c55086da 100644
+index 2c4821b34f71d30ce814bd1f3cf9a7a76bbaac66..c7dc371c780a405f502a84c77e92251ae08f66e0 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 @@ -99,6 +99,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
@@ -128,14 +91,14 @@ index a55934320e475af475f7169a5b30954c7e98d775..78d626f2c5be20106ebd54b71a9b0663
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index d684614589c9e55965450d712ee6dc0deef6aade..e0446753a3d972215423c079160fe8bfd2f9c3be 100644
+index 9b691e2f16c68235dd180a28b6eb2eefc91f8e4c..9d4a7fb36e671980024b895eaafab2d970ac2818 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
 @@ -13,6 +13,7 @@
  
  #include "base/component_export.h"
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  // The CGSConnectionID is used to create the CAContext in the process that is
  // going to share the CALayers that it is rendering to another process to
  // display.
@@ -149,28 +112,29 @@ index d684614589c9e55965450d712ee6dc0deef6aade..e0446753a3d972215423c079160fe8bf
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index e6baf74c966791ed5326fea23e7d23259a781313..7fab070b8b06dfc5c9940c3b800735d187a72cf9 100644
+index e23eb7719a9798afe984c6af6a422167b93d89b5..d448bc09ee54fc77f1ed4d088d1369b96f83a1db 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
-@@ -10,14 +10,17 @@
+@@ -10,6 +10,7 @@
  
  namespace ui {
  
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
  namespace {
  // Control use of cross-process CALayers to display content directly from the
  // GPU process on Mac.
- base::Feature kRemoteCoreAnimationAPI{"RemoteCoreAnimationAPI",
-                                       base::FEATURE_ENABLED_BY_DEFAULT};
+@@ -17,8 +18,10 @@
+              "RemoteCoreAnimationAPI",
+              base::FEATURE_ENABLED_BY_DEFAULT);
  }  // namespace
 +#endif
  
  bool RemoteLayerAPISupported() {
-+#ifndef MAS_BUILD
++#if !IS_MAS_BUILD()
    if (!base::FeatureList::IsEnabled(kRemoteCoreAnimationAPI))
      return false;
  
-@@ -49,6 +52,9 @@ bool RemoteLayerAPISupported() {
+@@ -50,6 +53,9 @@ bool RemoteLayerAPISupported() {
  
    // If everything is there, we should be able to use the API.
    return true;
