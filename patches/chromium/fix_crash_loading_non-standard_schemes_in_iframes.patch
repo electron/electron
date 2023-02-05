@@ -37,12 +37,12 @@ index 61b47ad9abee29a8e6f999830ca37b0095b62222..7b60da8f1433cf1d43432d1b42db6960
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 21cb1e96f90341981c02ffac84eb3c0d6f9ae87b..c62197529e85d94c387c0389b9fc0e05438e2975 100644
+index d9960e3890a0bd30ba2c607ceff5f7e8d2355338..acd655dedda2882ff6b028dd4938db4ea9154732 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2783,6 +2783,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-   // used on primary main frames.
-   bool IsPageReadyToBeClosed();
+@@ -2799,6 +2799,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // frame. Can only be called on a frame with a committed navigation.
+   net::CookieSettingOverrides GetCookieSettingOverrides();
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
