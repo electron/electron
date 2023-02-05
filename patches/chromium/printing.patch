@@ -78,7 +78,7 @@ index cbae837cf5c5f60d6d5f00268bc77986fd4c42af..ad27594670a34f45c80978fe0972f244
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 773dce8cdaa2ae0d7c012a2c8a69b8a1689d8fad..3d5d9335963db050f58c128e4b431ca3ecc1fcfe 100644
+index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246dd9af8360 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -776,10 +776,10 @@ index 3f82c0cdfd11a8d0c3cbcba9cc74b0e3e1a41b0f..36c1df7e3346f51945721ababf12dc34
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e6c3a6b31f5faaf93c7d573f52fae7560ff9d621..fe9fcf07594fa91bd1f8ff42e5bf26b92cefd681 100644
+index 3d63821d02c61b9aed485be1b0abceb4fd9269d3..23d32d68a3a4b7ba8158e23e6d729ad2330c7f95 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2835,8 +2835,9 @@ source_set("browser") {
+@@ -2852,8 +2852,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

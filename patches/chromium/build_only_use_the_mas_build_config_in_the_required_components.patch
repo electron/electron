@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index f1689d628f2b6cdf359983661d127e9b2c1e10ac..61f440c475dd23af924b4f7de449ce6b4d889a01 100644
+index a52faec8e0a2d9401df9e620d66f39feb8873a39..d6f4b7897ffeab5868fc99246928b6a2e4f6839e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1488,6 +1488,7 @@ component("base") {
@@ -68,7 +68,7 @@ index 74b30a0d050468ad1f450d86621308c090a699b5..a1f555b07519ad07441c0bca0c20ddd5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fe9fcf07594fa91bd1f8ff42e5bf26b92cefd681..d391386ee0c6d5d594c9c4dac0c01f87c058458f 100644
+index 23d32d68a3a4b7ba8158e23e6d729ad2330c7f95..84ec85fc39bf2ebae7570069fbfe7393f996d868 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -57,6 +57,7 @@ source_set("browser") {
@@ -80,7 +80,7 @@ index fe9fcf07594fa91bd1f8ff42e5bf26b92cefd681..d391386ee0c6d5d594c9c4dac0c01f87
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 028c944eb065c7e96588c36e35fd5ac423ace806..9207d5a401e2193a116f65b79f063e9582a4bdcf 100644
+index 2a38c8929258489e4dbe43c0fd6dfc3a96c08cff..a894759d4b371af806b41d2a6ff5265fda2b4f7a 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -170,6 +170,7 @@ source_set("common") {
@@ -92,10 +92,10 @@ index 028c944eb065c7e96588c36e35fd5ac423ace806..9207d5a401e2193a116f65b79f063e95
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index a1f691c0d3452b440210190c467f96c727b3ec58..2c4808ec4b7018165947c311816d113067e8542c 100644
+index 53544c211e602a691bc33ea18830b86b19faec5f..cee14ca0ba1fff17abd8664ec86747214c79ebf5 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -220,6 +220,7 @@ target(link_target_type, "renderer") {
+@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -245,10 +245,10 @@ index 0f86f36cdbda772166975a7943637e7abcc6b3db..5c69b481ad1e8adab87dbd8f4f7e42ed
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index a4420e249407de58e73a1ed089337ae36d60c75c..78dc01b13fbbdae708187cdae75c1c5d8eba5587 100644
+index 67ac6ca8bfdc175502c48a3748dddc90c275af0a..0809842cc38b5f3e53b4914ab9cae569a1615dc6 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -188,6 +188,7 @@ component("gfx") {
+@@ -189,6 +189,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]
@@ -257,7 +257,7 @@ index a4420e249407de58e73a1ed089337ae36d60c75c..78dc01b13fbbdae708187cdae75c1c5d
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index accb869030e59007935fa2363b8138c1508d7396..bd0be0ce3d7becea13096d46a44a019fe71c0172 100644
+index 32c600786c86e155fc4c4d81692043c02b12d745..6dd67bc725022abced16458c3e10fd126af3b07d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -668,6 +668,7 @@ component("views") {

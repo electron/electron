@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index e05f6ea9420f04f838abf64a0cfa37beec941034..2a7320cebe43d731e7b3449a0da158e3d909a6b4 100644
+index c37375eb33ab3b6e4ffcdb2a4cbb617a5e08f1cd..fcbec9b2526b0fc84c21d0bcd4603b272d8b70dd 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -157,6 +157,15 @@ void ExtractUnderlines(NSAttributedString* string,

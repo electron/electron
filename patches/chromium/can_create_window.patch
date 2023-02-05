@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 71173e12868dfd6867fda3319cadb4ba76152d9f..3cd085042ad1bc746f164fc41bcb2937e6d6aef8 100644
+index 75ac0d976f4fe16b506ed5687fa7adf36be0e9b6..ef052d2ee8e9ba63218fa69575414a2101ddfc67 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7541,6 +7541,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7569,6 +7569,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index 71173e12868dfd6867fda3319cadb4ba76152d9f..3cd085042ad1bc746f164fc41bcb2937
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 8254bebd8494bb2a1776fa3a2a3bce2b33747cdd..4f79a0f0556a2b411e6f26eba8a49bdddc7aef3d 100644
+index 4ae03db7512de016594f17edff880f29ae1683d2..776d30b037c645ac733f22cf42f2e2ae97477658 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4129,6 +4129,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -66,10 +66,10 @@ index d2f710218b4fb7c24be02ea1cc78abcfb5718fc9..4d6f86e5674cf4f419061a0f67f3700f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 75dbea1be3e609b39304272b24614e6e37da678d..0105dcc394fc94579a6d534900b8413f31841437 100644
+index 2fa698f19e1c950e89b6288ffae346c096f52b8f..6a461c7a5a2be93ccb2907fd21bd637fe24a2c94 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -634,6 +634,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -630,6 +630,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index 75dbea1be3e609b39304272b24614e6e37da678d..0105dcc394fc94579a6d534900b8413f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 868dd480c66e38fb6a52c5c32a7e3c28b29f5240..cea55873bb5550a8d60279a56c691a6cae501667 100644
+index 0bacda97940944a2277c401e37aeb22fc04e9c9c..c27abed0a379d111e9c427a5603ba3f916ee21e8 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -164,6 +164,7 @@ class NetworkService;
@@ -100,7 +100,7 @@ index 868dd480c66e38fb6a52c5c32a7e3c28b29f5240..cea55873bb5550a8d60279a56c691a6c
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index cd36de9275d252387771b1bc4127a2b6239f6218..14d536f262064bedfe8f2835928c47db0871506a 100644
+index 67aae42aae2c865ff9bb5eaf7c00a88ef233f1a5..56f63548c47914d718c146d3a1d310219af2a336 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -27,6 +27,17 @@ namespace content {
@@ -210,7 +210,7 @@ index a50a83d36f9172add44867ee0b0f1c89779b387e..c4ac7d4c885e764cfcfc3f2cd25e31b4
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index c88166f2b60dcb799f56bfecfd0a8a10e70a887f..6b58d128b238ebc98078e62f9f388d9e5f70c76d 100644
+index 99eda95769980844748236276fa445ee0cc0de87..9c8a0eac7d53f275fc15cf90c03b1eeeb071238f 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2213,6 +2213,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

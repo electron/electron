@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index c2ef1da09511b9314298b4e55a23bd521ba17969..d95b992daae050ea601da86008823bbd41df9b6d 100644
+index 6715e328262351a6984780a52aff4cbb6a8c6138..4548313d31ecbc87016b8f406220ad07c4779347 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
