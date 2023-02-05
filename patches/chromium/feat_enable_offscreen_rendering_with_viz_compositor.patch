@@ -87,7 +87,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 77fc13c924dd185f337fcf1d7a5f7e69953143e1..c320ce10cfcd8b62dc516871bae900f6da9600f5 100644
+index 21a1138ca8df215fc8a711b5d37b6eeba9020935..74b30a0d050468ad1f450d86621308c090a699b5 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -114,7 +114,7 @@ index 28f44e5df4a3591c8563564a9aba7cec1b023a29..befc5a556a7fd6719d8a1c2eb8e92784
  
  }  // namespace viz
 diff --git a/components/viz/service/display_embedder/output_surface_provider_impl.cc b/components/viz/service/display_embedder/output_surface_provider_impl.cc
-index ec7cc3404b5d60f2c57f239889f4b6a557d7c44c..1fdbbbfc7caf4c40fc7ff6240c70e40199ee7ad2 100644
+index 0bc450ca4faf2a4a38a93f4c6a60b95a583eec8b..5eaa99698b588edbfe8588aa80ba68457ccf8983 100644
 --- a/components/viz/service/display_embedder/output_surface_provider_impl.cc
 +++ b/components/viz/service/display_embedder/output_surface_provider_impl.cc
 @@ -23,12 +23,14 @@
@@ -132,7 +132,7 @@ index ec7cc3404b5d60f2c57f239889f4b6a557d7c44c..1fdbbbfc7caf4c40fc7ff6240c70e401
  #include "ui/base/ui_base_switches.h"
  
  #if BUILDFLAG(IS_WIN)
-@@ -89,7 +91,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -92,7 +94,8 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
      mojom::DisplayClient* display_client,
      DisplayCompositorMemoryAndTaskController* gpu_dependency,
      const RendererSettings& renderer_settings,
@@ -142,7 +142,7 @@ index ec7cc3404b5d60f2c57f239889f4b6a557d7c44c..1fdbbbfc7caf4c40fc7ff6240c70e401
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    if (surface_handle == gpu::kNullSurfaceHandle)
      return std::make_unique<OutputSurfaceUnified>();
-@@ -97,7 +100,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -100,7 +103,7 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  
    if (!gpu_compositing) {
      return std::make_unique<SoftwareOutputSurface>(
@@ -151,7 +151,7 @@ index ec7cc3404b5d60f2c57f239889f4b6a557d7c44c..1fdbbbfc7caf4c40fc7ff6240c70e401
    } else {
      DCHECK(gpu_dependency);
  
-@@ -137,10 +140,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
+@@ -140,10 +143,22 @@ std::unique_ptr<OutputSurface> OutputSurfaceProviderImpl::CreateOutputSurface(
  std::unique_ptr<SoftwareOutputDevice>
  OutputSurfaceProviderImpl::CreateSoftwareOutputDeviceForPlatform(
      gpu::SurfaceHandle surface_handle,
@@ -218,10 +218,10 @@ index a8fcbf5149efa95ec5ec01f4571428053a10bbdb..9fa132fd8dd984e65e53ef6298c09a7d
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index fd787775ccd27c85ebd1e36157a095d4a871d8c4..5a55149fc5ef8d2ea7136b92f67546155232c377 100644
+index e12c1d87018a86d763f59e5ac62058cf815fce3a..01f8023811b49797674a0de6e32c358d965789d1 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
-@@ -61,6 +61,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
+@@ -62,6 +62,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
    void UpdateAndCopyBufferDamage(Buffer* previous_paint_buffer,
                                   const SkRegion& new_damage_rect);
  
@@ -527,10 +527,10 @@ index f9dd844cd6b665a5566cf6f46830287cffedc0ca..5b74259b2650fc4a525ba3a1be61d3d9
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 0b0c6d676f83f49eb3c846ee79430089b5a5bc0f..3427494a6b6d1df803d9b6bdae81ceaf296028ae 100644
+index a45fa7c141777bc6ebc5c34ba73c2e6cc602c2b0..a4bbec572b63a22e2b920e7b139c0c9b6ec34e0c 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -399,8 +399,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -397,8 +397,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -560,7 +560,7 @@ index 83c153d99c1e2be2b139330cd4eedf129fcac2ce..14466dd30eb6b63638d351dcf7caf93a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index ebb40d253e3870250d8dbe21dc26e7be5566297a..fd29e465522e7d219d1012d3e993d13d45c5e7e5 100644
+index 71d79e79e3d68679696977682b85cad1b09e99ef..b7fd9f45394925949398cb467f9388f856f64e94 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {

@@ -252,7 +252,7 @@ index fe0b5134ea3d7887aa237200e89e79c2ff68314c..c544d1ef0eb381da7f96013643c862f6
  #if BUILDFLAG(USE_ZYGOTE)
      if (zygote_for_testing_.has_value()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index c0abba2466c7dba5f3e41f95ede3f983ce0050e0..0f3bb9b69597aec460ad26d569b281b0877ff6f9 100644
+index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515a7027ea8 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@
@@ -266,7 +266,7 @@ index c0abba2466c7dba5f3e41f95ede3f983ce0050e0..0f3bb9b69597aec460ad26d569b281b0
  namespace base {
  class Thread;
  }  // namespace base
-@@ -93,9 +97,13 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -98,9 +102,13 @@ class CONTENT_EXPORT UtilityProcessHost
  
    // Returns information about the utility child process.
    const ChildProcessData& GetData();
@@ -282,7 +282,7 @@ index c0abba2466c7dba5f3e41f95ede3f983ce0050e0..0f3bb9b69597aec460ad26d569b281b0
  
    // Starts the utility process.
    bool Start();
-@@ -135,6 +143,16 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -140,6 +148,16 @@ class CONTENT_EXPORT UtilityProcessHost
    void SetZygoteForTesting(ZygoteCommunication* handle);
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -299,7 +299,7 @@ index c0abba2466c7dba5f3e41f95ede3f983ce0050e0..0f3bb9b69597aec460ad26d569b281b0
    // Returns a control interface for the running child process.
    mojom::ChildProcess* GetChildProcess();
  
-@@ -183,6 +201,22 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -188,6 +206,22 @@ class CONTENT_EXPORT UtilityProcessHost
    absl::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  

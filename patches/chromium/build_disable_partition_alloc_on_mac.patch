@@ -21,4 +21,3 @@ index e90ccba879dc5823c15acf35869cd5bd211b717b..a95d2b46b37e007405cd472bd9f882c1
  }
  
  # Under Windows debug build, the allocator shim is not compatible with CRT.
-

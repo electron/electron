@@ -15,10 +15,10 @@ node does not change in this case.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-index 0d51ac779dde44da69cb1d4141e3df53d46dde74..d2df636848524bb2d78d153ce90a732621a7a281 100644
+index 7d471653b3dfadaa91cbe7dfdd5ff324d0fbe1bb..08251f85beef09719808db3fb042c9f6f45c218e 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-@@ -993,6 +993,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
+@@ -994,6 +994,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
    return viz::ScopedSurfaceIdAllocator(std::move(allocation_task));
  }
  
@@ -32,7 +32,7 @@ index 0d51ac779dde44da69cb1d4141e3df53d46dde74..d2df636848524bb2d78d153ce90a7326
    if (!text_input_manager_)
      return ui::TEXT_INPUT_TYPE_NONE;
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-index 05c3c2d19985b8d32d95187fe3075aa4eab6de0a..424967bfaf957b3ab426517b3185b8fc3bd7b633 100644
+index 2ca4e42342ff6bf3f2ad104208944e36d572aa3c..7421cc779873b580d6f5a109d57ff7445dde9d58 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
 @@ -181,6 +181,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
@@ -45,10 +45,10 @@ index 05c3c2d19985b8d32d95187fe3075aa4eab6de0a..424967bfaf957b3ab426517b3185b8fc
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index eff9b4689b68c7ff291b31b53d98b9ab7bf21e85..c7bbcc7973341acfeefc374959feb0151ff57a33 100644
+index 2a725bbc0da11a360bfdd21e34d2b04be2f23405..6bd1aa05b07afdd707f3562aefad621d8eff4987 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8027,7 +8027,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -8028,7 +8028,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =

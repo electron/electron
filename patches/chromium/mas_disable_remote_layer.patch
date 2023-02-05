@@ -38,7 +38,6 @@ index 71c48ed69f2ee9586620966333c744a6d1533cad..25d80eda83182936548d6098a3875f42
    bool use_remote_layer_api_;
  #endif
    base::scoped_nsobject<CAContext> ca_context_;
-
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 index b8b3ab18cdf1d9e3b3a125965362044a806ba0de..11f79cea3261889d6e4d5f3ea2828128a4a9a672 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
@@ -61,7 +60,6 @@ index b8b3ab18cdf1d9e3b3a125965362044a806ba0de..11f79cea3261889d6e4d5f3ea2828128
      if (use_remote_layer_api_) {
        params.ca_context_id = [ca_context_ contextId];
      } else {
-
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 index 2c4821b34f71d30ce814bd1f3cf9a7a76bbaac66..c7dc371c780a405f502a84c77e92251ae08f66e0 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm

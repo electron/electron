@@ -41,7 +41,7 @@ index 809410c3c7337e0ac62e8ce0697469ebaaa3f8d1..6f82ca34664b323764603f41e0e4e174
                                  const content::NotificationSource& source,
                                  const content::NotificationDetails& details) {
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index 17b0aaeb05bcb1f8dadc6551c6b688c7b084c1ff..a47b2b663ca6a96eacb217ed7399b72e087e0689 100644
+index 17b0aaeb05bcb1f8dadc6551c6b688c7b084c1ff..1e1060f348bc9c5ee23ecf6cbffddad27a80af18 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -138,6 +138,8 @@ class SpellcheckService : public KeyedService,
@@ -53,7 +53,7 @@ index 17b0aaeb05bcb1f8dadc6551c6b688c7b084c1ff..a47b2b663ca6a96eacb217ed7399b72e
    // NotificationProfile implementation.
    void Observe(int type,
                 const content::NotificationSource& source,
-@@ -299,6 +301,8 @@ class SpellcheckService : public KeyedService,
+@@ -305,6 +307,8 @@ class SpellcheckService : public KeyedService,
    // A pointer to the BrowserContext which this service refers to.
    raw_ptr<content::BrowserContext> context_;
  
