@@ -878,6 +878,129 @@ describe('BrowserWindow module', () => {
           w.loadURL(`${url}/navigate-302`);
         });
       });
+
+      describe('relationships', () => {
+        let server = null as unknown as http.Server;
+        let url = null as unknown as string;
+        before((done) => {
+          server = http.createServer((req, res) => {
+            if (req.url === '/navigate') {
+              res.end('<a href="/">navigate</a>');
+            } else if (req.url === '/redirect') {
+              res.end('<a href="/redirect2">redirect</a>');
+            } else if (req.url === '/redirect2') {
+              res.statusCode = 302;
+              res.setHeader('location', url);
+              res.end();
+            } else {
+              res.end('');
+            }
+          });
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+            done();
+          });
+        });
+        it('initial navigation event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'did-frame-navigate',
+            'did-navigate'
+          ];
+          const allEvents = Promise.all(expectedEventOrder.map(event =>
+            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+          ));
+          const timeout = new Promise(resolve => setTimeout(() => resolve(1), 1000));
+          w.loadURL(url);
+          await Promise.race([allEvents, timeout]);
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+
+        it('second navigation event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'will-frame-navigate',
+            'will-navigate',
+            'did-frame-navigate',
+            'did-navigate'
+          ];
+          w.loadURL(`${url}navigate`);
+          await emittedOnce(w.webContents, 'did-navigate');
+          await delay(1000);
+          const allEvents = Promise.all(expectedEventOrder.map(event =>
+            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+          ));
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: pageTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await new Promise(resolve => setTimeout(() => resolve(1), 100));
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await allEvents;
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+
+        it('navigation with redirect event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'will-frame-navigate',
+            'will-navigate',
+            'will-redirect',
+            'did-redirect-navigation',
+            'did-frame-navigate',
+            'did-navigate'
+          ];
+          w.loadURL(`${url}redirect`);
+          await emittedOnce(w.webContents, 'did-navigate');
+          await delay(1000);
+          const allEvents = Promise.all(expectedEventOrder.map(event =>
+            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+          ));
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: pageTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await new Promise(resolve => setTimeout(() => resolve(1), 100));
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await allEvents;
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+      });
     });
   }
 
