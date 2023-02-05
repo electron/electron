@@ -1230,7 +1230,6 @@ NativeWindowHandle NativeWindowMac::GetNativeWindowHandle() const {
   return [window_ contentView];
 }
 
-
 void NativeWindowMac::SetProgressBar(double progress,
                                      const NativeWindow::ProgressState state) {
   NSDockTile* dock_tile = [NSApp dockTile];

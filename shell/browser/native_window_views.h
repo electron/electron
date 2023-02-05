@@ -149,6 +149,7 @@ class NativeWindowViews : public NativeWindow,
   content::DesktopMediaID GetDesktopMediaID() const override;
   gfx::AcceleratedWidget GetAcceleratedWidget() const override;
   NativeWindowHandle GetNativeWindowHandle() const override;
+
   gfx::Rect ContentBoundsToWindowBounds(const gfx::Rect& bounds) const override;
   gfx::Rect WindowBoundsToContentBounds(const gfx::Rect& bounds) const override;
 
