@@ -13,7 +13,7 @@
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
-#include "content/common/mac_helpers.h"
+#include "content/browser/mac_helpers.h"
 #include "content/public/common/content_paths.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/application_info.h"

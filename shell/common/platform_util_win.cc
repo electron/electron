@@ -15,10 +15,10 @@
 #include <shlobj.h>
 #include <wrl/client.h>
 
-#include "base/bind.h"
-#include "base/callback_helpers.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/stl_util.h"
 #include "base/strings/escape.h"

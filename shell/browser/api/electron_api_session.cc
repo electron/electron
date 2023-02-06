@@ -528,7 +528,7 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
           createProxyConfig(proxy_mode, pac_url, proxy_rules, bypass_list)},
       WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                                 std::move(promise)));
 

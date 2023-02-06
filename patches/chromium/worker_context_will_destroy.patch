@@ -10,7 +10,7 @@ An attempt to upstream this was made, but rejected:
 https://chromium-review.googlesource.com/c/chromium/src/+/1954347
 
 diff --git a/content/public/renderer/content_renderer_client.h b/content/public/renderer/content_renderer_client.h
-index 09846e00f1a75b54ddfe9434521add4ce3b20e97..25b01a54932108c5a888607e19d76f2301e05b76 100644
+index 77f2c4fbf8c886c5c622f41d0b9da67d09b7d331..7aa2059f33dfa92828beec95f4716775e7291fed 100644
 --- a/content/public/renderer/content_renderer_client.h
 +++ b/content/public/renderer/content_renderer_client.h
 @@ -373,6 +373,11 @@ class CONTENT_EXPORT ContentRendererClient {
@@ -26,10 +26,10 @@ index 09846e00f1a75b54ddfe9434521add4ce3b20e97..25b01a54932108c5a888607e19d76f23
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index c31323121b8feeaa24b984042cc891778b4f3635..bb76dd7b61619d6d5be5ac8bbf5dad7e88274ffb 100644
+index a0811daead7bc6b44f8ad7210bc5dcd89c92c592..0b9e29a204f6b06e064452bc70c688e8e1f651fa 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -879,6 +879,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -856,6 +856,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,10 +43,10 @@ index c31323121b8feeaa24b984042cc891778b4f3635..bb76dd7b61619d6d5be5ac8bbf5dad7e
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 3ae765eea4b8f903ada141c17e22bd1cae377e67..7f42a38482248fd87f66ad04051250ab975ebcfa 100644
+index f9b61ff32e3e76e73e82b5785521160c413c4dd5..64b38b09c9c6f0a67fe78fa80e621f3c5c8340f0 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -184,6 +184,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -182,6 +182,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;
@@ -55,10 +55,10 @@ index 3ae765eea4b8f903ada141c17e22bd1cae377e67..7f42a38482248fd87f66ad04051250ab
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index a2a4996e3cbe326d92319b0f9fd383e5e543a2fe..59c70b9f82b338bd782ea9b6dd7e90180922d4a6 100644
+index b2de9ae25b7acfae950a68e77b0f85fa619d6fc9..375442953c6284d8b5936d3554a1eb5892e42cdb 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
-@@ -651,6 +651,7 @@ class BLINK_PLATFORM_EXPORT Platform {
+@@ -646,6 +646,7 @@ class BLINK_PLATFORM_EXPORT Platform {
    virtual void DidStartWorkerThread() {}
    virtual void WillStopWorkerThread() {}
    virtual void WorkerContextCreated(const v8::Local<v8::Context>& worker) {}
@@ -67,10 +67,10 @@ index a2a4996e3cbe326d92319b0f9fd383e5e543a2fe..59c70b9f82b338bd782ea9b6dd7e9018
        const WebSecurityOrigin& script_origin) {
      return false;
 diff --git a/third_party/blink/renderer/core/workers/worker_thread.cc b/third_party/blink/renderer/core/workers/worker_thread.cc
-index 3282f6ea03bce5f3d670ab7c63b0078dbb7b0aff..01812866abf766ac1eb28d0c5aef5dc0a2b6b4c7 100644
+index 26406732de36f38635ba19e7db6f7a9e7a4e946f..995f304bcfebb734c30c1230e96a4014a78b345f 100644
 --- a/third_party/blink/renderer/core/workers/worker_thread.cc
 +++ b/third_party/blink/renderer/core/workers/worker_thread.cc
-@@ -748,6 +748,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
+@@ -749,6 +749,12 @@ void WorkerThread::PrepareForShutdownOnWorkerThread() {
    }
    pause_handle_.reset();
  

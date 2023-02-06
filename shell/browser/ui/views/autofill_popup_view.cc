@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/i18n/rtl.h"
 #include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_view_host.h"
@@ -298,7 +298,7 @@ void AutofillPopupView::OnMouseExited(const ui::MouseEvent& event) {
   // Pressing return causes the cursor to hide, which will generate an
   // OnMouseExited event. Pressing return should activate the current selection
   // via AcceleratorPressed, so we need to let that run first.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&AutofillPopupView::ClearSelection,
                                 weak_ptr_factory_.GetWeakPtr()));
 }

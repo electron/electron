@@ -49,7 +49,10 @@ app.whenReady().then(async () => {
     .argv;
 
   const Mocha = require('mocha');
-  const mochaOptions = {};
+  const mochaOptions = {
+    retries: 3,
+    forbidOnly: process.env.CI
+  };
   if (process.env.MOCHA_REPORTER) {
     mochaOptions.reporter = process.env.MOCHA_REPORTER;
   }

@@ -10,7 +10,7 @@ can be reverted when those failures are addressed. It's unlikely
 that this patch will be upstreamed.
 
 diff --git a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
-index 01abaf8086c8a0eee581516ce1b9c5748f41d1e8..a1798e40df8797f56d4113de84e3e9ab252b9b7c 100644
+index 87944ed0b4a51498e0c3e2da7fee2b6b0ed4768b..8ba3141b7bd18a073f71db6047ffd064f102cf02 100644
 --- a/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 +++ b/chrome/browser/extensions/api/language_settings_private/language_settings_private_api_unittest.cc
 @@ -293,26 +293,7 @@ TEST_F(LanguageSettingsPrivateApiTest, GetNeverTranslateLanguagesListTest) {
