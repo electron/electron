@@ -35,6 +35,6 @@
 // Allows to explicitly register builtin modules instead of using
 // __attribute__((constructor)).
 #define NODE_LINKED_MODULE_CONTEXT_AWARE(modname, regfunc) \
-  NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
+  NODE_BINDING_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_
