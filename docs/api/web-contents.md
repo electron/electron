@@ -1421,31 +1421,6 @@ If you would like the page to stay hidden, you should ensure that `stayHidden` i
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])` _Deprecated_
-
-* `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
-* `stayHidden` boolean (optional) -  Keep the page hidden instead of visible.
-* `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
-
-Increase the capturer count by one. The page is considered visible when its browser window is
-hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
-
-This also affects the Page Visibility API.
-
-**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`. See [breaking changes](../breaking-changes.md).
-
-#### `contents.decrementCapturerCount([stayHidden, stayAwake])` _Deprecated_
-
-* `stayHidden` boolean (optional) -  Keep the page in hidden state instead of visible.
-* `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
-
-Decrease the capturer count by one. The page will be set to hidden or occluded state when its
-browser window is hidden or occluded and the capturer count reaches zero. If you want to
-decrease the hidden capturer count instead you should set `stayHidden` to true.
-
-**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`.
-See [breaking changes](../breaking-changes.md).
-
 #### `contents.getPrinters()` _Deprecated_
 
 Get the system printer list.
