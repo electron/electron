@@ -31,7 +31,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 162b451c5b459c566980c7d3476b3df0cef72871..db59d7fb8b46b5a6d4c77de7b5c492408351816d 100644
+index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d9970d15c9a 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
