@@ -27,9 +27,7 @@ class Menu : public gin::Wrappable<Menu>,
  public:
   // gin_helper::Constructible
   static gin::Handle<Menu> New(gin::Arguments* args);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;

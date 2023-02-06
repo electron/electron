@@ -394,10 +394,9 @@ bool Tray::CheckAlive() {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "Tray", templ)
+void Tray::FillObjectTemplate(v8::Isolate* isolate,
+                              v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Tray", templ)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
