@@ -121,7 +121,7 @@ index ba331906397e7355dba0377641eb08ba14495648..790f48fa351f82f22968a63733986b62
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 0cd52f9e25177831d02911b60ce267e07f8ee79e..2317ef7f3884c34ac7f2bd815a5b16196294e553 100644
+index 0cd52f9e25177831d02911b60ce267e07f8ee79e..4161df767143b2497c396da1942076eaccbb8bad 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -298,6 +298,15 @@ index 0cd52f9e25177831d02911b60ce267e07f8ee79e..2317ef7f3884c34ac7f2bd815a5b1619
  
    auto callback_wrapper =
        base::BindOnce(&PrintViewManagerBase::UpdatePrintSettingsReply,
+@@ -637,7 +671,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+ void PrintViewManagerBase::IsPrintingEnabled(
+     IsPrintingEnabledCallback callback) {
+   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  std::move(callback).Run(printing_enabled_.GetValue());
++  std::move(callback).Run(true);
+ }
+ 
+ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
 @@ -653,14 +687,14 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
      // didn't happen for some reason.
      bad_message::ReceivedBadMessage(
