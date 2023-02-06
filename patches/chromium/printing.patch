@@ -121,7 +121,7 @@ index ba331906397e7355dba0377641eb08ba14495648..790f48fa351f82f22968a63733986b62
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 017e421d0ca3e6154b849373abbcb8d75b369e60..aaadfba1735b21e17b66e8efe69f8a5ab4a312b0 100644
+index 0cd52f9e25177831d02911b60ce267e07f8ee79e..4161df767143b2497c396da1942076eaccbb8bad 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -298,7 +298,7 @@ index 017e421d0ca3e6154b849373abbcb8d75b369e60..aaadfba1735b21e17b66e8efe69f8a5a
  
    auto callback_wrapper =
        base::BindOnce(&PrintViewManagerBase::UpdatePrintSettingsReply,
-@@ -630,7 +664,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -637,7 +671,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
  void PrintViewManagerBase::IsPrintingEnabled(
      IsPrintingEnabledCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -307,7 +307,7 @@ index 017e421d0ca3e6154b849373abbcb8d75b369e60..aaadfba1735b21e17b66e8efe69f8a5a
  }
  
  void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
-@@ -646,14 +680,14 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
+@@ -653,14 +687,14 @@ void PrintViewManagerBase::ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
      // didn't happen for some reason.
      bad_message::ReceivedBadMessage(
          render_process_host, bad_message::PVMB_SCRIPTED_PRINT_FENCED_FRAME);
