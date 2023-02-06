@@ -902,6 +902,8 @@ describe('BrowserWindow module', () => {
               res.statusCode = 302;
               res.setHeader('location', url);
               res.end();
+            } else if (req.url === '/in-page') {
+              res.end('<a href="#in-page">redirect</a><div id="in-page"></div>');
             } else {
               res.end('');
             }
@@ -957,7 +959,6 @@ describe('BrowserWindow module', () => {
             clickCount: 1,
             button: 'left'
           }, sessionId);
-          await new Promise(resolve => setTimeout(() => resolve(1), 100));
           await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
             type: 'mouseReleased',
             x: 10,
@@ -1001,7 +1002,44 @@ describe('BrowserWindow module', () => {
             clickCount: 1,
             button: 'left'
           }, sessionId);
-          await new Promise(resolve => setTimeout(() => resolve(1), 100));
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await navigationFinished;
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+
+        it('when navigating in-page, event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'did-navigate-in-page'
+          ];
+          w.loadURL(`${url}in-page`);
+          await emittedOnce(w.webContents, 'did-navigate');
+          await delay(1000);
+          navigationEvents.forEach(event =>
+            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+          );
+          const navigationFinished = emittedOnce(w.webContents, 'did-navigate-in-page');
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: pageTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
           await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
             type: 'mouseReleased',
             x: 10,
