@@ -1193,7 +1193,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..a991bef2b98766a1cfb248d2af97101af305de82
+index 0000000000000000000000000000000000000000..2a9146e592429c1726527353c6484bd4534731b1
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,653 @@
@@ -1358,7 +1358,6 @@ index 0000000000000000000000000000000000000000..a991bef2b98766a1cfb248d2af97101a
 +    "lib/internal/assert.js",
 +    "lib/internal/assert/assertion_error.js",
 +    "lib/internal/assert/calltracker.js",
-+    "lib/internal/assert/snapshot.js",
 +    "lib/internal/async_hooks.js",
 +    "lib/internal/blob.js",
 +    "lib/internal/blocklist.js",
@@ -1548,6 +1547,7 @@ index 0000000000000000000000000000000000000000..a991bef2b98766a1cfb248d2af97101a
 +    "lib/internal/test_runner/tap_stream.js",
 +    "lib/internal/test_runner/test.js",
 +    "lib/internal/test_runner/utils.js",
++    "lib/internal/test_runner/yaml_parser.js",
 +    "lib/internal/timers.js",
 +    "lib/internal/tls/secure-context.js",
 +    "lib/internal/tls/secure-pair.js",
