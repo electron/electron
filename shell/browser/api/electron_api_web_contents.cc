@@ -3234,47 +3234,6 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   return handle;
 }
 
-// TODO(codebytere): remove in Electron v23.
-void WebContents::IncrementCapturerCount(gin::Arguments* args) {
-  EmitWarning(node::Environment::GetCurrent(args->isolate()),
-              "webContents.incrementCapturerCount() is deprecated and will be "
-              "removed in v23",
-              "electron");
-
-  gfx::Size size;
-  bool stay_hidden = false;
-  bool stay_awake = false;
-
-  // get size arguments if they exist
-  args->GetNext(&size);
-  // get stayHidden arguments if they exist
-  args->GetNext(&stay_hidden);
-  // get stayAwake arguments if they exist
-  args->GetNext(&stay_awake);
-
-  std::ignore = web_contents()
-                    ->IncrementCapturerCount(size, stay_hidden, stay_awake)
-                    .Release();
-}
-
-// TODO(codebytere): remove in Electron v23.
-void WebContents::DecrementCapturerCount(gin::Arguments* args) {
-  EmitWarning(node::Environment::GetCurrent(args->isolate()),
-              "webContents.decrementCapturerCount() is deprecated and will be "
-              "removed in v23",
-              "electron");
-
-  bool stay_hidden = false;
-  bool stay_awake = false;
-
-  // get stayHidden arguments if they exist
-  args->GetNext(&stay_hidden);
-  // get stayAwake arguments if they exist
-  args->GetNext(&stay_awake);
-
-  web_contents()->DecrementCapturerCount(stay_hidden, stay_awake);
-}
-
 bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
@@ -4103,8 +4062,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
-      .SetMethod("incrementCapturerCount", &WebContents::IncrementCapturerCount)
-      .SetMethod("decrementCapturerCount", &WebContents::DecrementCapturerCount)
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
