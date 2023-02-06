@@ -879,9 +879,19 @@ describe('BrowserWindow module', () => {
         });
       });
 
-      describe('relationships', () => {
+      describe('ordering', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
+        const navigationEvents = [
+          'did-start-navigation',
+          'did-navigate-in-page',
+          'will-frame-navigate',
+          'will-navigate',
+          'will-redirect',
+          'did-redirect-navigation',
+          'did-frame-navigate',
+          'did-navigate'
+        ];
         before((done) => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate') {
@@ -901,14 +911,14 @@ describe('BrowserWindow module', () => {
             done();
           });
         });
-        it('initial navigation event order is consistent', async () => {
+        it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [
             'did-start-navigation',
             'did-frame-navigate',
             'did-navigate'
           ];
-          const allEvents = Promise.all(expectedEventOrder.map(event =>
+          const allEvents = Promise.all(navigationEvents.map(event =>
             emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
           ));
           const timeout = new Promise(resolve => setTimeout(() => resolve(1), 1000));
@@ -917,7 +927,7 @@ describe('BrowserWindow module', () => {
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
 
-        it('second navigation event order is consistent', async () => {
+        it('for second navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [
             'did-start-navigation',
@@ -929,9 +939,10 @@ describe('BrowserWindow module', () => {
           w.loadURL(`${url}navigate`);
           await emittedOnce(w.webContents, 'did-navigate');
           await delay(1000);
-          const allEvents = Promise.all(expectedEventOrder.map(event =>
+          navigationEvents.forEach(event =>
             emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
-          ));
+          );
+          const navigationFinished = emittedOnce(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
           const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
@@ -954,11 +965,11 @@ describe('BrowserWindow module', () => {
             clickCount: 1,
             button: 'left'
           }, sessionId);
-          await allEvents;
+          await navigationFinished;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
 
-        it('navigation with redirect event order is consistent', async () => {
+        it('when navigating with redirection, event order is consistent', async () => {
           const firedEvents: string[] = [];
           const expectedEventOrder = [
             'did-start-navigation',
@@ -972,9 +983,10 @@ describe('BrowserWindow module', () => {
           w.loadURL(`${url}redirect`);
           await emittedOnce(w.webContents, 'did-navigate');
           await delay(1000);
-          const allEvents = Promise.all(expectedEventOrder.map(event =>
+          navigationEvents.forEach(event =>
             emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
-          ));
+          );
+          const navigationFinished = emittedOnce(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
           const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
@@ -997,7 +1009,7 @@ describe('BrowserWindow module', () => {
             clickCount: 1,
             button: 'left'
           }, sessionId);
-          await allEvents;
+          await navigationFinished;
           expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
       });
