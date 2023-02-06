@@ -1619,7 +1619,7 @@ describe('webContents module', () => {
       await w.webContents.loadURL('about:blank');
       const promise: Promise<[string, string]> = new Promise(resolve => {
         w.webContents.once('ipc-message-sync', (event, channel, arg) => {
-          event.returnValue = 'foobar' as any;
+          event.returnValue = 'foobar';
           resolve([channel, arg]);
         });
       });
