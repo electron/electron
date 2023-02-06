@@ -45,9 +45,7 @@ class Tray : public gin::Wrappable<Tray>,
                                v8::Local<v8::Value> image,
                                absl::optional<UUID> guid,
                                gin::Arguments* args);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;

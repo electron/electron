@@ -386,10 +386,9 @@ gin::Handle<WebFrameMain> WebFrameMain::FromOrNull(
 }
 
 // static
-v8::Local<v8::ObjectTemplate> WebFrameMain::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin_helper::ObjectTemplateBuilder(isolate, templ)
+void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
+                                      v8::Local<v8::ObjectTemplate> templ) {
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("executeJavaScript", &WebFrameMain::ExecuteJavaScript)
       .SetMethod("reload", &WebFrameMain::Reload)
       .SetMethod("_send", &WebFrameMain::Send)

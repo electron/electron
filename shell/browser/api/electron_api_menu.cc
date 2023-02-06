@@ -266,10 +266,9 @@ void Menu::OnMenuWillShow() {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "Menu", templ)
+void Menu::FillObjectTemplate(v8::Isolate* isolate,
+                              v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Menu", templ)
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)

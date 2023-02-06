@@ -2787,7 +2787,7 @@ describe('navigator.hid', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
-      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;
@@ -2810,7 +2810,7 @@ describe('navigator.hid', () => {
       w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(frame).to.not.be.empty();
+      expect(!!frame).to.be.true();
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.hid.getDevices()');
         expect(grantedDevicesOnNewPage).to.be.empty();
@@ -2988,7 +2988,7 @@ describe('navigator.usb', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-usb-device', (event, details, callback) => {
-      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;
@@ -3011,7 +3011,7 @@ describe('navigator.usb', () => {
       w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(frame).to.not.be.empty();
+      expect(!!frame).to.be.true();
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevicesOnNewPage).to.be.empty();
