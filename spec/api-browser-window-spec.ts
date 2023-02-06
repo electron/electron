@@ -1789,7 +1789,6 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
       await emittedOnce(w, 'ready-to-show');
 
-      w.webContents.incrementCapturerCount();
       const image = await w.capturePage();
       expect(image.isEmpty()).to.equal(false);
     });
@@ -1806,14 +1805,6 @@ describe('BrowserWindow module', () => {
       // Check the 25th byte in the PNG.
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6);
-    });
-
-    it('should increase the capturer count', () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.incrementCapturerCount();
-      expect(w.webContents.isBeingCaptured()).to.be.true();
-      w.webContents.decrementCapturerCount();
-      expect(w.webContents.isBeingCaptured()).to.be.false();
     });
   });
 
