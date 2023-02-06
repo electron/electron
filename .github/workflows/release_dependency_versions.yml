@@ -8,24 +8,26 @@ env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  check_tag:
+  trigger_chromedriver:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - name: Check Tag
+    - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag: v3
+    - name: Trigger New chromedriver Release
       run: |
-        if [[ ${{ github.event.release.tag_name }} =~ ^v[0-9]+\.0\.0$ ]]; then
-          echo ::set-output name=should_release::true
-        fi
-  trigger:
-    runs-on: ubuntu-latest
-    needs: check_tag
-    if: needs.check_tag.outputs.should_release == 'true'
-    steps:
-      - uses: actions/checkout@v3
-      - name: Trigger New chromedriver Release
-        run: |
+        if [[ ${{ github.event.release.tag_name }} =~ ^v\d+\.\d+\.\d+$ ]]; then
           gh api /repos/:owner/chromedriver/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
+        else
+          echo "Not releasing for version ${{ github.event.release.tag_name }}"
+        fi
+
+  trigger_mksnapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag: v3
       - name: Trigger New mksnapshot Release
         run: |
-          gh api /repos/:owner/mksnapshot/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
+          if [[ ${{ github.event.release.tag_name }} =~ ^v\d+\.\d+\.\d+$ ]]; then
+            gh api /repos/:owner/mksnapshot/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
+          else
+            echo "Not releasing for version ${{ github.event.release.tag_name }}"
+          fi
