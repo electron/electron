@@ -105,10 +105,10 @@ index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 716b40be50cdc2ebbd249e5a9d562385169f77ad..271b8b9c0e4b2b613fdc82c4ed0e7bc7cb9bba4f 100644
+index 43247cf3d70b78a1e332d55336c2a5175a155e93..b9066b4b0fb9a529c4cbf774e5aacfd8a7aa99c8 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -279,7 +279,7 @@ class ByteSource {
+@@ -280,7 +280,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.

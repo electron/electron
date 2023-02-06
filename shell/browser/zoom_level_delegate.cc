@@ -9,8 +9,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/bind.h"
 #include "base/files/file_path.h"
+#include "base/functional/bind.h"
 #include "base/strings/string_number_conversions.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/pref_filter.h"

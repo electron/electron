@@ -11,7 +11,7 @@
 #import <ReactiveObjC/RACSignal.h>
 #import <Squirrel/Squirrel.h>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/time/time.h"
 #include "gin/arguments.h"

@@ -7,7 +7,7 @@ This tweaks Chrome's Accessibility support at chrome://accessibility
 to make it usable from Electron by removing Profile references.
 
 diff --git a/chrome/browser/accessibility/accessibility_ui.cc b/chrome/browser/accessibility/accessibility_ui.cc
-index 4f0fcb630f91efe649913220d0e972bb2fe5dd47..17340bb185339baf3266cb931b7b4923c96bbe21 100644
+index 737959bfc0410d7ad0254b995279f940c9007fcc..3f94acb95f1a487f73515f4e6e9aeffe63e9371a 100644
 --- a/chrome/browser/accessibility/accessibility_ui.cc
 +++ b/chrome/browser/accessibility/accessibility_ui.cc
 @@ -21,7 +21,10 @@
@@ -75,7 +75,7 @@ index 4f0fcb630f91efe649913220d0e972bb2fe5dd47..17340bb185339baf3266cb931b7b4923
    data.Set(kBrowsersField, std::move(browser_list));
  
    base::Value::List widgets_list;
-@@ -484,8 +491,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(
+@@ -482,8 +489,10 @@ void AccessibilityUIMessageHandler::SetGlobalFlag(
  
    AllowJavascript();
    if (flag_name_str == kInternal) {
@@ -86,7 +86,7 @@ index 4f0fcb630f91efe649913220d0e972bb2fe5dd47..17340bb185339baf3266cb931b7b4923
      return;
    }
  
-@@ -589,8 +598,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
+@@ -587,8 +596,12 @@ void AccessibilityUIMessageHandler::RequestWebContentsTree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -99,7 +99,7 @@ index 4f0fcb630f91efe649913220d0e972bb2fe5dd47..17340bb185339baf3266cb931b7b4923
    std::string accessibility_contents =
        web_contents->DumpAccessibilityTree(internal, property_filters);
    result.Set(kTreeField, accessibility_contents);
-@@ -615,6 +628,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -613,6 +626,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
                       AXPropertyFilter::ALLOW_EMPTY);
    AddPropertyFilters(property_filters, deny, AXPropertyFilter::DENY);
  
@@ -107,7 +107,7 @@ index 4f0fcb630f91efe649913220d0e972bb2fe5dd47..17340bb185339baf3266cb931b7b4923
    for (Browser* browser : *BrowserList::GetInstance()) {
      if (browser->session_id().id() == session_id) {
        base::Value::Dict result = BuildTargetDescriptor(browser);
-@@ -627,6 +641,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
+@@ -625,6 +639,7 @@ void AccessibilityUIMessageHandler::RequestNativeUITree(
        return;
      }
    }
@@ -115,7 +115,7 @@ index 4f0fcb630f91efe649913220d0e972bb2fe5dd47..17340bb185339baf3266cb931b7b4923
  #endif  // !BUILDFLAG(IS_ANDROID)
    // No browser with the specified |session_id| was found.
    base::Value::Dict result;
-@@ -739,5 +754,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
+@@ -737,5 +752,7 @@ void AccessibilityUIMessageHandler::RequestAccessibilityEvents(
  // static
  void AccessibilityUIMessageHandler::RegisterProfilePrefs(
      user_prefs::PrefRegistrySyncable* registry) {

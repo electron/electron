@@ -13,11 +13,11 @@ app.requestSingleInstanceLock API so that users can pass in a JSON
 object for the second instance to send to the first instance.
 
 diff --git a/chrome/browser/process_singleton.h b/chrome/browser/process_singleton.h
-index 19350d58e817ea8ac7868dd90a08cc25836c9921..5e4a054946c37bed297cc4e952235b83b23756be 100644
+index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d542cd758 100644
 --- a/chrome/browser/process_singleton.h
 +++ b/chrome/browser/process_singleton.h
 @@ -18,6 +18,7 @@
- #include "base/files/file_path.h"
+ #include "base/functional/callback.h"
  #include "base/memory/ref_counted.h"
  #include "base/process/process.h"
 +#include "base/containers/span.h"
@@ -65,7 +65,7 @@ index 19350d58e817ea8ac7868dd90a08cc25836c9921..5e4a054946c37bed297cc4e952235b83
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 62902da2dde6be2e2b223d612ebab3dd54a286bd..24772ea67464eb5ad4e0c3a2aa4fb557d720f000 100644
+index 0e1baf024e7aee3bc1edad1e0620bd56647d042b..2302cd0b1c536f5c5bc5125a7bbe133e86a77d69 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -608,6 +608,7 @@ class ProcessSingleton::LinuxWatcher
@@ -179,7 +179,7 @@ index 62902da2dde6be2e2b223d612ebab3dd54a286bd..24772ea67464eb5ad4e0c3a2aa4fb557
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 009b522049adc32144c51842369dc1156bd959fa..8fb7835f6e0a7b2690d13b45179f8de70747e874 100644
+index 51a109504c1c8f79ef8748641ef21efed3a9315d..7df5b345b7e6a2360c226e0aaf48bcdf95c99afa 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {

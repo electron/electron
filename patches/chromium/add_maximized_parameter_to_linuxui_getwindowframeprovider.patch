@@ -58,7 +58,7 @@ index ebc31db3dad9ba7904fbd345c6a1ba31ed6fd813..1d2ffc82bb67ed80f508631c8c7d045b
  
  }  // namespace gtk
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index 9180d27328c5170171ea45d9ad83b34493aae2b9..f38bac04961fb200031f719183a229b943e22754 100644
+index e866f32a06abd8b9ee70f2972822b37756878259..d55229238fed1fedba65a969495c9b5c9f1b94fa 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
 @@ -39,16 +39,18 @@ std::string GetThemeName() {
@@ -105,7 +105,16 @@ index 9180d27328c5170171ea45d9ad83b34493aae2b9..f38bac04961fb200031f719183a229b9
    ApplyCssToContext(context, R"(window, headerbar {
      background-image: none;
      background-color: black;
-@@ -170,8 +172,8 @@ void WindowFrameProviderGtk::Asset::CloneFrom(
+@@ -145,7 +147,7 @@ int ComputeTopCornerRadius() {
+ bool HeaderIsTranslucent() {
+   // The arbitrary square size to render a sample header.
+   constexpr int kHeaderSize = 32;
+-  auto context = HeaderContext(false, false);
++  auto context = HeaderContext(false, false, false);
+   ApplyCssToContext(context, R"(window, headerbar {
+     box-shadow: none;
+     border: none;
+@@ -197,8 +199,8 @@ void WindowFrameProviderGtk::Asset::CloneFrom(
    unfocused_bitmap = src.unfocused_bitmap;
  }
  
@@ -116,7 +125,7 @@ index 9180d27328c5170171ea45d9ad83b34493aae2b9..f38bac04961fb200031f719183a229b9
  
  WindowFrameProviderGtk::~WindowFrameProviderGtk() = default;
  
-@@ -273,7 +275,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(
+@@ -305,7 +307,7 @@ void WindowFrameProviderGtk::PaintWindowFrame(
        top_area_height_dip * scale - effective_frame_thickness_px.top();
  
    auto header = PaintHeaderbar({client_bounds_px.width(), top_area_height_px},
@@ -125,7 +134,7 @@ index 9180d27328c5170171ea45d9ad83b34493aae2b9..f38bac04961fb200031f719183a229b9
    image = gfx::ImageSkia::CreateFrom1xBitmap(header);
    // In GTK4, the headerbar gets clipped by the window.
    if (GtkCheckVersion(4)) {
-@@ -305,7 +307,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -337,7 +339,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
  
    gfx::Rect frame_bounds_dip(kMaxFrameSizeDip, kMaxFrameSizeDip,
                               2 * kMaxFrameSizeDip, 2 * kMaxFrameSizeDip);
@@ -134,7 +143,7 @@ index 9180d27328c5170171ea45d9ad83b34493aae2b9..f38bac04961fb200031f719183a229b9
    frame_bounds_dip.Inset(-GtkStyleContextGetPadding(focused_context));
    frame_bounds_dip.Inset(-GtkStyleContextGetBorder(focused_context));
    gfx::Size bitmap_size(BitmapSizePx(asset), BitmapSizePx(asset));
-@@ -313,7 +315,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
+@@ -345,7 +347,7 @@ void WindowFrameProviderGtk::MaybeUpdateBitmaps(float scale) {
        PaintBitmap(bitmap_size, frame_bounds_dip, focused_context, scale);
    asset.unfocused_bitmap =
        PaintBitmap(bitmap_size, frame_bounds_dip,
@@ -144,7 +153,7 @@ index 9180d27328c5170171ea45d9ad83b34493aae2b9..f38bac04961fb200031f719183a229b9
    // In GTK4, there's no way to obtain the frame thickness from CSS values
    // directly, so we must determine it experimentally based on the drawn
 diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
-index d8cb2c6aab333cc55ad1daa70ac91b0569d33a7c..558aa3979301f79df789a29ba3ad1cf134bd6494 100644
+index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf605848b0 100644
 --- a/ui/gtk/window_frame_provider_gtk.h
 +++ b/ui/gtk/window_frame_provider_gtk.h
 @@ -14,7 +14,7 @@ namespace gtk {
@@ -156,7 +165,7 @@ index d8cb2c6aab333cc55ad1daa70ac91b0569d33a7c..558aa3979301f79df789a29ba3ad1cf1
  
    WindowFrameProviderGtk(const WindowFrameProviderGtk&) = delete;
    WindowFrameProviderGtk& operator=(const WindowFrameProviderGtk&) = delete;
-@@ -70,6 +70,9 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
+@@ -72,6 +72,9 @@ class WindowFrameProviderGtk : public ui::WindowFrameProvider {
  
    // Cached bitmaps and metrics.  The scale is rounded to percent.
    base::flat_map<int, Asset> assets_;

@@ -10,11 +10,11 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index de39505b1e515559182b6b3f25ffbe96f0b8262b..a040d30dd35f3f6c4dda58fb9d2e3e537ecbb9f7 100644
+index 2e1391ce0a3abcae068f52222e88d17f76157b42..fea6de602562ae051df14b2beb3f461b8e0f3aea 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -10,9 +10,11 @@
- #include "base/containers/adapters.h"
+ #include "base/functional/bind.h"
  #include "base/metrics/histogram_macros.h"
  #include "base/trace_event/trace_event.h"
 +#if 0
@@ -63,7 +63,7 @@ index de39505b1e515559182b6b3f25ffbe96f0b8262b..a040d30dd35f3f6c4dda58fb9d2e3e53
  
  void PreconnectManager::Start(const GURL& url,
 diff --git a/chrome/browser/predictors/preconnect_manager.h b/chrome/browser/predictors/preconnect_manager.h
-index 5f7e0db497a48829a330d7aae63d0da34cca7e33..d25f97a11174cb6e28b961cd7fc59ba3831e7a54 100644
+index d18470c05cdaffbc48b83cc0c76f7085442dccce..0c0a3f11a2da083ef5437a0e6abcf91afbcf9df3 100644
 --- a/chrome/browser/predictors/preconnect_manager.h
 +++ b/chrome/browser/predictors/preconnect_manager.h
 @@ -17,7 +17,9 @@
