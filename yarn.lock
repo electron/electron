@@ -134,10 +134,10 @@
   optionalDependencies:
     "@types/glob" "^7.1.1"
 
-"@electron/docs-parser@^1.0.0":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.0.1.tgz#f9856d00ec1663a0fb6301f55bc674f44c7dc543"
-  integrity sha512-jqUHwo3MWUhWusHtTVpSHTZqWSVuc1sPUfavI5Zwdx64q7qd4phqOPGoxScWS3JthKt7Wydvo/eReIUNDJ0gRg==
+"@electron/docs-parser@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.1.0.tgz#ba095def41746bde56bee731feaf22272bf0b765"
+  integrity sha512-qrjIKJk8t4/xAYldDVNQgcF8zdAAuG260bzPxdh/xI3p/yddm61bftoct+Tx2crnWFnOfOkr6nGERsDknNiT8A==
   dependencies:
     "@types/markdown-it" "^12.0.0"
     chai "^4.2.0"

@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
 import { AddressInfo } from 'net';
-import { BrowserWindow } from 'electron/main';
+import { BrowserWindow, Debugger } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce, emittedUntil } from './lib/events-helpers';
 
@@ -114,7 +114,7 @@ describe('debugger module', () => {
       w.webContents.loadURL(url);
       w.webContents.debugger.attach();
       const message = emittedUntil(w.webContents.debugger, 'message',
-        (event: Electron.Event, method: string) => method === 'Console.messageAdded');
+        (event: Electron.Event<{}, Debugger>, method: string) => method === 'Console.messageAdded');
       w.webContents.debugger.sendCommand('Console.enable');
       const [,, params] = await message;
       w.webContents.debugger.detach();

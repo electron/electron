@@ -1812,6 +1812,79 @@ void WebContents::OnFirstNonEmptyLayout(
   }
 }
 
+// This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
+// still call the callback and send an error. Not doing so causes a Mojo DCHECK,
+// since Mojo requires callbacks to be called before they are destroyed.
+class ReplySender : public gin::Wrappable<ReplySender> {
+ public:
+  using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
+  static gin::Handle<ReplySender> Create(v8::Isolate* isolate,
+                                         InvokeCallback callback) {
+    return gin::CreateHandle(isolate, new ReplySender(std::move(callback)));
+  }
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::Wrappable<ReplySender>::GetObjectTemplateBuilder(isolate)
+        .SetMethod("sendReply", &ReplySender::SendReply);
+  }
+  const char* GetTypeName() override { return "ReplySender"; }
+
+ private:
+  explicit ReplySender(InvokeCallback callback)
+      : callback_(std::move(callback)) {}
+  ~ReplySender() override {
+    if (callback_) {
+      v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+      // If there's no current context, it means we're shutting down, so we
+      // don't need to send an event.
+      if (!isolate->GetCurrentContext().IsEmpty()) {
+        v8::HandleScope scope(isolate);
+        auto message = gin::DataObjectBuilder(isolate)
+                           .Set("error", "reply was never sent")
+                           .Build();
+        SendReply(isolate, message);
+      }
+    }
+  }
+
+  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arg, &message)) {
+      return false;
+    }
+
+    std::move(callback_).Run(std::move(message));
+    return true;
+  }
+
+  InvokeCallback callback_;
+};
+
+gin::WrapperInfo ReplySender::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+gin::Handle<gin_helper::internal::PreventableEvent>
+WebContents::MakeEventWithSender(
+    v8::Isolate* isolate,
+    content::RenderFrameHost* frame,
+    electron::mojom::ElectronApiIPC::InvokeCallback callback) {
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper))
+    return gin::Handle<gin_helper::internal::PreventableEvent>();
+  gin::Handle<gin_helper::internal::PreventableEvent> event =
+      gin_helper::internal::CreateCustomEvent(isolate, wrapper);
+  gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+  if (callback)
+    dict.Set("_replySender", ReplySender::Create(isolate, std::move(callback)));
+  if (frame) {
+    dict.Set("frameId", frame->GetRoutingID());
+    dict.Set("processId", frame->GetProcess()->GetID());
+  }
+  return event;
+}
+
 void WebContents::ReceivePostMessage(
     const std::string& channel,
     blink::TransferableMessage message,

@@ -1178,8 +1178,7 @@ gin::Handle<Session> Session::CreateFrom(
   // to use partition strings, instead of using the Session object directly.
   handle->Pin(isolate);
 
-  App::Get()->EmitCustomEvent("session-created",
-                              handle.ToV8().As<v8::Object>());
+  App::Get()->EmitWithoutCustomEvent("session-created", handle);
 
   return handle;
 }
