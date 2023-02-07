@@ -68,11 +68,27 @@ requests according to the specified protocol scheme in the `options` object.
 * `input` string | [Request](https://nodejs.org/api/globals.html#request)
 * `init` [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/fetch#options) (optional)
 
-Returns `Promise<GlobalResponse>`.
+Returns `Promise<GlobalResponse>` - see [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 
 Sends a request, similarly to how `fetch()` works in the renderer, using
-Chrome's network stack. This differs from Node's `fetch()`, which uses an
-entirely separate HTTP stack, with different limitations.
+Chrome's network stack. This differs from Node's `fetch()`, which uses
+Node.js's HTTP stack.
+
+Example:
+
+```js
+async function example () {
+  const response = await net.fetch('https://my.app')
+  if (response.ok) {
+    const body = await response.json()
+    // ... use the result.
+  }
+}
+```
+
+This method will issue requests from the [default
+session](session.md#sessiondefaultsession). To send a `fetch` request from
+another session, use [ses.fetch()](session.md#sesfetchinput-init).
 
 See the MDN documentation for
 [`fetch()`](https://developer.mozilla.org/en-US/docs/Web/API/fetch) for more

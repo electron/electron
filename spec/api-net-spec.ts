@@ -2036,6 +2036,26 @@ describe('net module', () => {
         const result = await resp.formData();
         expect(result.get('foo')).to.equal('bar');
       });
+
+      it('should be able to use a session cookie store', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.setHeader('x-cookie', request.headers.cookie!);
+          response.end();
+        });
+        const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+        const cookieVal = `${Date.now()}`;
+        await sess.cookies.set({
+          url: serverUrl,
+          name: 'wild_cookie',
+          value: cookieVal
+        });
+        const response = await sess.fetch(serverUrl, {
+          credentials: 'include'
+        });
+        expect(response.headers.get('x-cookie')).to.equal(`wild_cookie=${cookieVal}`);
+      });
     });
   });
 });
