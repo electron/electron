@@ -24,7 +24,7 @@ index 0c3953a9e8c68059374144a46276f4f1823306bf..b6fe4f5ca24228a8956128cead7a74e7
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index d8f5abbbaa0d54e46185fa5f85b01ea00554fdcd..c7af65cff142ae5eb3f4d28a06e28386735c2efc 100644
+index d83e754fe27be4cf77570eec5e8a05c7b90ca53b..be58619d4612d7a6ff382be21708a9422a9b2c81 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
 @@ -25,8 +25,11 @@

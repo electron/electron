@@ -533,10 +533,10 @@ index 7f6faeb58f91bbcb8f836ad3a7c7e9007558e480..9ee41950cd4ec67df73ee73ecdeaae10
                         PrintWithParamsCallback callback) override;
    void PrintForSystemDialog() override;
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index 42d9af1e278f6c3e09bb7e54a7c4de0f17d064bf..96112222530e63f911d866884eca03cce24c3ade 100644
+index ad1bf91f695a080c30da3b5d2529f9e2763e6670..69703fe649226f3d335059bfd6c9713f259413f2 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -289,7 +289,7 @@ union PrintWithParamsResult {
+@@ -291,7 +291,7 @@ union PrintWithParamsResult {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -545,7 +545,7 @@ index 42d9af1e278f6c3e09bb7e54a7c4de0f17d064bf..96112222530e63f911d866884eca03cc
  
    // Requests the frame to be printed with specified parameters. This is used
    // to programmatically produce PDF by request from the browser (e.g. over
-@@ -380,7 +380,7 @@ interface PrintManagerHost {
+@@ -382,7 +382,7 @@ interface PrintManagerHost {
    // Requests the print settings from the user. This step is about showing
    // UI to the user to select the final print settings.
    [Sync]
@@ -776,10 +776,10 @@ index 3f82c0cdfd11a8d0c3cbcba9cc74b0e3e1a41b0f..36c1df7e3346f51945721ababf12dc34
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3d63821d02c61b9aed485be1b0abceb4fd9269d3..23d32d68a3a4b7ba8158e23e6d729ad2330c7f95 100644
+index 6c2322e83894eeee7015695e0d9c150f787a29f2..07b9d64d6d430f086eca0f96e2d4d316e80cb830 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2852,8 +2852,9 @@ source_set("browser") {
+@@ -2847,8 +2847,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

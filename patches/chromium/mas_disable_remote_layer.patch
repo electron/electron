@@ -39,7 +39,7 @@ index 71c48ed69f2ee9586620966333c744a6d1533cad..25d80eda83182936548d6098a3875f42
  #endif
    base::scoped_nsobject<CAContext> ca_context_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index b8b3ab18cdf1d9e3b3a125965362044a806ba0de..11f79cea3261889d6e4d5f3ea2828128a4a9a672 100644
+index b726596b926d5cd4d7131997dc07beaf04757612..39858ca20bc4fba50fc5bc5cf8ed4279799f5041 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -74,7 +74,7 @@
