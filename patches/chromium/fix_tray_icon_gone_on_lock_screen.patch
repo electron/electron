@@ -6,10 +6,10 @@ Subject: Re-register status item when owner of status watcher is changed
 https://chromium-review.googlesource.com/c/chromium/src/+/4022621
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index 166f6cf06cba791e14851b35a785200f1a5f5549..88289caa2518a2888de596fd65b7dfb6efa3e1ab 100644
+index cba134dd8c10e9f05d4d2547fd39cc51f83ba054..797953fd2ddef1f827e504c5116a666e0d5e90fb 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -380,6 +380,13 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
+@@ -361,6 +361,13 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
      return;
    }
  
@@ -23,7 +23,7 @@ index 166f6cf06cba791e14851b35a785200f1a5f5549..88289caa2518a2888de596fd65b7dfb6
    dbus::MethodCall method_call(kInterfaceStatusNotifierWatcher,
                                 kMethodRegisterStatusNotifierItem);
    dbus::MessageWriter writer(&method_call);
-@@ -395,6 +402,14 @@ void StatusIconLinuxDbus::OnRegistered(dbus::Response* response) {
+@@ -376,6 +383,14 @@ void StatusIconLinuxDbus::OnRegistered(dbus::Response* response) {
      delegate_->OnImplInitializationFailed();
  }
  
@@ -39,10 +39,10 @@ index 166f6cf06cba791e14851b35a785200f1a5f5549..88289caa2518a2888de596fd65b7dfb6
      dbus::MethodCall* method_call,
      dbus::ExportedObject::ResponseSender sender) {
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index e7628de42f980fa3535cab9dfffd0deab30f8812..eae1c332a0972aefb8843cac947aeb2f4c48d360 100644
+index 1257135667d738f733c576d4b36a449a429b4a47..4025a7c6483b92b4462869b903228b8d630a730b 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-@@ -74,10 +74,16 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+@@ -71,10 +71,16 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
                    const std::string& method_name,
                    bool success);
    void OnInitialized(bool success);

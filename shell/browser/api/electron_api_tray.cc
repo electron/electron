@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/threading/thread_task_runner_handle.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"

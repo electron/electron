@@ -28,7 +28,7 @@
     <string>MainMenu</string>
     <key>NSPrincipalClass</key>
     <string>AtomApplication</string>
-    <key>NSAppTransportSecurity</key>    
+    <key>NSAppTransportSecurity</key>
     <dict>
       <key>NSAllowsArbitraryLoads</key>
       <true/>

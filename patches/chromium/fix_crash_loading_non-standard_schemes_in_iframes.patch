@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 37e932cfc8f66631e811d520542c6fc6f29aff80..9c6740d228dedd8a3f47c9f782095bb3d6cab868 100644
+index 61b47ad9abee29a8e6f999830ca37b0095b62222..7b60da8f1433cf1d43432d1b42db69600c7f1640 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6886,10 +6886,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -6975,10 +6975,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,12 +37,12 @@ index 37e932cfc8f66631e811d520542c6fc6f29aff80..9c6740d228dedd8a3f47c9f782095bb3
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index a19e9306c24d9483e2e899bfa8e5b78d77e9fb88..c1c9faae501786a2f7bc24d76f2ec2c2944b9ec2 100644
+index 21cb1e96f90341981c02ffac84eb3c0d6f9ae87b..c62197529e85d94c387c0389b9fc0e05438e2975 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2770,6 +2770,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-     user_activation_state_.Activate(notification_type);
-   }
+@@ -2783,6 +2783,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // used on primary main frames.
+   bool IsPageReadyToBeClosed();
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
@@ -58,7 +58,7 @@ index a19e9306c24d9483e2e899bfa8e5b78d77e9fb88..c1c9faae501786a2f7bc24d76f2ec2c2
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3086,17 +3097,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3101,17 +3112,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

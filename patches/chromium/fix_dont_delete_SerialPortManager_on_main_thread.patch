@@ -50,7 +50,7 @@ upstream would also hit this DCHECK, so give it a try with content_shell or
 chrome and that would help reporting upstream crbug.
 
 diff --git a/services/device/device_service.cc b/services/device/device_service.cc
-index 1f8a587cfea7507bcb4d1b10099b7c61c5d313dc..35d1e45a95f28dcfed8408ca0c538893398a905a 100644
+index eaee3293f9df6c2fa237684206fda50793aee1ae..b5a9e57452703ceb686a408f0d48bf62185343d5 100644
 --- a/services/device/device_service.cc
 +++ b/services/device/device_service.cc
 @@ -158,7 +158,7 @@ DeviceService::~DeviceService() {

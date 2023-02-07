@@ -7,10 +7,10 @@ Subject: feat: filter out non-shareable windows in the current application in
 This patch ensures that windows protected via win.setContentProtection(true) do not appear in full display captures via desktopCapturer.  This patch could be upstreamed but as the check is limited to in-process windows it doesn't make a lot of sense for Chromium itself.  This patch currently has a limitation that it only function for windows created / protected BEFORE the stream is started.  There is theoretical future work we can do via polling / observers to automatically update the SCContentFilter when new windows are made but for now this will solve 99+% of the problem and folks can re-order their logic a bit to get it working for their use cases.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index dc28dc5379aa252c6eb380a38a1e1411ac983f93..5b7d99ffa9f6489be5073d432887de53875d78e8 100644
+index 618a17d87e9af2511dd74702ed30d2a67ec8853c..5b9a2a691afc5e0c2a049ac9c9216b7f61bec18e 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -164,7 +164,15 @@ void OnShareableContentCreated(
+@@ -165,7 +165,15 @@ void OnShareableContentCreated(
        case DesktopMediaID::TYPE_SCREEN:
          for (SCDisplay* display : [content displays]) {
            if (source_.id == [display displayID]) {

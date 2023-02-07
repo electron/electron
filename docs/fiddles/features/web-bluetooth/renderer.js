@@ -9,7 +9,7 @@ document.getElementById('clickme').addEventListener('click',testIt)
 
 window.electronAPI.bluetoothPairingRequest((event, details) => {
   const response = {}
-  
+
   switch (details.pairingKind) {
     case 'confirm': {
       response.confirmed = confirm(`Do you want to connect to device ${details.deviceId}?`)

@@ -19,7 +19,7 @@ body:
     label: Electron Version
     description: |
       What version of Electron are you using?
-      
+
       Note: Please only report issues for [currently supported versions of Electron](https://www.electronjs.org/docs/latest/tutorial/support#currently-supported-versions).
     placeholder: 17.0.0
   validations:

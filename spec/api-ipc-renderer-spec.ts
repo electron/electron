@@ -74,7 +74,7 @@ describe('ipcRenderer module', () => {
     it('can send objects that both reference the same object', async () => {
       w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
-        
+
         const child = { hello: 'world' }
         const foo = { name: 'foo', child: child }
         const bar = { name: 'bar', child: child }

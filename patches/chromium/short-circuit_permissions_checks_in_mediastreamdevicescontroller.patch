@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 7dbbcc13901dcd8b7a9ca9c9bdce4f924c1c6a55..f4def7e347aafe30485fd1e6055c97d471b44776 100644
+index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e020904586 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -56,7 +56,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -86,7 +86,7 @@ index 7dbbcc13901dcd8b7a9ca9c9bdce4f924c1c6a55..f4def7e347aafe30485fd1e6055c97d4
  }
  
 diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
-index b9cf3f6ad047fa16594393134eae5fc5349e7430..5de5e0bf9b455872f69de47d58dda929f00df12c 100644
+index b4258f59081c5d99b9c3edf02ca538499a5a435e..3bb6ac4e27fb39283d71a46dd3af7b9f7258d1e2 100644
 --- a/components/webrtc/media_stream_devices_controller.h
 +++ b/components/webrtc/media_stream_devices_controller.h
 @@ -48,7 +48,8 @@ class MediaStreamDevicesController {

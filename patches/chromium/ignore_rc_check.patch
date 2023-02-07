@@ -7,10 +7,10 @@ Dont compare RC.exe and RC.py output.
 FIXME: It has to be reverted once the script is fixed.
 
 diff --git a/build/toolchain/win/rc/rc.py b/build/toolchain/win/rc/rc.py
-index 2e5ec6b2631ef62d6bcae95a7dfd95bdaa8ce8af..44530b54d36d5925e99edd200ea8bc73fdfdedb6 100755
+index a650506a1e0a19566861b672cb800024965d7ff5..cde05b15eef3decdee0093ca8b84201008e4adb0 100755
 --- a/build/toolchain/win/rc/rc.py
 +++ b/build/toolchain/win/rc/rc.py
-@@ -245,7 +245,10 @@ def CompareToMsRcOutput(preprocessed_output, is_utf8, flags):
+@@ -244,7 +244,10 @@ def CompareToMsRcOutput(preprocessed_output, is_utf8, flags):
    # Assert Microsoft rc.exe and rc.py produced identical .res files.
    if rc_exe_exit_code == 0:
      import filecmp

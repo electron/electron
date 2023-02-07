@@ -1325,7 +1325,7 @@ describe('chromium features', () => {
     it('fails with "not supported" for getDisplayMedia', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))');
+      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))', true);
       expect(ok).to.be.false();
       expect(err).to.equal('Not supported');
     });
@@ -2027,7 +2027,8 @@ describe('chromium features', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'win32' && process.platform !== 'linux')('webgl', () => {
+  // This is intentionally disabled on arm macs: https://chromium-review.googlesource.com/c/chromium/src/+/4143761
+  ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('webgl', () => {
     it('can be gotten as context in canvas', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');

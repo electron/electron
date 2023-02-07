@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 #include "gin/arguments.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/event_emitter_mixin.h"
