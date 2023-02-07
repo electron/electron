@@ -56,7 +56,7 @@ following properties:
     `unsafe-url`, `same-origin`, `strict-origin`, or
     `strict-origin-when-cross-origin`. Defaults to
     `strict-origin-when-cross-origin`.
-  * `cache` string (optional) - can be `""`, `default`, `no-store`, `reload`,
+  * `cache` string (optional) - can be `default`, `no-store`, `reload`,
     `no-cache`, `force-cache` or `only-if-cached`.
 
 `options` properties such as `protocol`, `host`, `hostname`, `port` and `path`

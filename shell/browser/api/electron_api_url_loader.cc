@@ -79,7 +79,7 @@ struct Converter<blink::mojom::FetchCacheMode> {
     std::string cache;
     if (!ConvertFromV8(isolate, val, &cache))
       return false;
-    if (cache == "default" || cache == "") {
+    if (cache == "default") {
       *out = blink::mojom::FetchCacheMode::kDefault;
     } else if (cache == "no-store") {
       *out = blink::mojom::FetchCacheMode::kNoStore;
