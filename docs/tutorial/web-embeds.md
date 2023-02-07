@@ -45,11 +45,9 @@ and handling various events.
 ### WebContentsView
 
 [`WebContentsView`](../api/web-contents-view.md)s are not a part of the
-DOM—instead, they are created in and controlled by your Main process. Using
-`WebContentsView`, you can combine and layer many pages together in the same
-[`BaseWindow`](../api/base-window.md). The position and size of
-`WebContentsView`s is not controlled by the DOM or CSS. Instead, it is
-controlled by the Main process.
+DOM—instead, they are created, controlled, positioned, and sized by your
+Main process. Using `WebContentsView`, you can combine and layer many pages
+together in the same [`BaseWindow`](../api/base-window.md).
 
 `WebContentsView`s offer the greatest control over their contents, since they
 implement the `webContents` similarly to how `BrowserWindow` does it. However,
