@@ -511,8 +511,8 @@ void ElectronURLLoaderFactory::StartLoadingFile(
     mojo::PendingReceiver<network::mojom::URLLoader> loader,
     network::mojom::URLResponseHeadPtr head,
     const network::ResourceRequest& original_request,
-    base::FilePath path,
-    gin_helper::Dictionary opts) {
+    const base::FilePath& path,
+    const gin_helper::Dictionary& opts) {
   network::ResourceRequest request = original_request;
   request.url = net::FilePathToFileURL(path);
   if (!opts.IsEmpty()) {
