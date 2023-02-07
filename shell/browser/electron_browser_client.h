@@ -71,7 +71,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   // content::ContentBrowserClient:
   std::string GetApplicationLocale() override;
-  base::FilePath GetFontLookupTableCacheDir() override;
   bool ShouldEnableStrictSiteIsolation() override;
   void BindHostReceiverForRenderer(
       content::RenderProcessHost* render_process_host,
