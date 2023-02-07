@@ -157,28 +157,6 @@ declare namespace Electron {
   }
 
 
-  // Experimental views API
-  /*
-  class View {}
-  class BaseWindow {
-    constructor(args: {show: boolean})
-    setContentView(view: View): void
-    static fromId(id: number): BaseWindow;
-    static getAllWindows(): BaseWindow[];
-    isFocused(): boolean;
-    static getFocusedWindow(): BaseWindow | undefined;
-    setMenu(menu: Menu): void;
-  }
-  class WebContentsView {
-    constructor(options: BrowserWindowConstructorOptions)
-  }
-  namespace Main {
-    class BaseWindow extends Electron.BaseWindow {}
-    class View extends Electron.View {}
-    class WebContentsView extends Electron.WebContentsView {}
-  }
-  */
-
   // Deprecated / undocumented BrowserWindow methods
   interface BrowserWindow {
     getURL(): string;

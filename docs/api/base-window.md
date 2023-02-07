@@ -4,6 +4,11 @@
 
 Process: [Main](../glossary.md#main-process)
 
+> **Note**
+> `BaseWindow` provides a flexible way to compose multiple web views in a
+> single window. For windows with only a single, full-size web view, the
+> [`BrowserWindow`](browser-window.md) class may be a simpler option.
+
 This module cannot be used until the `ready` event of the `app`
 module is emitted.
 

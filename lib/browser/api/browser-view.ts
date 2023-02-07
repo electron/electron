@@ -33,7 +33,6 @@ export default class BrowserView {
     return this.#webContentsView.getBounds();
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   setAutoResize (options: AutoResizeOptions) {
     if (options == null || typeof options !== 'object') { throw new Error('Invalid auto resize options'); }
     this.#autoResizeFlags = {
