@@ -145,3 +145,4 @@ mojo_validate_that_a_message_is_allowed_to_use_the_sync_flag.patch
 cherry-pick-43637378b14e.patch
 cherry-pick-57c54ae221d6.patch
 cherry-pick-ca2b108a0f1f.patch
+cherry-pick-d652130c4bc2.patch
