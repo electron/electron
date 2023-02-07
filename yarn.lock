@@ -187,10 +187,10 @@
     "@octokit/auth-app" "^3.6.1"
     "@octokit/rest" "^18.12.0"
 
-"@electron/typescript-definitions@^8.11.0":
-  version "8.11.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.11.0.tgz#db9350d05ed0055610634019a071efc1708cb3fb"
-  integrity sha512-uLzNqt/e42bytxoCYxwc4Dw5lWecnkVwLPobiuCjGUByDaGeLok29+XK7zRoqctNRwMkwunBjcuisqsR8/dZlg==
+"@electron/typescript-definitions@^8.13.0":
+  version "8.13.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.13.0.tgz#90066ec69cf9904728d013a39140a766e09dfcdd"
+  integrity sha512-lMiExa4B95HH+/VQof08Hp0JzQxzo04IX3p90Kz5rWTVIYPXxSMdvThCqjcrZ/aBnujq8mMNUeZOH1dH3soNng==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
