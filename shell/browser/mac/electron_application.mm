@@ -199,7 +199,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   // is accessed frequently so we only change the accessibility state when
   // accessibility is disabled.
   auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-  if (!ax_state->GetAccessibilityMode().has_mode(ui::kAXModeBasic.flags())) {
+  if (!ax_state->GetAccessibilityMode().has_mode(ui::kAXModeBasic.mode())) {
     ax_state->AddAccessibilityModeFlags(ui::kAXModeBasic);
   }
   return [super accessibilityRole];
