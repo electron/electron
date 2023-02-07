@@ -492,6 +492,14 @@ The `focus` and `blur` events of `WebContents` should only be used to detect
 focus change between different `WebContents` and `BrowserView` in the same
 window.
 
+#### Event: 'devtools-open-url'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
+
 #### Event: 'devtools-opened'
 
 Emitted when DevTools is opened.
@@ -570,7 +578,7 @@ Returns:
   * `finalUpdate` boolean
 
 Emitted when a result is available for
-[`webContents.findInPage`] request.
+[`webContents.findInPage`](#contentsfindinpagetext-options) request.
 
 #### Event: 'media-started-playing'
 
@@ -1324,7 +1332,7 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 #### `contents.stopFindInPage(action)`
 
 * `action` string - Specifies the action to take place when ending
-  [`webContents.findInPage`] request.
+  [`webContents.findInPage`](#contentsfindinpagetext-options) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -1358,31 +1366,6 @@ If you would like the page to stay hidden, you should ensure that `stayHidden` i
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
-
-#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])` _Deprecated_
-
-* `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
-* `stayHidden` boolean (optional) -  Keep the page hidden instead of visible.
-* `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
-
-Increase the capturer count by one. The page is considered visible when its browser window is
-hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
-
-This also affects the Page Visibility API.
-
-**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`. See [breaking changes](../breaking-changes.md).
-
-#### `contents.decrementCapturerCount([stayHidden, stayAwake])` _Deprecated_
-
-* `stayHidden` boolean (optional) -  Keep the page in hidden state instead of visible.
-* `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
-
-Decrease the capturer count by one. The page will be set to hidden or occluded state when its
-browser window is hidden or occluded and the capturer count reaches zero. If you want to
-decrease the hidden capturer count instead you should set `stayHidden` to true.
-
-**Deprecated:** This API's functionality is now handled automatically within `contents.capturePage()`.
-See [breaking changes](../breaking-changes.md).
 
 #### `contents.getPrinters()` _Deprecated_
 
@@ -1712,7 +1695,7 @@ app.whenReady().then(() => {
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` Integer | [number, number] - the ID of the frame to send to, or a
+* `frameId` Integer | \[number, number] - the ID of the frame to send to, or a
   pair of `[processId, frameId]` if the frame is in a different process to the
   main frame.
 * `channel` string

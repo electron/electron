@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index e58cc4b4fb4ba28f23133530dc3d908c4cb68426..3e73073fb3f0e3bed74ff00521fc1b98997d9540 100644
+index cbbc7264c6ad097c5da4902ac1bdbdcebfdd36af..6704d96142f806be9c0605f0b41206e77f492b96 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -27,7 +27,7 @@ index e58cc4b4fb4ba28f23133530dc3d908c4cb68426..3e73073fb3f0e3bed74ff00521fc1b98
        }],
        ['target_arch in "ppc64 s390x"', {
          'v8_enable_backtrace': 1,
-@@ -393,9 +395,12 @@
+@@ -389,9 +391,12 @@
        ['v8_enable_pointer_compression == 1', {
          'defines': [
            'V8_COMPRESS_POINTERS',
@@ -42,10 +42,10 @@ index e58cc4b4fb4ba28f23133530dc3d908c4cb68426..3e73073fb3f0e3bed74ff00521fc1b98
          'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
        }],
 diff --git a/configure.py b/configure.py
-index a4e5723067f286d4a836f329d0049b6bbaac9419..1b7a721585764aecfd855ee47c47a3bd235d2ef3 100755
+index 81d54a14b7af51b77b6340a4f7bf605d6f1656bc..bae674fd264ff0bfbe025c286279182358872b23 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1477,6 +1477,7 @@ def configure_v8(o):
+@@ -1524,6 +1524,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0

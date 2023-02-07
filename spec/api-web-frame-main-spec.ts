@@ -3,10 +3,10 @@ import * as http from 'http';
 import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce, emittedNTimes } from './events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce, emittedNTimes } from './lib/events-helpers';
 import { AddressInfo } from 'net';
-import { defer, ifit, waitUntil } from './spec-helpers';
+import { defer, ifit, waitUntil } from './lib/spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -177,12 +177,12 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
-      expect(webFrame).to.have.ownProperty('url').that.is.a('string');
-      expect(webFrame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
-      expect(webFrame).to.have.ownProperty('name').that.is.a('string');
-      expect(webFrame).to.have.ownProperty('osProcessId').that.is.a('number');
-      expect(webFrame).to.have.ownProperty('processId').that.is.a('number');
-      expect(webFrame).to.have.ownProperty('routingId').that.is.a('number');
+      expect(webFrame).to.have.property('url').that.is.a('string');
+      expect(webFrame).to.have.property('frameTreeNodeId').that.is.a('number');
+      expect(webFrame).to.have.property('name').that.is.a('string');
+      expect(webFrame).to.have.property('osProcessId').that.is.a('number');
+      expect(webFrame).to.have.property('processId').that.is.a('number');
+      expect(webFrame).to.have.property('routingId').that.is.a('number');
     });
   });
 

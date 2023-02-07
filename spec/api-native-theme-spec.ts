@@ -4,9 +4,9 @@ import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
 
-import { delay, ifdescribe } from './spec-helpers';
-import { emittedOnce } from './events-helpers';
-import { closeAllWindows } from './window-helpers';
+import { delay, ifdescribe } from './lib/spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('nativeTheme module', () => {
   describe('nativeTheme.shouldUseDarkColors', () => {
@@ -36,6 +36,7 @@ describe('nativeTheme module', () => {
     });
 
     it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', async () => {
+      nativeTheme.themeSource = 'light';
       let updatedEmitted = emittedOnce(nativeTheme, 'updated');
       nativeTheme.themeSource = 'dark';
       await updatedEmitted;

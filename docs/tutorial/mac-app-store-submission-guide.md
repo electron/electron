@@ -11,7 +11,7 @@ This guide provides information on:
 To sign Electron apps, the following tools must be installed first:
 
 * Xcode 11 or above.
-* The [@electron/osx-sign] npm module.
+* The [@electron/osx-sign][] npm module.
 
 You also have to register an Apple Developer account and join the
 [Apple Developer Program][developer-program].

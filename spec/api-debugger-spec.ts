@@ -3,8 +3,8 @@ import * as http from 'http';
 import * as path from 'path';
 import { AddressInfo } from 'net';
 import { BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce, emittedUntil } from './events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce, emittedUntil } from './lib/events-helpers';
 
 describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

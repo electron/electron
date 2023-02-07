@@ -18,7 +18,7 @@ environment:
   PYTHONIOENCODING: UTF-8
 # Uncomment these lines and set APPVEYOR_RDP_PASSWORD in project settings to enable RDP before bake begins
 # install:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))  
+#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
 build_script:
   # Uncomment/change the following line if the hard drive/partition size needs to change
   # - ps: Resize-Partition -DriveLetter C -Size (256GB) # ensure initial partition size
@@ -28,8 +28,8 @@ build_script:
       if (-not (Test-Path -Path .\src)) {
         New-Item -Path .\src -ItemType Directory
       }
-  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
-  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
   - update_depot_tools.bat
   - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   # Uncomment the following line if windows deps change

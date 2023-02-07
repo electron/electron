@@ -18,8 +18,6 @@ def strip_binary(binary_path, target_cpu):
     strip = 'arm-linux-gnueabihf-strip'
   elif target_cpu == 'arm64':
     strip = 'aarch64-linux-gnu-strip'
-  elif target_cpu == 'mips64el':
-    strip = 'mips64el-redhat-linux-strip'
   else:
     strip = 'strip'
   execute([

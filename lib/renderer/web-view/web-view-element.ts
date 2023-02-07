@@ -8,7 +8,7 @@
 // which runs in browserify environment instead of Node environment, all native
 // modules must be passed from outside, all included files must be plain JS.
 
-import { WEB_VIEW_CONSTANTS } from '@electron/internal/renderer/web-view/web-view-constants';
+import { WEB_VIEW_ATTRIBUTES, WEB_VIEW_ERROR_MESSAGES } from '@electron/internal/renderer/web-view/web-view-constants';
 import { WebViewImpl, WebViewImplHooks, setupMethods } from '@electron/internal/renderer/web-view/web-view-impl';
 import type { SrcAttribute } from '@electron/internal/renderer/web-view/web-view-attributes';
 
@@ -19,19 +19,19 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
   return class WebViewElement extends HTMLElement {
     static get observedAttributes () {
       return [
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_PARTITION,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_HTTPREFERRER,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_USERAGENT,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATION,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_NODEINTEGRATIONINSUBFRAMES,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_PLUGINS,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEWEBSECURITY,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_ALLOWPOPUPS,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_PRELOAD,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_BLINKFEATURES,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_DISABLEBLINKFEATURES,
-        WEB_VIEW_CONSTANTS.ATTRIBUTE_WEBPREFERENCES
+        WEB_VIEW_ATTRIBUTES.PARTITION,
+        WEB_VIEW_ATTRIBUTES.SRC,
+        WEB_VIEW_ATTRIBUTES.HTTPREFERRER,
+        WEB_VIEW_ATTRIBUTES.USERAGENT,
+        WEB_VIEW_ATTRIBUTES.NODEINTEGRATION,
+        WEB_VIEW_ATTRIBUTES.NODEINTEGRATIONINSUBFRAMES,
+        WEB_VIEW_ATTRIBUTES.PLUGINS,
+        WEB_VIEW_ATTRIBUTES.DISABLEWEBSECURITY,
+        WEB_VIEW_ATTRIBUTES.ALLOWPOPUPS,
+        WEB_VIEW_ATTRIBUTES.PRELOAD,
+        WEB_VIEW_ATTRIBUTES.BLINKFEATURES,
+        WEB_VIEW_ATTRIBUTES.DISABLEBLINKFEATURES,
+        WEB_VIEW_ATTRIBUTES.WEBPREFERENCES
       ];
     }
 
@@ -43,7 +43,7 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
     getWebContentsId () {
       const internal = internals.get(this);
       if (!internal || !internal.guestInstanceId) {
-        throw new Error(WEB_VIEW_CONSTANTS.ERROR_MSG_NOT_ATTACHED);
+        throw new Error(WEB_VIEW_ERROR_MESSAGES.NOT_ATTACHED);
       }
       return internal.guestInstanceId;
     }
@@ -58,7 +58,7 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
           dispatchEvent: internal.dispatchEvent.bind(internal)
         });
         internal.elementAttached = true;
-        (internal.attributes.get(WEB_VIEW_CONSTANTS.ATTRIBUTE_SRC) as SrcAttribute).parse();
+        (internal.attributes.get(WEB_VIEW_ATTRIBUTES.SRC) as SrcAttribute).parse();
       }
     }
 

@@ -12,7 +12,7 @@ Electron's [autoUpdater](../api/auto-updater.md) module.
 
 ## Using update.electronjs.org
 
-The Electron team maintains [update.electronjs.org], a free and open-source
+The Electron team maintains [update.electronjs.org][], a free and open-source
 webservice that Electron apps can use to self-update. The service is designed
 for Electron apps that meet the following criteria:
 
@@ -21,7 +21,7 @@ for Electron apps that meet the following criteria:
 - Builds are published to [GitHub Releases][gh-releases]
 - Builds are [code-signed](./code-signing.md)
 
-The easiest way to use this service is by installing [update-electron-app],
+The easiest way to use this service is by installing [update-electron-app][],
 a Node.js module preconfigured for use with update.electronjs.org.
 
 Install the module using your Node.js package manager of choice:

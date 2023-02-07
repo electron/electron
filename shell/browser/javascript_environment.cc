@@ -15,8 +15,8 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/task/current_thread.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
@@ -77,7 +77,7 @@ namespace electron {
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
     : isolate_(Initialize(event_loop, setup_wasm_streaming)),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
+      isolate_holder_(base::SingleThreadTaskRunner::GetCurrentDefault(),
                       gin::IsolateHolder::kSingleThread,
                       gin::IsolateHolder::kAllowAtomicsWait,
                       gin::IsolateHolder::IsolateType::kUtility,

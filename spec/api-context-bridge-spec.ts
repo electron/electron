@@ -7,8 +7,8 @@ import * as os from 'os';
 import * as path from 'path';
 import * as cp from 'child_process';
 
-import { closeWindow } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
 import { AddressInfo } from 'net';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
@@ -76,7 +76,7 @@ describe('contextBridge', () => {
         const gc=require('vm').runInNewContext('gc');
         renderer_1.webFrame.setIsolatedWorldInfo(${worldId}, {
           name: "Isolated World"
-        });  
+        });
         renderer_1.contextBridge.exposeInIsolatedWorld(${worldId}, 'GCRunner', {
           run: () => gc()
         });`}

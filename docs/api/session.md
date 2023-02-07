@@ -561,7 +561,7 @@ Clears the session’s HTTP cache.
   * `origin` string (optional) - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` string[] (optional) - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can contain:
@@ -659,7 +659,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match URLs which are IP address literals.
 
    Examples:
-     "127.0.1", "[0:0::1]", "[::1]", "http://[::1]:99"
+     "127.0.1", "\[0:0::1]", "\[::1]", "http://\[::1]:99"
 
 * `IP_LITERAL "/" PREFIX_LENGTH_IN_BITS`
 
@@ -794,6 +794,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
     * `pointerLock` - Request to directly interpret mouse movements as an input method. Click [here](https://developer.mozilla.org/en-US/docs/Web/API/Pointer_Lock_API) to know more. These requests always appear to originate from the main frame.
     * `fullscreen` - Request for the app to enter fullscreen mode.
     * `openExternal` - Request to open links in external applications.
+    * `window-management` - Request access to enumerate screens using the [`getScreenDetails`](https://developer.chrome.com/en/articles/multi-screen-window-placement/) API.
     * `unknown` - An unrecognized permission request
   * `callback` Function
     * `permissionGranted` boolean - Allow or deny the permission.

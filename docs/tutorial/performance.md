@@ -437,7 +437,6 @@ Call `Menu.setApplicationMenu(null)` before `app.on("ready")`. This will prevent
 [web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 [request-idle-callback]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback
 [multithreading]: ./multithreading.md
-[caniuse]: https://caniuse.com/
 [jquery-need]: https://youmightnotneedjquery.com/
 [service-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API
 [webpack]: https://webpack.js.org/

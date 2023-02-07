@@ -58,7 +58,7 @@ def upload_node(version):
     elif get_target_arch() == 'arm64':
       node_lib = os.path.join(DIST_DIR, 'arm64', 'node.lib')
       iojs_lib = os.path.join(DIST_DIR, 'win-arm64', 'iojs.lib')
-      v4_node_lib = os.path.join(DIST_DIR, 'win-arm64', 'node.lib')   
+      v4_node_lib = os.path.join(DIST_DIR, 'win-arm64', 'node.lib')
     else:
       node_lib = os.path.join(DIST_DIR, 'x64', 'node.lib')
       iojs_lib = os.path.join(DIST_DIR, 'win-x64', 'iojs.lib')

@@ -546,7 +546,7 @@ source_set("electron_lib") {
     deps += [
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
-      "//content/common:mac_helpers",
+      "//content/browser:mac_helpers",
       "//ui/accelerated_widget_mac",
     ]
 
@@ -632,8 +632,6 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/certificate_manager_model.cc",
       "shell/browser/certificate_manager_model.h",
-      "shell/browser/ui/gtk/menu_util.cc",
-      "shell/browser/ui/gtk/menu_util.h",
       "shell/browser/ui/gtk_util.cc",
       "shell/browser/ui/gtk_util.h",
     ]

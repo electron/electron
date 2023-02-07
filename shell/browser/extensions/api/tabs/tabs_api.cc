@@ -509,16 +509,4 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
   return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
 }
 
-void TabsUpdateFunction::OnExecuteCodeFinished(
-    const std::string& error,
-    const GURL& url,
-    const base::ListValue& script_result) {
-  if (!error.empty()) {
-    Respond(Error(error));
-    return;
-  }
-
-  return Respond(GetResult());
-}
-
 }  // namespace extensions

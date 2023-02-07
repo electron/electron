@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { Notification } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { ifit } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { ifit } from './lib/spec-helpers';
 
 describe('Notification module', () => {
   it('is supported', () => {

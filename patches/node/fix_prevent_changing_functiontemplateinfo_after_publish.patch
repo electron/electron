@@ -37,10 +37,10 @@ index 3a3228ddc9eb6b53efc0721466479a9f62cd8967..175a67840348ca507d6e8b29835e5ab3
          HistogramBase::kInternalFieldCount);
      SetProtoMethodNoSideEffect(isolate, tmpl, "count", GetCount);
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index f88270fc75de91610a973c0649e1bc699c3e014d..e47f7a597a6ca0cfd71fec1e42f0fbb75cb539c7 100644
+index 009ac0056c5486a3f94889f70b592e26827d86a0..ba497064de834c4ea565bb267d1e95e4647b79eb 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
-@@ -1467,13 +1467,16 @@ static void InitMessaging(Local<Object> target,
+@@ -1495,13 +1495,16 @@ static void InitMessaging(Local<Object> target,
      t->Inherit(BaseObject::GetConstructorTemplate(env));
      t->InstanceTemplate()->SetInternalFieldCount(
          JSTransferable::kInternalFieldCount);

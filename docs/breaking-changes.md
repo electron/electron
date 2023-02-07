@@ -260,7 +260,7 @@ requires unsafe mode), so Electron is unable to support this feature on Linux.
 
 The handler invoked when `session.setDevicePermissionHandler(handler)` is used
 has a change to its arguments.  This handler no longer is passed a frame
-`[WebFrameMain](api/web-frame-main.md)`, but instead is passed the `origin`, which
+[`WebFrameMain`](api/web-frame-main.md), but instead is passed the `origin`, which
 is the origin that is checking for device permission.
 
 ## Planned Breaking API Changes (19.0)
@@ -1433,7 +1433,7 @@ When building native modules for windows, the `win_delay_load_hook` variable in
 the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
-guide](/docs/tutorial/using-native-node-modules.md) for more.
+guide](./tutorial/using-native-node-modules.md) for more.
 
 ### Removed: IA32 Linux support
 

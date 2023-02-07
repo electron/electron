@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as path from 'path';
-import { emittedOnce } from './events-helpers';
+import { emittedOnce } from './lib/events-helpers';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
-import { closeWindow } from './window-helpers';
-import { defer, ifit, startRemoteControlApp } from './spec-helpers';
-import { areColorsSimilar, captureScreen, getPixelColor } from './screen-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { areColorsSimilar, captureScreen, getPixelColor } from './lib/screen-helpers';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -398,28 +398,8 @@ describe('BrowserView module', () => {
       });
       await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
 
-      view.webContents.incrementCapturerCount();
       const image = await view.webContents.capturePage();
       expect(image.isEmpty()).to.equal(false);
-    });
-
-    it('should increase the capturer count', () => {
-      view = new BrowserView({
-        webPreferences: {
-          backgroundThrottling: false
-        }
-      });
-      w.setBrowserView(view);
-      view.setBounds({
-        ...w.getBounds(),
-        x: 0,
-        y: 0
-      });
-
-      view.webContents.incrementCapturerCount();
-      expect(view.webContents.isBeingCaptured()).to.be.true();
-      view.webContents.decrementCapturerCount();
-      expect(view.webContents.isBeingCaptured()).to.be.false();
     });
   });
 });

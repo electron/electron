@@ -1,5 +1,6 @@
 name: 'Close stale issues'
 on:
+  workflow_dispatch:
   schedule:
     # 1:30am every day
     - cron: '30 1 * * *'
@@ -11,7 +12,7 @@ jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/stale@3de2653986ebd134983c79fe2be5d45cc3d9f4e1
+      - uses: actions/stale@5ebf00ea0e4c1561e9b43a292ed34424fb1d4578 # tag: v6.0.1
         with:
           days-before-stale: 90
           days-before-close: 30
@@ -24,8 +25,11 @@ jobs:
           exempt-issue-labels: "discussion,security \U0001F512,enhancement :sparkles:"
           only-pr-labels: not-a-real-label
   pending-repro:
+    runs-on: ubuntu-latest
+    if: ${{ always() }}
+    needs: stale
     steps:
-      - uses: actions/stale@3de2653986ebd134983c79fe2be5d45cc3d9f4e1
+      - uses: actions/stale@5ebf00ea0e4c1561e9b43a292ed34424fb1d4578 # tag: v6.0.1
         with:
           days-before-stale: -1
           days-before-close: 10

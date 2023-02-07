@@ -4,9 +4,9 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
-import { emittedOnce } from './events-helpers';
-import { closeAllWindows } from './window-helpers';
-import { ifdescribe, delay, defer, waitUntil } from './spec-helpers';
+import { emittedOnce } from './lib/events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe, delay, defer, waitUntil } from './lib/spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -2049,12 +2049,15 @@ describe('webContents module', () => {
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
     it('works as expected', async function () {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+      const w = new BrowserWindow({ webPreferences: { sandbox: true } });
+
+      // TODO(codebytere): figure out why this workaround is needed and remove.
+      // It is not germane to the actual test.
+      await w.loadFile(path.join(fixturesPath, 'blank.html'));
+
       await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
 
-      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
-        this.skip();
-      }
+      await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')', true);
 
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);

@@ -117,9 +117,9 @@ driver.quit()
 ## Using Playwright
 
 [Microsoft Playwright](https://playwright.dev) is an end-to-end testing framework built
-using browser-specific remote debugging protocols, similar to the [Puppeteer] headless
+using browser-specific remote debugging protocols, similar to the [Puppeteer][] headless
 Node.js API but geared towards end-to-end testing. Playwright has experimental Electron
-support via Electron's support for the [Chrome DevTools Protocol] (CDP).
+support via Electron's support for the [Chrome DevTools Protocol][] (CDP).
 
 ### Install dependencies
 

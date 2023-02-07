@@ -2,6 +2,7 @@ name: Update AppVeyor Image
 
 # Run chron daily Mon-Fri
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 8 * * 1-5' # runs 8:00 every business day (see https://crontab.guru)
 
@@ -50,7 +51,7 @@ jobs:
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
       uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
       with:
-        token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+        token: ${{ secrets.GITHUB_TOKEN }}
         commit-message: 'build: update appveyor image to latest version'
         committer: GitHub <noreply@github.com>
         author: ${{ github.actor }} <${{ github.actor }}@users.noreply.github.com>

@@ -2,9 +2,9 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
 import { BrowserWindow } from 'electron/main';
-import { ifdescribe, ifit } from './spec-helpers';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedOnce } from './lib/events-helpers';
 import * as childProcess from 'child_process';
 
 const Module = require('module');
