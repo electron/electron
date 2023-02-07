@@ -65,7 +65,7 @@ the API become immutable and updates on either side of the bridge do not result 
 An example of a complex API is shown below:
 
 ```javascript
-const { contextBridge } = require('electron')
+const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld(
   'electron',

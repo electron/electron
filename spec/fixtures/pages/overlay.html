@@ -55,7 +55,7 @@
         const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect();
         ipcRenderer.send('geometrychange', {x, y, width, height});
       };
-    </script>      
+    </script>
     <div id="titleBarContainer">
       <div id="titleBar" class=" draggable">
         <span class="draggable">Title goes here</span>
@@ -76,7 +76,7 @@
       }
 
       function getJSOverlayProperties() {
-        const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect(); 
+        const {x, y, width, height} = navigator.windowControlsOverlay.getTitlebarAreaRect();
         return {x, y, width, height};
       }
     </script>

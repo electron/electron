@@ -14,7 +14,7 @@ If Electron compiles on Windows without this patch then it's no longer
 needed.
 
 diff --git a/include/v8-cppgc.h b/include/v8-cppgc.h
-index 139af8fdac26c3f829886aedc18af1592a4de7ef..b361aa912c74233d2fb6feb0b00e45c1c1697496 100644
+index 4a457027c9f76b5d75f8f693ebe31fd616134849..16548d3053563d2a5891fb8967a2b63a1f920f95 100644
 --- a/include/v8-cppgc.h
 +++ b/include/v8-cppgc.h
 @@ -76,6 +76,12 @@ struct WrapperDescriptor final {
@@ -28,9 +28,9 @@ index 139af8fdac26c3f829886aedc18af1592a4de7ef..b361aa912c74233d2fb6feb0b00e45c1
 +};
 +
  struct V8_EXPORT CppHeapCreateParams {
-   std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces;
-   WrapperDescriptor wrapper_descriptor;
-@@ -91,6 +97,7 @@ struct V8_EXPORT CppHeapCreateParams {
+   CppHeapCreateParams(
+       std::vector<std::unique_ptr<cppgc::CustomSpaceBase>> custom_spaces,
+@@ -100,6 +106,7 @@ struct V8_EXPORT CppHeapCreateParams {
     */
    cppgc::Heap::SweepingType sweeping_support =
        cppgc::Heap::SweepingType::kIncrementalAndConcurrent;

@@ -53,9 +53,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
   content::RenderFrameHost* render_frame_host() const { return render_frame_; }

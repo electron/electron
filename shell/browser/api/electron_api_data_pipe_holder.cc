@@ -10,6 +10,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
+#include "base/task/sequenced_task_runner.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/public/cpp/system/simple_watcher.h"
 #include "net/base/net_errors.h"
@@ -40,7 +41,7 @@ class DataPipeReader {
         data_pipe_getter_(std::move(data_pipe_getter)),
         handle_watcher_(FROM_HERE,
                         mojo::SimpleWatcher::ArmingPolicy::MANUAL,
-                        base::SequencedTaskRunnerHandle::Get()) {
+                        base::SequencedTaskRunner::GetCurrentDefault()) {
     // Get a new data pipe and start.
     mojo::ScopedDataPipeProducerHandle producer_handle;
     CHECK_EQ(mojo::CreateDataPipe(nullptr, producer_handle, data_pipe_),

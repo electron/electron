@@ -556,28 +556,8 @@ describe('BrowserView module', () => {
       });
       await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
 
-      view.webContents.incrementCapturerCount();
       const image = await view.webContents.capturePage();
       expect(image.isEmpty()).to.equal(false);
-    });
-
-    it('should increase the capturer count', () => {
-      view = new BrowserView({
-        webPreferences: {
-          backgroundThrottling: false
-        }
-      });
-      w.setBrowserView(view);
-      view.setBounds({
-        ...w.getBounds(),
-        x: 0,
-        y: 0
-      });
-
-      view.webContents.incrementCapturerCount();
-      expect(view.webContents.isBeingCaptured()).to.be.true();
-      view.webContents.decrementCapturerCount();
-      expect(view.webContents.isBeingCaptured()).to.be.false();
     });
   });
 });
