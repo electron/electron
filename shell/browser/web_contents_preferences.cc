@@ -389,7 +389,7 @@ void WebContentsPreferences::AppendCommandLineSwitches(
 }
 
 void WebContentsPreferences::SaveLastPreferences() {
-  last_web_preferences_ = base::Value(base::Value::Type::DICTIONARY);
+  last_web_preferences_ = base::Value(base::Value::Type::DICT);
   last_web_preferences_.SetKey(options::kNodeIntegration,
                                base::Value(node_integration_));
   last_web_preferences_.SetKey(options::kNodeIntegrationInSubFrames,
