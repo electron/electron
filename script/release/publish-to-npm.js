@@ -170,7 +170,7 @@ new Promise((resolve, reject) => {
   // test that the package can install electron prebuilt from github release
     const tarballPath = path.join(tempDir, `${rootPackageJson.name}-${currentElectronVersion}.tgz`);
     return new Promise((resolve, reject) => {
-      const result = childProcess.spawnSync('npm', ['install', tarballPath, '--force', '--silent'], {
+      const result = childProcess.spawnSync('npm', ['install', tarballPath, '--force'], {
         env: { ...process.env, electron_config_cache: tempDir },
         cwd: tempDir,
         stdio: 'inherit'
