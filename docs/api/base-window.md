@@ -18,7 +18,16 @@ const { BaseWindow } = require('electron')
 
 const win = new BaseWindow({ width: 800, height: 600 })
 
-// TODO example
+const leftView = new WebContentsView()
+leftView.webContents.loadURL('https://electronjs.org')
+mainWindow.contentView.addChildView(leftView)
+
+const rightView = new WebContentsView()
+rightView.webContents.loadURL('https://slack.com')
+mainWindow.contentView.addChildView(rightView)
+
+leftView.setBounds({ x: 0, y: 0, width: 400, height: 600 })
+rightView.setBounds({ x: 400, y: 0, width: 400, height: 600 })
 ```
 
 ## Parent and child windows

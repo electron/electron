@@ -1,6 +1,6 @@
 # View
 
-> A View.
+> Create and layout native views.
 
 Process: [Main](../glossary.md#main-process)
 
@@ -8,12 +8,17 @@ This module cannot be used until the `ready` event of the `app`
 module is emitted.
 
 ```javascript
-// TODO example
+const win = new BaseWindow()
+const view = new View()
+
+view.setBackgroundColor('red')
+view.setBounds({ x: 0, y: 0, width: 100, height: 100 })
+win.contentView.addChildView(view)
 ```
 
 ## Class: View
 
-> A View.
+> A basic native view.
 
 Process: [Main](../glossary.md#main-process)
 
