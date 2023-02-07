@@ -70,7 +70,7 @@ bool HidChooserContext::CanStorePersistentEntry(
 // static
 base::Value HidChooserContext::DeviceInfoToValue(
     const device::mojom::HidDeviceInfo& device) {
-  base::Value value(base::Value::Type::DICTIONARY);
+  base::Value value(base::Value::Type::DICT);
   value.SetStringKey(
       kHidDeviceNameKey,
       base::UTF16ToUTF8(HidChooserContext::DisplayNameFromDeviceInfo(device)));
