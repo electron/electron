@@ -33,7 +33,7 @@ NodeService::~NodeService() {
   if (!node_env_stopped_) {
     node_env_->env()->set_trace_sync_io(false);
     js_env_->DestroyMicrotasksRunner();
-    node::Stop(node_env_->env());
+    node::Stop(node_env_->env(), false);
   }
 }
 
@@ -43,8 +43,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
-  js_env_ = std::make_unique<JavascriptEnvironment>(
-      node_bindings_->uv_loop(), NodeEnvironmentType::kNormal);
+  js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
   v8::HandleScope scope(js_env_->isolate());
 
@@ -69,7 +68,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
                                 // Destroy node platform.
                                 env->set_trace_sync_io(false);
                                 js_env_->DestroyMicrotasksRunner();
-                                node::Stop(env);
+                                node::Stop(env, false);
                                 node_env_stopped_ = true;
                                 receiver_.ResetWithReason(exit_code, "");
                               });

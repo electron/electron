@@ -18,14 +18,11 @@ class MultiIsolatePlatform;
 
 namespace electron {
 
-enum class NodeEnvironmentType { kNodeMode, kNormal };
-
 class MicrotasksRunner;
 // Manage the V8 isolate and context automatically.
 class JavascriptEnvironment {
  public:
   JavascriptEnvironment(uv_loop_t* event_loop,
-                        NodeEnvironmentType type,
                         bool setup_wasm_streaming = false);
   ~JavascriptEnvironment();
 
