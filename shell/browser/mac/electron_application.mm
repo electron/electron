@@ -193,6 +193,18 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   return [super accessibilitySetValue:value forAttribute:attribute];
 }
 
+- (NSAccessibilityRole)accessibilityRole {
+  // For non-VoiceOver AT, such as Voice Control, Apple recommends turning on
+  // a11y when an AT accesses the 'accessibilityRole' property. This function
+  // is accessed frequently so we only change the accessibility state when
+  // accessibility is disabled.
+  auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+  if (!ax_state->GetAccessibilityMode().has_mode(ui::kAXModeBasic.mode())) {
+    ax_state->AddAccessibilityModeFlags(ui::kAXModeBasic);
+  }
+  return [super accessibilityRole];
+}
+
 - (void)orderFrontStandardAboutPanel:(id)sender {
   electron::Browser::Get()->ShowAboutPanel();
 }
