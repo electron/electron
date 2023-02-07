@@ -1851,6 +1851,8 @@ class ReplySender : public gin::Wrappable<ReplySender> {
   }
 
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
+    if (!callback_)
+      return false;
     blink::CloneableMessage message;
     if (!gin::ConvertFromV8(isolate, arg, &message)) {
       return false;
