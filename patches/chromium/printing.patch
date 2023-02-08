@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 83a7abc95803f5347dda697088fd54788c1db5ca..175b642341de7ace748e877d0dbee6ae697ef975 100644
+index a989b324e4228e62a7f730da8676bf398cd4466a..3da7bd7d6928d996efad6850dbbea866f85d8157 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -955,7 +955,6 @@ if (is_win) {
+@@ -958,7 +958,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 83a7abc95803f5347dda697088fd54788c1db5ca..175b642341de7ace748e877d0dbee6ae
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -964,6 +963,10 @@ if (is_win) {
+@@ -967,6 +966,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -34,7 +34,7 @@ index 83a7abc95803f5347dda697088fd54788c1db5ca..175b642341de7ace748e877d0dbee6ae
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index cbae837cf5c5f60d6d5f00268bc77986fd4c42af..ad27594670a34f45c80978fe0972f24416890edd 100644
+index 044b34d3738985f3e38476c37a189a5c06ed5353..8cf9832ca1ba864860bccb9b8cb4180da0f1cb29 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -91,6 +91,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -53,7 +53,7 @@ index cbae837cf5c5f60d6d5f00268bc77986fd4c42af..ad27594670a34f45c80978fe0972f244
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -370,8 +372,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -374,8 +376,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -65,7 +65,7 @@ index cbae837cf5c5f60d6d5f00268bc77986fd4c42af..ad27594670a34f45c80978fe0972f244
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -461,8 +465,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -465,8 +469,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
@@ -78,7 +78,7 @@ index cbae837cf5c5f60d6d5f00268bc77986fd4c42af..ad27594670a34f45c80978fe0972f244
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246dd9af8360 100644
+index fa787f8534c9e2fada5eb217a83e1d59182eb428..4f640fdb5ff03f6748bdfb9b3503a4011c49b54e 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -29,8 +29,6 @@
@@ -318,7 +318,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
  }
  
  void PrintViewManagerBase::RenderFrameDeleted(
-@@ -792,12 +825,17 @@ void PrintViewManagerBase::OnJobDone() {
+@@ -792,7 +825,12 @@ void PrintViewManagerBase::OnJobDone() {
    // Printing is done, we don't need it anymore.
    // print_job_->is_job_pending() may still be true, depending on the order
    // of object registration.
@@ -332,13 +332,16 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
    ReleasePrintJob();
  }
  
+@@ -801,7 +839,7 @@ void PrintViewManagerBase::OnCanceling() {
+ }
+ 
  void PrintViewManagerBase::OnFailed() {
 -#if !BUILDFLAG(IS_ANDROID)  // Android does not implement this function.
 +#if 0  // Electron does not implement this function.
    if (!canceling_job_)
      ShowPrintErrorDialog();
  #endif
-@@ -811,7 +849,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
+@@ -815,7 +853,7 @@ bool PrintViewManagerBase::RenderAllMissingPagesNow() {
  
    // Is the document already complete?
    if (print_job_->document() && print_job_->document()->IsComplete()) {
@@ -347,7 +350,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
      return true;
    }
  
-@@ -859,7 +897,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -863,7 +901,10 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  
    // Disconnect the current `print_job_`.
    auto weak_this = weak_ptr_factory_.GetWeakPtr();
@@ -359,7 +362,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
    if (!weak_this)
      return false;
  
-@@ -880,7 +921,7 @@ bool PrintViewManagerBase::CreateNewPrintJob(
+@@ -884,7 +925,7 @@ bool PrintViewManagerBase::CreateNewPrintJob(
  #endif
    print_job_->AddObserver(*this);
  
@@ -368,7 +371,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
    return true;
  }
  
-@@ -942,6 +983,11 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -946,6 +987,11 @@ void PrintViewManagerBase::ReleasePrintJob() {
    }
  #endif
  
@@ -380,7 +383,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
    if (!print_job_)
      return;
  
-@@ -949,7 +995,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
+@@ -953,7 +999,7 @@ void PrintViewManagerBase::ReleasePrintJob() {
      // printing_rfh_ should only ever point to a RenderFrameHost with a live
      // RenderFrame.
      DCHECK(rfh->IsRenderFrameLive());
@@ -389,7 +392,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
    }
  
    print_job_->RemoveObserver(*this);
-@@ -991,7 +1037,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -995,7 +1041,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -398,7 +401,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
      return true;
  
    if (!cookie) {
-@@ -1106,7 +1152,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
+@@ -1110,7 +1156,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
  }
  
  void PrintViewManagerBase::CompletePrintNow(content::RenderFrameHost* rfh) {
@@ -408,7 +411,7 @@ index 5676be5cb4f795241caf4ca8088a8380f80b61bf..e371fbc59a0b6a51df8d6095f1b2246d
    for (auto& observer : GetObservers())
      observer.OnPrintNow(rfh);
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index da07d050096c625db13cb7a77cf4d76abe3036e4..0a9f33383863d64cb5f778884ddd1ee76fc2224b 100644
+index 0c12c83202728b6b93d94deaccb02e710b101ff7..dba0a0ae8f7c9100d5b4baa8d37263b4a847b16a 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -46,6 +46,8 @@ namespace printing {
@@ -455,7 +458,7 @@ index da07d050096c625db13cb7a77cf4d76abe3036e4..0a9f33383863d64cb5f778884ddd1ee7
   protected:
    explicit PrintViewManagerBase(content::WebContents* web_contents);
  
-@@ -270,7 +284,8 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -271,7 +285,8 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // Runs `callback` with `params` to reply to ScriptedPrint().
    void ScriptedPrintReply(ScriptedPrintCallback callback,
                            int process_id,
@@ -465,7 +468,7 @@ index da07d050096c625db13cb7a77cf4d76abe3036e4..0a9f33383863d64cb5f778884ddd1ee7
  
    // Requests the RenderView to render all the missing pages for the print job.
    // No-op if no print job is pending. Returns true if at least one page has
-@@ -340,8 +355,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -341,8 +356,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // The current RFH that is printing with a system printing dialog.
    raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
  
@@ -776,10 +779,10 @@ index 3f82c0cdfd11a8d0c3cbcba9cc74b0e3e1a41b0f..36c1df7e3346f51945721ababf12dc34
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6c2322e83894eeee7015695e0d9c150f787a29f2..07b9d64d6d430f086eca0f96e2d4d316e80cb830 100644
+index e3b6a2493782984785312dee3e6adde324251afc..962a1c4a13fe1472628225bede00939155548302 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2847,8 +2847,9 @@ source_set("browser") {
+@@ -2846,8 +2846,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

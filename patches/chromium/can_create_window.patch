@@ -66,10 +66,10 @@ index d2f710218b4fb7c24be02ea1cc78abcfb5718fc9..4d6f86e5674cf4f419061a0f67f3700f
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 2fa698f19e1c950e89b6288ffae346c096f52b8f..6a461c7a5a2be93ccb2907fd21bd637fe24a2c94 100644
+index b2e22d6bddf396cba32ac4d2a55847cd5972a809..1b2db94e55473e6b1c6c68403b3faea266102e25 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -630,6 +630,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -629,6 +629,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index 2fa698f19e1c950e89b6288ffae346c096f52b8f..6a461c7a5a2be93ccb2907fd21bd637f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 0bacda97940944a2277c401e37aeb22fc04e9c9c..c27abed0a379d111e9c427a5603ba3f916ee21e8 100644
+index 6237e94a5ebc7febb0a334e3bce2e7453833ca39..a9f2eeb24137b6218d5bf5bf9d14b42e70cf4034 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -164,6 +164,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index 0bacda97940944a2277c401e37aeb22fc04e9c9c..c27abed0a379d111e9c427a5603ba3f9
  }  // namespace network
  
  namespace sandbox {
-@@ -1029,6 +1030,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1026,6 +1027,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -210,10 +210,10 @@ index a50a83d36f9172add44867ee0b0f1c89779b387e..c4ac7d4c885e764cfcfc3f2cd25e31b4
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 99eda95769980844748236276fa445ee0cc0de87..9c8a0eac7d53f275fc15cf90c03b1eeeb071238f 100644
+index 8c03efd78f0753d2a6c7fdeaeaac54ffeea93d60..4fe1d7111843f67a20b9551416b9b1acd8ead990 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2213,6 +2213,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2208,6 +2208,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window, completed_url);
  

@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a52faec8e0a2d9401df9e620d66f39feb8873a39..d6f4b7897ffeab5868fc99246928b6a2e4f6839e 100644
+index e58ef66ac00fe440811fc386faa6d57d320a2d05..f57a7ecf053f7cdc83db1c11a826b6ce862a9976 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1488,6 +1488,7 @@ component("base") {
@@ -68,7 +68,7 @@ index 74b30a0d050468ad1f450d86621308c090a699b5..a1f555b07519ad07441c0bca0c20ddd5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 07b9d64d6d430f086eca0f96e2d4d316e80cb830..fe788c19dd4a6df8e5a22352d928b7bb12179006 100644
+index 962a1c4a13fe1472628225bede00939155548302..09caef7f5a4442c2c383753c32648447b2eb33f1 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -57,6 +57,7 @@ source_set("browser") {
@@ -92,7 +92,7 @@ index 2a38c8929258489e4dbe43c0fd6dfc3a96c08cff..a894759d4b371af806b41d2a6ff5265f
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 53544c211e602a691bc33ea18830b86b19faec5f..cee14ca0ba1fff17abd8664ec86747214c79ebf5 100644
+index 338152c7de5855ecf3209fd2b17da679e2c324e3..aa39937fba22edb488638fe5043f1afe18b6a74f 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -128,12 +128,12 @@ index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 44635f13048890b20c74870d26c4e74bab363ddb..33ad7650832b7572949fb6f362bef02879f4c31b 100644
+index 5ab38bcba49581e2ead8dd237e53822680f06595..495f9f9e86e1de2aeeb9e39c6f1f6c47464936dc 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -188,6 +188,7 @@ source_set("audio") {
-       "CoreAudio.framework",
-       "CoreFoundation.framework",
+@@ -200,6 +200,7 @@ source_set("audio") {
+       "ios/audio_manager_ios.h",
+       "ios/audio_private_api.h",
      ]
 +    configs += ["//electron/build/config:mas_build"]
    }
@@ -206,7 +206,7 @@ index 161a304180a4a580efa7e8a8bb634a84594b857a..fd7e4f714655f8679e4e6dc2d87cff2c
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9b487e4b6 100644
+index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682ca6f07179 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -249,6 +249,7 @@ component("platform") {
@@ -218,17 +218,17 @@ index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index dd664f25f4318bd1a62af1b86c2cd2052ffd2ea5..30a892fc54efa9f62290fddc88678069c2619d82 100644
+index 6eb917e68c8636f60a685fc8941bddb21e3446f6..7a3fa203015f273ae2c3e1e1c5cd70859e1b901f 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -349,6 +349,7 @@ component("base") {
+@@ -347,6 +347,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
-   if (is_chromeos_lacros) {
+   if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
 index 0f86f36cdbda772166975a7943637e7abcc6b3db..5c69b481ad1e8adab87dbd8f4f7e42ed7f593265 100644
 --- a/ui/display/BUILD.gn
