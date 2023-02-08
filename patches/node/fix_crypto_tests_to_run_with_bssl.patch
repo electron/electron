@@ -958,26 +958,10 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685c49be3b7 100644
+index 442423954b10b2ee1696eb7db56eaa4c88492122..cbb96d7de046c80fad608431b7ec0216e2d271fb 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
-@@ -37,6 +37,7 @@ const { subtle } = require('crypto').webcrypto;
-   test('P-521').then(common.mustCall());
- }
- 
-+/*
- // Test HKDF bit derivation
- {
-   async function test(pass, info, salt, hash, length, expected) {
-@@ -68,6 +69,7 @@ const { subtle } = require('crypto').webcrypto;
- 
-   tests.then(common.mustCall());
- }
-+*/
- 
- // Test PBKDF2 bit derivation
- {
-@@ -101,6 +103,7 @@ const { subtle } = require('crypto').webcrypto;
+@@ -101,6 +101,7 @@ const { subtle } = require('crypto').webcrypto;
    tests.then(common.mustCall());
  }
  
@@ -985,32 +969,16 @@ index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685
  // Test X25519 and X448 bit derivation
  {
    async function test(name) {
-@@ -126,3 +129,4 @@ const { subtle } = require('crypto').webcrypto;
+@@ -126,3 +127,4 @@ const { subtle } = require('crypto').webcrypto;
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index b819b998d217e0c71e9b41f175de6802d3ac7d90..2afaa9918d7ebd156061094a055dbf076f9965f5 100644
+index b819b998d217e0c71e9b41f175de6802d3ac7d90..fbd32b02abd120aa02b9ac92341ef1331422308d 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
-@@ -46,6 +46,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
-   test('P-521').then(common.mustCall());
- }
- 
-+/*
- // Test HKDF key derivation
- {
-   async function test(pass, info, salt, hash, expected) {
-@@ -82,6 +83,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
- 
-   tests.then(common.mustCall());
- }
-+*/
- 
- // Test PBKDF2 key derivation
- {
-@@ -174,6 +176,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -174,6 +174,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    })().then(common.mustCall());
  }
  
@@ -1018,7 +986,7 @@ index b819b998d217e0c71e9b41f175de6802d3ac7d90..2afaa9918d7ebd156061094a055dbf07
  // Test X25519 and X448 key derivation
  {
    async function test(name) {
-@@ -208,3 +211,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -208,3 +209,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
