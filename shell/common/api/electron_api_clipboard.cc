@@ -134,7 +134,7 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
   }
 
   if (data.Get("html", &html))
-    writer.WriteHTML(html, std::string(), ui::ClipboardContentType::kSanitized));
+    writer.WriteHTML(html, std::string(), ui::ClipboardContentType::kSanitized);
 
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
