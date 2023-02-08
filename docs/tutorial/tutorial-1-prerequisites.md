@@ -121,14 +121,13 @@ need to install Node.js themselves as a prerequisite to running your app.
 
 To check which version of Node.js is running in your app, you can access the global
 [`process.versions`][] variable in the main process or preload script. You can also reference
-the list of versions in the [electron/releases][] repository.
+<https://releases.electronjs.org/releases.json>.
 
 :::
 
 <!-- Links -->
 
 [chromium]: https://www.chromium.org/
-[electron/releases]: https://github.com/electron/releases/blob/master/readme.md#releases
 [homebrew]: https://brew.sh/
 [mdn-guide]: https://developer.mozilla.org/en-US/docs/Learn/
 [node]: https://nodejs.org/
