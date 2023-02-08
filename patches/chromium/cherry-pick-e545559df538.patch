@@ -1,7 +1,7 @@
-From e545559df5387c7cc1e13c4070153d1d402ccc66 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Victor Vasiliev <vasilvv@chromium.org>
 Date: Thu, 12 Jan 2023 22:03:48 +0000
-Subject: [PATCH] Ensure clean destruction of network::WebTransport
+Subject: Ensure clean destruction of network::WebTransport
 
 Once the destruction of the object begins, we should not process any
 callbacks, nor should we attempt to reset the streams on a connection
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4139783
 Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5359@{#1326}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/services/network/web_transport.cc b/services/network/web_transport.cc
-index 8ddbeb94..cd92d0f 100644
+index fd62b83d43052d9d588a211b59e46a6c25ffeb76..534954181abcd7c4cf11eade64a2aa97c62785cc 100644
 --- a/services/network/web_transport.cc
 +++ b/services/network/web_transport.cc
-@@ -177,7 +177,7 @@
+@@ -177,7 +177,7 @@ class WebTransport::Stream final {
  
    ~Stream() {
      auto* stream = incoming_ ? incoming_.get() : outgoing_.get();
@@ -34,7 +33,7 @@ index 8ddbeb94..cd92d0f 100644
        return;
      }
      stream->MaybeResetDueToStreamObjectGone();
-@@ -399,7 +399,10 @@
+@@ -399,7 +399,10 @@ WebTransport::WebTransport(
    transport_->Connect();
  }
  
@@ -47,10 +46,10 @@ index 8ddbeb94..cd92d0f 100644
  void WebTransport::SendDatagram(base::span<const uint8_t> data,
                                  base::OnceCallback<void(bool)> callback) {
 diff --git a/services/network/web_transport_unittest.cc b/services/network/web_transport_unittest.cc
-index 81bf26f..1a9e6bc 100644
+index ffac5c19f9d154b91eb6aeac1e19a62277e4e7e8..46deb561091232fe64950be01e9157c8d891f111 100644
 --- a/services/network/web_transport_unittest.cc
 +++ b/services/network/web_transport_unittest.cc
-@@ -610,6 +610,51 @@
+@@ -611,6 +611,51 @@ TEST_F(WebTransportTest, EchoOnUnidirectionalStreams) {
    EXPECT_EQ(0u, resets_sent.size());
  }
  
