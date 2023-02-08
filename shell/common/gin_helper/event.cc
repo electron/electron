@@ -9,9 +9,8 @@
 namespace gin_helper::internal {
 
 // static
-gin::Handle<Event> Event::New(v8::Isolate* isolate,
-                              v8::Local<v8::Object> sender) {
-  return gin::CreateHandle(isolate, new Event(isolate, sender));
+gin::Handle<Event> Event::New(v8::Isolate* isolate) {
+  return gin::CreateHandle(isolate, new Event());
 }
 // static
 v8::Local<v8::ObjectTemplate> Event::FillObjectTemplate(
@@ -20,24 +19,17 @@ v8::Local<v8::ObjectTemplate> Event::FillObjectTemplate(
   return gin::ObjectTemplateBuilder(isolate, "Event", templ)
       .SetMethod("preventDefault", &Event::PreventDefault)
       .SetProperty("defaultPrevented", &Event::GetDefaultPrevented)
-      .SetProperty("sender", &Event::GetSender)
       .Build();
 }
 
-Event::Event(v8::Isolate* isolate, v8::Local<v8::Object> sender)
-    : sender_(isolate, sender) {}
+Event::Event() = default;
 
 Event::~Event() = default;
 
-v8::Local<v8::Object> Event::GetSender(v8::Isolate* isolate) {
-  return sender_.Get(isolate);
-}
-
 gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-gin::Handle<Event> CreateEvent(v8::Isolate* isolate,
-                               v8::Local<v8::Object> sender) {
-  return Event::New(isolate, sender);
+gin::Handle<Event> CreateEvent(v8::Isolate* isolate) {
+  return Event::New(isolate);
 }
 
 }  // namespace gin_helper::internal

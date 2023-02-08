@@ -525,7 +525,8 @@ const addReplyToEvent = (event: Electron.IpcMainEvent) => {
   };
 };
 
-const addSenderFrameToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+const addSenderToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, sender: Electron.WebContents) => {
+  event.sender = sender;
   const { processId, frameId } = event;
   Object.defineProperty(event, 'senderFrame', {
     get: () => webFrameMain.fromId(processId, frameId)
@@ -575,7 +576,7 @@ WebContents.prototype._init = function () {
 
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
-    addSenderFrameToEvent(event);
+    addSenderToEvent(event, this);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
@@ -588,8 +589,8 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke' as any, async function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
-    addSenderFrameToEvent(event);
+  this.on('-ipc-invoke' as any, async function (this: Electron.WebContents, event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
+    addSenderToEvent(event, this);
     const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
     const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
@@ -611,7 +612,7 @@ WebContents.prototype._init = function () {
   });
 
   this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
-    addSenderFrameToEvent(event);
+    addSenderToEvent(event, this);
     addReturnValueToEvent(event);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
@@ -628,8 +629,8 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
-    addSenderFrameToEvent(event);
+  this.on('-ipc-ports' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
+    addSenderToEvent(event, this);
     event.ports = ports.map(p => new MessagePortMain(p));
     const maybeWebFrame = getWebFrameForEvent(event);
     maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
@@ -683,7 +684,7 @@ WebContents.prototype._init = function () {
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
-          embedder: event.sender,
+          embedder: this,
           disposition,
           referrer,
           postData,
@@ -731,7 +732,7 @@ WebContents.prototype._init = function () {
         } : undefined;
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         const webPreferences = makeWebPreferences({
-          embedder: event.sender,
+          embedder: this,
           insecureParsedWebPreferences: parsedWebPreferences,
           secureOverrideWebPreferences
         });
@@ -760,7 +761,7 @@ WebContents.prototype._init = function () {
       }
 
       openGuestWindow({
-        embedder: event.sender,
+        embedder: this,
         guest: webContents,
         overrideBrowserWindowOptions: overriddenOptions,
         disposition,

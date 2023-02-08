@@ -44,7 +44,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     if (wrapper.IsEmpty())
       return false;
     gin::Handle<gin_helper::internal::Event> event =
-        internal::CreateEvent(isolate(), wrapper);
+        internal::CreateEvent(isolate());
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
 

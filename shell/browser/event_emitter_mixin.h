@@ -31,10 +31,10 @@ class EventEmitterMixin {
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
       return false;
-    gin::Handle<internal::Event> event =
-        internal::CreateEvent(isolate, wrapper);
-    return EmitWithEvent(isolate, wrapper, name, event,
-                         std::forward<Args>(args)...);
+    gin::Handle<internal::Event> event = internal::CreateEvent(isolate);
+    gin_helper::EmitEvent(isolate, wrapper, name, event,
+                          std::forward<Args>(args)...);
+    return event->GetDefaultPrevented();
   }
 
   // this.emit(name, args...);
@@ -66,19 +66,6 @@ class EventEmitterMixin {
     return gin::ObjectTemplateBuilder(isolate,
                                       static_cast<T*>(this)->GetTypeName(),
                                       constructor->InstanceTemplate());
-  }
-
- private:
-  // this.emit(name, event, args...);
-  template <typename... Args>
-  static bool EmitWithEvent(v8::Isolate* isolate,
-                            v8::Local<v8::Object> wrapper,
-                            base::StringPiece name,
-                            gin::Handle<gin_helper::internal::Event> event,
-                            Args&&... args) {
-    gin_helper::EmitEvent(isolate, wrapper, name, event,
-                          std::forward<Args>(args)...);
-    return event->GetDefaultPrevented();
   }
 };
 

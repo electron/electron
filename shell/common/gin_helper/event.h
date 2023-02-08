@@ -23,8 +23,7 @@ class Event : public gin::Wrappable<Event>,
               public gin_helper::Constructible<Event> {
  public:
   // gin_helper::Constructible
-  static gin::Handle<Event> New(v8::Isolate* isolate,
-                                v8::Local<v8::Object> sender);
+  static gin::Handle<Event> New(v8::Isolate* isolate);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> prototype);
@@ -37,17 +36,14 @@ class Event : public gin::Wrappable<Event>,
   void PreventDefault() { default_prevented_ = true; }
 
   bool GetDefaultPrevented() { return default_prevented_; }
-  v8::Local<v8::Object> GetSender(v8::Isolate* isolate);
 
  private:
-  Event(v8::Isolate* isolate, v8::Local<v8::Object> sender);
+  Event();
 
   bool default_prevented_ = false;
-  v8::Global<v8::Object> sender_;
 };
 
-gin::Handle<Event> CreateEvent(v8::Isolate* isolate,
-                               v8::Local<v8::Object> sender);
+gin::Handle<Event> CreateEvent(v8::Isolate* isolate);
 
 }  // namespace gin_helper::internal
 
