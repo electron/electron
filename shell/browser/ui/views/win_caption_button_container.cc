@@ -14,6 +14,7 @@
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/strings/grit/ui_strings.h"
+#include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
 #include "ui/views/view_class_properties.h"
 
@@ -128,6 +129,8 @@ void WinCaptionButtonContainer::AddedToWidget() {
   UpdateButtons();
 
   if (frame_view_->window()->IsWindowControlsOverlayEnabled()) {
+    SetBackground(views::CreateSolidBackground(
+        frame_view_->window()->overlay_button_color()));
     SetPaintToLayer();
   }
 }
@@ -156,10 +159,11 @@ void WinCaptionButtonContainer::UpdateButtons() {
   const bool is_touch = ui::TouchUiController::Get()->touch_ui();
   restore_button_->SetEnabled(!is_touch);
 
-  // The maximize button should only be enabled if the window is
-  // maximizable *and* touch mode is disabled.
+  // In touch mode, windows cannot be taken out of fullscreen or tiled mode, so
+  // the maximize/restore button should be disabled, unless the window is not
+  // maximized.
   const bool maximizable = frame_view_->window()->IsMaximizable();
-  maximize_button_->SetEnabled(!is_touch && maximizable);
+  maximize_button_->SetEnabled(!(is_touch && is_maximized) && maximizable);
 
   const bool closable = frame_view_->window()->IsClosable();
   close_button_->SetEnabled(closable);

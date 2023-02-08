@@ -14,13 +14,32 @@
 #include "sandbox/win/src/win_utils.h"
 #include "ui/base/win/shell.h"
 
-namespace relauncher {
-
-namespace internal {
+namespace relauncher::internal {
 
 namespace {
 
 const CharType* kWaitEventName = L"ElectronRelauncherWaitEvent";
+
+struct PROCESS_BASIC_INFORMATION {
+  union {
+    NTSTATUS ExitStatus;
+    PVOID padding_for_x64_0;
+  };
+  PPEB PebBaseAddress;
+  KAFFINITY AffinityMask;
+  union {
+    KPRIORITY BasePriority;
+    PVOID padding_for_x64_1;
+  };
+  union {
+    DWORD UniqueProcessId;
+    PVOID padding_for_x64_2;
+  };
+  union {
+    DWORD InheritedFromUniqueProcessId;
+    PVOID padding_for_x64_3;
+  };
+};
 
 HANDLE GetParentProcessHandle(base::ProcessHandle handle) {
   NtQueryInformationProcessFunction NtQueryInformationProcess = nullptr;
@@ -125,6 +144,4 @@ int LaunchProgram(const StringVector& relauncher_args,
   return process.IsValid() ? 0 : 1;
 }
 
-}  // namespace internal
-
-}  // namespace relauncher
+}  // namespace relauncher::internal

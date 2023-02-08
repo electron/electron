@@ -15,9 +15,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 // Builds GtkImageMenuItems.
 GtkWidget* BuildMenuItemWithImage(const std::string& label, GtkWidget* image);
@@ -56,8 +54,6 @@ void BuildSubmenuFromModel(ui::MenuModel* model,
 // Sets the check mark, enabled/disabled state and dynamic labels on menu items.
 void SetMenuItemInfo(GtkWidget* widget, void* block_activation_ptr);
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_MENU_UTIL_H_

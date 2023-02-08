@@ -21,8 +21,10 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/content_settings/core/common/content_settings_pattern.h"
+#include "content/public/app/initialize_mojo_core.h"
 #include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
+#include "electron/fuses.h"
 #include "extensions/common/constants.h"
 #include "ipc/ipc_buildflags.h"
 #include "sandbox/policy/switches.h"
@@ -38,9 +40,11 @@
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 #include "shell/utility/electron_content_utility_client.h"
+#include "third_party/abseil-cpp/absl/types/variant.h"
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/base/ui_base_switches.h"
 
@@ -55,12 +59,11 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/nix/xdg_util.h"
-#include "components/crash/core/app/breakpad_linux.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
 #include "v8/include/v8.h"
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #include "components/crash/core/common/crash_key.h"
@@ -192,7 +195,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
   }
 
   // TODO(bauerb): http://crbug.com/259796
-  base::ThreadRestrictions::ScopedAllowIO allow_io;
+  ScopedAllowBlockingForElectron allow_blocking;
   if (create_dir && !base::PathExists(cur) && !base::CreateDirectory(cur)) {
     return false;
   }
@@ -239,7 +242,7 @@ const char* const ElectronMainDelegate::kNonWildcardDomainNonPortSchemes[] = {
 const size_t ElectronMainDelegate::kNonWildcardDomainNonPortSchemesSize =
     std::size(kNonWildcardDomainNonPortSchemes);
 
-bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
+absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
 
 #if BUILDFLAG(IS_WIN)
@@ -299,7 +302,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
                << " is not supported. See https://crbug.com/638180.";
 #endif
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   // In MAS build we are using --disable-remote-core-animation.
   //
   // According to ccameron:
@@ -314,10 +317,7 @@ bool ElectronMainDelegate::BasicStartupComplete(int* exit_code) {
       ::switches::kDisableGpuMemoryBufferCompositorResources);
 #endif
 
-  content_client_ = std::make_unique<ElectronContentClient>();
-  SetContentClient(content_client_.get());
-
-  return false;
+  return absl::nullopt;
 }
 
 void ElectronMainDelegate::PreSandboxStartup() {
@@ -346,7 +346,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
                                    process_type == ::switches::kZygoteProcess);
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   crash_reporter::InitializeCrashKeys();
 #endif
 
@@ -358,7 +358,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
     LoadResourceBundle(locale);
   }
 
-#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !defined(MAS_BUILD))
+#if BUILDFLAG(IS_WIN) || (BUILDFLAG(IS_MAC) && !IS_MAS_BUILD())
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad. If we're in the renderer, we want to initialize it
   // immediately at boot.
@@ -372,20 +372,16 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // Zygote needs to call InitCrashReporter() in RunZygote().
   if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
     ElectronCrashReporterClient::Create();
-    if (crash_reporter::IsCrashpadEnabled()) {
-      if (command_line->HasSwitch(
-              crash_reporter::switches::kCrashpadHandlerPid)) {
-        crash_reporter::InitializeCrashpad(false, process_type);
-        crash_reporter::SetFirstChanceExceptionHandler(
-            v8::TryHandleWebAssemblyTrapPosix);
-      }
-    } else {
-      breakpad::InitCrashReporter(process_type);
+    if (command_line->HasSwitch(
+            crash_reporter::switches::kCrashpadHandlerPid)) {
+      crash_reporter::InitializeCrashpad(false, process_type);
+      crash_reporter::SetFirstChanceExceptionHandler(
+          v8::TryHandleWebAssemblyTrapPosix);
     }
   }
 #endif
 
-#if !defined(MAS_BUILD)
+#if !IS_MAS_BUILD()
   crash_keys::SetCrashKeysFromCommandLine(*command_line);
   crash_keys::SetPlatformCrashKey();
 #endif
@@ -410,14 +406,36 @@ void ElectronMainDelegate::SandboxInitialized(const std::string& process_type) {
 #endif
 }
 
-void ElectronMainDelegate::PreBrowserMain() {
+absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
   // This is initialized early because the service manager reads some feature
   // flags and we need to make sure the feature list is initialized before the
   // service manager reads the features.
   InitializeFeatureList();
+  // Initialize mojo core as soon as we have a valid feature list
+  content::InitializeMojoCore();
 #if BUILDFLAG(IS_MAC)
   RegisterAtomCrApp();
 #endif
+  return absl::nullopt;
+}
+
+base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
+  const base::CommandLine* command_line =
+      base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  bool load_browser_process_specific_v8_snapshot =
+      process_type.empty() &&
+      electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
+  if (load_browser_process_specific_v8_snapshot) {
+    return "browser_v8_context_snapshot.bin";
+  }
+  return ContentMainDelegate::GetBrowserV8SnapshotFilename();
+}
+
+content::ContentClient* ElectronMainDelegate::CreateContentClient() {
+  content_client_ = std::make_unique<ElectronContentClient>();
+  return content_client_.get();
 }
 
 content::ContentBrowserClient*
@@ -460,8 +478,12 @@ ElectronMainDelegate::RunProcess(
     return std::move(main_function_params);
 }
 
-bool ElectronMainDelegate::ShouldCreateFeatureList() {
-  return false;
+bool ElectronMainDelegate::ShouldCreateFeatureList(InvokedIn invoked_in) {
+  return absl::holds_alternative<InvokedInChildProcess>(invoked_in);
+}
+
+bool ElectronMainDelegate::ShouldInitializeMojo(InvokedIn invoked_in) {
+  return ShouldCreateFeatureList(invoked_in);
 }
 
 bool ElectronMainDelegate::ShouldLockSchemeRegistry() {
@@ -477,15 +499,10 @@ void ElectronMainDelegate::ZygoteForked() {
       base::CommandLine::ForCurrentProcess();
   std::string process_type =
       command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (crash_reporter::IsCrashpadEnabled()) {
-    if (command_line->HasSwitch(
-            crash_reporter::switches::kCrashpadHandlerPid)) {
-      crash_reporter::InitializeCrashpad(false, process_type);
-      crash_reporter::SetFirstChanceExceptionHandler(
-          v8::TryHandleWebAssemblyTrapPosix);
-    }
-  } else {
-    breakpad::InitCrashReporter(process_type);
+  if (command_line->HasSwitch(crash_reporter::switches::kCrashpadHandlerPid)) {
+    crash_reporter::InitializeCrashpad(false, process_type);
+    crash_reporter::SetFirstChanceExceptionHandler(
+        v8::TryHandleWebAssemblyTrapPosix);
   }
 
   // Reset the command line for the newly spawned process.

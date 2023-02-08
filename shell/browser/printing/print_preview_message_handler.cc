@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/memory/read_only_shared_memory_region.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/ref_counted_memory.h"
@@ -117,7 +117,7 @@ void PrintPreviewMessageHandler::DidPrepareDocumentForPreview(
     auto* focused_frame = web_contents_->GetFocusedFrame();
     auto* rfh = focused_frame && focused_frame->HasSelection()
                     ? focused_frame
-                    : web_contents_->GetMainFrame();
+                    : web_contents_->GetPrimaryMainFrame();
 
     client->DoPrepareForDocumentToPdf(
         document_cookie, rfh,
@@ -179,7 +179,7 @@ void PrintPreviewMessageHandler::DidPreviewPage(
     auto* focused_frame = web_contents_->GetFocusedFrame();
     auto* rfh = focused_frame && focused_frame->HasSelection()
                     ? focused_frame
-                    : web_contents_->GetMainFrame();
+                    : web_contents_->GetPrimaryMainFrame();
 
     // Use utility process to convert skia metafile to pdf.
     client->DoCompositePageToPdf(
@@ -208,16 +208,16 @@ void PrintPreviewMessageHandler::PrintPreviewCancelled(int32_t document_cookie,
 }
 
 void PrintPreviewMessageHandler::PrintToPDF(
-    base::DictionaryValue options,
+    base::Value::Dict options,
     gin_helper::Promise<v8::Local<v8::Value>> promise) {
   int request_id;
-  options.GetInteger(printing::kPreviewRequestID, &request_id);
+  options.Get(printing::kPreviewRequestID, &request_id);
   promise_map_.emplace(request_id, std::move(promise));
 
   auto* focused_frame = web_contents_->GetFocusedFrame();
   auto* rfh = focused_frame && focused_frame->HasSelection()
                   ? focused_frame
-                  : web_contents_->GetMainFrame();
+                  : web_contents_->GetPrimaryMainFrame();
 
   if (!print_render_frame_.is_bound()) {
     rfh->GetRemoteAssociatedInterfaces()->GetInterface(&print_render_frame_);

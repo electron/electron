@@ -7,7 +7,7 @@
 #include <memory>
 #include <utility>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/i18n/rtl.h"
 #include "cc/paint/skia_paint_canvas.h"
 #include "content/public/browser/render_view_host.h"
@@ -174,7 +174,7 @@ void AutofillPopupView::DrawAutofillEntry(gfx::Canvas* canvas,
   const int text_align =
       is_rtl ? gfx::Canvas::TEXT_ALIGN_RIGHT : gfx::Canvas::TEXT_ALIGN_LEFT;
   gfx::Rect value_rect = entry_rect;
-  value_rect.Inset(gfx::Insets::VH(kEndPadding, 0));
+  value_rect.Inset(gfx::Insets::VH(0, kEndPadding));
 
   int x_align_left = value_rect.x();
   const int value_width = gfx::GetStringWidth(
@@ -224,6 +224,9 @@ void AutofillPopupView::DoUpdateBoundsAndRedrawPopup() {
   if (!popup_)
     return;
 
+  // Clamp popup_bounds_ to ensure it's never zero-width.
+  popup_->popup_bounds_.Union(
+      gfx::Rect(popup_->popup_bounds_.origin(), gfx::Size(1, 1)));
   GetWidget()->SetBounds(popup_->popup_bounds_);
 #if BUILDFLAG(ENABLE_OSR)
   if (view_proxy_.get()) {
@@ -295,7 +298,7 @@ void AutofillPopupView::OnMouseExited(const ui::MouseEvent& event) {
   // Pressing return causes the cursor to hide, which will generate an
   // OnMouseExited event. Pressing return should activate the current selection
   // via AcceleratorPressed, so we need to let that run first.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&AutofillPopupView::ClearSelection,
                                 weak_ptr_factory_.GetWeakPtr()));
 }

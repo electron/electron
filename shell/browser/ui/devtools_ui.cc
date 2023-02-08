@@ -31,8 +31,8 @@ std::string PathWithoutParams(const std::string& path) {
       .substr(1);
 }
 
-std::string GetMimeTypeForPath(const std::string& path) {
-  std::string filename = PathWithoutParams(path);
+std::string GetMimeTypeForUrl(const GURL& url) {
+  std::string filename = url.ExtractFileName();
   if (base::EndsWith(filename, ".html", base::CompareCase::INSENSITIVE_ASCII)) {
     return "text/html";
   } else if (base::EndsWith(filename, ".css",
@@ -95,8 +95,8 @@ class BundledDataSource : public content::URLDataSource {
     std::move(callback).Run(nullptr);
   }
 
-  std::string GetMimeType(const std::string& path) override {
-    return GetMimeTypeForPath(path);
+  std::string GetMimeType(const GURL& url) override {
+    return GetMimeTypeForUrl(url);
   }
 
   bool ShouldAddContentSecurityPolicy() override { return false; }

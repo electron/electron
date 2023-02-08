@@ -12,7 +12,172 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (20.0)
+## Planned Breaking API Changes (23.0)
+
+### Removed: Windows 7 / 8 / 8.1 support
+
+[Windows 7, Windows 8, and Windows 8.1 are no longer supported](https://www.electronjs.org/blog/windows-7-to-8-1-deprecation-notice). Electron follows the planned Chromium deprecation policy, which will [deprecate Windows 7 support beginning in Chromium 109](https://support.google.com/chrome/thread/185534985/sunsetting-support-for-windows-7-8-8-1-in-early-2023?hl=en).
+
+Older versions of Electron will continue to run on these operating systems, but Windows 10 or later will be required to run Electron v23.0.0 and higher.
+
+### Removed: BrowserWindow `scroll-touch-*` events
+
+The deprecated `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge`
+events on BrowserWindow have been removed. Instead, use the newly available
+[`input-event` event](api/web-contents.md#event-input-event) on WebContents.
+
+```js
+// Removed in Electron 23.0
+win.on('scroll-touch-begin', scrollTouchBegin)
+win.on('scroll-touch-edge', scrollTouchEdge)
+win.on('scroll-touch-end', scrollTouchEnd)
+
+// Replace with
+win.webContents.on('input-event', (_, event) => {
+  if (event.type === 'gestureScrollBegin') {
+    scrollTouchBegin()
+  } else if (event.type === 'gestureScrollUpdate') {
+    scrollTouchEdge()
+  } else if (event.type === 'gestureScrollEnd') {
+    scrollTouchEnd()
+  }
+})
+```
+
+### Removed: `webContents.incrementCapturerCount(stayHidden, stayAwake)`
+
+The `webContents.incrementCapturerCount(stayHidden, stayAwake)` function has been removed.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
+### Removed: `webContents.decrementCapturerCount(stayHidden, stayAwake)`
+
+The `webContents.decrementCapturerCount(stayHidden, stayAwake)` function has been removed.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
+## Planned Breaking API Changes (22.0)
+
+### Deprecated: `webContents.incrementCapturerCount(stayHidden, stayAwake)`
+
+`webContents.incrementCapturerCount(stayHidden, stayAwake)` has been deprecated.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
+### Deprecated: `webContents.decrementCapturerCount(stayHidden, stayAwake)`
+
+`webContents.decrementCapturerCount(stayHidden, stayAwake)` has been deprecated.
+It is now automatically handled by `webContents.capturePage` when a page capture completes.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed in Electron 23
+w.webContents.incrementCapturerCount()
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+  w.webContents.decrementCapturerCount()
+})
+
+// Replace with
+w.capturePage().then(image => {
+  console.log(image.toDataURL())
+})
+```
+
+### Removed: WebContents `new-window` event
+
+The `new-window` event of WebContents has been removed. It is replaced by [`webContents.setWindowOpenHandler()`](api/web-contents.md#contentssetwindowopenhandlerhandler).
+
+```js
+// Removed in Electron 22
+webContents.on('new-window', (event) => {
+  event.preventDefault()
+})
+
+// Replace with
+webContents.setWindowOpenHandler((details) => {
+  return { action: 'deny' }
+})
+```
+
+### Deprecated: BrowserWindow `scroll-touch-*` events
+
+The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
+BrowserWindow are deprecated. Instead, use the newly available [`input-event`
+event](api/web-contents.md#event-input-event) on WebContents.
+
+```js
+// Deprecated
+win.on('scroll-touch-begin', scrollTouchBegin)
+win.on('scroll-touch-edge', scrollTouchEdge)
+win.on('scroll-touch-end', scrollTouchEnd)
+
+// Replace with
+win.webContents.on('input-event', (_, event) => {
+  if (event.type === 'gestureScrollBegin') {
+    scrollTouchBegin()
+  } else if (event.type === 'gestureScrollUpdate') {
+    scrollTouchEdge()
+  } else if (event.type === 'gestureScrollEnd') {
+    scrollTouchEnd()
+  }
+})
+```
+
+## Planned Breaking API Changes (21.0)
+
+### Behavior Changed: V8 Memory Cage enabled
+
+The V8 memory cage has been enabled, which has implications for native modules
+which wrap non-V8 memory with `ArrayBuffer` or `Buffer`. See the [blog post
+about the V8 memory cage](https://www.electronjs.org/blog/v8-memory-cage) for
+more details.
 
 ### API Changed: `webContents.printToPDF()`
 
@@ -69,6 +234,8 @@ webContents.printToPDF({
 })
 ```
 
+## Planned Breaking API Changes (20.0)
+
 ### Default Changed: renderers without `nodeIntegration: true` are sandboxed by default
 
 Previously, renderers that specified a preload script defaulted to being
@@ -89,9 +256,19 @@ window manager. There is not a direct equivalent for Wayland, and the known
 workarounds have unacceptable tradeoffs (e.g. Window.is_skip_taskbar in GNOME
 requires unsafe mode), so Electron is unable to support this feature on Linux.
 
+### API Changed: `session.setDevicePermissionHandler(handler)`
+
+The handler invoked when `session.setDevicePermissionHandler(handler)` is used
+has a change to its arguments.  This handler no longer is passed a frame
+[`WebFrameMain`](api/web-frame-main.md), but instead is passed the `origin`, which
+is the origin that is checking for device permission.
+
 ## Planned Breaking API Changes (19.0)
 
-None
+### Removed: IA32 Linux binaries
+
+This is a result of Chromium 102.0.4999.0 dropping support for IA32 Linux.
+This concludes the [removal of support for IA32 Linux](#removed-ia32-linux-support).
 
 ## Planned Breaking API Changes (18.0)
 
@@ -1256,7 +1433,11 @@ When building native modules for windows, the `win_delay_load_hook` variable in
 the module's `binding.gyp` must be true (which is the default). If this hook is
 not present, then the native module will fail to load on Windows, with an error
 message like `Cannot find module`. See the [native module
-guide](/docs/tutorial/using-native-node-modules.md) for more.
+guide](./tutorial/using-native-node-modules.md) for more.
+
+### Removed: IA32 Linux support
+
+Electron 18 will no longer run on 32-bit Linux systems. See [discontinuing support for 32-bit Linux](https://www.electronjs.org/blog/linux-32bit-support) for more information.
 
 ## Breaking API Changes (3.0)
 

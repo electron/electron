@@ -11,14 +11,15 @@
 
 #include "base/scoped_observation.h"
 #include "shell/browser/ui/views/frameless_view.h"
+#include "ui/base/ui_base_types.h"
+#include "ui/linux/linux_ui.h"
+#include "ui/linux/nav_button_provider.h"
+#include "ui/linux/window_button_order_observer.h"
+#include "ui/linux/window_frame_provider.h"
 #include "ui/native_theme/native_theme.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/button/image_button.h"
 #include "ui/views/controls/label.h"
-#include "ui/views/linux_ui/linux_ui.h"
-#include "ui/views/linux_ui/nav_button_provider.h"
-#include "ui/views/linux_ui/window_button_order_observer.h"
-#include "ui/views/linux_ui/window_frame_provider.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/frame_buttons.h"
 
@@ -26,7 +27,7 @@ namespace electron {
 
 class ClientFrameViewLinux : public FramelessView,
                              public ui::NativeThemeObserver,
-                             public views::WindowButtonOrderObserver {
+                             public ui::WindowButtonOrderObserver {
  public:
   static const char kViewClassName[];
   ClientFrameViewLinux();
@@ -39,6 +40,11 @@ class ClientFrameViewLinux : public FramelessView,
   gfx::Insets GetInputInsets() const;
   gfx::Rect GetWindowContentBounds() const;
   SkRRect GetRoundedWindowContentBounds() const;
+  // Returns which edges of the frame are tiled.
+  const ui::WindowTiledEdges& tiled_edges() const { return tiled_edges_; }
+  void set_tiled_edges(ui::WindowTiledEdges tiled_edges) {
+    tiled_edges_ = tiled_edges;
+  }
 
  protected:
   // ui::NativeThemeObserver:
@@ -67,11 +73,14 @@ class ClientFrameViewLinux : public FramelessView,
   void OnPaint(gfx::Canvas* canvas) override;
   const char* GetClassName() const override;
 
+  // Overriden from views::ViewTargeterDelegate
+  views::View* TargetForRect(views::View* root, const gfx::Rect& rect) override;
+
  private:
   static constexpr int kNavButtonCount = 4;
 
   struct NavButton {
-    views::NavButtonProvider::FrameButtonDisplayType type;
+    ui::NavButtonProvider::FrameButtonDisplayType type;
     views::FrameButton frame_button;
     void (views::Widget::*callback)();
     int accessibility_id;
@@ -98,7 +107,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   enum class ButtonSide { kLeading, kTrailing };
 
-  views::NavButtonProvider::FrameButtonDisplayType GetButtonTypeToSkip() const;
+  ui::NavButtonProvider::FrameButtonDisplayType GetButtonTypeToSkip() const;
   void UpdateButtonImages();
   void LayoutButtons();
   void LayoutButtonsOnSide(ButtonSide side,
@@ -115,7 +124,7 @@ class ClientFrameViewLinux : public FramelessView,
 
   views::Label* title_;
 
-  std::unique_ptr<views::NavButtonProvider> nav_button_provider_;
+  std::unique_ptr<ui::NavButtonProvider> nav_button_provider_;
   std::array<NavButton, kNavButtonCount> nav_buttons_;
 
   std::vector<views::FrameButton> leading_frame_buttons_;
@@ -123,17 +132,16 @@ class ClientFrameViewLinux : public FramelessView,
 
   bool host_supports_client_frame_shadow_ = false;
 
-  views::WindowFrameProvider* frame_provider_;
+  ui::WindowFrameProvider* frame_provider_;
 
   base::ScopedObservation<ui::NativeTheme, ui::NativeThemeObserver>
       native_theme_observer_{this};
-  base::ScopedObservation<views::LinuxUI,
-                          views::WindowButtonOrderObserver,
-                          &views::LinuxUI::AddWindowButtonOrderObserver,
-                          &views::LinuxUI::RemoveWindowButtonOrderObserver>
+  base::ScopedObservation<ui::LinuxUi, ui::WindowButtonOrderObserver>
       window_button_order_observer_{this};
 
   base::CallbackListSubscription paint_as_active_changed_subscription_;
+
+  ui::WindowTiledEdges tiled_edges_;
 };
 
 }  // namespace electron

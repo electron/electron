@@ -1,0 +1,28 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Wed, 16 Nov 2022 10:07:02 +0100
+Subject: chore: patch out partition attribute DCHECK for webviews
+
+https://chromium-review.googlesource.com/c/chromium/src/+/4014994
+made it such that <webview>s in Chromium each have their own
+StoragePartitionConfig. This is in part because webviews are only
+ever instantiated by extensions in Chromium, which is not the case
+in Electron.
+
+This change patches it out to prevent the DCHECK.
+
+It can be removed once/if we see a better solution to the problem.
+
+diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
+index c204a15da17d7ca717bc130c29a70c696b7299be..a06dcd028a39c85bf0f3649396155063dcc90e83 100644
+--- a/content/browser/site_instance_impl.cc
++++ b/content/browser/site_instance_impl.cc
+@@ -209,7 +209,7 @@ scoped_refptr<SiteInstanceImpl> SiteInstanceImpl::CreateForGuest(
+     BrowserContext* browser_context,
+     const StoragePartitionConfig& partition_config) {
+   DCHECK(browser_context);
+-  DCHECK(!partition_config.is_default());
++  // DCHECK(!partition_config.is_default());
+ 
+   auto guest_site_info =
+       SiteInfo::CreateForGuest(browser_context, partition_config);

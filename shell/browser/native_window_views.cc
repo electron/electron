@@ -19,9 +19,8 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_browser_view_views.h"
-#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
-#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 #include "shell/browser/ui/views/root_view.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/browser/web_view_manager.h"
@@ -51,6 +50,7 @@
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "shell/browser/ui/views/frameless_view.h"
 #include "shell/browser/ui/views/native_frame_view.h"
+#include "shell/common/platform_util.h"
 #include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
 #include "ui/views/window/native_frame_view.h"
 
@@ -271,6 +271,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   // Set WM_CLASS.
   params.wm_class_name = base::ToLowerASCII(name);
   params.wm_class_class = name;
+  // Set Wayland application ID.
+  params.wayland_app_id = platform_util::GetXdgAppId();
 
   auto* native_widget = new views::DesktopNativeWidgetAura(widget());
   params.native_widget = native_widget;
@@ -300,14 +302,9 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
 #if defined(USE_OZONE_PLATFORM_X11)
   if (IsX11()) {
-    // TODO(ckerr): remove in Electron v20.0.0
     // Before the window is mapped the SetWMSpecState can not work, so we have
     // to manually set the _NET_WM_STATE.
     std::vector<x11::Atom> state_atom_list;
-    bool skip_taskbar = false;
-    if (options.Get(options::kSkipTaskbar, &skip_taskbar) && skip_taskbar) {
-      state_atom_list.push_back(x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
-    }
 
     // Before the window is mapped, there is no SHOW_FULLSCREEN_STATE.
     if (fullscreen) {
@@ -494,6 +491,13 @@ void NativeWindowViews::Show() {
 #if defined(USE_OZONE)
   if (global_menu_bar_)
     global_menu_bar_->OnWindowMapped();
+#endif
+
+#if defined(USE_OZONE_PLATFORM_X11)
+  // On X11, setting Z order before showing the window doesn't take effect,
+  // so we have to call it again.
+  if (IsX11())
+    widget()->SetZOrderLevel(widget()->GetZOrderLevel());
 #endif
 }
 
@@ -719,7 +723,6 @@ void NativeWindowViews::SetBounds(const gfx::Rect& bounds, bool animate) {
 #if BUILDFLAG(IS_WIN)
   if (is_moving_ || is_resizing_) {
     pending_bounds_change_ = bounds;
-    return;
   }
 #endif
 
@@ -876,7 +879,7 @@ bool NativeWindowViews::IsMovable() {
 void NativeWindowViews::SetMinimizable(bool minimizable) {
 #if BUILDFLAG(IS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), minimizable, WS_MINIMIZEBOX);
-  if (titlebar_overlay_enabled()) {
+  if (IsWindowControlsOverlayEnabled()) {
     auto* frame_view =
         static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
     frame_view->caption_button_container()->UpdateButtons();
@@ -896,7 +899,7 @@ bool NativeWindowViews::IsMinimizable() {
 void NativeWindowViews::SetMaximizable(bool maximizable) {
 #if BUILDFLAG(IS_WIN)
   FlipWindowStyle(GetAcceleratedWidget(), maximizable, WS_MAXIMIZEBOX);
-  if (titlebar_overlay_enabled()) {
+  if (IsWindowControlsOverlayEnabled()) {
     auto* frame_view =
         static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
     frame_view->caption_button_container()->UpdateButtons();
@@ -936,7 +939,7 @@ void NativeWindowViews::SetClosable(bool closable) {
   } else {
     EnableMenuItem(menu, SC_CLOSE, MF_BYCOMMAND | MF_DISABLED | MF_GRAYED);
   }
-  if (titlebar_overlay_enabled()) {
+  if (IsWindowControlsOverlayEnabled()) {
     auto* frame_view =
         static_cast<WinFrameView*>(widget()->non_client_view()->frame_view());
     frame_view->caption_button_container()->UpdateButtons();
@@ -1036,10 +1039,6 @@ void NativeWindowViews::SetSkipTaskbar(bool skip) {
     taskbar->AddTab(GetAcceleratedWidget());
     taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
   }
-#elif defined(USE_OZONE_PLATFORM_X11)
-  if (IsX11())
-    SetWMSpecState(static_cast<x11::Window>(GetAcceleratedWidget()), skip,
-                   x11::GetAtom("_NET_WM_STATE_SKIP_TASKBAR"));
 #endif
 }
 
@@ -1495,11 +1494,6 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   return content_bounds;
 }
 
-void NativeWindowViews::UpdateDraggableRegions(
-    const std::vector<mojom::DraggableRegionPtr>& regions) {
-  draggable_region_ = DraggableRegionsToSkRegion(regions);
-}
-
 #if BUILDFLAG(IS_WIN)
 void NativeWindowViews::SetIcon(HICON window_icon, HICON app_icon) {
   // We are responsible for storing the images.
@@ -1598,29 +1592,7 @@ views::View* NativeWindowViews::GetContentsView() {
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
     gfx::NativeView child,
     const gfx::Point& location) {
-  // App window should claim mouse events that fall within any BrowserViews'
-  // draggable region.
-  for (auto* view : browser_views()) {
-    auto* native_view = static_cast<NativeBrowserViewViews*>(view);
-    auto* view_draggable_region = native_view->draggable_region();
-    if (view_draggable_region &&
-        view_draggable_region->contains(location.x(), location.y()))
-      return false;
-  }
-
-  // App window should claim mouse events that fall within the draggable region.
-  if (draggable_region() &&
-      draggable_region()->contains(location.x(), location.y()))
-    return false;
-
-  // And the events on border for dragging resizable frameless window.
-  if ((!has_frame() || has_client_frame()) && resizable_) {
-    auto* frame =
-        static_cast<FramelessView*>(widget()->non_client_view()->frame_view());
-    return frame->ResizingBorderHitTest(location) == HTNOWHERE;
-  }
-
-  return true;
+  return NonClientHitTest(location) == HTNOWHERE;
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {

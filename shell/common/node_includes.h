@@ -20,9 +20,9 @@
 #include "env.h"
 #include "node.h"
 #include "node_buffer.h"
+#include "node_builtins.h"
 #include "node_errors.h"
 #include "node_internals.h"
-#include "node_native_module_env.h"
 #include "node_object_wrap.h"
 #include "node_options-inl.h"
 #include "node_options.h"
@@ -35,6 +35,6 @@
 // Allows to explicitly register builtin modules instead of using
 // __attribute__((constructor)).
 #define NODE_LINKED_MODULE_CONTEXT_AWARE(modname, regfunc) \
-  NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
+  NODE_BINDING_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_

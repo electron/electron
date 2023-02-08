@@ -40,9 +40,7 @@ HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
 
 }  // namespace
 
-namespace electron {
-
-namespace win {
+namespace electron::win {
 
 bool IsDarkModeSupported() {
   auto* os_info = base::win::OSInfo::GetInstance();
@@ -59,6 +57,4 @@ void SetDarkModeForWindow(HWND hWnd) {
   TrySetWindowTheme(hWnd, dark);
 }
 
-}  // namespace win
-
-}  // namespace electron
+}  // namespace electron::win

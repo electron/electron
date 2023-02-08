@@ -11,10 +11,10 @@
 
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/memory/ref_counted_memory.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
@@ -30,6 +30,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
@@ -48,9 +49,7 @@
 #include "ui/gfx/icon_util.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -68,7 +67,7 @@ base::FilePath NormalizePath(const base::FilePath& path) {
     return path;
   }
 
-  base::ThreadRestrictions::ScopedAllowIO allow_blocking;
+  ScopedAllowBlockingForElectron allow_blocking;
   base::FilePath absolute_path = MakeAbsoluteFilePath(path);
   // MakeAbsoluteFilePath returns an empty path on failures so use original path
   if (absolute_path.empty()) {
@@ -271,12 +270,6 @@ std::string NativeImage::ToDataURL(gin::Arguments* args) {
       image_.AsImageSkia().GetRepresentation(scale_factor).GetBitmap());
 }
 
-#if !defined(V8_SANDBOX)
-void SkUnref(char* data, void* hint) {
-  reinterpret_cast<SkRefCnt*>(hint)->unref();
-}
-#endif
-
 v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
@@ -285,18 +278,10 @@ v8::Local<v8::Value> NativeImage::GetBitmap(gin::Arguments* args) {
   SkPixelRef* ref = bitmap.pixelRef();
   if (!ref)
     return node::Buffer::New(args->isolate(), 0).ToLocalChecked();
-#if defined(V8_SANDBOX)
   return node::Buffer::Copy(args->isolate(),
                             reinterpret_cast<char*>(ref->pixels()),
                             bitmap.computeByteSize())
       .ToLocalChecked();
-#else
-  ref->ref();
-  return node::Buffer::New(args->isolate(),
-                           reinterpret_cast<char*>(ref->pixels()),
-                           bitmap.computeByteSize(), &SkUnref, ref)
-      .ToLocalChecked();
-#endif
 }
 
 v8::Local<v8::Value> NativeImage::GetNativeHandle(
@@ -345,24 +330,24 @@ float NativeImage::GetAspectRatio(const absl::optional<float> scale_factor) {
 }
 
 gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
-                                             base::DictionaryValue options) {
+                                             base::Value::Dict options) {
   float scale_factor = GetScaleFactorFromOptions(args);
 
   gfx::Size size = GetSize(scale_factor);
-  int width = size.width();
-  int height = size.height();
-  bool width_set = options.GetInteger("width", &width);
-  bool height_set = options.GetInteger("height", &height);
+  absl::optional<int> new_width = options.FindInt("width");
+  absl::optional<int> new_height = options.FindInt("height");
+  int width = new_width.value_or(size.width());
+  int height = new_height.value_or(size.height());
   size.SetSize(width, height);
 
   if (width <= 0 && height <= 0) {
     return CreateEmpty(args->isolate());
-  } else if (width_set && !height_set) {
+  } else if (new_width && !new_height) {
     // Scale height to preserve original aspect ratio
     size.set_height(width);
     size =
         gfx::ScaleToRoundedSize(size, 1.f, 1.f / GetAspectRatio(scale_factor));
-  } else if (height_set && !width_set) {
+  } else if (new_height && !new_width) {
     // Scale width to preserve original aspect ratio
     size.set_width(height);
     size = gfx::ScaleToRoundedSize(size, GetAspectRatio(scale_factor), 1.f);
@@ -370,11 +355,10 @@ gin::Handle<NativeImage> NativeImage::Resize(gin::Arguments* args,
 
   skia::ImageOperations::ResizeMethod method =
       skia::ImageOperations::ResizeMethod::RESIZE_BEST;
-  std::string quality;
-  options.GetString("quality", &quality);
-  if (quality == "good")
+  std::string* quality = options.FindString("quality");
+  if (quality && *quality == "good")
     method = skia::ImageOperations::ResizeMethod::RESIZE_GOOD;
-  else if (quality == "better")
+  else if (quality && *quality == "better")
     method = skia::ImageOperations::ResizeMethod::RESIZE_BETTER;
 
   gfx::ImageSkia resized = gfx::ImageSkiaOperations::CreateResizedImage(
@@ -627,9 +611,7 @@ const char* NativeImage::GetTypeName() {
 // static
 gin::WrapperInfo NativeImage::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

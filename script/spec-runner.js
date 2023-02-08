@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const { ElectronVersions, Installer } = require('@electron/fiddle-core');
 const childProcess = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs-extra');
@@ -12,8 +13,8 @@ const pass = '✓'.green;
 const fail = '✗'.red;
 
 const args = require('minimist')(process.argv, {
-  string: ['runners', 'target'],
-  boolean: ['buildNativeTests', 'runTestFilesSeparately'],
+  string: ['runners', 'target', 'electronVersion'],
+  boolean: ['buildNativeTests'],
   unknown: arg => unknownFlags.push(arg)
 });
 
@@ -34,11 +35,19 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 
 const runners = new Map([
   ['main', { description: 'Main process specs', run: runMainProcessElectronTests }],
-  ['remote', { description: 'Remote based specs', run: runRemoteBasedElectronTests }],
   ['native', { description: 'Native specs', run: runNativeElectronTests }]
 ]);
 
 const specHashPath = path.resolve(__dirname, '../spec/.hash');
+
+if (args.electronVersion) {
+  if (args.runners && args.runners !== 'main') {
+    console.log(`${fail} only 'main' runner can be used with --electronVersion`);
+    process.exit(1);
+  }
+
+  args.runners = 'main';
+}
 
 let runnersToRun = null;
 if (args.runners !== undefined) {
@@ -53,6 +62,14 @@ if (args.runners !== undefined) {
 }
 
 async function main () {
+  if (args.electronVersion) {
+    const versions = await ElectronVersions.create();
+    if (!versions.isVersion(args.electronVersion)) {
+      console.log(`${fail} '${args.electronVersion}' is not a recognized Electron version`);
+      process.exit(1);
+    }
+  }
+
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash();
   const [currentSpecHash, currentSpecInstallHash] = await getSpecHash();
   const somethingChanged = (currentSpecHash !== lastSpecHash) ||
@@ -60,7 +77,6 @@ async function main () {
 
   if (somethingChanged) {
     await installSpecModules(path.resolve(__dirname, '..', 'spec'));
-    await installSpecModules(path.resolve(__dirname, '..', 'spec-main'));
     await getSpecHash().then(saveSpecHash);
   }
 
@@ -124,7 +140,13 @@ async function runElectronTests () {
 }
 
 async function runTestUsingElectron (specDir, testName) {
-  let exe = path.resolve(BASE, utils.getElectronExec());
+  let exe;
+  if (args.electronVersion) {
+    const installer = new Installer();
+    exe = await installer.install(args.electronVersion);
+  } else {
+    exe = path.resolve(BASE, utils.getElectronExec());
+  }
   const runnerArgs = [`electron/${specDir}`, ...unknownArgs.slice(2)];
   if (process.platform === 'linux') {
     runnerArgs.unshift(path.resolve(__dirname, 'dbus_mock.py'), exe);
@@ -153,26 +175,6 @@ const specFilter = (file) => {
     return true;
   }
 };
-
-async function runTests (specDir, testName) {
-  if (args.runTestFilesSeparately) {
-    const getFiles = require('../spec/static/get-files');
-    const testFiles = await getFiles(path.resolve(__dirname, `../${specDir}`), { filter: specFilter });
-    const baseElectronDir = path.resolve(__dirname, '..');
-    unknownArgs.splice(unknownArgs.length, 0, '--files', '');
-    testFiles.sort().forEach(async (file) => {
-      unknownArgs.splice((unknownArgs.length - 1), 1, path.relative(baseElectronDir, file));
-      console.log(`Running tests for ${unknownArgs[unknownArgs.length - 1]}`);
-      await runTestUsingElectron(specDir, testName);
-    });
-  } else {
-    await runTestUsingElectron(specDir, testName);
-  }
-}
-
-async function runRemoteBasedElectronTests () {
-  await runTests('spec', 'remote');
-}
 
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json');
@@ -226,7 +228,7 @@ async function runNativeElectronTests () {
 }
 
 async function runMainProcessElectronTests () {
-  await runTests('spec-main', 'main');
+  await runTestUsingElectron('spec', 'main');
 }
 
 async function installSpecModules (dir) {
@@ -234,13 +236,20 @@ async function installSpecModules (dir) {
   // but don't clobber any other CXXFLAGS that were passed into spec-runner.js
   const CXXFLAGS = ['-std=c++17', process.env.CXXFLAGS].filter(x => !!x).join(' ');
 
-  const nodeDir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
-  const env = Object.assign({}, process.env, {
+  const env = {
+    ...process.env,
     CXXFLAGS,
-    npm_config_nodedir: nodeDir,
     npm_config_msvs_version: '2019',
     npm_config_yes: 'true'
-  });
+  };
+  if (args.electronVersion) {
+    env.npm_config_target = args.electronVersion;
+    env.npm_config_disturl = 'https://electronjs.org/headers';
+    env.npm_config_runtime = 'electron';
+    env.npm_config_build_from_source = 'true';
+  } else {
+    env.npm_config_nodedir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
+  }
   if (fs.existsSync(path.resolve(dir, 'node_modules'))) {
     await fs.remove(path.resolve(dir, 'node_modules'));
   }
@@ -260,9 +269,7 @@ function getSpecHash () {
     (async () => {
       const hasher = crypto.createHash('SHA256');
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/package.json')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/package.json')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec/yarn.lock')));
-      hasher.update(fs.readFileSync(path.resolve(__dirname, '../spec-main/yarn.lock')));
       hasher.update(fs.readFileSync(path.resolve(__dirname, '../script/spec-runner.js')));
       return hasher.digest('hex');
     })(),

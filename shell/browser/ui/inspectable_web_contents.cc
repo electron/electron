@@ -271,8 +271,9 @@ class InspectableWebContents::NetworkResourceLoader
     base::Value id(stream_id_);
     base::Value encodedValue(encoded);
 
-    bindings_->CallClientFunction("DevToolsAPI.streamWrite", &id, &chunkValue,
-                                  &encodedValue);
+    bindings_->CallClientFunction("DevToolsAPI", "streamWrite", std::move(id),
+                                  std::move(chunkValue),
+                                  std::move(encodedValue));
     std::move(resume).Run();
   }
 
@@ -289,20 +290,21 @@ class InspectableWebContents::NetworkResourceLoader
           stream_id_, bindings_, resource_request_, traffic_annotation_,
           std::move(url_loader_factory_), std::move(callback_), delay);
     } else {
-      base::DictionaryValue response;
-      response.SetInteger("statusCode", response_headers_
-                                            ? response_headers_->response_code()
-                                            : net::HTTP_OK);
+      base::Value response(base::Value::Type::DICT);
+      response.GetDict().Set(
+          "statusCode", response_headers_ ? response_headers_->response_code()
+                                          : net::HTTP_OK);
 
-      auto headers = std::make_unique<base::DictionaryValue>();
+      base::Value::Dict headers;
       size_t iterator = 0;
       std::string name;
       std::string value;
       while (response_headers_ &&
              response_headers_->EnumerateHeaderLines(&iterator, &name, &value))
-        headers->SetString(name, value);
+        headers.Set(name, value);
 
-      response.Set("headers", std::move(headers));
+      response.GetDict().Set("headers", std::move(headers));
+
       std::move(callback_).Run(&response);
     }
 
@@ -348,7 +350,8 @@ InspectableWebContents::InspectableWebContents(
       web_contents_(std::move(web_contents)),
       is_guest_(is_guest),
       view_(CreateInspectableContentsView(this)) {
-  const base::Value* bounds_dict = pref_service_->Get(kDevToolsBoundsPref);
+  const base::Value* bounds_dict =
+      &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
     devtools_bounds_ = DictionaryToRect(bounds_dict);
     // Sometimes the devtools window is out of screen or has too small size.
@@ -400,7 +403,7 @@ content::WebContents* InspectableWebContents::GetDevToolsWebContents() const {
 
 void InspectableWebContents::InspectElement(int x, int y) {
   if (agent_host_)
-    agent_host_->InspectElement(web_contents_->GetMainFrame(), x, y);
+    agent_host_->InspectElement(web_contents_->GetPrimaryMainFrame(), x, y);
 }
 
 void InspectableWebContents::SetDelegate(
@@ -510,30 +513,29 @@ void InspectableWebContents::Reattach(DispatchCallback callback) {
 }
 
 void InspectableWebContents::CallClientFunction(
-    const std::string& function_name,
-    const base::Value* arg1,
-    const base::Value* arg2,
-    const base::Value* arg3) {
+    const std::string& object_name,
+    const std::string& method_name,
+    base::Value arg1,
+    base::Value arg2,
+    base::Value arg3,
+    base::OnceCallback<void(base::Value)> cb) {
   if (!GetDevToolsWebContents())
     return;
 
-  std::string javascript = function_name + "(";
-  if (arg1) {
-    std::string json;
-    base::JSONWriter::Write(*arg1, &json);
-    javascript.append(json);
-    if (arg2) {
-      base::JSONWriter::Write(*arg2, &json);
-      javascript.append(", ").append(json);
-      if (arg3) {
-        base::JSONWriter::Write(*arg3, &json);
-        javascript.append(", ").append(json);
+  base::Value::List arguments;
+  if (!arg1.is_none()) {
+    arguments.Append(std::move(arg1));
+    if (!arg2.is_none()) {
+      arguments.Append(std::move(arg2));
+      if (!arg3.is_none()) {
+        arguments.Append(std::move(arg3));
       }
     }
   }
-  javascript.append(");");
-  GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-      base::UTF8ToUTF16(javascript), base::NullCallback());
+
+  GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScriptMethod(
+      base::ASCIIToUTF16(object_name), base::ASCIIToUTF16(method_name),
+      std::move(arguments), std::move(cb));
 }
 
 gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
@@ -572,15 +574,15 @@ void InspectableWebContents::LoadCompleted() {
     SetIsDocked(DispatchCallback(), false);
   } else {
     if (dock_state_.empty()) {
-      const base::Value* prefs =
-          pref_service_->GetDictionary(kDevToolsPreferences);
+      const base::Value::Dict& prefs =
+          pref_service_->GetDict(kDevToolsPreferences);
       const std::string* current_dock_state =
-          prefs->FindStringKey("currentDockState");
+          prefs.FindString("currentDockState");
       base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
+    GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
         javascript, base::NullCallback());
   }
 
@@ -601,7 +603,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
   if (!registry)
     return;
 
-  base::ListValue results;
+  base::Value::List results;
   for (auto& extension : registry->enabled_extensions()) {
     auto devtools_page_url =
         extensions::chrome_manifest_urls::GetDevToolsPage(extension.get());
@@ -612,20 +614,20 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     // process. Grant the devtools process the ability to request URLs from the
     // extension.
     content::ChildProcessSecurityPolicy::GetInstance()->GrantRequestOrigin(
-        web_contents_->GetMainFrame()->GetProcess()->GetID(),
+        web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID(),
         url::Origin::Create(extension->url()));
 
-    auto extension_info = std::make_unique<base::DictionaryValue>();
-    extension_info->SetString("startPage", devtools_page_url.spec());
-    extension_info->SetString("name", extension->name());
-    extension_info->SetBoolean(
-        "exposeExperimentalAPIs",
-        extension->permissions_data()->HasAPIPermission(
-            extensions::mojom::APIPermissionID::kExperimental));
-    results.Append(std::move(extension_info));
+    base::Value::Dict extension_info;
+    extension_info.Set("startPage", devtools_page_url.spec());
+    extension_info.Set("name", extension->name());
+    extension_info.Set("exposeExperimentalAPIs",
+                       extension->permissions_data()->HasAPIPermission(
+                           extensions::mojom::APIPermissionID::kExperimental));
+    results.Append(base::Value(std::move(extension_info)));
   }
 
-  CallClientFunction("DevToolsAPI.addExtensions", &results, NULL, NULL);
+  CallClientFunction("DevToolsAPI", "addExtensions",
+                     base::Value(std::move(results)));
 }
 #endif
 
@@ -653,8 +655,8 @@ void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
                                                  int stream_id) {
   GURL gurl(url);
   if (!gurl.is_valid()) {
-    base::DictionaryValue response;
-    response.SetInteger("statusCode", net::HTTP_NOT_FOUND);
+    base::Value response(base::Value::Type::DICT);
+    response.GetDict().Set("statusCode", net::HTTP_NOT_FOUND);
     std::move(callback).Run(&response);
     return;
   }
@@ -721,7 +723,10 @@ void InspectableWebContents::SetIsDocked(DispatchCallback callback,
     std::move(callback).Run(nullptr);
 }
 
-void InspectableWebContents::OpenInNewTab(const std::string& url) {}
+void InspectableWebContents::OpenInNewTab(const std::string& url) {
+  if (delegate_)
+    delegate_->DevToolsOpenInNewTab(url);
+}
 
 void InspectableWebContents::ShowItemInFolder(
     const std::string& file_system_path) {
@@ -856,14 +861,13 @@ void InspectableWebContents::SendJsonRequest(DispatchCallback callback,
 }
 
 void InspectableWebContents::GetPreferences(DispatchCallback callback) {
-  const base::Value* prefs = pref_service_->GetDictionary(kDevToolsPreferences);
-  std::move(callback).Run(prefs);
+  const base::Value& prefs = pref_service_->GetValue(kDevToolsPreferences);
+  std::move(callback).Run(&prefs);
 }
 
 void InspectableWebContents::GetPreference(DispatchCallback callback,
                                            const std::string& name) {
-  if (auto* pref =
-          pref_service_->GetDictionary(kDevToolsPreferences)->FindKey(name)) {
+  if (auto* pref = pref_service_->GetDict(kDevToolsPreferences).Find(name)) {
     std::move(callback).Run(pref);
     return;
   }
@@ -875,18 +879,18 @@ void InspectableWebContents::GetPreference(DispatchCallback callback,
 
 void InspectableWebContents::SetPreference(const std::string& name,
                                            const std::string& value) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->SetKey(name, base::Value(value));
+  ScopedDictPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update->Set(name, base::Value(value));
 }
 
 void InspectableWebContents::RemovePreference(const std::string& name) {
-  DictionaryPrefUpdate update(pref_service_, kDevToolsPreferences);
-  update.Get()->RemoveKey(name);
+  ScopedDictPrefUpdate update(pref_service_, kDevToolsPreferences);
+  update->Remove(name);
 }
 
 void InspectableWebContents::ClearPreferences() {
-  DictionaryPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
-  unsynced_update.Get()->DictClear();
+  ScopedDictPrefUpdate unsynced_update(pref_service_, kDevToolsPreferences);
+  unsynced_update->clear();
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
@@ -903,32 +907,25 @@ void InspectableWebContents::RegisterExtensionsAPI(const std::string& origin,
 }
 
 void InspectableWebContents::HandleMessageFromDevToolsFrontend(
-    base::Value message) {
+    base::Value::Dict message) {
   // TODO(alexeykuzmin): Should we expect it to exist?
   if (!embedder_message_dispatcher_) {
     return;
   }
 
-  const std::string* method = nullptr;
-  base::Value* params = nullptr;
-
-  if (message.is_dict()) {
-    method = message.FindStringKey(kFrontendHostMethod);
-    params = message.FindKey(kFrontendHostParams);
-  }
+  const std::string* method = message.FindString(kFrontendHostMethod);
+  base::Value* params = message.Find(kFrontendHostParams);
 
   if (!method || (params && !params->is_list())) {
     LOG(ERROR) << "Invalid message was sent to embedder: " << message;
     return;
   }
-  base::Value empty_params(base::Value::Type::LIST);
-  if (!params) {
-    params = &empty_params;
-  }
-  int id = message.FindIntKey(kFrontendHostId).value_or(0);
-  std::vector<base::Value> params_list;
-  if (params)
-    params_list = std::move(*params).TakeListDeprecated();
+
+  const base::Value::List no_params;
+  const base::Value::List& params_list =
+      params != nullptr && params->is_list() ? params->GetList() : no_params;
+
+  const int id = message.FindInt(kFrontendHostId).value_or(0);
   embedder_message_dispatcher_->Dispatch(
       base::BindRepeating(&InspectableWebContents::SendMessageAck,
                           weak_factory_.GetWeakPtr(), id),
@@ -943,22 +940,21 @@ void InspectableWebContents::DispatchProtocolMessage(
 
   base::StringPiece str_message(reinterpret_cast<const char*>(message.data()),
                                 message.size());
-  if (str_message.size() < kMaxMessageChunkSize) {
-    std::string param;
-    base::EscapeJSONString(str_message, true, &param);
-    std::u16string javascript =
-        base::UTF8ToUTF16("DevToolsAPI.dispatchMessage(" + param + ");");
-    GetDevToolsWebContents()->GetMainFrame()->ExecuteJavaScript(
-        javascript, base::NullCallback());
-    return;
-  }
+  if (str_message.length() < kMaxMessageChunkSize) {
+    CallClientFunction("DevToolsAPI", "dispatchMessage",
+                       base::Value(std::string(str_message)));
+  } else {
+    size_t total_size = str_message.length();
+    for (size_t pos = 0; pos < str_message.length();
+         pos += kMaxMessageChunkSize) {
+      base::StringPiece str_message_chunk =
+          str_message.substr(pos, kMaxMessageChunkSize);
 
-  base::Value total_size(static_cast<int>(str_message.length()));
-  for (size_t pos = 0; pos < str_message.length();
-       pos += kMaxMessageChunkSize) {
-    base::Value message_value(str_message.substr(pos, kMaxMessageChunkSize));
-    CallClientFunction("DevToolsAPI.dispatchMessageChunk", &message_value,
-                       pos ? nullptr : &total_size, nullptr);
+      CallClientFunction(
+          "DevToolsAPI", "dispatchMessageChunk",
+          base::Value(std::string(str_message_chunk)),
+          base::Value(base::NumberToString(pos ? 0 : total_size)));
+    }
   }
 }
 
@@ -1032,12 +1028,12 @@ void InspectableWebContents::ReadyToCommitNavigation(
     content::NavigationHandle* navigation_handle) {
   if (navigation_handle->IsInMainFrame()) {
     if (navigation_handle->GetRenderFrameHost() ==
-            GetDevToolsWebContents()->GetMainFrame() &&
+            GetDevToolsWebContents()->GetPrimaryMainFrame() &&
         frontend_host_) {
       return;
     }
     frontend_host_ = content::DevToolsFrontendHost::Create(
-        web_contents()->GetMainFrame(),
+        web_contents()->GetPrimaryMainFrame(),
         base::BindRepeating(
             &InspectableWebContents::HandleMessageFromDevToolsFrontend,
             base::Unretained(this)));
@@ -1070,8 +1066,13 @@ void InspectableWebContents::DidFinishNavigation(
 
 void InspectableWebContents::SendMessageAck(int request_id,
                                             const base::Value* arg) {
-  base::Value id_value(request_id);
-  CallClientFunction("DevToolsAPI.embedderMessageAck", &id_value, arg, nullptr);
+  if (arg) {
+    CallClientFunction("DevToolsAPI", "embedderMessageAck",
+                       base::Value(request_id), arg->Clone());
+  } else {
+    CallClientFunction("DevToolsAPI", "embedderMessageAck",
+                       base::Value(request_id));
+  }
 }
 
 }  // namespace electron

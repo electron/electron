@@ -15,11 +15,7 @@
 #include "shell/renderer/electron_render_frame_observer.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 
-namespace electron {
-
-namespace api {
-
-namespace context_bridge {
+namespace electron::api::context_bridge {
 
 using ObjectCachePair = std::pair<v8::Local<v8::Value>, v8::Local<v8::Value>>;
 
@@ -38,10 +34,6 @@ class ObjectCache final {
   std::unordered_map<int, std::forward_list<ObjectCachePair>> proxy_map_;
 };
 
-}  // namespace context_bridge
-
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api::context_bridge
 
 #endif  // ELECTRON_SHELL_RENDERER_API_CONTEXT_BRIDGE_OBJECT_CACHE_H_

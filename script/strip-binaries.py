@@ -4,11 +4,11 @@ import argparse
 import os
 import sys
 
-from lib.config import LINUX_BINARIES, enable_verbose_mode
-from lib.util import execute, get_out_dir
+from lib.config import enable_verbose_mode
+from lib.util import execute, get_linux_binaries, get_out_dir
 
 def strip_binaries(directory, target_cpu):
-  for binary in LINUX_BINARIES:
+  for binary in get_linux_binaries():
     binary_path = os.path.join(directory, binary)
     if os.path.isfile(binary_path):
       strip_binary(binary_path, target_cpu)
@@ -18,8 +18,6 @@ def strip_binary(binary_path, target_cpu):
     strip = 'arm-linux-gnueabihf-strip'
   elif target_cpu == 'arm64':
     strip = 'aarch64-linux-gnu-strip'
-  elif target_cpu == 'mips64el':
-    strip = 'mips64el-redhat-linux-strip'
   else:
     strip = 'strip'
   execute([

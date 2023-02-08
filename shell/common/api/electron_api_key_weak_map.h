@@ -11,9 +11,7 @@
 #include "shell/common/gin_helper/wrappable.h"
 #include "shell/common/key_weak_map.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 template <typename K>
 class KeyWeakMap : public gin_helper::Wrappable<KeyWeakMap<K>> {
@@ -59,8 +57,6 @@ class KeyWeakMap : public gin_helper::Wrappable<KeyWeakMap<K>> {
   electron::KeyWeakMap<K> key_weak_map_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_COMMON_API_ELECTRON_API_KEY_WEAK_MAP_H_

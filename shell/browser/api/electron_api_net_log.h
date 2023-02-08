@@ -5,8 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NET_LOG_H_
 
-#include "base/callback.h"
 #include "base/files/file_path.h"
+#include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "base/values.h"
 #include "gin/handle.h"
@@ -57,7 +57,7 @@ class NetLog : public gin::Wrappable<NetLog> {
 
   void StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
                                   uint64_t max_file_size,
-                                  base::Value custom_constants,
+                                  base::Value::Dict custom_constants,
                                   base::File output_file);
   void NetLogStarted(int32_t error);
 

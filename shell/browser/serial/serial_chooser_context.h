@@ -29,9 +29,6 @@ class Value;
 
 namespace electron {
 
-extern const char kHidVendorIdKey[];
-extern const char kHidProductIdKey[];
-
 #if BUILDFLAG(IS_WIN)
 extern const char kDeviceInstanceIdKey[];
 #else
@@ -46,17 +43,19 @@ extern const char kUsbDriverKey[];
 class SerialChooserContext : public KeyedService,
                              public device::mojom::SerialPortManagerClient {
  public:
-  using PortObserver = content::SerialDelegate::Observer;
+  class PortObserver : public content::SerialDelegate::Observer {
+   public:
+    // Called when the SerialChooserContext is shutting down. Observers must
+    // remove themselves before returning.
+    virtual void OnSerialChooserContextShutdown() = 0;
+  };
 
-  SerialChooserContext();
+  explicit SerialChooserContext(ElectronBrowserContext* context);
   ~SerialChooserContext() override;
 
   // disable copy
   SerialChooserContext(const SerialChooserContext&) = delete;
   SerialChooserContext& operator=(const SerialChooserContext&) = delete;
-
-  // ObjectPermissionContextBase::PermissionObserver:
-  void OnPermissionRevoked(const url::Origin& origin);
 
   // Serial-specific interface for granting and checking permissions.
   void GrantPortPermission(const url::Origin& origin,
@@ -65,8 +64,18 @@ class SerialChooserContext : public KeyedService,
   bool HasPortPermission(const url::Origin& origin,
                          const device::mojom::SerialPortInfo& port,
                          content::RenderFrameHost* render_frame_host);
+  void RevokePortPermissionWebInitiated(
+      const url::Origin& origin,
+      const base::UnguessableToken& token,
+      content::RenderFrameHost* render_frame_host);
   static bool CanStorePersistentEntry(
       const device::mojom::SerialPortInfo& port);
+
+  // Only call this if you're sure |port_info_| has been initialized
+  // before-hand. The returned raw pointer is owned by |port_info_| and will be
+  // destroyed when the port is removed.
+  const device::mojom::SerialPortInfo* GetPortInfo(
+      const base::UnguessableToken& token);
 
   device::mojom::SerialPortManager* GetPortManager();
 
@@ -75,34 +84,30 @@ class SerialChooserContext : public KeyedService,
 
   base::WeakPtr<SerialChooserContext> AsWeakPtr();
 
-  bool is_initialized_ = false;
-
-  // Map from port token to port info.
-  std::map<base::UnguessableToken, device::mojom::SerialPortInfoPtr> port_info_;
-
   // SerialPortManagerClient implementation.
   void OnPortAdded(device::mojom::SerialPortInfoPtr port) override;
   void OnPortRemoved(device::mojom::SerialPortInfoPtr port) override;
-  void RevokePortPermissionWebInitiated(const url::Origin& origin,
-                                        const base::UnguessableToken& token);
-  // Only call this if you're sure |port_info_| has been initialized
-  // before-hand. The returned raw pointer is owned by |port_info_| and will be
-  // destroyed when the port is removed.
-  const device::mojom::SerialPortInfo* GetPortInfo(
-      const base::UnguessableToken& token);
 
  private:
   void EnsurePortManagerConnection();
   void SetUpPortManagerConnection(
       mojo::PendingRemote<device::mojom::SerialPortManager> manager);
+  void OnGetDevices(std::vector<device::mojom::SerialPortInfoPtr> ports);
   void OnPortManagerConnectionError();
-  void RevokeObjectPermissionInternal(const url::Origin& origin,
-                                      const base::Value& object,
-                                      bool revoked_by_website);
+
+  bool is_initialized_ = false;
+
+  // Tracks the set of ports to which an origin has access to.
+  std::map<url::Origin, std::set<base::UnguessableToken>> ephemeral_ports_;
+
+  // Map from port token to port info.
+  std::map<base::UnguessableToken, device::mojom::SerialPortInfoPtr> port_info_;
 
   mojo::Remote<device::mojom::SerialPortManager> port_manager_;
   mojo::Receiver<device::mojom::SerialPortManagerClient> client_receiver_{this};
   base::ObserverList<PortObserver> port_observer_list_;
+
+  ElectronBrowserContext* browser_context_;
 
   base::WeakPtrFactory<SerialChooserContext> weak_factory_{this};
 };

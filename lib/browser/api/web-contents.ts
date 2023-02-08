@@ -1,4 +1,4 @@
-import { app, ipcMain, session, webFrameMain, deprecate } from 'electron/main';
+import { app, ipcMain, session, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -9,11 +9,15 @@ import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
+import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
+import * as deprecate from '@electron/internal/common/deprecate';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
 // eslint-disable-next-line
 session
+
+const webFrameMainBinding = process._linkedBinding('electron_browser_web_frame_main');
 
 let nextId = 0;
 const getNextId = function () {
@@ -124,13 +128,6 @@ WebContents.prototype.sendToFrame = function (frameId, channel, ...args) {
   return true;
 };
 
-WebContents.prototype._sendToFrameInternal = function (frameId, channel, ...args) {
-  const frame = getWebFrame(this, frameId);
-  if (!frame) return false;
-  frame._sendInternal(channel, ...args);
-  return true;
-};
-
 // Following methods are mapped to webFrame.
 const webFrameMethods = [
   'insertCSS',
@@ -177,13 +174,13 @@ WebContents.prototype.printToPDF = async function (options) {
     headerTemplate: '',
     footerTemplate: '',
     printBackground: false,
-    scale: 1,
+    scale: 1.0,
     paperWidth: 8.5,
-    paperHeight: 11,
-    marginTop: 0,
-    marginBottom: 0,
-    marginLeft: 0,
-    marginRight: 0,
+    paperHeight: 11.0,
+    marginTop: 0.4,
+    marginBottom: 0.4,
+    marginLeft: 0.4,
+    marginRight: 0.4,
     pageRanges: '',
     preferCSSPageSize: false
   };
@@ -213,7 +210,7 @@ WebContents.prototype.printToPDF = async function (options) {
     if (typeof options.scale !== 'number') {
       return Promise.reject(new Error('scale must be a Number'));
     }
-    printSettings.scaleFactor = options.scale;
+    printSettings.scale = options.scale;
   }
 
   const { pageSize } = options;
@@ -275,7 +272,7 @@ WebContents.prototype.printToPDF = async function (options) {
 
   if (options.pageRanges !== undefined) {
     if (typeof options.pageRanges !== 'string') {
-      return Promise.reject(new Error('printBackground must be a String'));
+      return Promise.reject(new Error('pageRanges must be a String'));
     }
     printSettings.pageRanges = options.pageRanges;
   }
@@ -453,12 +450,14 @@ WebContents.prototype.loadURL = function (url, options) {
     const removeListeners = () => {
       this.removeListener('did-finish-load', finishListener);
       this.removeListener('did-fail-load', failListener);
+      this.removeListener('did-navigate-in-page', finishListener);
       this.removeListener('did-start-navigation', navigationListener);
       this.removeListener('did-stop-loading', stopLoadingListener);
       this.removeListener('destroyed', stopLoadingListener);
     };
     this.on('did-finish-load', finishListener);
     this.on('did-fail-load', failListener);
+    this.on('did-navigate-in-page', finishListener);
     this.on('did-start-navigation', navigationListener);
     this.on('did-stop-loading', stopLoadingListener);
     this.on('destroyed', stopLoadingListener);
@@ -540,6 +539,11 @@ const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
   });
 };
 
+const getWebFrameForEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+  if (!event.processId || !event.frameId) return null;
+  return webFrameMainBinding.fromIdOrNull(event.processId, event.frameId);
+};
+
 const commandLine = process._linkedBinding('electron_common_command_line');
 const environment = process._linkedBinding('electron_common_environment');
 
@@ -563,6 +567,12 @@ WebContents.prototype._init = function () {
 
   this._windowOpenHandler = null;
 
+  const ipc = new IpcMainImpl();
+  Object.defineProperty(this, 'ipc', {
+    get () { return ipc; },
+    enumerable: true
+  });
+
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
@@ -571,6 +581,9 @@ WebContents.prototype._init = function () {
     } else {
       addReplyToEvent(event);
       this.emit('ipc-message', event, channel, ...args);
+      const maybeWebFrame = getWebFrameForEvent(event);
+      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
+      ipc.emit(channel, event, ...args);
       ipcMain.emit(channel, event, ...args);
     }
   });
@@ -582,8 +595,10 @@ WebContents.prototype._init = function () {
       console.error(`Error occurred in handler for '${channel}':`, error);
       event.sendReply({ error: error.toString() });
     };
-    const target = internal ? ipcMainInternal : ipcMain;
-    if ((target as any)._invokeHandlers.has(channel)) {
+    const maybeWebFrame = getWebFrameForEvent(event);
+    const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
+    const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
+    if (target) {
       (target as any)._invokeHandlers.get(channel)(event, ...args);
     } else {
       event._throw(`No handler registered for '${channel}'`);
@@ -597,10 +612,13 @@ WebContents.prototype._init = function () {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
       addReplyToEvent(event);
-      if (this.listenerCount('ipc-message-sync') === 0 && ipcMain.listenerCount(channel) === 0) {
+      const maybeWebFrame = getWebFrameForEvent(event);
+      if (this.listenerCount('ipc-message-sync') === 0 && ipc.listenerCount(channel) === 0 && ipcMain.listenerCount(channel) === 0 && (!maybeWebFrame || maybeWebFrame.ipc.listenerCount(channel) === 0)) {
         console.warn(`WebContents #${this.id} called ipcRenderer.sendSync() with '${channel}' channel without listeners.`);
       }
       this.emit('ipc-message-sync', event, channel, ...args);
+      maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, ...args);
+      ipc.emit(channel, event, ...args);
       ipcMain.emit(channel, event, ...args);
     }
   });
@@ -608,6 +626,9 @@ WebContents.prototype._init = function () {
   this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
     addSenderFrameToEvent(event);
     event.ports = ports.map(p => new MessagePortMain(p));
+    const maybeWebFrame = getWebFrameForEvent(event);
+    maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
+    ipc.emit(channel, event, message);
     ipcMain.emit(channel, event, message);
   });
 
@@ -658,7 +679,6 @@ WebContents.prototype._init = function () {
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
-          event,
           embedder: event.sender,
           disposition,
           referrer,
@@ -706,18 +726,16 @@ WebContents.prototype._init = function () {
           transparent: windowOpenOverriddenOptions.transparent,
           ...windowOpenOverriddenOptions.webPreferences
         } : undefined;
-        // TODO(zcbenz): The features string is parsed twice: here where it is
-        // passed to C++, and in |makeBrowserWindowOptions| later where it is
-        // not actually used since the WebContents is created here.
-        // We should be able to remove the latter once the |new-window| event
-        // is removed.
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
-        // Parameters should keep same with |makeBrowserWindowOptions|.
         const webPreferences = makeWebPreferences({
           embedder: event.sender,
           insecureParsedWebPreferences: parsedWebPreferences,
           secureOverrideWebPreferences
         });
+        windowOpenOverriddenOptions = {
+          ...windowOpenOverriddenOptions,
+          webPreferences
+        };
         this._setNextChildWebPreferences(webPreferences);
       }
     });
@@ -739,7 +757,6 @@ WebContents.prototype._init = function () {
       }
 
       openGuestWindow({
-        event,
         embedder: event.sender,
         guest: webContents,
         overrideBrowserWindowOptions: overriddenOptions,
@@ -820,6 +837,10 @@ export function create (options = {}): Electron.WebContents {
 
 export function fromId (id: string) {
   return binding.fromId(id);
+}
+
+export function fromFrame (frame: Electron.WebFrameMain) {
+  return binding.fromFrame(frame);
 }
 
 export function fromDevToolsTargetId (targetId: string) {

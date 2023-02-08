@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
 #include "components/viz/host/client_frame_sink_video_capturer.h"
 #include "content/public/browser/web_contents.h"
@@ -22,9 +22,7 @@ class Image;
 class Rect;
 }  // namespace gfx
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class WebContents;
 
@@ -48,9 +46,8 @@ class FrameSubscriber : public content::WebContentsObserver,
   void DetachFromHost();
 
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
+  void PrimaryPageChanged(content::Page& page) override;
   void RenderViewDeleted(content::RenderViewHost* host) override;
-  void RenderViewHostChanged(content::RenderViewHost* old_host,
-                             content::RenderViewHost* new_host) override;
 
   // viz::mojom::FrameSinkVideoConsumer implementation.
   void OnFrameCaptured(
@@ -59,6 +56,7 @@ class FrameSubscriber : public content::WebContentsObserver,
       const gfx::Rect& content_rect,
       mojo::PendingRemote<viz::mojom::FrameSinkVideoConsumerFrameCallbacks>
           callbacks) override;
+  void OnNewCropVersion(uint32_t crop_version) override;
   void OnFrameWithEmptyRegionCapture() override;
   void OnStopped() override;
   void OnLog(const std::string& message) override;
@@ -77,8 +75,6 @@ class FrameSubscriber : public content::WebContentsObserver,
   base::WeakPtrFactory<FrameSubscriber> weak_ptr_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_FRAME_SUBSCRIBER_H_

@@ -15,8 +15,8 @@
 #include "base/command_line.h"
 #include "base/feature_list.h"
 #include "base/task/current_thread.h"
+#include "base/task/single_thread_task_runner.h"
 #include "base/task/thread_pool/initialization_util.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/trace_event/trace_event.h"
 #include "gin/array_buffer.h"
 #include "gin/v8_initializer.h"
@@ -24,6 +24,7 @@
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/common/switches.h"
+#include "third_party/electron_node/src/node_wasm_web_api.h"
 
 namespace {
 v8::Isolate* g_isolate;
@@ -73,9 +74,10 @@ struct base::trace_event::TraceValue::Helper<
 
 namespace electron {
 
-JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
-    : isolate_(Initialize(event_loop)),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
+JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
+                                             bool setup_wasm_streaming)
+    : isolate_(Initialize(event_loop, setup_wasm_streaming)),
+      isolate_holder_(base::SingleThreadTaskRunner::GetCurrentDefault(),
                       gin::IsolateHolder::kSingleThread,
                       gin::IsolateHolder::kAllowAtomicsWait,
                       gin::IsolateHolder::IsolateType::kUtility,
@@ -247,12 +249,14 @@ class TracingControllerImpl : public node::tracing::TracingController {
   }
 };
 
-v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
+v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop,
+                                               bool setup_wasm_streaming) {
   auto* cmd = base::CommandLine::ForCurrentProcess();
 
   // --js-flags.
   std::string js_flags =
       cmd->GetSwitchValueASCII(blink::switches::kJavaScriptFlags);
+  js_flags.append(" --no-freeze-flags-after-init");
   if (!js_flags.empty())
     v8::V8::SetFlagsFromString(js_flags.c_str(), js_flags.size());
 
@@ -261,11 +265,11 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
   auto* tracing_agent = node::CreateAgent();
   auto* tracing_controller = new TracingControllerImpl();
   node::tracing::TraceEventHelper::SetAgent(tracing_agent);
-  platform_ = node::CreatePlatform(
+  platform_ = node::MultiIsolatePlatform::Create(
       base::RecommendedMaxNumberOfThreadsInThreadGroup(3, 8, 0.1, 0),
-      tracing_controller, gin::V8Platform::PageAllocator());
+      tracing_controller, gin::V8Platform::GetCurrentPageAllocator());
 
-  v8::V8::InitializePlatform(platform_);
+  v8::V8::InitializePlatform(platform_.get());
   gin::IsolateHolder::Initialize(gin::IsolateHolder::kNonStrictMode,
                                  gin::ArrayBufferAllocator::SharedInstance(),
                                  nullptr /* external_reference_table */,
@@ -275,6 +279,17 @@ v8::Isolate* JavascriptEnvironment::Initialize(uv_loop_t* event_loop) {
 
   v8::Isolate* isolate = v8::Isolate::Allocate();
   platform_->RegisterIsolate(isolate, event_loop);
+
+  // This is done here because V8 checks for the callback in NewContext.
+  // Our setup order doesn't allow for calling SetupIsolateForNode
+  // before NewContext without polluting JavaScriptEnvironment with
+  // Node.js logic and so we conditionally do it here to keep
+  // concerns separate.
+  if (setup_wasm_streaming) {
+    isolate->SetWasmStreamingCallback(
+        node::wasm_web_api::StartStreamingCompilation);
+  }
+
   g_isolate = isolate;
 
   return isolate;
@@ -286,13 +301,13 @@ v8::Isolate* JavascriptEnvironment::GetIsolate() {
   return g_isolate;
 }
 
-void JavascriptEnvironment::OnMessageLoopCreated() {
+void JavascriptEnvironment::CreateMicrotasksRunner() {
   DCHECK(!microtasks_runner_);
   microtasks_runner_ = std::make_unique<MicrotasksRunner>(isolate());
   base::CurrentThread::Get()->AddTaskObserver(microtasks_runner_.get());
 }
 
-void JavascriptEnvironment::OnMessageLoopDestroying() {
+void JavascriptEnvironment::DestroyMicrotasksRunner() {
   DCHECK(microtasks_runner_);
   {
     v8::HandleScope scope(isolate_);

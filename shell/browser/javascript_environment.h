@@ -22,17 +22,18 @@ class MicrotasksRunner;
 // Manage the V8 isolate and context automatically.
 class JavascriptEnvironment {
  public:
-  explicit JavascriptEnvironment(uv_loop_t* event_loop);
+  explicit JavascriptEnvironment(uv_loop_t* event_loop,
+                                 bool setup_wasm_streaming = false);
   ~JavascriptEnvironment();
 
   // disable copy
   JavascriptEnvironment(const JavascriptEnvironment&) = delete;
   JavascriptEnvironment& operator=(const JavascriptEnvironment&) = delete;
 
-  void OnMessageLoopCreated();
-  void OnMessageLoopDestroying();
+  void CreateMicrotasksRunner();
+  void DestroyMicrotasksRunner();
 
-  node::MultiIsolatePlatform* platform() const { return platform_; }
+  node::MultiIsolatePlatform* platform() const { return platform_.get(); }
   v8::Isolate* isolate() const { return isolate_; }
   v8::Local<v8::Context> context() const {
     return v8::Local<v8::Context>::New(isolate_, context_);
@@ -41,9 +42,8 @@ class JavascriptEnvironment {
   static v8::Isolate* GetIsolate();
 
  private:
-  v8::Isolate* Initialize(uv_loop_t* event_loop);
-  // Leaked on exit.
-  node::MultiIsolatePlatform* platform_;
+  v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
+  std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
   v8::Isolate* isolate_;
   gin::IsolateHolder isolate_holder_;

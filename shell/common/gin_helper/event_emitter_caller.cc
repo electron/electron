@@ -8,16 +8,15 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_includes.h"
 
-namespace gin_helper {
-
-namespace internal {
+namespace gin_helper::internal {
 
 v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
                                         v8::Local<v8::Object> obj,
                                         const char* method,
                                         ValueVector* args) {
   // Perform microtask checkpoint after running JavaScript.
-  gin_helper::MicrotasksScope microtasks_scope(isolate, true);
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, obj->GetCreationContextChecked()->GetMicrotaskQueue(), true);
   // Use node::MakeCallback to call the callback, and it will also run pending
   // tasks in Node.js.
   v8::MaybeLocal<v8::Value> ret = node::MakeCallback(
@@ -33,6 +32,4 @@ v8::Local<v8::Value> CallMethodWithArgs(v8::Isolate* isolate,
   return v8::Boolean::New(isolate, false);
 }
 
-}  // namespace internal
-
-}  // namespace gin_helper
+}  // namespace gin_helper::internal

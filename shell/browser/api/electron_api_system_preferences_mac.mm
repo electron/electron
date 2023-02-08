@@ -15,11 +15,9 @@
 #import <Security/Security.h>
 
 #include "base/mac/scoped_cftyperef.h"
-#include "base/mac/sdk_forward_declarations.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
 #include "net/base/mac/url_conversions.h"
@@ -86,9 +84,7 @@ struct Converter<NSAppearance*> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -140,7 +136,7 @@ NSNotificationCenter* GetNotificationCenter(NotificationCenterKind kind) {
 }  // namespace
 
 void SystemPreferences::PostNotification(const std::string& name,
-                                         base::DictionaryValue user_info,
+                                         base::Value::Dict user_info,
                                          gin::Arguments* args) {
   bool immediate = false;
   args->GetNext(&immediate);
@@ -150,7 +146,7 @@ void SystemPreferences::PostNotification(const std::string& name,
   [center
       postNotificationName:base::SysUTF8ToNSString(name)
                     object:nil
-                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())
+                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))
         deliverImmediately:immediate];
 }
 
@@ -168,12 +164,12 @@ void SystemPreferences::UnsubscribeNotification(int request_id) {
 }
 
 void SystemPreferences::PostLocalNotification(const std::string& name,
-                                              base::DictionaryValue user_info) {
+                                              base::Value::Dict user_info) {
   NSNotificationCenter* center = [NSNotificationCenter defaultCenter];
   [center
       postNotificationName:base::SysUTF8ToNSString(name)
                     object:nil
-                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
+                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))];
 }
 
 int SystemPreferences::SubscribeLocalNotification(
@@ -188,15 +184,14 @@ void SystemPreferences::UnsubscribeLocalNotification(int request_id) {
                             NotificationCenterKind::kNSNotificationCenter);
 }
 
-void SystemPreferences::PostWorkspaceNotification(
-    const std::string& name,
-    base::DictionaryValue user_info) {
+void SystemPreferences::PostWorkspaceNotification(const std::string& name,
+                                                  base::Value::Dict user_info) {
   NSNotificationCenter* center =
       [[NSWorkspace sharedWorkspace] notificationCenter];
   [center
       postNotificationName:base::SysUTF8ToNSString(name)
                     object:nil
-                  userInfo:DictionaryValueToNSDictionary(user_info.GetDict())];
+                  userInfo:DictionaryValueToNSDictionary(std::move(user_info))];
 }
 
 int SystemPreferences::SubscribeWorkspaceNotification(
@@ -248,7 +243,7 @@ int SystemPreferences::DoSubscribeNotification(
                 } else {
                   copied_callback.Run(
                       base::SysNSStringToUTF8(notification.name),
-                      base::DictionaryValue(), object);
+                      base::Value(base::Value::Dict()), object);
                 }
               }];
   return request_id;
@@ -297,24 +292,24 @@ v8::Local<v8::Value> SystemPreferences::GetUserDefault(
 }
 
 void SystemPreferences::RegisterDefaults(gin::Arguments* args) {
-  base::DictionaryValue value;
+  base::Value::Dict dict_value;
 
-  if (!args->GetNext(&value)) {
+  if (!args->GetNext(&dict_value)) {
     args->ThrowError();
-  } else {
-    @try {
-      NSDictionary* dict = DictionaryValueToNSDictionary(value.GetDict());
-      for (id key in dict) {
-        id value = [dict objectForKey:key];
-        if ([value isKindOfClass:[NSNull class]] || value == nil) {
-          args->ThrowError();
-          return;
-        }
+    return;
+  }
+  @try {
+    NSDictionary* dict = DictionaryValueToNSDictionary(std::move(dict_value));
+    for (id key in dict) {
+      id value = [dict objectForKey:key];
+      if ([value isKindOfClass:[NSNull class]] || value == nil) {
+        args->ThrowError();
+        return;
       }
-      [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
-    } @catch (NSException* exception) {
-      args->ThrowError();
     }
+    [[NSUserDefaults standardUserDefaults] registerDefaults:dict];
+  } @catch (NSException* exception) {
+    args->ThrowError();
   }
 }
 
@@ -428,9 +423,10 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 
 bool SystemPreferences::CanPromptTouchID() {
   base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-  if (![context
-          canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                      error:nil])
+  LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+  if (@available(macOS 10.15, *))
+    auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+  if (![context canEvaluatePolicy:auth_policy error:nil])
     return false;
   if (@available(macOS 10.13.2, *))
     return [context biometryType] == LABiometryTypeTouchID;
@@ -452,7 +448,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
               nullptr));
 
   scoped_refptr<base::SequencedTaskRunner> runner =
-      base::SequencedTaskRunnerHandle::Get();
+      base::SequencedTaskRunner::GetCurrentDefault();
 
   __block gin_helper::Promise<void> p = std::move(promise);
   [context
@@ -657,6 +653,4 @@ void SystemPreferences::SetAppLevelAppearance(gin::Arguments* args) {
   }
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

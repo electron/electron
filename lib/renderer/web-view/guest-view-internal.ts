@@ -6,22 +6,15 @@ const { mainFrame: webFrame } = process._linkedBinding('electron_renderer_web_fr
 
 export interface GuestViewDelegate {
   dispatchEvent (eventName: string, props: Record<string, any>): void;
-  reset(): void;
 }
 
 export function registerEvents (viewInstanceId: number, delegate: GuestViewDelegate) {
-  ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`, function () {
-    delegate.reset();
-    delegate.dispatchEvent('destroyed', {});
-  });
-
   ipcRendererInternal.on(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`, function (event, eventName, props) {
     delegate.dispatchEvent(eventName, props);
   });
 }
 
 export function deregisterEvents (viewInstanceId: number) {
-  ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DESTROY_GUEST}-${viewInstanceId}`);
   ipcRendererInternal.removeAllListeners(`${IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT}-${viewInstanceId}`);
 }
 

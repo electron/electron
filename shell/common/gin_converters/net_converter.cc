@@ -234,13 +234,13 @@ v8::Local<v8::Value> Converter<net::HttpRequestHeaders>::ToV8(
 bool Converter<net::HttpRequestHeaders>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HttpRequestHeaders* out) {
-  base::DictionaryValue dict;
+  base::Value::Dict dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
-  for (base::DictionaryValue::Iterator it(dict); !it.IsAtEnd(); it.Advance()) {
-    if (it.value().is_string()) {
-      std::string value = it.value().GetString();
-      out->SetHeader(it.key(), value);
+  for (const auto it : dict) {
+    if (it.second.is_string()) {
+      std::string value = it.second.GetString();
+      out->SetHeader(it.first, value);
     }
   }
   return true;

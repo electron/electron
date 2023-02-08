@@ -7,7 +7,7 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -25,10 +25,12 @@
  @private
   in_app_purchase::InAppPurchaseCallback callback_;
   NSInteger quantity_;
+  NSString* username_;
 }
 
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
-              quantity:(NSInteger)quantity;
+              quantity:(NSInteger)quantity
+              username:(NSString*)username;
 
 - (void)purchaseProduct:(NSString*)productID;
 
@@ -45,10 +47,12 @@
  * to the queue.
  */
 - (id)initWithCallback:(in_app_purchase::InAppPurchaseCallback)callback
-              quantity:(NSInteger)quantity {
+              quantity:(NSInteger)quantity
+              username:(NSString*)username {
   if ((self = [super init])) {
     callback_ = std::move(callback);
     quantity_ = quantity;
+    username_ = [username copy];
   }
 
   return self;
@@ -107,6 +111,7 @@
   // when the transaction is finished).
   SKMutablePayment* payment = [SKMutablePayment paymentWithProduct:product];
   payment.quantity = quantity_;
+  payment.applicationUsername = username_;
 
   [[SKPaymentQueue defaultQueue] addPayment:payment];
 
@@ -126,6 +131,11 @@
   }
   // Release this delegate.
   [self release];
+}
+
+- (void)dealloc {
+  [username_ release];
+  [super dealloc];
 }
 
 @end
@@ -183,9 +193,12 @@ std::string GetReceiptURL() {
 
 void PurchaseProduct(const std::string& productID,
                      int quantity,
+                     const std::string& username,
                      InAppPurchaseCallback callback) {
-  auto* iap = [[InAppPurchase alloc] initWithCallback:std::move(callback)
-                                             quantity:quantity];
+  auto* iap = [[InAppPurchase alloc]
+      initWithCallback:std::move(callback)
+              quantity:quantity
+              username:base::SysUTF8ToNSString(username)];
 
   [iap purchaseProduct:base::SysUTF8ToNSString(productID)];
 }

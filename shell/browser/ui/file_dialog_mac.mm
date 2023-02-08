@@ -16,11 +16,11 @@
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
-#include "base/threading/thread_restrictions.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/file_path_converter.h"
+#include "shell/common/thread_restrictions.h"
 
 @interface PopUpButtonHandler : NSObject
 
@@ -173,7 +173,7 @@ void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {
   NSString* default_dir = nil;
   NSString* default_filename = nil;
   if (!settings.default_path.empty()) {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     if (base::DirectoryExists(settings.default_path)) {
       default_dir = base::SysUTF8ToNSString(settings.default_path.value());
     } else {
@@ -340,13 +340,13 @@ void OpenDialogCompletion(int chosen,
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePaths", std::vector<base::FilePath>());
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     dict.Set("bookmarks", std::vector<std::string>());
 #endif
   } else {
     std::vector<base::FilePath> paths;
     dict.Set("canceled", false);
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     std::vector<std::string> bookmarks;
     if (security_scoped_bookmarks)
       ReadDialogPathsWithBookmarks(dialog, &paths, &bookmarks);
@@ -418,14 +418,14 @@ void SaveDialogCompletion(int chosen,
   if (chosen == NSModalResponseCancel) {
     dict.Set("canceled", true);
     dict.Set("filePath", base::FilePath());
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     dict.Set("bookmark", base::StringPiece());
 #endif
   } else {
     std::string path = base::SysNSStringToUTF8([[dialog URL] path]);
     dict.Set("filePath", base::FilePath(path));
     dict.Set("canceled", false);
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
     std::string bookmark;
     if (security_scoped_bookmarks) {
       bookmark = GetBookmarkDataFromNSURL([dialog URL]);

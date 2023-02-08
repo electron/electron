@@ -7,10 +7,9 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/command_line.h"
 #include "base/files/file_path.h"
-#include "base/task/task_runner_util.h"
+#include "base/functional/bind.h"
 #include "base/task/thread_pool.h"
 #include "chrome/browser/browser_process.h"
 #include "components/net_log/chrome_net_log.h"
@@ -132,9 +131,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   auto command_line_string =
       base::CommandLine::ForCurrentProcess()->GetCommandLineString();
   auto channel_string = std::string("Electron " ELECTRON_VERSION);
-  base::Value custom_constants =
-      base::Value::FromUniquePtrValue(net_log::GetPlatformConstantsForNetLog(
-          command_line_string, channel_string));
+  base::Value::Dict custom_constants = net_log::GetPlatformConstantsForNetLog(
+      command_line_string, channel_string);
 
   auto* network_context =
       browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
@@ -144,9 +142,8 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
   net_log_exporter_.set_disconnect_handler(
       base::BindOnce(&NetLog::OnConnectionError, base::Unretained(this)));
 
-  base::PostTaskAndReplyWithResult(
-      file_task_runner_.get(), FROM_HERE,
-      base::BindOnce(OpenFileForWriting, log_path),
+  file_task_runner_->PostTaskAndReplyWithResult(
+      FROM_HERE, base::BindOnce(OpenFileForWriting, log_path),
       base::BindOnce(&NetLog::StartNetLogAfterCreateFile,
                      weak_ptr_factory_.GetWeakPtr(), capture_mode,
                      max_file_size, std::move(custom_constants)));
@@ -156,7 +153,7 @@ v8::Local<v8::Promise> NetLog::StartLogging(base::FilePath log_path,
 
 void NetLog::StartNetLogAfterCreateFile(net::NetLogCaptureMode capture_mode,
                                         uint64_t max_file_size,
-                                        base::Value custom_constants,
+                                        base::Value::Dict custom_constants,
                                         base::File output_file) {
   if (!net_log_exporter_) {
     // Theoretically the mojo pipe could have been closed by the time we get
@@ -204,7 +201,7 @@ v8::Local<v8::Promise> NetLog::StopLogging(gin::Arguments* args) {
     // pointer lives long enough to resolve the promise. Moving it into the
     // callback will cause the instance variable to become empty.
     net_log_exporter_->Stop(
-        base::Value(base::Value::Type::DICTIONARY),
+        base::Value::Dict(),
         base::BindOnce(
             [](mojo::Remote<network::mojom::NetLogExporter>,
                gin_helper::Promise<void> promise, int32_t error) {

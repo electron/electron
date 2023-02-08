@@ -20,3 +20,16 @@ index 149dd0555a69be576fd1eb97aa79b8aedafcac04..233e6d2ac511c4a7fa45d47bb7448bee
    DCHECK_NO_SCRIPT_NO_EXCEPTION_MAYBE_TEARDOWN(i_isolate)
  
  #define ENTER_V8_NO_SCRIPT_NO_EXCEPTION(i_isolate) \
+diff --git a/src/execution/microtask-queue.cc b/src/execution/microtask-queue.cc
+index ac48de9b499aed29a09ba918ddabfa67cd5485da..aa50aeb1d4f3943f83ded5e328b4a65bcfbc7317 100644
+--- a/src/execution/microtask-queue.cc
++++ b/src/execution/microtask-queue.cc
+@@ -180,7 +180,7 @@ int MicrotaskQueue::RunMicrotasks(Isolate* isolate) {
+ 
+   if (isolate->is_execution_terminating()) {
+     DCHECK(isolate->has_scheduled_exception());
+-    DCHECK(maybe_result.is_null());
++    // DCHECK(maybe_result.is_null());
+     delete[] ring_buffer_;
+     ring_buffer_ = nullptr;
+     capacity_ = 0;

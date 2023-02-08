@@ -1,1 +1,2 @@
 use_new_constructor_for_scriptorigin_when_17_x.patch
+chore_remove_deprecated_accessorsignatures.patch

@@ -28,22 +28,20 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   GPUInfoManager& operator=(const GPUInfoManager&) = delete;
 
   bool NeedsCompleteGpuInfoCollection() const;
-  void FetchCompleteInfo(gin_helper::Promise<base::DictionaryValue> promise);
-  void FetchBasicInfo(gin_helper::Promise<base::DictionaryValue> promise);
+  void FetchCompleteInfo(gin_helper::Promise<base::Value> promise);
+  void FetchBasicInfo(gin_helper::Promise<base::Value> promise);
   void OnGpuInfoUpdate() override;
 
  private:
-  std::unique_ptr<base::DictionaryValue> EnumerateGPUInfo(
-      gpu::GPUInfo gpu_info) const;
+  base::Value::Dict EnumerateGPUInfo(gpu::GPUInfo gpu_info) const;
 
   // These should be posted to the task queue
-  void CompleteInfoFetcher(gin_helper::Promise<base::DictionaryValue> promise);
+  void CompleteInfoFetcher(gin_helper::Promise<base::Value> promise);
   void ProcessCompleteInfo();
 
   // This set maintains all the promises that should be fulfilled
   // once we have the complete information data
-  std::vector<gin_helper::Promise<base::DictionaryValue>>
-      complete_info_promise_set_;
+  std::vector<gin_helper::Promise<base::Value>> complete_info_promise_set_;
   content::GpuDataManagerImpl* gpu_data_manager_;
 };
 

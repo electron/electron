@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/threading/thread_task_runner_handle.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
@@ -56,9 +55,7 @@ struct Converter<electron::TrayIcon::IconType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Tray::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -397,10 +394,9 @@ bool Tray::CheckAlive() {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "Tray", templ)
+void Tray::FillObjectTemplate(v8::Isolate* isolate,
+                              v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Tray", templ)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
@@ -422,9 +418,7 @@ v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

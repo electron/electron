@@ -45,6 +45,13 @@ returns `null`.
 Returns `WebContents` | undefined - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
+### `webContents.fromFrame(frame)`
+
+* `frame` WebFrameMain
+
+Returns `WebContents` | undefined - A WebContents instance with the given WebFrameMain, or
+`undefined` if there is no WebContents associated with the given WebFrameMain.
+
 ### `webContents.fromDevToolsTargetId(targetId)`
 
 * `targetId` string - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
@@ -130,10 +137,6 @@ Corresponds to the points in time when the spinner of the tab stopped spinning.
 
 #### Event: 'dom-ready'
 
-Returns:
-
-* `event` Event
-
 Emitted when the document in the top-level frame is loaded.
 
 #### Event: 'page-title-updated'
@@ -156,63 +159,17 @@ Returns:
 
 Emitted when page receives favicon urls.
 
-#### Event: 'new-window' _Deprecated_
+#### Event: 'content-bounds-updated'
 
 Returns:
 
-* `event` NewWindowWebContentsEvent
-* `url` string
-* `frameName` string
-* `disposition` string - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window`, `save-to-disk` and `other`.
-* `options` BrowserWindowConstructorOptions - The options which will be used for creating the new
-  [`BrowserWindow`](browser-window.md).
-* `additionalFeatures` string[] - The non-standard features (features not handled
-  by Chromium or Electron) given to `window.open()`. Deprecated, and will now
-  always be the empty array `[]`.
-* `referrer` [Referrer](structures/referrer.md) - The referrer that will be
-  passed to the new window. May or may not result in the `Referer` header being
-  sent, depending on the referrer policy.
-* `postBody` [PostBody](structures/post-body.md) (optional) - The post data that
-  will be sent to the new window, along with the appropriate headers that will
-  be set. If no post data is to be sent, the value will be `null`. Only defined
-  when the window is being created by a form that set `target=_blank`.
+* `event` Event
+* `bounds` [Rectangle](structures/rectangle.md) - requested new content bounds
 
-Deprecated in favor of [`webContents.setWindowOpenHandler`](web-contents.md#contentssetwindowopenhandlerhandler).
+Emitted when the page calls `window.moveTo`, `window.resizeTo` or related APIs.
 
-Emitted when the page requests to open a new window for a `url`. It could be
-requested by `window.open` or an external link like `<a target='_blank'>`.
-
-By default a new `BrowserWindow` will be created for the `url`.
-
-Calling `event.preventDefault()` will prevent Electron from automatically creating a
-new [`BrowserWindow`](browser-window.md). If you call `event.preventDefault()` and manually create a new
-[`BrowserWindow`](browser-window.md) then you must set `event.newGuest` to reference the new [`BrowserWindow`](browser-window.md)
-instance, failing to do so may result in unexpected behavior. For example:
-
-```javascript
-myBrowserWindow.webContents.on('new-window', (event, url, frameName, disposition, options, additionalFeatures, referrer, postBody) => {
-  event.preventDefault()
-  const win = new BrowserWindow({
-    webContents: options.webContents, // use existing webContents if provided
-    show: false
-  })
-  win.once('ready-to-show', () => win.show())
-  if (!options.webContents) {
-    const loadOptions = {
-      httpReferrer: referrer
-    }
-    if (postBody != null) {
-      const { data, contentType, boundary } = postBody
-      loadOptions.postData = postBody.data
-      loadOptions.extraHeaders = `content-type: ${contentType}; boundary=${boundary}`
-    }
-
-    win.loadURL(url, loadOptions) // existing webContents will be navigated automatically
-  }
-  event.newGuest = win
-})
-```
+By default, this will move the window. To prevent that behavior, call
+`event.preventDefault()`.
 
 #### Event: 'did-create-window'
 
@@ -454,6 +411,16 @@ Emitted when a plugin process has crashed.
 
 Emitted when `webContents` is destroyed.
 
+#### Event: 'input-event'
+
+Returns:
+
+* `event` Event
+* `inputEvent` [InputEvent](structures/input-event.md)
+
+Emitted when an input event is sent to the WebContents. See
+[InputEvent](structures/input-event.md) for details.
+
 #### Event: 'before-input-event'
 
 Returns:
@@ -524,6 +491,14 @@ changed.
 The `focus` and `blur` events of `WebContents` should only be used to detect
 focus change between different `WebContents` and `BrowserView` in the same
 window.
+
+#### Event: 'devtools-open-url'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
 #### Event: 'devtools-opened'
 
@@ -603,7 +578,7 @@ Returns:
   * `finalUpdate` boolean
 
 Emitted when a result is available for
-[`webContents.findInPage`] request.
+[`webContents.findInPage`](#contentsfindinpagetext-options) request.
 
 #### Event: 'media-started-playing'
 
@@ -862,6 +837,8 @@ Returns:
 
 Emitted when the renderer process sends an asynchronous message via `ipcRenderer.send()`.
 
+See also [`webContents.ipc`](#contentsipc-readonly), which provides an [`IpcMain`](ipc-main.md)-like interface for responding to IPC messages specifically from this WebContents.
+
 #### Event: 'ipc-message-sync'
 
 Returns:
@@ -871,6 +848,8 @@ Returns:
 * `...args` any[]
 
 Emitted when the renderer process sends a synchronous message via `ipcRenderer.sendSync()`.
+
+See also [`webContents.ipc`](#contentsipc-readonly), which provides an [`IpcMain`](ipc-main.md)-like interface for responding to IPC messages specifically from this WebContents.
 
 #### Event: 'preferred-size-changed'
 
@@ -979,6 +958,21 @@ Returns `string` - The title of the current web page.
 #### `contents.isDestroyed()`
 
 Returns `boolean` - Whether the web page is destroyed.
+
+#### `contents.close([opts])`
+
+* `opts` Object (optional)
+  * `waitForBeforeUnload` boolean - if true, fire the `beforeunload` event
+    before closing the page. If the page prevents the unload, the WebContents
+    will not be closed. The [`will-prevent-unload`](#event-will-prevent-unload)
+    will be fired if the page requests prevention of unload.
+
+Closes the page, as if the web content had called `window.close()`.
+
+If the page is successfully closed (i.e. the unload is not prevented by the
+page, or `waitForBeforeUnload` is false or unspecified), the WebContents will
+be destroyed and no longer usable. The [`destroyed`](#event-destroyed) event
+will be emitted.
 
 #### `contents.focus()`
 
@@ -1169,7 +1163,7 @@ Ignore application menu shortcuts while this web contents is focused.
 
 #### `contents.setWindowOpenHandler(handler)`
 
-* `handler` Function<{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
+* `handler` Function<{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}>
   * `details` Object
     * `url` string - The _resolved_ version of the URL passed to `window.open()`. e.g. opening a window with `window.open('foo')` will yield something like `https://the-origin/the/current/path/foo`.
     * `frameName` string - Name of the window provided in `window.open()`
@@ -1185,8 +1179,11 @@ Ignore application menu shortcuts while this web contents is focused.
       be set. If no post data is to be sent, the value will be `null`. Only defined
       when the window is being created by a form that set `target=_blank`.
 
-  Returns `{action: 'deny'} | {action: 'allow', overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
+  Returns `{action: 'deny'} | {action: 'allow', outlivesOpener?: boolean, overrideBrowserWindowOptions?: BrowserWindowConstructorOptions}` - `deny` cancels the creation of the new
   window. `allow` will allow the new window to be created. Specifying `overrideBrowserWindowOptions` allows customization of the created window.
+  By default, child windows are closed when their opener is closed. This can be
+  changed by specifying `outlivesOpener: true`, in which case the opened window
+  will not be closed when its opener is closed.
   Returning an unrecognized value such as a null, undefined, or an object
   without a recognized 'action' value will result in a console error and have
   the same effect as returning `{action: 'deny'}`.
@@ -1336,7 +1333,7 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 #### `contents.stopFindInPage(action)`
 
 * `action` string - Specifies the action to take place when ending
-  [`webContents.findInPage`] request.
+  [`webContents.findInPage`](#contentsfindinpagetext-options) request.
   * `clearSelection` - Clear the selection.
   * `keepSelection` - Translate the selection into a normal selection.
   * `activateSelection` - Focus and click the selection node.
@@ -1353,38 +1350,23 @@ const requestId = webContents.findInPage('api')
 console.log(requestId)
 ```
 
-#### `contents.capturePage([rect])`
+#### `contents.capturePage([rect, opts])`
 
 * `rect` [Rectangle](structures/rectangle.md) (optional) - The area of the page to be captured.
+* `opts` Object (optional)
+  * `stayHidden` boolean (optional) -  Keep the page hidden instead of visible. Default is `false`.
+  * `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep. Default is `false`.
 
 Returns `Promise<NativeImage>` - Resolves with a [NativeImage](native-image.md)
 
 Captures a snapshot of the page within `rect`. Omitting `rect` will capture the whole visible page.
+The page is considered visible when its browser window is hidden and the capturer count is non-zero.
+If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
 
 #### `contents.isBeingCaptured()`
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
-
-#### `contents.incrementCapturerCount([size, stayHidden, stayAwake])`
-
-* `size` [Size](structures/size.md) (optional) - The preferred size for the capturer.
-* `stayHidden` boolean (optional) -  Keep the page hidden instead of visible.
-* `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
-
-Increase the capturer count by one. The page is considered visible when its browser window is
-hidden and the capturer count is non-zero. If you would like the page to stay hidden, you should ensure that `stayHidden` is set to true.
-
-This also affects the Page Visibility API.
-
-#### `contents.decrementCapturerCount([stayHidden, stayAwake])`
-
-* `stayHidden` boolean (optional) -  Keep the page in hidden state instead of visible.
-* `stayAwake` boolean (optional) -  Keep the system awake instead of allowing it to sleep.
-
-Decrease the capturer count by one. The page will be set to hidden or occluded state when its
-browser window is hidden or occluded and the capturer count reaches zero. If you want to
-decrease the hidden capturer count instead you should set `stayHidden` to true.
 
 #### `contents.getPrinters()` _Deprecated_
 
@@ -1623,6 +1605,8 @@ Opens the devtools.
 When `contents` is a `<webview>` tag, the `mode` would be `detach` by default,
 explicitly passing an empty `mode` can force using last used dock state.
 
+On Windows, if Windows Control Overlay is enabled, Devtools will be opened with `mode: 'detach'`.
+
 #### `contents.closeDevTools()`
 
 Closes the devtools.
@@ -1712,7 +1696,7 @@ app.whenReady().then(() => {
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` Integer | [number, number] - the ID of the frame to send to, or a
+* `frameId` Integer | \[number, number] - the ID of the frame to send to, or a
   pair of `[processId, frameId]` if the frame is in a different process to the
   main frame.
 * `channel` string
@@ -1986,6 +1970,35 @@ This corresponds to the [animationPolicy][] accessibility feature in Chromium.
 
 ### Instance Properties
 
+#### `contents.ipc` _Readonly_
+
+An [`IpcMain`](ipc-main.md) scoped to just IPC messages sent from this
+WebContents.
+
+IPC messages sent with `ipcRenderer.send`, `ipcRenderer.sendSync` or
+`ipcRenderer.postMessage` will be delivered in the following order:
+
+1. `contents.on('ipc-message')`
+2. `contents.mainFrame.on(channel)`
+3. `contents.ipc.on(channel)`
+4. `ipcMain.on(channel)`
+
+Handlers registered with `invoke` will be checked in the following order. The
+first one that is defined will be called, the rest will be ignored.
+
+1. `contents.mainFrame.handle(channel)`
+2. `contents.handle(channel)`
+3. `ipcMain.handle(channel)`
+
+A handler or event listener registered on the WebContents will receive IPC
+messages sent from any frame, including child frames. In most cases, only the
+main frame can send IPC messages. However, if the `nodeIntegrationInSubFrames`
+option is enabled, it is possible for child frames to send IPC messages also.
+In that case, handlers should check the `senderFrame` property of the IPC event
+to ensure that the message is coming from the expected frame. Alternatively,
+register handlers on the appropriate frame directly using the
+[`WebFrameMain.ipc`](web-frame-main.md#frameipc-readonly) interface.
+
 #### `contents.audioMuted`
 
 A `boolean` property that determines whether this page is muted.
@@ -2045,7 +2058,13 @@ when the page becomes backgrounded. This also affects the Page Visibility API.
 
 A [`WebFrameMain`](web-frame-main.md) property that represents the top frame of the page's frame hierarchy.
 
+#### `contents.opener` _Readonly_
+
+A [`WebFrameMain`](web-frame-main.md) property that represents the frame that opened this WebContents, either
+with open(), or by navigating a link with a target attribute.
+
 [keyboardevent]: https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+[`MessagePortMain`]: message-port-main.md

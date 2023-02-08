@@ -15,15 +15,11 @@
 
 #include "ui/native_theme/native_theme.h"
 
-namespace electron {
-
-namespace win {
+namespace electron::win {
 
 bool IsDarkModeSupported();
 void SetDarkModeForWindow(HWND hWnd);
 
-}  // namespace win
-
-}  // namespace electron
+}  // namespace electron::win
 
 #endif  // ELECTRON_SHELL_BROWSER_WIN_DARK_MODE_H_

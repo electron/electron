@@ -20,7 +20,6 @@
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
 #include "shell/browser/ui/win/dialog_thread.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/gfx/icon_util.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -138,7 +137,7 @@ TaskDialogCallback(HWND hwnd, UINT msg, WPARAM, LPARAM, LONG_PTR data) {
   return S_OK;
 }
 
-DialogResult ShowTaskDialogWstr(NativeWindow* parent,
+DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
                                 MessageBoxType type,
                                 const std::vector<std::wstring>& buttons,
                                 int default_id,
@@ -161,8 +160,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
   config.dwFlags = flags;
 
   if (parent) {
-    config.hwndParent = static_cast<electron::NativeWindowViews*>(parent)
-                            ->GetAcceleratedWidget();
+    config.hwndParent = parent;
   }
 
   if (default_id > 0)
@@ -255,6 +253,7 @@ DialogResult ShowTaskDialogWstr(NativeWindow* parent,
 }
 
 DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
+                                gfx::AcceleratedWidget parent_widget,
                                 HWND* hwnd) {
   std::vector<std::wstring> buttons;
   for (const auto& button : settings.buttons)
@@ -267,7 +266,7 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
       base::UTF8ToUTF16(settings.checkbox_label);
 
   return ShowTaskDialogWstr(
-      settings.parent_window, settings.type, buttons, settings.default_id,
+      parent_widget, settings.type, buttons, settings.default_id,
       settings.cancel_id, settings.no_link, title, message, detail,
       checkbox_label, settings.checkbox_checked, settings.icon, hwnd);
 }
@@ -275,8 +274,12 @@ DialogResult ShowTaskDialogUTF8(const MessageBoxSettings& settings,
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
-  electron::UnresponsiveSuppressor suppressor;
-  DialogResult result = ShowTaskDialogUTF8(settings, nullptr);
+  gfx::AcceleratedWidget parent_widget =
+      settings.parent_window
+          ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
+                ->GetAcceleratedWidget()
+          : nullptr;
+  DialogResult result = ShowTaskDialogUTF8(settings, parent_widget, nullptr);
   return result.button_id;
 }
 
@@ -293,17 +296,23 @@ void ShowMessageBox(const MessageBoxSettings& settings,
     hwnd = it.first->second.get();
   }
 
-  dialog_thread::Run(
-      base::BindOnce(&ShowTaskDialogUTF8, settings, base::Unretained(hwnd)),
-      base::BindOnce(
-          [](MessageBoxCallback callback, absl::optional<int> id,
-             DialogResult result) {
-            if (id)
-              GetDialogsMap().erase(*id);
-            std::move(callback).Run(result.button_id,
-                                    result.verification_flag_checked);
-          },
-          std::move(callback), settings.id));
+  gfx::AcceleratedWidget parent_widget =
+      settings.parent_window
+          ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
+                ->GetAcceleratedWidget()
+          : nullptr;
+  dialog_thread::Run(base::BindOnce(&ShowTaskDialogUTF8, settings,
+                                    parent_widget, base::Unretained(hwnd)),
+                     base::BindOnce(
+                         [](MessageBoxCallback callback, absl::optional<int> id,
+                            DialogResult result) {
+                           if (id)
+                             GetDialogsMap().erase(*id);
+                           std::move(callback).Run(
+                               result.button_id,
+                               result.verification_flag_checked);
+                         },
+                         std::move(callback), settings.id));
 }
 
 void CloseMessageBox(int id) {
@@ -326,7 +335,6 @@ void CloseMessageBox(int id) {
 }
 
 void ShowErrorBox(const std::u16string& title, const std::u16string& content) {
-  electron::UnresponsiveSuppressor suppressor;
   ShowTaskDialogWstr(nullptr, MessageBoxType::kError, {}, -1, 0, false,
                      u"Error", title, content, u"", false, gfx::ImageSkia(),
                      nullptr);

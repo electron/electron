@@ -238,6 +238,11 @@ def to_utf8(patch):
 
 
 def export_patches(repo, out_dir, patch_range=None, dry_run=False):
+  if not os.path.exists(repo):
+    sys.stderr.write(
+      "Skipping patches in {} because it does not exist.\n".format(repo)
+    )
+    return
   if patch_range is None:
     patch_range, num_patches = guess_base_commit(repo)
     sys.stderr.write("Exporting {} patches in {} since {}\n".format(

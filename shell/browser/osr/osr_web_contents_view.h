@@ -63,6 +63,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
                              content::RenderViewHost* new_host) override;
   void SetOverscrollControllerEnabled(bool enabled) override;
   void OnCapturerCountChanged() override;
+  void FullscreenStateChanged(bool is_fullscreen) override;
 
 #if BUILDFLAG(IS_MAC)
   bool CloseTabAfterEventTrackingIfNeeded() override;
@@ -72,7 +73,8 @@ class OffScreenWebContentsView : public content::WebContentsView,
   void StartDragging(const content::DropData& drop_data,
                      blink::DragOperationsMask allowed_ops,
                      const gfx::ImageSkia& image,
-                     const gfx::Vector2d& image_offset,
+                     const gfx::Vector2d& cursor_offset,
+                     const gfx::Rect& drag_obj_rect,
                      const blink::mojom::DragEventSourceInfo& event_info,
                      content::RenderWidgetHostImpl* source_rwh) override;
   void UpdateDragCursor(ui::mojom::DragOperation operation) override;

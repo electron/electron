@@ -13,9 +13,7 @@
 #include "ui/display/screen.h"
 #include "ui/views/controls/menu/menu_runner.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class MenuViews : public Menu {
  public:
@@ -39,8 +37,6 @@ class MenuViews : public Menu {
   base::WeakPtrFactory<MenuViews> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_VIEWS_H_

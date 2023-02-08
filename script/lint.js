@@ -5,20 +5,24 @@ const { GitProcess } = require('dugite');
 const childProcess = require('child_process');
 const { ESLint } = require('eslint');
 const fs = require('fs');
-const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
-const { chunkFilenames } = require('./lib/utils');
+const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
 const DEPOT_TOOLS = path.resolve(SOURCE_ROOT, 'third_party', 'depot_tools');
 
+// Augment the PATH for this script so that we can find executables
+// in the depot_tools folder even if folks do not have an instance of
+// DEPOT_TOOLS in their path already
+process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
+
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec-main', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
+  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
   ['spec', 'ts-smoke', 'electron', 'main.ts'],
   ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
   ['spec', 'ts-smoke', 'runner.js']
@@ -27,10 +31,10 @@ const IGNORELIST = new Set([
 const IS_WINDOWS = process.platform === 'win32';
 
 function spawnAndCheckExitCode (cmd, args, opts) {
-  opts = Object.assign({ stdio: 'inherit' }, opts);
+  opts = { stdio: 'inherit', ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
   if (error) {
-    // the subsprocess failed or timed out
+    // the subprocess failed or timed out
     console.error(error);
     process.exit(1);
   }
@@ -82,11 +86,8 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
-    }
+    const clangFormatFlags = opts.fix ? ['--fix'] : [];
+    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
     const filter = [
       '-readability/braces',
       '-readability/casting',
@@ -103,13 +104,13 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const rcfile = path.join(DEPOT_TOOLS, 'pylintrc');
     const args = ['--rcfile=' + rcfile, ...filenames];
-    const env = Object.assign({ PYTHONPATH: path.join(ELECTRON_ROOT, 'script') }, process.env);
+    const env = { PYTHONPATH: path.join(ELECTRON_ROOT, 'script'), ...process.env };
     spawnAndCheckExitCode('pylint-2.7', args, { env });
   }
 }, {
   key: 'javascript',
-  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec', 'spec-main'],
-  ignoreRoots: ['spec/node_modules', 'spec-main/node_modules'],
+  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
+  ignoreRoots: ['spec/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: async (opts, filenames) => {
     const eslint = new ESLint({
@@ -143,10 +144,11 @@ const LINTERS = [{
   test: filename => filename.endsWith('.gn') || filename.endsWith('.gni'),
   run: (opts, filenames) => {
     const allOk = filenames.map(filename => {
-      const env = Object.assign({
+      const env = {
         CHROMIUM_BUILDTOOLS_PATH: path.resolve(ELECTRON_ROOT, '..', 'buildtools'),
-        DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
-      }, process.env);
+        DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+        ...process.env
+      };
       // Users may not have depot_tools in PATH.
       env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
       const args = ['format', filename];
@@ -175,6 +177,7 @@ const LINTERS = [{
     const patchesConfig = path.resolve(patchesDir, 'config.json');
     // If the config does not exist, that's a problem
     if (!fs.existsSync(patchesConfig)) {
+      console.error(`Patches config file: "${patchesConfig}" does not exist`);
       process.exit(1);
     }
 
@@ -182,34 +185,48 @@ const LINTERS = [{
     for (const key of Object.keys(config)) {
       // The directory the config points to should exist
       const targetPatchesDir = path.resolve(__dirname, '../../..', key);
-      if (!fs.existsSync(targetPatchesDir)) throw new Error(`target patch directory: "${targetPatchesDir}" does not exist`);
+      if (!fs.existsSync(targetPatchesDir)) {
+        console.error(`target patch directory: "${targetPatchesDir}" does not exist`);
+        process.exit(1);
+      }
       // We need a .patches file
       const dotPatchesPath = path.resolve(targetPatchesDir, '.patches');
-      if (!fs.existsSync(dotPatchesPath)) throw new Error(`.patches file: "${dotPatchesPath}" does not exist`);
+      if (!fs.existsSync(dotPatchesPath)) {
+        console.error(`.patches file: "${dotPatchesPath}" does not exist`);
+        process.exit(1);
+      }
 
       // Read the patch list
       const patchFileList = fs.readFileSync(dotPatchesPath, 'utf8').trim().split('\n');
       const patchFileSet = new Set(patchFileList);
       patchFileList.reduce((seen, file) => {
         if (seen.has(file)) {
-          throw new Error(`'${file}' is listed in ${dotPatchesPath} more than once`);
+          console.error(`'${file}' is listed in ${dotPatchesPath} more than once`);
+          process.exit(1);
         }
         return seen.add(file);
       }, new Set());
-      if (patchFileList.length !== patchFileSet.size) throw new Error('each patch file should only be in the .patches file once');
+
+      if (patchFileList.length !== patchFileSet.size) {
+        console.error('Each patch file should only be in the .patches file once');
+        process.exit(1);
+      }
+
       for (const file of fs.readdirSync(targetPatchesDir)) {
         // Ignore the .patches file and READMEs
         if (file === '.patches' || file === 'README.md') continue;
 
         if (!patchFileSet.has(file)) {
-          throw new Error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`);
+          console.error(`Expected the .patches file at "${dotPatchesPath}" to contain a patch file ("${file}") present in the directory but it did not`);
+          process.exit(1);
         }
         patchFileSet.delete(file);
       }
 
       // If anything is left in this set, it means it did not exist on disk
       if (patchFileSet.size > 0) {
-        throw new Error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`);
+        console.error(`Expected all the patch files listed in the .patches file at "${dotPatchesPath}" to exist but some did not:\n${JSON.stringify([...patchFileSet.values()], null, 2)}`);
+        process.exit(1);
       }
     }
 
@@ -256,21 +273,6 @@ async function findChangedFiles (top) {
   const relativePaths = result.stdout.split(/\r\n|\r|\n/g);
   const absolutePaths = relativePaths.map(x => path.join(top, x));
   return new Set(absolutePaths);
-}
-
-async function findMatchingFiles (top, test) {
-  return new Promise((resolve, reject) => {
-    const matches = [];
-    klaw(top, {
-      filter: f => path.basename(f) !== '.bin'
-    })
-      .on('end', () => resolve(matches))
-      .on('data', item => {
-        if (test(item.path)) {
-          matches.push(item.path);
-        }
-      });
-  });
 }
 
 async function findFiles (args, linter) {

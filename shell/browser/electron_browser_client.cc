@@ -49,6 +49,7 @@
 #include "content/public/browser/tts_controller.h"
 #include "content/public/browser/tts_platform.h"
 #include "content/public/browser/url_loader_request_interceptor.h"
+#include "content/public/browser/weak_document_ptr.h"
 #include "content/public/common/content_descriptors.h"
 #include "content/public/common/content_paths.h"
 #include "content/public/common/content_switches.h"
@@ -82,7 +83,6 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_navigation_throttle.h"
-#include "shell/browser/electron_quota_permission_context.h"
 #include "shell/browser/electron_speech_recognition_manager_delegate.h"
 #include "shell/browser/electron_web_contents_utility_handler_impl.h"
 #include "shell/browser/font_defaults.h"
@@ -103,6 +103,7 @@
 #include "shell/browser/ui/devtools_manager_delegate.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/browser/webauthn/electron_authenticator_request_delegate.h"
 #include "shell/browser/window_list.h"
 #include "shell/common/api/api.mojom.h"
 #include "shell/common/application_info.h"
@@ -110,6 +111,7 @@
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
@@ -117,10 +119,6 @@
 #include "ui/base/resource/resource_bundle.h"
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
-
-#if BUILDFLAG(IS_WIN)
-#include "sandbox/win/src/sandbox_policy.h"
-#endif
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
@@ -180,20 +178,16 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
-#include "content/common/mac_helpers.h"
-#include "content/public/common/child_process_host.h"
+#include "content/browser/mac_helpers.h"
+#include "content/public/browser/child_process_host.h"
 #endif
 
-#if BUILDFLAG(IS_LINUX) && !defined(MAS_BUILD)
-#include "base/debug/leak_annotations.h"
-#include "components/crash/content/browser/crash_handler_host_linux.h"
-#include "components/crash/core/app/breakpad_linux.h"  // nogncheck
+#if BUILDFLAG(IS_LINUX)
 #include "components/crash/core/app/crash_switches.h"  // nogncheck
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
 #if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
-#include "chrome/browser/ui/views/overlay/document_overlay_window_views.h"
 #include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
@@ -306,67 +300,9 @@ const extensions::Extension* GetEnabledExtensionFromEffectiveURL(
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 #if BUILDFLAG(IS_LINUX)
-breakpad::CrashHandlerHostLinux* CreateCrashHandlerHost(
-    const std::string& process_type) {
-  base::FilePath dumps_path;
-  base::PathService::Get(electron::DIR_CRASH_DUMPS, &dumps_path);
-  {
-    ANNOTATE_SCOPED_MEMORY_LEAK;
-    bool upload = ElectronCrashReporterClient::Get()->GetCollectStatsConsent();
-    breakpad::CrashHandlerHostLinux* crash_handler =
-        new breakpad::CrashHandlerHostLinux(process_type, dumps_path, upload);
-    crash_handler->StartUploaderThread();
-    return crash_handler;
-  }
-}
-
 int GetCrashSignalFD(const base::CommandLine& command_line) {
-  if (crash_reporter::IsCrashpadEnabled()) {
-    int fd;
-    pid_t pid;
-    return crash_reporter::GetHandlerSocket(&fd, &pid) ? fd : -1;
-  }
-
-  // Extensions have the same process type as renderers.
-  if (command_line.HasSwitch(extensions::switches::kExtensionProcess)) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost("extension");
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  std::string process_type =
-      command_line.GetSwitchValueASCII(::switches::kProcessType);
-
-  if (process_type == ::switches::kRendererProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  if (process_type == ::switches::kPpapiPluginProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  if (process_type == ::switches::kGpuProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  if (process_type == ::switches::kUtilityProcess) {
-    static breakpad::CrashHandlerHostLinux* crash_handler = nullptr;
-    if (!crash_handler)
-      crash_handler = CreateCrashHandlerHost(process_type);
-    return crash_handler->GetDeathSignalSocket();
-  }
-
-  return -1;
+  int fd;
+  return crash_reporter::GetHandlerSocket(&fd, nullptr) ? fd : -1;
 }
 #endif  // BUILDFLAG(IS_LINUX)
 
@@ -525,7 +461,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     int process_id) {
   // Make sure we're about to launch a known executable
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    ScopedAllowBlockingForElectron allow_blocking;
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
@@ -534,15 +470,10 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         content::ChildProcessHost::CHILD_RENDERER);
     auto gpu_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_GPU);
-#if BUILDFLAG(ENABLE_PLUGINS)
     auto plugin_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_PLUGIN);
-#endif
-    if (program != renderer_child_path && program != gpu_child_path
-#if BUILDFLAG(ENABLE_PLUGINS)
-        && program != plugin_child_path
-#endif
-    ) {
+    if (program != renderer_child_path && program != gpu_child_path &&
+        program != plugin_child_path) {
       child_path = content::ChildProcessHost::GetChildPath(
           content::ChildProcessHost::CHILD_NORMAL);
       CHECK_EQ(program, child_path)
@@ -564,42 +495,22 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
       command_line->GetSwitchValueASCII(::switches::kProcessType);
 
 #if BUILDFLAG(IS_LINUX)
-  bool enable_crash_reporter = false;
-  if (crash_reporter::IsCrashpadEnabled()) {
-    command_line->AppendSwitch(::switches::kEnableCrashpad);
-    enable_crash_reporter = true;
-
-    int fd;
-    pid_t pid;
-
-    if (crash_reporter::GetHandlerSocket(&fd, &pid)) {
-      command_line->AppendSwitchASCII(
-          crash_reporter::switches::kCrashpadHandlerPid,
-          base::NumberToString(pid));
-    }
-  } else {
-    enable_crash_reporter = breakpad::IsCrashReporterEnabled();
+  pid_t pid;
+  if (crash_reporter::GetHandlerSocket(nullptr, &pid)) {
+    command_line->AppendSwitchASCII(
+        crash_reporter::switches::kCrashpadHandlerPid,
+        base::NumberToString(pid));
   }
 
   // Zygote Process gets booted before any JS runs, accessing GetClientId
   // will end up touching DIR_USER_DATA path provider and this will
   // configure default value because app.name from browser_init has
   // not run yet.
-  if (enable_crash_reporter && process_type != ::switches::kZygoteProcess) {
+  if (process_type != ::switches::kZygoteProcess) {
     std::string switch_value =
         api::crash_reporter::GetClientId() + ",no_channel";
     command_line->AppendSwitchASCII(::switches::kEnableCrashReporter,
                                     switch_value);
-    if (!crash_reporter::IsCrashpadEnabled()) {
-      for (const auto& pair : api::crash_reporter::GetGlobalCrashKeys()) {
-        if (!switch_value.empty())
-          switch_value += ",";
-        switch_value += pair.first;
-        switch_value += "=";
-        switch_value += pair.second;
-      }
-      command_line->AppendSwitchASCII(switches::kGlobalCrashKeys, switch_value);
-    }
   }
 #endif
 
@@ -680,11 +591,6 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
   std::string api_key;
   env->GetVar("GOOGLE_API_KEY", &api_key);
   return api_key;
-}
-
-scoped_refptr<content::QuotaPermissionContext>
-ElectronBrowserClient::CreateQuotaPermissionContext() {
-  return base::MakeRefCounted<ElectronQuotaPermissionContext>();
 }
 
 content::GeneratedCodeCacheSettings
@@ -779,24 +685,6 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
   if (!app_user_model_id.empty()) {
     auto* overlay_window_view =
         static_cast<VideoOverlayWindowViews*>(overlay_window.get());
-    ui::win::SetAppIdForWindow(app_user_model_id,
-                               overlay_window_view->GetNativeWindow()
-                                   ->GetHost()
-                                   ->GetAcceleratedWidget());
-  }
-#endif
-  return overlay_window;
-}
-
-std::unique_ptr<content::DocumentOverlayWindow>
-ElectronBrowserClient::CreateWindowForDocumentPictureInPicture(
-    content::DocumentPictureInPictureWindowController* controller) {
-  auto overlay_window = content::DocumentOverlayWindow::Create(controller);
-#if BUILDFLAG(IS_WIN)
-  std::wstring app_user_model_id = Browser::Get()->GetAppUserModelID();
-  if (!app_user_model_id.empty()) {
-    auto* overlay_window_view =
-        static_cast<DocumentOverlayWindowViews*>(overlay_window.get());
     ui::win::SetAppIdForWindow(app_user_model_id,
                                overlay_window_view->GetNativeWindow()
                                    ->GetHost()
@@ -987,7 +875,7 @@ void ElectronBrowserClient::WebNotificationAllowed(
     return;
   }
   permission_helper->RequestWebNotificationPermission(
-      base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
+      rfh, base::BindOnce(std::move(callback), web_contents->IsAudioMuted()));
 }
 
 void ElectronBrowserClient::RenderProcessHostDestroyed(
@@ -1022,6 +910,7 @@ void OnOpenExternal(const GURL& escaped_url, bool allowed) {
 
 void HandleExternalProtocolInUI(
     const GURL& url,
+    content::WeakDocumentPtr document_ptr,
     content::WebContents::OnceGetter web_contents_getter,
     bool has_user_gesture) {
   content::WebContents* web_contents = std::move(web_contents_getter).Run();
@@ -1033,9 +922,18 @@ void HandleExternalProtocolInUI(
   if (!permission_helper)
     return;
 
+  content::RenderFrameHost* rfh = document_ptr.AsRenderFrameHostIfValid();
+  if (!rfh) {
+    // If the render frame host is not valid it means it was a top level
+    // navigation and the frame has already been disposed of.  In this case we
+    // take the current main frame and declare it responsible for the
+    // transition.
+    rfh = web_contents->GetPrimaryMainFrame();
+  }
+
   GURL escaped_url(base::EscapeExternalHandlerValue(url.spec()));
   auto callback = base::BindOnce(&OnOpenExternal, escaped_url);
-  permission_helper->RequestOpenExternalPermission(std::move(callback),
+  permission_helper->RequestOpenExternalPermission(rfh, std::move(callback),
                                                    has_user_gesture, url);
 }
 
@@ -1055,6 +953,9 @@ bool ElectronBrowserClient::HandleExternalProtocol(
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&HandleExternalProtocolInUI, url,
+                     initiator_document
+                         ? initiator_document->GetWeakDocumentPtr()
+                         : content::WeakDocumentPtr(),
                      std::move(web_contents_getter), has_user_gesture));
   return true;
 }
@@ -1487,18 +1388,13 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
       std::move(proxied_receiver), std::move(target_factory_remote),
       std::move(header_client_receiver), type);
 
-  if (bypass_redirect_checks)
-    *bypass_redirect_checks = true;
-
   return true;
 }
 
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,
-    int frame_tree_node_id,
-    const scoped_refptr<network::SharedURLLoaderFactory>&
-        network_loader_factory) {
+    int frame_tree_node_id) {
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
       interceptors;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -1535,20 +1431,6 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
 }
 
-#if BUILDFLAG(IS_WIN)
-bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
-                                          sandbox::mojom::Sandbox sandbox_type,
-                                          ChildSpawnFlags flags) {
-  // Allow crashpad to communicate via named pipe.
-  sandbox::ResultCode result = policy->AddRule(
-      sandbox::TargetPolicy::SUBSYS_FILES,
-      sandbox::TargetPolicy::FILES_ALLOW_ANY, L"\\??\\pipe\\crashpad_*");
-  if (result != sandbox::SBOX_ALL_OK)
-    return false;
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
-
 void ElectronBrowserClient::
     RegisterAssociatedInterfaceBindersForRenderFrameHost(
         content::RenderFrameHost&
@@ -1560,58 +1442,63 @@ void ElectronBrowserClient::
   if (contents) {
     auto* prefs = WebContentsPreferences::From(contents);
     if (render_frame_host.GetFrameTreeNodeId() ==
-            contents->GetMainFrame()->GetFrameTreeNodeId() ||
+            contents->GetPrimaryMainFrame()->GetFrameTreeNodeId() ||
         (prefs && prefs->AllowsNodeIntegrationInSubFrames())) {
-      associated_registry.AddInterface(base::BindRepeating(
-          [](content::RenderFrameHost* render_frame_host,
-             mojo::PendingAssociatedReceiver<electron::mojom::ElectronApiIPC>
-                 receiver) {
-            ElectronApiIPCHandlerImpl::Create(render_frame_host,
-                                              std::move(receiver));
-          },
-          &render_frame_host));
+      associated_registry.AddInterface<mojom::ElectronApiIPC>(
+          base::BindRepeating(
+              [](content::RenderFrameHost* render_frame_host,
+                 mojo::PendingAssociatedReceiver<mojom::ElectronApiIPC>
+                     receiver) {
+                ElectronApiIPCHandlerImpl::Create(render_frame_host,
+                                                  std::move(receiver));
+              },
+              &render_frame_host));
     }
   }
 
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<
-             electron::mojom::ElectronWebContentsUtility> receiver) {
-        ElectronWebContentsUtilityHandlerImpl::Create(render_frame_host,
-                                                      std::move(receiver));
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<mojom::ElectronWebContentsUtility>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<mojom::ElectronWebContentsUtility>
+                 receiver) {
+            ElectronWebContentsUtilityHandlerImpl::Create(render_frame_host,
+                                                          std::move(receiver));
+          },
+          &render_frame_host));
 
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
-             receiver) {
-        AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
-                                                  render_frame_host);
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<mojom::ElectronAutofillDriver>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<mojom::ElectronAutofillDriver>
+                 receiver) {
+            AutofillDriverFactory::BindAutofillDriver(std::move(receiver),
+                                                      render_frame_host);
+          },
+          &render_frame_host));
 #if BUILDFLAG(ENABLE_PRINTING)
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
-             receiver) {
-        PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
-                                                       render_frame_host);
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<printing::mojom::PrintManagerHost>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<printing::mojom::PrintManagerHost>
+                 receiver) {
+            PrintViewManagerElectron::BindPrintManagerHost(std::move(receiver),
+                                                           render_frame_host);
+          },
+          &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_EXTENSIONS)
-  associated_registry.AddInterface(base::BindRepeating(
-      [](content::RenderFrameHost* render_frame_host,
-         mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>
-             receiver) {
-        extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
-            std::move(receiver), render_frame_host);
-      },
-      &render_frame_host));
+  associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
+      base::BindRepeating(
+          [](content::RenderFrameHost* render_frame_host,
+             mojo::PendingAssociatedReceiver<extensions::mojom::LocalFrameHost>
+                 receiver) {
+            extensions::ExtensionWebContentsObserver::BindLocalFrameHost(
+                std::move(receiver), render_frame_host);
+          },
+          &render_frame_host));
 #endif
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-  associated_registry.AddInterface(base::BindRepeating(
+  associated_registry.AddInterface<pdf::mojom::PdfService>(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<pdf::mojom::PdfService> receiver) {
         pdf::PDFWebContentsHelper::BindPdfService(std::move(receiver),
@@ -1687,9 +1574,10 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
     blink::AssociatedInterfaceRegistry* associated_registry,
     content::RenderProcessHost* render_process_host) {
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  associated_registry->AddInterface(base::BindRepeating(
-      &extensions::EventRouter::BindForRenderer, render_process_host->GetID()));
-  associated_registry->AddInterface(
+  associated_registry->AddInterface<extensions::mojom::EventRouter>(
+      base::BindRepeating(&extensions::EventRouter::BindForRenderer,
+                          render_process_host->GetID()));
+  associated_registry->AddInterface<extensions::mojom::GuestView>(
       base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
                           render_process_host->GetID()));
 #endif
@@ -1805,6 +1693,12 @@ content::BluetoothDelegate* ElectronBrowserClient::GetBluetoothDelegate() {
   return bluetooth_delegate_.get();
 }
 
+content::UsbDelegate* ElectronBrowserClient::GetUsbDelegate() {
+  if (!usb_delegate_)
+    usb_delegate_ = std::make_unique<ElectronUsbDelegate>();
+  return usb_delegate_.get();
+}
+
 void BindBadgeServiceForServiceWorker(
     const content::ServiceWorkerVersionBaseInfo& info,
     mojo::PendingReceiver<blink::mojom::BadgeService> receiver) {
@@ -1820,6 +1714,8 @@ void BindBadgeServiceForServiceWorker(
 }
 
 void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
+    content::BrowserContext* browser_context,
+    const content::ServiceWorkerVersionBaseInfo& service_worker_version_info,
     mojo::BinderMapWithContext<const content::ServiceWorkerVersionBaseInfo&>*
         map) {
   map->Add<blink::mojom::BadgeService>(
@@ -1838,6 +1734,15 @@ content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
   if (!hid_delegate_)
     hid_delegate_ = std::make_unique<ElectronHidDelegate>();
   return hid_delegate_.get();
+}
+
+content::WebAuthenticationDelegate*
+ElectronBrowserClient::GetWebAuthenticationDelegate() {
+  if (!web_authentication_delegate_) {
+    web_authentication_delegate_ =
+        std::make_unique<ElectronWebAuthenticationDelegate>();
+  }
+  return web_authentication_delegate_.get();
 }
 
 }  // namespace electron

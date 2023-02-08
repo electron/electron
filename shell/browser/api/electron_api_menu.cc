@@ -44,9 +44,7 @@ struct Converter<SharingItem> {
 
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -212,7 +210,7 @@ void Menu::Clear() {
 }
 
 int Menu::GetIndexOfCommandId(int command_id) const {
-  return model_->GetIndexOfCommandId(command_id);
+  return model_->GetIndexOfCommandId(command_id).value_or(-1);
 }
 
 int Menu::GetItemCount() const {
@@ -268,10 +266,9 @@ void Menu::OnMenuWillShow() {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "Menu", templ)
+void Menu::FillObjectTemplate(v8::Isolate* isolate,
+                              v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Menu", templ)
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
@@ -301,9 +298,7 @@ v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
       .Build();
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

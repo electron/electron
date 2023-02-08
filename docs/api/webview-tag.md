@@ -609,7 +609,7 @@ examples.
 
 ### `<webview>.sendToFrame(frameId, channel, ...args)`
 
-* `frameId` [number, number] - `[processId, frameId]`
+* `frameId` \[number, number] - `[processId, frameId]`
 * `channel` string
 * `...args` any[]
 
@@ -805,33 +805,6 @@ const requestId = webview.findInPage('test')
 console.log(requestId)
 ```
 
-### Event: 'new-window'
-
-Returns:
-
-* `url` string
-* `frameName` string
-* `disposition` string - Can be `default`, `foreground-tab`, `background-tab`,
-  `new-window`, `save-to-disk` and `other`.
-* `options` BrowserWindowConstructorOptions - The options which should be used for creating the new
-  [`BrowserWindow`](browser-window.md).
-
-Fired when the guest page attempts to open a new browser window.
-
-The following example code opens the new url in system's default browser.
-
-```javascript
-const { shell } = require('electron')
-const webview = document.querySelector('webview')
-
-webview.addEventListener('new-window', async (e) => {
-  const protocol = (new URL(e.url)).protocol
-  if (protocol === 'http:' || protocol === 'https:') {
-    await shell.openExternal(e.url)
-  }
-})
-```
-
 ### Event: 'will-navigate'
 
 Returns:
@@ -936,7 +909,7 @@ webview.addEventListener('close', () => {
 
 Returns:
 
-* `frameId` [number, number] - pair of `[processId, frameId]`.
+* `frameId` \[number, number] - pair of `[processId, frameId]`.
 * `channel` string
 * `args` any[]
 
@@ -1007,6 +980,14 @@ Returns:
 * `url` string
 
 Emitted when mouse moves over a link or the keyboard moves the focus to a link.
+
+### Event: 'devtools-open-url'
+
+Returns:
+
+* `url` string - URL of the link that was clicked or selected.
+
+Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
 
 ### Event: 'devtools-opened'
 

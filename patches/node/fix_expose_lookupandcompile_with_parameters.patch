@@ -1,0 +1,54 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 13 Oct 2022 17:10:01 +0200
+Subject: fix: expose LookupAndCompile with parameters
+
+Node.js removed custom parameters from the public version of LookupAndCompile,
+which we use in Electron. This patch re-exposes a wrapper to allow custom
+parameters.
+
+This should be upstreamed.
+
+diff --git a/src/node_builtins.cc b/src/node_builtins.cc
+index d3a0dd7cedb0d239ae427d1af2335e155345a454..de0c39234bb4155c56b4e51e42a399df3c4b8f87 100644
+--- a/src/node_builtins.cc
++++ b/src/node_builtins.cc
+@@ -439,6 +439,22 @@ MaybeLocal<Function> BuiltinLoader::LookupAndCompile(
+   return maybe;
+ }
+ 
++MaybeLocal<Function> BuiltinLoader::LookupAndCompile(
++    Local<Context> context,
++    const char* id,
++    std::vector<Local<String>>* parameters,
++    Environment* optional_env) {
++  Result result;
++  Isolate* isolate = context->GetIsolate();
++
++  MaybeLocal<Function> maybe = GetInstance()->LookupAndCompileInternal(
++      context, id, parameters, &result);
++  if (optional_env != nullptr) {
++    RecordResult(id, result, optional_env);
++  }
++  return maybe;
++}
++
+ bool BuiltinLoader::CompileAllBuiltins(Local<Context> context) {
+   BuiltinLoader* loader = GetInstance();
+   std::vector<std::string> ids = loader->GetBuiltinIds();
+diff --git a/src/node_builtins.h b/src/node_builtins.h
+index 8d9f7c409659a30747e5feeac6cfec4208791370..34a51c3e5a79154c3633143b352aa9e108497767 100644
+--- a/src/node_builtins.h
++++ b/src/node_builtins.h
+@@ -50,6 +50,11 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
+       v8::Local<v8::Context> context,
+       const char* id,
+       Environment* optional_env);
++  static v8::MaybeLocal<v8::Function> LookupAndCompile(
++      v8::Local<v8::Context> context,
++      const char* id,
++      std::vector<v8::Local<v8::String>>* parameters,
++      Environment* optional_env);
+ 
+   static v8::Local<v8::Object> GetSourceObject(v8::Local<v8::Context> context);
+   // Returns config.gypi as a JSON string

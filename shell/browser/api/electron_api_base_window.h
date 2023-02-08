@@ -19,11 +19,10 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/trackable_object.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class View;
+class BrowserView;
 
 class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                    public NativeWindowObserver {
@@ -69,8 +68,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
                         bool* prevent_default) override;
   void OnWindowMove() override;
   void OnWindowMoved() override;
-  void OnWindowScrollTouchBegin() override;
-  void OnWindowScrollTouchEnd() override;
   void OnWindowSwipe(const std::string& direction) override;
   void OnWindowRotateGesture(float rotation) override;
   void OnWindowSheetBegin() override;
@@ -82,7 +79,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void OnWindowAlwaysOnTopChanged() override;
   void OnExecuteAppCommand(const std::string& command_name) override;
   void OnTouchBarItemResult(const std::string& item_id,
-                            const base::DictionaryValue& details) override;
+                            const base::Value::Dict& details) override;
   void OnNewWindowForTab() override;
   void OnSystemContextMenu(int x, int y, bool* prevent_default) override;
 #if BUILDFLAG(IS_WIN)
@@ -159,6 +156,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsTabletMode() const;
   virtual void SetBackgroundColor(const std::string& color_name);
   std::string GetBackgroundColor(gin_helper::Arguments* args);
+  void InvalidateShadow();
   void SetHasShadow(bool has_shadow);
   bool HasShadow();
   void SetOpacity(const double opacity);
@@ -175,10 +173,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> menu);
   void RemoveMenu();
   void SetParentWindow(v8::Local<v8::Value> value, gin_helper::Arguments* args);
-  virtual void SetBrowserView(v8::Local<v8::Value> value);
-  virtual void AddBrowserView(v8::Local<v8::Value> value);
-  virtual void RemoveBrowserView(v8::Local<v8::Value> value);
-  virtual void SetTopBrowserView(v8::Local<v8::Value> value,
+  virtual void SetBrowserView(
+      absl::optional<gin::Handle<BrowserView>> browser_view);
+  virtual void AddBrowserView(gin::Handle<BrowserView> browser_view);
+  virtual void RemoveBrowserView(gin::Handle<BrowserView> browser_view);
+  virtual void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                  gin_helper::Arguments* args);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
@@ -198,6 +197,11 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool GetWindowButtonVisibility() const;
   void SetTrafficLightPosition(const gfx::Point& position);
   gfx::Point GetTrafficLightPosition() const;
+#endif
+
+#if BUILDFLAG(IS_MAC)
+  bool IsHiddenInMissionControl();
+  void SetHiddenInMissionControl(bool hidden);
 #endif
 
   void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
@@ -282,8 +286,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   base::WeakPtrFactory<BaseWindow> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_

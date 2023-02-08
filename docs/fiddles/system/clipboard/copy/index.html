@@ -2,12 +2,13 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="script-src 'self' 'unsafe-inline';" />
   </head>
   <body>
     <div>
       <div>
         <h1>Clipboard copy</h1>
-        <i>Supports: Win, macOS, Linux <span>|</span> Process: Both</i>
+        <i>Supports: Win, macOS, Linux <span>|</span> Process: Main, Renderer (non-sandboxed only)</i>
         <div>
           <div>
             <button id="copy-to">Copy</button>
@@ -17,8 +18,6 @@
         </div>
       </div>
     </div>
+    <script src="./renderer.js"></script>
   </body>
-  <script>
-    require('./renderer.js')
-  </script>
 </html>

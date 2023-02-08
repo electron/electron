@@ -7,9 +7,7 @@
 #include "base/logging.h"
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace util {
+namespace electron::util {
 
 v8::MaybeLocal<v8::Value> CompileAndCall(
     v8::Local<v8::Context> context,
@@ -20,8 +18,8 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   v8::Isolate* isolate = context->GetIsolate();
   v8::TryCatch try_catch(isolate);
   v8::MaybeLocal<v8::Function> compiled =
-      node::native_module::NativeModuleEnv::LookupAndCompile(
-          context, id, parameters, optional_env);
+      node::builtins::BuiltinLoader::LookupAndCompile(context, id, parameters,
+                                                      optional_env);
   if (compiled.IsEmpty()) {
     return v8::MaybeLocal<v8::Value>();
   }
@@ -36,6 +34,4 @@ v8::MaybeLocal<v8::Value> CompileAndCall(
   return ret;
 }
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace electron::util

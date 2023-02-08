@@ -28,9 +28,7 @@ namespace gin {
 class Arguments;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class WebContents;
 
@@ -46,15 +44,16 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   static gin::Handle<WebFrameMain> From(
       v8::Isolate* isolate,
       content::RenderFrameHost* render_frame_host);
+  static gin::Handle<WebFrameMain> FromOrNull(
+      v8::Isolate* isolate,
+      content::RenderFrameHost* render_frame_host);
   static WebFrameMain* FromFrameTreeNodeId(int frame_tree_node_id);
   static WebFrameMain* FromRenderFrameHost(
       content::RenderFrameHost* render_frame_host);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
   content::RenderFrameHost* render_frame_host() const { return render_frame_; }
@@ -108,6 +107,7 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   int ProcessID() const;
   int RoutingID() const;
   GURL URL() const;
+  std::string Origin() const;
   blink::mojom::PageVisibilityState VisibilityState() const;
 
   content::RenderFrameHost* Top() const;
@@ -131,8 +131,6 @@ class WebFrameMain : public gin::Wrappable<WebFrameMain>,
   base::WeakPtrFactory<WebFrameMain> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_WEB_FRAME_MAIN_H_

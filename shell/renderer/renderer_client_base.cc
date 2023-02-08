@@ -18,7 +18,6 @@
 #include "content/public/common/content_switches.h"
 #include "content/public/renderer/render_frame.h"
 #include "content/public/renderer/render_thread.h"
-#include "content/public/renderer/render_view.h"
 #include "electron/buildflags/buildflags.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/electron_api_protocol.h"
@@ -47,6 +46,7 @@
 #include "third_party/blink/public/web/web_view.h"
 #include "third_party/blink/renderer/platform/media/multi_buffer_data_source.h"  // nogncheck
 #include "third_party/blink/renderer/platform/weborigin/scheme_registry.h"  // nogncheck
+#include "third_party/widevine/cdm/buildflags.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "base/strings/sys_string_conversions.h"
@@ -56,7 +56,7 @@
 #include <shlobj.h>
 #endif
 
-#if defined(WIDEVINE_CDM_AVAILABLE)
+#if BUILDFLAG(ENABLE_WIDEVINE)
 #include "chrome/renderer/media/chrome_key_systems.h"  // nogncheck
 #endif
 
@@ -73,6 +73,7 @@
 #endif  // BUILDFLAG(ENABLE_PDF_VIEWER)
 
 #if BUILDFLAG(ENABLE_PLUGINS)
+#include "shell/common/plugin_info.h"
 #include "shell/renderer/pepper_helper.h"
 #endif  // BUILDFLAG(ENABLE_PLUGINS)
 
@@ -89,6 +90,7 @@
 #include "extensions/common/extensions_client.h"
 #include "extensions/renderer/dispatcher.h"
 #include "extensions/renderer/extension_frame_helper.h"
+#include "extensions/renderer/extension_web_view_helper.h"
 #include "extensions/renderer/guest_view/mime_handler_view/mime_handler_view_container_manager.h"
 #include "shell/common/extensions/electron_extensions_client.h"
 #include "shell/renderer/extensions/electron_extensions_renderer_client.h"
@@ -322,10 +324,11 @@ void RendererClientBase::RenderFrameCreated(
 
   dispatcher->OnRenderFrameCreated(render_frame);
 
-  render_frame->GetAssociatedInterfaceRegistry()->AddInterface(
-      base::BindRepeating(
-          &extensions::MimeHandlerViewContainerManager::BindReceiver,
-          render_frame->GetRoutingID()));
+  render_frame->GetAssociatedInterfaceRegistry()
+      ->AddInterface<extensions::mojom::MimeHandlerViewContainerManager>(
+          base::BindRepeating(
+              &extensions::MimeHandlerViewContainerManager::BindReceiver,
+              render_frame->GetRoutingID()));
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
@@ -377,8 +380,10 @@ bool RendererClientBase::OverrideCreatePlugin(
 
 void RendererClientBase::GetSupportedKeySystems(
     media::GetSupportedKeySystemsCB cb) {
-#if defined(WIDEVINE_CDM_AVAILABLE)
+#if BUILDFLAG(ENABLE_WIDEVINE)
   GetChromeKeySystems(std::move(cb));
+#else
+  std::move(cb).Run({});
 #endif
 }
 
@@ -416,19 +421,12 @@ bool RendererClientBase::IsPluginHandledExternally(
         ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
   }
 
-  // TODO(nornagon): this info should be shared with the data in
-  // electron_content_client.cc / ComputeBuiltInPlugins.
-  content::WebPluginInfo info;
-  info.type = content::WebPluginInfo::PLUGIN_TYPE_BROWSER_PLUGIN;
-  info.name = base::ASCIIToUTF16(kPDFExtensionPluginName);
-  info.path = base::FilePath::FromUTF8Unsafe(extension_misc::kPdfExtensionId);
-  info.background_color = content::WebPluginInfo::kDefaultBackgroundColor;
-  info.mime_types.emplace_back(kPDFMimeType, "pdf", "Portable Document Format");
   return extensions::MimeHandlerViewContainerManager::Get(
              content::RenderFrame::FromWebFrame(
                  plugin_element.GetDocument().GetFrame()),
              true /* create_if_does_not_exist */)
-      ->CreateFrameContainer(plugin_element, original_url, mime_type, info);
+      ->CreateFrameContainer(plugin_element, original_url, mime_type,
+                             GetPDFPluginInfo());
 #else
   return false;
 #endif
@@ -536,6 +534,14 @@ void RendererClientBase::WillDestroyServiceWorkerContextOnWorkerThread(
 #endif
 }
 
+void RendererClientBase::WebViewCreated(blink::WebView* web_view,
+                                        bool was_created_by_renderer,
+                                        const url::Origin* outermost_origin) {
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  new extensions::ExtensionWebViewHelper(web_view, outermost_origin);
+#endif
+}
+
 v8::Local<v8::Context> RendererClientBase::GetContext(
     blink::WebLocalFrame* frame,
     v8::Isolate* isolate) const {
@@ -633,7 +639,7 @@ void RendererClientBase::AllowGuestViewElementDefinition(
 
   render_frame->GetWebFrame()->RequestExecuteV8Function(
       context->GetCreationContextChecked(), register_cb, v8::Null(isolate), 0,
-      nullptr, nullptr);
+      nullptr, base::NullCallback());
 }
 
 }  // namespace electron

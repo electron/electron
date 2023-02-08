@@ -1,0 +1,70 @@
+import("//build/config/features.gni")
+import("//printing/buildflags/buildflags.gni")
+
+group("spec") {
+  testonly = true
+
+  deps = [
+    ":chromium_browsertests",
+    ":chromium_unittests",
+  ]
+}
+
+group("chromium_unittests") {
+  testonly = true
+
+  deps = [
+    "//base:base_unittests",
+    "//cc:cc_unittests",
+    "//content/test:content_unittests",
+    "//crypto:crypto_unittests",
+    "//device:device_unittests",
+    "//gin:gin_unittests",
+    "//gpu:gpu_unittests",
+    "//ipc:ipc_tests",
+    "//media:media_unittests",
+    "//media/capture:capture_unittests",
+    "//media/midi:midi_unittests",
+    "//media/mojo:media_mojo_unittests",
+    "//mojo:mojo_unittests",
+    "//net:net_unittests",
+    "//ppapi:ppapi_unittests",
+    "//printing:printing_unittests",
+    "//skia:skia_unittests",
+    "//sql:sql_unittests",
+    "//storage:storage_unittests",
+    "//third_party/angle/src/tests:angle_unittests",
+    "//third_party/blink/public:all_blink",
+    "//third_party/blink/public:test_support",
+    "//third_party/leveldatabase:env_chromium_unittests",
+    "//ui/base:ui_base_unittests",
+    "//ui/compositor:compositor_unittests",
+    "//ui/display:display_unittests",
+    "//ui/events:events_unittests",
+    "//ui/gl:gl_unittests",
+    "//url:url_unittests",
+    "//url/ipc:url_ipc_unittests",
+    "//v8/test/unittests:unittests",
+  ]
+
+  if (enable_printing) {
+    deps += [ "//printing:printing_unittests" ]
+  }
+
+  if (is_linux) {
+    deps += [
+      "//net:disk_cache_memory_test",
+      "//sandbox/linux:sandbox_linux_unittests",
+    ]
+
+    if (use_dbus) {
+      deps += [ "//dbus:dbus_unittests" ]
+    }
+  }
+}
+
+group("chromium_browsertests") {
+  testonly = true
+
+  deps = [ "//content/test:content_browsertests" ]
+}

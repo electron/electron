@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/functional/bind.h"
 #include "build/build_config.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
 #include "printing/mojom/print.mojom.h"
@@ -59,86 +60,36 @@ void PrintViewManagerElectron::BindPrintManagerHost(
   print_manager->BindReceiver(std::move(receiver), rfh);
 }
 
-// static
-std::string PrintViewManagerElectron::PrintResultToString(PrintResult result) {
-  switch (result) {
-    case PRINT_SUCCESS:
-      return std::string();  // no error message
-    case PRINTING_FAILED:
-      return "Printing failed";
-    case INVALID_PRINTER_SETTINGS:
-      return "Show invalid printer settings error";
-    case INVALID_MEMORY_HANDLE:
-      return "Invalid memory handle";
-    case METAFILE_MAP_ERROR:
-      return "Map to shared memory error";
-    case METAFILE_INVALID_HEADER:
-      return "Invalid metafile header";
-    case METAFILE_GET_DATA_ERROR:
-      return "Get data from metafile error";
-    case SIMULTANEOUS_PRINT_ACTIVE:
-      return "The previous printing job hasn't finished";
-    case PAGE_RANGE_SYNTAX_ERROR:
-      return "Page range syntax error";
-    case PAGE_RANGE_INVALID_RANGE:
-      return "Page range is invalid (start > end)";
-    case PAGE_COUNT_EXCEEDED:
-      return "Page range exceeds page count";
-    default:
-      NOTREACHED();
-      return "Unknown PrintResult";
-  }
+void PrintViewManagerElectron::DidPrintToPdf(
+    int cookie,
+    PrintToPdfCallback callback,
+    print_to_pdf::PdfPrintResult result,
+    scoped_refptr<base::RefCountedMemory> memory) {
+  base::Erase(pdf_jobs_, cookie);
+  std::move(callback).Run(result, memory);
 }
 
 void PrintViewManagerElectron::PrintToPdf(
     content::RenderFrameHost* rfh,
     const std::string& page_ranges,
     printing::mojom::PrintPagesParamsPtr print_pages_params,
-    PrintToPDFCallback callback) {
-  DCHECK(callback);
+    PrintToPdfCallback callback) {
+  // Store cookie in order to track job uniqueness and differentiate
+  // between regular and headless print jobs.
+  int cookie = print_pages_params->params->document_cookie;
+  pdf_jobs_.emplace_back(cookie);
 
-  if (callback_) {
-    std::move(callback).Run(SIMULTANEOUS_PRINT_ACTIVE,
-                            base::MakeRefCounted<base::RefCountedString>());
-    return;
-  }
-
-  if (!rfh->IsRenderFrameLive()) {
-    std::move(callback).Run(PRINTING_FAILED,
-                            base::MakeRefCounted<base::RefCountedString>());
-    return;
-  }
-
-  absl::variant<printing::PageRanges, print_to_pdf::PageRangeError>
-      parsed_ranges = print_to_pdf::TextPageRangesToPageRanges(page_ranges);
-  if (absl::holds_alternative<print_to_pdf::PageRangeError>(parsed_ranges)) {
-    PrintResult print_result;
-    switch (absl::get<print_to_pdf::PageRangeError>(parsed_ranges)) {
-      case print_to_pdf::PageRangeError::kSyntaxError:
-        print_result = PAGE_RANGE_SYNTAX_ERROR;
-        break;
-      case print_to_pdf::PageRangeError::kInvalidRange:
-        print_result = PAGE_RANGE_INVALID_RANGE;
-        break;
-    }
-    std::move(callback).Run(print_result,
-                            base::MakeRefCounted<base::RefCountedString>());
-    return;
-  }
-
-  printing_rfh_ = rfh;
-  print_pages_params->pages = absl::get<printing::PageRanges>(parsed_ranges);
-  auto cookie = print_pages_params->params->document_cookie;
-  set_cookie(cookie);
-  headless_jobs_.emplace_back(cookie);
-  callback_ = std::move(callback);
-
-  GetPrintRenderFrame(rfh)->PrintWithParams(std::move(print_pages_params));
+  print_to_pdf::PdfPrintJob::StartJob(
+      web_contents(), rfh, GetPrintRenderFrame(rfh), page_ranges,
+      std::move(print_pages_params),
+      base::BindOnce(&PrintViewManagerElectron::DidPrintToPdf,
+                     weak_factory_.GetWeakPtr(), cookie, std::move(callback)));
 }
 
 void PrintViewManagerElectron::GetDefaultPrintSettings(
     GetDefaultPrintSettingsCallback callback) {
-  if (printing_rfh_) {
+  // This isn't ideal, but we're not able to access the document cookie here.
+  if (pdf_jobs_.size() > 0) {
     LOG(ERROR) << "Scripted print is not supported";
     std::move(callback).Run(printing::mojom::PrintParams::New());
   } else {
@@ -149,9 +100,8 @@ void PrintViewManagerElectron::GetDefaultPrintSettings(
 void PrintViewManagerElectron::ScriptedPrint(
     printing::mojom::ScriptedPrintParamsPtr params,
     ScriptedPrintCallback callback) {
-  auto entry =
-      std::find(headless_jobs_.begin(), headless_jobs_.end(), params->cookie);
-  if (entry == headless_jobs_.end()) {
+  auto entry = std::find(pdf_jobs_.begin(), pdf_jobs_.end(), params->cookie);
+  if (entry == pdf_jobs_.end()) {
     PrintViewManagerBase::ScriptedPrint(std::move(params), std::move(callback));
     return;
   }
@@ -162,25 +112,13 @@ void PrintViewManagerElectron::ScriptedPrint(
   std::move(callback).Run(std::move(default_param), /*cancelled*/ false);
 }
 
-void PrintViewManagerElectron::ShowInvalidPrinterSettingsError() {
-  ReleaseJob(INVALID_PRINTER_SETTINGS);
-}
-
-void PrintViewManagerElectron::PrintingFailed(
-    int32_t cookie,
-    printing::mojom::PrintFailureReason reason) {
-  ReleaseJob(reason == printing::mojom::PrintFailureReason::kInvalidPageRange
-                 ? PAGE_COUNT_EXCEEDED
-                 : PRINTING_FAILED);
-}
-
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
 void PrintViewManagerElectron::UpdatePrintSettings(
     int32_t cookie,
     base::Value::Dict job_settings,
     UpdatePrintSettingsCallback callback) {
-  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(), cookie);
-  if (entry == headless_jobs_.end()) {
+  auto entry = std::find(pdf_jobs_.begin(), pdf_jobs_.end(), cookie);
+  if (entry == pdf_jobs_.end()) {
     PrintViewManagerBase::UpdatePrintSettings(cookie, std::move(job_settings),
                                               std::move(callback));
     return;
@@ -211,76 +149,11 @@ void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
 }
 #endif  // BUILDFLAG(ENABLE_PRINT_PREVIEW)
 
-void PrintViewManagerElectron::RenderFrameDeleted(
-    content::RenderFrameHost* render_frame_host) {
-  PrintViewManagerBase::RenderFrameDeleted(render_frame_host);
-
-  if (printing_rfh_ != render_frame_host)
-    return;
-
-  if (callback_) {
-    std::move(callback_).Run(PRINTING_FAILED,
-                             base::MakeRefCounted<base::RefCountedString>());
-  }
-
-  Reset();
-}
-
 void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
                                                        uint32_t number_pages) {
-  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(), cookie);
-  if (entry == headless_jobs_.end()) {
+  auto entry = std::find(pdf_jobs_.begin(), pdf_jobs_.end(), cookie);
+  if (entry == pdf_jobs_.end()) {
     PrintViewManagerBase::DidGetPrintedPagesCount(cookie, number_pages);
-  }
-}
-
-void PrintViewManagerElectron::DidPrintDocument(
-    printing::mojom::DidPrintDocumentParamsPtr params,
-    DidPrintDocumentCallback callback) {
-  auto entry = std::find(headless_jobs_.begin(), headless_jobs_.end(),
-                         params->document_cookie);
-  if (entry == headless_jobs_.end()) {
-    PrintViewManagerBase::DidPrintDocument(std::move(params),
-                                           std::move(callback));
-    return;
-  }
-
-  auto& content = *params->content;
-  if (!content.metafile_data_region.IsValid()) {
-    ReleaseJob(INVALID_MEMORY_HANDLE);
-    std::move(callback).Run(false);
-    return;
-  }
-
-  base::ReadOnlySharedMemoryMapping map = content.metafile_data_region.Map();
-  if (!map.IsValid()) {
-    ReleaseJob(METAFILE_MAP_ERROR);
-    std::move(callback).Run(false);
-    return;
-  }
-
-  data_ = std::string(static_cast<const char*>(map.memory()), map.size());
-  headless_jobs_.erase(entry);
-  std::move(callback).Run(true);
-  ReleaseJob(PRINT_SUCCESS);
-}
-
-void PrintViewManagerElectron::Reset() {
-  printing_rfh_ = nullptr;
-  callback_.Reset();
-  data_.clear();
-}
-
-void PrintViewManagerElectron::ReleaseJob(PrintResult result) {
-  if (callback_) {
-    DCHECK(result == PRINT_SUCCESS || data_.empty());
-    std::move(callback_).Run(result,
-                             base::RefCountedString::TakeString(&data_));
-    if (printing_rfh_ && printing_rfh_->IsRenderFrameLive()) {
-      GetPrintRenderFrame(printing_rfh_)->PrintingDone(result == PRINT_SUCCESS);
-    }
-
-    Reset();
   }
 }
 

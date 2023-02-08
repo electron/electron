@@ -32,7 +32,7 @@ void WebViewGuestDelegate::AttachToIframe(
   embedder_web_contents_ = embedder_web_contents;
 
   int embedder_process_id =
-      embedder_web_contents_->GetMainFrame()->GetProcess()->GetID();
+      embedder_web_contents_->GetPrimaryMainFrame()->GetProcess()->GetID();
   auto* embedder_frame =
       content::RenderFrameHost::FromID(embedder_process_id, embedder_frame_id);
   DCHECK_EQ(embedder_web_contents_,
@@ -49,7 +49,10 @@ void WebViewGuestDelegate::AttachToIframe(
   // frame |embedder_frame| hosts the inner WebContents.
   embedder_web_contents_->AttachInnerWebContents(
       base::WrapUnique<content::WebContents>(guest_web_contents),
-      embedder_frame, false);
+      embedder_frame,
+      /*remote_frame=*/mojo::NullAssociatedRemote(),
+      /*remote_frame_host_receiver=*/mojo::NullAssociatedReceiver(),
+      /*is_full_page=*/false);
 
   ResetZoomController();
 
@@ -97,7 +100,8 @@ void WebViewGuestDelegate::ResetZoomController() {
   }
 }
 
-content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
+std::unique_ptr<content::WebContents>
+WebViewGuestDelegate::CreateNewGuestWindow(
     const content::WebContents::CreateParams& create_params) {
   // Code below mirrors what content::WebContentsImpl::CreateNewWindow
   // does for non-guest sources
@@ -114,9 +118,10 @@ content::WebContents* WebViewGuestDelegate::CreateNewGuestWindow(
             guest_contents_impl->GetRenderViewHost()->GetWidget());
     if (!create_params.initially_hidden)
       widget_view->Show();
-    return guest_contents_impl;
+    return base::WrapUnique(
+        static_cast<content::WebContentsImpl*>(guest_contents_impl));
   }
-  return guest_contents.release();
+  return guest_contents;
 }
 
 }  // namespace electron

@@ -16,8 +16,8 @@
 #include "shell/browser/ui/views/client_frame_view_linux.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/geometry/skia_conversions.h"
+#include "ui/linux/linux_ui.h"
 #include "ui/platform_window/platform_window.h"
-#include "ui/views/linux_ui/linux_ui.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host_linux.h"
 #include "ui/views/window/non_client_view.h"
@@ -78,6 +78,14 @@ void ElectronDesktopWindowTreeHostLinux::OnWindowStateChanged(
   UpdateWindowState(new_state);
 }
 
+void ElectronDesktopWindowTreeHostLinux::OnWindowTiledStateChanged(
+    ui::WindowTiledEdges new_tiled_edges) {
+  static_cast<ClientFrameViewLinux*>(
+      native_window_view_->widget()->non_client_view()->frame_view())
+      ->set_tiled_edges(new_tiled_edges);
+  UpdateFrameHints();
+}
+
 void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
     ui::PlatformWindowState new_state) {
   if (window_state_ == new_state)
@@ -95,6 +103,9 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
+    case ui::PlatformWindowState::kSnappedPrimary:
+    case ui::PlatformWindowState::kSnappedSecondary:
+    case ui::PlatformWindowState::kFloated:
       break;
   }
   switch (new_state) {
@@ -109,6 +120,9 @@ void ElectronDesktopWindowTreeHostLinux::UpdateWindowState(
       break;
     case ui::PlatformWindowState::kUnknown:
     case ui::PlatformWindowState::kNormal:
+    case ui::PlatformWindowState::kSnappedPrimary:
+    case ui::PlatformWindowState::kSnappedSecondary:
+    case ui::PlatformWindowState::kFloated:
       break;
   }
   window_state_ = new_state;
@@ -153,7 +167,15 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
 
     input_insets = view->GetInputInsets();
   }
-
+  const auto tiled_edges = view->tiled_edges();
+  if (tiled_edges.left)
+    insets.set_left(0);
+  if (tiled_edges.right)
+    insets.set_right(0);
+  if (tiled_edges.top)
+    insets.set_top(0);
+  if (tiled_edges.bottom)
+    insets.set_bottom(0);
   gfx::Insets scaled_insets = gfx::ScaleToCeiledInsets(insets, scale);
   window->SetDecorationInsets(&scaled_insets);
 

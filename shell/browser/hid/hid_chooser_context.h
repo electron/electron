@@ -16,7 +16,7 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/unguessable_token.h"
-#include "content/public/browser/render_frame_host.h"
+#include "components/keyed_service/core/keyed_service.h"
 #include "content/public/browser/web_contents.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
 #include "mojo/public/cpp/bindings/pending_remote.h"
@@ -33,9 +33,7 @@ namespace electron {
 
 extern const char kHidDeviceNameKey[];
 extern const char kHidGuidKey[];
-extern const char kHidVendorIdKey[];
 extern const char kHidProductIdKey[];
-extern const char kHidSerialNumberKey[];
 
 // Manages the internal state and connection to the device service for the
 // Human Interface Device (HID) chooser UI.
@@ -74,14 +72,11 @@ class HidChooserContext : public KeyedService,
 
   // HID-specific interface for granting and checking permissions.
   void GrantDevicePermission(const url::Origin& origin,
-                             const device::mojom::HidDeviceInfo& device,
-                             content::RenderFrameHost* render_frame_host);
+                             const device::mojom::HidDeviceInfo& device);
   void RevokeDevicePermission(const url::Origin& origin,
-                              const device::mojom::HidDeviceInfo& device,
-                              content::RenderFrameHost* render_frame_host);
+                              const device::mojom::HidDeviceInfo& device);
   bool HasDevicePermission(const url::Origin& origin,
-                           const device::mojom::HidDeviceInfo& device,
-                           content::RenderFrameHost* render_frame_host);
+                           const device::mojom::HidDeviceInfo& device);
 
   // For ScopedObserver.
   void AddDeviceObserver(DeviceObserver* observer);
@@ -117,8 +112,7 @@ class HidChooserContext : public KeyedService,
   // HID-specific interface for revoking device permissions.
   void RevokePersistentDevicePermission(
       const url::Origin& origin,
-      const device::mojom::HidDeviceInfo& device,
-      content::RenderFrameHost* render_frame_host);
+      const device::mojom::HidDeviceInfo& device);
   void RevokeEphemeralDevicePermission(
       const url::Origin& origin,
       const device::mojom::HidDeviceInfo& device);

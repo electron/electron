@@ -128,11 +128,11 @@ struct Converter<std::vector<std::pair<K, V>>> {
       if (!obj->Get(context, v8key).ToLocal(&v8value))
         return false;
       K key;
-      V value;
+      V out_value;
       if (!ConvertFromV8(isolate, v8key, &key) ||
-          !ConvertFromV8(isolate, v8value, &value))
+          !ConvertFromV8(isolate, v8value, &out_value))
         return false;
-      (*out).emplace_back(std::move(key), std::move(value));
+      (*out).emplace_back(std::move(key), std::move(out_value));
     }
     return true;
   }

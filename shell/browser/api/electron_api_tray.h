@@ -29,9 +29,7 @@ namespace gin_helper {
 class Dictionary;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Menu;
 
@@ -47,9 +45,7 @@ class Tray : public gin::Wrappable<Tray>,
                                v8::Local<v8::Value> image,
                                absl::optional<UUID> guid,
                                gin::Arguments* args);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -113,8 +109,6 @@ class Tray : public gin::Wrappable<Tray>,
   std::unique_ptr<TrayIcon> tray_icon_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_TRAY_H_

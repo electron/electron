@@ -34,7 +34,7 @@ void MenuDelegate::RunMenu(ElectronMenuModel* model,
     hold_first_switch_ = true;
   }
 
-  id_ = button->tag();
+  id_ = button->GetID();
   adapter_ = std::make_unique<MenuModelAdapter>(model);
 
   auto* item = new views::MenuItemView(this);
@@ -127,7 +127,7 @@ views::MenuItemView* MenuDelegate::GetSiblingMenu(
   views::MenuButton* button;
   ElectronMenuModel* model;
   if (menu_bar_->GetMenuButtonFromScreenPoint(screen_point, &model, &button) &&
-      button->tag() != id_) {
+      button->GetID() != id_) {
     bool switch_in_progress = !!button_to_open_;
     // Always update target to open.
     button_to_open_ = button;

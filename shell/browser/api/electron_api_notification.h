@@ -25,9 +25,7 @@ template <typename T>
 class Handle;
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Notification : public gin::Wrappable<Notification>,
                      public gin_helper::EventEmitterMixin<Notification>,
@@ -40,9 +38,7 @@ class Notification : public gin::Wrappable<Notification>,
   // gin_helper::Constructible
   static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
                                        gin::Arguments* args);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
 
   // NotificationDelegate:
   void NotificationAction(int index) override;
@@ -117,8 +113,6 @@ class Notification : public gin::Wrappable<Notification>,
   base::WeakPtr<electron::Notification> notification_;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_NOTIFICATION_H_

@@ -15,9 +15,7 @@
 #include "shell/common/node_includes.h"
 #include "shell/common/platform_util.h"
 
-namespace electron {
-
-namespace safestorage {
+namespace electron::safestorage {
 
 static const char* kEncryptionVersionPrefixV10 = "v10";
 static const char* kEncryptionVersionPrefixV11 = "v11";
@@ -119,9 +117,7 @@ std::string DecryptString(v8::Isolate* isolate, v8::Local<v8::Value> buffer) {
   return plaintext;
 }
 
-}  // namespace safestorage
-
-}  // namespace electron
+}  // namespace electron::safestorage
 
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,

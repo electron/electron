@@ -1,0 +1,76 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Fri, 29 Jul 2022 00:29:35 +0900
+Subject: chore: allow chromium to handle synthetic mouse events for touch
+
+With WCO, allow chromium to handle synthetic mouse events generated for touch
+actions in the non-client caption area.
+
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index e534b895eca4e28e003ef35de4a2fb5b32baf88b..756738951476ba1d509935d0eb152c978cfde7e6 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1204,6 +1204,10 @@ void DesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(
+   }
+ }
+ 
++bool DesktopWindowTreeHostWin::HandleMouseEventForCaption(UINT message) const {
++  return false;
++}
++
+ DesktopNativeCursorManager*
+ DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
+   return new DesktopNativeCursorManagerWin();
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+index b23ba1bf3a49f72d1cd0f0ae4b0f316e7c15fa76..bf0a4869af4aaca15074fae42508b54aef611cf6 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
+@@ -258,6 +258,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+   void HandleWindowSizeChanging() override;
+   void HandleWindowSizeUnchanged() override;
+   void HandleWindowScaleFactorChanged(float window_scale_factor) override;
++  bool HandleMouseEventForCaption(UINT message) const override;
+ 
+   Widget* GetWidget();
+   const Widget* GetWidget() const;
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 214a596da0dfdff2566a7642ac04e501655c5d88..dff84d16386acfb3ccc72a22878476f1ac463ea1 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -3094,15 +3094,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+       SetMsgHandled(FALSE);
+     // We must let Windows handle the caption buttons if it's drawing them, or
+     // they won't work.
++    bool simulate_mouse_event_for_caption = false;
+     if (delegate_->GetFrameMode() == FrameMode::SYSTEM_DRAWN &&
+         (hittest == HTCLOSE || hittest == HTMINBUTTON ||
+          hittest == HTMAXBUTTON)) {
+-      SetMsgHandled(FALSE);
++      simulate_mouse_event_for_caption =
++          delegate_->HandleMouseEventForCaption(message);
++      if (!simulate_mouse_event_for_caption)
++        SetMsgHandled(FALSE);
+     }
+     // Let resize events fall through. Ignore everything else, as we're either
+     // letting Windows handle it above or we've already handled the equivalent
+     // touch message.
+-    if (!IsHitTestOnResizeHandle(hittest))
++    if (!IsHitTestOnResizeHandle(hittest) && !simulate_mouse_event_for_caption)
+       return 0;
+   }
+ 
+diff --git a/ui/views/win/hwnd_message_handler_delegate.h b/ui/views/win/hwnd_message_handler_delegate.h
+index da6afe2ae8940faebe3fbacfd7780fa0d5b1591a..4263d68e8b01eb961ab0e38d6b64b0c0b24146eb 100644
+--- a/ui/views/win/hwnd_message_handler_delegate.h
++++ b/ui/views/win/hwnd_message_handler_delegate.h
+@@ -251,6 +251,10 @@ class VIEWS_EXPORT HWNDMessageHandlerDelegate {
+   // Called when the window scale factor has changed.
+   virtual void HandleWindowScaleFactorChanged(float window_scale_factor) = 0;
+ 
++  // Called when synthetic mouse event is generated for touch event on
++  // caption buttons.
++  virtual bool HandleMouseEventForCaption(UINT message) const = 0;
++
+  protected:
+   virtual ~HWNDMessageHandlerDelegate() = default;
+ };

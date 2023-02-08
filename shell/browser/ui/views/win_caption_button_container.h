@@ -46,6 +46,9 @@ class WinCaptionButtonContainer : public views::View,
   // time, and both are disabled in tablet UI mode.
   void UpdateButtons();
 
+  // Reset window button states to STATE_NORMAL.
+  void ResetWindowControls();
+
  private:
   // views::View:
   void AddedToWidget() override;
@@ -54,8 +57,6 @@ class WinCaptionButtonContainer : public views::View,
   // views::WidgetObserver:
   void OnWidgetBoundsChanged(views::Widget* widget,
                              const gfx::Rect& new_bounds) override;
-
-  void ResetWindowControls();
 
   WinFrameView* const frame_view_;
   WinCaptionButton* const minimize_button_;

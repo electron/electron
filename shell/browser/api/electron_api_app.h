@@ -191,6 +191,7 @@ class App : public ElectronBrowserClient::Delegate,
   void SetDesktopName(const std::string& desktop_name);
   std::string GetLocale();
   std::string GetLocaleCountryCode();
+  std::string GetSystemLocale(gin_helper::ErrorThrower thrower) const;
   void OnSecondInstance(const base::CommandLine& cmd,
                         const base::FilePath& cwd,
                         const std::vector<const uint8_t> additional_data);
@@ -234,7 +235,7 @@ class App : public ElectronBrowserClient::Delegate,
   bool IsRunningUnderARM64Translation() const;
 #endif
 
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   base::RepeatingCallback<void()> StartAccessingSecurityScopedResource(
       gin::Arguments* args);
 #endif
@@ -264,6 +265,7 @@ class App : public ElectronBrowserClient::Delegate,
 
   bool disable_hw_acceleration_ = false;
   bool disable_domain_blocking_for_3DAPIs_ = false;
+  bool watch_singleton_socket_on_ready_ = false;
 };
 
 }  // namespace api

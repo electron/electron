@@ -68,19 +68,12 @@ async function nextBeta (v) {
   return tags.length === 0 ? `${next}-beta.1` : semver.inc(tags.pop(), 'prerelease');
 }
 
-async function getElectronVersion () {
-  const versionPath = path.resolve(ELECTRON_DIR, 'ELECTRON_VERSION');
-  const version = await readFile(versionPath, 'utf8');
-  return version.trim();
-}
-
 async function nextNightly (v) {
   let next = semver.valid(semver.coerce(v));
   const pre = `nightly.${getCurrentDate()}`;
 
   const branch = (await GitProcess.exec(['rev-parse', '--abbrev-ref', 'HEAD'], ELECTRON_DIR)).stdout.trim();
-  // TODO(main-migration): Simplify once main branch is renamed
-  if (branch === 'master' || branch === 'main') {
+  if (branch === 'main') {
     next = semver.inc(await getLastMajorForMain(), 'major');
   } else if (isStable(v)) {
     next = semver.inc(next, 'patch');
@@ -114,7 +107,6 @@ module.exports = {
   nextAlpha,
   nextBeta,
   makeVersion,
-  getElectronVersion,
   nextNightly,
   preType
 };

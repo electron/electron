@@ -6,10 +6,10 @@ Subject: JSON.parse errors made user-friendly
 Update tests for  https://chromium-review.googlesource.com/c/v8/v8/+/3513684
 
 diff --git a/test/es-module/test-esm-data-urls.js b/test/es-module/test-esm-data-urls.js
-index 9d0deb70a1568c93ccdecbef59327ecb2a17ae5e..2ab8f2bdcf7cca1437df33668c4177a76b4dc3ca 100644
+index 5be45d0f7af3b6dd483fe3b185c76e41a1bf533b..c20dd4f9067203bf40d35c92c2ef1bb27ec14b99 100644
 --- a/test/es-module/test-esm-data-urls.js
 +++ b/test/es-module/test-esm-data-urls.js
-@@ -75,7 +75,7 @@ function createBase64URL(mime, body) {
+@@ -76,7 +76,7 @@ function createBase64URL(mime, body) {
        import('data:application/json;foo="test,",0',
          { assert: { type: 'json' } }), {
        name: 'SyntaxError',
@@ -19,21 +19,15 @@ index 9d0deb70a1568c93ccdecbef59327ecb2a17ae5e..2ab8f2bdcf7cca1437df33668c4177a7
    }
    {
 diff --git a/test/es-module/test-esm-invalid-pjson.js b/test/es-module/test-esm-invalid-pjson.js
-index cdbebb17b4bb34421a2f98c384650d495908885c..12247f15dbaddc0e06f1e6aff09faf7a035cf43a 100644
+index f3a38018637aa349ad79617ab9835e61d7058fe9..bc78b870c84c4baedecdd7ffc1157c86c307cebf 100644
 --- a/test/es-module/test-esm-invalid-pjson.js
 +++ b/test/es-module/test-esm-invalid-pjson.js
-@@ -17,11 +17,13 @@ child.stderr.on('data', (data) => {
- child.on('close', mustCall((code, signal) => {
-   strictEqual(code, 1);
-   strictEqual(signal, null);
-+  console.log('STDERR is: ', stderr);
-+  console.log('DONE STDERR');
-   ok(
-     stderr.includes(
-       `[ERR_INVALID_PACKAGE_CONFIG]: Invalid package config ${invalidJson} ` +
-       `while importing "invalid-pjson" from ${entry}. ` +
--      `Unexpected token } in JSON at position ${12 + checkoutEOL.length * 2}`
-+      `Expected ':' after property name in JSON at position ${12 + checkoutEOL.length * 2}`
-     ),
-     stderr);
- }));
+@@ -18,7 +18,7 @@ describe('ESM: Package.json', { concurrency: true }, () => {
+       stderr.includes(
+         `[ERR_INVALID_PACKAGE_CONFIG]: Invalid package config ${invalidJson} ` +
+         `while importing "invalid-pjson" from ${entry}. ` +
+-        `Unexpected token } in JSON at position ${12 + checkoutEOL.length * 2}`
++        `Expected ':' after property name in JSON at position ${12 + checkoutEOL.length * 2}`
+       ),
+       stderr
+     );

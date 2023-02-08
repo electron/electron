@@ -6,8 +6,7 @@
 
 #include <string>
 
-#include "base/callback_helpers.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/functional/callback_helpers.h"
 #include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"
@@ -37,9 +36,7 @@ struct Converter<device::mojom::WakeLockType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo PowerSaveBlocker::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -126,9 +123,7 @@ gin::ObjectTemplateBuilder PowerSaveBlocker::GetObjectTemplateBuilder(
       .SetMethod("isStarted", &PowerSaveBlocker::IsStarted);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

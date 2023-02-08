@@ -18,10 +18,11 @@ if (!OUT_DIR) {
   throw new Error('No viable out dir: one of Debug, Testing, or Release must exist.');
 }
 
-const env = Object.assign({
+const env = {
   CHROMIUM_BUILDTOOLS_PATH: path.resolve(SOURCE_ROOT, '..', 'buildtools'),
-  DEPOT_TOOLS_WIN_TOOLCHAIN: '0'
-}, process.env);
+  DEPOT_TOOLS_WIN_TOOLCHAIN: '0',
+  ...process.env
+};
 // Users may not have depot_tools in PATH.
 env.PATH = `${env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 

@@ -140,9 +140,44 @@ ipcRenderer.on('port', (e, msg) => {
 
 ### Instance Properties
 
+#### `frame.ipc` _Readonly_
+
+An [`IpcMain`](ipc-main.md) instance scoped to the frame.
+
+IPC messages sent with `ipcRenderer.send`, `ipcRenderer.sendSync` or
+`ipcRenderer.postMessage` will be delivered in the following order:
+
+1. `contents.on('ipc-message')`
+2. `contents.mainFrame.on(channel)`
+3. `contents.ipc.on(channel)`
+4. `ipcMain.on(channel)`
+
+Handlers registered with `invoke` will be checked in the following order. The
+first one that is defined will be called, the rest will be ignored.
+
+1. `contents.mainFrame.handle(channel)`
+2. `contents.handle(channel)`
+3. `ipcMain.handle(channel)`
+
+In most cases, only the main frame of a WebContents can send or receive IPC
+messages. However, if the `nodeIntegrationInSubFrames` option is enabled, it is
+possible for child frames to send and receive IPC messages also. The
+[`WebContents.ipc`](web-contents.md#contentsipc-readonly) interface may be more
+convenient when `nodeIntegrationInSubFrames` is not enabled.
+
 #### `frame.url` _Readonly_
 
 A `string` representing the current URL of the frame.
+
+#### `frame.origin` _Readonly_
+
+A `string` representing the current origin of the frame, serialized according
+to [RFC 6454](https://www.rfc-editor.org/rfc/rfc6454). This may be different
+from the URL. For instance, if the frame is a child window opened to
+`about:blank`, then `frame.origin` will return the parent frame's origin, while
+`frame.url` will return the empty string. Pages without a scheme/host/port
+triple origin will have the serialized origin of `"null"` (that is, the string
+containing the letters n, u, l, l).
 
 #### `frame.top` _Readonly_
 
@@ -198,3 +233,4 @@ See also how the [Page Visibility API](browser-window.md#page-visibility) is aff
 
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
+[`MessagePortMain`]: message-port-main.md

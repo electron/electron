@@ -21,9 +21,7 @@
 #include "ui/gfx/sys_color_change_listener.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 #if BUILDFLAG(IS_MAC)
 enum class NotificationCenterKind {
@@ -74,18 +72,18 @@ class SystemPreferences
       void(const std::string&, base::Value, const std::string&)>;
 
   void PostNotification(const std::string& name,
-                        base::DictionaryValue user_info,
+                        base::Value::Dict user_info,
                         gin::Arguments* args);
   int SubscribeNotification(v8::Local<v8::Value> maybe_name,
                             const NotificationCallback& callback);
   void UnsubscribeNotification(int id);
   void PostLocalNotification(const std::string& name,
-                             base::DictionaryValue user_info);
+                             base::Value::Dict user_info);
   int SubscribeLocalNotification(v8::Local<v8::Value> maybe_name,
                                  const NotificationCallback& callback);
   void UnsubscribeLocalNotification(int request_id);
   void PostWorkspaceNotification(const std::string& name,
-                                 base::DictionaryValue user_info);
+                                 base::Value::Dict user_info);
   int SubscribeWorkspaceNotification(v8::Local<v8::Value> maybe_name,
                                      const NotificationCallback& callback);
   void UnsubscribeWorkspaceNotification(int request_id);
@@ -168,8 +166,6 @@ class SystemPreferences
 #endif
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_SYSTEM_PREFERENCES_H_

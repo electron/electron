@@ -5,6 +5,8 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_WEB_VIEW_GUEST_DELEGATE_H_
 
+#include <memory>
+
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
 
@@ -33,7 +35,7 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
  protected:
   // content::BrowserPluginGuestDelegate:
   content::WebContents* GetOwnerWebContents() final;
-  content::WebContents* CreateNewGuestWindow(
+  std::unique_ptr<content::WebContents> CreateNewGuestWindow(
       const content::WebContents::CreateParams& create_params) final;
 
   // WebContentsZoomController::Observer:

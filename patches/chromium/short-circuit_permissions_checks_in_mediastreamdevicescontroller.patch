@@ -1,0 +1,101 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Tue, 12 Jul 2022 16:51:43 -0700
+Subject: short-circuit permissions checks in MediaStreamDevicesController
+
+The //components/permissions architecture is complicated and not that
+widely used in Chromium, and mostly oriented around showing permissions
+UI and/or remembering per-site permissions, which we're not interested
+in.
+
+Since we do a permissions check prior to invoking the
+MediaStreamDevicesController, and don't (yet) provide the ability to set
+granular permissions (e.g. allow video but not audio), just
+short-circuit all the permissions checks in MSDC for now to allow us to
+unduplicate this code.
+
+diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
+index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e020904586 100644
+--- a/components/webrtc/media_stream_devices_controller.cc
++++ b/components/webrtc/media_stream_devices_controller.cc
+@@ -56,7 +56,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
+ void MediaStreamDevicesController::RequestPermissions(
+     const content::MediaStreamRequest& request,
+     MediaStreamDeviceEnumerator* enumerator,
+-    ResultCallback callback) {
++    ResultCallback callback,
++    bool previously_approved) {
+   content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
+       request.render_process_id, request.render_frame_id);
+   // The RFH may have been destroyed by the time the request is processed.
+@@ -92,6 +93,7 @@ void MediaStreamDevicesController::RequestPermissions(
+ 
+   std::vector<blink::PermissionType> permission_types;
+ 
++#if 0
+   content::PermissionController* permission_controller =
+       web_contents->GetBrowserContext()->GetPermissionController();
+ 
+@@ -152,19 +154,25 @@ void MediaStreamDevicesController::RequestPermissions(
+       permission_types.push_back(blink::PermissionType::CAMERA_PAN_TILT_ZOOM);
+     }
+   }
++#endif
+ 
+   // It is OK to ignore `request.security_origin` because it will be calculated
+   // from `render_frame_host` and we always ignore `requesting_origin` for
+   // `AUDIO_CAPTURE` and `VIDEO_CAPTURE`.
+   // `render_frame_host->GetMainFrame()->GetLastCommittedOrigin()` will be used
+   // instead.
+-  rfh->GetBrowserContext()
+-      ->GetPermissionController()
+-      ->RequestPermissionsFromCurrentDocument(
+-          permission_types, rfh, request.user_gesture,
+-          base::BindOnce(
+-              &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
+-              std::move(controller)));
++  if (previously_approved) {
++    controller->PromptAnsweredGroupedRequest({blink::mojom::PermissionStatus::GRANTED /*audio*/,
++                                              blink::mojom::PermissionStatus::GRANTED /*video*/});
++  } else {
++    rfh->GetBrowserContext()
++    ->GetPermissionController()
++    ->RequestPermissionsFromCurrentDocument(
++        permission_types, rfh, request.user_gesture,
++        base::BindOnce(
++            &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
++            std::move(controller)));
++  }
+ }
+ 
+ MediaStreamDevicesController::~MediaStreamDevicesController() {
+@@ -434,6 +442,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+     return false;
+   }
+ 
++#if 0
+   // TODO(raymes): This function wouldn't be needed if
+   // PermissionManager::RequestPermissions returned a denial reason.
+   content::PermissionResult result =
+@@ -444,6 +453,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+     DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
+     return true;
+   }
++#endif
+   return false;
+ }
+ 
+diff --git a/components/webrtc/media_stream_devices_controller.h b/components/webrtc/media_stream_devices_controller.h
+index b4258f59081c5d99b9c3edf02ca538499a5a435e..3bb6ac4e27fb39283d71a46dd3af7b9f7258d1e2 100644
+--- a/components/webrtc/media_stream_devices_controller.h
++++ b/components/webrtc/media_stream_devices_controller.h
+@@ -48,7 +48,8 @@ class MediaStreamDevicesController {
+   // synchronously or asynchronously returned via |callback|.
+   static void RequestPermissions(const content::MediaStreamRequest& request,
+                                  MediaStreamDeviceEnumerator* enumerator,
+-                                 ResultCallback callback);
++                                 ResultCallback callback,
++                                 bool previously_approved = false);
+ 
+   ~MediaStreamDevicesController();
+ 

@@ -87,7 +87,7 @@ bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   }
 
   return true;
-}  // namespace extensions
+}
 
 bool ElectronRuntimeAPIDelegate::RestartDevice(std::string* error_message) {
   *error_message = "Restart is not supported in Electron";

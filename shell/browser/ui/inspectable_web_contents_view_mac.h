@@ -8,13 +8,13 @@
 
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 
+#include <vector>
+
 #include "base/mac/scoped_nsobject.h"
 
 @class ElectronInspectableWebContentsView;
 
 namespace electron {
-
-class InspectableWebContents;
 
 class InspectableWebContentsViewMac : public InspectableWebContentsView {
  public:
@@ -35,14 +35,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
 
-  InspectableWebContents* inspectable_web_contents() {
-    return inspectable_web_contents_;
-  }
-
  private:
-  // Owns us.
-  InspectableWebContents* inspectable_web_contents_;
-
   base::scoped_nsobject<ElectronInspectableWebContentsView> view_;
 };
 

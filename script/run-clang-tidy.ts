@@ -1,6 +1,5 @@
 import * as childProcess from 'child_process';
 import * as fs from 'fs';
-import * as klaw from 'klaw';
 import * as minimist from 'minimist';
 import * as os from 'os';
 import * as path from 'path';
@@ -9,7 +8,7 @@ import * as streamJson from 'stream-json';
 import { ignore as streamJsonIgnore } from 'stream-json/filters/Ignore';
 import { streamArray as streamJsonStreamArray } from 'stream-json/streamers/StreamArray';
 
-import { chunkFilenames } from './lib/utils';
+import { chunkFilenames, findMatchingFiles } from './lib/utils';
 
 const SOURCE_ROOT = path.normalize(path.dirname(__dirname));
 const LLVM_BIN = path.resolve(
@@ -173,7 +172,7 @@ async function runClangTidy (
   const worker = async () => {
     let filenames = chunkedFilenames.shift();
 
-    while (filenames) {
+    while (filenames?.length) {
       results.push(
         await spawnAsync(cmd, [...args, ...filenames], {}).then((result) => {
           console.log(result.stdout);
@@ -202,24 +201,6 @@ async function runClangTidy (
   } catch {
     return false;
   }
-}
-
-async function findMatchingFiles (
-  top: string,
-  test: (filename: string) => boolean
-): Promise<string[]> {
-  return new Promise((resolve) => {
-    const matches = [] as string[];
-    klaw(top, {
-      filter: (f) => path.basename(f) !== '.bin'
-    })
-      .on('end', () => resolve(matches))
-      .on('data', (item) => {
-        if (test(item.path)) {
-          matches.push(item.path);
-        }
-      });
-  });
 }
 
 function parseCommandLine () {

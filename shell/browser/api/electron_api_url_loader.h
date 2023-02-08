@@ -33,9 +33,7 @@ class SimpleURLLoader;
 struct ResourceRequest;
 }  // namespace network
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 /** Wraps a SimpleURLLoader to make it usable from JavaScript */
 class SimpleURLLoaderWrapper
@@ -123,8 +121,6 @@ class SimpleURLLoaderWrapper
   base::WeakPtrFactory<SimpleURLLoaderWrapper> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_URL_LOADER_H_

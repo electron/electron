@@ -7,7 +7,7 @@
 
 #include <string>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 
 namespace in_app_purchase {
 
@@ -29,6 +29,7 @@ std::string GetReceiptURL();
 
 void PurchaseProduct(const std::string& productID,
                      int quantity,
+                     const std::string& username,
                      InAppPurchaseCallback callback);
 
 }  // namespace in_app_purchase

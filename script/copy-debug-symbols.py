@@ -4,12 +4,12 @@ import argparse
 import os
 import sys
 
-from lib.config import LINUX_BINARIES, PLATFORM
-from lib.util import execute, get_out_dir, safe_mkdir
+from lib.config import PLATFORM
+from lib.util import execute, get_linux_binaries, get_out_dir, safe_mkdir
 
 # It has to be done before stripping the binaries.
 def copy_debug_from_binaries(directory, out_dir, target_cpu, compress):
-  for binary in LINUX_BINARIES:
+  for binary in get_linux_binaries():
     binary_path = os.path.join(directory, binary)
     if os.path.isfile(binary_path):
       copy_debug_from_binary(binary_path, out_dir, target_cpu, compress)
@@ -17,7 +17,7 @@ def copy_debug_from_binaries(directory, out_dir, target_cpu, compress):
 def copy_debug_from_binary(binary_path, out_dir, target_cpu, compress):
   if PLATFORM == 'linux' and target_cpu in ('x86', 'arm', 'arm64'):
     # Skip because no objcopy binary on the given target.
-    return    
+    return
   debug_name = get_debug_name(binary_path)
   cmd = ['objcopy', '--only-keep-debug']
   if compress:

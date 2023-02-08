@@ -176,11 +176,7 @@ void WebContentsPreferences::Clear() {
 void WebContentsPreferences::SetFromDictionary(
     const gin_helper::Dictionary& web_preferences) {
   Clear();
-  Merge(web_preferences);
-}
 
-void WebContentsPreferences::Merge(
-    const gin_helper::Dictionary& web_preferences) {
   web_preferences.Get(options::kPlugins, &plugins_);
   web_preferences.Get(options::kExperimentalFeatures, &experimental_features_);
   web_preferences.Get(options::kNodeIntegration, &node_integration_);
@@ -316,9 +312,7 @@ bool WebContentsPreferences::IsSandboxed() const {
   if (sandbox_)
     return *sandbox_;
   bool sandbox_disabled_by_default =
-      node_integration_ || node_integration_in_worker_ || preload_path_ ||
-      !SessionPreferences::GetValidPreloads(web_contents_->GetBrowserContext())
-           .empty();
+      node_integration_ || node_integration_in_worker_;
   return !sandbox_disabled_by_default;
 }
 
@@ -327,7 +321,8 @@ content::WebContents* WebContentsPreferences::GetWebContentsFromProcessID(
     int process_id) {
   for (WebContentsPreferences* preferences : Instances()) {
     content::WebContents* web_contents = preferences->web_contents_;
-    if (web_contents->GetMainFrame()->GetProcess()->GetID() == process_id)
+    if (web_contents->GetPrimaryMainFrame()->GetProcess()->GetID() ==
+        process_id)
       return web_contents;
   }
   return nullptr;

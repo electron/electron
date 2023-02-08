@@ -130,6 +130,11 @@ void ElectronPermissionManager::SetDevicePermissionHandler(
   device_permission_handler_ = handler;
 }
 
+void ElectronPermissionManager::SetBluetoothPairingHandler(
+    const BluetoothPairingHandler& handler) {
+  bluetooth_pairing_handler_ = handler;
+}
+
 void ElectronPermissionManager::RequestPermission(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
@@ -137,8 +142,7 @@ void ElectronPermissionManager::RequestPermission(
     bool user_gesture,
     StatusCallback response_callback) {
   RequestPermissionWithDetails(permission, render_frame_host, requesting_origin,
-                               user_gesture, nullptr,
-                               std::move(response_callback));
+                               user_gesture, {}, std::move(response_callback));
 }
 
 void ElectronPermissionManager::RequestPermissionWithDetails(
@@ -146,11 +150,11 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
     bool user_gesture,
-    const base::DictionaryValue* details,
+    base::Value::Dict details,
     StatusCallback response_callback) {
   RequestPermissionsWithDetails(
       std::vector<blink::PermissionType>(1, permission), render_frame_host,
-      user_gesture, details,
+      user_gesture, std::move(details),
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
 }
@@ -162,14 +166,14 @@ void ElectronPermissionManager::RequestPermissions(
     bool user_gesture,
     StatusesCallback response_callback) {
   RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
-                                nullptr, std::move(response_callback));
+                                {}, std::move(response_callback));
 }
 
 void ElectronPermissionManager::RequestPermissionsWithDetails(
     const std::vector<blink::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
     bool user_gesture,
-    const base::DictionaryValue* details,
+    base::Value::Dict details,
     StatusesCallback response_callback) {
   if (permissions.empty()) {
     std::move(response_callback).Run({});
@@ -204,13 +208,11 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
-    auto mutable_details =
-        details == nullptr ? base::DictionaryValue() : details->Clone();
-    mutable_details.SetStringKey(
-        "requestingUrl", render_frame_host->GetLastCommittedURL().spec());
-    mutable_details.SetBoolKey("isMainFrame",
-                               render_frame_host->GetParent() == nullptr);
-    request_handler_.Run(web_contents, permission, callback, mutable_details);
+    details.Set("requestingUrl",
+                render_frame_host->GetLastCommittedURL().spec());
+    details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+    request_handler_.Run(web_contents, permission, callback,
+                         base::Value(std::move(details)));
   }
 }
 
@@ -241,19 +243,29 @@ void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
     base::OnceCallback<void(const std::vector<blink::mojom::PermissionStatus>&)>
         callback) {
   RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
-                                nullptr, std::move(callback));
+                                {}, std::move(callback));
 }
 
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
     blink::PermissionType permission,
     const GURL& requesting_origin,
     const GURL& embedding_origin) {
-  base::DictionaryValue details;
-  details.SetString("embeddingOrigin", embedding_origin.spec());
-  bool granted = CheckPermissionWithDetails(permission, nullptr,
-                                            requesting_origin, &details);
+  base::Value::Dict details;
+  details.Set("embeddingOrigin", embedding_origin.spec());
+  bool granted = CheckPermissionWithDetails(permission, {}, requesting_origin,
+                                            std::move(details));
   return granted ? blink::mojom::PermissionStatus::GRANTED
                  : blink::mojom::PermissionStatus::DENIED;
+}
+
+content::PermissionResult
+ElectronPermissionManager::GetPermissionResultForOriginWithoutContext(
+    blink::PermissionType permission,
+    const url::Origin& origin) {
+  blink::mojom::PermissionStatus status =
+      GetPermissionStatus(permission, origin.GetURL(), origin.GetURL());
+  return content::PermissionResult(
+      status, content::PermissionStatusSource::UNSPECIFIED);
 }
 
 ElectronPermissionManager::SubscriptionId
@@ -269,11 +281,23 @@ ElectronPermissionManager::SubscribePermissionStatusChange(
 void ElectronPermissionManager::UnsubscribePermissionStatusChange(
     SubscriptionId id) {}
 
+void ElectronPermissionManager::CheckBluetoothDevicePair(
+    gin_helper::Dictionary details,
+    PairCallback pair_callback) const {
+  if (bluetooth_pairing_handler_.is_null()) {
+    base::Value::Dict response;
+    response.Set("confirmed", false);
+    std::move(pair_callback).Run(std::move(response));
+  } else {
+    bluetooth_pairing_handler_.Run(details, std::move(pair_callback));
+  }
+}
+
 bool ElectronPermissionManager::CheckPermissionWithDetails(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
     const GURL& requesting_origin,
-    const base::DictionaryValue* details) const {
+    base::Value::Dict details) const {
   if (check_handler_.is_null()) {
     return true;
   }
@@ -281,51 +305,40 @@ bool ElectronPermissionManager::CheckPermissionWithDetails(
       render_frame_host
           ? content::WebContents::FromRenderFrameHost(render_frame_host)
           : nullptr;
-  auto mutable_details =
-      details == nullptr ? base::DictionaryValue() : details->Clone();
   if (render_frame_host) {
-    mutable_details.SetStringKey(
-        "requestingUrl", render_frame_host->GetLastCommittedURL().spec());
+    details.Set("requestingUrl",
+                render_frame_host->GetLastCommittedURL().spec());
   }
-  mutable_details.SetBoolKey(
-      "isMainFrame",
-      render_frame_host && render_frame_host->GetParent() == nullptr);
+  details.Set("isMainFrame",
+              render_frame_host && render_frame_host->GetParent() == nullptr);
   switch (permission) {
     case blink::PermissionType::AUDIO_CAPTURE:
-      mutable_details.SetStringKey("mediaType", "audio");
+      details.Set("mediaType", "audio");
       break;
     case blink::PermissionType::VIDEO_CAPTURE:
-      mutable_details.SetStringKey("mediaType", "video");
+      details.Set("mediaType", "video");
       break;
     default:
       break;
   }
   return check_handler_.Run(web_contents, permission, requesting_origin,
-                            mutable_details);
+                            base::Value(std::move(details)));
 }
 
 bool ElectronPermissionManager::CheckDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
+    const base::Value& device,
+    ElectronBrowserContext* browser_context) const {
   if (device_permission_handler_.is_null()) {
-    if (api_web_contents) {
-      return api_web_contents->CheckDevicePermission(origin, device, permission,
-                                                     render_frame_host);
-    }
-    return false;
+    return browser_context->CheckDevicePermission(origin, device, permission);
   } else {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
     v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
                                         .Set("deviceType", permission)
                                         .Set("origin", origin.Serialize())
-                                        .Set("device", device->Clone())
-                                        .Set("frame", render_frame_host)
+                                        .Set("device", device.Clone())
                                         .Build();
     return device_permission_handler_.Run(details);
   }
@@ -334,38 +347,35 @@ bool ElectronPermissionManager::CheckDevicePermission(
 void ElectronPermissionManager::GrantDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
+    const base::Value& device,
+    ElectronBrowserContext* browser_context) const {
   if (device_permission_handler_.is_null()) {
-    auto* web_contents =
-        content::WebContents::FromRenderFrameHost(render_frame_host);
-    api::WebContents* api_web_contents = api::WebContents::From(web_contents);
-    if (api_web_contents)
-      api_web_contents->GrantDevicePermission(origin, device, permission,
-                                              render_frame_host);
+    browser_context->GrantDevicePermission(origin, device, permission);
   }
 }
 
 void ElectronPermissionManager::RevokeDevicePermission(
     blink::PermissionType permission,
     const url::Origin& origin,
-    const base::Value* device,
-    content::RenderFrameHost* render_frame_host) const {
-  auto* web_contents =
-      content::WebContents::FromRenderFrameHost(render_frame_host);
-  api::WebContents* api_web_contents = api::WebContents::From(web_contents);
-  if (api_web_contents)
-    api_web_contents->RevokeDevicePermission(origin, device, permission,
-                                             render_frame_host);
+    const base::Value& device,
+    ElectronBrowserContext* browser_context) const {
+  browser_context->RevokeDevicePermission(origin, device, permission);
 }
 
 blink::mojom::PermissionStatus
 ElectronPermissionManager::GetPermissionStatusForCurrentDocument(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host) {
-  return GetPermissionStatus(
-      permission, render_frame_host->GetLastCommittedOrigin().GetURL(),
-      content::PermissionUtil::GetLastCommittedOriginAsURL(render_frame_host));
+  base::Value::Dict details;
+  details.Set("embeddingOrigin",
+              content::PermissionUtil::GetLastCommittedOriginAsURL(
+                  render_frame_host->GetMainFrame())
+                  .spec());
+  bool granted = CheckPermissionWithDetails(
+      permission, render_frame_host,
+      render_frame_host->GetLastCommittedOrigin().GetURL(), std::move(details));
+  return granted ? blink::mojom::PermissionStatus::GRANTED
+                 : blink::mojom::PermissionStatus::DENIED;
 }
 
 blink::mojom::PermissionStatus

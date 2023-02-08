@@ -13,15 +13,14 @@ This patch can be removed when enable_print_content_analysis can be more
 easily enabled or disabled by default with buildflags.
 
 diff --git a/printing/buildflags/buildflags.gni b/printing/buildflags/buildflags.gni
-index 559ac76d4e4b9d9c1824c4da186a6b0f7619fcca..72855e0c5fadb286b67144b34ff71f45e1434c73 100644
+index 8a688b2d196070caf8076bc5621eca2649a6f136..c148f511628ac13f0b50faab01f7308538f102a9 100644
 --- a/printing/buildflags/buildflags.gni
 +++ b/printing/buildflags/buildflags.gni
-@@ -36,8 +36,7 @@ declare_args() {
+@@ -44,7 +44,7 @@ declare_args() {
  
    # Enable snapshotting a page when printing for its content to be analyzed for
    # sensitive content by enterprise users.
--  enable_print_content_analysis =
--      is_chromeos_ash || is_chromeos_lacros || is_win || is_linux || is_mac
+-  enable_print_content_analysis = is_chromeos || is_win || is_linux || is_mac
 +  enable_print_content_analysis = is_chromeos_ash || is_chromeos_lacros
  }
  

@@ -49,18 +49,31 @@ bool ElectronSerialDelegate::CanRequestPortPermission(
   auto* permission_helper =
       WebContentsPermissionHelper::FromWebContents(web_contents);
   return permission_helper->CheckSerialAccessPermission(
-      web_contents->GetMainFrame()->GetLastCommittedOrigin());
+      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin());
 }
 
 bool ElectronSerialDelegate::HasPortPermission(
     content::RenderFrameHost* frame,
     const device::mojom::SerialPortInfo& port) {
   auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
-  auto* browser_context = web_contents->GetBrowserContext();
-  auto* chooser_context =
-      SerialChooserContextFactory::GetForBrowserContext(browser_context);
-  return chooser_context->HasPortPermission(
-      web_contents->GetMainFrame()->GetLastCommittedOrigin(), port, frame);
+  return GetChooserContext(frame)->HasPortPermission(
+      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin(), port,
+      frame);
+}
+
+void ElectronSerialDelegate::RevokePortPermissionWebInitiated(
+    content::RenderFrameHost* frame,
+    const base::UnguessableToken& token) {
+  auto* web_contents = content::WebContents::FromRenderFrameHost(frame);
+  return GetChooserContext(frame)->RevokePortPermissionWebInitiated(
+      web_contents->GetPrimaryMainFrame()->GetLastCommittedOrigin(), token,
+      frame);
+}
+
+const device::mojom::SerialPortInfo* ElectronSerialDelegate::GetPortInfo(
+    content::RenderFrameHost* frame,
+    const base::UnguessableToken& token) {
+  return GetChooserContext(frame)->GetPortInfo(token);
 }
 
 device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(
@@ -68,30 +81,19 @@ device::mojom::SerialPortManager* ElectronSerialDelegate::GetPortManager(
   return GetChooserContext(frame)->GetPortManager();
 }
 
-void ElectronSerialDelegate::AddObserver(content::RenderFrameHost* frame,
-                                         Observer* observer) {
-  return GetChooserContext(frame)->AddPortObserver(observer);
-}
-
-void ElectronSerialDelegate::RemoveObserver(content::RenderFrameHost* frame,
-                                            Observer* observer) {
-  SerialChooserContext* serial_chooser_context = GetChooserContext(frame);
-  if (serial_chooser_context) {
-    return serial_chooser_context->RemovePortObserver(observer);
-  }
-}
-
-void ElectronSerialDelegate::RevokePortPermissionWebInitiated(
+void ElectronSerialDelegate::AddObserver(
     content::RenderFrameHost* frame,
-    const base::UnguessableToken& token) {
-  // TODO(nornagon/jkleinsc): pass this on to the chooser context
+    content::SerialDelegate::Observer* observer) {
+  observer_list_.AddObserver(observer);
+  auto* chooser_context = GetChooserContext(frame);
+  if (!port_observation_.IsObserving())
+    port_observation_.Observe(chooser_context);
 }
 
-const device::mojom::SerialPortInfo* ElectronSerialDelegate::GetPortInfo(
+void ElectronSerialDelegate::RemoveObserver(
     content::RenderFrameHost* frame,
-    const base::UnguessableToken& token) {
-  // TODO(nornagon/jkleinsc): pass this on to the chooser context
-  return nullptr;
+    content::SerialDelegate::Observer* observer) {
+  observer_list_.RemoveObserver(observer);
 }
 
 SerialChooserController* ElectronSerialDelegate::ControllerForFrame(
@@ -117,6 +119,29 @@ SerialChooserController* ElectronSerialDelegate::AddControllerForFrame(
 void ElectronSerialDelegate::DeleteControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   controller_map_.erase(render_frame_host);
+}
+
+// SerialChooserContext::PortObserver:
+void ElectronSerialDelegate::OnPortAdded(
+    const device::mojom::SerialPortInfo& port) {
+  for (auto& observer : observer_list_)
+    observer.OnPortAdded(port);
+}
+
+void ElectronSerialDelegate::OnPortRemoved(
+    const device::mojom::SerialPortInfo& port) {
+  for (auto& observer : observer_list_)
+    observer.OnPortRemoved(port);
+}
+
+void ElectronSerialDelegate::OnPortManagerConnectionError() {
+  port_observation_.Reset();
+  for (auto& observer : observer_list_)
+    observer.OnPortManagerConnectionError();
+}
+
+void ElectronSerialDelegate::OnSerialChooserContextShutdown() {
+  port_observation_.Reset();
 }
 
 }  // namespace electron

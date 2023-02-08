@@ -7,8 +7,10 @@
 #include <memory>
 
 #include <utility>
+#include <vector>
 
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
@@ -79,7 +81,7 @@ InspectableWebContentsView* CreateInspectableContentsView(
 
 InspectableWebContentsViewViews::InspectableWebContentsViewViews(
     InspectableWebContents* inspectable_web_contents)
-    : inspectable_web_contents_(inspectable_web_contents),
+    : InspectableWebContentsView(inspectable_web_contents),
       devtools_web_view_(new views::WebView(nullptr)),
       title_(u"Developer Tools") {
   if (!inspectable_web_contents_->IsGuest() &&
