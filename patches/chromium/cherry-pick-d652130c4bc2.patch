@@ -1,7 +1,7 @@
-From d652130c4bc2842d5df5488c69ef4f3168634a54 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Vasiliy Telezhnikov <vasilyt@chromium.org>
 Date: Mon, 16 Jan 2023 17:43:34 +0000
-Subject: [PATCH] Remove NUM_COMMAND_BUFFER_NAMESPACES from SyncToken.mojom
+Subject: Remove NUM_COMMAND_BUFFER_NAMESPACES from SyncToken.mojom
 
 Mojo validates input for allowed values, NUM_COMMAND_BUFFER_NAMESPACES
 is not valid value to send over ipc and is used only to know maximum
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4167409
 Reviewed-by: danakj <danakj@chromium.org>
 Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1093100}
----
 
 diff --git a/gpu/ipc/common/sync_token.mojom b/gpu/ipc/common/sync_token.mojom
-index eac3809..a159f655 100644
+index 7c957007e3a377bd1e9969f14d9edc80c7d76645..b24017647aa6a11080580dd48e4c3d1cd79d1cf3 100644
 --- a/gpu/ipc/common/sync_token.mojom
 +++ b/gpu/ipc/common/sync_token.mojom
-@@ -11,9 +11,7 @@
+@@ -11,9 +11,7 @@ enum CommandBufferNamespace {
    GPU_IO,
    IN_PROCESS,
    MOJO,
