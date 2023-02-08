@@ -146,8 +146,8 @@ int NodeMain(int argc, char* argv[]) {
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    // Explicitly register electron's builtin modules.
-    NodeBindings::RegisterBuiltinModules();
+    // Explicitly register electron's builtin bindings.
+    NodeBindings::RegisterBuiltinBindings();
 
     // Parse and set Node.js cli flags.
     int flags_exit_code = SetNodeCliFlags();
