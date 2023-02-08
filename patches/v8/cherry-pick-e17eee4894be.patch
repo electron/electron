@@ -1,7 +1,7 @@
-From e17eee4894be67f715a7b2d7f17d8b69724f1cf8 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Clemens Backes <clemensb@chromium.org>
 Date: Thu, 22 Dec 2022 09:43:42 +0100
-Subject: [PATCH] [wasm] Fix printing of wasm-to-js frames
+Subject: Fix printing of wasm-to-js frames
 
 After https://crrev.com/c/3859787 those frames would be printed like
 standard Wasm frames, but in the place of the WasmInstanceObject, they
@@ -19,13 +19,12 @@ Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
 Commit-Queue: Clemens Backes <clemensb@chromium.org>
 Reviewed-by: Victor Gomes <victorgomes@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#84993}
----
 
 diff --git a/src/compiler/backend/arm/code-generator-arm.cc b/src/compiler/backend/arm/code-generator-arm.cc
-index 51dbd89..5ab345a 100644
+index 0cf7fa97eaa626a3bada90a4f70eda7437809b4f..845cf7f3d684f97e9853e1097ca234ba19a6eba4 100644
 --- a/src/compiler/backend/arm/code-generator-arm.cc
 +++ b/src/compiler/backend/arm/code-generator-arm.cc
-@@ -3699,6 +3699,10 @@
+@@ -3702,6 +3702,10 @@ void CodeGenerator::AssembleConstructFrame() {
        if (call_descriptor->IsWasmFunctionCall() ||
            call_descriptor->IsWasmImportWrapper() ||
            call_descriptor->IsWasmCapiFunction()) {
@@ -37,10 +36,10 @@ index 51dbd89..5ab345a 100644
        }
        if (call_descriptor->IsWasmCapiFunction()) {
 diff --git a/src/compiler/backend/arm64/code-generator-arm64.cc b/src/compiler/backend/arm64/code-generator-arm64.cc
-index 1889a7b..c448845 100644
+index bdc200ca299750f74b9ac4d7f85fdb7fee82a90f..a2e031e916e7cebe630a21b5ef3e32615059f5d8 100644
 --- a/src/compiler/backend/arm64/code-generator-arm64.cc
 +++ b/src/compiler/backend/arm64/code-generator-arm64.cc
-@@ -3224,6 +3224,9 @@
+@@ -3218,6 +3218,9 @@ void CodeGenerator::AssembleConstructFrame() {
          Register scratch = temps.AcquireX();
          __ Mov(scratch,
                 StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
@@ -51,10 +50,10 @@ index 1889a7b..c448845 100644
          int extra_slots =
              call_descriptor->kind() == CallDescriptor::kCallWasmImportWrapper
 diff --git a/src/compiler/backend/ia32/code-generator-ia32.cc b/src/compiler/backend/ia32/code-generator-ia32.cc
-index b53adf2..865b890 100644
+index e23b29516076056dce8e4e4c4ea9cb27a5a27e51..e9450b710148bab8145a1cc6630cc1ee1c9287b1 100644
 --- a/src/compiler/backend/ia32/code-generator-ia32.cc
 +++ b/src/compiler/backend/ia32/code-generator-ia32.cc
-@@ -4043,6 +4043,10 @@
+@@ -4018,6 +4018,10 @@ void CodeGenerator::AssembleConstructFrame() {
        if (call_descriptor->IsWasmFunctionCall() ||
            call_descriptor->IsWasmImportWrapper() ||
            call_descriptor->IsWasmCapiFunction()) {
@@ -66,10 +65,10 @@ index b53adf2..865b890 100644
        }
        if (call_descriptor->IsWasmCapiFunction()) {
 diff --git a/src/compiler/backend/x64/code-generator-x64.cc b/src/compiler/backend/x64/code-generator-x64.cc
-index 4bf367b..9e80816 100644
+index 87ac836d59a1901a5513cb14dc0c0d2e25922be3..1b3bb857c0b027f9469830de57d64548132aefb4 100644
 --- a/src/compiler/backend/x64/code-generator-x64.cc
 +++ b/src/compiler/backend/x64/code-generator-x64.cc
-@@ -4859,10 +4859,10 @@
+@@ -4766,10 +4766,10 @@ void CodeGenerator::AssembleConstructFrame() {
        if (call_descriptor->IsWasmFunctionCall() ||
            call_descriptor->IsWasmImportWrapper() ||
            call_descriptor->IsWasmCapiFunction()) {
@@ -85,10 +84,10 @@ index 4bf367b..9e80816 100644
        }
        if (call_descriptor->IsWasmCapiFunction()) {
 diff --git a/src/diagnostics/objects-printer.cc b/src/diagnostics/objects-printer.cc
-index 4106b52..b763468 100644
+index 5b546e29926c23518c4f4188ceb5c0ab5fe0af33..cf7bfc780d80b203f7f74aa0510a7ed4bcbd144e 100644
 --- a/src/diagnostics/objects-printer.cc
 +++ b/src/diagnostics/objects-printer.cc
-@@ -2156,6 +2156,7 @@
+@@ -2080,6 +2080,7 @@ void WasmApiFunctionRef::WasmApiFunctionRefPrint(std::ostream& os) {
    os << "\n - isolate_root: " << reinterpret_cast<void*>(isolate_root());
    os << "\n - native_context: " << Brief(native_context());
    os << "\n - callable: " << Brief(callable());
@@ -97,10 +96,10 @@ index 4106b52..b763468 100644
    os << "\n";
  }
 diff --git a/src/execution/frames.cc b/src/execution/frames.cc
-index 7af7ae9..1730323 100644
+index 0e2fb1b8d0756e744021ef7c1848aef172725a49..dea9f96012b9bde3c12c97aa10b7dfc32eca9046 100644
 --- a/src/execution/frames.cc
 +++ b/src/execution/frames.cc
-@@ -2501,7 +2501,7 @@
+@@ -2398,7 +2398,7 @@ void WasmFrame::Print(StringStream* accumulator, PrintMode mode,
      return;
    }
    wasm::WasmCodeRefScope code_ref_scope;
@@ -109,7 +108,7 @@ index 7af7ae9..1730323 100644
    accumulator->PrintName(script().name());
    Address instruction_start = wasm_code()->instruction_start();
    base::Vector<const uint8_t> raw_func_name =
-@@ -2632,6 +2632,15 @@
+@@ -2529,6 +2529,15 @@ void WasmDebugBreakFrame::Print(StringStream* accumulator, PrintMode mode,
    if (mode != OVERVIEW) accumulator->Add("\n");
  }
  
@@ -126,11 +125,11 @@ index 7af7ae9..1730323 100644
    CodeLookupResult lookup_result = GetContainingCode(isolate(), pc());
    CHECK(lookup_result.IsFound());
 diff --git a/src/execution/frames.h b/src/execution/frames.h
-index 536b044..4bed950 100644
+index e11834452c3bd1e364812b0cf2e09bfde3c72fe2..b60d9638038ab6ef248d02294526153bddadd089 100644
 --- a/src/execution/frames.h
 +++ b/src/execution/frames.h
-@@ -1035,7 +1035,7 @@
-   void Iterate(RootVisitor* v) const override;
+@@ -998,7 +998,7 @@ class WasmFrame : public TypedFrame {
+   int LookupExceptionHandlerInTable();
  
    // Accessors.
 -  V8_EXPORT_PRIVATE WasmInstanceObject wasm_instance() const;
@@ -138,7 +137,7 @@ index 536b044..4bed950 100644
    V8_EXPORT_PRIVATE wasm::NativeModule* native_module() const;
    wasm::WasmCode* wasm_code() const;
    int function_index() const;
-@@ -1101,6 +1101,9 @@
+@@ -1064,6 +1064,9 @@ class WasmToJsFrame : public StubFrame {
   public:
    Type type() const override { return WASM_TO_JS; }
  
@@ -150,7 +149,7 @@ index 536b044..4bed950 100644
  
 diff --git a/test/mjsunit/regress/asm/regress-1402270.js b/test/mjsunit/regress/asm/regress-1402270.js
 new file mode 100644
-index 0000000..77badd7
+index 0000000000000000000000000000000000000000..77badd768f6f502ee3bacec73049f25cd8af40b7
 --- /dev/null
 +++ b/test/mjsunit/regress/asm/regress-1402270.js
 @@ -0,0 +1,16 @@
