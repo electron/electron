@@ -797,7 +797,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  app.emit('web-contents-created', { preventDefault () {} }, this);
+  app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
 
   // Properties
 
