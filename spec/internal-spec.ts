@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './lib/window-helpers';
+import { closeAllWindows } from './window-helpers';
 
 describe('feature-string parsing', () => {
   it('is indifferent to whitespace around keys and values', () => {
