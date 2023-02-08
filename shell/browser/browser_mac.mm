@@ -8,12 +8,15 @@
 #include <string>
 #include <utility>
 
+#include "base/i18n/rtl.h"
 #include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
+#include "base/mac/mac_util.mm"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
+#include "chrome/browser/browser_process.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/badging/badge_manager.h"
 #include "shell/browser/mac/dict_util.h"
@@ -35,6 +38,13 @@
 namespace electron {
 
 namespace {
+
+bool IsAppRTL() {
+  const std::string& locale = g_browser_process->GetApplicationLocale();
+  base::i18n::TextDirection text_direction =
+      base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
+  return text_direction == base::i18n::RIGHT_TO_LEFT;
+}
 
 NSString* GetAppPathForProtocol(const GURL& url) {
   NSURL* ns_url = [NSURL
@@ -63,6 +73,24 @@ std::u16string GetAppDisplayNameForProtocol(NSString* app_path) {
       [[NSFileManager defaultManager] displayNameAtPath:app_path];
   return base::SysNSStringToUTF16(app_display_name);
 }
+
+#if !IS_MAS_BUILD()
+bool CheckLoginItemStatus(bool* is_hidden) {
+  base::mac::LoginItemsFileList login_items;
+  if (!login_items.Initialize())
+    return false;
+
+  base::ScopedCFTypeRef<LSSharedFileListItemRef> item(
+      login_items.GetLoginItemForMainApp());
+  if (!item.get())
+    return false;
+
+  if (is_hidden)
+    *is_hidden = base::mac::IsHiddenLoginItem(item);
+
+  return true;
+}
+#endif
 
 }  // namespace
 
@@ -235,14 +263,14 @@ bool Browser::SetBadgeCount(absl::optional<int> count) {
 }
 
 void Browser::SetUserActivity(const std::string& type,
-                              base::DictionaryValue user_info,
+                              base::Value::Dict user_info,
                               gin::Arguments* args) {
   std::string url_string;
   args->GetNext(&url_string);
 
   [[AtomApplication sharedApplication]
       setCurrentActivity:base::SysUTF8ToNSString(type)
-            withUserInfo:DictionaryValueToNSDictionary(user_info)
+            withUserInfo:DictionaryValueToNSDictionary(std::move(user_info))
           withWebpageURL:net::NSURLWithGURL(GURL(url_string))];
 }
 
@@ -261,10 +289,11 @@ void Browser::ResignCurrentActivity() {
 }
 
 void Browser::UpdateCurrentActivity(const std::string& type,
-                                    base::DictionaryValue user_info) {
+                                    base::Value::Dict user_info) {
   [[AtomApplication sharedApplication]
       updateCurrentActivity:base::SysUTF8ToNSString(type)
-               withUserInfo:DictionaryValueToNSDictionary(user_info)];
+               withUserInfo:DictionaryValueToNSDictionary(
+                                std::move(user_info))];
 }
 
 bool Browser::WillContinueUserActivity(const std::string& type) {
@@ -281,36 +310,63 @@ void Browser::DidFailToContinueUserActivity(const std::string& type,
 }
 
 bool Browser::ContinueUserActivity(const std::string& type,
-                                   base::DictionaryValue user_info,
-                                   base::DictionaryValue details) {
+                                   base::Value::Dict user_info,
+                                   base::Value::Dict details) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnContinueUserActivity(&prevent_default, type, user_info, details);
+    observer.OnContinueUserActivity(&prevent_default, type, user_info.Clone(),
+                                    details.Clone());
   return prevent_default;
 }
 
 void Browser::UserActivityWasContinued(const std::string& type,
-                                       base::DictionaryValue user_info) {
+                                       base::Value::Dict user_info) {
   for (BrowserObserver& observer : observers_)
-    observer.OnUserActivityWasContinued(type, user_info);
+    observer.OnUserActivityWasContinued(type, user_info.Clone());
 }
 
 bool Browser::UpdateUserActivityState(const std::string& type,
-                                      base::DictionaryValue user_info) {
+                                      base::Value::Dict user_info) {
   bool prevent_default = false;
   for (BrowserObserver& observer : observers_)
-    observer.OnUpdateUserActivityState(&prevent_default, type, user_info);
+    observer.OnUpdateUserActivityState(&prevent_default, type,
+                                       user_info.Clone());
   return prevent_default;
+}
+
+// Modified from chrome/browser/ui/cocoa/l10n_util.mm.
+void Browser::ApplyForcedRTL() {
+  NSUserDefaults* defaults = NSUserDefaults.standardUserDefaults;
+
+  auto dir = base::i18n::GetForcedTextDirection();
+
+  // An Electron app should respect RTL behavior of application locale over
+  // system locale.
+  auto should_be_rtl = dir == base::i18n::RIGHT_TO_LEFT || IsAppRTL();
+  auto should_be_ltr = dir == base::i18n::LEFT_TO_RIGHT || !IsAppRTL();
+
+  // -registerDefaults: won't do the trick here because these defaults exist
+  // (in the global domain) to reflect the system locale. They need to be set
+  // in Chrome's domain to supersede the system value.
+  if (should_be_rtl) {
+    [defaults setBool:YES forKey:@"AppleTextDirection"];
+    [defaults setBool:YES forKey:@"NSForceRightToLeftWritingDirection"];
+  } else if (should_be_ltr) {
+    [defaults setBool:YES forKey:@"AppleTextDirection"];
+    [defaults setBool:NO forKey:@"NSForceRightToLeftWritingDirection"];
+  } else {
+    [defaults removeObjectForKey:@"AppleTextDirection"];
+    [defaults removeObjectForKey:@"NSForceRightToLeftWritingDirection"];
+  }
 }
 
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   settings.open_at_login = platform_util::GetLoginItemEnabled();
 #else
-  settings.open_at_login =
-      base::mac::CheckLoginItemStatus(&settings.open_as_hidden);
+  settings.open_at_login = CheckLoginItemStatus(&settings.open_as_hidden);
   settings.restore_state = base::mac::WasLaunchedAsLoginItemRestoreState();
   settings.opened_at_login = base::mac::WasLaunchedAsLoginOrResumeItem();
   settings.opened_as_hidden = base::mac::WasLaunchedAsHiddenLoginItem();
@@ -318,47 +374,17 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   return settings;
 }
 
-void RemoveFromLoginItems() {
-#pragma clang diagnostic push  // https://crbug.com/1154377
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  // logic to find the login item copied from GetLoginItemForApp in
-  // base/mac/mac_util.mm
-  base::ScopedCFTypeRef<LSSharedFileListRef> login_items(
-      LSSharedFileListCreate(NULL, kLSSharedFileListSessionLoginItems, NULL));
-  if (!login_items.get()) {
-    LOG(ERROR) << "Couldn't get a Login Items list.";
-    return;
-  }
-  base::scoped_nsobject<NSArray> login_items_array(
-      base::mac::CFToNSCast(LSSharedFileListCopySnapshot(login_items, NULL)));
-  NSURL* url = [NSURL fileURLWithPath:[base::mac::MainBundle() bundlePath]];
-  for (NSUInteger i = 0; i < [login_items_array count]; ++i) {
-    LSSharedFileListItemRef item =
-        reinterpret_cast<LSSharedFileListItemRef>(login_items_array[i]);
-    base::ScopedCFTypeRef<CFErrorRef> error;
-    CFURLRef item_url_ref =
-        LSSharedFileListItemCopyResolvedURL(item, 0, error.InitializeInto());
-    if (!error && item_url_ref) {
-      base::ScopedCFTypeRef<CFURLRef> item_url(item_url_ref);
-      if (CFEqual(item_url, url)) {
-        LSSharedFileListItemRemove(login_items, item);
-        return;
-      }
-    }
-  }
-#pragma clang diagnostic pop
-}
-
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   if (!platform_util::SetLoginItemEnabled(settings.open_at_login)) {
     LOG(ERROR) << "Unable to set login item enabled on sandboxed app.";
   }
 #else
   if (settings.open_at_login) {
-    base::mac::AddToLoginItems(settings.open_as_hidden);
+    base::mac::AddToLoginItems(base::mac::MainBundlePath(),
+                               settings.open_as_hidden);
   } else {
-    RemoveFromLoginItems();
+    base::mac::RemoveFromLoginItems(base::mac::MainBundlePath());
   }
 #endif
 }
@@ -445,8 +471,8 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
     dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
     dispatch_after(one_ms, dispatch_get_main_queue(), ^{
       TransformProcessType(&psn, kProcessTransformToForegroundApplication);
-      dispatch_time_t one_ms = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
-      dispatch_after(one_ms, dispatch_get_main_queue(), ^{
+      dispatch_time_t one_ms_2 = dispatch_time(DISPATCH_TIME_NOW, USEC_PER_SEC);
+      dispatch_after(one_ms_2, dispatch_get_main_queue(), ^{
         [[NSRunningApplication currentApplication]
             activateWithOptions:NSApplicationActivateIgnoringOtherApps];
         p.Resolve();
@@ -475,12 +501,20 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
     image = native_image->image();
   }
 
+  // This is needed when this fn is called before the browser
+  // process is ready, since supported scales are normally set
+  // by ui::ResourceBundle::InitSharedInstance
+  // during browser process startup.
+  if (!is_ready())
+    gfx::ImageSkia::SetSupportedScales({1.0f});
+
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
 }
 
 void Browser::ShowAboutPanel() {
-  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
+  NSDictionary* options =
+      DictionaryValueToNSDictionary(about_panel_options_.GetDict());
 
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
@@ -502,15 +536,14 @@ void Browser::ShowAboutPanel() {
       orderFrontStandardAboutPanelWithOptions:options];
 }
 
-void Browser::SetAboutPanelOptions(base::DictionaryValue options) {
-  about_panel_options_.DictClear();
+void Browser::SetAboutPanelOptions(base::Value::Dict options) {
+  about_panel_options_.GetDict().clear();
 
-  for (const auto pair : options.DictItems()) {
-    std::string key = std::string(pair.first);
+  for (const auto pair : options) {
+    std::string key = pair.first;
     if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      auto val = std::make_unique<base::Value>(pair.second.Clone());
-      about_panel_options_.Set(key, std::move(val));
+      about_panel_options_.GetDict().Set(key, pair.second.Clone());
     }
   }
 }

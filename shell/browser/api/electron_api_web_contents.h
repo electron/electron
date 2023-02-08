@@ -17,11 +17,9 @@
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
-#include "content/common/cursors/webcursor.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
-#include "content/public/browser/permission_type.h"
 #include "content/public/browser/render_widget_host.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -43,11 +41,12 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/pinnable.h"
+#include "ui/base/cursor/cursor.h"
 #include "ui/base/models/image_model.h"
 #include "ui/gfx/image/image.h"
 
 #if BUILDFLAG(ENABLE_PRINTING)
-#include "shell/browser/printing/print_preview_message_handler.h"
+#include "components/printing/browser/print_to_pdf/pdf_print_result.h"
 #include "shell/browser/printing/print_view_manager_electron.h"
 #endif
 
@@ -61,7 +60,8 @@ class ScriptExecutor;
 
 namespace blink {
 struct DeviceEmulationParams;
-}
+// enum class PermissionType;
+}  // namespace blink
 
 namespace gin_helper {
 class Dictionary;
@@ -76,6 +76,8 @@ class Arguments;
 }
 
 class ExclusiveAccessManager;
+
+class SkRegion;
 
 namespace electron {
 
@@ -95,11 +97,6 @@ class OffScreenWebContentsView;
 
 namespace api {
 
-using DevicePermissionMap = std::map<
-    int,
-    std::map<content::PermissionType,
-             std::map<url::Origin, std::vector<std::unique_ptr<base::Value>>>>>;
-
 // Wrapper around the content::WebContents.
 class WebContents : public ExclusiveAccessContext,
                     public gin::Wrappable<WebContents>,
@@ -109,6 +106,7 @@ class WebContents : public ExclusiveAccessContext,
                     public gin_helper::CleanedUpAtExit,
                     public content::WebContentsObserver,
                     public content::WebContentsDelegate,
+                    public content::RenderWidgetHost::InputEventObserver,
                     public InspectableWebContentsDelegate,
                     public InspectableWebContentsViewDelegate {
  public:
@@ -152,12 +150,11 @@ class WebContents : public ExclusiveAccessContext,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
   void Destroy();
+  void Close(absl::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
   bool GetBackgroundThrottling() const;
@@ -216,21 +213,21 @@ class WebContents : public ExclusiveAccessContext,
   void SetEmbedder(const WebContents* embedder);
   void SetDevToolsWebContents(const WebContents* devtools);
   v8::Local<v8::Value> GetNativeView(v8::Isolate* isolate) const;
-  void IncrementCapturerCount(gin::Arguments* args);
-  void DecrementCapturerCount(gin::Arguments* args);
   bool IsBeingCaptured();
   void HandleNewRenderFrame(content::RenderFrameHost* render_frame_host);
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  void OnGetDefaultPrinter(base::Value print_settings,
-                           printing::CompletionCallback print_callback,
-                           std::u16string device_name,
-                           bool silent,
-                           // <error, default_printer_name>
-                           std::pair<std::string, std::u16string> info);
+  void OnGetDeviceNameToUse(base::Value::Dict print_settings,
+                            printing::CompletionCallback print_callback,
+                            bool silent,
+                            // <error, device_name>
+                            std::pair<std::string, std::u16string> info);
   void Print(gin::Arguments* args);
   // Print current page as PDF.
-  v8::Local<v8::Promise> PrintToPDF(base::DictionaryValue settings);
+  v8::Local<v8::Promise> PrintToPDF(const base::Value& settings);
+  void OnPDFCreated(gin_helper::Promise<v8::Local<v8::Value>> promise,
+                    print_to_pdf::PdfPrintResult print_result,
+                    scoped_refptr<base::RefCountedMemory> data);
 #endif
 
   void SetNextChildWebPreferences(const gin_helper::Dictionary);
@@ -336,6 +333,7 @@ class WebContents : public ExclusiveAccessContext,
   v8::Local<v8::Value> DevToolsWebContents(v8::Isolate* isolate);
   v8::Local<v8::Value> Debugger(v8::Isolate* isolate);
   content::RenderFrameHost* MainFrame();
+  content::RenderFrameHost* Opener();
 
   WebContentsZoomController* GetZoomController() { return zoom_controller_; }
 
@@ -435,20 +433,10 @@ class WebContents : public ExclusiveAccessContext,
 
   void SetImageAnimationPolicy(const std::string& new_policy);
 
-  // Grants |origin| access to |device|.
-  // To be used in place of ObjectPermissionContextBase::GrantObjectPermission.
-  void GrantDevicePermission(const url::Origin& origin,
-                             const base::Value* device,
-                             content::PermissionType permissionType,
-                             content::RenderFrameHost* render_frame_host);
+  // content::RenderWidgetHost::InputEventObserver:
+  void OnInputEvent(const blink::WebInputEvent& event) override;
 
-  // Returns the list of devices that |origin| has been granted permission to
-  // access. To be used in place of
-  // ObjectPermissionContextBase::GetGrantedObjects.
-  std::vector<base::Value> GetGrantedDevices(
-      const url::Origin& origin,
-      content::PermissionType permissionType,
-      content::RenderFrameHost* render_frame_host);
+  SkRegion* draggable_region() { return draggable_region_.get(); }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -516,7 +504,7 @@ class WebContents : public ExclusiveAccessContext,
                       std::unique_ptr<content::WebContents> new_contents,
                       const GURL& target_url,
                       WindowOpenDisposition disposition,
-                      const gfx::Rect& initial_rect,
+                      const blink::mojom::WindowFeatures& window_features,
                       bool user_gesture,
                       bool* was_blocked) override;
   content::WebContents* OpenURLFromTab(
@@ -553,7 +541,6 @@ class WebContents : public ExclusiveAccessContext,
       content::RenderWidgetHost* render_widget_host) override;
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override;
-  bool OnGoToEntryOffset(int offset) override;
   void FindReply(content::WebContents* web_contents,
                  int request_id,
                  int number_of_matches,
@@ -628,7 +615,7 @@ class WebContents : public ExclusiveAccessContext,
       const content::MediaPlayerId& id,
       content::WebContentsObserver::MediaStoppedReason reason) override;
   void DidChangeThemeColor() override;
-  void OnCursorChanged(const content::WebCursor& cursor) override;
+  void OnCursorChanged(const ui::Cursor& cursor) override;
   void DidAcquireFullscreen(content::RenderFrameHost* rfh) override;
   void OnWebContentsFocused(
       content::RenderWidgetHost* render_widget_host) override;
@@ -684,6 +671,7 @@ class WebContents : public ExclusiveAccessContext,
       const GURL& url,
       ExclusiveAccessBubbleType bubble_type,
       ExclusiveAccessBubbleHideCallback bubble_first_hide_callback,
+      bool notify_download,
       bool force_update) override;
   void OnExclusiveAccessUserInput() override;
   content::WebContents* GetActiveWebContents() override;
@@ -710,6 +698,7 @@ class WebContents : public ExclusiveAccessContext,
   void DevToolsIndexPath(int request_id,
                          const std::string& file_system_path,
                          const std::string& excluded_folders_message) override;
+  void DevToolsOpenInNewTab(const std::string& url) override;
   void DevToolsStopIndexing(int request_id) override;
   void DevToolsSearchInPath(int request_id,
                             const std::string& file_system_path,
@@ -829,8 +818,7 @@ class WebContents : public ExclusiveAccessContext,
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
-  // In-memory cache that holds objects that have been granted permissions.
-  DevicePermissionMap granted_devices_;
+  std::unique_ptr<SkRegion> draggable_region_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

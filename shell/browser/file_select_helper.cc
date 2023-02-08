@@ -10,8 +10,8 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_split.h"
 #include "base/strings/string_util.h"
@@ -22,6 +22,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/platform_util.h"
 #include "chrome/common/pref_names.h"
+#include "chrome/grit/generated_resources.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
@@ -31,7 +32,6 @@
 #include "content/public/browser/render_view_host.h"
 #include "content/public/browser/render_widget_host_view.h"
 #include "content/public/browser/web_contents.h"
-#include "electron/grit/electron_resources.h"
 #include "net/base/filename_util.h"
 #include "net/base/mime_util.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -79,7 +79,7 @@ FileSelectHelper::FileSelectHelper()
 FileSelectHelper::~FileSelectHelper() {
   // There may be pending file dialogs, we need to tell them that we've gone
   // away so they don't try and call back to us.
-  if (select_file_dialog_.get())
+  if (select_file_dialog_)
     select_file_dialog_->ListenerDestroyed();
 }
 
@@ -180,7 +180,7 @@ void FileSelectHelper::OnListDone(int error) {
   std::unique_ptr<ActiveDirectoryEnumeration> entry =
       std::move(directory_enumeration_);
   if (error) {
-    FileSelectionCanceled(NULL);
+    FileSelectionCanceled(nullptr);
     return;
   }
 
@@ -487,6 +487,11 @@ void FileSelectHelper::RunFileChooserEnd() {
     listener_->FileSelectionCanceled();
   render_frame_host_ = nullptr;
   web_contents_ = nullptr;
+  // If the dialog was actually opened, dispose of our reference.
+  if (select_file_dialog_) {
+    select_file_dialog_->ListenerDestroyed();
+    select_file_dialog_.reset();
+  }
   Release();
 }
 
@@ -525,8 +530,6 @@ void FileSelectHelper::RenderWidgetHostDestroyed(
 void FileSelectHelper::RenderFrameHostChanged(
     content::RenderFrameHost* old_host,
     content::RenderFrameHost* new_host) {
-  if (!render_frame_host_)
-    return;
   // The |old_host| and its children are now pending deletion. Do not give them
   // file access past this point.
   for (content::RenderFrameHost* host = render_frame_host_; host;

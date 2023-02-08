@@ -2,7 +2,7 @@ import { internalContextBridge } from '@electron/internal/renderer/api/context-b
 import { ipcRendererInternal } from '@electron/internal/renderer/ipc-renderer-internal';
 import * as ipcRendererUtils from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import { webFrame } from 'electron/renderer';
-import { IPC_MESSAGES } from '../common/ipc-messages';
+import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 const { contextIsolationEnabled } = internalContextBridge;
 

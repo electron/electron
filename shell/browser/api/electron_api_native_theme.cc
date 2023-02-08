@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/task/post_task.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/handle.h"
@@ -17,9 +16,7 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/native_theme/native_theme.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo NativeTheme::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -39,8 +36,8 @@ void NativeTheme::OnNativeThemeUpdatedOnUI() {
 }
 
 void NativeTheme::OnNativeThemeUpdated(ui::NativeTheme* theme) {
-  base::PostTask(FROM_HERE, {content::BrowserThread::UI},
-                 base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
+  content::GetUIThreadTaskRunner({})->PostTask(
+      FROM_HERE, base::BindOnce(&NativeTheme::OnNativeThemeUpdatedOnUI,
                                 base::Unretained(this)));
 }
 
@@ -118,9 +115,7 @@ const char* NativeTheme::GetTypeName() {
   return "NativeTheme";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
@@ -175,4 +170,4 @@ bool Converter<ui::NativeTheme::ThemeSource>::FromV8(
 
 }  // namespace gin
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_native_theme, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_native_theme, Initialize)

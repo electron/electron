@@ -10,7 +10,7 @@ app.whenReady().then(async function () {
     url,
     name,
     value,
-    expirationDate: Date.now() + 60000,
+    expirationDate: Math.floor((Date.now() + 60000) / 1000),
     sameSite: 'strict'
   });
 

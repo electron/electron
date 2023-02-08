@@ -188,7 +188,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
       // creation context of the original method.  If it's not we proceed
       // with the proxy logic
       if (maybe_original_fn.ToLocal(&proxy_func) && proxy_func->IsFunction() &&
-          proxy_func.As<v8::Object>()->CreationContext() ==
+          proxy_func.As<v8::Object>()->GetCreationContextChecked() ==
               destination_context) {
         return v8::MaybeLocal<v8::Value>(proxy_func);
       }
@@ -349,8 +349,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   blink::WebBlob blob = blink::WebBlob::FromV8Value(value);
   if (!blob.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
-    return v8::MaybeLocal<v8::Value>(blob.ToV8Value(
-        destination_context->Global(), destination_context->GetIsolate()));
+    return v8::MaybeLocal<v8::Value>(
+        blob.ToV8Value(destination_context->GetIsolate()));
   }
 
   // Proxy all objects
@@ -408,7 +408,8 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     return;
 
   v8::Local<v8::Function> func = func_value.As<v8::Function>();
-  v8::Local<v8::Context> func_owning_context = func->CreationContext();
+  v8::Local<v8::Context> func_owning_context =
+      func->GetCreationContextChecked();
 
   {
     v8::Context::Scope func_owning_context_scope(func_owning_context);
@@ -518,7 +519,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
           desc.Get("set", &setter);
 
           {
-            v8::Context::Scope destination_context_scope(destination_context);
+            v8::Context::Scope inner_destination_context_scope(
+                destination_context);
             v8::Local<v8::Value> getter_proxy;
             v8::Local<v8::Value> setter_proxy;
             if (!getter.IsEmpty()) {
@@ -536,9 +538,9 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
                 continue;
             }
 
-            v8::PropertyDescriptor desc(getter_proxy, setter_proxy);
+            v8::PropertyDescriptor prop_desc(getter_proxy, setter_proxy);
             std::ignore = proxy.GetHandle()->DefineProperty(
-                destination_context, key.As<v8::Name>(), desc);
+                destination_context, key.As<v8::Name>(), prop_desc);
           }
           continue;
         }
@@ -559,19 +561,26 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
   }
 }
 
-void ExposeAPIInMainWorld(v8::Isolate* isolate,
-                          const std::string& key,
-                          v8::Local<v8::Value> api,
-                          gin_helper::Arguments* args) {
-  TRACE_EVENT1("electron", "ContextBridge::ExposeAPIInMainWorld", "key", key);
+void ExposeAPIInWorld(v8::Isolate* isolate,
+                      const int world_id,
+                      const std::string& key,
+                      v8::Local<v8::Value> api,
+                      gin_helper::Arguments* args) {
+  TRACE_EVENT2("electron", "ContextBridge::ExposeAPIInWorld", "key", key,
+               "worldId", world_id);
 
   auto* render_frame = GetRenderFrame(isolate->GetCurrentContext()->Global());
   CHECK(render_frame);
   auto* frame = render_frame->GetWebFrame();
   CHECK(frame);
-  v8::Local<v8::Context> main_context = frame->MainWorldScriptContext();
-  gin_helper::Dictionary global(main_context->GetIsolate(),
-                                main_context->Global());
+
+  v8::Local<v8::Context> target_context =
+      world_id == WorldIDs::MAIN_WORLD_ID
+          ? frame->MainWorldScriptContext()
+          : frame->GetScriptContextFromWorldId(isolate, world_id);
+
+  gin_helper::Dictionary global(target_context->GetIsolate(),
+                                target_context->Global());
 
   if (global.Has(key)) {
     args->ThrowError(
@@ -580,15 +589,17 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     return;
   }
 
-  v8::Local<v8::Context> isolated_context = frame->GetScriptContextFromWorldId(
-      args->isolate(), WorldIDs::ISOLATED_WORLD_ID);
+  v8::Local<v8::Context> electron_isolated_context =
+      frame->GetScriptContextFromWorldId(args->isolate(),
+                                         WorldIDs::ISOLATED_WORLD_ID);
 
   {
     context_bridge::ObjectCache object_cache;
-    v8::Context::Scope main_context_scope(main_context);
+    v8::Context::Scope target_context_scope(target_context);
 
-    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
-        isolated_context, main_context, api, &object_cache, false, 0);
+    v8::MaybeLocal<v8::Value> maybe_proxy =
+        PassValueToOtherContext(electron_isolated_context, target_context, api,
+                                &object_cache, false, 0);
     if (maybe_proxy.IsEmpty())
       return;
     auto proxy = maybe_proxy.ToLocalChecked();
@@ -599,7 +610,7 @@ void ExposeAPIInMainWorld(v8::Isolate* isolate,
     }
 
     if (proxy->IsObject() && !proxy->IsTypedArray() &&
-        !DeepFreeze(proxy.As<v8::Object>(), main_context))
+        !DeepFreeze(proxy.As<v8::Object>(), target_context))
       return;
 
     global.SetReadOnlyNonConfigurable(key, proxy);
@@ -636,9 +647,9 @@ void OverrideGlobalValueFromIsolatedWorld(
   {
     v8::Context::Scope main_context_scope(main_context);
     context_bridge::ObjectCache object_cache;
-    v8::MaybeLocal<v8::Value> maybe_proxy =
-        PassValueToOtherContext(value->CreationContext(), main_context, value,
-                                &object_cache, support_dynamic_properties, 1);
+    v8::MaybeLocal<v8::Value> maybe_proxy = PassValueToOtherContext(
+        value->GetCreationContextChecked(), main_context, value, &object_cache,
+        support_dynamic_properties, 1);
     DCHECK(!maybe_proxy.IsEmpty());
     auto proxy = maybe_proxy.ToLocalChecked();
 
@@ -672,16 +683,16 @@ bool OverrideGlobalPropertyFromIsolatedWorld(
     v8::Local<v8::Value> getter_proxy;
     v8::Local<v8::Value> setter_proxy;
     if (!getter->IsNullOrUndefined()) {
-      v8::MaybeLocal<v8::Value> maybe_getter_proxy =
-          PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  getter, &object_cache, false, 1);
+      v8::MaybeLocal<v8::Value> maybe_getter_proxy = PassValueToOtherContext(
+          getter->GetCreationContextChecked(), main_context, getter,
+          &object_cache, false, 1);
       DCHECK(!maybe_getter_proxy.IsEmpty());
       getter_proxy = maybe_getter_proxy.ToLocalChecked();
     }
     if (!setter->IsNullOrUndefined() && setter->IsObject()) {
-      v8::MaybeLocal<v8::Value> maybe_setter_proxy =
-          PassValueToOtherContext(getter->CreationContext(), main_context,
-                                  setter, &object_cache, false, 1);
+      v8::MaybeLocal<v8::Value> maybe_setter_proxy = PassValueToOtherContext(
+          getter->GetCreationContextChecked(), main_context, setter,
+          &object_cache, false, 1);
       DCHECK(!maybe_setter_proxy.IsEmpty());
       setter_proxy = maybe_setter_proxy.ToLocalChecked();
     }
@@ -715,7 +726,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("exposeAPIInMainWorld", &electron::api::ExposeAPIInMainWorld);
+  dict.SetMethod("exposeAPIInWorld", &electron::api::ExposeAPIInWorld);
   dict.SetMethod("_overrideGlobalValueFromIsolatedWorld",
                  &electron::api::OverrideGlobalValueFromIsolatedWorld);
   dict.SetMethod("_overrideGlobalPropertyFromIsolatedWorld",

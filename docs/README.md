@@ -42,7 +42,7 @@ an issue:
   * [Web embeds in Electron](tutorial/web-embeds.md)
 * [Boilerplates and CLIs](tutorial/boilerplates-and-clis.md)
   * [Boilerplate vs CLI](tutorial/boilerplates-and-clis.md#boilerplate-vs-cli)
-  * [electron-forge](tutorial/boilerplates-and-clis.md#electron-forge)
+  * [Electron Forge](tutorial/boilerplates-and-clis.md#electron-forge)
   * [electron-builder](tutorial/boilerplates-and-clis.md#electron-builder)
   * [electron-react-boilerplate](tutorial/boilerplates-and-clis.md#electron-react-boilerplate)
   * [Other Tools and Boilerplates](tutorial/boilerplates-and-clis.md#other-tools-and-boilerplates)
@@ -68,10 +68,8 @@ an issue:
   * [Mac App Store](tutorial/mac-app-store-submission-guide.md)
   * [Windows Store](tutorial/windows-store-guide.md)
   * [Snapcraft](tutorial/snapcraft.md)
+  * [ASAR Archives](tutorial/asar-archives.md)
 * [Updates](tutorial/updates.md)
-  * [Deploying an Update Server](tutorial/updates.md#deploying-an-update-server)
-  * [Implementing Updates in Your App](tutorial/updates.md#implementing-updates-in-your-app)
-  * [Applying Updates](tutorial/updates.md#applying-updates)
 * [Getting Support](tutorial/support.md)
 
 ## Detailed Tutorials
@@ -85,7 +83,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * Electron Releases & Developer Feedback
   * [Versioning Policy](tutorial/electron-versioning.md)
   * [Release Timelines](tutorial/electron-timelines.md)
-* [Testing Widevine CDM](tutorial/testing-widevine-cdm.md)
 
 ---
 
@@ -113,6 +110,7 @@ These individual tutorials expand on topics discussed in the guide above.
 * [BrowserView](api/browser-view.md)
 * [BrowserWindow](api/browser-window.md)
 * [contentTracing](api/content-tracing.md)
+* [desktopCapturer](api/desktop-capturer.md)
 * [dialog](api/dialog.md)
 * [globalShortcut](api/global-shortcut.md)
 * [inAppPurchase](api/in-app-purchase.md)
@@ -121,19 +119,22 @@ These individual tutorials expand on topics discussed in the guide above.
 * [MenuItem](api/menu-item.md)
 * [MessageChannelMain](api/message-channel-main.md)
 * [MessagePortMain](api/message-port-main.md)
+* [nativeTheme](api/native-theme.md)
 * [net](api/net.md)
 * [netLog](api/net-log.md)
-* [nativeTheme](api/native-theme.md)
 * [Notification](api/notification.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
+* [pushNotifications](api/push-notifications.md)
+* [safeStorage](api/safe-storage.md)
 * [screen](api/screen.md)
 * [session](api/session.md)
 * [ShareMenu](api/share-menu.md)
 * [systemPreferences](api/system-preferences.md)
 * [TouchBar](api/touch-bar.md)
 * [Tray](api/tray.md)
+* [utilityProcess](api/utility-process.md)
 * [webContents](api/web-contents.md)
 * [webFrameMain](api/web-frame-main.md)
 
@@ -145,11 +146,10 @@ These individual tutorials expand on topics discussed in the guide above.
 
 ### Modules for Both Processes:
 
-* [clipboard](api/clipboard.md)
+* [clipboard](api/clipboard.md) (non-sandboxed renderers only)
 * [crashReporter](api/crash-reporter.md)
-* [desktopCapturer](api/desktop-capturer.md)
 * [nativeImage](api/native-image.md)
-* [shell](api/shell.md)
+* [shell](api/shell.md) (non-sandboxed renderers only)
 
 ## Development
 

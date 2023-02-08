@@ -6,8 +6,8 @@
 
 #include <utility>
 
-#include "base/bind.h"
-#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/functional/bind.h"
+#include "base/task/sequenced_task_runner.h"
 #include "build/build_config.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
@@ -33,7 +33,8 @@ void ExposeElectronRendererInterfacesToBrowser(
     electron::RendererClientBase* client,
     mojo::BinderMap* binders) {
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  binders->Add(base::BindRepeating(&BindSpellChecker, client),
-               base::SequencedTaskRunnerHandle::Get());
+  binders->Add<spellcheck::mojom::SpellChecker>(
+      base::BindRepeating(&BindSpellChecker, client),
+      base::SequencedTaskRunner::GetCurrentDefault());
 #endif
 }

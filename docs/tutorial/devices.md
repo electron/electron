@@ -16,6 +16,10 @@ with bluetooth devices. In order to use this API in Electron, developers will
 need to handle the [`select-bluetooth-device` event on the webContents](../api/web-contents.md#event-select-bluetooth-device)
 associated with the device request.
 
+Additionally, [`ses.setBluetoothPairingHandler(handler)`](../api/session.md#sessetbluetoothpairinghandlerhandler-windows-linux)
+can be used to handle pairing to bluetooth devices on Windows or Linux when
+additional validation such as a pin is needed.
+
 ### Example
 
 This example demonstrates an Electron application that automatically selects
@@ -36,12 +40,14 @@ the WebHID API:
   can be used to select a HID device when a call to
   `navigator.hid.requestDevice` is made.  Additionally the [`hid-device-added`](../api/session.md#event-hid-device-added)
   and [`hid-device-removed`](../api/session.md#event-hid-device-removed) events
-  on the Session can be used to handle devices being plugged in or unplugged during the
-  `navigator.hid.requestDevice` process.
+  on the Session can be used to handle devices being plugged in or unplugged
+  when handling the `select-hid-device` event.
+  **Note:** These events only fire until the callback from `select-hid-device`
+  is called.  They are not intended to be used as a generic hid device listener.
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
   can be used to provide default permissioning to devices without first calling
   for permission to devices via `navigator.hid.requestDevice`.  Additionally,
-  the default behavior of Electron is to store granted device permision through
+  the default behavior of Electron is to store granted device permission through
   the lifetime of the corresponding WebContents.  If longer term storage is
   needed, a developer can store granted device permissions (eg when handling
   the `select-hid-device` event) and then read from that storage with
@@ -82,12 +88,15 @@ There are several additional APIs for working with the Web Serial API:
 
 * The [`serial-port-added`](../api/session.md#event-serial-port-added)
   and [`serial-port-removed`](../api/session.md#event-serial-port-removed) events
-  on the Session can be used to handle devices being plugged in or unplugged during the
-  `navigator.serial.requestPort` process.
+  on the Session can be used to handle devices being plugged in or unplugged
+  when handling the `select-serial-port` event.
+  **Note:** These events only fire until the callback from `select-serial-port`
+  is called.  They are not intended to be used as a generic serial port
+  listener.
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
   can be used to provide default permissioning to devices without first calling
   for permission to devices via `navigator.serial.requestPort`.  Additionally,
-  the default behavior of Electron is to store granted device permision through
+  the default behavior of Electron is to store granted device permission through
   the lifetime of the corresponding WebContents.  If longer term storage is
   needed, a developer can store granted device permissions (eg when handling
   the `select-serial-port` event) and then read from that storage with
@@ -104,5 +113,43 @@ as well as demonstrating selecting the first available Arduino Uno serial device
 when the `Test Web Serial` button is clicked.
 
 ```javascript fiddle='docs/fiddles/features/web-serial'
+
+```
+
+## WebUSB API
+
+The [WebUSB API](https://web.dev/usb/) can be used to access USB devices.
+Electron provides several APIs for working with the WebUSB API:
+
+* The [`select-usb-device` event on the Session](../api/session.md#event-select-usb-device)
+  can be used to select a USB device when a call to
+  `navigator.usb.requestDevice` is made.  Additionally the [`usb-device-added`](../api/session.md#event-usb-device-added)
+  and [`usb-device-removed`](../api/session.md#event-usb-device-removed) events
+  on the Session can be used to handle devices being plugged in or unplugged
+  when handling the `select-usb-device` event.
+  **Note:** These two events only fire until the callback from `select-usb-device`
+  is called.  They are not intended to be used as a generic usb device listener.
+* The [`usb-device-revoked' event on the Session](../api/session.md#event-usb-device-revoked) can
+  be used to respond when [device.forget()](https://developer.chrome.com/articles/usb/#revoke-access)
+  is called on a USB device.
+* [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
+  can be used to provide default permissioning to devices without first calling
+  for permission to devices via `navigator.usb.requestDevice`.  Additionally,
+  the default behavior of Electron is to store granted device permission through
+  the lifetime of the corresponding WebContents.  If longer term storage is
+  needed, a developer can store granted device permissions (eg when handling
+  the `select-usb-device` event) and then read from that storage with
+  `setDevicePermissionHandler`.
+* [`ses.setPermissionCheckHandler(handler)`](../api/session.md#sessetpermissioncheckhandlerhandler)
+  can be used to disable USB access for specific origins.
+
+### Example
+
+This example demonstrates an Electron application that automatically selects
+USB devices (if they are attached) through [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
+and through [`select-usb-device` event on the Session](../api/session.md#event-select-usb-device)
+when the `Test WebUSB` button is clicked.
+
+```javascript fiddle='docs/fiddles/features/web-usb'
 
 ```

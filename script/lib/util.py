@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 from __future__ import print_function
 import contextlib
@@ -15,7 +15,9 @@ except ImportError:
   from urllib2 import urlopen
 import zipfile
 
-from lib.config import is_verbose_mode
+# from lib.config import is_verbose_mode
+def is_verbose_mode():
+  return False
 
 ELECTRON_DIR = os.path.abspath(
   os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
@@ -149,23 +151,29 @@ def get_electron_branding():
   with open(branding_file_path) as f:
     return json.load(f)
 
-def get_electron_version():
-  SOURCE_ROOT = os.path.abspath(os.path.join(__file__, '..', '..', '..'))
-  version_file = os.path.join(SOURCE_ROOT, 'ELECTRON_VERSION')
-  with open(version_file) as f:
-    return 'v' + f.read().strip()
 
-def s3put(bucket, access_key, secret_key, prefix, key_prefix, files):
+cached_electron_version = None
+def get_electron_version():
+  global cached_electron_version
+  if cached_electron_version is None:
+    cached_electron_version = str.strip(execute([
+      'node',
+      '-p',
+      'require("./script/lib/get-version").getElectronVersion()'
+    ], cwd=ELECTRON_DIR).decode())
+  return cached_electron_version
+
+def store_artifact(prefix, key_prefix, files):
+  # Azure Storage
+  azput(prefix, key_prefix, files)
+
+def azput(prefix, key_prefix, files):
   env = os.environ.copy()
-  env['AWS_ACCESS_KEY_ID'] = access_key
-  env['AWS_SECRET_ACCESS_KEY'] = secret_key
   output = execute([
     'node',
-    os.path.join(os.path.dirname(__file__), 's3put.js'),
-    '--bucket', bucket,
+    os.path.join(os.path.dirname(__file__), 'azput.js'),
     '--prefix', prefix,
     '--key_prefix', key_prefix,
-    '--grant', 'public-read',
   ] + files, env)
   print(output)
 
@@ -207,3 +215,14 @@ def get_buildtools_executable(name):
   if sys.platform == 'win32':
     path += '.exe'
   return path
+
+def get_linux_binaries():
+  return [
+    'chrome-sandbox',
+    'chrome_crashpad_handler',
+    get_electron_branding()['project_name'],
+    'libEGL.so',
+    'libGLESv2.so',
+    'libffmpeg.so',
+    'libvk_swiftshader.so',
+  ]

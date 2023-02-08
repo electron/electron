@@ -135,9 +135,7 @@ struct Converter<in_app_purchase::Product> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo InAppPurchase::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -180,9 +178,11 @@ v8::Local<v8::Promise> InAppPurchase::PurchaseProduct(
 
   int quantity = 1;
   args->GetNext(&quantity);
+  std::string username = "";
+  args->GetNext(&username);
 
   in_app_purchase::PurchaseProduct(
-      product_id, quantity,
+      product_id, quantity, username,
       base::BindOnce(gin_helper::Promise<bool>::ResolvePromise,
                      std::move(promise)));
 
@@ -211,9 +211,7 @@ void InAppPurchase::OnTransactionsUpdated(
 }
 #endif
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

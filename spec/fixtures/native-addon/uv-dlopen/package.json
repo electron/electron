@@ -1,0 +1,5 @@
+{
+  "name": "@electron-ci/uv-dlopen",
+  "version": "0.0.1",
+  "main": "index.js"
+}

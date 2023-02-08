@@ -1,14 +1,16 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import argparse
 import json
+import os
 
 from lib import git
 
 
 def export_patches(dirs, dry_run):
   for patch_dir, repo in dirs.items():
-    git.export_patches(repo=repo, out_dir=patch_dir, dry_run=dry_run)
+    if os.path.exists(repo):
+      git.export_patches(repo=repo, out_dir=patch_dir, dry_run=dry_run)
 
 
 def parse_args():

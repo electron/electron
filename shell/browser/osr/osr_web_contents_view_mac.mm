@@ -15,7 +15,7 @@
   NSString* str = @"No content under offscreen mode";
   NSMutableParagraphStyle* paragraphStyle =
       [[[NSParagraphStyle defaultParagraphStyle] mutableCopy] autorelease];
-  [paragraphStyle setAlignment:NSCenterTextAlignment];
+  [paragraphStyle setAlignment:NSTextAlignmentCenter];
   NSDictionary* attributes =
       [NSDictionary dictionaryWithObject:paragraphStyle
                                   forKey:NSParagraphStyleAttributeName];

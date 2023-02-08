@@ -1,0 +1,1 @@
+process.nextTick(() => process.crash());

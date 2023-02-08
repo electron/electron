@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "gin/dictionary.h"
 #include "gin/handle.h"
 #include "shell/browser/browser.h"
@@ -24,9 +24,11 @@
 #include "ui/display/win/screen_win.h"
 #endif
 
-namespace electron {
+#if defined(USE_OZONE)
+#include "ui/ozone/public/ozone_platform.h"
+#endif
 
-namespace api {
+namespace electron::api {
 
 gin::WrapperInfo Screen::kWrapperInfo = {gin::kEmbedderNativeGin};
 
@@ -70,7 +72,18 @@ Screen::~Screen() {
   screen_->RemoveObserver(this);
 }
 
-gfx::Point Screen::GetCursorScreenPoint() {
+gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
+#if defined(USE_OZONE)
+  // Wayland will crash unless a window is created prior to calling
+  // GetCursorScreenPoint.
+  if (!ui::OzonePlatform::IsInitialized()) {
+    gin_helper::ErrorThrower thrower(isolate);
+    thrower.ThrowError(
+        "screen.getCursorScreenPoint() cannot be called before a window has "
+        "been created.");
+    return gfx::Point();
+  }
+#endif
   return screen_->GetCursorScreenPoint();
 }
 
@@ -107,20 +120,20 @@ static gfx::Rect DIPToScreenRect(electron::NativeWindow* window,
 #endif
 
 void Screen::OnDisplayAdded(const display::Display& new_display) {
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
                                 "display-added", new_display));
 }
 
 void Screen::OnDisplayRemoved(const display::Display& old_display) {
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE, base::BindOnce(&DelayEmit, base::Unretained(this),
                                 "display-removed", old_display));
 }
 
 void Screen::OnDisplayMetricsChanged(const display::Display& display,
                                      uint32_t changed_metrics) {
-  base::ThreadTaskRunnerHandle::Get()->PostNonNestableTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostNonNestableTask(
       FROM_HERE, base::BindOnce(&DelayEmitWithMetrics, base::Unretained(this),
                                 "display-metrics-changed", display,
                                 MetricsToArray(changed_metrics)));
@@ -166,9 +179,7 @@ const char* Screen::GetTypeName() {
   return "Screen";
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 
@@ -185,4 +196,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_screen, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_screen, Initialize)

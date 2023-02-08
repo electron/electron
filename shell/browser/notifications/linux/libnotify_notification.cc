@@ -9,14 +9,13 @@
 
 #include "base/files/file_enumerator.h"
 #include "base/logging.h"
-#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/notifications/notification_delegate.h"
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 
 namespace electron {
 
@@ -138,13 +137,8 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
 
   // Send the desktop name to identify the application
   // The desktop-entry is the part before the .desktop
-  std::string desktop_id;
-  if (platform_util::GetDesktopName(&desktop_id)) {
-    const std::string suffix{".desktop"};
-    if (base::EndsWith(desktop_id, suffix,
-                       base::CompareCase::INSENSITIVE_ASCII)) {
-      desktop_id.resize(desktop_id.size() - suffix.size());
-    }
+  std::string desktop_id = platform_util::GetXdgAppId();
+  if (!desktop_id.empty()) {
     libnotify_loader_.notify_notification_set_hint_string(
         notification_, "desktop-entry", desktop_id.c_str());
   }

@@ -29,7 +29,6 @@ class EventEmitterMixin {
   template <typename... Args>
   bool Emit(base::StringPiece name, Args&&... args) {
     v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope handle_scope(isolate);
     v8::Local<v8::Object> wrapper;
     if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
@@ -37,6 +36,17 @@ class EventEmitterMixin {
     v8::Local<v8::Object> event = internal::CreateCustomEvent(isolate, wrapper);
     return EmitWithEvent(isolate, wrapper, name, event,
                          std::forward<Args>(args)...);
+  }
+
+  // this.emit(name, args...);
+  template <typename... Args>
+  void EmitWithoutCustomEvent(base::StringPiece name, Args&&... args) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    v8::HandleScope handle_scope(isolate);
+    v8::Local<v8::Object> wrapper;
+    if (!static_cast<T*>(this)->GetWrapper(isolate).ToLocal(&wrapper))
+      return;
+    gin_helper::EmitEvent(isolate, wrapper, name, std::forward<Args>(args)...);
   }
 
   // this.emit(name, event, args...);

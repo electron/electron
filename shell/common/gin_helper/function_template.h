@@ -7,8 +7,8 @@
 
 #include <utility>
 
-#include "base/bind.h"
-#include "base/callback.h"
+#include "base/functional/bind.h"
+#include "base/functional/callback.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
@@ -217,7 +217,9 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   template <typename ReturnType>
   void DispatchToCallback(
       base::RepeatingCallback<ReturnType(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope(args_->isolate(), true);
+    gin_helper::MicrotasksScope microtasks_scope(
+        args_->isolate(),
+        args_->GetHolderCreationContext()->GetMicrotaskQueue(), true);
     args_->Return(
         callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...));
   }
@@ -226,7 +228,9 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
   // expression to foo. As a result, we must specialize the case of Callbacks
   // that have the void return type.
   void DispatchToCallback(base::RepeatingCallback<void(ArgTypes...)> callback) {
-    gin_helper::MicrotasksScope microtasks_scope(args_->isolate(), true);
+    gin_helper::MicrotasksScope microtasks_scope(
+        args_->isolate(),
+        args_->GetHolderCreationContext()->GetMicrotaskQueue(), true);
     callback.Run(std::move(ArgumentHolder<indices, ArgTypes>::value)...);
   }
 
@@ -313,7 +317,7 @@ struct CallbackTraits<base::RepeatingCallback<T>> {
 
 // Specialization for member function pointers. We need to handle this case
 // specially because the first parameter for callbacks to MFP should typically
-// come from the the JavaScript "this" object the function was called on, not
+// come from the JavaScript "this" object the function was called on, not
 // from the first normal parameter.
 template <typename T>
 struct CallbackTraits<

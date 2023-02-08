@@ -19,6 +19,7 @@
 #include "ui/display/win/dpi.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/geometry/dip_util.h"
+#include "ui/views/background.h"
 #include "ui/views/widget/widget.h"
 #include "ui/views/win/hwnd_util.h"
 
@@ -33,14 +34,6 @@ WinFrameView::~WinFrameView() = default;
 void WinFrameView::Init(NativeWindowViews* window, views::Widget* frame) {
   window_ = window;
   frame_ = frame;
-
-  // Prevent events from trickling down the views hierarchy here, since
-  // when a given resizable window is frameless we only want to use
-  // FramelessView's ResizingBorderHitTest in
-  // ShouldDescendIntoChildForEventHandling. See
-  // https://chromium-review.googlesource.com/c/chromium/src/+/3251980.
-  if (!window_->has_frame() && window_->IsResizable())
-    frame_->client_view()->SetCanProcessEventsWithinSubtree(false);
 
   if (window->IsWindowControlsOverlayEnabled()) {
     caption_button_container_ =
@@ -63,9 +56,11 @@ SkColor WinFrameView::GetReadableFeatureColor(SkColor background_color) {
 }
 
 void WinFrameView::InvalidateCaptionButtons() {
-  // Ensure that the caption buttons container exists
-  DCHECK(caption_button_container_);
+  if (!caption_button_container_)
+    return;
 
+  caption_button_container_->SetBackground(
+      views::CreateSolidBackground(window()->overlay_button_color()));
   caption_button_container_->InvalidateLayout();
   caption_button_container_->SchedulePaint();
 }
@@ -81,6 +76,25 @@ int WinFrameView::FrameBorderThickness() const {
   return (IsMaximized() || frame()->IsFullscreen())
              ? 0
              : display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME);
+}
+
+views::View* WinFrameView::TargetForRect(views::View* root,
+                                         const gfx::Rect& rect) {
+  if (NonClientHitTest(rect.origin()) != HTCLIENT) {
+    // Custom system titlebar returns non HTCLIENT value, however event should
+    // be handled by the view, not by the system, because there are no system
+    // buttons underneath.
+    if (!ShouldCustomDrawSystemTitlebar()) {
+      return this;
+    }
+    auto local_point = rect.origin();
+    ConvertPointToTarget(parent(), caption_button_container_, &local_point);
+    if (!caption_button_container_->HitTestPoint(local_point)) {
+      return this;
+    }
+  }
+
+  return NonClientFrameView::TargetForRect(root, rect);
 }
 
 int WinFrameView::NonClientHitTest(const gfx::Point& point) {
@@ -105,37 +119,35 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     // corner of the window. This code ensures the mouse isn't set to a size
     // cursor while hovering over the caption buttons, thus giving the incorrect
     // impression that the user can resize the window.
-    if (base::win::GetVersion() >= base::win::Version::WIN8) {
-      RECT button_bounds = {0};
-      if (SUCCEEDED(DwmGetWindowAttribute(
-              views::HWNDForWidget(frame()), DWMWA_CAPTION_BUTTON_BOUNDS,
-              &button_bounds, sizeof(button_bounds)))) {
-        gfx::RectF button_bounds_in_dips = gfx::ConvertRectToDips(
-            gfx::Rect(button_bounds), display::win::GetDPIScale());
-        // TODO(crbug.com/1131681): GetMirroredRect() requires an integer rect,
-        // but the size in DIPs may not be an integer with a fractional device
-        // scale factor. If we want to keep using integers, the choice to use
-        // ToFlooredRectDeprecated() seems to be doing the wrong thing given the
-        // comment below about insetting 1 DIP instead of 1 physical pixel. We
-        // should probably use ToEnclosedRect() and then we could have inset 1
-        // physical pixel here.
-        gfx::Rect buttons = GetMirroredRect(
-            gfx::ToFlooredRectDeprecated(button_bounds_in_dips));
+    RECT button_bounds = {0};
+    if (SUCCEEDED(DwmGetWindowAttribute(
+            views::HWNDForWidget(frame()), DWMWA_CAPTION_BUTTON_BOUNDS,
+            &button_bounds, sizeof(button_bounds)))) {
+      gfx::RectF button_bounds_in_dips = gfx::ConvertRectToDips(
+          gfx::Rect(button_bounds), display::win::GetDPIScale());
+      // TODO(crbug.com/1131681): GetMirroredRect() requires an integer rect,
+      // but the size in DIPs may not be an integer with a fractional device
+      // scale factor. If we want to keep using integers, the choice to use
+      // ToFlooredRectDeprecated() seems to be doing the wrong thing given the
+      // comment below about insetting 1 DIP instead of 1 physical pixel. We
+      // should probably use ToEnclosedRect() and then we could have inset 1
+      // physical pixel here.
+      gfx::Rect buttons =
+          GetMirroredRect(gfx::ToFlooredRectDeprecated(button_bounds_in_dips));
 
-        // There is a small one-pixel strip right above the caption buttons in
-        // which the resize border "peeks" through.
-        constexpr int kCaptionButtonTopInset = 1;
-        // The sizing region at the window edge above the caption buttons is
-        // 1 px regardless of scale factor. If we inset by 1 before converting
-        // to DIPs, the precision loss might eliminate this region entirely. The
-        // best we can do is to inset after conversion. This guarantees we'll
-        // show the resize cursor when resizing is possible. The cost of which
-        // is also maybe showing it over the portion of the DIP that isn't the
-        // outermost pixel.
-        buttons.Inset(0, kCaptionButtonTopInset, 0, 0);
-        if (buttons.Contains(point))
-          return HTNOWHERE;
-      }
+      // There is a small one-pixel strip right above the caption buttons in
+      // which the resize border "peeks" through.
+      constexpr int kCaptionButtonTopInset = 1;
+      // The sizing region at the window edge above the caption buttons is
+      // 1 px regardless of scale factor. If we inset by 1 before converting
+      // to DIPs, the precision loss might eliminate this region entirely. The
+      // best we can do is to inset after conversion. This guarantees we'll
+      // show the resize cursor when resizing is possible. The cost of which
+      // is also maybe showing it over the portion of the DIP that isn't the
+      // outermost pixel.
+      buttons.Inset(gfx::Insets::TLBR(0, kCaptionButtonTopInset, 0, 0));
+      if (buttons.Contains(point))
+        return HTNOWHERE;
     }
 
     int top_border_thickness = FrameTopBorderThickness(false);
@@ -143,8 +155,8 @@ int WinFrameView::NonClientHitTest(const gfx::Point& point) {
     // pixels at the end of the top and bottom edges trigger diagonal resizing.
     constexpr int kResizeCornerWidth = 16;
     int window_component = GetHTComponentForFrame(
-        point, gfx::Insets(top_border_thickness, 0, 0, 0), top_border_thickness,
-        kResizeCornerWidth - FrameBorderThickness(),
+        point, gfx::Insets::TLBR(top_border_thickness, 0, 0, 0),
+        top_border_thickness, kResizeCornerWidth - FrameBorderThickness(),
         frame()->widget_delegate()->CanResize());
     if (window_component != HTNOWHERE)
       return window_component;

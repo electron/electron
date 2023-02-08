@@ -8,9 +8,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 View::View(views::View* view) : view_(view) {
   view_->set_owned_by_client();
@@ -55,9 +53,7 @@ void View::BuildPrototype(v8::Isolate* isolate,
 #endif
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

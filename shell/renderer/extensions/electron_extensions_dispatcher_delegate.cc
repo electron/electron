@@ -8,8 +8,8 @@
 #include <set>
 #include <string>
 
-#include "chrome/renderer/extensions/extension_hooks_delegate.h"
-#include "chrome/renderer/extensions/tabs_hooks_delegate.h"
+#include "chrome/renderer/extensions/api/extension_hooks_delegate.h"
+#include "chrome/renderer/extensions/api/tabs_hooks_delegate.h"
 #include "extensions/renderer/bindings/api_bindings_system.h"
 #include "extensions/renderer/lazy_background_page_native_handler.h"
 #include "extensions/renderer/module_system.h"

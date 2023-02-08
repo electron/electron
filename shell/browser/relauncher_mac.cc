@@ -16,9 +16,7 @@
 #include "base/process/launch.h"
 #include "base/strings/sys_string_conversions.h"
 
-namespace relauncher {
-
-namespace internal {
+namespace relauncher::internal {
 
 void RelauncherSynchronizeWithParent() {
   base::ScopedFD relauncher_sync_fd(kRelauncherSyncFD);
@@ -91,6 +89,4 @@ int LaunchProgram(const StringVector& relauncher_args,
   return process.IsValid() ? 0 : 1;
 }
 
-}  // namespace internal
-
-}  // namespace relauncher
+}  // namespace relauncher::internal

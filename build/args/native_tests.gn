@@ -1,4 +1,4 @@
-root_extra_deps = [ "//electron/spec" ]
+root_extra_deps = [ "//electron/spec-chromium:spec" ]
 
 dcheck_always_on = true
 is_debug = false

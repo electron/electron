@@ -5,13 +5,13 @@
 #include <cstdlib>
 #include <memory>
 
+#include "base/allocator/early_zone_registration_mac.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"
 #include "shell/app/uv_stdio_fix.h"
-#include "shell/common/electron_constants.h"
 
-#if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
 #include <mach-o/dyld.h>
 #include <cstdio>
 
@@ -28,15 +28,17 @@ namespace {
 }  // namespace
 
 int main(int argc, char* argv[]) {
+  partition_alloc::EarlyMallocZoneRegistration();
   FixStdioStreams();
 
 #if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode)) {
+  if (electron::fuses::IsRunAsNodeEnabled() &&
+      IsEnvSet("ELECTRON_RUN_AS_NODE")) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
 #endif
 
-#if defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
   uint32_t exec_path_size = 0;
   int rv = _NSGetExecutablePath(NULL, &exec_path_size);
   if (rv != -1) {
@@ -63,7 +65,7 @@ int main(int argc, char* argv[]) {
       abort();
     }
   }
-#endif  // defined(HELPER_EXECUTABLE) && !defined(MAS_BUILD)
+#endif  // defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD
 
   return ElectronMain(argc, argv);
 }

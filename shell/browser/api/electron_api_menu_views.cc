@@ -8,14 +8,11 @@
 #include <utility>
 
 #include "shell/browser/native_window_views.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "ui/display/screen.h"
 
 using views::MenuRunner;
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 MenuViews::MenuViews(gin::Arguments* args) : Menu(args) {}
 
@@ -40,9 +37,6 @@ void MenuViews::PopupAt(BaseWindow* window,
   }
 
   int flags = MenuRunner::CONTEXT_MENU | MenuRunner::HAS_MNEMONICS;
-
-  // Don't emit unresponsive event when showing menu.
-  electron::UnresponsiveSuppressor suppressor;
 
   // Make sure the Menu object would not be garbage-collected until the callback
   // has run.
@@ -91,6 +85,4 @@ gin::Handle<Menu> Menu::New(gin::Arguments* args) {
   return handle;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 from __future__ import print_function
 import argparse
 import glob
@@ -28,6 +28,7 @@ def main():
       if args.snapshot_files_dir is None:
         with open(os.path.join(app_path, 'mksnapshot_args')) as f:
           mkargs = f.read().splitlines()
+        print('running: ' + ' '.join(mkargs + [ SNAPSHOT_SOURCE ]))
         subprocess.check_call(mkargs + [ SNAPSHOT_SOURCE ], cwd=app_path)
         print('ok mksnapshot successfully created snapshot_blob.bin.')
         context_snapshot = 'v8_context_snapshot.bin'
@@ -41,6 +42,7 @@ def main():
                                     app_path)
         genargs = [ gen_binary, \
                   '--output_file={0}'.format(context_snapshot_path) ]
+        print('running: ' + ' '.join(genargs))
         subprocess.check_call(genargs)
         print('ok v8_context_snapshot_generator successfully created ' \
               + context_snapshot)
@@ -69,6 +71,7 @@ def main():
       else:
         electron = os.path.join(app_path, PROJECT_NAME)
 
+      print('running: ' + ' '.join([electron, test_path]))
       subprocess.check_call([electron, test_path])
       print('ok successfully used custom snapshot.')
   except subprocess.CalledProcessError as e:

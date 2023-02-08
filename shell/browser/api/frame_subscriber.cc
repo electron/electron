@@ -17,9 +17,7 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/skbitmap_operations.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 constexpr static int kMaxFrameRate = 30;
 
@@ -29,9 +27,7 @@ FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
     : content::WebContentsObserver(web_contents),
       callback_(callback),
       only_dirty_(only_dirty) {
-  content::RenderViewHost* rvh = web_contents->GetRenderViewHost();
-  if (rvh)
-    AttachToHost(rvh->GetWidget());
+  AttachToHost(web_contents->GetPrimaryMainFrame()->GetRenderWidgetHost());
 }
 
 FrameSubscriber::~FrameSubscriber() = default;
@@ -74,11 +70,11 @@ void FrameSubscriber::RenderViewDeleted(content::RenderViewHost* host) {
   }
 }
 
-void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                            content::RenderViewHost* new_host) {
-  if ((old_host && old_host->GetWidget() == host_) || (!old_host && !host_)) {
+void FrameSubscriber::PrimaryPageChanged(content::Page& page) {
+  if (auto* host = page.GetMainDocument().GetMainFrame()->GetRenderWidgetHost();
+      host_ != host) {
     DetachFromHost();
-    AttachToHost(new_host->GetWidget());
+    AttachToHost(host);
   }
 }
 
@@ -145,6 +141,8 @@ void FrameSubscriber::OnFrameCaptured(
   Done(content_rect, bitmap);
 }
 
+void FrameSubscriber::OnNewCropVersion(uint32_t crop_version) {}
+
 void FrameSubscriber::OnFrameWithEmptyRegionCapture() {}
 
 void FrameSubscriber::OnStopped() {}
@@ -180,6 +178,4 @@ gfx::Size FrameSubscriber::GetRenderViewSize() const {
       gfx::ScaleSize(gfx::SizeF(size), view->GetDeviceScaleFactor()));
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

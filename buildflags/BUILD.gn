@@ -19,7 +19,6 @@ buildflag_header("buildflags") {
     "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
     "ENABLE_BUILTIN_SPELLCHECKER=$enable_builtin_spellchecker",
     "ENABLE_PICTURE_IN_PICTURE=$enable_picture_in_picture",
-    "ENABLE_WIN_DARK_MODE_WINDOW_UI=$enable_win_dark_mode_window_ui",
     "OVERRIDE_LOCATION_PROVIDER=$enable_fake_location_provider",
   ]
 }

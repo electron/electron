@@ -15,9 +15,7 @@
 #include "shell/browser/lib/power_observer_linux.h"
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class PowerMonitor : public gin::Wrappable<PowerMonitor>,
                      public gin_helper::EventEmitterMixin<PowerMonitor>,
@@ -86,8 +84,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
 #endif
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_POWER_MONITOR_H_

@@ -410,7 +410,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
   // remove any old commits
   pool.commits = pool.commits.filter(commit => !pool.processedHashes.has(commit.hash));
 
-  // if a commmit _and_ revert occurred in the unprocessed set, skip them both
+  // if a commit _and_ revert occurred in the unprocessed set, skip them both
   for (const commit of pool.commits) {
     const revertHash = commit.revertHash;
     if (!revertHash) {
@@ -596,10 +596,14 @@ function renderDescription (commit) {
 const renderNote = (commit, excludeBranch) =>
   `* ${renderDescription(commit)} ${renderLink(commit)} ${renderTrops(commit, excludeBranch)}\n`;
 
-const renderNotes = (notes) => {
+const renderNotes = (notes, unique = false) => {
   const rendered = [`# Release Notes for ${notes.name}\n\n`];
 
-  const renderSection = (title, commits) => {
+  const renderSection = (title, commits, unique) => {
+    if (unique) {
+      // omit changes that also landed in other branches
+      commits = commits.filter((commit) => renderTrops(commit, notes.toBranch).length === 0);
+    }
     if (commits.length > 0) {
       rendered.push(
         `## ${title}\n\n`,
@@ -608,17 +612,17 @@ const renderNotes = (notes) => {
     }
   };
 
-  renderSection('Breaking Changes', notes.breaking);
-  renderSection('Features', notes.feat);
-  renderSection('Fixes', notes.fix);
-  renderSection('Other Changes', notes.other);
+  renderSection('Breaking Changes', notes.breaking, unique);
+  renderSection('Features', notes.feat, unique);
+  renderSection('Fixes', notes.fix, unique);
+  renderSection('Other Changes', notes.other, unique);
 
   if (notes.docs.length) {
     const docs = notes.docs.map(commit => renderLink(commit)).sort();
     rendered.push('## Documentation\n\n', ` * Documentation changes: ${docs.join(', ')}\n`, '\n');
   }
 
-  renderSection('Unknown', notes.unknown);
+  renderSection('Unknown', notes.unknown, unique);
 
   return rendered.join('');
 };

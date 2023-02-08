@@ -67,6 +67,7 @@ base::LazyInstance<ElectronPermissionMessageProvider>::DestructorAtExit
 
 ElectronExtensionsClient::ElectronExtensionsClient()
     : webstore_base_url_(extension_urls::kChromeWebstoreBaseURL),
+      new_webstore_base_url_(extension_urls::kNewChromeWebstoreBaseURL),
       webstore_update_url_(extension_urls::kChromeWebstoreUpdateURL) {
   AddAPIProvider(std::make_unique<extensions::CoreExtensionsAPIProvider>());
   AddAPIProvider(std::make_unique<ElectronExtensionsAPIProvider>());
@@ -125,6 +126,10 @@ bool ElectronExtensionsClient::IsScriptableURL(const GURL& url,
 
 const GURL& ElectronExtensionsClient::GetWebstoreBaseURL() const {
   return webstore_base_url_;
+}
+
+const GURL& ElectronExtensionsClient::GetNewWebstoreBaseURL() const {
+  return new_webstore_base_url_;
 }
 
 const GURL& ElectronExtensionsClient::GetWebstoreUpdateURL() const {

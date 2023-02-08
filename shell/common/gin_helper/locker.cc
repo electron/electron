@@ -13,4 +13,10 @@ Locker::Locker(v8::Isolate* isolate) {
 
 Locker::~Locker() = default;
 
+void Locker::SetIsBrowserProcess(bool is_browser_process) {
+  g_is_browser_process = is_browser_process;
+}
+
+bool Locker::g_is_browser_process = false;
+
 }  // namespace gin_helper

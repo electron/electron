@@ -1,0 +1,282 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Mon, 14 Nov 2022 01:05:20 -0800
+Subject: build: only use the mas build config in the required components
+
+Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
+
+diff --git a/base/BUILD.gn b/base/BUILD.gn
+index 29344e62d32b50cceef20c5c869c77f992880667..90dbf4ad6f38f6380aa65679d8114fd8cb230444 100644
+--- a/base/BUILD.gn
++++ b/base/BUILD.gn
+@@ -1485,6 +1485,7 @@ component("base") {
+     "//build/config/compiler:prevent_unsafe_narrowing",
+     "//build/config/compiler:wexit_time_destructors",
+     "//build/config/compiler:wglobal_constructors",
++    "//electron/build/config:mas_build",
+   ]
+ 
+   deps = [
+diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
+index 5a4570c4699cde1376c21fb50954b6562acd999f..7172c144eacccf8efce6cc85545599ecf14c5d4a 100644
+--- a/build/config/BUILDCONFIG.gn
++++ b/build/config/BUILDCONFIG.gn
+@@ -355,7 +355,6 @@ default_compiler_configs = [
+   "//build/config/compiler/pgo:default_pgo_flags",
+   "//build/config/coverage:default_coverage",
+   "//build/config/sanitizers:default_sanitizer_flags",
+-  "//electron/build/config:mas_build",
+ ]
+ 
+ if (is_win) {
+diff --git a/components/os_crypt/BUILD.gn b/components/os_crypt/BUILD.gn
+index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36ee6a5b75 100644
+--- a/components/os_crypt/BUILD.gn
++++ b/components/os_crypt/BUILD.gn
+@@ -65,6 +65,8 @@ component("os_crypt") {
+       "keychain_password_mac.mm",
+       "os_crypt_mac.mm",
+     ]
++
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_win) {
+diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
+index 1adfddd0fa65aac18e4bc98a38e52dfd62701ff4..6ac3d77d7259970394537e164097cd8dbefec6b0 100644
+--- a/components/remote_cocoa/app_shim/BUILD.gn
++++ b/components/remote_cocoa/app_shim/BUILD.gn
+@@ -16,6 +16,7 @@ component("app_shim") {
+   assert(is_mac)
+ 
+   configs += [ ":app_shim_warnings" ]
++  configs += ["//electron/build/config:mas_build"]
+   sources = [
+     "alert.h",
+     "alert.mm",
+diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
+index c320ce10cfcd8b62dc516871bae900f6da9600f5..c9347d61c76098c9df5e0142872b5078017e6270 100644
+--- a/components/viz/service/BUILD.gn
++++ b/components/viz/service/BUILD.gn
+@@ -306,6 +306,8 @@ viz_component("service") {
+ 
+     deps += [ "//ui/accelerated_widget_mac" ]
+     frameworks = [ "IOSurface.framework" ]
++
++    configs = ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_android || use_ozone) {
+diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
+index 9ba992e9ce8e107949db8dfc928a478b50fea35a..564467c1dda1210085488aed47d64052c457bd8a 100644
+--- a/content/browser/BUILD.gn
++++ b/content/browser/BUILD.gn
+@@ -57,6 +57,7 @@ source_set("browser") {
+     "//content:content_implementation",
+     "//v8:external_startup_data",
+   ]
++  configs += ["//electron/build/config:mas_build"]
+   defines = []
+   libs = []
+   frameworks = []
+diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
+index d01ad9dbeabeef8a5679823d8b1678d0a46c3865..2c4d34bc40aec5de7603ada2777e532be4416fce 100644
+--- a/content/common/BUILD.gn
++++ b/content/common/BUILD.gn
+@@ -170,6 +170,7 @@ source_set("common") {
+     "//content:content_implementation",
+     "//build/config:precompiled_headers",
+   ]
++  configs += ["//electron/build/config:mas_build"]
+ 
+   public_deps = [
+     ":mojo_bindings",
+diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
+index a1f691c0d3452b440210190c467f96c727b3ec58..2c4808ec4b7018165947c311816d113067e8542c 100644
+--- a/content/renderer/BUILD.gn
++++ b/content/renderer/BUILD.gn
+@@ -220,6 +220,7 @@ target(link_target_type, "renderer") {
+   }
+ 
+   configs += [ "//content:content_implementation" ]
++  configs += ["//electron/build/config:mas_build"]
+   defines = []
+ 
+   public_deps = [
+diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
+index 0b526044dcc7cbc21cc25cfdd7be8e4cdd8f06eb..c5c61601a684ea08e2279b4fc6b77d81ff2f03e1 100644
+--- a/device/bluetooth/BUILD.gn
++++ b/device/bluetooth/BUILD.gn
+@@ -249,6 +249,7 @@ component("bluetooth") {
+       "IOKit.framework",
+       "Foundation.framework",
+     ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_win) {
+diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
+index e5bc3c86e07873f5ad5a54fba950e3105049ab2b..6774273357a7b6a465a9918f81b4cee90c0859a4 100644
+--- a/gpu/ipc/service/BUILD.gn
++++ b/gpu/ipc/service/BUILD.gn
+@@ -119,6 +119,7 @@ component("service") {
+       "QuartzCore.framework",
+     ]
+     defines += [ "GL_SILENCE_DEPRECATION" ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+   if (is_android) {
+     sources += [
+diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
+index 44635f13048890b20c74870d26c4e74bab363ddb..33ad7650832b7572949fb6f362bef02879f4c31b 100644
+--- a/media/audio/BUILD.gn
++++ b/media/audio/BUILD.gn
+@@ -188,6 +188,7 @@ source_set("audio") {
+       "CoreAudio.framework",
+       "CoreFoundation.framework",
+     ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_win) {
+diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
+index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aaeea1a49a 100644
+--- a/net/dns/BUILD.gn
++++ b/net/dns/BUILD.gn
+@@ -173,6 +173,8 @@ source_set("dns") {
+     ":host_resolver_manager",
+     ":mdns_client",
+   ]
++
++  configs += ["//electron/build/config:mas_build"]
+ }
+ 
+ # The standard API of net/dns.
+diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
+index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3edb116d9b2 100644
+--- a/sandbox/mac/BUILD.gn
++++ b/sandbox/mac/BUILD.gn
+@@ -37,6 +37,7 @@ component("seatbelt") {
+   ]
+   public_deps = [ "//third_party/protobuf:protobuf_lite" ]
+   defines = [ "SEATBELT_IMPLEMENTATION" ]
++  configs += ["//electron/build/config:mas_build"]
+ }
+ 
+ component("seatbelt_extension") {
+@@ -50,6 +51,7 @@ component("seatbelt_extension") {
+   libs = [ "sandbox" ]
+   public_deps = [ "//base" ]
+   defines = [ "SEATBELT_IMPLEMENTATION" ]
++  configs += ["//electron/build/config:mas_build"]
+ }
+ 
+ component("system_services") {
+@@ -64,6 +66,7 @@ component("system_services") {
+   deps = [ ":seatbelt_export" ]
+   public_deps = [ "//base" ]
+   defines = [ "SEATBELT_IMPLEMENTATION" ]
++  configs += ["//electron/build/config:mas_build"]
+ }
+ 
+ source_set("sandbox_unittests") {
+diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
+index fabf49654cebc659348e3505487b2be583647fed..58efb9cfe6e4ed44a8e3753ef4af8e4db84617cd 100644
+--- a/third_party/blink/renderer/core/BUILD.gn
++++ b/third_party/blink/renderer/core/BUILD.gn
+@@ -280,6 +280,7 @@ component("core") {
+   configs -= core_config_remove
+   configs += core_config_add
+   configs += [ "//v8:external_startup_data" ]
++  configs += ["//electron/build/config:mas_build"]
+ 
+   public_deps = [
+     ":core_generated",
+diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
+index 1ca2843130e81f9ea6be7a71b6b2a8d68bd413ae..712e4428bc9417f114a695a5980c488801007b77 100644
+--- a/ui/accelerated_widget_mac/BUILD.gn
++++ b/ui/accelerated_widget_mac/BUILD.gn
+@@ -53,6 +53,8 @@ component("accelerated_widget_mac") {
+     "OpenGL.framework",
+     "QuartzCore.framework",
+   ]
++
++  configs += ["//electron/build/config:mas_build"]
+ }
+ 
+ test("accelerated_widget_mac_unittests") {
+diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
+index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9b487e4b6 100644
+--- a/ui/accessibility/platform/BUILD.gn
++++ b/ui/accessibility/platform/BUILD.gn
+@@ -249,6 +249,7 @@ component("platform") {
+       weak_frameworks = [
+         "Accessibility.framework",  # macOS 11
+       ]
++      configs += ["//electron/build/config:mas_build"]
+     }
+ 
+     if (use_atk) {
+diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
+index 8ed2cd062b2e9531742835c61f015975c7d59d40..989005583f46879f6ed32aa121d9dc2d7af0d589 100644
+--- a/ui/base/BUILD.gn
++++ b/ui/base/BUILD.gn
+@@ -348,6 +348,7 @@ component("base") {
+       "l10n/l10n_util_mac.mm",
+       "resource/resource_bundle_mac.mm",
+     ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_chromeos_lacros) {
+diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
+index aadf9f2a52fd6bf4f027a070656c893b5025c714..445fa39d3676b80901ffb734bfb5ca1045dc4c41 100644
+--- a/ui/display/BUILD.gn
++++ b/ui/display/BUILD.gn
+@@ -56,6 +56,10 @@ component("display") {
+       "mac/display_link_mac.h",
+       "mac/screen_mac.mm",
+     ]
++
++    configs += [
++      "//electron/build/config:mas_build"
++    ]
+   }
+ 
+   if (is_win) {
+diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
+index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675cb22bf4e7 100644
+--- a/ui/gfx/BUILD.gn
++++ b/ui/gfx/BUILD.gn
+@@ -188,6 +188,7 @@ component("gfx") {
+       "scoped_ns_graphics_context_save_gstate_mac.h",
+       "scoped_ns_graphics_context_save_gstate_mac.mm",
+     ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+   if (is_win) {
+     sources += [
+diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
+index 36bc22a122193bf5ccd7e86df08cce7e5451a035..6d64206ee17042b6eef9ba15977eba0458903c75 100644
+--- a/ui/views/BUILD.gn
++++ b/ui/views/BUILD.gn
+@@ -664,6 +664,7 @@ component("views") {
+       "IOSurface.framework",
+       "QuartzCore.framework",
+     ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_win) {
+diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
+index f37a5a881ac6ac432a4672c5738b7f49b75b5523..1764117f539c2423ebe8bb4c3fe70afcdd0883e8 100644
+--- a/ui/views/controls/webview/BUILD.gn
++++ b/ui/views/controls/webview/BUILD.gn
+@@ -19,6 +19,7 @@ component("webview") {
+ 
+   if (is_mac) {
+     sources += [ "unhandled_keyboard_event_handler_mac.mm" ]
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_win) {

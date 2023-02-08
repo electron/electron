@@ -20,7 +20,7 @@ work). Extensions are installed per-`session`. To load an extension, call
 ```js
 const { session } = require('electron')
 
-session.loadExtension('path/to/unpacked/extension').then(({ id }) => {
+session.defaultSession.loadExtension('path/to/unpacked/extension').then(({ id }) => {
   // ...
 })
 ```
@@ -99,6 +99,7 @@ Only `chrome.storage.local` is supported; `chrome.storage.sync` and
 The following methods of `chrome.tabs` are supported:
 
 - `chrome.tabs.sendMessage`
+- `chrome.tabs.reload`
 - `chrome.tabs.executeScript`
 - `chrome.tabs.update` (partial support)
   - supported properties: `url`, `muted`.

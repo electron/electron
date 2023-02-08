@@ -13,8 +13,7 @@
 
 #include "base/strings/sys_string_conversions.h"
 #include "net/cert/cert_database.h"
-#include "net/cert/x509_util_ios_and_mac.h"
-#include "net/cert/x509_util_mac.h"
+#include "net/cert/x509_util_apple.h"
 #include "shell/browser/native_window.h"
 
 @interface TrustDelegate : NSObject {

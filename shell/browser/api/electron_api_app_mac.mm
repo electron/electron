@@ -9,13 +9,12 @@
 #include "shell/common/electron_paths.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/process_util.h"
+#include "shell/common/thread_restrictions.h"
 
 #import <Cocoa/Cocoa.h>
 #import <sys/sysctl.h>
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
                          absl::optional<base::FilePath> custom_path) {
@@ -25,7 +24,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
       return;
     }
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ScopedAllowBlockingForElectron allow_blocking;
       base::PathService::Override(DIR_APP_LOGS, custom_path.value());
     }
   } else {
@@ -36,7 +35,7 @@ void App::SetAppLogsPath(gin_helper::ErrorThrower thrower,
     NSString* library_path =
         [NSHomeDirectory() stringByAppendingPathComponent:logs_path];
     {
-      base::ThreadRestrictions::ScopedAllowIO allow_io;
+      ScopedAllowBlockingForElectron allow_blocking;
       base::PathService::Override(DIR_APP_LOGS,
                                   base::FilePath([library_path UTF8String]));
     }
@@ -82,6 +81,4 @@ bool App::IsRunningUnderARM64Translation() const {
   return proc_translated == 1;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

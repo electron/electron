@@ -9,10 +9,9 @@
 #include <utility>
 #include <vector>
 
-#include "base/callback_helpers.h"
+#include "base/functional/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
-#include "base/task/post_task.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
@@ -83,19 +82,19 @@ ui::MouseEvent UiMouseEventFromWebMouseEvent(blink::WebMouseEvent event) {
   int button_flags = 0;
   switch (event.button) {
     case blink::WebMouseEvent::Button::kBack:
-      button_flags |= ui::EventFlags::EF_BACK_MOUSE_BUTTON;
+      button_flags |= ui::EF_BACK_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kForward:
-      button_flags |= ui::EventFlags::EF_FORWARD_MOUSE_BUTTON;
+      button_flags |= ui::EF_FORWARD_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kLeft:
-      button_flags |= ui::EventFlags::EF_LEFT_MOUSE_BUTTON;
+      button_flags |= ui::EF_LEFT_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kMiddle:
-      button_flags |= ui::EventFlags::EF_MIDDLE_MOUSE_BUTTON;
+      button_flags |= ui::EF_MIDDLE_MOUSE_BUTTON;
       break;
     case blink::WebMouseEvent::Button::kRight:
-      button_flags |= ui::EventFlags::EF_RIGHT_MOUSE_BUTTON;
+      button_flags |= ui::EF_RIGHT_MOUSE_BUTTON;
       break;
     default:
       button_flags = 0;
@@ -220,7 +219,8 @@ OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
   ui::ContextFactory* context_factory = content::GetContextFactory();
   compositor_ = std::make_unique<ui::Compositor>(
       context_factory->AllocateFrameSinkId(), context_factory,
-      base::ThreadTaskRunnerHandle::Get(), false /* enable_pixel_canvas */,
+      base::SingleThreadTaskRunner::GetCurrentDefault(),
+      false /* enable_pixel_canvas */,
       false /* use_external_begin_frame_control */);
   compositor_->SetAcceleratedWidget(gfx::kNullAcceleratedWidget);
   compositor_->SetDelegate(this);
@@ -397,7 +397,7 @@ void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
 
 void OffScreenRenderWidgetHostView::InitAsPopup(
     content::RenderWidgetHostView* parent_host_view,
-    const gfx::Rect& pos,
+    const gfx::Rect& bounds,
     const gfx::Rect& anchor_rect) {
   DCHECK_EQ(parent_host_view_, parent_host_view);
   DCHECK_EQ(widget_type_, content::WidgetType::kPopup);
@@ -411,17 +411,14 @@ void OffScreenRenderWidgetHostView::InitAsPopup(
       base::BindRepeating(&OffScreenRenderWidgetHostView::OnPopupPaint,
                           parent_host_view_->weak_ptr_factory_.GetWeakPtr());
 
-  popup_position_ = pos;
+  popup_position_ = bounds;
 
-  ResizeRootLayer(false);
+  ResizeRootLayer(true);
   SetPainting(parent_host_view_->IsPainting());
-  if (video_consumer_) {
-    video_consumer_->SizeChanged();
-  }
   Show();
 }
 
-void OffScreenRenderWidgetHostView::UpdateCursor(const content::WebCursor&) {}
+void OffScreenRenderWidgetHostView::UpdateCursor(const ui::Cursor&) {}
 
 content::CursorManager* OffScreenRenderWidgetHostView::GetCursorManager() {
   return cursor_manager_.get();
@@ -688,13 +685,8 @@ void OffScreenRenderWidgetHostView::OnPaint(const gfx::Rect& damage_rect,
 
 gfx::Size OffScreenRenderWidgetHostView::SizeInPixels() {
   float sf = GetDeviceScaleFactor();
-  if (IsPopupWidget()) {
-    return gfx::ToFlooredSize(
-        gfx::ConvertSizeToPixels(popup_position_.size(), sf));
-  } else {
-    return gfx::ToFlooredSize(
-        gfx::ConvertSizeToPixels(GetViewBounds().size(), sf));
-  }
+  return gfx::ToFlooredSize(
+      gfx::ConvertSizeToPixels(GetViewBounds().size(), sf));
 }
 
 void OffScreenRenderWidgetHostView::CompositeFrame(
@@ -765,8 +757,8 @@ void OffScreenRenderWidgetHostView::ReleaseResize() {
   hold_resize_ = false;
   if (pending_resize_) {
     pending_resize_ = false;
-    base::PostTask(
-        FROM_HERE, {content::BrowserThread::UI},
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE,
         base::BindOnce(
             &OffScreenRenderWidgetHostView::SynchronizeVisualProperties,
             weak_ptr_factory_.GetWeakPtr()));
@@ -870,8 +862,8 @@ void OffScreenRenderWidgetHostView::SendMouseWheelEvent(
         // Scrolling outside of the popup widget so destroy it.
         // Execute asynchronously to avoid deleting the widget from inside some
         // other callback.
-        base::PostTask(
-            FROM_HERE, {content::BrowserThread::UI},
+        content::GetUIThreadTaskRunner({})->PostTask(
+            FROM_HERE,
             base::BindOnce(&OffScreenRenderWidgetHostView::CancelWidget,
                            popup_host_view_->weak_ptr_factory_.GetWeakPtr()));
       }
@@ -995,7 +987,7 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
       display::Screen::GetScreen()->GetDisplayNearestView(GetNativeView());
   const float scaleFactor = display.device_scale_factor();
   float sf = GetDeviceScaleFactor();
-  const bool scaleFactorDidChange = scaleFactor != sf;
+  const bool sf_did_change = scaleFactor != sf;
 
   // Initialize a screen_infos_ struct as needed, to cache the scale factor.
   if (screen_infos_.screen_infos.empty()) {
@@ -1003,14 +995,9 @@ void OffScreenRenderWidgetHostView::ResizeRootLayer(bool force) {
   }
   screen_infos_.mutable_current().device_scale_factor = scaleFactor;
 
-  gfx::Size size;
-  if (!IsPopupWidget())
-    size = GetViewBounds().size();
-  else
-    size = popup_position_.size();
+  gfx::Size size = GetViewBounds().size();
 
-  if (!force && !scaleFactorDidChange &&
-      size == GetRootLayer()->bounds().size())
+  if (!force && !sf_did_change && size == GetRootLayer()->bounds().size())
     return;
 
   GetRootLayer()->SetBounds(gfx::Rect(size));

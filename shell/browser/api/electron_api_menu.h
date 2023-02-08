@@ -8,7 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
 #include "gin/arguments.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -16,9 +16,7 @@
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/pinnable.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class Menu : public gin::Wrappable<Menu>,
              public gin_helper::EventEmitterMixin<Menu>,
@@ -29,9 +27,7 @@ class Menu : public gin::Wrappable<Menu>,
  public:
   // gin_helper::Constructible
   static gin::Handle<Menu> New(gin::Arguments* args);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
@@ -123,9 +119,7 @@ class Menu : public gin::Wrappable<Menu>,
   bool WorksWhenHiddenAt(int index) const;
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace gin {
 

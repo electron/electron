@@ -8,16 +8,16 @@ a child process. This patch disables partition alloc for mac,
 and can be removed when the crash in fork is resolved.
 Related issue: https://github.com/electron/electron/issues/32718
 
-diff --git a/base/allocator/allocator.gni b/base/allocator/allocator.gni
-index 97a57dfb1626ae9a781736dd8b0b55bf201162c1..5c97441faad781b459255cb1f7d0652ec86e40c8 100644
---- a/base/allocator/allocator.gni
-+++ b/base/allocator/allocator.gni
-@@ -20,7 +20,7 @@ _disable_partition_alloc = is_component_build || (is_win && is_debug)
+diff --git a/build_overrides/partition_alloc.gni b/build_overrides/partition_alloc.gni
+index e1fa5fe9f6da68451d364fadbc021239a8c3e19a..4850698ef66776333fad27812a5414a9aa55fe08 100644
+--- a/build_overrides/partition_alloc.gni
++++ b/build_overrides/partition_alloc.gni
+@@ -42,7 +42,7 @@ _disable_partition_alloc_everywhere = is_component_build || (is_win && is_debug)
  
  # - NaCl: No plans to support it.
  # - iOS: not done yet.
--_is_partition_alloc_platform = !is_nacl && !is_ios
-+_is_partition_alloc_platform = !is_nacl && !is_ios && !is_mac
+-_is_partition_alloc_everywhere_platform = !is_nacl && !is_ios
++_is_partition_alloc_everywhere_platform = !is_nacl && !is_ios && !is_mac
  
- # Under Windows Debug the allocator shim is not compatible with CRT.
+ # Under Windows debug build, the allocator shim is not compatible with CRT.
  #     NaCl in particular does seem to link some binaries statically

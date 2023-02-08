@@ -1,7 +1,7 @@
 template("npm_action") {
   assert(defined(invoker.script),
          "Need script name to run (must be defined in package.json)")
-  assert(defined(invoker.args), "Need script argumets")
+  assert(defined(invoker.args), "Need script arguments")
 
   action("npm_pre_flight_" + target_name) {
     inputs = [

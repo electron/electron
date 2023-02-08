@@ -40,11 +40,9 @@ class WebContentsPreferences
   WebContentsPreferences(const WebContentsPreferences&) = delete;
   WebContentsPreferences& operator=(const WebContentsPreferences&) = delete;
 
-  void Merge(const gin_helper::Dictionary& new_web_preferences);
-
   void SetFromDictionary(const gin_helper::Dictionary& new_web_preferences);
 
-  // Append command paramters according to preferences.
+  // Append command parameters according to preferences.
   void AppendCommandLineSwitches(base::CommandLine* command_line,
                                  bool is_subframe);
 

@@ -10,12 +10,11 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/post_task.h"
+#include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
 #include "shell/browser/native_window.h"
-#include "shell/browser/unresponsive_suppressor.h"
 #include "shell/common/keyboard_util.h"
 #include "shell/common/node_includes.h"
 
@@ -43,9 +42,7 @@ ui::Accelerator GetAcceleratorFromKeyEquivalentAndModifierMask(
 
 }  // namespace
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 MenuMac::MenuMac(gin::Arguments* args) : Menu(args) {}
 
@@ -68,7 +65,8 @@ void MenuMac::PopupAt(BaseWindow* window,
       base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                      native_window->GetWeakPtr(), window->weak_map_id(), x, y,
                      positioning_item, std::move(callback_with_ref));
-  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(popup));
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
+                                                           std::move(popup));
 }
 
 v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
@@ -134,7 +132,7 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   if (!item) {
     CGFloat windowBottom = CGRectGetMinY([view window].frame);
     CGFloat lowestMenuPoint = windowBottom + position.y - [menu size].height;
-    CGFloat screenBottom = CGRectGetMinY([view window].screen.frame);
+    CGFloat screenBottom = CGRectGetMinY([view window].screen.visibleFrame);
     CGFloat distanceFromBottom = lowestMenuPoint - screenBottom;
     if (distanceFromBottom < 0)
       position.y = position.y - distanceFromBottom + 4;
@@ -143,13 +141,13 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   // Place the menu left of cursor if it is overflowing off right of screen.
   CGFloat windowLeft = CGRectGetMinX([view window].frame);
   CGFloat rightmostMenuPoint = windowLeft + position.x + [menu size].width;
-  CGFloat screenRight = CGRectGetMaxX([view window].screen.frame);
+  CGFloat screenRight = CGRectGetMaxX([view window].screen.visibleFrame);
   if (rightmostMenuPoint > screenRight)
     position.x = position.x - [menu size].width;
 
   [popup_controllers_[window_id] setCloseCallback:std::move(close_callback)];
   // Make sure events can be pumped while the menu is up.
-  base::CurrentThread::ScopedNestableTaskAllower allow;
+  base::CurrentThread::ScopedAllowApplicationTasksInNativeNestedLoop allow;
 
   // One of the events that could be pumped is |window.close()|.
   // User-initiated event-tracking loops protect against this by
@@ -159,15 +157,14 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
   base::mac::ScopedSendingEvent sendingEventScoper;
 
   // Don't emit unresponsive event when showing menu.
-  electron::UnresponsiveSuppressor suppressor;
   [menu popUpMenuPositioningItem:item atLocation:position inView:view];
 }
 
 void MenuMac::ClosePopupAt(int32_t window_id) {
   auto close_popup = base::BindOnce(&MenuMac::ClosePopupOnUI,
                                     weak_factory_.GetWeakPtr(), window_id);
-  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE,
-                                                   std::move(close_popup));
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, std::move(close_popup));
 }
 
 std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {
@@ -263,6 +260,4 @@ gin::Handle<Menu> Menu::New(gin::Arguments* args) {
   return handle;
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

@@ -29,8 +29,7 @@ class ElectronContentClient : public content::ContentClient {
   gfx::Image& GetNativeImageNamed(int resource_id) override;
   base::RefCountedMemory* GetDataResourceBytes(int resource_id) override;
   void AddAdditionalSchemes(Schemes* schemes) override;
-  void AddPepperPlugins(
-      std::vector<content::PepperPluginInfo>* plugins) override;
+  void AddPlugins(std::vector<content::ContentPluginInfo>* plugins) override;
   void AddContentDecryptionModules(
       std::vector<content::CdmInfo>* cdms,
       std::vector<media::CdmHostFilePath>* cdm_host_file_paths) override;

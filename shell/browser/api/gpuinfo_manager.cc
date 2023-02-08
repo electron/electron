@@ -7,7 +7,7 @@
 #include <utility>
 
 #include "base/memory/singleton.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/task/single_thread_task_runner.h"
 #include "content/public/browser/browser_thread.h"
 #include "gpu/config/gpu_info_collector.h"
 #include "shell/browser/api/gpu_info_enumerator.h"
@@ -41,11 +41,11 @@ bool GPUInfoManager::NeedsCompleteGpuInfoCollection() const {
 
 // Should be posted to the task runner
 void GPUInfoManager::ProcessCompleteInfo() {
-  const auto result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
+  base::Value::Dict result = EnumerateGPUInfo(gpu_data_manager_->GetGPUInfo());
   // We have received the complete information, resolve all promises that
   // were waiting for this info.
   for (auto& promise : complete_info_promise_set_) {
-    promise.Resolve(*result);
+    promise.Resolve(base::Value(result.Clone()));
   }
   complete_info_promise_set_.clear();
 }
@@ -54,14 +54,14 @@ void GPUInfoManager::OnGpuInfoUpdate() {
   // Ignore if called when not asked for complete GPUInfo
   if (NeedsCompleteGpuInfoCollection())
     return;
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::ProcessCompleteInfo,
                                 base::Unretained(this)));
 }
 
 // Should be posted to the task runner
 void GPUInfoManager::CompleteInfoFetcher(
-    gin_helper::Promise<base::DictionaryValue> promise) {
+    gin_helper::Promise<base::Value> promise) {
   complete_info_promise_set_.emplace_back(std::move(promise));
 
   if (NeedsCompleteGpuInfoCollection()) {
@@ -73,22 +73,21 @@ void GPUInfoManager::CompleteInfoFetcher(
 }
 
 void GPUInfoManager::FetchCompleteInfo(
-    gin_helper::Promise<base::DictionaryValue> promise) {
-  base::ThreadTaskRunnerHandle::Get()->PostTask(
+    gin_helper::Promise<base::Value> promise) {
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(&GPUInfoManager::CompleteInfoFetcher,
                                 base::Unretained(this), std::move(promise)));
 }
 
 // This fetches the info synchronously, so no need to post to the task queue.
 // There cannot be multiple promises as they are resolved synchronously.
-void GPUInfoManager::FetchBasicInfo(
-    gin_helper::Promise<base::DictionaryValue> promise) {
+void GPUInfoManager::FetchBasicInfo(gin_helper::Promise<base::Value> promise) {
   gpu::GPUInfo gpu_info;
   CollectBasicGraphicsInfo(&gpu_info);
-  promise.Resolve(*EnumerateGPUInfo(gpu_info));
+  promise.Resolve(base::Value(EnumerateGPUInfo(gpu_info)));
 }
 
-std::unique_ptr<base::DictionaryValue> GPUInfoManager::EnumerateGPUInfo(
+base::Value::Dict GPUInfoManager::EnumerateGPUInfo(
     gpu::GPUInfo gpu_info) const {
   GPUInfoEnumerator enumerator;
   gpu_info.EnumerateFields(&enumerator);

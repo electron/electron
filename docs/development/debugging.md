@@ -9,7 +9,7 @@ Some of the more common approaches are outlined below.
 
 Chromium contains logging macros which can aid debugging by printing information to console in C++ and Objective-C++.
 
-You might use this to print out variable values, function names, and line numbers, amonst other things.
+You might use this to print out variable values, function names, and line numbers, amongst other things.
 
 Some examples:
 
@@ -25,7 +25,7 @@ See [logging.h](https://chromium.googlesource.com/chromium/src/base/+/refs/heads
 
 ## Printing Stacktraces
 
-Chromium contains a helper to print stack traces to console without interrrupting the program.
+Chromium contains a helper to print stack traces to console without interrupting the program.
 
 ```cpp
 #include "base/debug/stack_trace.h"

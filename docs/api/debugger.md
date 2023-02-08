@@ -59,7 +59,6 @@ Returns:
 Emitted whenever the debugging target issues an instrumentation event.
 
 [rdp]: https://chromedevtools.github.io/devtools-protocol/
-[`webContents.findInPage`]: web-contents.md#contentsfindinpagetext-options
 
 ### Instance Methods
 

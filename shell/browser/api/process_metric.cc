@@ -160,7 +160,7 @@ ProcessMemoryInfo ProcessMetric::GetMemoryInfo() const {
 }
 
 bool ProcessMetric::IsSandboxed() const {
-#if defined(MAS_BUILD)
+#if IS_MAS_BUILD()
   return true;
 #else
   return sandbox_check(process.Pid(), nullptr, 0) != 0;

@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/stl_util.h"
+#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "extensions/browser/api/web_request/web_request_resource_type.h"
 #include "gin/converter.h"
@@ -81,9 +82,7 @@ struct Converter<extensions::WebRequestResourceType> {
 
 }  // namespace gin
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -115,13 +114,12 @@ bool MatchesFilterCondition(extensions::WebRequestInfo* info,
 // to pass the original keys.
 v8::Local<v8::Value> HttpResponseHeadersToV8(
     net::HttpResponseHeaders* headers) {
-  base::DictionaryValue response_headers;
+  base::Value::Dict response_headers;
   if (headers) {
     size_t iter = 0;
     std::string key;
     std::string value;
     while (headers->EnumerateHeaderLines(&iter, &key, &value)) {
-      base::Value* values = response_headers.FindListKey(key);
       // Note that Web servers not developed with nodejs allow non-utf8
       // characters in content-disposition's filename field. Use Chromium's
       // HttpContentDisposition class to decode the correct encoding instead of
@@ -138,12 +136,14 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
         std::string filename = "\"" + header.filename() + "\"";
         value = decodedFilename + "; filename=" + filename;
       }
+      base::Value::List* values = response_headers.FindList(key);
       if (!values)
-        values = response_headers.SetKey(key, base::ListValue());
-      values->Append(value);
+        values = &response_headers.Set(key, base::Value::List())->GetList();
+      values->Append(base::Value(value));
     }
   }
-  return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
+  return gin::ConvertToV8(v8::Isolate::GetCurrent(),
+                          base::Value(std::move(response_headers)));
 }
 
 // Overloaded by multiple types to fill the |details| object.
@@ -506,7 +506,7 @@ void WebRequest::OnListenerResult(uint64_t id,
 
   // The ProxyingURLLoaderFactory expects the callback to be executed
   // asynchronously, because it used to work on IO thread before NetworkService.
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
   callbacks_.erase(iter);
 }
@@ -550,6 +550,4 @@ gin::Handle<WebRequest> WebRequest::From(
   return gin::CreateHandle(isolate, user_data->data);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

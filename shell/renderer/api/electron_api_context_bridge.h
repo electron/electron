@@ -12,9 +12,7 @@ namespace gin_helper {
 class Arguments;
 }
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info);
 
@@ -51,8 +49,6 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     bool support_dynamic_properties,
     int recursion_depth);
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_RENDERER_API_ELECTRON_API_CONTEXT_BRIDGE_H_

@@ -144,6 +144,7 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("id", val.id());
+  dict.Set("label", val.label());
   dict.Set("bounds", val.bounds());
   dict.Set("workArea", val.work_area());
   dict.Set("accelerometerSupport", val.accelerometer_support());

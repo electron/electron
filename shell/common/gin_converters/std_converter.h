@@ -24,7 +24,7 @@ v8::Local<v8::Value> ConvertToV8(v8::Isolate* isolate, T&& input) {
       isolate, std::forward<T>(input));
 }
 
-#if !BUILDFLAG(IS_LINUX) && !defined(OS_FREEBSD)
+#if !BUILDFLAG(IS_LINUX)
 template <>
 struct Converter<unsigned long> {  // NOLINT(runtime/int)
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
@@ -163,11 +163,11 @@ struct Converter<std::map<K, V>> {
       if (maybe_v8value.IsEmpty())
         return false;
       K key;
-      V value;
+      V out_value;
       if (!ConvertFromV8(isolate, v8key, &key) ||
-          !ConvertFromV8(isolate, maybe_v8value.ToLocalChecked(), &value))
+          !ConvertFromV8(isolate, maybe_v8value.ToLocalChecked(), &out_value))
         return false;
-      (*out)[key] = std::move(value);
+      (*out)[key] = std::move(out_value);
     }
     return true;
   }

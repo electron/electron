@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jeremy Rose <japthorp@slack-corp.com>
+Date: Mon, 9 May 2022 17:09:21 -0700
+Subject: Revert "[runtime] DHCECK terminating exception in Microtasks"
+
+This reverts commit bccb536c98181e8a6e9cf0b6342311adbbf61aca.
+
+diff --git a/src/builtins/builtins-microtask-queue-gen.cc b/src/builtins/builtins-microtask-queue-gen.cc
+index f58636fee555d782e18b7521c0c4f28ed60b3a52..6b0c63b34ff09f70cb9a4fe419f3b9bb0adf6790 100644
+--- a/src/builtins/builtins-microtask-queue-gen.cc
++++ b/src/builtins/builtins-microtask-queue-gen.cc
+@@ -118,7 +118,6 @@ void MicrotaskQueueBuiltinsAssembler::PrepareForContext(
+ void MicrotaskQueueBuiltinsAssembler::RunSingleMicrotask(
+     TNode<Context> current_context, TNode<Microtask> microtask) {
+   CSA_DCHECK(this, TaggedIsNotSmi(microtask));
+-  CSA_DCHECK(this, Word32BinaryNot(IsExecutionTerminating()));
+ 
+   StoreRoot(RootIndex::kCurrentMicrotask, microtask);
+   TNode<IntPtrT> saved_entered_context_count = GetEnteredContextCount();
+diff --git a/src/codegen/code-stub-assembler.cc b/src/codegen/code-stub-assembler.cc
+index 7d47afa2c92c1da43657702d5a85251646d680fd..10c3ec8387522ce2e35b77a7e6eb04de22597349 100644
+--- a/src/codegen/code-stub-assembler.cc
++++ b/src/codegen/code-stub-assembler.cc
+@@ -6417,12 +6417,6 @@ void CodeStubAssembler::SetPendingMessage(TNode<HeapObject> message) {
+   StoreFullTaggedNoWriteBarrier(pending_message, message);
+ }
+ 
+-TNode<BoolT> CodeStubAssembler::IsExecutionTerminating() {
+-  TNode<HeapObject> pending_message = GetPendingMessage();
+-  return TaggedEqual(pending_message,
+-                     LoadRoot(RootIndex::kTerminationException));
+-}
+-
+ TNode<BoolT> CodeStubAssembler::InstanceTypeEqual(TNode<Int32T> instance_type,
+                                                   int type) {
+   return Word32Equal(instance_type, Int32Constant(type));
+diff --git a/src/codegen/code-stub-assembler.h b/src/codegen/code-stub-assembler.h
+index fdd6da601705f72bd5d1a9101171048bdf408b9d..496c73225f8641e78793ba74d80e2e8b1e3f5c02 100644
+--- a/src/codegen/code-stub-assembler.h
++++ b/src/codegen/code-stub-assembler.h
+@@ -2550,7 +2550,6 @@ class V8_EXPORT_PRIVATE CodeStubAssembler
+ 
+   TNode<HeapObject> GetPendingMessage();
+   void SetPendingMessage(TNode<HeapObject> message);
+-  TNode<BoolT> IsExecutionTerminating();
+ 
+   // Type checks.
+   // Check whether the map is for an object with special properties, such as a

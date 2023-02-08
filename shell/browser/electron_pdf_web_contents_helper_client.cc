@@ -14,19 +14,19 @@ ElectronPDFWebContentsHelperClient::~ElectronPDFWebContentsHelperClient() =
 
 content::RenderFrameHost* ElectronPDFWebContentsHelperClient::FindPdfFrame(
     content::WebContents* contents) {
-  content::RenderFrameHost* main_frame = contents->GetMainFrame();
+  content::RenderFrameHost* main_frame = contents->GetPrimaryMainFrame();
   content::RenderFrameHost* pdf_frame =
       pdf_frame_util::FindPdfChildFrame(main_frame);
   return pdf_frame ? pdf_frame : main_frame;
 }
 
 void ElectronPDFWebContentsHelperClient::UpdateContentRestrictions(
-    content::WebContents* contents,
+    content::RenderFrameHost* render_frame_host,
     int content_restrictions) {}
 void ElectronPDFWebContentsHelperClient::OnPDFHasUnsupportedFeature(
     content::WebContents* contents) {}
 void ElectronPDFWebContentsHelperClient::OnSaveURL(
     content::WebContents* contents) {}
 void ElectronPDFWebContentsHelperClient::SetPluginCanSave(
-    content::WebContents* contents,
+    content::RenderFrameHost* render_frame_host,
     bool can_save) {}

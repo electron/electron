@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 2 Jun 2022 15:45:21 +0200
+Subject: chore: remove deprecated AccessorSignatures
+
+Removed in https://chromium-review.googlesource.com/c/v8/v8/+/3654096
+Upstreamed to nan: https://github.com/nodejs/nan/pull/941
+
+diff --git a/nan.h b/nan.h
+index df5496c1a001120d10cd7c4b87d5e7bce8169f38..c29a99b79970421a15c5520a94ab65b1c3c473ff 100644
+--- a/nan.h
++++ b/nan.h
+@@ -2516,8 +2516,7 @@ inline void SetAccessor(
+   , SetterCallback setter = 0
+   , v8::Local<v8::Value> data = v8::Local<v8::Value>()
+   , v8::AccessControl settings = v8::DEFAULT
+-  , v8::PropertyAttribute attribute = v8::None
+-  , imp::Sig signature = imp::Sig()) {
++  , v8::PropertyAttribute attribute = v8::None) {
+   HandleScope scope;
+ 
+   imp::NativeGetter getter_ =
+@@ -2550,9 +2549,6 @@ inline void SetAccessor(
+     , obj
+     , settings
+     , attribute
+-#if (NODE_MODULE_VERSION < NODE_18_0_MODULE_VERSION)
+-    , signature
+-#endif
+   );
+ }
+ 
+diff --git a/nan_callbacks.h b/nan_callbacks.h
+index 53ede846ac9a865a737218dabbbd48305d3d6b63..ea81e452d364e3d3c15a121dc69ae21134bfb586 100644
+--- a/nan_callbacks.h
++++ b/nan_callbacks.h
+@@ -52,8 +52,6 @@ typedef void(*IndexQueryCallback)(
+     const PropertyCallbackInfo<v8::Integer>&);
+ 
+ namespace imp {
+-typedef v8::Local<v8::AccessorSignature> Sig;
+-
+ static const int kDataIndex =                    0;
+ 
+ static const int kFunctionIndex =                1;

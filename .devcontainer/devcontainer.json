@@ -2,6 +2,7 @@
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "buildtools",
 	"onCreateCommand": ".devcontainer/on-create-command.sh",
+	"updateContentCommand": ".devcontainer/update-content-command.sh",
 	"workspaceFolder": "/workspaces/gclient/src/electron",
 	"extensions": [
 		"joeleinbinder.mojom-language",
@@ -11,14 +12,28 @@
 		"mutantdino.resourcemonitor",
 		"dbaeumer.vscode-eslint",
 		"shakram02.bash-beautify",
-		"marshallofsound.gnls-electron"
+		"marshallofsound.gnls-electron",
+		"CircleCI.circleci"
 	],
 	"settings": {
+		"editor.tabSize": 2,
+		"bashBeautify.tabSize": 2,
+		"typescript.tsdk": "node_modules/typescript/lib",
 		"[gn]": {
 			"editor.formatOnSave": true
 		},
-		"editor.tabSize": 2,
-		"bashBeautify.tabSize": 2
+		"[javascript]": {
+			"editor.codeActionsOnSave": {
+				"source.fixAll.eslint": true
+			}
+		},
+		"[typescript]": {
+			"editor.codeActionsOnSave": {
+				"source.fixAll.eslint": true
+			}
+		},
+		"javascript.preferences.quoteStyle": "single",
+		"typescript.preferences.quoteStyle": "single"
 	},
 	"forwardPorts": [8088, 6080, 5901],
 	"portsAttributes": {
@@ -36,8 +51,15 @@
 		}
 	},
 	"hostRequirements": {
-		"storage": "32gb",
-		"cpus": 8
+		"storage": "128gb",
+		"cpus": 16
 	},
-	"remoteUser": "builduser"
+	"remoteUser": "builduser",
+	"customizations": {
+		"codespaces": {
+			"openFiles": [
+				".devcontainer/README.md"
+			]
+		}
+	}
 }

@@ -8,11 +8,11 @@
 #include "base/files/file_util.h"
 #include "base/strings/pattern.h"
 #include "base/strings/string_util.h"
-#include "base/threading/thread_restrictions.h"
 #include "net/base/data_url.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/skia_util.h"
+#include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
@@ -28,9 +28,7 @@
 #include "ui/gfx/icon_util.h"
 #endif
 
-namespace electron {
-
-namespace util {
+namespace electron::util {
 
 struct ScaleFactorPair {
   const char* name;
@@ -125,7 +123,7 @@ bool AddImageSkiaRepFromPath(gfx::ImageSkia* image,
                              double scale_factor) {
   std::string file_contents;
   {
-    base::ThreadRestrictions::ScopedAllowIO allow_io;
+    electron::ScopedAllowBlockingForElectron allow_blocking;
     if (!asar::ReadFileToString(path, &file_contents))
       return false;
   }
@@ -164,6 +162,4 @@ bool ReadImageSkiaFromICO(gfx::ImageSkia* image, HICON icon) {
 }
 #endif
 
-}  // namespace util
-
-}  // namespace electron
+}  // namespace electron::util

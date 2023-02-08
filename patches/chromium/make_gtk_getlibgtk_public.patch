@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 7 Apr 2022 20:30:16 +0900
+Subject: Make gtk::GetLibGtk and gtk::GetLibGdkPixbuf public
+
+Allows embedders to get a handle to the gtk and
+gdk_pixbuf libraries already loaded in the process.
+
+diff --git a/ui/gtk/gtk_compat.cc b/ui/gtk/gtk_compat.cc
+index d196e304a43191b6dc82f25b0b4bf24d242edb3c..85d618efa0574b00fc0cb1e5bde5ed725b2a90ab 100644
+--- a/ui/gtk/gtk_compat.cc
++++ b/ui/gtk/gtk_compat.cc
+@@ -66,11 +66,6 @@ void* GetLibGio() {
+   return libgio;
+ }
+ 
+-void* GetLibGdkPixbuf() {
+-  static void* libgdk_pixbuf = DlOpen("libgdk_pixbuf-2.0.so.0");
+-  return libgdk_pixbuf;
+-}
+-
+ void* GetLibGdk3() {
+   static void* libgdk3 = DlOpen("libgdk-3.so.0");
+   return libgdk3;
+@@ -86,12 +81,6 @@ void* GetLibGtk4(bool check = true) {
+   return libgtk4;
+ }
+ 
+-void* GetLibGtk() {
+-  if (GtkCheckVersion(4))
+-    return GetLibGtk4();
+-  return GetLibGtk3();
+-}
+-
+ bool LoadGtk3() {
+   if (!GetLibGtk3(false))
+     return false;
+@@ -134,6 +123,17 @@ gfx::Insets InsetsFromGtkBorder(const GtkBorder& border) {
+ 
+ }  // namespace
+ 
++void* GetLibGdkPixbuf() {
++  static void* libgdk_pixbuf = DlOpen("libgdk_pixbuf-2.0.so.0");
++  return libgdk_pixbuf;
++}
++
++void* GetLibGtk() {
++  if (GtkCheckVersion(4))
++    return GetLibGtk4();
++  return GetLibGtk3();
++}
++
+ bool LoadGtk() {
+   static bool loaded = LoadGtkImpl();
+   return loaded;
+diff --git a/ui/gtk/gtk_compat.h b/ui/gtk/gtk_compat.h
+index 94f3997bcfc05b1ce9cb5bd821d8b57e2ffe85f3..da45ce627a9cac6460d0e1577d192f5a2dd03ae4 100644
+--- a/ui/gtk/gtk_compat.h
++++ b/ui/gtk/gtk_compat.h
+@@ -34,6 +34,12 @@ using SkColor = uint32_t;
+ 
+ namespace gtk {
+ 
++// Get handle to the currently loaded gdk_pixbuf library in the process.
++void* GetLibGdkPixbuf();
++
++// Get handle to the currently loaded gtk library in the process.
++void* GetLibGtk();
++
+ // Loads libgtk and related libraries and returns true on success.
+ bool LoadGtk();
+ 

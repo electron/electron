@@ -1,6 +1,0 @@
-
-{
-  "main": "./lib/echo.js",
-  "name": "echo",
-  "version": "0.0.1"
-}

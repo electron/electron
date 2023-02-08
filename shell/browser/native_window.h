@@ -7,6 +7,7 @@
 
 #include <list>
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
 
@@ -16,13 +17,14 @@
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "extensions/browser/app_window/size_constraints.h"
+#include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_observer.h"
+#include "shell/browser/ui/inspectable_web_contents_view.h"
+#include "shell/common/api/api.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
-namespace base {
-class DictionaryValue;
-}
+class SkRegion;
 
 namespace content {
 struct NativeWebKeyboardEvent;
@@ -45,6 +47,10 @@ namespace electron {
 
 class ElectronMenuModel;
 class NativeBrowserView;
+
+namespace api {
+class BrowserView;
+}
 
 #if BUILDFLAG(IS_MAC)
 typedef NSView* NativeWindowHandle;
@@ -159,6 +165,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual bool IsTabletMode() const;
   virtual void SetBackgroundColor(SkColor color) = 0;
   virtual SkColor GetBackgroundColor() = 0;
+  virtual void InvalidateShadow();
   virtual void SetHasShadow(bool has_shadow) = 0;
   virtual bool HasShadow() = 0;
   virtual void SetOpacity(const double opacity) = 0;
@@ -218,6 +225,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void UpdateFrame() = 0;
 #endif
 
+// whether windows should be ignored by mission control
+#if BUILDFLAG(IS_MAC)
+  virtual bool IsHiddenInMissionControl() = 0;
+  virtual void SetHiddenInMissionControl(bool hidden) = 0;
+#endif
+
   // Touchbar API
   virtual void SetTouchBar(std::vector<gin_helper::PersistentDictionary> items);
   virtual void RefreshTouchBarItem(const std::string& item_id);
@@ -269,7 +282,7 @@ class NativeWindow : public base::SupportsUserData,
 
   // Public API used by platform-dependent delegates and observers to send UI
   // related notifications.
-  void NotifyWindowRequestPreferredWith(int* width);
+  void NotifyWindowRequestPreferredWidth(int* width);
   void NotifyWindowCloseButtonClicked();
   void NotifyWindowClosed();
   void NotifyWindowEndSession();
@@ -290,8 +303,6 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowResized();
   void NotifyWindowWillMove(const gfx::Rect& new_bounds, bool* prevent_default);
   void NotifyWindowMoved();
-  void NotifyWindowScrollTouchBegin();
-  void NotifyWindowScrollTouchEnd();
   void NotifyWindowSwipe(const std::string& direction);
   void NotifyWindowRotateGesture(float rotation);
   void NotifyWindowSheetBegin();
@@ -303,7 +314,7 @@ class NativeWindow : public base::SupportsUserData,
   void NotifyWindowAlwaysOnTopChanged();
   void NotifyWindowExecuteAppCommand(const std::string& command);
   void NotifyTouchBarItemInteraction(const std::string& item_id,
-                                     const base::DictionaryValue& details);
+                                     base::Value::Dict details);
   void NotifyNewWindowForTab();
   void NotifyWindowSystemContextMenu(int x, int y, bool* prevent_default);
   void NotifyLayoutWindowControlsOverlay();
@@ -315,6 +326,27 @@ class NativeWindow : public base::SupportsUserData,
   void AddObserver(NativeWindowObserver* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(NativeWindowObserver* obs) {
     observers_.RemoveObserver(obs);
+  }
+
+  // Handle fullscreen transitions.
+  void HandlePendingFullscreenTransitions();
+
+  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+
+  void set_fullscreen_transition_state(FullScreenTransitionState state) {
+    fullscreen_transition_state_ = state;
+  }
+  FullScreenTransitionState fullscreen_transition_state() const {
+    return fullscreen_transition_state_;
+  }
+
+  enum class FullScreenTransitionType { HTML, NATIVE, NONE };
+
+  void set_fullscreen_transition_type(FullScreenTransitionType type) {
+    fullscreen_transition_type_ = type;
+  }
+  FullScreenTransitionType fullscreen_transition_type() const {
+    return fullscreen_transition_type_;
   }
 
   views::Widget* widget() const { return widget_.get(); }
@@ -347,7 +379,13 @@ class NativeWindow : public base::SupportsUserData,
 
   int32_t window_id() const { return next_id_; }
 
+  int NonClientHitTest(const gfx::Point& point);
+  void AddDraggableRegionProvider(DraggableRegionProvider* provider);
+  void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
+
  protected:
+  friend class api::BrowserView;
+
   NativeWindow(const gin_helper::Dictionary& options, NativeWindow* parent);
 
   // views::WidgetDelegate:
@@ -374,6 +412,12 @@ class NativeWindow : public base::SupportsUserData,
 
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
+
+  std::queue<bool> pending_transitions_;
+  FullScreenTransitionState fullscreen_transition_state_ =
+      FullScreenTransitionState::NONE;
+  FullScreenTransitionType fullscreen_transition_type_ =
+      FullScreenTransitionType::NONE;
 
  private:
   std::unique_ptr<views::Widget> widget_;
@@ -421,6 +465,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // The browser view layer.
   std::list<NativeBrowserView*> browser_views_;
+
+  std::list<DraggableRegionProvider*> draggable_region_providers_;
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;

@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_browser_view.h"
@@ -58,9 +59,7 @@ struct Converter<electron::TaskbarHost::ThumbarButton> {
 }  // namespace gin
 #endif
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 namespace {
 
@@ -118,7 +117,8 @@ BaseWindow::~BaseWindow() {
 
   // Destroy the native window in next tick because the native code might be
   // iterating all windows.
-  base::ThreadTaskRunnerHandle::Get()->DeleteSoon(FROM_HERE, window_.release());
+  base::SingleThreadTaskRunner::GetCurrentDefault()->DeleteSoon(
+      FROM_HERE, window_.release());
 
   // Remove global reference so the JS object can be garbage collected.
   self_ref_.Reset();
@@ -166,7 +166,8 @@ void BaseWindow::OnWindowClosed() {
   BaseWindow::ResetBrowserViews();
 
   // Destroy the native class when window is closed.
-  base::ThreadTaskRunnerHandle::Get()->PostTask(FROM_HERE, GetDestroyClosure());
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+      FROM_HERE, GetDestroyClosure());
 }
 
 void BaseWindow::OnWindowEndSession() {
@@ -209,7 +210,6 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
                                     const gfx::ResizeEdge& edge,
                                     bool* prevent_default) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::Locker locker(isolate);
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary info = gin::Dictionary::CreateEmpty(isolate);
   info.Set("edge", edge);
@@ -250,14 +250,6 @@ void BaseWindow::OnWindowLeaveFullScreen() {
   Emit("leave-full-screen");
 }
 
-void BaseWindow::OnWindowScrollTouchBegin() {
-  Emit("scroll-touch-begin");
-}
-
-void BaseWindow::OnWindowScrollTouchEnd() {
-  Emit("scroll-touch-end");
-}
-
 void BaseWindow::OnWindowSwipe(const std::string& direction) {
   Emit("swipe", direction);
 }
@@ -291,7 +283,7 @@ void BaseWindow::OnExecuteAppCommand(const std::string& command_name) {
 }
 
 void BaseWindow::OnTouchBarItemResult(const std::string& item_id,
-                                      const base::DictionaryValue& details) {
+                                      const base::Value::Dict& details) {
   Emit("-touch-bar-interaction", item_id, details);
 }
 
@@ -309,7 +301,6 @@ void BaseWindow::OnSystemContextMenu(int x, int y, bool* prevent_default) {
 void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
   if (IsWindowMessageHooked(message)) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-    v8::Locker locker(isolate);
     v8::HandleScope scope(isolate);
     messages_callback_map_[message].Run(
         ToBuffer(isolate, static_cast<void*>(&w_param), sizeof(WPARAM)),
@@ -651,6 +642,10 @@ std::string BaseWindow::GetBackgroundColor(gin_helper::Arguments* args) {
   return ToRGBHex(window_->GetBackgroundColor());
 }
 
+void BaseWindow::InvalidateShadow() {
+  window_->InvalidateShadow();
+}
+
 void BaseWindow::SetHasShadow(bool has_shadow) {
   window_->SetHasShadow(has_shadow);
 }
@@ -757,61 +752,54 @@ void BaseWindow::SetParentWindow(v8::Local<v8::Value> value,
   }
 }
 
-void BaseWindow::SetBrowserView(v8::Local<v8::Value> value) {
+void BaseWindow::SetBrowserView(
+    absl::optional<gin::Handle<BrowserView>> browser_view) {
   ResetBrowserViews();
-  AddBrowserView(value);
+  if (browser_view)
+    AddBrowserView(*browser_view);
 }
 
-void BaseWindow::AddBrowserView(v8::Local<v8::Value> value) {
-  gin::Handle<BrowserView> browser_view;
-  if (value->IsObject() &&
-      gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto get_that_view = browser_views_.find(browser_view->ID());
-    if (get_that_view == browser_views_.end()) {
-      // If we're reparenting a BrowserView, ensure that it's detached from
-      // its previous owner window.
-      auto* owner_window = browser_view->owner_window();
-      if (owner_window && owner_window != window_.get()) {
-        owner_window->RemoveBrowserView(browser_view->view());
-        browser_view->SetOwnerWindow(nullptr);
-      }
-
-      window_->AddBrowserView(browser_view->view());
-      browser_view->SetOwnerWindow(window_.get());
-      browser_views_[browser_view->ID()].Reset(isolate(), value);
-    }
-  }
-}
-
-void BaseWindow::RemoveBrowserView(v8::Local<v8::Value> value) {
-  gin::Handle<BrowserView> browser_view;
-  if (value->IsObject() &&
-      gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto get_that_view = browser_views_.find(browser_view->ID());
-    if (get_that_view != browser_views_.end()) {
-      window_->RemoveBrowserView(browser_view->view());
+void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
+  auto iter = browser_views_.find(browser_view->ID());
+  if (iter == browser_views_.end()) {
+    // If we're reparenting a BrowserView, ensure that it's detached from
+    // its previous owner window.
+    BaseWindow* owner_window = browser_view->owner_window();
+    if (owner_window) {
+      // iter == browser_views_.end() should imply owner_window != this.
+      DCHECK_NE(owner_window, this);
+      owner_window->RemoveBrowserView(browser_view);
       browser_view->SetOwnerWindow(nullptr);
-      (*get_that_view).second.Reset(isolate(), value);
-      browser_views_.erase(get_that_view);
     }
+
+    window_->AddBrowserView(browser_view->view());
+    window_->AddDraggableRegionProvider(browser_view.get());
+    browser_view->SetOwnerWindow(this);
+    browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
   }
 }
 
-void BaseWindow::SetTopBrowserView(v8::Local<v8::Value> value,
-                                   gin_helper::Arguments* args) {
-  gin::Handle<BrowserView> browser_view;
-  if (value->IsObject() &&
-      gin::ConvertFromV8(isolate(), value, &browser_view)) {
-    auto* owner_window = browser_view->owner_window();
-    auto get_that_view = browser_views_.find(browser_view->ID());
-    if (get_that_view == browser_views_.end() ||
-        (owner_window && owner_window != window_.get())) {
-      args->ThrowError("Given BrowserView is not attached to the window");
-      return;
-    }
-
-    window_->SetTopBrowserView(browser_view->view());
+void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
+  auto iter = browser_views_.find(browser_view->ID());
+  if (iter != browser_views_.end()) {
+    window_->RemoveBrowserView(browser_view->view());
+    window_->RemoveDraggableRegionProvider(browser_view.get());
+    browser_view->SetOwnerWindow(nullptr);
+    iter->second.Reset();
+    browser_views_.erase(iter);
   }
+}
+
+void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
+                                   gin_helper::Arguments* args) {
+  BaseWindow* owner_window = browser_view->owner_window();
+  auto iter = browser_views_.find(browser_view->ID());
+  if (iter == browser_views_.end() || (owner_window && owner_window != this)) {
+    args->ThrowError("Given BrowserView is not attached to the window");
+    return;
+  }
+
+  window_->SetTopBrowserView(browser_view->view());
 }
 
 std::string BaseWindow::GetMediaSourceId() const {
@@ -899,6 +887,16 @@ void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
 gfx::Point BaseWindow::GetTrafficLightPosition() const {
   // For backward compatibility we treat default value as (0, 0).
   return window_->GetTrafficLightPosition().value_or(gfx::Point());
+}
+#endif
+
+#if BUILDFLAG(IS_MAC)
+bool BaseWindow::IsHiddenInMissionControl() {
+  return window_->IsHiddenInMissionControl();
+}
+
+void BaseWindow::SetHiddenInMissionControl(bool hidden) {
+  window_->SetHiddenInMissionControl(hidden);
 }
 #endif
 
@@ -1131,11 +1129,12 @@ void BaseWindow::ResetBrowserViews() {
         !browser_view.IsEmpty()) {
       // There's a chance that the BrowserView may have been reparented - only
       // reset if the owner window is *this* window.
-      auto* owner_window = browser_view->owner_window();
-      if (owner_window && owner_window == window_.get()) {
-        browser_view->SetOwnerWindow(nullptr);
-        owner_window->RemoveBrowserView(browser_view->view());
-      }
+      BaseWindow* owner_window = browser_view->owner_window();
+      DCHECK_EQ(owner_window, this);
+      browser_view->SetOwnerWindow(nullptr);
+      window_->RemoveBrowserView(browser_view->view());
+      window_->RemoveDraggableRegionProvider(browser_view.get());
+      browser_view->SetOwnerWindow(nullptr);
     }
 
     item.second.Reset();
@@ -1267,6 +1266,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("isVisibleOnAllWorkspaces",
                  &BaseWindow::IsVisibleOnAllWorkspaces)
 #if BUILDFLAG(IS_MAC)
+      .SetMethod("invalidateShadow", &BaseWindow::InvalidateShadow)
       .SetMethod("_getAlwaysOnTopLevel", &BaseWindow::GetAlwaysOnTopLevel)
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
@@ -1277,6 +1277,14 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("getTrafficLightPosition",
                  &BaseWindow::GetTrafficLightPosition)
 #endif
+
+#if BUILDFLAG(IS_MAC)
+      .SetMethod("isHiddenInMissionControl",
+                 &BaseWindow::IsHiddenInMissionControl)
+      .SetMethod("setHiddenInMissionControl",
+                 &BaseWindow::SetHiddenInMissionControl)
+#endif
+
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
@@ -1325,9 +1333,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetProperty("id", &BaseWindow::GetID);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 namespace {
 

@@ -72,7 +72,7 @@ contextBridge.exposeInMainWorld('myAPI', {
 
 ## Usage with TypeScript
 
-If you're building your Electron app with TypeScript, you'll want to add types to your APIs exposed over the context bridge. The renderer's `window` object won't have the correct typings unless you extend the types with a [declaration file].
+If you're building your Electron app with TypeScript, you'll want to add types to your APIs exposed over the context bridge. The renderer's `window` object won't have the correct typings unless you extend the types with a [declaration file][].
 
 For example, given this `preload.ts` script:
 

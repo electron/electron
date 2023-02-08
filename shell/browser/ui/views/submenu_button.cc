@@ -11,7 +11,7 @@
 #include "ui/gfx/color_utils.h"
 #include "ui/gfx/text_utils.h"
 #include "ui/views/animation/flood_fill_ink_drop_ripple.h"
-#include "ui/views/animation/ink_drop_host_view.h"
+#include "ui/views/animation/ink_drop_host.h"
 #include "ui/views/animation/ink_drop_impl.h"
 #include "ui/views/controls/button/label_button_border.h"
 
@@ -54,8 +54,8 @@ void SubmenuButton::SetUnderlineColor(SkColor color) {
 }
 
 void SubmenuButton::GetAccessibleNodeData(ui::AXNodeData* node_data) {
-  node_data->SetName(GetAccessibleName());
   node_data->role = ax::mojom::Role::kPopUpButton;
+  node_data->SetName(GetAccessibleName());
 }
 
 void SubmenuButton::PaintButtonContents(gfx::Canvas* canvas) {

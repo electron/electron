@@ -1,0 +1,240 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <sattard@slack-corp.com>
+Date: Mon, 4 Mar 2019 14:43:36 -0800
+Subject: mas: avoid usage of private macOS APIs
+
+Disable usage of the following private APIs in MAS builds:
+* abort_report_np
+* pthread_fchdir_np
+* pthread_chdir_np
+* SetApplicationIsDaemon
+* _LSSetApplicationLaunchServicesServerConnectionStatus
+* AreDeviceAndUserJoinedToDomain
+* _CFIsObjC
+* AudioDeviceDuck
+
+diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
+index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2ee3295d68 100644
+--- a/base/enterprise_util_mac.mm
++++ b/base/enterprise_util_mac.mm
+@@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
+ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+   static DeviceUserDomainJoinState state = [] {
+     DeviceUserDomainJoinState state{false, false};
++#if IS_MAS_BUILD()
++    return state;
++  }();
++
++  return state;
++}
++#else
+ 
+     @autoreleasepool {
+       ODSession* session = [ODSession defaultSession];
+@@ -295,5 +302,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+ 
+   return state;
+ }
++#endif
+ 
+ }  // namespace base
+diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
+index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593e14fb701 100644
+--- a/base/mac/foundation_util.mm
++++ b/base/mac/foundation_util.mm
+@@ -28,12 +28,6 @@
+ extern "C" {
+ CFTypeID SecKeyGetTypeID();
+ #if !BUILDFLAG(IS_IOS)
+-// The NSFont/CTFont toll-free bridging is broken before 10.15.
+-// https://openradar.appspot.com/15341349
+-//
+-// TODO(https://crbug.com/1076527): This is fixed in 10.15. When 10.15 is the
+-// minimum OS for Chromium, remove this SPI declaration.
+-Boolean _CFIsObjC(CFTypeID typeID, CFTypeRef obj);
+ #endif
+ }  // extern "C"
+ 
+@@ -315,8 +309,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+       const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
+   DCHECK(!cf_val ||
+          CTFontGetTypeID() == CFGetTypeID(cf_val) ||
+-         (_CFIsObjC(CTFontGetTypeID(), cf_val) &&
+-          [ns_val isKindOfClass:[NSFont class]]));
++         ([ns_val isKindOfClass:[NSFont class]]));
+   return ns_val;
+ }
+ 
+@@ -387,9 +380,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+     return (CTFontRef)(cf_val);
+   }
+ 
+-  if (!_CFIsObjC(CTFontGetTypeID(), cf_val))
+-    return NULL;
+-
+   id<NSObject> ns_val = reinterpret_cast<id>(const_cast<void*>(cf_val));
+   if ([ns_val isKindOfClass:[NSFont class]]) {
+     return (CTFontRef)(cf_val);
+diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
+index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c479b8f03 100644
+--- a/base/process/launch_mac.cc
++++ b/base/process/launch_mac.cc
+@@ -19,14 +19,19 @@
+ #include "base/threading/scoped_blocking_call.h"
+ #include "base/threading/thread_restrictions.h"
+ #include "base/trace_event/base_tracing.h"
++#if IS_MAS_BUILD()
++#include <sys/syscall.h>
++#endif
+ 
+ extern "C" {
+ // Changes the current thread's directory to a path or directory file
+ // descriptor. libpthread only exposes a syscall wrapper starting in
+ // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
+ // the syscall is issued directly.
++#if !IS_MAS_BUILD()
+ int pthread_chdir_np(const char* dir) API_AVAILABLE(macosx(10.12));
+ int pthread_fchdir_np(int fd) API_AVAILABLE(macosx(10.12));
++#endif
+ 
+ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
+     API_AVAILABLE(macosx(10.14));
+@@ -95,13 +100,27 @@ class PosixSpawnFileActions {
+ };
+ 
+ int ChangeCurrentThreadDirectory(const char* path) {
++#if IS_MAS_BUILD()
++  #pragma clang diagnostic push
++  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
++  return syscall(SYS___pthread_chdir, path);
++  #pragma clang diagnostic pop
++#else
+   return pthread_chdir_np(path);
++#endif
+ }
+ 
+ // The recommended way to unset a per-thread cwd is to set a new value to an
+ // invalid file descriptor, per libpthread-218.1.3/private/private.h.
+ int ResetCurrentThreadDirectory() {
++#if IS_MAS_BUILD()
++  #pragma clang diagnostic push
++  #pragma clang diagnostic ignored "-Wdeprecated-declarations"
++  return syscall(SYS___pthread_fchdir, -1);
++  #pragma clang diagnostic pop
++#else
+   return pthread_fchdir_np(-1);
++#endif
+ }
+ 
+ struct GetAppOutputOptions {
+@@ -221,11 +240,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+     file_actions.Inherit(STDERR_FILENO);
+   }
+ 
++#if 0
+   if (options.disclaim_responsibility) {
+     if (__builtin_available(macOS 10.14, *)) {
+       DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
+     }
+   }
++#endif
+ 
+   std::vector<char*> argv_cstr;
+   argv_cstr.reserve(argv.size() + 1);
+diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
+index 72b78e9a7b80a37247c4c8e5468e17a5464e9d12..71fb7cfe4a0a8cd329940af5b0b371731ee2567a 100644
+--- a/media/audio/mac/audio_low_latency_input_mac.cc
++++ b/media/audio/mac/audio_low_latency_input_mac.cc
+@@ -31,19 +31,23 @@
+ 
+ namespace {
+ extern "C" {
++#if !IS_MAS_BUILD()
+ // See:
+ // https://trac.webkit.org/browser/webkit/trunk/Source/WebCore/PAL/pal/spi/cf/CoreAudioSPI.h?rev=228264
+ OSStatus AudioDeviceDuck(AudioDeviceID inDevice,
+                          Float32 inDuckedLevel,
+                          const AudioTimeStamp* __nullable inStartTime,
+                          Float32 inRampDuration) __attribute__((weak_import));
++#endif
+ }
+ 
+ void UndoDucking(AudioDeviceID output_device_id) {
++#if !IS_MAS_BUILD()
+   if (AudioDeviceDuck != nullptr) {
+     // Ramp the volume back up over half a second.
+     AudioDeviceDuck(output_device_id, 1.0, nullptr, 0.5);
+   }
++#endif
+ }
+ 
+ }  // namespace
+diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
+index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
+--- a/sandbox/mac/sandbox_logging.cc
++++ b/sandbox/mac/sandbox_logging.cc
+@@ -32,9 +32,11 @@
+   }
+ #endif
+ 
++#if !IS_MAS_BUILD()
+ extern "C" {
+ void abort_report_np(const char*, ...);
+ }
++#endif
+ 
+ namespace sandbox::logging {
+ 
+@@ -71,9 +73,11 @@ void SendOsLog(Level level, const char* message) {
+ 
+   os_log_with_type(log.get(), os_log_type, "%{public}s", message);
+ 
++#if !IS_MAS_BUILD()
+   if (level == Level::FATAL) {
+     abort_report_np(message);
+   }
++#endif
+ }
+ 
+ // |error| is strerror(errno) when a P* logging function is called. Pass
+diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
+index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
+--- a/sandbox/mac/system_services.cc
++++ b/sandbox/mac/system_services.cc
+@@ -9,6 +9,7 @@
+ 
+ #include "base/mac/mac_logging.h"
+ 
++#if !IS_MAS_BUILD()
+ extern "C" {
+ OSStatus SetApplicationIsDaemon(Boolean isDaemon);
+ void _LSSetApplicationLaunchServicesServerConnectionStatus(
+@@ -19,10 +20,12 @@ void _LSSetApplicationLaunchServicesServerConnectionStatus(
+ // https://github.com/WebKit/webkit/commit/8da694b0b3febcc262653d01a45e946ce91845ed.
+ void _CSCheckFixDisable() API_AVAILABLE(macosx(10.15));
+ }  // extern "C"
++#endif
+ 
+ namespace sandbox {
+ 
+ void DisableLaunchServices() {
++  #if !IS_MAS_BUILD()
+   // Allow the process to continue without a LaunchServices ASN. The
+   // INIT_Process function in HIServices will abort if it cannot connect to
+   // launchservicesd to get an ASN. By setting this flag, HIServices skips
+@@ -36,12 +39,15 @@ void DisableLaunchServices() {
+       0, ^bool(CFDictionaryRef options) {
+         return false;
+       });
++  #endif
+ }
+ 
+ void DisableCoreServicesCheckFix() {
++#if !IS_MAS_BUILD()
+   if (__builtin_available(macOS 10.15, *)) {
+     _CSCheckFixDisable();
+   }
++#endif
+ }
+ 
+ }  // namespace sandbox

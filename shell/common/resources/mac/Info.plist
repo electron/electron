@@ -14,5 +14,10 @@
 	<true/>
 	<key>CFBundleVersion</key>
 	<string>${ELECTRON_VERSION}</string>
+	<key>LSEnvironment</key>
+	<dict>
+		<key>MallocNanoZone</key>
+		<string>0</string>
+	</dict>
 </dict>
 </plist>

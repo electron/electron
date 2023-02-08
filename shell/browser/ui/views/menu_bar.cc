@@ -14,7 +14,7 @@
 #include "ui/views/layout/box_layout.h"
 
 #if BUILDFLAG(IS_LINUX)
-#include "ui/gtk/gtk_util.h"
+#include "ui/gtk/gtk_util.h"  // nogncheck
 #endif
 
 #if BUILDFLAG(IS_WIN)
@@ -38,8 +38,7 @@ MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
   RefreshColorCache(theme);
   UpdateViewColors();
 #if BUILDFLAG(IS_WIN)
-  SetBackground(
-      views::CreateThemedSolidBackground(this, ui::kColorMenuBackground));
+  SetBackground(views::CreateThemedSolidBackground(ui::kColorMenuBackground));
   background_color_ = GetBackground()->get_color();
 #endif
   SetFocusBehavior(FocusBehavior::ALWAYS);
@@ -82,7 +81,7 @@ void MenuBar::ActivateAccelerator(char16_t key) {
     static_cast<SubmenuButton*>(child)->Activate(nullptr);
 }
 
-int MenuBar::GetItemCount() const {
+size_t MenuBar::GetItemCount() const {
   return menu_model_ ? menu_model_->GetItemCount() : 0;
 }
 
@@ -93,7 +92,7 @@ bool MenuBar::GetMenuButtonFromScreenPoint(const gfx::Point& screenPoint,
     return false;
 
   auto children = GetChildrenInZOrder();
-  for (int i = 0, n = children.size(); i < n; ++i) {
+  for (size_t i = 0, n = children.size(); i < n; ++i) {
     if (children[i]->GetBoundsInScreen().Contains(screenPoint) &&
         (menu_model_->GetTypeAt(i) == ElectronMenuModel::TYPE_SUBMENU)) {
       *menu_model = menu_model_->GetSubmenuModelAt(i);
@@ -175,7 +174,7 @@ const char* MenuBar::GetClassName() const {
   return kViewClassName;
 }
 
-void MenuBar::ButtonPressed(int id, const ui::Event& event) {
+void MenuBar::ButtonPressed(size_t id, const ui::Event& event) {
   // Hide the accelerator when a submenu is activated.
   SetAcceleratorVisibility(pane_has_focus());
 
@@ -194,7 +193,8 @@ void MenuBar::ButtonPressed(int id, const ui::Event& event) {
   SubmenuButton* source = nullptr;
   for (auto* child : children()) {
     auto* button = static_cast<SubmenuButton*>(child);
-    if (button->tag() == id) {
+    int button_id = button->GetID();
+    if (button_id >= 0 && static_cast<size_t>(button_id) == id) {
       source = button;
       break;
     }
@@ -223,11 +223,11 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
 
 void MenuBar::RebuildChildren() {
   RemoveAllChildViews();
-  for (int i = 0, n = GetItemCount(); i < n; ++i) {
+  for (size_t i = 0, n = GetItemCount(); i < n; ++i) {
     auto* button = new SubmenuButton(
         base::BindRepeating(&MenuBar::ButtonPressed, base::Unretained(this), i),
         menu_model_->GetLabelAt(i), background_color_);
-    button->set_tag(i);
+    button->SetID(i);
     AddChildView(button);
   }
   UpdateViewColors();

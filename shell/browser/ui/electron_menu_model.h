@@ -81,20 +81,20 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   void AddObserver(Observer* obs) { observers_.AddObserver(obs); }
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
 
-  void SetToolTip(int index, const std::u16string& toolTip);
-  std::u16string GetToolTipAt(int index);
-  void SetRole(int index, const std::u16string& role);
-  std::u16string GetRoleAt(int index);
-  void SetSecondaryLabel(int index, const std::u16string& sublabel);
-  std::u16string GetSecondaryLabelAt(int index) const override;
-  bool GetAcceleratorAtWithParams(int index,
+  void SetToolTip(size_t index, const std::u16string& toolTip);
+  std::u16string GetToolTipAt(size_t index);
+  void SetRole(size_t index, const std::u16string& role);
+  std::u16string GetRoleAt(size_t index);
+  void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
+  std::u16string GetSecondaryLabelAt(size_t index) const override;
+  bool GetAcceleratorAtWithParams(size_t index,
                                   bool use_default_accelerator,
                                   ui::Accelerator* accelerator) const;
-  bool ShouldRegisterAcceleratorAt(int index) const;
-  bool WorksWhenHiddenAt(int index) const;
+  bool ShouldRegisterAcceleratorAt(size_t index) const;
+  bool WorksWhenHiddenAt(size_t index) const;
 #if BUILDFLAG(IS_MAC)
   // Return the SharingItem of menu item.
-  bool GetSharingItemAt(int index, SharingItem* item) const;
+  bool GetSharingItemAt(size_t index, SharingItem* item) const;
   // Set/Get the SharingItem of this menu.
   void SetSharingItem(SharingItem item);
   const absl::optional<SharingItem>& GetSharingItem() const;
@@ -109,7 +109,7 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   }
 
   using SimpleMenuModel::GetSubmenuModelAt;
-  ElectronMenuModel* GetSubmenuModelAt(int index);
+  ElectronMenuModel* GetSubmenuModelAt(size_t index);
 
  private:
   Delegate* delegate_;  // weak ref.

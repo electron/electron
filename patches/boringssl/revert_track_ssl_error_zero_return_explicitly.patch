@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 6 Sep 2022 09:42:52 +0200
+Subject: revert: track SSL_ERROR_ZERO_RETURN explicitly.
+
+This reverts commit ebd8b8965c74ab06bb91f7a00b23822e1f1f26ca.
+
+It is causing significant TLS failures in Node.js.
+
+diff --git a/ssl/ssl_buffer.cc b/ssl/ssl_buffer.cc
+index 2ca14efae5ea478f43794a81883b00dfdb1a37b0..d73055fbf39334925ef4b4804bbaca57c4a4d5d3 100644
+--- a/ssl/ssl_buffer.cc
++++ b/ssl/ssl_buffer.cc
+@@ -232,7 +232,6 @@ int ssl_handle_open_record(SSL *ssl, bool *out_retry, ssl_open_record_t ret,
+       return 1;
+ 
+     case ssl_open_record_close_notify:
+-      ssl->s3->rwstate = SSL_ERROR_ZERO_RETURN;
+       return 0;
+ 
+     case ssl_open_record_error:
+diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
+index 0f0f5b1c32f88ec019fc3eab0977c9bb64c095ed..e25b72ec1e43c52d329d4f396776698526685439 100644
+--- a/ssl/ssl_lib.cc
++++ b/ssl/ssl_lib.cc
+@@ -1320,7 +1320,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
+   }
+ 
+   if (ret_code == 0) {
+-    if (ssl->s3->rwstate == SSL_ERROR_ZERO_RETURN) {
++    if (ssl->s3->read_shutdown == ssl_shutdown_close_notify) {
+       return SSL_ERROR_ZERO_RETURN;
+     }
+     // An EOF was observed which violates the protocol, and the underlying
+@@ -2598,13 +2598,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
+   return CRYPTO_get_ex_data(&ctx->ex_data, idx);
+ }
+ 
+-int SSL_want(const SSL *ssl) {
+-  // Historically, OpenSSL did not track |SSL_ERROR_ZERO_RETURN| as an |rwstate|
+-  // value. We do, but map it back to |SSL_ERROR_NONE| to preserve the original
+-  // behavior.
+-  return ssl->s3->rwstate == SSL_ERROR_ZERO_RETURN ? SSL_ERROR_NONE
+-                                                   : ssl->s3->rwstate;
+-}
++int SSL_want(const SSL *ssl) { return ssl->s3->rwstate; }
+ 
+ void SSL_CTX_set_tmp_rsa_callback(SSL_CTX *ctx,
+                                   RSA *(*cb)(SSL *ssl, int is_export,
+diff --git a/ssl/ssl_test.cc b/ssl/ssl_test.cc
+index 17209298f84bcd248c0367a4cc8fb88074705b5e..fa6d7d22a26c520896ea8b8b1f0e5cf816a52812 100644
+--- a/ssl/ssl_test.cc
++++ b/ssl/ssl_test.cc
+@@ -8437,11 +8437,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+   EXPECT_EQ(ret, 0);
+   EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
+ 
+-  // Further calls to |SSL_read| continue to report |SSL_ERROR_ZERO_RETURN|.
+-  ret = SSL_read(client.get(), buf, sizeof(buf));
+-  EXPECT_EQ(ret, 0);
+-  EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
+-
+   // Although the client has seen close_notify, it should continue to report
+   // |SSL_ERROR_SYSCALL| when its writes fail.
+   ret = SSL_write(client.get(), data, sizeof(data));
+@@ -8449,22 +8444,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+   EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
+   EXPECT_TRUE(write_failed);
+   write_failed = false;
+-
+-  // Cause |BIO_write| to fail with a return value of zero instead.
+-  // |SSL_get_error| should not misinterpret this as a close_notify.
+-  //
+-  // This is not actually a correct implementation of |BIO_write|, but the rest
+-  // of the code treats zero from |BIO_write| as an error, so ensure it does so
+-  // correctly. Fixing https://crbug.com/boringssl/503 will make this case moot.
+-  BIO_meth_set_write(method.get(), [](BIO *, const char *, int) -> int {
+-    write_failed = true;
+-    return 0;
+-  });
+-  ret = SSL_write(client.get(), data, sizeof(data));
+-  EXPECT_EQ(ret, 0);
+-  EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
+-  EXPECT_TRUE(write_failed);
+-  write_failed = false;
+ }
+ 
+ // Test that |SSL_shutdown|, when quiet shutdown is enabled, simulates receiving
