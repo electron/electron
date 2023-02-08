@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/common/gin_helper/preventable_event.h"
+#include "shell/common/gin_helper/event.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 

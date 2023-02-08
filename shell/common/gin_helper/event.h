@@ -2,8 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_PREVENTABLE_EVENT_H_
-#define ELECTRON_SHELL_COMMON_GIN_HELPER_PREVENTABLE_EVENT_H_
+#ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_H_
+#define ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_H_
 
 #include "gin/handle.h"
 #include "gin/wrappable.h"
@@ -51,4 +51,4 @@ gin::Handle<Event> CreateEvent(v8::Isolate* isolate,
 
 }  // namespace gin_helper::internal
 
-#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_PREVENTABLE_EVENT_H_
+#endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_H_
