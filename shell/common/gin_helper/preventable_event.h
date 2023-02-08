@@ -46,8 +46,8 @@ class Event : public gin::Wrappable<Event>,
   v8::Global<v8::Object> sender_;
 };
 
-gin::Handle<Event> CreateCustomEvent(v8::Isolate* isolate,
-                                     v8::Local<v8::Object> sender);
+gin::Handle<Event> CreateEvent(v8::Isolate* isolate,
+                               v8::Local<v8::Object> sender);
 
 }  // namespace gin_helper::internal
 

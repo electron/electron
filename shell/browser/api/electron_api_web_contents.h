@@ -365,7 +365,7 @@ class WebContents : public ExclusiveAccessContext,
         MakeEventWithSender(isolate, frame, std::move(callback));
     if (event.IsEmpty())
       return false;
-    EmitWithoutCustomEvent(name, event, std::forward<Args>(args)...);
+    EmitWithoutEvent(name, event, std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
   }
 

@@ -35,8 +35,8 @@ v8::Local<v8::Object> Event::GetSender(v8::Isolate* isolate) {
 
 gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-gin::Handle<Event> CreateCustomEvent(v8::Isolate* isolate,
-                                     v8::Local<v8::Object> sender) {
+gin::Handle<Event> CreateEvent(v8::Isolate* isolate,
+                               v8::Local<v8::Object> sender) {
   return Event::New(isolate, sender);
 }
 
