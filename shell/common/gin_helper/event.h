@@ -43,8 +43,6 @@ class Event : public gin::Wrappable<Event>,
   bool default_prevented_ = false;
 };
 
-gin::Handle<Event> CreateEvent(v8::Isolate* isolate);
-
 }  // namespace gin_helper::internal
 
 #endif  // ELECTRON_SHELL_COMMON_GIN_HELPER_EVENT_H_

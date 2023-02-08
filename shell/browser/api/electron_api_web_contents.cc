@@ -1875,7 +1875,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
   if (!GetWrapper(isolate).ToLocal(&wrapper))
     return gin::Handle<gin_helper::internal::Event>();
   gin::Handle<gin_helper::internal::Event> event =
-      gin_helper::internal::CreateEvent(isolate);
+      gin_helper::internal::Event::New(isolate);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
   if (callback)
     dict.Set("_replyChannel",

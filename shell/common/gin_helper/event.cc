@@ -28,8 +28,4 @@ Event::~Event() = default;
 
 gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-gin::Handle<Event> CreateEvent(v8::Isolate* isolate) {
-  return Event::New(isolate);
-}
-
 }  // namespace gin_helper::internal
