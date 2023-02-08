@@ -1,0 +1,1597 @@
+From 9db020e7589507b5eb11b85a333d93011698c37f Mon Sep 17 00:00:00 2001
+From: Leszek Swirski <leszeks@chromium.org>
+Date: Mon, 05 Dec 2022 15:15:59 +0100
+Subject: [PATCH] [maglev] Record the maximum call args
+
+To handle stack overflow correctly, we need to check for stack overflow
+during calls in the caller, before pushing too many arguments onto the
+stack.
+
+Handle this in Maglev same as in TurboFan and Sparkplug -- calculate the
+maximum size of calls, and use this in the function entry stack check,
+rather than checking on each call.
+
+Bug: v8:7700
+Change-Id: I521bee3f5386d5100f94142a5054eb9a1434284a
+Fixed: chromium:1384403
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4079009
+Commit-Queue: Victor Gomes <victorgomes@chromium.org>
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#84650}
+---
+
+diff --git a/src/codegen/x64/macro-assembler-x64.h b/src/codegen/x64/macro-assembler-x64.h
+index 59a642e..7c84947 100644
+--- a/src/codegen/x64/macro-assembler-x64.h
++++ b/src/codegen/x64/macro-assembler-x64.h
+@@ -116,7 +116,7 @@
+ 
+   // Calculate the number of stack slots to reserve for arguments when calling a
+   // C function.
+-  int ArgumentStackSlotsForCFunctionCall(int num_arguments);
++  static int ArgumentStackSlotsForCFunctionCall(int num_arguments);
+ 
+   void CheckPageFlag(Register object, Register scratch, int mask, Condition cc,
+                      Label* condition_met,
+diff --git a/src/maglev/arm64/maglev-assembler-arm64.cc b/src/maglev/arm64/maglev-assembler-arm64.cc
+index bac7e15..d5699f7 100644
+--- a/src/maglev/arm64/maglev-assembler-arm64.cc
++++ b/src/maglev/arm64/maglev-assembler-arm64.cc
+@@ -79,9 +79,12 @@
+     Register stack_slots_size = temps.AcquireX();
+     Register interrupt_stack_limit = temps.AcquireX();
+     Mov(stack_slots_size, fp);
+-    // TODO(leszeks): Include a max call argument size here.
++    // Round up the stack slots and max call args separately, since both will be
++    // padded by their respective uses.
++    const int max_stack_slots_used = RoundUp<2>(remaining_stack_slots) +
++                                     RoundUp<2>(graph->max_call_stack_args());
+     Sub(stack_slots_size, stack_slots_size,
+-        Immediate(remaining_stack_slots * kSystemPointerSize));
++        Immediate(max_stack_slots_used * kSystemPointerSize));
+     LoadStackLimit(interrupt_stack_limit, StackLimitKind::kInterruptStackLimit);
+     Cmp(stack_slots_size, interrupt_stack_limit);
+ 
+diff --git a/src/maglev/arm64/maglev-ir-arm64.cc b/src/maglev/arm64/maglev-ir-arm64.cc
+index 560d1d6..bc9eed4 100644
+--- a/src/maglev/arm64/maglev-ir-arm64.cc
++++ b/src/maglev/arm64/maglev-ir-arm64.cc
+@@ -33,10 +33,10 @@
+ };
+ 
+ #define UNIMPLEMENTED_NODE(Node, ...)                                     \
+-  void Node ::SetValueLocationConstraints() {}                            \
++  void Node::SetValueLocationConstraints() {}                             \
+                                                                           \
+-  void Node ::GenerateCode(MaglevAssembler* masm,                         \
+-                           const ProcessingState& state) {                \
++  void Node::GenerateCode(MaglevAssembler* masm,                          \
++                          const ProcessingState& state) {                 \
+     USE(__VA_ARGS__);                                                     \
+   }                                                                       \
+   template <>                                                             \
+@@ -46,6 +46,10 @@
+     has_unimplemented_node_ = true;                                       \
+   }
+ 
++#define UNIMPLEMENTED_NODE_WITH_CALL(Node, ...)    \
++  int Node::MaxCallStackArgs() const { return 0; } \
++  UNIMPLEMENTED_NODE(Node, __VA_ARGS__)
++
+ // If we don't have a specialization, it means we have implemented the node.
+ template <typename NodeT>
+ void MaglevUnimplementedIRNode::Process(NodeT* node,
+@@ -103,7 +107,7 @@
+ UNIMPLEMENTED_NODE(Float64Subtract)
+ UNIMPLEMENTED_NODE(Float64Multiply)
+ UNIMPLEMENTED_NODE(Float64Divide)
+-UNIMPLEMENTED_NODE(Float64Exponentiate)
++UNIMPLEMENTED_NODE_WITH_CALL(Float64Exponentiate)
+ UNIMPLEMENTED_NODE(Float64Modulus)
+ UNIMPLEMENTED_NODE(Float64Negate)
+ UNIMPLEMENTED_NODE(Float64Equal)
+@@ -112,36 +116,36 @@
+ UNIMPLEMENTED_NODE(Float64LessThanOrEqual)
+ UNIMPLEMENTED_NODE(Float64GreaterThan)
+ UNIMPLEMENTED_NODE(Float64GreaterThanOrEqual)
+-UNIMPLEMENTED_NODE(Float64Ieee754Unary)
+-UNIMPLEMENTED_NODE(BuiltinStringFromCharCode)
+-UNIMPLEMENTED_NODE(BuiltinStringPrototypeCharCodeAt)
++UNIMPLEMENTED_NODE_WITH_CALL(Float64Ieee754Unary)
++UNIMPLEMENTED_NODE_WITH_CALL(BuiltinStringFromCharCode)
++UNIMPLEMENTED_NODE_WITH_CALL(BuiltinStringPrototypeCharCodeAt)
+ UNIMPLEMENTED_NODE(Call, receiver_mode_, target_type_, feedback_)
+-UNIMPLEMENTED_NODE(CallBuiltin)
+-UNIMPLEMENTED_NODE(CallRuntime)
+-UNIMPLEMENTED_NODE(CallWithArrayLike)
+-UNIMPLEMENTED_NODE(CallWithSpread)
+-UNIMPLEMENTED_NODE(CallKnownJSFunction)
+-UNIMPLEMENTED_NODE(Construct)
+-UNIMPLEMENTED_NODE(ConstructWithSpread)
++UNIMPLEMENTED_NODE_WITH_CALL(CallBuiltin)
++UNIMPLEMENTED_NODE_WITH_CALL(CallRuntime)
++UNIMPLEMENTED_NODE_WITH_CALL(CallWithArrayLike)
++UNIMPLEMENTED_NODE_WITH_CALL(CallWithSpread)
++UNIMPLEMENTED_NODE_WITH_CALL(CallKnownJSFunction)
++UNIMPLEMENTED_NODE_WITH_CALL(Construct)
++UNIMPLEMENTED_NODE_WITH_CALL(ConstructWithSpread)
+ UNIMPLEMENTED_NODE(ConvertReceiver, mode_)
+ UNIMPLEMENTED_NODE(ConvertHoleToUndefined)
+-UNIMPLEMENTED_NODE(CreateEmptyArrayLiteral)
+-UNIMPLEMENTED_NODE(CreateArrayLiteral)
+-UNIMPLEMENTED_NODE(CreateShallowArrayLiteral)
+-UNIMPLEMENTED_NODE(CreateObjectLiteral)
+-UNIMPLEMENTED_NODE(CreateEmptyObjectLiteral)
+-UNIMPLEMENTED_NODE(CreateShallowObjectLiteral)
+-UNIMPLEMENTED_NODE(CreateFunctionContext)
+-UNIMPLEMENTED_NODE(CreateClosure)
+-UNIMPLEMENTED_NODE(FastCreateClosure)
+-UNIMPLEMENTED_NODE(CreateRegExpLiteral)
+-UNIMPLEMENTED_NODE(DeleteProperty)
+-UNIMPLEMENTED_NODE(ForInPrepare)
+-UNIMPLEMENTED_NODE(ForInNext)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateEmptyArrayLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateArrayLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateShallowArrayLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateObjectLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateEmptyObjectLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateShallowObjectLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateFunctionContext)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateClosure)
++UNIMPLEMENTED_NODE_WITH_CALL(FastCreateClosure)
++UNIMPLEMENTED_NODE_WITH_CALL(CreateRegExpLiteral)
++UNIMPLEMENTED_NODE_WITH_CALL(DeleteProperty)
++UNIMPLEMENTED_NODE_WITH_CALL(ForInPrepare)
++UNIMPLEMENTED_NODE_WITH_CALL(ForInNext)
+ UNIMPLEMENTED_NODE(GeneratorRestoreRegister)
+-UNIMPLEMENTED_NODE(GetIterator)
++UNIMPLEMENTED_NODE_WITH_CALL(GetIterator)
+ UNIMPLEMENTED_NODE(GetSecondReturnedValue)
+-UNIMPLEMENTED_NODE(GetTemplateObject)
++UNIMPLEMENTED_NODE_WITH_CALL(GetTemplateObject)
+ UNIMPLEMENTED_NODE(LoadTaggedField)
+ UNIMPLEMENTED_NODE(LoadDoubleField)
+ UNIMPLEMENTED_NODE(LoadTaggedElement)
+@@ -151,23 +155,22 @@
+ UNIMPLEMENTED_NODE(LoadUnsignedIntTypedArrayElement, elements_kind_)
+ UNIMPLEMENTED_NODE(LoadDoubleTypedArrayElement, elements_kind_)
+ UNIMPLEMENTED_NODE(LoadDoubleElement)
+-UNIMPLEMENTED_NODE(LoadGlobal)
+-UNIMPLEMENTED_NODE(LoadNamedGeneric)
+-UNIMPLEMENTED_NODE(LoadNamedFromSuperGeneric)
+-UNIMPLEMENTED_NODE(SetNamedGeneric)
+-UNIMPLEMENTED_NODE(DefineNamedOwnGeneric)
+-UNIMPLEMENTED_NODE(StoreInArrayLiteralGeneric)
+-UNIMPLEMENTED_NODE(StoreGlobal)
+-UNIMPLEMENTED_NODE(GetKeyedGeneric)
+-UNIMPLEMENTED_NODE(SetKeyedGeneric)
+-UNIMPLEMENTED_NODE(DefineKeyedOwnGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(LoadGlobal)
++UNIMPLEMENTED_NODE_WITH_CALL(LoadNamedGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(LoadNamedFromSuperGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(SetNamedGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(DefineNamedOwnGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(StoreInArrayLiteralGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(StoreGlobal)
++UNIMPLEMENTED_NODE_WITH_CALL(GetKeyedGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(SetKeyedGeneric)
++UNIMPLEMENTED_NODE_WITH_CALL(DefineKeyedOwnGeneric)
+ UNIMPLEMENTED_NODE(Phi)
+-void Phi::SetValueLocationConstraintsInPostProcess() {}
+ UNIMPLEMENTED_NODE(RegisterInput)
+ UNIMPLEMENTED_NODE(CheckedSmiTagUint32)
+ UNIMPLEMENTED_NODE(UnsafeSmiTag)
+ UNIMPLEMENTED_NODE(CheckedInternalizedString, check_type_)
+-UNIMPLEMENTED_NODE(CheckedObjectToIndex)
++UNIMPLEMENTED_NODE_WITH_CALL(CheckedObjectToIndex)
+ UNIMPLEMENTED_NODE(CheckedTruncateNumberToInt32)
+ UNIMPLEMENTED_NODE(CheckedInt32ToUint32)
+ UNIMPLEMENTED_NODE(CheckedUint32ToInt32)
+@@ -184,19 +187,19 @@
+ UNIMPLEMENTED_NODE(CheckedFloat64Unbox)
+ UNIMPLEMENTED_NODE(LogicalNot)
+ UNIMPLEMENTED_NODE(SetPendingMessage)
+-UNIMPLEMENTED_NODE(StringAt)
++UNIMPLEMENTED_NODE_WITH_CALL(StringAt)
+ UNIMPLEMENTED_NODE(StringLength)
+ UNIMPLEMENTED_NODE(ToBoolean)
+ UNIMPLEMENTED_NODE(ToBooleanLogicalNot)
+ UNIMPLEMENTED_NODE(TaggedEqual)
+ UNIMPLEMENTED_NODE(TaggedNotEqual)
+-UNIMPLEMENTED_NODE(TestInstanceOf)
++UNIMPLEMENTED_NODE_WITH_CALL(TestInstanceOf)
+ UNIMPLEMENTED_NODE(TestUndetectable)
+ UNIMPLEMENTED_NODE(TestTypeOf, literal_)
+-UNIMPLEMENTED_NODE(ToName)
+-UNIMPLEMENTED_NODE(ToNumberOrNumeric)
+-UNIMPLEMENTED_NODE(ToObject)
+-UNIMPLEMENTED_NODE(ToString)
++UNIMPLEMENTED_NODE_WITH_CALL(ToName)
++UNIMPLEMENTED_NODE_WITH_CALL(ToNumberOrNumeric)
++UNIMPLEMENTED_NODE_WITH_CALL(ToObject)
++UNIMPLEMENTED_NODE_WITH_CALL(ToString)
+ UNIMPLEMENTED_NODE(AssertInt32, condition_, reason_)
+ UNIMPLEMENTED_NODE(CheckDynamicValue)
+ UNIMPLEMENTED_NODE(CheckInt32IsSmi)
+@@ -216,18 +219,18 @@
+ UNIMPLEMENTED_NODE(CheckValue)
+ UNIMPLEMENTED_NODE(CheckInstanceType, check_type_)
+ UNIMPLEMENTED_NODE(DebugBreak)
+-UNIMPLEMENTED_NODE(GeneratorStore)
++UNIMPLEMENTED_NODE_WITH_CALL(GeneratorStore)
+ UNIMPLEMENTED_NODE(JumpLoopPrologue, loop_depth_, unit_)
+-UNIMPLEMENTED_NODE(StoreMap)
++UNIMPLEMENTED_NODE_WITH_CALL(StoreMap)
+ UNIMPLEMENTED_NODE(StoreDoubleField)
+ UNIMPLEMENTED_NODE(StoreSignedIntDataViewElement, type_)
+ UNIMPLEMENTED_NODE(StoreDoubleDataViewElement)
+ UNIMPLEMENTED_NODE(StoreTaggedFieldNoWriteBarrier)
+-UNIMPLEMENTED_NODE(StoreTaggedFieldWithWriteBarrier)
+-UNIMPLEMENTED_NODE(ThrowReferenceErrorIfHole)
+-UNIMPLEMENTED_NODE(ThrowSuperNotCalledIfHole)
+-UNIMPLEMENTED_NODE(ThrowSuperAlreadyCalledIfNotHole)
+-UNIMPLEMENTED_NODE(ThrowIfNotSuperConstructor)
++UNIMPLEMENTED_NODE_WITH_CALL(StoreTaggedFieldWithWriteBarrier)
++UNIMPLEMENTED_NODE_WITH_CALL(ThrowReferenceErrorIfHole)
++UNIMPLEMENTED_NODE_WITH_CALL(ThrowSuperNotCalledIfHole)
++UNIMPLEMENTED_NODE_WITH_CALL(ThrowSuperAlreadyCalledIfNotHole)
++UNIMPLEMENTED_NODE_WITH_CALL(ThrowIfNotSuperConstructor)
+ UNIMPLEMENTED_NODE(BranchIfRootConstant)
+ UNIMPLEMENTED_NODE(BranchIfToBooleanTrue)
+ UNIMPLEMENTED_NODE(BranchIfReferenceCompare, operation_)
+@@ -237,7 +240,7 @@
+ UNIMPLEMENTED_NODE(BranchIfJSReceiver)
+ UNIMPLEMENTED_NODE(Switch)
+ UNIMPLEMENTED_NODE(JumpLoop)
+-UNIMPLEMENTED_NODE(Abort)
++UNIMPLEMENTED_NODE_WITH_CALL(Abort)
+ UNIMPLEMENTED_NODE(Deopt)
+ 
+ void Int32AddWithOverflow::SetValueLocationConstraints() {
+@@ -293,6 +296,7 @@
+          FieldMemOperand(feedback_cell, FeedbackCell::kInterruptBudgetOffset));
+ }
+ 
++int ReduceInterruptBudget::MaxCallStackArgs() const { return 1; }
+ void ReduceInterruptBudget::SetValueLocationConstraints() {}
+ void ReduceInterruptBudget::GenerateCode(MaglevAssembler* masm,
+                                          const ProcessingState& state) {
+diff --git a/src/maglev/maglev-compiler.cc b/src/maglev/maglev-compiler.cc
+index e017894..f9470fd 100644
+--- a/src/maglev/maglev-compiler.cc
++++ b/src/maglev/maglev-compiler.cc
+@@ -37,6 +37,7 @@
+ #include "src/maglev/maglev-interpreter-frame-state.h"
+ #include "src/maglev/maglev-ir-inl.h"
+ #include "src/maglev/maglev-ir.h"
++#include "src/maglev/maglev-regalloc-data.h"
+ #include "src/maglev/maglev-regalloc.h"
+ #include "src/objects/code-inl.h"
+ #include "src/objects/js-function.h"
+@@ -61,6 +62,33 @@
+ #undef DEF_PROCESS_NODE
+ };
+ 
++class MaxCallDepthProcessor {
++ public:
++  void PreProcessGraph(Graph* graph) {}
++  void PostProcessGraph(Graph* graph) {
++    graph->set_max_call_stack_args(max_call_stack_args_);
++  }
++  void PreProcessBasicBlock(BasicBlock* block) {}
++
++  template <typename NodeT>
++  void Process(NodeT* node, const ProcessingState& state) {
++    if constexpr (NodeT::kProperties.is_call() ||
++                  NodeT::kProperties.needs_register_snapshot()) {
++      int node_stack_args = node->MaxCallStackArgs();
++      if constexpr (NodeT::kProperties.needs_register_snapshot()) {
++        // Pessimistically assume that we'll push all registers in deferred
++        // calls.
++        node_stack_args +=
++            kAllocatableGeneralRegisterCount + kAllocatableDoubleRegisterCount;
++      }
++      max_call_stack_args_ = std::max(max_call_stack_args_, node_stack_args);
++    }
++  }
++
++ private:
++  int max_call_stack_args_ = 0;
++};
++
+ class UseMarkingProcessor {
+  public:
+   explicit UseMarkingProcessor(MaglevCompilationInfo* compilation_info)
+@@ -323,10 +351,12 @@
+ #endif
+ 
+   {
+-    // Preprocessing for register allocation:
++    // Preprocessing for register allocation and code gen:
+     //   - Collect input/output location constraints
++    //   - Find the maximum number of stack arguments passed to calls
+     //   - Collect use information, for SSA liveness and next-use distance.
+-    GraphMultiProcessor<ValueLocationConstraintProcessor, UseMarkingProcessor>
++    GraphMultiProcessor<ValueLocationConstraintProcessor, MaxCallDepthProcessor,
++                        UseMarkingProcessor>
+         processor(UseMarkingProcessor{compilation_info});
+     processor.ProcessGraph(graph);
+   }
+diff --git a/src/maglev/maglev-graph.h b/src/maglev/maglev-graph.h
+index cc084e8..0898ae4 100644
+--- a/src/maglev/maglev-graph.h
++++ b/src/maglev/maglev-graph.h
+@@ -51,6 +51,7 @@
+ 
+   uint32_t tagged_stack_slots() const { return tagged_stack_slots_; }
+   uint32_t untagged_stack_slots() const { return untagged_stack_slots_; }
++  uint32_t max_call_stack_args() const { return max_call_stack_args_; }
+   void set_tagged_stack_slots(uint32_t stack_slots) {
+     DCHECK_EQ(kMaxUInt32, tagged_stack_slots_);
+     DCHECK_NE(kMaxUInt32, stack_slots);
+@@ -61,6 +62,11 @@
+     DCHECK_NE(kMaxUInt32, stack_slots);
+     untagged_stack_slots_ = stack_slots;
+   }
++  void set_max_call_stack_args(uint32_t stack_slots) {
++    DCHECK_EQ(kMaxUInt32, max_call_stack_args_);
++    DCHECK_NE(kMaxUInt32, stack_slots);
++    max_call_stack_args_ = stack_slots;
++  }
+ 
+   ZoneMap<RootIndex, RootConstant*>& root() { return root_; }
+   ZoneMap<int, SmiConstant*>& smi() { return smi_; }
+@@ -79,6 +85,7 @@
+  private:
+   uint32_t tagged_stack_slots_ = kMaxUInt32;
+   uint32_t untagged_stack_slots_ = kMaxUInt32;
++  uint32_t max_call_stack_args_ = kMaxUInt32;
+   ZoneVector<BasicBlock*> blocks_;
+   ZoneMap<RootIndex, RootConstant*> root_;
+   ZoneMap<int, SmiConstant*> smi_;
+diff --git a/src/maglev/maglev-ir.h b/src/maglev/maglev-ir.h
+index 40b9e76..b31de7b 100644
+--- a/src/maglev/maglev-ir.h
++++ b/src/maglev/maglev-ir.h
+@@ -1698,6 +1698,7 @@
+    public:                                                            \
+     Name(uint64_t bitfield, const compiler::FeedbackSource& feedback) \
+         : Base(bitfield, feedback) {}                                 \
++    int MaxCallStackArgs() const { return 0; }                        \
+     void SetValueLocationConstraints();                               \
+     void GenerateCode(MaglevAssembler*, const ProcessingState&);      \
+     void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}    \
+@@ -1924,6 +1925,7 @@
+   Input& left_input() { return Node::input(kLeftIndex); }
+   Input& right_input() { return Node::input(kRightIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -1995,6 +1997,7 @@
+ 
+   Input& input() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -2195,6 +2198,7 @@
+ 
+   Input& input() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const { return 0; }
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2213,6 +2217,7 @@
+ 
+   Input& input() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const { return 0; }
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2231,6 +2236,7 @@
+ 
+   Input& input() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const { return 0; }
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2248,6 +2254,7 @@
+ 
+   Input& input() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const { return 0; }
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2563,6 +2570,7 @@
+   Input& callable() { return input(2); }
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2622,6 +2630,7 @@
+   Input& context() { return Node::input(0); }
+   Input& value_input() { return Node::input(1); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2643,6 +2652,7 @@
+   Input& value_input() { return Node::input(1); }
+   Object::Conversion mode() const { return mode_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2670,6 +2680,7 @@
+ 
+   LanguageMode mode() const { return mode_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -2714,6 +2725,7 @@
+     set_input(i + kFixedInputCount, node);
+   }
+ 
++  int MaxCallStackArgs() const;
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+@@ -2739,8 +2751,9 @@
+         unit_(unit) {}
+ 
+   static constexpr OpProperties kProperties =
+-      OpProperties::NeedsRegisterSnapshot() | OpProperties::EagerDeopt();
++      OpProperties::DeferredCall() | OpProperties::EagerDeopt();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2772,6 +2785,7 @@
+ 
+   int ReturnCount() const { return 2; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2801,6 +2815,7 @@
+   Input& cache_type() { return Node::input(3); }
+   Input& cache_index() { return Node::input(4); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2831,6 +2846,7 @@
+   int call_slot() const { return call_slot_; }
+   Handle<FeedbackVector> feedback() const { return feedback_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2867,6 +2883,7 @@
+   Input& context() { return Node::input(0); }
+   Input& value_input() { return Node::input(1); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -2886,6 +2903,7 @@
+   Input& context() { return Node::input(0); }
+   Input& value_input() { return Node::input(1); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3047,6 +3065,7 @@
+   static constexpr OpProperties kProperties =
+       OpProperties::GenericRuntimeOrBuiltinCall();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3076,6 +3095,7 @@
+   static constexpr OpProperties kProperties =
+       OpProperties::Call() | OpProperties::Throw() | OpProperties::LazyDeopt();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3107,6 +3127,7 @@
+   static constexpr OpProperties kProperties =
+       OpProperties::GenericRuntimeOrBuiltinCall();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3141,6 +3162,7 @@
+   static constexpr OpProperties kProperties =
+       OpProperties::Call() | OpProperties::Throw() | OpProperties::LazyDeopt();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3163,6 +3185,7 @@
+ 
+   compiler::MapRef map() { return map_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3197,6 +3220,7 @@
+   static constexpr OpProperties kProperties =
+       OpProperties::GenericRuntimeOrBuiltinCall();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3232,6 +3256,7 @@
+   static constexpr
+       typename Base::InputTypes kInputTypes{ValueRepresentation::kTagged};
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -3266,6 +3291,7 @@
+   static constexpr
+       typename Base::InputTypes kInputTypes{ValueRepresentation::kTagged};
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -3293,6 +3319,7 @@
+   // The implementation currently calls runtime.
+   static constexpr OpProperties kProperties = OpProperties::Call();
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3329,6 +3356,7 @@
+   static constexpr
+       typename Base::InputTypes kInputTypes{ValueRepresentation::kTagged};
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -3615,6 +3643,7 @@
+   static constexpr int kReceiverIndex = 0;
+   Input& receiver_input() { return input(kReceiverIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -3794,6 +3823,7 @@
+   static constexpr int kObjectIndex = 0;
+   Input& object_input() { return Node::input(kObjectIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3824,6 +3854,7 @@
+   }
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3846,6 +3877,7 @@
+ 
+   Input& code_input() { return input(0); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -3870,6 +3902,7 @@
+   Input& string_input() { return input(kStringIndex); }
+   Input& index_input() { return input(kIndexIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4268,6 +4301,7 @@
+   static constexpr int kObjectIndex = 0;
+   Input& object_input() { return input(kObjectIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4296,6 +4330,7 @@
+   Input& object_input() { return input(kObjectIndex); }
+   Input& value_input() { return input(kValueIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4327,6 +4362,7 @@
+ 
+   Input& context() { return input(0); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4356,6 +4392,7 @@
+   Input& context() { return input(0); }
+   Input& value() { return input(1); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4386,6 +4423,7 @@
+   Input& context() { return input(kContextIndex); }
+   Input& object_input() { return input(kObjectIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4421,6 +4459,7 @@
+   Input& receiver() { return input(kReceiverIndex); }
+   Input& lookup_start_object() { return input(kLookupStartObjectIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4454,6 +4493,7 @@
+   Input& object_input() { return input(kObjectIndex); }
+   Input& value_input() { return input(kValueIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4479,6 +4519,7 @@
+   Input& string_input() { return input(kStringIndex); }
+   Input& index_input() { return input(kIndexIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4498,6 +4539,7 @@
+   static constexpr int kObjectIndex = 0;
+   Input& object_input() { return input(kObjectIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4529,6 +4571,7 @@
+   Input& object_input() { return input(kObjectIndex); }
+   Input& value_input() { return input(kValueIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4564,6 +4607,7 @@
+   Input& name_input() { return input(kNameIndex); }
+   Input& value_input() { return input(kValueIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4595,6 +4639,7 @@
+   Input& object_input() { return input(kObjectIndex); }
+   Input& key_input() { return input(kKeyIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4628,6 +4673,7 @@
+   Input& key_input() { return input(kKeyIndex); }
+   Input& value_input() { return input(kValueIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4662,6 +4708,7 @@
+   Input& key_input() { return input(kKeyIndex); }
+   Input& value_input() { return input(kValueIndex); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4789,6 +4836,7 @@
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4839,6 +4887,7 @@
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -4925,6 +4974,7 @@
+   }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -4972,6 +5022,7 @@
+   }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -5016,6 +5067,7 @@
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5046,6 +5098,7 @@
+   Input& context() { return input(kContextIndex); }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5067,7 +5120,10 @@
+   // Inputs must be initialized manually.
+   CallKnownJSFunction(uint64_t bitfield, const compiler::JSFunctionRef function,
+                       ValueNode* receiver)
+-      : Base(bitfield), function_(function) {
++      : Base(bitfield),
++        function_(function),
++        expected_parameter_count_(
++            function.shared().internal_formal_parameter_count_with_receiver()) {
+     set_input(kReceiverIndex, receiver);
+   }
+ 
+@@ -5086,12 +5142,16 @@
+   }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+ 
+  private:
+   const compiler::JSFunctionRef function_;
++  // Cache the expected parameter count so that we can access it in
++  // MaxCallStackArgs without needing to unpark the local isolate.
++  int expected_parameter_count_;
+ };
+ 
+ class ConstructWithSpread : public ValueNodeT<ConstructWithSpread> {
+@@ -5135,6 +5195,7 @@
+   compiler::FeedbackSource feedback() const { return feedback_; }
+ 
+   void VerifyInputs(MaglevGraphLabeller* graph_labeller) const;
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5159,6 +5220,7 @@
+   static constexpr
+       typename Base::InputTypes kInputTypes{ValueRepresentation::kTagged};
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5223,6 +5285,7 @@
+ 
+   int amount() const { return amount_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -5249,6 +5312,7 @@
+ 
+   Input& value() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5271,6 +5335,7 @@
+ 
+   Input& value() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5291,6 +5356,7 @@
+ 
+   Input& value() { return Node::input(0); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5311,6 +5377,7 @@
+   Input& constructor() { return Node::input(0); }
+   Input& function() { return Node::input(1); }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const {}
+@@ -5503,8 +5570,11 @@
+     DCHECK_EQ(NodeBase::opcode(), opcode_of<Abort>);
+   }
+ 
++  static constexpr OpProperties kProperties = OpProperties::Call();
++
+   AbortReason reason() const { return reason_; }
+ 
++  int MaxCallStackArgs() const;
+   void SetValueLocationConstraints();
+   void GenerateCode(MaglevAssembler*, const ProcessingState&);
+   void PrintParams(std::ostream&, MaglevGraphLabeller*) const;
+@@ -5672,8 +5742,6 @@
+   static constexpr
+       typename Base::InputTypes kInputTypes{ValueRepresentation::kTagged};
+ 
+-  static constexpr OpProperties kProperties = OpProperties::Call();
+-
+   Input& condition_input() { return input(0); }
+ 
+   void SetValueLocationConstraints();
+diff --git a/src/maglev/maglev-regalloc.cc b/src/maglev/maglev-regalloc.cc
+index e7cfc28..401706f 100644
+--- a/src/maglev/maglev-regalloc.cc
++++ b/src/maglev/maglev-regalloc.cc
+@@ -844,7 +844,11 @@
+     DCHECK_EQ(node->num_temporaries_needed<Register>(), 0);
+     DCHECK_EQ(node->num_temporaries_needed<DoubleRegister>(), 0);
+     DCHECK_EQ(node->input_count(), 0);
+-    DCHECK_EQ(node->properties(), OpProperties(0));
++    // Either there are no special properties, or there's a call but it doesn't
++    // matter because we'll abort anyway.
++    DCHECK_IMPLIES(
++        node->properties() != OpProperties(0),
++        node->properties() == OpProperties::Call() && node->Is<Abort>());
+ 
+     if (v8_flags.trace_maglev_regalloc) {
+       printing_visitor_->Process(node, ProcessingState(block_it_));
+diff --git a/src/maglev/x64/maglev-assembler-x64.cc b/src/maglev/x64/maglev-assembler-x64.cc
+index 4d1cf0f..398570f 100644
+--- a/src/maglev/x64/maglev-assembler-x64.cc
++++ b/src/maglev/x64/maglev-assembler-x64.cc
+@@ -440,9 +440,10 @@
+     // stack limit or tighter. By ensuring we have space until that limit
+     // after building the frame we can quickly precheck both at once.
+     Move(kScratchRegister, rsp);
+-    // TODO(leszeks): Include a max call argument size here.
++    const int max_stack_slots_used =
++        code_gen_state()->stack_slots() + graph->max_call_stack_args();
+     subq(kScratchRegister,
+-         Immediate(code_gen_state()->stack_slots() * kSystemPointerSize));
++         Immediate(max_stack_slots_used * kSystemPointerSize));
+     cmpq(kScratchRegister,
+          StackLimitAsOperand(StackLimitKind::kInterruptStackLimit));
+ 
+diff --git a/src/maglev/x64/maglev-ir-x64.cc b/src/maglev/x64/maglev-ir-x64.cc
+index 82fcb7e..c7fbfef 100644
+--- a/src/maglev/x64/maglev-ir-x64.cc
++++ b/src/maglev/x64/maglev-ir-x64.cc
+@@ -7,6 +7,7 @@
+ #include "src/baseline/baseline-assembler-inl.h"
+ #include "src/builtins/builtins-constructor.h"
+ #include "src/codegen/interface-descriptors-inl.h"
++#include "src/codegen/interface-descriptors.h"
+ #include "src/codegen/maglev-safepoint-table.h"
+ #include "src/codegen/register.h"
+ #include "src/codegen/reglist.h"
+@@ -41,6 +42,10 @@
+ // Nodes
+ // ---
+ 
++int DeleteProperty::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kDeleteProperty>::type;
++  return D::GetStackParameterCount();
++}
+ void DeleteProperty::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kDeleteProperty>::type;
+   UseFixed(context(), kContextRegister);
+@@ -60,6 +65,9 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int GeneratorStore::MaxCallStackArgs() const {
++  return WriteBarrierDescriptor::GetStackParameterCount();
++}
+ void GeneratorStore::SetValueLocationConstraints() {
+   UseAny(context_input());
+   UseRegister(generator_input());
+@@ -213,6 +221,10 @@
+   }
+ }
+ 
++int ForInPrepare::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kForInPrepare>::type;
++  return D::GetStackParameterCount();
++}
+ void ForInPrepare::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kForInPrepare>::type;
+   UseFixed(context(), kContextRegister);
+@@ -231,6 +243,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int ForInNext::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kForInNext>::type;
++  return D::GetStackParameterCount();
++}
+ void ForInNext::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kForInNext>::type;
+   UseFixed(context(), kContextRegister);
+@@ -257,6 +273,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int GetIterator::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kGetIteratorWithFeedback>::type;
++  return D::GetStackParameterCount();
++}
+ void GetIterator::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kGetIteratorWithFeedback>::type;
+   UseFixed(context(), kContextRegister);
+@@ -299,6 +319,16 @@
+ #endif  // DEBUG
+ }
+ 
++int LoadGlobal::MaxCallStackArgs() const {
++  if (typeof_mode() == TypeofMode::kNotInside) {
++    using D = CallInterfaceDescriptorFor<Builtin::kLoadGlobalIC>::type;
++    return D::GetStackParameterCount();
++  } else {
++    using D =
++        CallInterfaceDescriptorFor<Builtin::kLoadGlobalICInsideTypeof>::type;
++    return D::GetStackParameterCount();
++  }
++}
+ void LoadGlobal::SetValueLocationConstraints() {
+   UseFixed(context(), kContextRegister);
+   DefineAsFixed(this, kReturnRegister0);
+@@ -331,6 +361,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int StoreGlobal::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kStoreGlobalIC>::type;
++  return D::GetStackParameterCount();
++}
+ void StoreGlobal::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kStoreGlobalIC>::type;
+   UseFixed(context(), kContextRegister);
+@@ -359,6 +393,10 @@
+   // Nothing to be done, the value is already in the register.
+ }
+ 
++int CreateEmptyArrayLiteral::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kCreateEmptyArrayLiteral>::type;
++  return D::GetStackParameterCount();
++}
+ void CreateEmptyArrayLiteral::SetValueLocationConstraints() {
+   DefineAsFixed(this, kReturnRegister0);
+ }
+@@ -372,6 +410,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CreateArrayLiteral::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(Runtime::kCreateArrayLiteral)->nargs, 4);
++  return 4;
++}
+ void CreateArrayLiteral::SetValueLocationConstraints() {
+   DefineAsFixed(this, kReturnRegister0);
+ }
+@@ -382,10 +424,14 @@
+   __ Push(TaggedIndex::FromIntptr(feedback().index()));
+   __ Push(constant_elements().object());
+   __ Push(Smi::FromInt(flags()));
+-  __ CallRuntime(Runtime::kCreateArrayLiteral);
++  __ CallRuntime(Runtime::kCreateArrayLiteral, 4);
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CreateShallowArrayLiteral::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kCreateEmptyArrayLiteral>::type;
++  return D::GetStackParameterCount();
++}
+ void CreateShallowArrayLiteral::SetValueLocationConstraints() {
+   DefineAsFixed(this, kReturnRegister0);
+ }
+@@ -403,6 +449,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CreateObjectLiteral::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(Runtime::kCreateObjectLiteral)->nargs, 4);
++  return 4;
++}
+ void CreateObjectLiteral::SetValueLocationConstraints() {
+   DefineAsFixed(this, kReturnRegister0);
+ }
+@@ -413,10 +463,13 @@
+   __ Push(TaggedIndex::FromIntptr(feedback().index()));
+   __ Push(boilerplate_descriptor().object());
+   __ Push(Smi::FromInt(flags()));
+-  __ CallRuntime(Runtime::kCreateObjectLiteral);
++  __ CallRuntime(Runtime::kCreateObjectLiteral, 4);
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CreateEmptyObjectLiteral::MaxCallStackArgs() const {
++  return AllocateDescriptor::GetStackParameterCount();
++}
+ void CreateEmptyObjectLiteral::SetValueLocationConstraints() {
+   DefineAsRegister(this);
+ }
+@@ -440,6 +493,11 @@
+   }
+ }
+ 
++int CreateShallowObjectLiteral::MaxCallStackArgs() const {
++  using D =
++      CallInterfaceDescriptorFor<Builtin::kCreateShallowObjectLiteral>::type;
++  return D::GetStackParameterCount();
++}
+ void CreateShallowObjectLiteral::SetValueLocationConstraints() {
+   DefineAsFixed(this, kReturnRegister0);
+ }
+@@ -456,6 +514,17 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CreateFunctionContext::MaxCallStackArgs() const {
++  if (scope_type() == FUNCTION_SCOPE) {
++    using D = CallInterfaceDescriptorFor<
++        Builtin::kFastNewFunctionContextFunction>::type;
++    return D::GetStackParameterCount();
++  } else {
++    using D =
++        CallInterfaceDescriptorFor<Builtin::kFastNewFunctionContextEval>::type;
++    return D::GetStackParameterCount();
++  }
++}
+ void CreateFunctionContext::SetValueLocationConstraints() {
+   DCHECK_LE(slot_count(),
+             static_cast<uint32_t>(
+@@ -496,6 +565,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int FastCreateClosure::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kFastNewClosure>::type;
++  return D::GetStackParameterCount();
++}
+ void FastCreateClosure::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kFastNewClosure>::type;
+   static_assert(D::HasContextParameter());
+@@ -514,6 +587,13 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CreateClosure::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(pretenured() ? Runtime::kNewClosure_Tenured
++                                                : Runtime::kNewClosure)
++                ->nargs,
++            2);
++  return 2;
++}
+ void CreateClosure::SetValueLocationConstraints() {
+   UseFixed(context(), kContextRegister);
+   DefineAsFixed(this, kReturnRegister0);
+@@ -527,6 +607,10 @@
+   __ CallRuntime(function_id);
+ }
+ 
++int CreateRegExpLiteral::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kCreateRegExpLiteral>::type;
++  return D::GetStackParameterCount();
++}
+ void CreateRegExpLiteral::SetValueLocationConstraints() {
+   DefineAsFixed(this, kReturnRegister0);
+ }
+@@ -542,12 +626,15 @@
+   __ CallBuiltin(Builtin::kCreateRegExpLiteral);
+ }
+ 
++int GetTemplateObject::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kGetTemplateObject>::type;
++  return D::GetStackParameterCount();
++}
+ void GetTemplateObject::SetValueLocationConstraints() {
+   using D = GetTemplateObjectDescriptor;
+   UseFixed(description(), D::GetRegisterParameter(D::kDescription));
+   DefineAsFixed(this, kReturnRegister0);
+ }
+-
+ void GetTemplateObject::GenerateCode(MaglevAssembler* masm,
+                                      const ProcessingState& state) {
+   using D = GetTemplateObjectDescriptor;
+@@ -560,6 +647,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int Abort::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(Runtime::kAbort)->nargs, 1);
++  return 1;
++}
+ void Abort::SetValueLocationConstraints() {}
+ void Abort::GenerateCode(MaglevAssembler* masm, const ProcessingState& state) {
+   __ Push(Smi::FromInt(static_cast<int>(reason())));
+@@ -765,6 +856,10 @@
+   __ EmitEagerDeoptIf(above, DeoptimizeReason::kNotAString, this);
+ }
+ 
++int CheckMapsWithMigration::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(Runtime::kTryMigrateInstance)->nargs, 1);
++  return 1;
++}
+ void CheckMapsWithMigration::SetValueLocationConstraints() {
+   UseRegister(receiver_input());
+ }
+@@ -1084,6 +1179,9 @@
+   __ bind(*done);
+ }
+ 
++int CheckedObjectToIndex::MaxCallStackArgs() const {
++  return MaglevAssembler::ArgumentStackSlotsForCFunctionCall(1);
++}
+ void CheckedObjectToIndex::SetValueLocationConstraints() {
+   UseRegister(object_input());
+   DefineAsRegister(this);
+@@ -1159,6 +1257,9 @@
+   __ bind(*done);
+ }
+ 
++int BuiltinStringFromCharCode::MaxCallStackArgs() const {
++  return AllocateDescriptor::GetStackParameterCount();
++}
+ void BuiltinStringFromCharCode::SetValueLocationConstraints() {
+   if (code_input().node()->Is<Int32Constant>()) {
+     UseAny(code_input());
+@@ -1191,6 +1292,10 @@
+   }
+ }
+ 
++int BuiltinStringPrototypeCharCodeAt::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(Runtime::kStringCharCodeAt)->nargs, 2);
++  return 2;
++}
+ void BuiltinStringPrototypeCharCodeAt::SetValueLocationConstraints() {
+   UseAndClobberRegister(string_input());
+   UseAndClobberRegister(index_input());
+@@ -1664,6 +1769,9 @@
+   __ StoreTaggedField(FieldOperand(object, offset()), value);
+ }
+ 
++int StoreMap::MaxCallStackArgs() const {
++  return WriteBarrierDescriptor::GetStackParameterCount();
++}
+ void StoreMap::SetValueLocationConstraints() {
+   UseFixed(object_input(), WriteBarrierDescriptor::ObjectRegister());
+ }
+@@ -1718,6 +1826,9 @@
+   __ bind(*done);
+ }
+ 
++int StoreTaggedFieldWithWriteBarrier::MaxCallStackArgs() const {
++  return WriteBarrierDescriptor::GetStackParameterCount();
++}
+ void StoreTaggedFieldWithWriteBarrier::SetValueLocationConstraints() {
+   UseFixed(object_input(), WriteBarrierDescriptor::ObjectRegister());
+   UseRegister(value_input());
+@@ -1772,6 +1883,9 @@
+   __ bind(*done);
+ }
+ 
++int LoadNamedGeneric::MaxCallStackArgs() const {
++  return LoadWithVectorDescriptor::GetStackParameterCount();
++}
+ void LoadNamedGeneric::SetValueLocationConstraints() {
+   using D = LoadWithVectorDescriptor;
+   UseFixed(context(), kContextRegister);
+@@ -1791,6 +1905,9 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int LoadNamedFromSuperGeneric::MaxCallStackArgs() const {
++  return LoadWithReceiverAndVectorDescriptor::GetStackParameterCount();
++}
+ void LoadNamedFromSuperGeneric::SetValueLocationConstraints() {
+   using D = LoadWithReceiverAndVectorDescriptor;
+   UseFixed(context(), kContextRegister);
+@@ -1814,6 +1931,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int SetNamedGeneric::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kStoreIC>::type;
++  return D::GetStackParameterCount();
++}
+ void SetNamedGeneric::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kStoreIC>::type;
+   UseFixed(context(), kContextRegister);
+@@ -1857,6 +1978,10 @@
+   __ movl(ToRegister(result()), FieldOperand(object, String::kLengthOffset));
+ }
+ 
++int StringAt::MaxCallStackArgs() const {
++  DCHECK_EQ(Runtime::FunctionForId(Runtime::kStringCharCodeAt)->nargs, 2);
++  return std::max(2, AllocateDescriptor::GetStackParameterCount());
++}
+ void StringAt::SetValueLocationConstraints() {
+   UseAndClobberRegister(string_input());
+   UseAndClobberRegister(index_input());
+@@ -1881,6 +2006,10 @@
+                         char_code, scratch);
+ }
+ 
++int DefineNamedOwnGeneric::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kDefineNamedOwnIC>::type;
++  return D::GetStackParameterCount();
++}
+ void DefineNamedOwnGeneric::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kDefineNamedOwnIC>::type;
+   UseFixed(context(), kContextRegister);
+@@ -1902,6 +2031,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int SetKeyedGeneric::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kKeyedStoreIC>::type;
++  return D::GetStackParameterCount();
++}
+ void SetKeyedGeneric::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kKeyedStoreIC>::type;
+   UseFixed(context(), kContextRegister);
+@@ -1924,8 +2057,12 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int DefineKeyedOwnGeneric::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kDefineKeyedOwnIC>::type;
++  return D::GetStackParameterCount();
++}
+ void DefineKeyedOwnGeneric::SetValueLocationConstraints() {
+-  using D = CallInterfaceDescriptorFor<Builtin::kKeyedStoreIC>::type;
++  using D = CallInterfaceDescriptorFor<Builtin::kDefineKeyedOwnIC>::type;
+   UseFixed(context(), kContextRegister);
+   UseFixed(object_input(), D::GetRegisterParameter(D::kReceiver));
+   UseFixed(key_input(), D::GetRegisterParameter(D::kName));
+@@ -1946,6 +2083,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int StoreInArrayLiteralGeneric::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kStoreInArrayLiteralIC>::type;
++  return D::GetStackParameterCount();
++}
+ void StoreInArrayLiteralGeneric::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kStoreInArrayLiteralIC>::type;
+   UseFixed(context(), kContextRegister);
+@@ -1968,6 +2109,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int GetKeyedGeneric::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kKeyedLoadIC>::type;
++  return D::GetStackParameterCount();
++}
+ void GetKeyedGeneric::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kKeyedLoadIC>::type;
+   UseFixed(context(), kContextRegister);
+@@ -2611,12 +2756,14 @@
+   __ Negpd(value, value, kScratchRegister);
+ }
+ 
++int Float64Exponentiate::MaxCallStackArgs() const {
++  return MaglevAssembler::ArgumentStackSlotsForCFunctionCall(2);
++}
+ void Float64Exponentiate::SetValueLocationConstraints() {
+   UseFixed(left_input(), xmm0);
+   UseFixed(right_input(), xmm1);
+   DefineSameAsFirst(this);
+ }
+-
+ void Float64Exponentiate::GenerateCode(MaglevAssembler* masm,
+                                        const ProcessingState& state) {
+   AllowExternalCallThatCantCauseGC scope(masm);
+@@ -2624,11 +2771,13 @@
+   __ CallCFunction(ExternalReference::ieee754_pow_function(), 2);
+ }
+ 
++int Float64Ieee754Unary::MaxCallStackArgs() const {
++  return MaglevAssembler::ArgumentStackSlotsForCFunctionCall(1);
++}
+ void Float64Ieee754Unary::SetValueLocationConstraints() {
+   UseFixed(input(), xmm0);
+   DefineSameAsFirst(this);
+ }
+-
+ void Float64Ieee754Unary::GenerateCode(MaglevAssembler* masm,
+                                        const ProcessingState& state) {
+   AllowExternalCallThatCantCauseGC scope(masm);
+@@ -3028,6 +3177,10 @@
+   __ bind(&done);
+ }
+ 
++int TestInstanceOf::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kInstanceOf_WithFeedback>::type;
++  return D::GetStackParameterCount();
++}
+ void TestInstanceOf::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kInstanceOf_WithFeedback>::type;
+   UseFixed(context(), kContextRegister);
+@@ -3169,6 +3322,10 @@
+   __ bind(&done);
+ }
+ 
++int ToName::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kToName>::type;
++  return D::GetStackParameterCount();
++}
+ void ToName::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kToName>::type;
+   UseFixed(context(), kContextRegister);
+@@ -3185,6 +3342,9 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int ToNumberOrNumeric::MaxCallStackArgs() const {
++  return TypeConversionDescriptor::GetStackParameterCount();
++}
+ void ToNumberOrNumeric::SetValueLocationConstraints() {
+   using D = TypeConversionDescriptor;
+   UseFixed(context(), kContextRegister);
+@@ -3204,6 +3364,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int ToObject::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kToObject>::type;
++  return D::GetStackParameterCount();
++}
+ void ToObject::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kToObject>::type;
+   UseFixed(context(), kContextRegister);
+@@ -3231,6 +3395,10 @@
+   __ bind(&done);
+ }
+ 
++int ToString::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kToString>::type;
++  return D::GetStackParameterCount();
++}
+ void ToString::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kToString>::type;
+   UseFixed(context(), kContextRegister);
+@@ -3407,6 +3575,7 @@
+ }
+ void Phi::GenerateCode(MaglevAssembler* masm, const ProcessingState& state) {}
+ 
++int Call::MaxCallStackArgs() const { return num_args(); }
+ void Call::SetValueLocationConstraints() {
+   // TODO(leszeks): Consider splitting Call into with- and without-feedback
+   // opcodes, rather than checking for feedback validity.
+@@ -3502,6 +3671,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CallKnownJSFunction::MaxCallStackArgs() const {
++  int actual_parameter_count = num_args() + 1;
++  return std::max(expected_parameter_count_, actual_parameter_count);
++}
+ void CallKnownJSFunction::SetValueLocationConstraints() {
+   UseAny(receiver());
+   for (int i = 0; i < num_args(); i++) {
+@@ -3511,12 +3684,10 @@
+ }
+ void CallKnownJSFunction::GenerateCode(MaglevAssembler* masm,
+                                        const ProcessingState& state) {
+-  int expected_parameter_count =
+-      shared_function_info().internal_formal_parameter_count_with_receiver();
+   int actual_parameter_count = num_args() + 1;
+-  if (actual_parameter_count < expected_parameter_count) {
++  if (actual_parameter_count < expected_parameter_count_) {
+     int number_of_undefineds =
+-        expected_parameter_count - actual_parameter_count;
++        expected_parameter_count_ - actual_parameter_count;
+     __ LoadRoot(kScratchRegister, RootIndex::kUndefinedValue);
+     for (int i = 0; i < number_of_undefineds; i++) {
+       __ Push(kScratchRegister);
+@@ -3542,6 +3713,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int Construct::MaxCallStackArgs() const {
++  using D = Construct_WithFeedbackDescriptor;
++  return num_args() + D::GetStackParameterCount();
++}
+ void Construct::SetValueLocationConstraints() {
+   using D = Construct_WithFeedbackDescriptor;
+   UseFixed(function(), D::GetRegisterParameter(D::kTarget));
+@@ -3575,6 +3750,16 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CallBuiltin::MaxCallStackArgs() const {
++  auto descriptor = Builtins::CallInterfaceDescriptorFor(builtin());
++  if (!descriptor.AllowVarArgs()) {
++    return descriptor.GetStackParameterCount();
++  } else {
++    int all_input_count = InputCountWithoutContext() + (has_feedback() ? 2 : 0);
++    DCHECK_GE(all_input_count, descriptor.GetRegisterParameterCount());
++    return all_input_count - descriptor.GetRegisterParameterCount();
++  }
++}
+ void CallBuiltin::SetValueLocationConstraints() {
+   auto descriptor = Builtins::CallInterfaceDescriptorFor(builtin());
+   bool has_context = descriptor.HasContextParameter();
+@@ -3677,6 +3862,7 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CallRuntime::MaxCallStackArgs() const { return num_args(); }
+ void CallRuntime::SetValueLocationConstraints() {
+   UseFixed(context(), kContextRegister);
+   for (int i = 0; i < num_args(); i++) {
+@@ -3695,6 +3881,17 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CallWithSpread::MaxCallStackArgs() const {
++  int argc_no_spread = num_args() - 1;
++  if (feedback_.IsValid()) {
++    using D =
++        CallInterfaceDescriptorFor<Builtin::kCallWithSpread_WithFeedback>::type;
++    return argc_no_spread + D::GetStackParameterCount();
++  } else {
++    using D = CallInterfaceDescriptorFor<Builtin::kCallWithSpread>::type;
++    return argc_no_spread + D::GetStackParameterCount();
++  }
++}
+ void CallWithSpread::SetValueLocationConstraints() {
+   if (feedback_.IsValid()) {
+     using D =
+@@ -3753,6 +3950,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int CallWithArrayLike::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kCallWithArrayLike>::type;
++  return D::GetStackParameterCount();
++}
+ void CallWithArrayLike::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kCallWithArrayLike>::type;
+   UseFixed(function(), D::GetRegisterParameter(D::kTarget));
+@@ -3775,6 +3976,12 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int ConstructWithSpread::MaxCallStackArgs() const {
++  int argc_no_spread = num_args() - 1;
++  using D = CallInterfaceDescriptorFor<
++      Builtin::kConstructWithSpread_WithFeedback>::type;
++  return argc_no_spread + D::GetStackParameterCount();
++}
+ void ConstructWithSpread::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<
+       Builtin::kConstructWithSpread_WithFeedback>::type;
+@@ -3810,6 +4017,10 @@
+   masm->DefineExceptionHandlerAndLazyDeoptPoint(this);
+ }
+ 
++int ConvertReceiver::MaxCallStackArgs() const {
++  using D = CallInterfaceDescriptorFor<Builtin::kToObject>::type;
++  return D::GetStackParameterCount();
++}
+ void ConvertReceiver::SetValueLocationConstraints() {
+   using D = CallInterfaceDescriptorFor<Builtin::kToObject>::type;
+   UseFixed(receiver_input(), D::GetRegisterParameter(D::kInput));
+@@ -3876,6 +4087,7 @@
+           Immediate(amount()));
+ }
+ 
++int ReduceInterruptBudget::MaxCallStackArgs() const { return 1; }
+ void ReduceInterruptBudget::SetValueLocationConstraints() {
+   set_temporaries_needed(1);
+ }
+@@ -3908,6 +4120,7 @@
+   __ bind(*done);
+ }
+ 
++int ThrowReferenceErrorIfHole::MaxCallStackArgs() const { return 1; }
+ void ThrowReferenceErrorIfHole::SetValueLocationConstraints() {
+   UseAny(value());
+ }
+@@ -3931,6 +4144,7 @@
+       this);
+ }
+ 
++int ThrowSuperNotCalledIfHole::MaxCallStackArgs() const { return 0; }
+ void ThrowSuperNotCalledIfHole::SetValueLocationConstraints() {
+   UseAny(value());
+ }
+@@ -3953,6 +4167,7 @@
+       this);
+ }
+ 
++int ThrowSuperAlreadyCalledIfNotHole::MaxCallStackArgs() const { return 0; }
+ void ThrowSuperAlreadyCalledIfNotHole::SetValueLocationConstraints() {
+   UseAny(value());
+ }
+@@ -3975,6 +4190,7 @@
+       this);
+ }
+ 
++int ThrowIfNotSuperConstructor::MaxCallStackArgs() const { return 2; }
+ void ThrowIfNotSuperConstructor::SetValueLocationConstraints() {
+   UseRegister(constructor());
+   UseRegister(function());
+@@ -4139,6 +4355,10 @@
+ 
+ }  // namespace
+ 
++int JumpLoopPrologue::MaxCallStackArgs() const {
++  // For the kCompileOptimizedOSRFromMaglev call.
++  return 1;
++}
+ void JumpLoopPrologue::SetValueLocationConstraints() {
+   if (!v8_flags.use_osr) return;
+   set_temporaries_needed(2);
