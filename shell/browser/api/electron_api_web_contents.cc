@@ -1815,27 +1815,27 @@ void WebContents::OnFirstNonEmptyLayout(
 // This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
 // still call the callback and send an error. Not doing so causes a Mojo DCHECK,
 // since Mojo requires callbacks to be called before they are destroyed.
-class ReplySender : public gin::Wrappable<ReplySender> {
+class ReplyChannel : public gin::Wrappable<ReplyChannel> {
  public:
   using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
-  static gin::Handle<ReplySender> Create(v8::Isolate* isolate,
-                                         InvokeCallback callback) {
-    return gin::CreateHandle(isolate, new ReplySender(std::move(callback)));
+  static gin::Handle<ReplyChannel> Create(v8::Isolate* isolate,
+                                          InvokeCallback callback) {
+    return gin::CreateHandle(isolate, new ReplyChannel(std::move(callback)));
   }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
       v8::Isolate* isolate) override {
-    return gin::Wrappable<ReplySender>::GetObjectTemplateBuilder(isolate)
-        .SetMethod("sendReply", &ReplySender::SendReply);
+    return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
+        .SetMethod("sendReply", &ReplyChannel::SendReply);
   }
-  const char* GetTypeName() override { return "ReplySender"; }
+  const char* GetTypeName() override { return "ReplyChannel"; }
 
  private:
-  explicit ReplySender(InvokeCallback callback)
+  explicit ReplyChannel(InvokeCallback callback)
       : callback_(std::move(callback)) {}
-  ~ReplySender() override {
+  ~ReplyChannel() override {
     if (callback_) {
       v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
       // If there's no current context, it means we're shutting down, so we
@@ -1865,7 +1865,7 @@ class ReplySender : public gin::Wrappable<ReplySender> {
   InvokeCallback callback_;
 };
 
-gin::WrapperInfo ReplySender::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 gin::Handle<gin_helper::internal::PreventableEvent>
 WebContents::MakeEventWithSender(
@@ -1879,7 +1879,8 @@ WebContents::MakeEventWithSender(
       gin_helper::internal::CreateCustomEvent(isolate, wrapper);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
   if (callback)
-    dict.Set("_replySender", ReplySender::Create(isolate, std::move(callback)));
+    dict.Set("_replySender",
+             ReplyChannel::Create(isolate, std::move(callback)));
   if (frame) {
     dict.Set("frameId", frame->GetRoutingID());
     dict.Set("processId", frame->GetProcess()->GetID());

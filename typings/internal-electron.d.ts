@@ -138,16 +138,16 @@ declare namespace Electron {
     acceleratorWorksWhenHidden?: boolean;
   }
 
-  interface ReplySender {
+  interface ReplyChannel {
     sendReply(value: any): void;
   }
 
   interface IpcMainEvent {
-    _replySender: ReplySender;
+    _replySender: ReplyChannel;
   }
 
   interface IpcMainInvokeEvent {
-    _replySender: ReplySender;
+    _replySender: ReplyChannel;
   }
 
   class View {}
