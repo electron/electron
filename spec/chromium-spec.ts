@@ -2270,17 +2270,19 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   );
   let w: BrowserWindow, server: http.Server;
 
-  before(() => {
+  beforeEach(async () => {
     server = http.createServer(async (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.write(await fullscreenChildHtml);
       res.end();
     });
 
-    server.listen(8989, '127.0.0.1');
-  });
+    await new Promise<void>((resolve) => {
+      server.listen(8989, '127.0.0.1', () => {
+        resolve();
+      });
+    });
 
-  beforeEach(() => {
     w = new BrowserWindow({
       show: true,
       fullscreen: true,
