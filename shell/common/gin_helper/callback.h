@@ -48,9 +48,10 @@ struct V8FunctionInvoker<v8::Local<v8::Value>(ArgTypes...)> {
     v8::EscapableHandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return v8::Null(isolate);
-    gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked();
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, context->GetMicrotaskQueue(), true);
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -72,9 +73,10 @@ struct V8FunctionInvoker<void(ArgTypes...)> {
     v8::HandleScope handle_scope(isolate);
     if (!function.IsAlive())
       return;
-    gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked();
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, context->GetMicrotaskQueue(), true);
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};
@@ -95,9 +97,10 @@ struct V8FunctionInvoker<ReturnType(ArgTypes...)> {
     ReturnType ret = ReturnType();
     if (!function.IsAlive())
       return ret;
-    gin_helper::MicrotasksScope microtasks_scope(isolate, true);
     v8::Local<v8::Function> holder = function.NewHandle(isolate);
     v8::Local<v8::Context> context = holder->GetCreationContextChecked();
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, context->GetMicrotaskQueue(), true);
     v8::Context::Scope context_scope(context);
     std::vector<v8::Local<v8::Value>> args{
         gin::ConvertToV8(isolate, std::forward<ArgTypes>(raw))...};

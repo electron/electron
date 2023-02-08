@@ -16,6 +16,7 @@ namespace gin_helper {
 class MicrotasksScope {
  public:
   explicit MicrotasksScope(v8::Isolate* isolate,
+                           v8::MicrotaskQueue* microtask_queue,
                            bool ignore_browser_checkpoint = false,
                            v8::MicrotasksScope::Type scope_type =
                                v8::MicrotasksScope::kRunMicrotasks);

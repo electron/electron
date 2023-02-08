@@ -201,9 +201,10 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, env->context()->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   if (env) {
     // Emit the after() hooks now that the exception has been handled.

@@ -162,12 +162,12 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
-
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::Context::Scope context_scope(context);
 
   InvokeHiddenCallback(context, kLifecycleKey, "onDocumentStart");
@@ -180,12 +180,12 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     return;
 
   auto* isolate = blink::MainThreadIsolate();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
-
   v8::Local<v8::Context> context =
       GetContext(render_frame->GetWebFrame(), isolate);
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::Context::Scope context_scope(context);
 
   InvokeHiddenCallback(context, kLifecycleKey, "onDocumentEnd");
@@ -230,7 +230,8 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
 
   auto* isolate = context->GetIsolate();
   gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      isolate, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
   InvokeHiddenCallback(context, kLifecycleKey, "onExit");
