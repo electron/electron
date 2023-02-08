@@ -9,37 +9,35 @@
 namespace gin_helper::internal {
 
 // static
-gin::Handle<PreventableEvent> PreventableEvent::New(
-    v8::Isolate* isolate,
-    v8::Local<v8::Object> sender) {
-  return gin::CreateHandle(isolate, new PreventableEvent(isolate, sender));
+gin::Handle<Event> Event::New(v8::Isolate* isolate,
+                              v8::Local<v8::Object> sender) {
+  return gin::CreateHandle(isolate, new Event(isolate, sender));
 }
 // static
-v8::Local<v8::ObjectTemplate> PreventableEvent::FillObjectTemplate(
+v8::Local<v8::ObjectTemplate> Event::FillObjectTemplate(
     v8::Isolate* isolate,
     v8::Local<v8::ObjectTemplate> templ) {
   return gin::ObjectTemplateBuilder(isolate, "Event", templ)
-      .SetMethod("preventDefault", &PreventableEvent::PreventDefault)
-      .SetProperty("defaultPrevented", &PreventableEvent::GetDefaultPrevented)
-      .SetProperty("sender", &PreventableEvent::GetSender)
+      .SetMethod("preventDefault", &Event::PreventDefault)
+      .SetProperty("defaultPrevented", &Event::GetDefaultPrevented)
+      .SetProperty("sender", &Event::GetSender)
       .Build();
 }
 
-PreventableEvent::PreventableEvent(v8::Isolate* isolate,
-                                   v8::Local<v8::Object> sender)
+Event::Event(v8::Isolate* isolate, v8::Local<v8::Object> sender)
     : sender_(isolate, sender) {}
 
-PreventableEvent::~PreventableEvent() = default;
+Event::~Event() = default;
 
-v8::Local<v8::Object> PreventableEvent::GetSender(v8::Isolate* isolate) {
+v8::Local<v8::Object> Event::GetSender(v8::Isolate* isolate) {
   return sender_.Get(isolate);
 }
 
-gin::WrapperInfo PreventableEvent::kWrapperInfo = {gin::kEmbedderNativeGin};
+gin::WrapperInfo Event::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-gin::Handle<PreventableEvent> CreateCustomEvent(v8::Isolate* isolate,
-                                                v8::Local<v8::Object> sender) {
-  return PreventableEvent::New(isolate, sender);
+gin::Handle<Event> CreateCustomEvent(v8::Isolate* isolate,
+                                     v8::Local<v8::Object> sender) {
+  return Event::New(isolate, sender);
 }
 
 }  // namespace gin_helper::internal

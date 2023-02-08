@@ -1867,15 +1867,14 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
 
 gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-gin::Handle<gin_helper::internal::PreventableEvent>
-WebContents::MakeEventWithSender(
+gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
     v8::Isolate* isolate,
     content::RenderFrameHost* frame,
     electron::mojom::ElectronApiIPC::InvokeCallback callback) {
   v8::Local<v8::Object> wrapper;
   if (!GetWrapper(isolate).ToLocal(&wrapper))
-    return gin::Handle<gin_helper::internal::PreventableEvent>();
-  gin::Handle<gin_helper::internal::PreventableEvent> event =
+    return gin::Handle<gin_helper::internal::Event>();
+  gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::CreateCustomEvent(isolate, wrapper);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
   if (callback)

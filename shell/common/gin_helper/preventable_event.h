@@ -19,12 +19,12 @@ class ObjectTemplate;
 
 namespace gin_helper::internal {
 
-class PreventableEvent : public gin::Wrappable<PreventableEvent>,
-                         public gin_helper::Constructible<PreventableEvent> {
+class Event : public gin::Wrappable<Event>,
+              public gin_helper::Constructible<Event> {
  public:
   // gin_helper::Constructible
-  static gin::Handle<PreventableEvent> New(v8::Isolate* isolate,
-                                           v8::Local<v8::Object> sender);
+  static gin::Handle<Event> New(v8::Isolate* isolate,
+                                v8::Local<v8::Object> sender);
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> prototype);
@@ -32,7 +32,7 @@ class PreventableEvent : public gin::Wrappable<PreventableEvent>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
 
-  ~PreventableEvent() override;
+  ~Event() override;
 
   void PreventDefault() { default_prevented_ = true; }
 
@@ -40,14 +40,14 @@ class PreventableEvent : public gin::Wrappable<PreventableEvent>,
   v8::Local<v8::Object> GetSender(v8::Isolate* isolate);
 
  private:
-  PreventableEvent(v8::Isolate* isolate, v8::Local<v8::Object> sender);
+  Event(v8::Isolate* isolate, v8::Local<v8::Object> sender);
 
   bool default_prevented_ = false;
   v8::Global<v8::Object> sender_;
 };
 
-gin::Handle<PreventableEvent> CreateCustomEvent(v8::Isolate* isolate,
-                                                v8::Local<v8::Object> sender);
+gin::Handle<Event> CreateCustomEvent(v8::Isolate* isolate,
+                                     v8::Local<v8::Object> sender);
 
 }  // namespace gin_helper::internal
 

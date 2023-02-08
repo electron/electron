@@ -442,8 +442,7 @@ void NodeBindings::Initialize() {
 #endif
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::internal::PreventableEvent::GetConstructor(
-      isolate->GetCurrentContext());
+  gin_helper::internal::Event::GetConstructor(isolate->GetCurrentContext());
 
   g_is_initialized = true;
 }

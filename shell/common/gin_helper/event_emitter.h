@@ -43,7 +43,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
     v8::Local<v8::Object> wrapper = GetWrapper();
     if (wrapper.IsEmpty())
       return false;
-    gin::Handle<gin_helper::internal::PreventableEvent> event =
+    gin::Handle<gin_helper::internal::Event> event =
         internal::CreateCustomEvent(isolate(), wrapper);
     return EmitWithEvent(name, event, std::forward<Args>(args)...);
   }
@@ -59,7 +59,7 @@ class EventEmitter : public gin_helper::Wrappable<T> {
   // this.emit(name, event, args...);
   template <typename... Args>
   bool EmitWithEvent(base::StringPiece name,
-                     gin::Handle<gin_helper::internal::PreventableEvent> event,
+                     gin::Handle<gin_helper::internal::Event> event,
                      Args&&... args) {
     // It's possible that |this| will be deleted by EmitEvent, so save anything
     // we need from |this| before calling EmitEvent.
