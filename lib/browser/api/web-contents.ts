@@ -534,7 +534,7 @@ const addSenderFrameToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainIn
 
 const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
   Object.defineProperty(event, 'returnValue', {
-    set: (value) => event._replySender.sendReply(value),
+    set: (value) => event._replyChannel.sendReply(value),
     get: () => {}
   });
 };
@@ -590,10 +590,10 @@ WebContents.prototype._init = function () {
 
   this.on('-ipc-invoke' as any, async function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
     addSenderFrameToEvent(event);
-    const replyWithResult = (result: any) => event._replySender.sendReply({ result });
+    const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
     const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
-      event._replySender.sendReply({ error: error.toString() });
+      event._replyChannel.sendReply({ error: error.toString() });
     };
     const maybeWebFrame = getWebFrameForEvent(event);
     const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];

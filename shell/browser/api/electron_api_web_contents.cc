@@ -1878,7 +1878,7 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
       gin_helper::internal::CreateEvent(isolate, wrapper);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
   if (callback)
-    dict.Set("_replySender",
+    dict.Set("_replyChannel",
              ReplyChannel::Create(isolate, std::move(callback)));
   if (frame) {
     dict.Set("frameId", frame->GetRoutingID());

@@ -143,11 +143,11 @@ declare namespace Electron {
   }
 
   interface IpcMainEvent {
-    _replySender: ReplyChannel;
+    _replyChannel: ReplyChannel;
   }
 
   interface IpcMainInvokeEvent {
-    _replySender: ReplyChannel;
+    _replyChannel: ReplyChannel;
   }
 
   class View {}
