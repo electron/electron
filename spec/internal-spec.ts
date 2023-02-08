@@ -35,7 +35,7 @@ describe('process._linkedBinding', () => {
     it('cannot access electron_renderer bindings', () => {
       expect(() => {
         process._linkedBinding('electron_renderer_ipc');
-      }).to.throw(/No such binding was linked: electron_renderer_ipc/);
+      }).to.throw(/No such module was linked: electron_renderer_ipc/);
     });
   });
 
