@@ -672,6 +672,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
   * `permission` string - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
+    * `clipboard-sanitized-write` - Request access to write to the clipboard.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
     * `display-capture` - Request access to capture the screen.
     * `mediaKeySystem` - Request access to DRM protected content.
