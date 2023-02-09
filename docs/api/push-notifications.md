@@ -26,6 +26,7 @@ The `pushNotification` module emits the following events:
 
 Returns:
 
+* `event` Event
 * `userInfo` Record<String, any>
 
 Emitted when the app receives a remote notification while running.

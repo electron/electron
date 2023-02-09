@@ -44,9 +44,7 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   // gin_helper::Constructible
   static gin::Handle<BrowserView> New(gin_helper::ErrorThrower thrower,
                                       gin::Arguments* args);
-  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
-      v8::Isolate*,
-      v8::Local<v8::ObjectTemplate>);
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;

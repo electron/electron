@@ -465,7 +465,6 @@ WebContents.prototype.loadURL = function (url, options) {
   // Add a no-op rejection handler to silence the unhandled rejection error.
   p.catch(() => {});
   this._loadURL(url, options);
-  this.emit('load-url', url, options);
   return p;
 };
 

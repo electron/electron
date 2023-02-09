@@ -37,7 +37,7 @@ index 3a3228ddc9eb6b53efc0721466479a9f62cd8967..175a67840348ca507d6e8b29835e5ab3
          HistogramBase::kInternalFieldCount);
      SetProtoMethodNoSideEffect(isolate, tmpl, "count", GetCount);
 diff --git a/src/node_messaging.cc b/src/node_messaging.cc
-index 009ac0056c5486a3f94889f70b592e26827d86a0..ba497064de834c4ea565bb267d1e95e4647b79eb 100644
+index d1296fe20c290bd137cb0aa0c077d1672c18c7a1..1c0f54286f9269efa436ba0fbc730766224891c0 100644
 --- a/src/node_messaging.cc
 +++ b/src/node_messaging.cc
 @@ -1495,13 +1495,16 @@ static void InitMessaging(Local<Object> target,

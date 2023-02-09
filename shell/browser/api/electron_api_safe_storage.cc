@@ -131,4 +131,4 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("decryptString", &electron::safestorage::DecryptString);
 }
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_safe_storage, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_safe_storage, Initialize)

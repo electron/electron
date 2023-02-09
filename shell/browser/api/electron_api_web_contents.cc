@@ -4016,9 +4016,8 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
+void WebContents::FillObjectTemplate(v8::Isolate* isolate,
+                                     v8::Local<v8::ObjectTemplate> templ) {
   gin::InvokerOptions options;
   options.holder_is_first_argument = true;
   options.holder_type = "WebContents";
@@ -4030,7 +4029,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // We use gin_helper::ObjectTemplateBuilder instead of
   // gin::ObjectTemplateBuilder here to handle the fact that WebContents is
   // destroyable.
-  return gin_helper::ObjectTemplateBuilder(isolate, templ)
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
       .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
@@ -4320,4 +4319,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_web_contents, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_web_contents, Initialize)

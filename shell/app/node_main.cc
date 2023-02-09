@@ -146,8 +146,8 @@ int NodeMain(int argc, char* argv[]) {
     feature_list->InitializeFromCommandLine("", "");
     base::FeatureList::SetInstance(std::move(feature_list));
 
-    // Explicitly register electron's builtin modules.
-    NodeBindings::RegisterBuiltinModules();
+    // Explicitly register electron's builtin bindings.
+    NodeBindings::RegisterBuiltinBindings();
 
     // Parse and set Node.js cli flags.
     int flags_exit_code = SetNodeCliFlags();
@@ -226,7 +226,8 @@ int NodeMain(int argc, char* argv[]) {
       uint64_t env_flags = node::EnvironmentFlags::kDefaultFlags |
                            node::EnvironmentFlags::kHideConsoleWindows;
       env = node::CreateEnvironment(
-          isolate_data, gin_env.context(), result->args(), result->exec_args(),
+          isolate_data, isolate->GetCurrentContext(), result->args(),
+          result->exec_args(),
           static_cast<node::EnvironmentFlags::Flags>(env_flags));
       CHECK_NE(nullptr, env);
 
@@ -293,7 +294,8 @@ int NodeMain(int argc, char* argv[]) {
 
     node::ResetStdio();
 
-    node::Stop(env);
+    node::Stop(env, false);
+
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
   }
