@@ -658,6 +658,54 @@ describe('net module', () => {
       expect(response.headers['x-cookie']).to.equal('undefined');
     });
 
+    it('should be able correctly filter out cookies that are secure', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('set-cookie', ['cookie1=1', 'cookie2=2; secure']);
+        response.end();
+      });
+      net.request({
+        url: serverUrl,
+        origin: serverUrl
+      });
+
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+      const secureCookies = await sess.cookies.get({
+        secure: true
+      });
+      expect(secureCookies).to.have.lengthOf(1);
+
+      const cookies = await sess.cookies.get({
+        secure: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+    });
+
+    it('should be able correctly filter out cookies that are session', async () => {
+      const serverUrl = await respondOnce.toSingleURL((request, response) => {
+        response.statusCode = 200;
+        response.statusMessage = 'OK';
+        response.setHeader('set-cookie', ['cookie1=1', 'cookie2=2; expires=Wed, 21 Oct 3023 07:28:00 GMT']);
+        response.end();
+      });
+      net.request({
+        url: serverUrl,
+        origin: serverUrl
+      });
+
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+      const sessionCookies = await sess.cookies.get({
+        session: true
+      });
+      expect(sessionCookies).to.have.lengthOf(1);
+
+      const cookies = await sess.cookies.get({
+        session: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+    });
+
     for (const extraOptions of [{ useSessionCookies: true }, { credentials: 'include' }] as ClientRequestConstructorOptions[]) {
       describe(`when ${JSON.stringify(extraOptions)}`, () => {
         it('should be able to use the sessions cookie store', async () => {
