@@ -1,0 +1,171 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Clemens Backes <clemensb@chromium.org>
+Date: Thu, 22 Dec 2022 09:43:42 +0100
+Subject: Fix printing of wasm-to-js frames
+
+After https://crrev.com/c/3859787 those frames would be printed like
+standard Wasm frames, but in the place of the WasmInstanceObject, they
+have a WasmApiFunctionRef object instead.
+So special-case the {WasmToJsFrame::instance()} to load the instance
+properly. Also special-case the {position()} accessor for imported
+functions.
+
+R=victorgomes@chromium.org
+
+Bug: chromium:1402270
+Change-Id: I39805805a50e7a73d7d8075c63c46bdf5a373a33
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4116778
+Reviewed-by: Nico Hartmann <nicohartmann@chromium.org>
+Commit-Queue: Clemens Backes <clemensb@chromium.org>
+Reviewed-by: Victor Gomes <victorgomes@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#84993}
+
+diff --git a/src/compiler/backend/arm/code-generator-arm.cc b/src/compiler/backend/arm/code-generator-arm.cc
+index 4c5accd7a8f352a128499861d5d28a6d9b859f1a..d8a77d70bbd465035ee91dbc57058f83ccf7cf83 100644
+--- a/src/compiler/backend/arm/code-generator-arm.cc
++++ b/src/compiler/backend/arm/code-generator-arm.cc
+@@ -3699,6 +3699,10 @@ void CodeGenerator::AssembleConstructFrame() {
+       if (call_descriptor->IsWasmFunctionCall() ||
+           call_descriptor->IsWasmImportWrapper() ||
+           call_descriptor->IsWasmCapiFunction()) {
++        // For import wrappers and C-API functions, this stack slot is only used
++        // for printing stack traces in V8. Also, it holds a WasmApiFunctionRef
++        // instead of the instance itself, which is taken care of in the frames
++        // accessors.
+         __ Push(kWasmInstanceRegister);
+       }
+       if (call_descriptor->IsWasmCapiFunction()) {
+diff --git a/src/compiler/backend/arm64/code-generator-arm64.cc b/src/compiler/backend/arm64/code-generator-arm64.cc
+index 60d19c79307529f13f64a1f5c41295d720f31dde..8ad2c88c12763106d7d279372d7f36933755f1e0 100644
+--- a/src/compiler/backend/arm64/code-generator-arm64.cc
++++ b/src/compiler/backend/arm64/code-generator-arm64.cc
+@@ -3225,6 +3225,9 @@ void CodeGenerator::AssembleConstructFrame() {
+         Register scratch = temps.AcquireX();
+         __ Mov(scratch,
+                StackFrame::TypeToMarker(info()->GetOutputStackFrameType()));
++        // This stack slot is only used for printing stack traces in V8. Also,
++        // it holds a WasmApiFunctionRef instead of the instance itself, which
++        // is taken care of in the frames accessors.
+         __ Push(scratch, kWasmInstanceRegister);
+         int extra_slots =
+             call_descriptor->kind() == CallDescriptor::kCallWasmImportWrapper
+diff --git a/src/compiler/backend/ia32/code-generator-ia32.cc b/src/compiler/backend/ia32/code-generator-ia32.cc
+index 5afd119ff506ddd07f719d539ad6e9592f967201..d13310cfcc244ea2c61766a9960dbab29779bf52 100644
+--- a/src/compiler/backend/ia32/code-generator-ia32.cc
++++ b/src/compiler/backend/ia32/code-generator-ia32.cc
+@@ -4026,6 +4026,10 @@ void CodeGenerator::AssembleConstructFrame() {
+       if (call_descriptor->IsWasmFunctionCall() ||
+           call_descriptor->IsWasmImportWrapper() ||
+           call_descriptor->IsWasmCapiFunction()) {
++        // For import wrappers and C-API functions, this stack slot is only used
++        // for printing stack traces in V8. Also, it holds a WasmApiFunctionRef
++        // instead of the instance itself, which is taken care of in the frames
++        // accessors.
+         __ push(kWasmInstanceRegister);
+       }
+       if (call_descriptor->IsWasmCapiFunction()) {
+diff --git a/src/compiler/backend/x64/code-generator-x64.cc b/src/compiler/backend/x64/code-generator-x64.cc
+index e3f759f570050c183d133854f83d02d9b442d8f9..0e02c63ace62caf2fcb5642db82d0c07af2cc2ba 100644
+--- a/src/compiler/backend/x64/code-generator-x64.cc
++++ b/src/compiler/backend/x64/code-generator-x64.cc
+@@ -4841,10 +4841,10 @@ void CodeGenerator::AssembleConstructFrame() {
+       if (call_descriptor->IsWasmFunctionCall() ||
+           call_descriptor->IsWasmImportWrapper() ||
+           call_descriptor->IsWasmCapiFunction()) {
+-        // We do not use this stack value in import wrappers and capi functions.
+-        // We push it anyway to satisfy legacy assumptions about these frames'
+-        // size and order.
+-        // TODO(manoskouk): Consider fixing this.
++        // For import wrappers and C-API functions, this stack slot is only used
++        // for printing stack traces in V8. Also, it holds a WasmApiFunctionRef
++        // instead of the instance itself, which is taken care of in the frames
++        // accessors.
+         __ pushq(kWasmInstanceRegister);
+       }
+       if (call_descriptor->IsWasmCapiFunction()) {
+diff --git a/src/diagnostics/objects-printer.cc b/src/diagnostics/objects-printer.cc
+index ce4d15b2c27e145be7e8dd2b98f1519ed11ce2f6..71604afa7a067e14a891057de4011416f45f4f19 100644
+--- a/src/diagnostics/objects-printer.cc
++++ b/src/diagnostics/objects-printer.cc
+@@ -2137,6 +2137,7 @@ void WasmApiFunctionRef::WasmApiFunctionRefPrint(std::ostream& os) {
+   os << "\n - isolate_root: " << reinterpret_cast<void*>(isolate_root());
+   os << "\n - native_context: " << Brief(native_context());
+   os << "\n - callable: " << Brief(callable());
++  os << "\n - instance: " << Brief(instance());
+   os << "\n - suspend: " << suspend();
+   os << "\n";
+ }
+diff --git a/src/execution/frames.cc b/src/execution/frames.cc
+index 0ca10a21e190f5113e0a84687ae6fa1d2882d3ee..c18ce06a87f94431c503997913e9c1993e6be804 100644
+--- a/src/execution/frames.cc
++++ b/src/execution/frames.cc
+@@ -2500,7 +2500,7 @@ void WasmFrame::Print(StringStream* accumulator, PrintMode mode,
+     return;
+   }
+   wasm::WasmCodeRefScope code_ref_scope;
+-  accumulator->Add("Wasm [");
++  accumulator->Add(is_wasm_to_js() ? "Wasm-to-JS [" : "Wasm [");
+   accumulator->PrintName(script().name());
+   Address instruction_start = wasm_code()->instruction_start();
+   base::Vector<const uint8_t> raw_func_name =
+@@ -2631,6 +2631,15 @@ void WasmDebugBreakFrame::Print(StringStream* accumulator, PrintMode mode,
+   if (mode != OVERVIEW) accumulator->Add("\n");
+ }
+ 
++WasmInstanceObject WasmToJsFrame::wasm_instance() const {
++  // WasmToJsFrames hold the {WasmApiFunctionRef} object in the instance slot.
++  // Load the instance from there.
++  const int offset = WasmFrameConstants::kWasmInstanceOffset;
++  Object func_ref_obj(Memory<Address>(fp() + offset));
++  WasmApiFunctionRef func_ref = WasmApiFunctionRef::cast(func_ref_obj);
++  return WasmInstanceObject::cast(func_ref.instance());
++}
++
+ void JsToWasmFrame::Iterate(RootVisitor* v) const {
+   CodeLookupResult lookup_result = GetContainingCode(isolate(), pc());
+   CHECK(lookup_result.IsFound());
+diff --git a/src/execution/frames.h b/src/execution/frames.h
+index c72b7acef4b532fec8c55b698711a4897b1494c9..f6cf5360ce94fe62ce9076abb929b42e13c60b6a 100644
+--- a/src/execution/frames.h
++++ b/src/execution/frames.h
+@@ -1035,7 +1035,7 @@ class WasmFrame : public TypedFrame {
+   void Iterate(RootVisitor* v) const override;
+ 
+   // Accessors.
+-  V8_EXPORT_PRIVATE WasmInstanceObject wasm_instance() const;
++  virtual V8_EXPORT_PRIVATE WasmInstanceObject wasm_instance() const;
+   V8_EXPORT_PRIVATE wasm::NativeModule* native_module() const;
+   wasm::WasmCode* wasm_code() const;
+   int function_index() const;
+@@ -1101,6 +1101,9 @@ class WasmToJsFrame : public WasmFrame {
+  public:
+   Type type() const override { return WASM_TO_JS; }
+ 
++  int position() const override { return 0; }
++  WasmInstanceObject wasm_instance() const override;
++
+  protected:
+   inline explicit WasmToJsFrame(StackFrameIteratorBase* iterator);
+ 
+diff --git a/test/mjsunit/regress/asm/regress-1402270.js b/test/mjsunit/regress/asm/regress-1402270.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..77badd768f6f502ee3bacec73049f25cd8af40b7
+--- /dev/null
++++ b/test/mjsunit/regress/asm/regress-1402270.js
+@@ -0,0 +1,16 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++function print_stack(unused_arg) {
++  console.trace();
++}
++function asm(_, imports) {
++  'use asm';
++  var print_stack = imports.print_stack;
++  function f() {
++      print_stack(1);
++  }
++  return f;
++}
++asm({}, {'print_stack': print_stack})();
