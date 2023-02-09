@@ -217,14 +217,14 @@ void SpellCheckClient::SpellCheckWords(const SpellCheckScope& scope,
                                        const std::set<std::u16string>& words) {
   DCHECK(!scope.spell_check_.IsEmpty());
 
+  auto context = isolate_->GetCurrentContext();
   gin_helper::MicrotasksScope microtasks_scope(
-      isolate_, v8::MicrotasksScope::kDoNotRunMicrotasks);
+      isolate_, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
 
   v8::Local<v8::FunctionTemplate> templ = gin_helper::CreateFunctionTemplate(
       isolate_,
       base::BindRepeating(&SpellCheckClient::OnSpellCheckDone, AsWeakPtr()));
-
-  auto context = isolate_->GetCurrentContext();
   v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate_, words),
                                  templ->GetFunction(context).ToLocalChecked()};
   // Call javascript with the words and the callback function

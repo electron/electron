@@ -25,7 +25,8 @@ PromiseBase& PromiseBase::operator=(PromiseBase&&) = default;
 
 v8::Maybe<bool> PromiseBase::Reject() {
   v8::HandleScope handle_scope(isolate());
-  gin_helper::MicrotasksScope microtasks_scope(isolate());
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate(), GetContext()->GetMicrotaskQueue());
   v8::Context::Scope context_scope(GetContext());
 
   return GetInner()->Reject(GetContext(), v8::Undefined(isolate()));
@@ -33,7 +34,8 @@ v8::Maybe<bool> PromiseBase::Reject() {
 
 v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
   v8::HandleScope handle_scope(isolate());
-  gin_helper::MicrotasksScope microtasks_scope(isolate());
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate(), GetContext()->GetMicrotaskQueue());
   v8::Context::Scope context_scope(GetContext());
 
   return GetInner()->Reject(GetContext(), except);
@@ -41,7 +43,8 @@ v8::Maybe<bool> PromiseBase::Reject(v8::Local<v8::Value> except) {
 
 v8::Maybe<bool> PromiseBase::RejectWithErrorMessage(base::StringPiece message) {
   v8::HandleScope handle_scope(isolate());
-  gin_helper::MicrotasksScope microtasks_scope(isolate());
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate(), GetContext()->GetMicrotaskQueue());
   v8::Context::Scope context_scope(GetContext());
 
   v8::Local<v8::Value> error =
@@ -83,7 +86,8 @@ v8::Local<v8::Promise> Promise<void>::ResolvedPromise(v8::Isolate* isolate) {
 
 v8::Maybe<bool> Promise<void>::Resolve() {
   v8::HandleScope handle_scope(isolate());
-  gin_helper::MicrotasksScope microtasks_scope(isolate());
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate(), GetContext()->GetMicrotaskQueue());
   v8::Context::Scope context_scope(GetContext());
 
   return GetInner()->Resolve(GetContext(), v8::Undefined(isolate()));
