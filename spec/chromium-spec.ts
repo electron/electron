@@ -2270,17 +2270,19 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   );
   let w: BrowserWindow, server: http.Server;
 
-  before(() => {
+  beforeEach(async () => {
     server = http.createServer(async (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.write(await fullscreenChildHtml);
       res.end();
     });
 
-    server.listen(8989, '127.0.0.1');
-  });
+    await new Promise<void>((resolve) => {
+      server.listen(8989, '127.0.0.1', () => {
+        resolve();
+      });
+    });
 
-  beforeEach(() => {
     w = new BrowserWindow({
       show: true,
       fullscreen: true,
@@ -2545,14 +2547,10 @@ describe('window.getScreenDetails', () => {
   });
 });
 
-describe('navigator.clipboard', () => {
+describe('navigator.clipboard.read', () => {
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({
-      webPreferences: {
-        enableBlinkFeatures: 'Serial'
-      }
-    });
+    w = new BrowserWindow();
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
@@ -2594,6 +2592,54 @@ describe('navigator.clipboard', () => {
     });
     const clipboard = await readClipboard();
     expect(clipboard).to.not.equal('Read permission denied.');
+  });
+});
+
+describe('navigator.clipboard.write', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow();
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const writeClipboard: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.clipboard.writeText('Hello World!').catch(err => err.message);
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
+    const clipboard = await writeClipboard();
+    expect(clipboard).to.not.equal('Write permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-sanitized-write') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const clipboard = await writeClipboard();
+    expect(clipboard).to.equal('Write permission denied.');
+  });
+
+  it('returns clipboard contents when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-sanitized-write') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const clipboard = await writeClipboard();
+    expect(clipboard).to.not.equal('Write permission denied.');
   });
 });
 
