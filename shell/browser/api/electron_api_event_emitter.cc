@@ -46,4 +46,4 @@ v8::Local<v8::Object> GetEventEmitterPrototype(v8::Isolate* isolate) {
 
 }  // namespace electron
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_event_emitter, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_event_emitter, Initialize)

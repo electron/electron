@@ -154,4 +154,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_power_monitor, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_power_monitor, Initialize)
