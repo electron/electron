@@ -810,57 +810,73 @@ describe('net module', () => {
           // and attach the cookies for the new target domain
           expect(response.headers['x-cookie']).to.equal(`wild_cookie=${cookieLocalVal}`);
         });
-
-        it('should be able correctly filter out cookies that are secure', async () => {
-          const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
-          const serverUrl = await respondOnce.toSingleURL((request, response) => {
-            response.statusCode = 200;
-            response.statusMessage = 'OK';
-            response.setHeader('set-cookie', ['cookie1=1', 'cookie2=2; secure']);
-            response.end();
-          });
-          const urlRequest = net.request({
-            url: serverUrl,
-            session: sess
-          });
-
-          await collectStreamBody(await getResponse(urlRequest));
-          const secureCookies = await sess.cookies.get({
-            secure: true
-          });
-          expect(secureCookies).to.have.lengthOf(1);
-
-          const cookies = await sess.cookies.get({
-            secure: false
-          });
-          expect(cookies).to.have.lengthOf(1);
-        });
-
-        it('should be able correctly filter out cookies that are session', async () => {
-          const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
-          const serverUrl = await respondOnce.toSingleURL((request, response) => {
-            response.statusCode = 200;
-            response.statusMessage = 'OK';
-            response.setHeader('set-cookie', ['cookie1=1', 'cookie2=2; expires=Wed, 21 Oct 3023 07:28:00 GMT']);
-            response.end();
-          });
-          net.request({
-            url: serverUrl,
-            session: sess
-          });
-
-          const sessionCookies = await sess.cookies.get({
-            session: true
-          });
-          expect(sessionCookies).to.have.lengthOf(1);
-
-          const cookies = await sess.cookies.get({
-            session: false
-          });
-          expect(cookies).to.have.lengthOf(1);
-        });
       });
     }
+
+    it('should be able correctly filter out cookies that are secure', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await Promise.all([
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie1',
+          value: '1',
+          secure: true
+        }),
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie2',
+          value: '2',
+          secure: false
+        })
+      ]);
+
+      const secureCookies = await sess.cookies.get({
+        secure: true
+      });
+      expect(secureCookies).to.have.lengthOf(1);
+      expect(secureCookies[0].name).to.equal('cookie1');
+
+      const cookies = await sess.cookies.get({
+        secure: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+      expect(cookies[0].name).to.equal('cookie2');
+    });
+
+    it('should be able correctly filter out cookies that are session', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await Promise.all([
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie1',
+          value: '1'
+        }),
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie2',
+          value: '2',
+          expirationDate: Math.round(Date.now() / 1000) + 10000
+        })
+      ]);
+
+      const sessionCookies = await sess.cookies.get({
+        session: true
+      });
+      expect(sessionCookies).to.have.lengthOf(1);
+      expect(sessionCookies[0].name).to.equal('cookie1');
+
+      const cookies = await sess.cookies.get({
+        session: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+      expect(cookies[0].name).to.equal('cookie2');
+    });
 
     describe('when {"credentials":"omit"}', () => {
       it('should not send cookies');
