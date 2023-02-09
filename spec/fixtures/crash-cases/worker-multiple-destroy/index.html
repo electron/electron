@@ -1,0 +1,22 @@
+<html>
+
+<body>
+  <style>
+    textarea {
+      background-image: url(checkerboard);
+      background-image: paint(checkerboard);
+    }
+
+    @supports (background: paint(id)) {
+      background-image: paint(checkerboard);
+    }
+  </style>
+  <textarea></textarea>
+  <script>
+    const addPaintWorklet = async () => {
+      await CSS.paintWorklet.addModule('worklet.js');
+    }
+  </script>
+</body>
+
+</html>
