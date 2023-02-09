@@ -79,7 +79,7 @@ class NodeBindings {
   enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
-  static void RegisterBuiltinModules();
+  static void RegisterBuiltinBindings();
   static bool IsInitialized();
 
   virtual ~NodeBindings();
