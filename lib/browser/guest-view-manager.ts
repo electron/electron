@@ -118,7 +118,7 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   });
 
   // Init guest web view after attached.
-  guest.once('did-attach' as any, function (this: Electron.WebContents, event: Electron.Event<{}, Electron.WebContents>) {
+  guest.once('did-attach' as any, function (this: Electron.WebContents, event: Electron.Event) {
     const previouslyAttached = this.viewInstanceId != null;
     this.viewInstanceId = instanceId;
 
