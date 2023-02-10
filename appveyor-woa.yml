@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-106.0.5249.199
+image: e-106.0.5249.199-2
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -82,8 +82,8 @@ for:
           if (Test-Path -Path "$pwd\build-tools") {
             Remove-Item -Recurse -Force $pwd\build-tools
           }
-      - ps: | 
-          git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git          
+      - ps: |
           cd depot_tools
           git fetch --depth 1 origin b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
           git checkout b7d8efd8bee494f4cfacacc19cf50fc4d4be3900
