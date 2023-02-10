@@ -16,6 +16,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
 #include "ui/views/layout/flex_layout_types.h"
@@ -119,6 +120,8 @@ gin::Handle<WebContentsView> WebContentsView::Create(
   v8::Local<v8::Context> context = isolate->GetCurrentContext();
   v8::Local<v8::Value> arg = gin::ConvertToV8(isolate, web_preferences);
   v8::Local<v8::Object> obj;
+  if (!web_preferences.Has(options::kShow))
+    gin::Dictionary(isolate, arg.As<v8::Object>()).Set(options::kShow, true);
   if (GetConstructor(isolate)->NewInstance(context, 1, &arg).ToLocal(&obj)) {
     gin::Handle<WebContentsView> web_contents_view;
     if (gin::ConvertFromV8(isolate, obj, &web_contents_view))
@@ -143,6 +146,8 @@ gin_helper::WrappableBase* WebContentsView::New(gin_helper::Arguments* args) {
   gin_helper::Dictionary web_preferences =
       gin::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&web_preferences);
+  if (!web_preferences.Has(options::kShow))
+    web_preferences.Set(options::kShow, false);
   auto web_contents =
       WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 

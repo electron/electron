@@ -1,13 +1,13 @@
-import { closeWindow } from './lib/window-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { expect } from 'chai';
 
 import { BaseWindow, WebContentsView } from 'electron/main';
 
 describe('WebContentsView', () => {
-  let w: BaseWindow;
-  afterEach(() => closeWindow(w as any).then(() => { w = null as unknown as BaseWindow; }));
+  afterEach(closeAllWindows);
 
   it('can be used as content view', () => {
-    w = new BaseWindow({ show: false });
+    const w = new BaseWindow({ show: false });
     w.setContentView(new WebContentsView({}));
   });
 
@@ -32,6 +32,73 @@ describe('WebContentsView', () => {
       // bunch of stuff.
       triggerGCByAllocation();
       done();
+    });
+  });
+
+  describe('visibilityState', () => {
+    it('is initially hidden', async () => {
+      const v = new WebContentsView();
+      await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
+      expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('hidden');
+    });
+
+    it('becomes visibile when attached', async () => {
+      const v = new WebContentsView();
+      await v.webContents.loadURL('about:blank');
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
+      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      const w = new BaseWindow();
+      w.setContentView(v);
+      await p;
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+    });
+
+    it('is initially visible if load happens after attach', async () => {
+      const w = new BaseWindow();
+      const v = new WebContentsView();
+      w.contentView = v;
+      await v.webContents.loadURL('data:text/html,<script>initialVisibility = document.visibilityState</script>');
+      expect(await v.webContents.executeJavaScript('initialVisibility')).to.equal('visible');
+    });
+
+    it('becomes hidden when parent window is hidden', async () => {
+      const w = new BaseWindow();
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      w.hide();
+      await p;
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
+    });
+
+    it('becomes visible when parent window is shown', async () => {
+      const w = new BaseWindow({ show: false });
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
+      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      w.show();
+      await p;
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+    });
+
+    it('does not change when view is moved between two visible windows', async () => {
+      const w = new BaseWindow();
+      const v = new WebContentsView();
+      w.setContentView(v);
+      await v.webContents.loadURL('about:blank');
+      expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
+
+      const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", () => resolve(document.visibilityState)))');
+      const w2 = new BaseWindow();
+      w2.setContentView(v);
+      // A visibilitychange event is triggered, because the page cycled from
+      // visible -> hidden -> visible, but the page's JS can't observe the
+      // 'hidden' state.
+      expect(await p).to.equal('visible');
     });
   });
 });

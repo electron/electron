@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import * as cp from 'child_process';
-import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron/main';
+import { BaseWindow, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, WebContents, WebContentsView } from 'electron/main';
 import * as path from 'path';
 
 import { emittedOnce } from './lib/events-helpers';
@@ -10,16 +10,16 @@ import { ifdescribe, delay } from './lib/spec-helpers';
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
 ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
-  let w: BrowserWindow;
+  let w: BaseWindow & {webContents: WebContents};
 
   afterEach(() => {
     return closeWindow(w);
   });
 
-  const load = () => w.loadFile(path.resolve(__dirname, 'fixtures', 'chromium', 'visibilitystate.html'));
+  const load = () => w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'chromium', 'visibilitystate.html'));
 
   const itWithOptions = (name: string, options: BrowserWindowConstructorOptions, fn: Mocha.Func) => {
-    return it(name, async function (...args) {
+    it(name, async function (...args) {
       w = new BrowserWindow({
         ...options,
         paintWhenInitiallyHidden: false,
@@ -29,6 +29,16 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           contextIsolation: false
         }
       });
+      await Promise.resolve(fn.apply(this, args));
+    });
+
+    it(name + ' with BaseWindow', async function (...args) {
+      const baseWindow = new BaseWindow({
+        ...options
+      });
+      const wcv = new WebContentsView({ ...(options.webPreferences ?? {}), nodeIntegration: true, contextIsolation: false });
+      baseWindow.contentView = wcv;
+      w = Object.assign(baseWindow, { webContents: wcv.webContents });
       await Promise.resolve(fn.apply(this, args));
     });
   };
