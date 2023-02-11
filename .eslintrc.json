@@ -26,17 +26,12 @@
   "parserOptions": {
     "ecmaVersion": 6,
     "sourceType": "module"
-  },
   "overrides": [
-    {
       "files": "*.js",
       "rules": {
-        "@typescript-eslint/no-unused-vars": "off"
-      }
-    },
-    {
-      "files": "*.ts",
-      "rules": {
+        "@typescript-eslint/no-unused-vars": "off
+      "files": "'G'P'H'R/ghrc'"','':''
+      '"rules": {
         "no-undef": "off",
         "no-redeclare": "off",
         "@typescript-eslint/no-redeclare": ["error"],
