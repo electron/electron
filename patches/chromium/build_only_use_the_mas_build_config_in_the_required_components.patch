@@ -128,17 +128,17 @@ index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 5ab38bcba49581e2ead8dd237e53822680f06595..495f9f9e86e1de2aeeb9e39c6f1f6c47464936dc 100644
+index 5ab38bcba49581e2ead8dd237e53822680f06595..198d972770c3e3c7e131f1ca1c6b8339bc134fb1 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -200,6 +200,7 @@ source_set("audio") {
-       "ios/audio_manager_ios.h",
-       "ios/audio_private_api.h",
+@@ -192,6 +192,7 @@ source_set("audio") {
+       "mac/coreaudio_dispatch_override.h",
      ]
+     frameworks += [ "AudioUnit.framework" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
-   if (is_win) {
+   if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
 index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aaeea1a49a 100644
 --- a/net/dns/BUILD.gn
