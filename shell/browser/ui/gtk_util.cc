@@ -19,7 +19,7 @@
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 
 // The following utilities are pulled from
-// https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_impl_gtk.cc;l=43-74
+// https://source.chromium.org/chromium/chromium/src/+/main:ui/gtk/select_file_dialog_linux_gtk.cc;l=44-75;drc=a03ba4ca94f75531207c3ea832d6a605cde77394
 namespace gtk_util {
 
 namespace {
