@@ -27,7 +27,9 @@ FrameSubscriber::FrameSubscriber(content::WebContents* web_contents,
     : content::WebContentsObserver(web_contents),
       callback_(callback),
       only_dirty_(only_dirty) {
-  AttachToHost(web_contents->GetPrimaryMainFrame()->GetRenderWidgetHost());
+  content::RenderViewHost* rvh = web_contents->GetRenderViewHost();
+  if (rvh)
+    AttachToHost(rvh->GetWidget());
 }
 
 FrameSubscriber::~FrameSubscriber() = default;
@@ -70,11 +72,11 @@ void FrameSubscriber::RenderViewDeleted(content::RenderViewHost* host) {
   }
 }
 
-void FrameSubscriber::PrimaryPageChanged(content::Page& page) {
-  if (auto* host = page.GetMainDocument().GetMainFrame()->GetRenderWidgetHost();
-      host_ != host) {
+void FrameSubscriber::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                            content::RenderViewHost* new_host) {
+  if ((old_host && old_host->GetWidget() == host_) || (!old_host && !host_)) {
     DetachFromHost();
-    AttachToHost(host);
+    AttachToHost(new_host->GetWidget());
   }
 }
 

@@ -110,7 +110,6 @@ These individual tutorials expand on topics discussed in the guide above.
 * [BrowserView](api/browser-view.md)
 * [BrowserWindow](api/browser-window.md)
 * [contentTracing](api/content-tracing.md)
-* [desktopCapturer](api/desktop-capturer.md)
 * [dialog](api/dialog.md)
 * [globalShortcut](api/global-shortcut.md)
 * [inAppPurchase](api/in-app-purchase.md)
@@ -119,22 +118,19 @@ These individual tutorials expand on topics discussed in the guide above.
 * [MenuItem](api/menu-item.md)
 * [MessageChannelMain](api/message-channel-main.md)
 * [MessagePortMain](api/message-port-main.md)
-* [nativeTheme](api/native-theme.md)
 * [net](api/net.md)
 * [netLog](api/net-log.md)
+* [nativeTheme](api/native-theme.md)
 * [Notification](api/notification.md)
 * [powerMonitor](api/power-monitor.md)
 * [powerSaveBlocker](api/power-save-blocker.md)
 * [protocol](api/protocol.md)
-* [pushNotifications](api/push-notifications.md)
-* [safeStorage](api/safe-storage.md)
 * [screen](api/screen.md)
 * [session](api/session.md)
 * [ShareMenu](api/share-menu.md)
 * [systemPreferences](api/system-preferences.md)
 * [TouchBar](api/touch-bar.md)
 * [Tray](api/tray.md)
-* [utilityProcess](api/utility-process.md)
 * [webContents](api/web-contents.md)
 * [webFrameMain](api/web-frame-main.md)
 
@@ -146,10 +142,11 @@ These individual tutorials expand on topics discussed in the guide above.
 
 ### Modules for Both Processes:
 
-* [clipboard](api/clipboard.md) (non-sandboxed renderers only)
+* [clipboard](api/clipboard.md)
 * [crashReporter](api/crash-reporter.md)
+* [desktopCapturer](api/desktop-capturer.md)
 * [nativeImage](api/native-image.md)
-* [shell](api/shell.md) (non-sandboxed renderers only)
+* [shell](api/shell.md)
 
 ## Development
 

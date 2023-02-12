@@ -8,8 +8,7 @@
 #include <memory>
 #include <string>
 
-#include "base/functional/callback.h"
-#include "base/task/single_thread_task_runner.h"
+#include "base/callback.h"
 #include "base/timer/timer.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"

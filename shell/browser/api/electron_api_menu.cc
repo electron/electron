@@ -266,9 +266,10 @@ void Menu::OnMenuWillShow() {
 }
 
 // static
-void Menu::FillObjectTemplate(v8::Isolate* isolate,
-                              v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Menu", templ)
+v8::Local<v8::ObjectTemplate> Menu::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
+  return gin::ObjectTemplateBuilder(isolate, "Menu", templ)
       .SetMethod("insertItem", &Menu::InsertItemAt)
       .SetMethod("insertCheckItem", &Menu::InsertCheckItemAt)
       .SetMethod("insertRadioItem", &Menu::InsertRadioItemAt)
@@ -321,4 +322,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_menu, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_menu, Initialize)

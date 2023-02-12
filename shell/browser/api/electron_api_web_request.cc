@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/stl_util.h"
-#include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
 #include "extensions/browser/api/web_request/web_request_resource_type.h"
 #include "gin/converter.h"
@@ -506,7 +505,7 @@ void WebRequest::OnListenerResult(uint64_t id,
 
   // The ProxyingURLLoaderFactory expects the callback to be executed
   // asynchronously, because it used to work on IO thread before NetworkService.
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+  base::SequencedTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(std::move(callbacks_[id]), result));
   callbacks_.erase(iter);
 }

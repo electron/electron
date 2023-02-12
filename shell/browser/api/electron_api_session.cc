@@ -528,7 +528,7 @@ v8::Local<v8::Promise> Session::SetProxy(gin::Arguments* args) {
           createProxyConfig(proxy_mode, pac_url, proxy_rules, bypass_list)},
       WriteablePrefStore::DEFAULT_PREF_WRITE_FLAGS);
 
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE, base::BindOnce(gin_helper::Promise<void>::ResolvePromise,
                                 std::move(promise)));
 
@@ -1313,4 +1313,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_session, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_session, Initialize)

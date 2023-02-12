@@ -6,7 +6,7 @@
 
 #include <utility>
 
-#include "base/functional/callback.h"
+#include "base/callback.h"
 
 namespace electron {
 

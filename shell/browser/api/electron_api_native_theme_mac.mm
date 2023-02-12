@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_native_theme.h"
 
+#include "base/mac/sdk_forward_declarations.h"
 #include "shell/browser/mac/electron_application.h"
 
 namespace electron::api {

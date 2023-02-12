@@ -10,7 +10,6 @@
 #include "base/mac/scoped_sending_event.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
-#include "base/task/sequenced_task_runner.h"
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/web_contents.h"
@@ -65,8 +64,7 @@ void MenuMac::PopupAt(BaseWindow* window,
       base::BindOnce(&MenuMac::PopupOnUI, weak_factory_.GetWeakPtr(),
                      native_window->GetWeakPtr(), window->weak_map_id(), x, y,
                      positioning_item, std::move(callback_with_ref));
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(FROM_HERE,
-                                                           std::move(popup));
+  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE, std::move(popup));
 }
 
 v8::Local<v8::Value> Menu::GetUserAcceleratorAt(int command_id) const {
@@ -163,8 +161,8 @@ void MenuMac::PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
 void MenuMac::ClosePopupAt(int32_t window_id) {
   auto close_popup = base::BindOnce(&MenuMac::ClosePopupOnUI,
                                     weak_factory_.GetWeakPtr(), window_id);
-  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
-      FROM_HERE, std::move(close_popup));
+  base::SequencedTaskRunnerHandle::Get()->PostTask(FROM_HERE,
+                                                   std::move(close_popup));
 }
 
 std::u16string MenuMac::GetAcceleratorTextAtForTesting(int index) const {

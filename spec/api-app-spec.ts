@@ -1516,7 +1516,6 @@ describe('app module', () => {
         // to the Docker invocation allows the syscalls that Chrome needs, but
         // are probably more permissive than we'd like.
         this.skip();
-        return;
       }
       fs.unlink(socketPath, () => {
         server = net.createServer();
@@ -1528,17 +1527,13 @@ describe('app module', () => {
     afterEach(done => {
       if (appProcess != null) appProcess.kill();
 
-      if (server) {
-        server.close(() => {
-          if (process.platform === 'win32') {
-            done();
-          } else {
-            fs.unlink(socketPath, () => done());
-          }
-        });
-      } else {
-        done();
-      }
+      server.close(() => {
+        if (process.platform === 'win32') {
+          done();
+        } else {
+          fs.unlink(socketPath, () => done());
+        }
+      });
     });
 
     describe('when app.enableSandbox() is called', () => {

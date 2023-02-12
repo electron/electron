@@ -1325,7 +1325,7 @@ describe('chromium features', () => {
     it('fails with "not supported" for getDisplayMedia', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))', true);
+      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))');
       expect(ok).to.be.false();
       expect(err).to.equal('Not supported');
     });
@@ -2027,8 +2027,7 @@ describe('chromium features', () => {
     });
   });
 
-  // This is intentionally disabled on arm macs: https://chromium-review.googlesource.com/c/chromium/src/+/4143761
-  ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('webgl', () => {
+  ifdescribe(process.platform !== 'win32' && process.platform !== 'linux')('webgl', () => {
     it('can be gotten as context in canvas', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
@@ -2270,19 +2269,17 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   );
   let w: BrowserWindow, server: http.Server;
 
-  beforeEach(async () => {
+  before(() => {
     server = http.createServer(async (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.write(await fullscreenChildHtml);
       res.end();
     });
 
-    await new Promise<void>((resolve) => {
-      server.listen(8989, '127.0.0.1', () => {
-        resolve();
-      });
-    });
+    server.listen(8989, '127.0.0.1');
+  });
 
+  beforeEach(() => {
     w = new BrowserWindow({
       show: true,
       fullscreen: true,
@@ -2547,10 +2544,14 @@ describe('window.getScreenDetails', () => {
   });
 });
 
-describe('navigator.clipboard.read', () => {
+describe('navigator.clipboard', () => {
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow();
+    w = new BrowserWindow({
+      webPreferences: {
+        enableBlinkFeatures: 'Serial'
+      }
+    });
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
@@ -2592,54 +2593,6 @@ describe('navigator.clipboard.read', () => {
     });
     const clipboard = await readClipboard();
     expect(clipboard).to.not.equal('Read permission denied.');
-  });
-});
-
-describe('navigator.clipboard.write', () => {
-  let w: BrowserWindow;
-  before(async () => {
-    w = new BrowserWindow();
-    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-  });
-
-  const writeClipboard: any = () => {
-    return w.webContents.executeJavaScript(`
-      navigator.clipboard.writeText('Hello World!').catch(err => err.message);
-    `, true);
-  };
-
-  after(closeAllWindows);
-  afterEach(() => {
-    session.defaultSession.setPermissionRequestHandler(null);
-  });
-
-  it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
-    const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
-  });
-
-  it('returns an error when permission denied', async () => {
-    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-      if (permission === 'clipboard-sanitized-write') {
-        callback(false);
-      } else {
-        callback(true);
-      }
-    });
-    const clipboard = await writeClipboard();
-    expect(clipboard).to.equal('Write permission denied.');
-  });
-
-  it('returns clipboard contents when permission is granted', async () => {
-    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
-      if (permission === 'clipboard-sanitized-write') {
-        callback(true);
-      } else {
-        callback(false);
-      }
-    });
-    const clipboard = await writeClipboard();
-    expect(clipboard).to.not.equal('Write permission denied.');
   });
 });
 
@@ -2833,7 +2786,7 @@ describe('navigator.hid', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
-      expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
+      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;
@@ -2856,7 +2809,7 @@ describe('navigator.hid', () => {
       w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(!!frame).to.be.true();
+      expect(frame).to.not.be.empty();
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.hid.getDevices()');
         expect(grantedDevicesOnNewPage).to.be.empty();
@@ -3034,7 +2987,7 @@ describe('navigator.usb', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-usb-device', (event, details, callback) => {
-      expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
+      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;
@@ -3057,7 +3010,7 @@ describe('navigator.usb', () => {
       w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(!!frame).to.be.true();
+      expect(frame).to.not.be.empty();
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevicesOnNewPage).to.be.empty();

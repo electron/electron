@@ -24,7 +24,7 @@ class EventEmitterMixin;
 //                   public gin_helper::Constructible<Example> {
 //    public:
 //     static gin::Handle<Tray> New(...usual gin method arguments...);
-//     static void FillObjectTemplate(
+//     static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
 //         v8::Isolate*,
 //         v8::Local<v8::ObjectTemplate>);
 //   }
@@ -55,8 +55,9 @@ class Constructible {
       }
       constructor->InstanceTemplate()->SetInternalFieldCount(
           gin::kNumberOfInternalFields);
-      T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
-      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
+      v8::Local<v8::ObjectTemplate> obj_templ =
+          T::FillObjectTemplate(isolate, constructor->InstanceTemplate());
+      data->SetObjectTemplate(wrapper_info, obj_templ);
       data->SetFunctionTemplate(wrapper_info, constructor);
     }
     return constructor->GetFunction(context).ToLocalChecked();

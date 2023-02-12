@@ -4,13 +4,11 @@
 
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
 
-#include <iterator>
 #include <tuple>
 #include <vector>
 
 #include "base/base_paths.h"
 #include "base/command_line.h"
-#include "base/containers/contains.h"
 #include "base/files/file_path.h"
 #include "base/path_service.h"
 #include "base/process/process_handle.h"
@@ -35,17 +33,17 @@ namespace electron {
 
 namespace {
 
-const char kEmitProcessEventKey[] = "emit-process-event";
-const char kBindingCacheKey[] = "native-binding-cache";
+const char kLifecycleKey[] = "lifecycle";
+const char kModuleCacheKey[] = "native-module-cache";
 
-v8::Local<v8::Object> GetBindingCache(v8::Isolate* isolate) {
+v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
   gin_helper::Dictionary global(isolate, context->Global());
   v8::Local<v8::Value> cache;
 
-  if (!global.GetHidden(kBindingCacheKey, &cache)) {
+  if (!global.GetHidden(kModuleCacheKey, &cache)) {
     cache = v8::Object::New(isolate);
-    global.SetHidden(kBindingCacheKey, cache);
+    global.SetHidden(kModuleCacheKey, cache);
   }
 
   return cache->ToObject(context).ToLocalChecked();
@@ -56,19 +54,18 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 v8::Local<v8::String> key,
                                 gin_helper::Arguments* margs) {
   v8::Local<v8::Object> exports;
-  std::string binding_key = gin::V8ToString(isolate, key);
-  gin_helper::Dictionary cache(isolate, GetBindingCache(isolate));
+  std::string module_key = gin::V8ToString(isolate, key);
+  gin_helper::Dictionary cache(isolate, GetModuleCache(isolate));
 
-  if (cache.Get(binding_key.c_str(), &exports)) {
+  if (cache.Get(module_key.c_str(), &exports)) {
     return exports;
   }
 
-  auto* mod = node::binding::get_linked_module(binding_key.c_str());
+  auto* mod = node::binding::get_linked_module(module_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
-    snprintf(errmsg, sizeof(errmsg), "No such binding: %s",
-             binding_key.c_str());
+    snprintf(errmsg, sizeof(errmsg), "No such module: %s", module_key.c_str());
     margs->ThrowError(errmsg);
     return exports;
   }
@@ -78,7 +75,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   DCHECK_NE(mod->nm_context_register_func, nullptr);
   mod->nm_context_register_func(exports, v8::Null(isolate),
                                 isolate->GetCurrentContext(), mod->nm_priv);
-  cache.Set(binding_key.c_str(), exports);
+  cache.Set(module_key.c_str(), exports);
   return exports;
 }
 
@@ -97,32 +94,34 @@ double Uptime() {
       .InSecondsF();
 }
 
-void InvokeEmitProcessEvent(v8::Handle<v8::Context> context,
-                            const std::string& event_name) {
+void InvokeHiddenCallback(v8::Handle<v8::Context> context,
+                          const std::string& hidden_key,
+                          const std::string& callback_name) {
   auto* isolate = context->GetIsolate();
-  // set by sandboxed_renderer/init.js
-  auto binding_key = gin::ConvertToV8(isolate, kEmitProcessEventKey)
-                         ->ToString(context)
-                         .ToLocalChecked();
+  auto binding_key =
+      gin::ConvertToV8(isolate, hidden_key)->ToString(context).ToLocalChecked();
   auto private_binding_key = v8::Private::ForApi(isolate, binding_key);
   auto global_object = context->Global();
-  v8::Local<v8::Value> callback_value;
-  if (!global_object->GetPrivate(context, private_binding_key)
-           .ToLocal(&callback_value))
+  v8::Local<v8::Value> value;
+  if (!global_object->GetPrivate(context, private_binding_key).ToLocal(&value))
     return;
-  if (callback_value.IsEmpty() || !callback_value->IsFunction())
+  if (value.IsEmpty() || !value->IsObject())
     return;
+  auto binding = value->ToObject(context).ToLocalChecked();
+  auto callback_key = gin::ConvertToV8(isolate, callback_name)
+                          ->ToString(context)
+                          .ToLocalChecked();
+  auto callback_value = binding->Get(context, callback_key).ToLocalChecked();
+  DCHECK(callback_value->IsFunction());  // set by sandboxed_renderer/init.js
   auto callback = callback_value.As<v8::Function>();
-  v8::Local<v8::Value> args[] = {gin::ConvertToV8(isolate, event_name)};
-  std::ignore =
-      callback->Call(context, callback, std::size(args), std::data(args));
+  std::ignore = callback->Call(context, binding, 0, nullptr);
 }
 
 }  // namespace
 
 ElectronSandboxedRendererClient::ElectronSandboxedRendererClient() {
-  // Explicitly register electron's builtin bindings.
-  NodeBindings::RegisterBuiltinBindings();
+  // Explicitly register electron's builtin modules.
+  NodeBindings::RegisterBuiltinModules();
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 
@@ -159,13 +158,37 @@ void ElectronSandboxedRendererClient::RenderFrameCreated(
 void ElectronSandboxedRendererClient::RunScriptsAtDocumentStart(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentStart(render_frame);
-  EmitProcessEvent(render_frame, "document-start");
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return;
+
+  auto* isolate = blink::MainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context =
+      GetContext(render_frame->GetWebFrame(), isolate);
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
+  v8::Context::Scope context_scope(context);
+
+  InvokeHiddenCallback(context, kLifecycleKey, "onDocumentStart");
 }
 
 void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
     content::RenderFrame* render_frame) {
   RendererClientBase::RunScriptsAtDocumentEnd(render_frame);
-  EmitProcessEvent(render_frame, "document-end");
+  if (injected_frames_.find(render_frame) == injected_frames_.end())
+    return;
+
+  auto* isolate = blink::MainThreadIsolate();
+  v8::HandleScope handle_scope(isolate);
+  v8::Local<v8::Context> context =
+      GetContext(render_frame->GetWebFrame(), isolate);
+  gin_helper::MicrotasksScope microtasks_scope(
+      isolate, context->GetMicrotaskQueue(),
+      v8::MicrotasksScope::kDoNotRunMicrotasks);
+  v8::Context::Scope context_scope(context);
+
+  InvokeHiddenCallback(context, kLifecycleKey, "onDocumentEnd");
 }
 
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
@@ -196,7 +219,7 @@ void ElectronSandboxedRendererClient::DidCreateScriptContext(
 
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
-  InvokeEmitProcessEvent(context, "loaded");
+  InvokeHiddenCallback(context, kLifecycleKey, "onLoaded");
 }
 
 void ElectronSandboxedRendererClient::WillReleaseScriptContext(
@@ -211,25 +234,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
       v8::MicrotasksScope::kDoNotRunMicrotasks);
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
-  InvokeEmitProcessEvent(context, "exit");
-}
-
-void ElectronSandboxedRendererClient::EmitProcessEvent(
-    content::RenderFrame* render_frame,
-    const char* event_name) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
-    return;
-
-  auto* isolate = blink::MainThreadIsolate();
-  v8::HandleScope handle_scope(isolate);
-  v8::Local<v8::Context> context =
-      GetContext(render_frame->GetWebFrame(), isolate);
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, context->GetMicrotaskQueue(),
-      v8::MicrotasksScope::kDoNotRunMicrotasks);
-  v8::Context::Scope context_scope(context);
-
-  InvokeEmitProcessEvent(context, event_name);
+  InvokeHiddenCallback(context, kLifecycleKey, "onExit");
 }
 
 }  // namespace electron

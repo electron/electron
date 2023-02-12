@@ -74,7 +74,7 @@ std::string ConvertDeviceAccessStatus(DeviceAccessStatus value) {
 namespace api {
 
 bool SystemPreferences::IsAeroGlassEnabled() {
-  return true;
+  return ui::win::IsAeroGlassEnabled();
 }
 
 std::string hexColorDWORDToRGBA(DWORD color) {

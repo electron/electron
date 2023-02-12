@@ -13,7 +13,7 @@ hide_title: true
 <!-- ✍ Update this section if you want to provide more details -->
 
 This guide will take you through the process of creating a
-[Tray](../api/tray.md) icon with
+[Tray](https://www.electronjs.org/docs/api/tray) icon with
 its own context menu to the system's notification area.
 
 On MacOS and Ubuntu, the Tray will be located on the top
@@ -31,11 +31,11 @@ const { app, Tray, Menu, nativeImage } = require('electron')
 ```
 
 Next we will create our Tray. To do this, we will use a
-[`NativeImage`](../api/native-image.md) icon,
+[`NativeImage`](https://www.electronjs.org/docs/api/native-image) icon,
 which can be created through any one of these
-[methods](../api/native-image.md#methods).
+[methods](https://www.electronjs.org/docs/api/native-image#methods).
 Note that we wrap our Tray creation code within an
-[`app.whenReady`](../api/app.md#appwhenready)
+[`app.whenReady`](https://www.electronjs.org/docs/api/app#appwhenready)
 as we will need to wait for our electron app to finish initializing.
 
 ```js title='main.js'
@@ -64,7 +64,7 @@ tray.setContextMenu(contextMenu)
 
 The code above will create 4 separate radio-type items in the context menu.
 To read more about constructing native menus, click
-[here](../api/menu.md#menubuildfromtemplatetemplate).
+[here](https://www.electronjs.org/docs/api/menu#menubuildfromtemplatetemplate).
 
 Finally, let's give our tray a tooltip and a title.
 

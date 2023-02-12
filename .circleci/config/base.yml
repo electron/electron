@@ -4,7 +4,7 @@ parameters:
   run-docs-only:
     type: boolean
     default: false
-
+  
   upload-to-storage:
     type: string
     default: '1'
@@ -141,7 +141,7 @@ env-mas-apple-silicon: &env-mas-apple-silicon
 
 env-send-slack-notifications: &env-send-slack-notifications
   NOTIFY_SLACK: true
-
+  
 env-global: &env-global
   ELECTRON_OUT_DIR: Default
 
@@ -505,9 +505,6 @@ step-fix-sync: &step-fix-sync
       sed $SEDOPTION "s/Updating depot_tools... //g" ninja_ensure_file
       cipd ensure --root src/third_party/ninja -ensure-file ninja_ensure_file
 
-      # Explicitly add ninja to the path
-      echo 'export PATH="$PATH:'"$PWD"'/src/third_party/ninja"' >> $BASH_ENV
-
       cd src/third_party/angle
       rm .git/objects/info/alternates
       git remote set-url origin https://chromium.googlesource.com/angle/angle.git
@@ -694,7 +691,7 @@ step-show-goma-stats: &step-show-goma-stats
   run:
     shell: /bin/bash
     name: Check goma stats after build
-    command: |
+    command: |      
       set +e
       set +o pipefail
       $LOCAL_GOMA_DIR/goma_ctl.py stat
@@ -798,7 +795,7 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         elif [ "$TARGET_ARCH" == "arm64" ]; then
           export MKSNAPSHOT_PATH="clang_x64_v8_arm64"
         fi
-        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default
+        cp "out/Default/$MKSNAPSHOT_PATH/mksnapshot" out/Default        
         cp "out/Default/$MKSNAPSHOT_PATH/v8_context_snapshot_generator" out/Default
         if [ "`uname`" == "Linux" ]; then
           cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.so" out/Default
@@ -1012,7 +1009,7 @@ commands:
               else
                 echo 'Using Python install from cache'
               fi
-              sudo installer -pkg python-downloads/python-2.7.18-macosx10.9.pkg -target /
+              sudo installer -pkg python-downloads/python-2.7.18-macosx10.9.pkg -target /        
             fi
       - save_cache:
           paths:
@@ -1420,7 +1417,7 @@ commands:
                 artifact-key: << parameters.artifact-key >>
                 build-nonproprietary-ffmpeg: << parameters.build-nonproprietary-ffmpeg >>
             - steps: << parameters.after-build-and-save >>
-
+            
             # Save all data needed for a further tests run.
             - when:
                 condition: << parameters.persist >>
@@ -2124,7 +2121,7 @@ jobs:
       - electron-tests:
           artifact-key: darwin-x64
 
-  darwin-testing-arm64-tests:
+  darwin-testing-arm64-tests:  
     executor: apple-silicon
     environment:
       <<: *env-mac-large
@@ -2239,9 +2236,9 @@ workflows:
           filters:
             branches:
               # Do not run this on forked pull requests
-              ignore: /pull\/[0-9]+/
+              ignore: /pull\/[0-9]+/        
           requires:
-            - linux-arm-testing
+            - linux-arm-testing      
       - linux-arm64-testing:
           requires:
             - linux-make-src-cache
@@ -2249,7 +2246,7 @@ workflows:
           filters:
             branches:
               # Do not run this on forked pull requests
-              ignore: /pull\/[0-9]+/
+              ignore: /pull\/[0-9]+/        
           requires:
             - linux-arm64-testing
       - linux-arm64-testing-gn-check:

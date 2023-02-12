@@ -29,7 +29,6 @@ const defaultOptions = [
   'default',
   `--skip-tests=${DISABLED_TESTS.join(',')}`,
   '--flaky-tests=dontcare',
-  '--measure-flakiness=9',
   '--shell',
   utils.getAbsoluteElectronExec(),
   '-J'
@@ -58,9 +57,8 @@ async function main () {
   if (args.validateDisabled) {
     const missing = [];
     for (const test of DISABLED_TESTS) {
-      const js = path.join(NODE_DIR, 'test', `${test}.js`);
-      const mjs = path.join(NODE_DIR, 'test', `${test}.mjs`);
-      if (!fs.existsSync(js) && !fs.existsSync(mjs)) {
+      const testName = test.endsWith('.js') ? test : `${test}.js`;
+      if (!fs.existsSync(path.join(NODE_DIR, 'test', testName))) {
         missing.push(test);
       }
     }

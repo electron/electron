@@ -286,7 +286,7 @@ using FullScreenTransitionState =
   if (shell_->is_modal() && shell_->parent() && shell_->IsVisible()) {
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     NSWindow* sheetParent = [window sheetParent];
-    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+    base::ThreadTaskRunnerHandle::Get()->PostTask(
         FROM_HERE, base::BindOnce(base::RetainBlock(^{
           [sheetParent endSheet:window];
         })));

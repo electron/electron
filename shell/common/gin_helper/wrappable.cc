@@ -5,6 +5,7 @@
 #include "shell/common/gin_helper/wrappable.h"
 
 #include "base/logging.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "shell/common/gin_helper/dictionary.h"
 
 namespace gin_helper {

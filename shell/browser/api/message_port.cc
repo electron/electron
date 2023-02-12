@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/strings/string_number_conversions.h"
-#include "base/task/single_thread_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/data_object_builder.h"
 #include "gin/handle.h"
@@ -129,7 +128,7 @@ void MessagePort::Entangle(blink::MessagePortDescriptor port) {
   connector_ = std::make_unique<mojo::Connector>(
       port_.TakeHandleToEntangleWithEmbedder(),
       mojo::Connector::SINGLE_THREADED_SEND,
-      base::SingleThreadTaskRunner::GetCurrentDefault());
+      base::ThreadTaskRunnerHandle::Get());
   connector_->PauseIncomingMethodCallProcessing();
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(
@@ -293,4 +292,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_message_port, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_message_port, Initialize)

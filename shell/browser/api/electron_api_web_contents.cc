@@ -20,6 +20,8 @@
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
+#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
@@ -1603,13 +1605,6 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
                                          content::RenderFrameHost* new_host) {
-  if (new_host->IsInPrimaryMainFrame()) {
-    if (old_host)
-      old_host->GetRenderWidgetHost()->RemoveInputEventObserver(this);
-    if (new_host)
-      new_host->GetRenderWidgetHost()->AddInputEventObserver(this);
-  }
-
   // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
@@ -1705,6 +1700,14 @@ void WebContents::OnWebContentsFocused(
 void WebContents::OnWebContentsLostFocus(
     content::RenderWidgetHost* render_widget_host) {
   Emit("blur");
+}
+
+void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
+                                        content::RenderViewHost* new_host) {
+  if (old_host)
+    old_host->GetWidget()->RemoveInputEventObserver(this);
+  if (new_host)
+    new_host->GetWidget()->AddInputEventObserver(this);
 }
 
 void WebContents::DOMContentLoaded(
@@ -3234,11 +3237,54 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   return handle;
 }
 
+// TODO(codebytere): remove in Electron v23.
+void WebContents::IncrementCapturerCount(gin::Arguments* args) {
+  EmitWarning(node::Environment::GetCurrent(args->isolate()),
+              "webContents.incrementCapturerCount() is deprecated and will be "
+              "removed in v23",
+              "electron");
+
+  gfx::Size size;
+  bool stay_hidden = false;
+  bool stay_awake = false;
+
+  // get size arguments if they exist
+  args->GetNext(&size);
+  // get stayHidden arguments if they exist
+  args->GetNext(&stay_hidden);
+  // get stayAwake arguments if they exist
+  args->GetNext(&stay_awake);
+
+  std::ignore = web_contents()
+                    ->IncrementCapturerCount(size, stay_hidden, stay_awake)
+                    .Release();
+}
+
+// TODO(codebytere): remove in Electron v23.
+void WebContents::DecrementCapturerCount(gin::Arguments* args) {
+  EmitWarning(node::Environment::GetCurrent(args->isolate()),
+              "webContents.decrementCapturerCount() is deprecated and will be "
+              "removed in v23",
+              "electron");
+
+  bool stay_hidden = false;
+  bool stay_awake = false;
+
+  // get stayHidden arguments if they exist
+  args->GetNext(&stay_hidden);
+  // get stayAwake arguments if they exist
+  args->GetNext(&stay_awake);
+
+  web_contents()->DecrementCapturerCount(stay_hidden, stay_awake);
+}
+
 bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
+void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
+  const ui::Cursor& cursor = webcursor.cursor();
+
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(cursor),
          gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
@@ -3504,10 +3550,8 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   ScopedAllowBlockingForElectron allow_blocking;
-  uint32_t flags = base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE;
-  // The snapshot file is passed to an untrusted process.
-  flags = base::File::AddFlagsForPassingToUntrustedProcess(flags);
-  base::File file(file_path, flags);
+  base::File file(file_path,
+                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
   if (!file.IsValid()) {
     promise.RejectWithErrorMessage("takeHeapSnapshot failed");
     return handle;
@@ -3941,8 +3985,9 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
 }
 
 // static
-void WebContents::FillObjectTemplate(v8::Isolate* isolate,
-                                     v8::Local<v8::ObjectTemplate> templ) {
+v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
+    v8::Isolate* isolate,
+    v8::Local<v8::ObjectTemplate> templ) {
   gin::InvokerOptions options;
   options.holder_is_first_argument = true;
   options.holder_type = "WebContents";
@@ -3954,7 +3999,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
   // We use gin_helper::ObjectTemplateBuilder instead of
   // gin::ObjectTemplateBuilder here to handle the fact that WebContents is
   // destroyable.
-  gin_helper::ObjectTemplateBuilder(isolate, templ)
+  return gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
       .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
@@ -4061,6 +4106,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
+      .SetMethod("incrementCapturerCount", &WebContents::IncrementCapturerCount)
+      .SetMethod("decrementCapturerCount", &WebContents::DecrementCapturerCount)
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
@@ -4244,4 +4291,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_web_contents, Initialize)
+NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_web_contents, Initialize)

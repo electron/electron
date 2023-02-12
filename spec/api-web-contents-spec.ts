@@ -2049,15 +2049,12 @@ describe('webContents module', () => {
   describe('PictureInPicture video', () => {
     afterEach(closeAllWindows);
     it('works as expected', async function () {
-      const w = new BrowserWindow({ webPreferences: { sandbox: true } });
-
-      // TODO(codebytere): figure out why this workaround is needed and remove.
-      // It is not germane to the actual test.
-      await w.loadFile(path.join(fixturesPath, 'blank.html'));
-
+      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
 
-      await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')', true);
+      if (!await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')')) {
+        this.skip();
+      }
 
       const result = await w.webContents.executeJavaScript(
         `runTest(${features.isPictureInPictureEnabled()})`, true);

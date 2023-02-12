@@ -38,7 +38,9 @@ class Notification : public gin::Wrappable<Notification>,
   // gin_helper::Constructible
   static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
                                        gin::Arguments* args);
-  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate*,
+      v8::Local<v8::ObjectTemplate>);
 
   // NotificationDelegate:
   void NotificationAction(int index) override;

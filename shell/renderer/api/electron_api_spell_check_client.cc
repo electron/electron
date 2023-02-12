@@ -13,7 +13,7 @@
 
 #include "base/logging.h"
 #include "base/numerics/safe_conversions.h"
-#include "base/task/single_thread_task_runner.h"
+#include "base/threading/thread_task_runner_handle.h"
 #include "components/spellcheck/renderer/spellcheck_worditerator.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/function_template.h"
@@ -106,7 +106,7 @@ void SpellCheckClient::RequestCheckingOfText(
   pending_request_param_ =
       std::make_unique<SpellcheckRequest>(text, std::move(completionCallback));
 
-  base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
       FROM_HERE,
       base::BindOnce(&SpellCheckClient::SpellCheckText, AsWeakPtr()));
 }

@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "base/functional/callback.h"
+#include "base/callback.h"
 #include "shell/browser/native_window.h"
 #include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"

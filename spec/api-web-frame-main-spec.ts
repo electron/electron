@@ -177,12 +177,12 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(subframesPath, 'frame.html'));
       const webFrame = w.webContents.mainFrame;
-      expect(webFrame).to.have.property('url').that.is.a('string');
-      expect(webFrame).to.have.property('frameTreeNodeId').that.is.a('number');
-      expect(webFrame).to.have.property('name').that.is.a('string');
-      expect(webFrame).to.have.property('osProcessId').that.is.a('number');
-      expect(webFrame).to.have.property('processId').that.is.a('number');
-      expect(webFrame).to.have.property('routingId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('url').that.is.a('string');
+      expect(webFrame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('name').that.is.a('string');
+      expect(webFrame).to.have.ownProperty('osProcessId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('processId').that.is.a('number');
+      expect(webFrame).to.have.ownProperty('routingId').that.is.a('number');
     });
   });
 

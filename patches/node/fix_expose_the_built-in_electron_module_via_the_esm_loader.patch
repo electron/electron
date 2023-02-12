@@ -18,7 +18,7 @@ index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc71
  
  /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 646b12382f6ebd073fe5968f8c1c0f36dbc64eac..15415e0652864d059390bc7383e073c86f5d0c03 100644
+index 7cec4e9a3e3675ba75d66a44ed4e142d13ca1821..0c7aad193442a7e5cab62638441969a7d4983ef9 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -824,6 +824,8 @@ function parsePackageName(specifier, base) {

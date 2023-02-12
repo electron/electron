@@ -63,7 +63,7 @@ const startServer = async () => {
   }
 
   const server = http.createServer((req, res) => {
-    const busboy = Busboy({ headers: req.headers });
+    const busboy = new Busboy({ headers: req.headers });
     const fields = {} as Record<string, any>;
     const files = {} as Record<string, Buffer>;
     busboy.on('file', (fieldname, file) => {

@@ -178,8 +178,8 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
-#include "content/browser/mac_helpers.h"
-#include "content/public/browser/child_process_host.h"
+#include "content/common/mac_helpers.h"
+#include "content/public/common/child_process_host.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)

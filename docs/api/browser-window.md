@@ -1036,8 +1036,6 @@ height areas you have within the overall content view.
 The aspect ratio is not respected when window is resized programmatically with
 APIs like `win.setSize`.
 
-To reset an aspect ratio, pass 0 as the `aspectRatio` value: `win.setAspectRatio(0)`.
-
 #### `win.setBackgroundColor(backgroundColor)`
 
 * `backgroundColor` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is optional for the hex type.
@@ -1402,8 +1400,8 @@ The native type of the handle is `HWND` on Windows, `NSView*` on macOS, and
 
 * `message` Integer
 * `callback` Function
-  * `wParam` Buffer - The `wParam` provided to the WndProc
-  * `lParam` Buffer - The `lParam` provided to the WndProc
+  * `wParam` any - The `wParam` provided to the WndProc
+  * `lParam` any - The `lParam` provided to the WndProc
 
 Hooks a windows message. The `callback` is called when
 the message is received in the WndProc.
@@ -1910,7 +1908,7 @@ removed in future Electron releases.
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.
 
-[runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5
+[runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc
