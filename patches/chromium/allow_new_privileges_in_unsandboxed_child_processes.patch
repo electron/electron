@@ -6,25 +6,22 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed child process to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 8c5cc2b157f6e2894216a003256a9ef3b6dbf5f7..008ba5bef67adbd166919ca4708452faa4bb85b5 100644
+index b7f21237e87fa994b304a26fea8fec2531bca8de..7f6a4197aa7da2ba6a16cd83b78243e49ec1f2f4 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -56,6 +56,18 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
-     options->fds_to_remap.push_back(std::make_pair(sandbox_fd, GetSandboxFD()));
-   }
+@@ -62,6 +62,15 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+       options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
+     }
  
-+  // (For Electron), if we're launching without zygote, that means we're
-+  // launching an unsandboxed process (since all sandboxed processes are
-+  // forked from the zygote). Relax the allow_new_privs option to permit
-+  // launching suid processes from unsandboxed child processes.
-+  ZygoteHandle zygote_handle =
-+      base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote)
-+          ? nullptr
-+          : delegate_->GetZygote();
-+  if (!zygote_handle) {
-+    options->allow_new_privs = true;
-+  }
++    // (For Electron), if we're launching without zygote, that means we're
++    // launching an unsandboxed process (since all sandboxed processes are
++    // forked from the zygote). Relax the allow_new_privs option to permit
++    // launching suid processes from unsandboxed child processes.
++    if (!base::CommandLine::ForCurrentProcess()->HasSwitch(switches::kNoZygote) &&
++        delegate_->GetZygote() == nullptr) {
++      options->allow_new_privs = true;
++    }
 +
-   for (const auto& remapped_fd : file_data_->additional_remapped_fds) {
-     options->fds_to_remap.emplace_back(remapped_fd.second.get(),
-                                        remapped_fd.first);
+     options->environment = delegate_->GetEnvironment();
+   } else {
+     DCHECK(GetZygoteForLaunch());

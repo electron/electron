@@ -561,7 +561,7 @@ Clears the session’s HTTP cache.
   * `origin` string (optional) - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` string[] (optional) - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can contain:
@@ -784,6 +784,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
   * `permission` string - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
+    * `clipboard-sanitized-write` - Request access to write to the clipboard.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
     * `display-capture` - Request access to capture the screen.
     * `mediaKeySystem` - Request access to DRM protected content.

@@ -27,7 +27,7 @@ ipcMain.handle('clipboard:writeText', (event, text) => {
 
 app.whenReady().then(() => {
   createWindow()
-  
+
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

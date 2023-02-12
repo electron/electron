@@ -7,14 +7,14 @@
 #include <map>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
+#include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
-#include "content/public/common/child_process_host.h"
 #include "content/public/common/result_codes.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -187,7 +187,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   connector_ = std::make_unique<mojo::Connector>(
       host_port_.TakeHandleToEntangleWithEmbedder(),
       mojo::Connector::SINGLE_THREADED_SEND,
-      base::ThreadTaskRunnerHandle::Get());
+      base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(base::BindOnce(
       &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
@@ -417,4 +417,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_utility_process, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_utility_process, Initialize)

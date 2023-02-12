@@ -1,18 +1,18 @@
-# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor.yml 
-# IF APPLICABLE!!!! 
+# NOTE IF CHANGING THIS FILE, ALSO APPLY THE CHANGE TO appveyor.yml
+# IF APPLICABLE!!!!
 #
 #
 # The config expects the following environment variables to be set:
 #  - "GN_CONFIG" Build type. One of {'testing', 'release'}.
 #  - "GN_EXTRA_ARGS" Additional gn arguments for a build config,
 #      e.g. 'target_cpu="x86"' to build for a 32bit platform.
-#      https://gn.googlesource.com/gn/+/master/docs/reference.md#target_cpu
+#      https://gn.googlesource.com/gn/+/main/docs/reference.md#var_target_cpu
 #      Don't forget to set up "NPM_CONFIG_ARCH" and "TARGET_ARCH" accordingly
 #      if you pass a custom value for 'target_cpu'.
 #  - "ELECTRON_RELEASE" Set it to '1' upload binaries on success.
 #  - "NPM_CONFIG_ARCH" E.g. 'x86'. Is used to build native Node.js modules.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "TARGET_ARCH" value.
-#  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64', 'mips64el'}.
+#  - "TARGET_ARCH" Choose from {'ia32', 'x64', 'arm', 'arm64'}.
 #      Is used in some publishing scripts, but does NOT affect the Electron binary.
 #      Must match 'target_cpu' passed to "GN_EXTRA_ARGS" and "NPM_CONFIG_ARCH" value.
 #  - "UPLOAD_TO_STORAGE" Set it to '1' upload a release to the Azure bucket.
@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-111.0.5518.0
+image: e-111.0.5560.0-2
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -82,7 +82,7 @@ for:
           if (Test-Path -Path "$pwd\build-tools") {
             Remove-Item -Recurse -Force $pwd\build-tools
           }
-      - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {
@@ -119,7 +119,7 @@ for:
             $env:NINJA_STATUS="[%r processes, %f/%t @ %o/s : %es] "
           }
       - gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
-      # Patches are applied in the image bake. Check depshash to see if patches have changed. 
+      # Patches are applied in the image bake. Check depshash to see if patches have changed.
       - ps: $env:RUN_GCLIENT_SYNC="false"
       - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
       - ps: cd src\electron
@@ -261,7 +261,7 @@ for:
           cd src
           New-Item .\out\Default\gen\node_headers\Release -Type directory
           Copy-Item -path .\out\Default\electron.lib -destination .\out\Default\gen\node_headers\Release\node.lib
-      - set npm_config_nodedir=%cd%\out\Default\gen\node_headers          
+      - set npm_config_nodedir=%cd%\out\Default\gen\node_headers
       - set npm_config_arch=arm64
       - cd electron
       # Explicitly set npm_config_arch because the .env doesn't persist
@@ -272,7 +272,7 @@ for:
       - echo Running main test suite & node script/yarn test  --runners=main --enable-logging --disable-features=CalculateNativeWinOcclusion
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
-    
+
     on_finish:
       # Uncomment these lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

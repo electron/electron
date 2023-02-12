@@ -6,8 +6,7 @@
 
 #include <string>
 
-#include "base/callback_helpers.h"
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/functional/callback_helpers.h"
 #include "content/public/browser/device_service.h"
 #include "gin/dictionary.h"
 #include "gin/function_template.h"
@@ -140,5 +139,5 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_power_save_blocker,
-                                 Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_power_save_blocker,
+                                  Initialize)

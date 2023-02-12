@@ -9,7 +9,7 @@ deprecated, and this API should be removed once the deprecated behavior
 is no longer supported.
 
 diff --git a/components/upload_list/upload_list.cc b/components/upload_list/upload_list.cc
-index da283af7c483beae96a0afde494ce24628e909c8..75fb0d0b019979186f9f6b34b72d96d39eb146f0 100644
+index bc1432727df939385fbf58f4f427ff470c2c8361..7edf9e3f7140d387c7ce07531fb3b48f9014076c 100644
 --- a/components/upload_list/upload_list.cc
 +++ b/components/upload_list/upload_list.cc
 @@ -72,6 +72,10 @@ void UploadList::Load(base::OnceClosure callback) {
@@ -24,7 +24,7 @@ index da283af7c483beae96a0afde494ce24628e909c8..75fb0d0b019979186f9f6b34b72d96d3
                         const base::Time& end,
                         base::OnceClosure callback) {
 diff --git a/components/upload_list/upload_list.h b/components/upload_list/upload_list.h
-index 9acfd8190484637630486bfdc654d25ff6a371b0..b9025804deca8c90969120ba05faa69110eef1d2 100644
+index 34aeeabde40111897b3e300861a0967a31887e3f..450c373f7d69986037fbd77bf9b1bcec88cdc5b3 100644
 --- a/components/upload_list/upload_list.h
 +++ b/components/upload_list/upload_list.h
 @@ -77,6 +77,8 @@ class UploadList : public base::RefCountedThreadSafe<UploadList> {

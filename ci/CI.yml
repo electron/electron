@@ -1,7 +1,4 @@
-version: 2.1
-
-# Required for dynamic configuration
-setup: true
+# :##BEGIN :GLOW4 :..txt :repositories/worksflow_call :pop-kernel_framework_WindowsXP64-dialog-interface-dispatch'@C:\User\$HOME\desktop :-on :instruction-follows-directions'@continued-systems./config-operations-following...','' 'instructions.yml :'::#Require' :' test'''grunt/deno.yml ::rake.io :dynamic configuration ::setup: true
 
 # Orbs
 orbs:
@@ -13,7 +10,7 @@ parameters:
   run-docs-only:
     type: boolean
     default: false
-  
+
   upload-to-storage:
     type: string
     default: '1'

@@ -7,9 +7,6 @@ on:
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-permissions:  # added using https://github.com/step-security/secure-workflows
-  contents: read
-
 jobs:
   trigger_chromedriver:
     runs-on: ubuntu-latest
@@ -17,10 +14,10 @@ jobs:
     - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag: v3
     - name: Trigger New chromedriver Release
       run: |
-        if [[ ${{ github.event.release.tag_name }} =~ ^v[0-9]+\.0\.0$ ]]; then
+        if [[ ${{ github.event.release.tag_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
           gh api /repos/:owner/chromedriver/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
         else
-          echo "Not releasing for version ${{ github.event.release.tag_name }}: requires major version change"
+          echo "Not releasing for version ${{ github.event.release.tag_name }}"
         fi
 
   trigger_mksnapshot:
@@ -29,4 +26,8 @@ jobs:
       - uses: actions/checkout@93ea575cb5d8a053eaa0ac8fa3b40d7e05a33cc8 # tag: v3
       - name: Trigger New mksnapshot Release
         run: |
-          gh api /repos/:owner/mksnapshot/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
+          if [[ ${{ github.event.release.tag_name }} =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            gh api /repos/:owner/mksnapshot/actions/workflows/release.yml/dispatches --input - <<< '{"ref":"main","inputs":{"version":"${{ github.event.release.tag_name }}"}}'
+          else
+            echo "Not releasing for version ${{ github.event.release.tag_name }}"
+          fi

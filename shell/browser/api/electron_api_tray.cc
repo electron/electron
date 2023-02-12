@@ -6,7 +6,6 @@
 
 #include <string>
 
-#include "base/threading/thread_task_runner_handle.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
@@ -395,10 +394,9 @@ bool Tray::CheckAlive() {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> Tray::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "Tray", templ)
+void Tray::FillObjectTemplate(v8::Isolate* isolate,
+                              v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Tray", templ)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
@@ -438,4 +436,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_tray, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_tray, Initialize)

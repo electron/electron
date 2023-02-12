@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 45b74d16e038a33d8b3d47e0357cfa3a1838461a..0f21653e6a3839ef4d4ae0bff9b58114fd27502d 100644
+index 940f15cab30983c3f05ef886d3b055bcc35159f2..4ddc504b02b8d0abcefd6e3e7871875df9b0fd81 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1898,6 +1898,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1880,6 +1880,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -48,7 +48,7 @@ index 012e0f781d21b96890b88e0bc2cb2d46cb1e3829..e74783c3f8003d87fbb343087a83da3c
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 97996a8a897e0ac7d6ba2eb9d1f47da6da573b6b..d84292521466d7bb2d7794269a332b0f2fa2d6e7 100644
+index a398a5d597946d804fff199859f85e03ff9960fc..621d08a28c5f1967343669bc805f7fb8a0ffb24d 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -81,7 +81,7 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index de753e5a941170d162132f2917b11672a50e833f..7e1fab06bf317758b731d56acb86ab0bf0b603fb 100644
+index 9f1efcdd0ef27c528c4aec954ab9ca74085a6e74..f86f288f32404ce75d4f177c7bfd1253c7b1ee3f 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,10 +93,10 @@ index de753e5a941170d162132f2917b11672a50e833f..7e1fab06bf317758b731d56acb86ab0b
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 0602a370d017a0b82b9056fb53341a30becb7b58..5300f3d6f55a40bcfc75cafcf1b757c18bbfd650 100644
+index 31678701d6ee0aefdb86c046178abdf11277de3d..7632aeeba116e08c9d2c7fdfb684334c7fa0ba76 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3302,6 +3302,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3309,6 +3309,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -213,7 +213,7 @@ index c119ef410f437b27ae4d0ff76627af55a2679171..997558e36dc1aec86005d05a82433691
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index a97bb1e7442c16a3f7659889e11ab51e431f1585..b0b882b5cea67a66faa9f7e40786f0d5f8c65b5d 100644
+index 52d44ad6b3e7c602711d304e07ce32138c99b4e0..e25476c76ad2d0aae66ee5a157548078b9f90ebd 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
@@ -226,7 +226,7 @@ index a97bb1e7442c16a3f7659889e11ab51e431f1585..b0b882b5cea67a66faa9f7e40786f0d5
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index 8bb46cc8a5d521452ac0ef9cac975987e203404c..03ee7b511c6b8fcd0b7154365cf533778ff4d234 100644
+index 166ac12df74510fd72d619251d4e7e455af075da..299a68885b5a5a4e6a684f12c96e61a1b34af273 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -12,6 +12,7 @@

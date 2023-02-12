@@ -72,7 +72,7 @@ namespace {
 
 #if BUILDFLAG(IS_WIN)
 gfx::Size GetExpandedWindowSize(const NativeWindow* window, gfx::Size size) {
-  if (!window->transparent() || !ui::win::IsAeroGlassEnabled())
+  if (!window->transparent())
     return size;
 
   gfx::Size min_size = display::win::ScreenWin::ScreenToDIPSize(
