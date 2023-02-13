@@ -79,7 +79,6 @@ auto_filenames = {
     "docs/api/structures/custom-scheme.md",
     "docs/api/structures/desktop-capturer-source.md",
     "docs/api/structures/display.md",
-    "docs/api/structures/event.md",
     "docs/api/structures/extension-info.md",
     "docs/api/structures/extension.md",
     "docs/api/structures/file-filter.md",
