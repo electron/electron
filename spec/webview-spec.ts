@@ -684,7 +684,7 @@ describe('<webview> tag', function () {
 
     it('emits a web-contents-created event', async () => {
       const webContentsCreated = emittedUntil(app, 'web-contents-created',
-        (event: Electron.Event<{}, WebContents>, contents: Electron.WebContents) => contents.getType() === 'window');
+        (event: Electron.Event, contents: Electron.WebContents) => contents.getType() === 'window');
 
       loadWebView(w.webContents, {
         allowpopups: 'on',
