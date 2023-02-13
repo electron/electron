@@ -135,7 +135,11 @@ class Browser : public WindowListObserver {
     std::u16string path;
     std::vector<std::u16string> args;
 
-#if BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_MAC)
+    std::string type = "mainAppService";
+    std::string name;
+    std::string status;
+#elif BUILDFLAG(IS_WIN)
     // used in browser::setLoginItemSettings
     bool enabled = true;
     std::wstring name;
@@ -205,9 +209,9 @@ class Browser : public WindowListObserver {
   void ApplyForcedRTL();
 
   // Bounce the dock icon.
-  enum class BounceType {
-    kCritical = 0,        // NSCriticalRequest
-    kInformational = 10,  // NSInformationalRequest
+  enum class BounceType{
+      kCritical = 0,        // NSCriticalRequest
+      kInformational = 10,  // NSInformationalRequest
   };
   int DockBounce(BounceType type);
   void DockCancelBounce(int request_id);
