@@ -33,8 +33,8 @@ declare namespace Electron {
     _refreshTouchBarItem: (itemID: string) => void;
     _getWindowButtonVisibility: () => boolean;
     frameName: string;
-    on(event: '-touch-bar-interaction', listener: (event: Event<{}, this>, itemID: string, details: any) => void): this;
-    removeListener(event: '-touch-bar-interaction', listener: (event: Event<{}, this>, itemID: string, details: any) => void): this;
+    on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
+    removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
   }
 
   interface BrowserWindowConstructorOptions {
@@ -138,16 +138,16 @@ declare namespace Electron {
     acceleratorWorksWhenHidden?: boolean;
   }
 
-  interface ReplySender {
+  interface ReplyChannel {
     sendReply(value: any): void;
   }
 
   interface IpcMainEvent {
-    _replySender: ReplySender;
+    _replyChannel: ReplyChannel;
   }
 
   interface IpcMainInvokeEvent {
-    _replySender: ReplySender;
+    _replyChannel: ReplyChannel;
   }
 
   class View {}

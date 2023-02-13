@@ -22,10 +22,10 @@ BrowserWindow.prototype._init = function (this: BWT) {
   };
 
   // Redirect focus/blur event to app instance too.
-  this.on('blur', (event: Electron.Event<{}, BWT>) => {
+  this.on('blur', (event: Electron.Event) => {
     app.emit('browser-window-blur', event, this);
   });
-  this.on('focus', (event: Electron.Event<{}, BWT>) => {
+  this.on('focus', (event: Electron.Event) => {
     app.emit('browser-window-focus', event, this);
   });
 

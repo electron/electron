@@ -359,15 +359,15 @@ class WebContents : public ExclusiveAccessContext,
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
 
-    gin::Handle<gin_helper::internal::PreventableEvent> event =
+    gin::Handle<gin_helper::internal::Event> event =
         MakeEventWithSender(isolate, frame, std::move(callback));
     if (event.IsEmpty())
       return false;
-    EmitWithoutCustomEvent(name, event, std::forward<Args>(args)...);
+    EmitWithoutEvent(name, event, std::forward<Args>(args)...);
     return event->GetDefaultPrevented();
   }
 
-  gin::Handle<gin_helper::internal::PreventableEvent> MakeEventWithSender(
+  gin::Handle<gin_helper::internal::Event> MakeEventWithSender(
       v8::Isolate* isolate,
       content::RenderFrameHost* frame,
       electron::mojom::ElectronApiIPC::InvokeCallback callback);

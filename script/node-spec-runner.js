@@ -29,6 +29,7 @@ const defaultOptions = [
   'default',
   `--skip-tests=${DISABLED_TESTS.join(',')}`,
   '--flaky-tests=dontcare',
+  '--measure-flakiness=9',
   '--shell',
   utils.getAbsoluteElectronExec(),
   '-J'

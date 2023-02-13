@@ -23,6 +23,7 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
+#include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -30,10 +31,10 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
-#include "shell/common/gin_helper/preventable_event.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
@@ -43,7 +44,7 @@
 #include "shell/common/crash_keys.h"
 #endif
 
-#define ELECTRON_BUILTIN_MODULES(V)      \
+#define ELECTRON_BROWSER_BINDINGS(V)     \
   V(electron_browser_app)                \
   V(electron_browser_auto_updater)       \
   V(electron_browser_browser_view)       \
@@ -75,43 +76,52 @@
   V(electron_browser_web_contents_view)  \
   V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
-  V(electron_browser_window)             \
-  V(electron_common_asar)                \
-  V(electron_common_clipboard)           \
-  V(electron_common_command_line)        \
-  V(electron_common_crashpad_support)    \
-  V(electron_common_environment)         \
-  V(electron_common_features)            \
-  V(electron_common_native_image)        \
-  V(electron_common_shell)               \
-  V(electron_common_v8_util)             \
-  V(electron_renderer_context_bridge)    \
-  V(electron_renderer_crash_reporter)    \
-  V(electron_renderer_ipc)               \
-  V(electron_renderer_web_frame)         \
-  V(electron_utility_parent_port)
+  V(electron_browser_window)
 
-#define ELECTRON_VIEWS_MODULES(V) V(electron_browser_image_view)
+#define ELECTRON_COMMON_BINDINGS(V)   \
+  V(electron_common_asar)             \
+  V(electron_common_clipboard)        \
+  V(electron_common_command_line)     \
+  V(electron_common_crashpad_support) \
+  V(electron_common_environment)      \
+  V(electron_common_features)         \
+  V(electron_common_native_image)     \
+  V(electron_common_shell)            \
+  V(electron_common_v8_util)
 
-#define ELECTRON_DESKTOP_CAPTURER_MODULE(V) V(electron_browser_desktop_capturer)
+#define ELECTRON_RENDERER_BINDINGS(V) \
+  V(electron_renderer_context_bridge) \
+  V(electron_renderer_crash_reporter) \
+  V(electron_renderer_ipc)            \
+  V(electron_renderer_web_frame)
 
-#define ELECTRON_TESTING_MODULE(V) V(electron_common_testing)
+#define ELECTRON_UTILITY_BINDINGS(V) V(electron_utility_parent_port)
 
-// This is used to load built-in modules. Instead of using
+#define ELECTRON_VIEWS_BINDINGS(V) V(electron_browser_image_view)
+
+#define ELECTRON_DESKTOP_CAPTURER_BINDINGS(V) \
+  V(electron_browser_desktop_capturer)
+
+#define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
+
+// This is used to load built-in bindings. Instead of using
 // __attribute__((constructor)), we call the _register_<modname>
-// function for each built-in modules explicitly. This is only
-// forward declaration. The definitions are in each module's
-// implementation when calling the NODE_LINKED_MODULE_CONTEXT_AWARE.
+// function for each built-in bindings explicitly. This is only
+// forward declaration. The definitions are in each binding's
+// implementation when calling the NODE_LINKED_BINDING_CONTEXT_AWARE.
 #define V(modname) void _register_##modname();
-ELECTRON_BUILTIN_MODULES(V)
+ELECTRON_BROWSER_BINDINGS(V)
+ELECTRON_COMMON_BINDINGS(V)
+ELECTRON_RENDERER_BINDINGS(V)
+ELECTRON_UTILITY_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
-ELECTRON_VIEWS_MODULES(V)
+ELECTRON_VIEWS_BINDINGS(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
 #if DCHECK_IS_ON()
-ELECTRON_TESTING_MODULE(V)
+ELECTRON_TESTING_BINDINGS(V)
 #endif
 #undef V
 
@@ -327,17 +337,29 @@ NodeBindings::~NodeBindings() {
     stop_and_close_uv_loop(uv_loop_);
 }
 
-void NodeBindings::RegisterBuiltinModules() {
+void NodeBindings::RegisterBuiltinBindings() {
 #define V(modname) _register_##modname();
-  ELECTRON_BUILTIN_MODULES(V)
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  if (process_type.empty()) {
+    ELECTRON_BROWSER_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
-  ELECTRON_VIEWS_MODULES(V)
+    ELECTRON_VIEWS_BINDINGS(V)
 #endif
 #if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-  ELECTRON_DESKTOP_CAPTURER_MODULE(V)
+    ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
+  }
+  ELECTRON_COMMON_BINDINGS(V)
+  if (process_type == ::switches::kRendererProcess) {
+    ELECTRON_RENDERER_BINDINGS(V)
+  }
+  if (process_type == ::switches::kUtilityProcess) {
+    ELECTRON_UTILITY_BINDINGS(V)
+  }
 #if DCHECK_IS_ON()
-  ELECTRON_TESTING_MODULE(V)
+  ELECTRON_TESTING_BINDINGS(V)
 #endif
 #undef V
 }
@@ -403,8 +425,8 @@ void NodeBindings::Initialize() {
     ElectronCommandLine::InitializeFromCommandLine();
 #endif
 
-  // Explicitly register electron's builtin modules.
-  RegisterBuiltinModules();
+  // Explicitly register electron's builtin bindings.
+  RegisterBuiltinBindings();
 
   // Parse and set Node.js cli flags.
   SetNodeCliFlags();
@@ -442,8 +464,7 @@ void NodeBindings::Initialize() {
 #endif
 
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::internal::PreventableEvent::GetConstructor(
-      isolate->GetCurrentContext());
+  gin_helper::internal::Event::GetConstructor(isolate->GetCurrentContext());
 
   g_is_initialized = true;
 }
