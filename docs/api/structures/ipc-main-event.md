@@ -1,4 +1,4 @@
-# IpcMainEvent Object extends `Event<EmptyParams, WebContents>`
+# IpcMainEvent Object extends `Event`
 
 * `processId` Integer - The internal ID of the renderer process that sent this message
 * `frameId` Integer - The ID of the renderer frame that sent this message

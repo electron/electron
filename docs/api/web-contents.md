@@ -878,7 +878,7 @@ Emitted when the preload script `preloadPath` throws an unhandled exception `err
 
 Returns:
 
-* `event` Event
+* `event` [IpcMainEvent](structures/ipc-main-event.md)
 * `channel` string
 * `...args` any[]
 
@@ -890,7 +890,7 @@ See also [`webContents.ipc`](#contentsipc-readonly), which provides an [`IpcMain
 
 Returns:
 
-* `event` Event
+* `event` [IpcMainEvent](structures/ipc-main-event.md)
 * `channel` string
 * `...args` any[]
 

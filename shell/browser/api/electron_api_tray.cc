@@ -97,22 +97,19 @@ void Tray::OnClicked(const gfx::Rect& bounds,
                      int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("click", CreateEventFromFlags(modifiers), bounds,
-                         location);
+  EmitWithoutEvent("click", CreateEventFromFlags(modifiers), bounds, location);
 }
 
 void Tray::OnDoubleClicked(const gfx::Rect& bounds, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("double-click", CreateEventFromFlags(modifiers),
-                         bounds);
+  EmitWithoutEvent("double-click", CreateEventFromFlags(modifiers), bounds);
 }
 
 void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("right-click", CreateEventFromFlags(modifiers),
-                         bounds);
+  EmitWithoutEvent("right-click", CreateEventFromFlags(modifiers), bounds);
 }
 
 void Tray::OnBalloonShow() {
@@ -142,35 +139,31 @@ void Tray::OnDropText(const std::string& text) {
 void Tray::OnMouseEntered(const gfx::Point& location, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("mouse-enter", CreateEventFromFlags(modifiers),
-                         location);
+  EmitWithoutEvent("mouse-enter", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseExited(const gfx::Point& location, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("mouse-leave", CreateEventFromFlags(modifiers),
-                         location);
+  EmitWithoutEvent("mouse-leave", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseMoved(const gfx::Point& location, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("mouse-move", CreateEventFromFlags(modifiers),
-                         location);
+  EmitWithoutEvent("mouse-move", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseUp(const gfx::Point& location, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("mouse-up", CreateEventFromFlags(modifiers), location);
+  EmitWithoutEvent("mouse-up", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnMouseDown(const gfx::Point& location, int modifiers) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutCustomEvent("mouse-down", CreateEventFromFlags(modifiers),
-                         location);
+  EmitWithoutEvent("mouse-down", CreateEventFromFlags(modifiers), location);
 }
 
 void Tray::OnDragEntered() {
@@ -443,4 +436,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_tray, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_tray, Initialize)

@@ -1178,7 +1178,7 @@ gin::Handle<Session> Session::CreateFrom(
   // to use partition strings, instead of using the Session object directly.
   handle->Pin(isolate);
 
-  App::Get()->EmitWithoutCustomEvent("session-created", handle);
+  App::Get()->EmitWithoutEvent("session-created", handle);
 
   return handle;
 }
@@ -1312,4 +1312,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_session, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_session, Initialize)

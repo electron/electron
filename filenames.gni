@@ -602,6 +602,8 @@ filenames = {
     "shell/common/gin_helper/dictionary.h",
     "shell/common/gin_helper/error_thrower.cc",
     "shell/common/gin_helper/error_thrower.h",
+    "shell/common/gin_helper/event.cc",
+    "shell/common/gin_helper/event.h",
     "shell/common/gin_helper/event_emitter.h",
     "shell/common/gin_helper/event_emitter_caller.cc",
     "shell/common/gin_helper/event_emitter_caller.h",

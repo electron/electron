@@ -7,10 +7,10 @@ Subject: feat: add kNoStartDebugSignalHandler to Environment to prevent
 This patch should be upstreamed, it allows embedders to prevent the call to StartDebugSignalHandler which handles SIGUSR1 and starts the inspector agent.  Apps that have --inspect disabled also don't want SIGUSR1 to have this affect.
 
 diff --git a/src/env-inl.h b/src/env-inl.h
-index fbc4fbb27b065d6a9e3ce7492a21b1eee2f334eb..59bab65f4cd6f0f977a0edc8d33b96d7fc4cdb16 100644
+index bea695bd8c92d44cb9526f347a9464549155ed85..0cbd1b25c107b5deba5fdd14551cc641904f7f21 100644
 --- a/src/env-inl.h
 +++ b/src/env-inl.h
-@@ -665,6 +665,10 @@ inline bool Environment::no_global_search_paths() const {
+@@ -669,6 +669,10 @@ inline bool Environment::no_global_search_paths() const {
           !options_->global_search_paths;
  }
  
@@ -22,10 +22,10 @@ index fbc4fbb27b065d6a9e3ce7492a21b1eee2f334eb..59bab65f4cd6f0f977a0edc8d33b96d7
    // configure --no-browser-globals
  #ifdef NODE_NO_BROWSER_GLOBALS
 diff --git a/src/env.h b/src/env.h
-index 4d5e72f9f44762fda4698f0bf62166d1222d1028..0cc91123f4b14439ea4f55814570c323b028ceb3 100644
+index 673581fd0e2ef91886fa5e6be6523a2394df6db1..562610e6827d8302f146b81d599dd366ba25cd74 100644
 --- a/src/env.h
 +++ b/src/env.h
-@@ -765,6 +765,7 @@ class Environment : public MemoryRetainer {
+@@ -767,6 +767,7 @@ class Environment : public MemoryRetainer {
    inline bool tracks_unmanaged_fds() const;
    inline bool hide_console_windows() const;
    inline bool no_global_search_paths() const;
