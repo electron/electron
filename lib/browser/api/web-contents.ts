@@ -524,7 +524,8 @@ const addReplyToEvent = (event: Electron.IpcMainEvent) => {
   };
 };
 
-const addSenderFrameToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent) => {
+const addSenderToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent, sender: Electron.WebContents) => {
+  event.sender = sender;
   const { processId, frameId } = event;
   Object.defineProperty(event, 'senderFrame', {
     get: () => webFrameMain.fromId(processId, frameId)
@@ -533,7 +534,7 @@ const addSenderFrameToEvent = (event: Electron.IpcMainEvent | Electron.IpcMainIn
 
 const addReturnValueToEvent = (event: Electron.IpcMainEvent) => {
   Object.defineProperty(event, 'returnValue', {
-    set: (value) => event.sendReply(value),
+    set: (value) => event._replyChannel.sendReply(value),
     get: () => {}
   });
 };
@@ -574,7 +575,7 @@ WebContents.prototype._init = function () {
 
   // Dispatch IPC messages to the ipc module.
   this.on('-ipc-message' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
-    addSenderFrameToEvent(event);
+    addSenderToEvent(event, this);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
     } else {
@@ -587,25 +588,30 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-invoke' as any, function (event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
-    addSenderFrameToEvent(event);
-    event._reply = (result: any) => event.sendReply({ result });
-    event._throw = (error: Error) => {
+  this.on('-ipc-invoke' as any, async function (this: Electron.WebContents, event: Electron.IpcMainInvokeEvent, internal: boolean, channel: string, args: any[]) {
+    addSenderToEvent(event, this);
+    const replyWithResult = (result: any) => event._replyChannel.sendReply({ result });
+    const replyWithError = (error: Error) => {
       console.error(`Error occurred in handler for '${channel}':`, error);
-      event.sendReply({ error: error.toString() });
+      event._replyChannel.sendReply({ error: error.toString() });
     };
     const maybeWebFrame = getWebFrameForEvent(event);
     const targets: (ElectronInternal.IpcMainInternal| undefined)[] = internal ? [ipcMainInternal] : [maybeWebFrame?.ipc, ipc, ipcMain];
     const target = targets.find(target => target && (target as any)._invokeHandlers.has(channel));
     if (target) {
-      (target as any)._invokeHandlers.get(channel)(event, ...args);
+      const handler = (target as any)._invokeHandlers.get(channel);
+      try {
+        replyWithResult(await Promise.resolve(handler(event, ...args)));
+      } catch (err) {
+        replyWithError(err as Error);
+      }
     } else {
-      event._throw(`No handler registered for '${channel}'`);
+      replyWithError(new Error(`No handler registered for '${channel}'`));
     }
   });
 
   this.on('-ipc-message-sync' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, args: any[]) {
-    addSenderFrameToEvent(event);
+    addSenderToEvent(event, this);
     addReturnValueToEvent(event);
     if (internal) {
       ipcMainInternal.emit(channel, event, ...args);
@@ -622,8 +628,8 @@ WebContents.prototype._init = function () {
     }
   });
 
-  this.on('-ipc-ports' as any, function (event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
-    addSenderFrameToEvent(event);
+  this.on('-ipc-ports' as any, function (this: Electron.WebContents, event: Electron.IpcMainEvent, internal: boolean, channel: string, message: any, ports: any[]) {
+    addSenderToEvent(event, this);
     event.ports = ports.map(p => new MessagePortMain(p));
     const maybeWebFrame = getWebFrameForEvent(event);
     maybeWebFrame && maybeWebFrame.ipc.emit(channel, event, message);
@@ -651,7 +657,7 @@ WebContents.prototype._init = function () {
 
   if (this.getType() !== 'remote') {
     // Make new windows requested by links behave like "window.open".
-    this.on('-new-window' as any, (event: ElectronInternal.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
+    this.on('-new-window' as any, (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
       rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
@@ -677,7 +683,7 @@ WebContents.prototype._init = function () {
       const options = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
         openGuestWindow({
-          embedder: event.sender,
+          embedder: this,
           disposition,
           referrer,
           postData,
@@ -690,7 +696,7 @@ WebContents.prototype._init = function () {
 
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
-    this.on('-will-add-new-contents' as any, (event: ElectronInternal.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
+    this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
       const postBody = postData ? {
         data: postData,
         ...parseContentTypeFormat(postData)
@@ -725,7 +731,7 @@ WebContents.prototype._init = function () {
         } : undefined;
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         const webPreferences = makeWebPreferences({
-          embedder: event.sender,
+          embedder: this,
           insecureParsedWebPreferences: parsedWebPreferences,
           secureOverrideWebPreferences
         });
@@ -738,7 +744,7 @@ WebContents.prototype._init = function () {
     });
 
     // Create a new browser window for "window.open"
-    this.on('-add-new-contents' as any, (event: ElectronInternal.Event, webContents: Electron.WebContents, disposition: string,
+    this.on('-add-new-contents' as any, (event: Electron.Event, webContents: Electron.WebContents, disposition: string,
       _userGesture: boolean, _left: number, _top: number, _width: number, _height: number, url: string, frameName: string,
       referrer: Electron.Referrer, rawFeatures: string, postData: PostData) => {
       const overriddenOptions = windowOpenOverriddenOptions || undefined;
@@ -754,7 +760,7 @@ WebContents.prototype._init = function () {
       }
 
       openGuestWindow({
-        embedder: event.sender,
+        embedder: this,
         guest: webContents,
         overrideBrowserWindowOptions: overriddenOptions,
         disposition,
@@ -791,8 +797,7 @@ WebContents.prototype._init = function () {
     }
   });
 
-  const event = process._linkedBinding('electron_browser_event').createEmpty();
-  app.emit('web-contents-created', event, this);
+  app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
 
   // Properties
 
