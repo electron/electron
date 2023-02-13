@@ -993,7 +993,7 @@ Emitted when DevTools is closed.
 
 Emitted when DevTools is focused / opened.
 
-[runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
+[runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5
 [chrome-webview]: https://developer.chrome.com/docs/extensions/reference/webviewTag/
 
 ### Event: 'context-menu'

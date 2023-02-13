@@ -85,8 +85,7 @@ ElectronContentUtilityClient::ElectronContentUtilityClient() = default;
 ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 
 // The guts of this came from the chromium implementation
-// https://cs.chromium.org/chromium/src/chrome/utility/
-// chrome_content_utility_client.cc?sq=package:chromium&dr=CSs&g=0&l=142
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/utility/chrome_content_utility_client.cc
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
 #if BUILDFLAG(IS_WIN)

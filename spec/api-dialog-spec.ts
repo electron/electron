@@ -80,7 +80,7 @@ describe('dialog module', () => {
     afterEach(closeAllWindows);
 
     // parentless message boxes are synchronous on macOS
-    // dangling message boxes on windows cause a DCHECK: https://cs.chromium.org/chromium/src/base/win/message_window.cc?l=68&rcl=7faa4bf236a866d007dc5672c9ce42660e67a6a6
+    // dangling message boxes on windows cause a DCHECK: https://source.chromium.org/chromium/chromium/src/+/main:base/win/message_window.cc;drc=7faa4bf236a866d007dc5672c9ce42660e67a6a6;l=68
     ifit(process.platform !== 'darwin' && process.platform !== 'win32')('should not throw for a parentless message box', () => {
       expect(() => {
         dialog.showMessageBox({ message: 'i am message' });
