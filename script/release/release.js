@@ -13,6 +13,7 @@ const fs = require('fs');
 const { execSync } = require('child_process');
 const got = require('got');
 const path = require('path');
+const semver = require('semver');
 const temp = require('temp').track();
 const { URL } = require('url');
 const { BlobServiceClient } = require('@azure/storage-blob');
@@ -317,12 +318,20 @@ function saveShaSumFile (checksums, fileName) {
 }
 
 async function publishRelease (release) {
+  const currentLatest = await octokit.repos.getLatestRelease({
+    owner: 'electron',
+    repo: targetRepo
+  });
+
+  const makeLatest = !release.prerelease && semver.gte(release.tag_name, currentLatest.data.tag_name);
+
   return octokit.repos.updateRelease({
     owner: 'electron',
     repo: targetRepo,
     release_id: release.id,
     tag_name: release.tag_name,
-    draft: false
+    draft: false,
+    make_latest: makeLatest ? 'true' : 'false'
   }).catch(err => {
     console.log(`${fail} Error publishing release:`, err);
     process.exit(1);
