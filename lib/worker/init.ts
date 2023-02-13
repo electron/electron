@@ -23,7 +23,7 @@ global.require = makeRequireFunction(global.module);
 // Set the __filename to the path of html file if it is file: protocol.
 // NB. 'self' isn't defined in an AudioWorklet.
 if (typeof self !== 'undefined' && self.location.protocol === 'file:') {
-  const pathname = process.platform === 'win32' && self?.location.pathname[0] === '/' ? self?.location.pathname.substr(1) : self?.location.pathname;
+  const pathname = process.platform === 'win32' && self.location && self.location.pathname[0] === '/' ? self.location.pathname.substr(1) : self.location.pathname;
   global.__filename = path.normalize(decodeURIComponent(pathname));
   global.__dirname = path.dirname(global.__filename);
 
