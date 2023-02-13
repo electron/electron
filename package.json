@@ -9,7 +9,7 @@
     "@electron/fiddle-core": "^1.0.4",
     "@electron/github-app-auth": "^1.5.0",
     "@electron/typescript-definitions": "^8.10.0",
-    "@octokit/rest": "^18.0.3",
+    "@octokit/rest": "^19.0.7",
     "@primer/octicons": "^10.0.0",
     "@types/basic-auth": "^1.1.3",
     "@types/busboy": "^0.2.3",
