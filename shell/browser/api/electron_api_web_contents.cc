@@ -1755,31 +1755,6 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-// TODO: move this to gin_helper/constructible.h, replace Constructible, and
-// refactor other users for the T::BuildPrototype style.
-template <typename T>
-class Constructible2 {
- public:
-  static v8::Local<v8::Function> GetConstructor(
-      v8::Local<v8::Context> context) {
-    v8::Isolate* isolate = context->GetIsolate();
-    gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
-    auto* wrapper_info = &T::kWrapperInfo;
-    v8::Local<v8::FunctionTemplate> constructor =
-        data->GetFunctionTemplate(wrapper_info);
-    if (constructor.IsEmpty()) {
-      constructor = gin::CreateConstructorFunctionTemplate(
-          isolate, base::BindRepeating(&T::New));
-      constructor->InstanceTemplate()->SetInternalFieldCount(
-          gin::kNumberOfInternalFields);
-      T::BuildPrototype(isolate, constructor);
-      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
-      data->SetFunctionTemplate(wrapper_info, constructor);
-    }
-    return constructor->GetFunction(context).ToLocalChecked();
-  }
-};
-
 bool WebContents::EmitNavigationEvent(
     const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
