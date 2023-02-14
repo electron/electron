@@ -118,7 +118,7 @@ declare namespace Electron {
     _shouldRegisterAcceleratorForCommandId(id: string): boolean;
     _getSharingItemForCommandId(id: string): SharingItem | null;
     _callMenuWillShow(): void;
-    _executeCommand(event: any, id: number): void;
+    _executeCommand(event: KeyboardEvent, id: number): void;
     _menuWillShow(): void;
     commandsMap: Record<string, MenuItem>;
     groupsMap: Record<string, MenuItem[]>;
@@ -146,14 +146,16 @@ declare namespace Electron {
     acceleratorWorksWhenHidden?: boolean;
   }
 
-  interface IpcMainEvent {
+  interface ReplyChannel {
     sendReply(value: any): void;
   }
 
+  interface IpcMainEvent {
+    _replyChannel: ReplyChannel;
+  }
+
   interface IpcMainInvokeEvent {
-    sendReply(value: any): void;
-    _reply(value: any): void;
-    _throw(error: Error | string): void;
+    _replyChannel: ReplyChannel;
   }
 
 
@@ -208,10 +210,6 @@ declare namespace ElectronInternal {
     handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => Promise<any> | any): void;
     on(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
     once(channel: string, listener: (event: IpcMainInternalEvent, ...args: any[]) => void): this;
-  }
-
-  interface Event extends Electron.Event {
-    sender: WebContents;
   }
 
   interface LoadURLOptions extends Electron.LoadURLOptions {

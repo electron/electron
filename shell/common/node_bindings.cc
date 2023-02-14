@@ -31,6 +31,7 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
@@ -49,7 +50,6 @@
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
-  V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
   V(electron_browser_image_view)         \
@@ -454,6 +454,9 @@ void NodeBindings::Initialize() {
       env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
+
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  gin_helper::internal::Event::GetConstructor(isolate->GetCurrentContext());
 
   g_is_initialized = true;
 }

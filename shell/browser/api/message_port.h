@@ -61,7 +61,7 @@ class MessagePort : public gin::Wrappable<MessagePort>, mojo::MessageReceiver {
   // The blink version of MessagePort uses the very nice "ActiveScriptWrapper"
   // class, which keeps the object alive through the V8 embedder hooks into the
   // GC lifecycle: see
-  // https://source.chromium.org/chromium/chromium/src/+/master:third_party/blink/renderer/platform/heap/thread_state.cc;l=258;drc=b892cf58e162a8f66cd76d7472f129fe0fb6a7d1
+  // https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/heap/thread_state.cc;l=258;drc=b892cf58e162a8f66cd76d7472f129fe0fb6a7d1
   // We do not have that luxury, so we brutishly use v8::Global to accomplish
   // something similar. Critically, whenever the value of
   // "HasPendingActivity()" changes, we must call Pin() or Unpin() as

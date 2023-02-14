@@ -1780,7 +1780,7 @@ On macOS it does not remove the focus from the window.
 
 #### `win.isFocusable()` _macOS_ _Windows_
 
-Returns whether the window can be focused.
+Returns `boolean` - Whether the window can be focused.
 
 #### `win.setParentWindow(parent)`
 
@@ -1935,7 +1935,7 @@ with `addBrowserView` or `setBrowserView`.
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.
 
-[runtime-enabled-features]: https://cs.chromium.org/chromium/src/third_party/blink/renderer/platform/runtime_enabled_features.json5?l=70
+[runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5
 [page-visibility-api]: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
 [quick-look]: https://en.wikipedia.org/wiki/Quick_Look
 [vibrancy-docs]: https://developer.apple.com/documentation/appkit/nsvisualeffectview?preferredLanguage=objc

@@ -135,33 +135,27 @@ class ElectronURLLoaderFactory : public network::SelfDeletingURLLoaderFactory {
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       int32_t request_id,
       const network::URLLoaderCompletionStatus& status);
+
   static void StartLoadingBuffer(
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       network::mojom::URLResponseHeadPtr head,
-      const gin_helper::Dictionary& dict);
-  static void StartLoadingString(
-      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
-      network::mojom::URLResponseHeadPtr head,
-      const gin_helper::Dictionary& dict,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> response);
+      v8::Local<v8::ArrayBufferView> buffer);
   static void StartLoadingFile(
-      mojo::PendingReceiver<network::mojom::URLLoader> loader,
-      network::ResourceRequest request,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       network::mojom::URLResponseHeadPtr head,
-      const gin_helper::Dictionary& dict,
-      v8::Isolate* isolate,
-      v8::Local<v8::Value> response);
+      const network::ResourceRequest& original_request,
+      const base::FilePath& path,
+      const gin_helper::Dictionary& opts);
   static void StartLoadingHttp(
+      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       mojo::PendingReceiver<network::mojom::URLLoader> loader,
       const network::ResourceRequest& original_request,
-      mojo::PendingRemote<network::mojom::URLLoaderClient> client,
       const net::MutableNetworkTrafficAnnotationTag& traffic_annotation,
       const gin_helper::Dictionary& dict);
   static void StartLoadingStream(
-      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       mojo::PendingRemote<network::mojom::URLLoaderClient> client,
+      mojo::PendingReceiver<network::mojom::URLLoader> loader,
       network::mojom::URLResponseHeadPtr head,
       const gin_helper::Dictionary& dict);
 
