@@ -384,6 +384,9 @@ def get_release(version):
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'find-github-release.js')
   release_info = execute(['node', script_path, version])
+  if is_verbose_mode():
+    print('Release info for version: {}:\n'.format(version))
+    print(release_info)
   release = json.loads(release_info)
   return release
 
