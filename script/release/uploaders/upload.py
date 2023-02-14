@@ -17,7 +17,8 @@ sys.path.append(
 
 from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch, \
-                       get_zip_name, enable_verbose_mode, get_platform_key
+                       get_zip_name, enable_verbose_mode, \
+                       is_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      store_artifact, get_electron_exec, get_out_dir, \
                      SRC_DIR, ELECTRON_DIR, TS_NODE
