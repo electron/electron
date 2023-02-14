@@ -70,8 +70,6 @@ for:
           }
           $global:LASTEXITCODE = 0
       - cd ..
-      - ps: $node_version = node --version
-      - ps: Write-Host "Using Node $node_version"
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
       - ps: >-

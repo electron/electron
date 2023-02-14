@@ -56,7 +56,6 @@ REM Install Windows SDK
 choco install windows-sdk-10-version-2104-all
 
 REM Install nodejs python git and yarn needed dependencies
-choco uninstall -y nodejs-lts
 choco install -y --force nodejs --version=18.12.1
 choco install -y python2 git yarn
 choco install python --version 3.7.9
