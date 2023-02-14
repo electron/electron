@@ -2121,6 +2121,21 @@ describe('net module', () => {
         });
         expect(response.headers.get('x-cookie')).to.equal(`wild_cookie=${cookieVal}`);
       });
+
+      it('should reject promise on DNS failure', async () => {
+        const r = net.fetch('https://i.do.not.exist');
+        await expect(r).to.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+      });
+
+      it('should reject body promise when stream fails', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.write('first chunk');
+          setTimeout(() => response.destroy());
+        });
+        const r = await net.fetch(serverUrl);
+        expect(r.status).to.equal(200);
+        await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
+      });
     });
   });
 });

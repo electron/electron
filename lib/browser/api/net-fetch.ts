@@ -96,7 +96,6 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
     if (locallyAborted) return;
     const headers = new Headers();
     for (const [k, v] of Object.entries(resp.headers)) { headers.set(k, Array.isArray(v) ? v.join(', ') : v); }
-    // TODO: this loses trailers and httpVersion info
     const nullBodyStatus = [101, 204, 205, 304];
     const body = nullBodyStatus.includes(resp.statusCode) || req.method === 'HEAD' ? null : Readable.toWeb(resp as unknown as Readable) as ReadableStream;
     const rResp = new Response(body, {
@@ -108,7 +107,6 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
   });
 
   r.on('error', (err) => {
-    // TODO: abort..?
     p.reject(err);
   });
 
