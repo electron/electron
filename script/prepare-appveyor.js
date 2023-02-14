@@ -14,8 +14,8 @@ const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
 const DEFAULT_BUILD_CLOUD_ID = '1598';
 const DEFAULT_BUILD_CLOUD = 'electronhq-16-core';
-const DEFAULT_BAKE_BASE_IMAGE = 'e-111.0.5560.0-2';
-const DEFAULT_BUILD_IMAGE = 'e-111.0.5560.0-2';
+const DEFAULT_BAKE_BASE_IMAGE = 'e-111.0.5560.0-node18';
+const DEFAULT_BUILD_IMAGE = 'e-111.0.5560.0-node18';
 
 const appveyorBakeJob = 'electron-bake-image';
 const appVeyorJobs = {
@@ -188,7 +188,7 @@ async function prepareAppVeyorImage (opts) {
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
     const cloudId = opts.cloudId || DEFAULT_BUILD_CLOUD_ID;
-    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}-node18`;
+    const imageVersion = opts.imageVersion || `e-${CHROMIUM_VERSION}`;
     const image = await checkAppVeyorImage({ cloudId, imageVersion });
 
     if (image && image.name) {

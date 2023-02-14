@@ -6,7 +6,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-111.0.5560.0-2
+image: e-111.0.5560.0-node18
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -69,7 +69,7 @@ build_script:
   - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
   - update_depot_tools.bat
   # Uncomment the following line if windows deps change
-  - src\electron\script\setup-win-for-dev.bat
+  # - src\electron\script\setup-win-for-dev.bat
   - >-
       gclient config
       --name "src\electron"
