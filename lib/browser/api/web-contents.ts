@@ -28,11 +28,47 @@ type PostData = LoadURLOptions['postData']
 
 // Stock page sizes
 const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
-  A5: {
-    custom_display_name: 'A5',
-    height_microns: 210000,
-    name: 'ISO_A5',
-    width_microns: 148000
+  Letter: {
+    custom_display_name: 'Letter',
+    height_microns: 279400,
+    name: 'NA_LETTER',
+    width_microns: 215900
+  },
+  Legal: {
+    custom_display_name: 'Legal',
+    height_microns: 355600,
+    name: 'NA_LEGAL',
+    width_microns: 215900
+  },
+  Tabloid: {
+    height_microns: 431800,
+    name: 'NA_LEDGER',
+    width_microns: 279400,
+    custom_display_name: 'Tabloid'
+  },
+  A0: {
+    custom_display_name: 'A0',
+    height_microns: 1189000,
+    name: 'ISO_A0',
+    width_microns: 841000
+  },
+  A1: {
+    custom_display_name: 'A1',
+    height_microns: 841000,
+    name: 'ISO_A1',
+    width_microns: 594000
+  },
+  A2: {
+    custom_display_name: 'A2',
+    height_microns: 594000,
+    name: 'ISO_A2',
+    width_microns: 420000
+  },
+  A3: {
+    custom_display_name: 'A3',
+    height_microns: 420000,
+    name: 'ISO_A3',
+    width_microns: 297000
   },
   A4: {
     custom_display_name: 'A4',
@@ -41,29 +77,17 @@ const PDFPageSizes: Record<string, ElectronInternal.MediaSize> = {
     is_default: 'true',
     width_microns: 210000
   },
-  A3: {
-    custom_display_name: 'A3',
-    height_microns: 420000,
-    name: 'ISO_A3',
-    width_microns: 297000
+  A5: {
+    custom_display_name: 'A5',
+    height_microns: 210000,
+    name: 'ISO_A5',
+    width_microns: 148000
   },
-  Legal: {
-    custom_display_name: 'Legal',
-    height_microns: 355600,
-    name: 'NA_LEGAL',
-    width_microns: 215900
-  },
-  Letter: {
-    custom_display_name: 'Letter',
-    height_microns: 279400,
-    name: 'NA_LETTER',
-    width_microns: 215900
-  },
-  Tabloid: {
-    height_microns: 431800,
-    name: 'NA_LEDGER',
-    width_microns: 279400,
-    custom_display_name: 'Tabloid'
+  A6: {
+    custom_display_name: 'A6',
+    height_microns: 148000,
+    name: 'ISO_A6',
+    width_microns: 105000
   }
 } as const;
 
