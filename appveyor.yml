@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-110.0.5451.0
+image: e-111.0.5560.0-node18
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -70,6 +70,8 @@ for:
           }
           $global:LASTEXITCODE = 0
       - cd ..
+      - ps: $node_version = node --version
+      - ps: Write-Host "Using Node $node_version"
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
       - ps: >-
