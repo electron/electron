@@ -1787,9 +1787,8 @@ bool WebContents::EmitNavigationEvent(
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
 
-  gin::Handle<gin_helper::internal::PreventableEvent> event =
-      gin_helper::internal::CreateCustomEvent(
-          isolate, GetWrapper(isolate).ToLocalChecked());
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
 
   gin::Dictionary dict(isolate, event_object);

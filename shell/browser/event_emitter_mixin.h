@@ -12,7 +12,6 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter.h"
-#include "shell/common/gin_helper/preventable_event.h"
 
 namespace gin_helper {
 

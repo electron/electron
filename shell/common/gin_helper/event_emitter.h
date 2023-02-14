@@ -13,7 +13,6 @@
 #include "gin/handle.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/preventable_event.h"
 #include "shell/common/gin_helper/wrappable.h"
 
 namespace content {
