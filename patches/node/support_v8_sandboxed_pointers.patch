@@ -165,7 +165,7 @@ index 6864f2d88b34abfa4090780d6993684cd0b366a3..1cdd436b343861a96582a803b460aefe
 +v8::ArrayBuffer::Allocator* GetAllocator() {
 +  static v8::ArrayBuffer::Allocator* allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 +  return allocator;
-+};
++}
 +
  class SerializerContext : public BaseObject,
                            public ValueSerializer::Delegate {
