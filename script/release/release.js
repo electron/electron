@@ -318,12 +318,15 @@ function saveShaSumFile (checksums, fileName) {
 }
 
 async function publishRelease (release) {
-  const currentLatest = await octokit.repos.getLatestRelease({
-    owner: 'electron',
-    repo: targetRepo
-  });
+  let makeLatest;
+  if (!release.prerelease) {
+    const currentLatest = await octokit.repos.getLatestRelease({
+      owner: 'electron',
+      repo: targetRepo
+    });
 
-  const makeLatest = !release.prerelease && semver.gte(release.tag_name, currentLatest.data.tag_name);
+    makeLatest = semver.gte(release.tag_name, currentLatest.data.tag_name);
+  }
 
   return octokit.repos.updateRelease({
     owner: 'electron',
