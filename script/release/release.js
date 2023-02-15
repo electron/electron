@@ -318,7 +318,7 @@ function saveShaSumFile (checksums, fileName) {
 }
 
 async function publishRelease (release) {
-  let makeLatest;
+  let makeLatest = false;
   if (!release.prerelease) {
     const currentLatest = await octokit.repos.getLatestRelease({
       owner: 'electron',
