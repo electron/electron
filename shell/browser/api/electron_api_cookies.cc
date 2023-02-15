@@ -128,10 +128,10 @@ bool MatchesCookie(const base::Value::Dict& filter,
       !MatchesDomain(*str, cookie.Domain()))
     return false;
   absl::optional<bool> secure_filter = filter.FindBool("secure");
-  if (secure_filter && *secure_filter == cookie.IsSecure())
+  if (secure_filter && *secure_filter != cookie.IsSecure())
     return false;
   absl::optional<bool> session_filter = filter.FindBool("session");
-  if (session_filter && *session_filter != !cookie.IsPersistent())
+  if (session_filter && *session_filter == cookie.IsPersistent())
     return false;
   return true;
 }
