@@ -135,7 +135,7 @@ describe('ipcRenderer module', () => {
         const payload = 'Hello World!';
 
         before(async () => {
-          contents = (webContents as any).create({
+          contents = (webContents as typeof ElectronInternal.WebContents).create({
             preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
             ...webPreferences
           });

@@ -3,7 +3,7 @@ import { AddressInfo } from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
-import { BrowserWindow, ipcMain, webContents, session, WebContents, app, BrowserView } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
 import { emittedOnce } from './lib/events-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, delay, defer, waitUntil } from './lib/spec-helpers';
@@ -48,11 +48,11 @@ describe('webContents module', () => {
 
   describe('fromFrame()', () => {
     it('returns WebContents for mainFrame', () => {
-      const contents = (webContents as any).create() as WebContents;
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
       expect(webContents.fromFrame(contents.mainFrame)).to.equal(contents);
     });
     it('returns undefined for disposed frame', async () => {
-      const contents = (webContents as any).create() as WebContents;
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
       const { mainFrame } = contents;
       contents.destroy();
       await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
@@ -1549,7 +1549,7 @@ describe('webContents module', () => {
         // is fine to retry this test for a few times.
         this.retries(3);
 
-        const contents = (webContents as any).create() as WebContents;
+        const contents = (webContents as typeof ElectronInternal.WebContents).create();
         const originalEmit = contents.emit.bind(contents);
         contents.emit = (...args) => { return originalEmit(...args); };
         contents.once(e.name as any, () => contents.destroy());
@@ -2261,7 +2261,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
 
     it('closes when close() is called', async () => {
-      const w = (webContents as any).create() as WebContents;
+      const w = (webContents as typeof ElectronInternal.WebContents).create();
       const destroyed = emittedOnce(w, 'destroyed');
       w.close();
       await destroyed;
@@ -2269,7 +2269,7 @@ describe('webContents module', () => {
     });
 
     it('closes when close() is called after loading a page', async () => {
-      const w = (webContents as any).create() as WebContents;
+      const w = (webContents as typeof ElectronInternal.WebContents).create();
       await w.loadURL('about:blank');
       const destroyed = emittedOnce(w, 'destroyed');
       w.close();
@@ -2284,7 +2284,7 @@ describe('webContents module', () => {
         registry = new FinalizationRegistry(resolve as any);
       });
       (() => {
-        const w = (webContents as any).create() as WebContents;
+        const w = (webContents as typeof ElectronInternal.WebContents).create();
         registry!.register(w, 42);
       })();
       const i = setInterval(() => v8Util.requestGarbageCollectionForTesting(), 100);
@@ -2302,7 +2302,7 @@ describe('webContents module', () => {
     });
 
     it('ignores beforeunload if waitForBeforeUnload not specified', async () => {
-      const w = (webContents as any).create() as WebContents;
+      const w = (webContents as typeof ElectronInternal.WebContents).create();
       await w.loadURL('about:blank');
       await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
       w.on('will-prevent-unload', () => { throw new Error('unexpected will-prevent-unload'); });
@@ -2313,7 +2313,7 @@ describe('webContents module', () => {
     });
 
     it('runs beforeunload if waitForBeforeUnload is specified', async () => {
-      const w = (webContents as any).create() as WebContents;
+      const w = (webContents as typeof ElectronInternal.WebContents).create();
       await w.loadURL('about:blank');
       await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
       const willPreventUnload = emittedOnce(w, 'will-prevent-unload');
@@ -2323,7 +2323,7 @@ describe('webContents module', () => {
     });
 
     it('overriding beforeunload prevention results in webcontents close', async () => {
-      const w = (webContents as any).create() as WebContents;
+      const w = (webContents as typeof ElectronInternal.WebContents).create();
       await w.loadURL('about:blank');
       await w.executeJavaScript('window.onbeforeunload = () => "hello"; null');
       w.once('will-prevent-unload', e => e.preventDefault());
