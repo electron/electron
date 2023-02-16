@@ -73,7 +73,7 @@ function defer (): Promise<any> & {resolve: Function, reject: Function} {
 describe('protocol module', () => {
   let contents: WebContents = null as unknown as WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => { contents = (webContents as any).create({ sandbox: true }); });
+  before(() => { contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true }); });
   after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
@@ -952,7 +952,10 @@ describe('protocol module', () => {
         callback('');
       });
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
+      const newContents = (webContents as typeof ElectronInternal.WebContents).create({
+        nodeIntegration: true,
+        contextIsolation: false
+      });
       const consoleMessages: string[] = [];
       newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
       try {
@@ -1053,7 +1056,11 @@ describe('protocol module', () => {
       await registerStreamProtocol(standardScheme, protocolHandler);
       await registerStreamProtocol('stream', protocolHandler);
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
+      const newContents = (webContents as typeof ElectronInternal.WebContents).create({
+        nodeIntegration: true,
+        contextIsolation: false
+      });
+
       try {
         newContents.loadURL(testingScheme + '://fake-host');
         const [, response] = await emittedOnce(ipcMain, 'result');

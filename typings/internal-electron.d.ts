@@ -282,7 +282,7 @@ declare namespace ElectronInternal {
   }
 
   class WebContents extends Electron.WebContents {
-    static create(opts: Electron.WebPreferences): Electron.WebContents;
+    static create(opts?: Electron.WebPreferences): Electron.WebContents;
   }
 }
 
