@@ -249,7 +249,6 @@ declare namespace ElectronInternal {
 
   interface ModuleEntry {
     name: string;
-    private?: boolean;
     loader: ModuleLoader;
   }
 
