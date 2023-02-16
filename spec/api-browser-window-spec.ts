@@ -5,11 +5,10 @@ import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
 import * as os from 'os';
-import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { ifit, ifdescribe, defer, delay } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, delay, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 
@@ -153,7 +152,7 @@ describe('BrowserWindow module', () => {
       let server: http.Server = null as unknown as http.Server;
       let url: string = null as unknown as string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           switch (request.url) {
             case '/net-error':
@@ -175,10 +174,9 @@ describe('BrowserWindow module', () => {
             default:
               throw new Error(`unsupported endpoint: ${request.url}`);
           }
-        }).listen(0, '127.0.0.1', () => {
-          url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+
+        url = (await listen(server)).url;
       });
 
       after(() => {
@@ -297,7 +295,7 @@ describe('BrowserWindow module', () => {
     let server = null as unknown as http.Server;
     let url = null as unknown as string;
     let postData = null as any;
-    before((done) => {
+    before(async () => {
       const filePath = path.join(fixtures, 'pages', 'a.html');
       const fileStats = fs.statSync(filePath);
       postData = [
@@ -340,10 +338,8 @@ describe('BrowserWindow module', () => {
         }
         setTimeout(respond, req.url && req.url.includes('slow') ? 200 : 0);
       });
-      server.listen(0, '127.0.0.1', () => {
-        url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-        done();
-      });
+
+      url = (await listen(server)).url;
     });
 
     after(() => {
@@ -486,7 +482,7 @@ describe('BrowserWindow module', () => {
       describe('will-navigate event', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
-        before((done) => {
+        before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate-top') {
               res.end('<a target=_top href="/">navigate _top</a>');
@@ -494,22 +490,18 @@ describe('BrowserWindow module', () => {
               res.end('');
             }
           });
-          server.listen(0, '127.0.0.1', () => {
-            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-            done();
-          });
+          url = (await listen(server)).url;
         });
 
         after(() => {
           server.close();
         });
 
-        it('allows the window to be closed from the event listener', (done) => {
-          w.webContents.once('will-navigate', () => {
-            w.close();
-            done();
-          });
+        it('allows the window to be closed from the event listener', async () => {
+          const event = emittedOnce(w.webContents, 'will-navigate');
           w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          await event;
+          w.close();
         });
 
         it('can be prevented', (done) => {
@@ -541,7 +533,7 @@ describe('BrowserWindow module', () => {
               resolve(url);
             });
           });
-          expect(navigatedTo).to.equal(url);
+          expect(navigatedTo).to.equal(url + '/');
           expect(w.webContents.getURL()).to.match(/^file:/);
         });
 
@@ -554,12 +546,12 @@ describe('BrowserWindow module', () => {
               resolve(url);
             });
           });
-          expect(navigatedTo).to.equal(url);
+          expect(navigatedTo).to.equal(url + '/');
           expect(w.webContents.getURL()).to.equal('about:blank');
         });
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
-          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await w.loadURL(`data:text/html,<iframe src="${url}/navigate-top"></iframe>`);
           await delay(1000);
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -594,7 +586,7 @@ describe('BrowserWindow module', () => {
       describe('will-redirect event', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
-        before((done) => {
+        before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/302') {
               res.setHeader('Location', '/200');
@@ -606,10 +598,7 @@ describe('BrowserWindow module', () => {
               res.end();
             }
           });
-          server.listen(0, '127.0.0.1', () => {
-            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-            done();
-          });
+          url = (await listen(server)).url;
         });
 
         after(() => {
@@ -643,12 +632,11 @@ describe('BrowserWindow module', () => {
           expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first');
         });
 
-        it('allows the window to be closed from the event listener', (done) => {
-          w.webContents.once('will-redirect', () => {
-            w.close();
-            done();
-          });
+        it('allows the window to be closed from the event listener', async () => {
+          const event = emittedOnce(w.webContents, 'will-redirect');
           w.loadURL(`${url}/302`);
+          await event;
+          w.close();
         });
 
         it('can be prevented', (done) => {
@@ -1914,9 +1902,7 @@ describe('BrowserWindow module', () => {
         res.end();
       });
       server.on('connection', () => { connections++; });
-
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => resolve()));
-      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      url = (await listen(server)).url;
     });
     afterEach(async () => {
       server.close();
@@ -2944,7 +2930,7 @@ describe('BrowserWindow module', () => {
       let server: http.Server = null as unknown as http.Server;
       let serverUrl: string = null as unknown as string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           switch (request.url) {
             case '/cross-site':
@@ -2953,10 +2939,8 @@ describe('BrowserWindow module', () => {
             default:
               throw new Error(`unsupported endpoint: ${request.url}`);
           }
-        }).listen(0, '127.0.0.1', () => {
-          serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+        serverUrl = (await listen(server)).url;
       });
 
       after(() => {
@@ -4475,13 +4459,11 @@ describe('BrowserWindow module', () => {
       let server: http.Server = null as unknown as http.Server;
       let serverUrl: string = null as unknown as string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           response.end();
-        }).listen(0, '127.0.0.1', () => {
-          serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+        serverUrl = (await listen(server)).url;
       });
 
       after(() => {

@@ -3,10 +3,9 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce, emittedUntil } from './lib/events-helpers';
-import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext } from './lib/spec-helpers';
+import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
 import { expect } from 'chai';
 import * as http from 'http';
-import { AddressInfo } from 'net';
 import * as auth from 'basic-auth';
 
 declare let WebView: any;
@@ -1208,11 +1207,11 @@ describe('<webview> tag', function () {
               res.end();
               server.close();
             }
-          }).listen(0, '127.0.0.1', () => {
-            const port = (server.address() as AddressInfo).port;
+          });
+          listen(server).then(({ url }) => {
             loadWebView(w, {
               httpreferrer: referrer,
-              src: `http://127.0.0.1:${port}`
+              src: url
             });
           });
         });
@@ -1464,15 +1463,13 @@ describe('<webview> tag', function () {
             res.end();
           }
         });
-        const uri = await new Promise<string>(resolve => server.listen(0, '127.0.0.1', () => {
-          resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
-        }));
+        const { url } = await listen(server);
         defer(() => { server.close(); });
         const event = await loadWebViewAndWaitForEvent(w, {
-          src: `${uri}/302`
+          src: `${url}/302`
         }, 'did-redirect-navigation');
 
-        expect(event.url).to.equal(`${uri}/200`);
+        expect(event.url).to.equal(`${url}/200`);
         expect(event.isInPlace).to.be.false();
         expect(event.isMainFrame).to.be.true();
         expect(event.frameProcessId).to.be.a('number');
@@ -1572,8 +1569,7 @@ describe('<webview> tag', function () {
     describe('dom-ready event', () => {
       it('emits when document is loaded', async () => {
         const server = http.createServer(() => {});
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-        const port = (server.address() as AddressInfo).port;
+        const { port } = await listen(server);
         await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
         }, 'dom-ready');
@@ -2063,8 +2059,7 @@ describe('<webview> tag', function () {
       defer(() => {
         server.close();
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       const e = await loadWebViewAndWaitForEvent(w, {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',

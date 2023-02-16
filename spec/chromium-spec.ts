@@ -10,8 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, defer, delay, itremote } from './lib/spec-helpers';
-import { AddressInfo } from 'net';
+import { ifit, ifdescribe, defer, delay, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 
@@ -60,18 +59,17 @@ describe('reporting api', () => {
       // "deprecation" report.
       res.end('<script>webkitRequestAnimationFrame(() => {})</script>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const { url } = await listen(server);
     const bw = new BrowserWindow({
       show: false
     });
     try {
       const reportGenerated = emittedOnce(reports, 'report');
-      const url = `https://localhost:${(server.address() as any).port}/a`;
       await bw.loadURL(url);
       const [report] = await reportGenerated;
       expect(report).to.be.an('array');
       expect(report[0].type).to.equal('deprecation');
-      expect(report[0].url).to.equal(url);
+      expect(report[0].url).to.equal(`${url}/a`);
       expect(report[0].body.id).to.equal('PrefixedRequestAnimationFrame');
     } finally {
       bw.destroy();
@@ -218,8 +216,7 @@ describe('web security', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
   after(() => {
     server.close();
@@ -847,8 +844,7 @@ describe('chromium features', () => {
           res.end(`body:${body}`);
         });
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      serverUrl = `http://localhost:${(server.address() as any).port}`;
+      serverUrl = (await listen(server)).url;
     });
     after(async () => {
       server.close();
@@ -1213,16 +1209,13 @@ describe('chromium features', () => {
       let serverURL: string;
       let server: any;
 
-      beforeEach((done) => {
+      beforeEach(async () => {
         server = http.createServer((req, res) => {
           res.writeHead(200);
           const filePath = path.join(fixturesPath, 'pages', 'window-opener-targetOrigin.html');
           res.end(fs.readFileSync(filePath, 'utf8'));
         });
-        server.listen(0, '127.0.0.1', () => {
-          serverURL = `http://127.0.0.1:${server.address().port}`;
-          done();
-        });
+        serverURL = (await listen(server)).url;
       });
 
       afterEach(() => {
@@ -1523,7 +1516,7 @@ describe('chromium features', () => {
       let server: http.Server;
       let serverUrl: string;
       let serverCrossSiteUrl: string;
-      before((done) => {
+      before(async () => {
         server = http.createServer((req, res) => {
           const respond = () => {
             if (req.url === '/redirect-cross-site') {
@@ -1538,11 +1531,8 @@ describe('chromium features', () => {
           };
           setTimeout(respond, 0);
         });
-        server.listen(0, '127.0.0.1', () => {
-          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-          serverCrossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
-          done();
-        });
+        serverUrl = (await listen(server)).url;
+        serverCrossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
       });
 
       after(() => {
@@ -1935,8 +1925,7 @@ describe('chromium features', () => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      serverUrl = `http://localhost:${(server.address() as any).port}`;
+      serverUrl = (await listen(server)).url;
     });
     after(() => {
       server.close();
@@ -2057,8 +2046,7 @@ describe('chromium features', () => {
   describe('websockets', () => {
     it('has user agent', async () => {
       const server = http.createServer();
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       const wss = new ws.Server({ server: server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
@@ -2081,8 +2069,7 @@ describe('chromium features', () => {
         res.end('test');
       });
       defer(() => server.close());
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       const w = new BrowserWindow({ show: false });
       w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const x = await w.webContents.executeJavaScript(`
@@ -2268,7 +2255,9 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   const fullscreenChildHtml = promisify(fs.readFile)(
     path.join(fixturesPath, 'pages', 'fullscreen-oopif.html')
   );
-  let w: BrowserWindow, server: http.Server;
+  let w: BrowserWindow;
+  let server: http.Server;
+  let crossSiteUrl: string;
 
   beforeEach(async () => {
     server = http.createServer(async (_req, res) => {
@@ -2277,11 +2266,8 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       res.end();
     });
 
-    await new Promise<void>((resolve) => {
-      server.listen(8989, '127.0.0.1', () => {
-        resolve();
-      });
-    });
+    const serverUrl = (await listen(server)).url;
+    crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
 
     w = new BrowserWindow({
       show: true,
@@ -2303,7 +2289,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
-      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+      `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
     w.loadURL(`data:text/html,${html}`);
     await fullscreenChange;
 
@@ -2328,7 +2314,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await emittedOnce(w, 'enter-full-screen');
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
-      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+      `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
     w.loadURL(`data:text/html,${html}`);
     await fullscreenChange;
 
@@ -2791,8 +2777,7 @@ describe('navigator.hid', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
 
   const requestDevices: any = () => {
@@ -2990,8 +2975,7 @@ describe('navigator.usb', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
 
   const requestDevices: any = () => {
