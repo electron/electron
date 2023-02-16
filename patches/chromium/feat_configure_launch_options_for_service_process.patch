@@ -323,7 +323,7 @@ index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 051f08d67c6186a8e874ded8752c1fd355e26cd7..fad86c948f6f2ee3a51680f367ad6440649141a4 100644
+index 68db1862fd51f9b6c8c8c9fbd4055490fccd5f9a..5fb93015c780124ced9781ff5ae3e9cb821bb6e7 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -346,7 +346,7 @@ index 051f08d67c6186a8e874ded8752c1fd355e26cd7..fad86c948f6f2ee3a51680f367ad6440
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -96,11 +98,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -97,11 +99,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -621,10 +621,10 @@ index ea5342394f2aaf6d612f58ab886440473ed12647..0a5a4fbdcebbb2ec5d06206f1854de58
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff30c32cec 100644
+index debced2872b720f8a08c5418b6dfaca15a3e0f62..939fb4396d00ce2126d8ca8417d42b46d25ccbcc 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
-@@ -742,11 +742,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
+@@ -744,11 +744,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
  // command line flag.
  ResultCode LaunchWithoutSandbox(
      const base::CommandLine& cmd_line,
@@ -637,7 +637,7 @@ index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff
    // Network process runs in a job even when unsandboxed. This is to ensure it
    // does not outlive the browser, which could happen if there is a lot of I/O
    // on process shutdown, in which case TerminateProcess can fail. See
-@@ -973,7 +971,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
+@@ -975,7 +973,7 @@ bool SandboxWin::InitTargetServices(TargetServices* target_services) {
  ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
      const base::CommandLine& cmd_line,
      const std::string& process_type,
@@ -646,7 +646,7 @@ index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff
      SandboxDelegate* delegate,
      TargetPolicy* policy) {
    const base::CommandLine& launcher_process_command_line =
-@@ -987,7 +985,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -989,7 +987,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    }
  
    // Add any handles to be inherited to the policy.
@@ -655,7 +655,7 @@ index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff
      policy->AddHandleToShare(handle);
  
    if (!policy->GetConfig()->IsConfigured()) {
-@@ -1002,6 +1000,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -1004,6 +1002,13 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
    // have no effect. These calls can fail with SBOX_ERROR_BAD_PARAMS.
    policy->SetStdoutHandle(GetStdHandle(STD_OUTPUT_HANDLE));
    policy->SetStderrHandle(GetStdHandle(STD_ERROR_HANDLE));
@@ -669,7 +669,7 @@ index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff
  #endif
  
    if (!delegate->PreSpawnTarget(policy))
-@@ -1014,7 +1019,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
+@@ -1016,7 +1021,7 @@ ResultCode SandboxWin::GeneratePolicyForSandboxedProcess(
  ResultCode SandboxWin::StartSandboxedProcess(
      const base::CommandLine& cmd_line,
      const std::string& process_type,
@@ -678,7 +678,7 @@ index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff
      SandboxDelegate* delegate,
      base::Process* process) {
    const base::ElapsedTimer timer;
-@@ -1022,7 +1027,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1024,7 +1029,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    // Avoid making a policy if we won't use it.
    if (IsUnsandboxedProcess(delegate->GetSandboxType(), cmd_line,
                             *base::CommandLine::ForCurrentProcess())) {
@@ -687,7 +687,7 @@ index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff
                                  process);
    }
  
-@@ -1033,7 +1038,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1035,7 +1040,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
    auto policy = g_broker_services->CreatePolicy(tag);
    auto time_policy_created = timer.Elapsed();
    ResultCode result = GeneratePolicyForSandboxedProcess(

@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index b18cf32890dcd6216c796acd11787f5ed7fd0dd6..626e50569a064718a2dd81c987eca052c5107d26 100644
+index 425ae9d948c9ef7b357c788409a92a0803a0ede1..b5c82892a99463601daafecad36988188c6c2ac9 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1858,7 +1858,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1857,7 +1857,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // IncrementCapturerCount() is destructed.
    void DecrementCapturerCount(bool stay_hidden,
                                bool stay_awake,

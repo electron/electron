@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 551c953a5fa0945a1d5ab882f1311225aaf5f463..c3e91f149716e1770ed0d361986b28c3cdeda71f 100644
+index 95c3e68e64eb92967570e1644d0e28214a98fabd..c4bc1c2f656ed0d377f7068613b9f34228f4869c 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1886,6 +1886,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1887,6 +1887,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -81,7 +81,7 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9f1efcdd0ef27c528c4aec954ab9ca74085a6e74..f86f288f32404ce75d4f177c7bfd1253c7b1ee3f 100644
+index 8ca1a9980844333a847b5f2b58facd45db491965..83970556688641c09d9114a172036959b0b189c8 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -224,6 +224,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
