@@ -518,7 +518,7 @@ describe('chromium features', () => {
     it('does not crash', (done) => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('did-finish-load', () => { done(); });
-      w.webContents.once('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'external-string.html'));
     });
   });
@@ -558,7 +558,7 @@ describe('chromium features', () => {
     it('does not crash', (done) => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('did-finish-load', () => { done(); });
-      w.webContents.once('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
     });
   });
@@ -596,7 +596,7 @@ describe('chromium features', () => {
           }).then(() => done());
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
 
@@ -637,7 +637,7 @@ describe('chromium features', () => {
           });
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
 
@@ -673,7 +673,7 @@ describe('chromium features', () => {
           });
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
     });
 
@@ -1559,7 +1559,7 @@ describe('chromium features', () => {
             ...extraPreferences
           });
           let redirected = false;
-          w.webContents.on('crashed', () => {
+          w.webContents.on('render-process-gone', () => {
             expect.fail('renderer crashed / was killed');
           });
           w.webContents.on('did-redirect-navigation', (event, url) => {
@@ -2730,7 +2730,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
           }).then(() => done());
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?setBadge' });
     });
 
@@ -2751,7 +2751,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
           }).then(() => done());
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?clearBadge' });
     });
   });
