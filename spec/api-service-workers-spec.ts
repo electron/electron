@@ -39,7 +39,7 @@ describe('session.serviceWorkers', () => {
       });
     });
 
-    w = (webContents as any).create({ session: ses });
+    w = (webContents as typeof ElectronInternal.WebContents).create({ session: ses });
   });
 
   afterEach(async () => {

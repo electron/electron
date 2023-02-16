@@ -1472,7 +1472,7 @@ describe('chromium features', () => {
       });
 
       beforeEach(() => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           nodeIntegration: true,
           contextIsolation: false
         });
@@ -1603,7 +1603,7 @@ describe('chromium features', () => {
       });
 
       it('default value allows websql', async () => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           session: sqlSession,
           nodeIntegration: true,
           contextIsolation: false
@@ -1614,7 +1614,7 @@ describe('chromium features', () => {
       });
 
       it('when set to false can disallow websql', async () => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           session: sqlSession,
           nodeIntegration: true,
           enableWebSQL: false,
@@ -1626,7 +1626,7 @@ describe('chromium features', () => {
       });
 
       it('when set to false does not disable indexedDB', async () => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           session: sqlSession,
           nodeIntegration: true,
           enableWebSQL: false,
