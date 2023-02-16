@@ -62,7 +62,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform === 'linux')('does not crash when setting large window icons', async () => {
       const appPath = path.join(fixtures, 'apps', 'xwindow-icon');
       const appProcess = childProcess.spawn(process.execPath, [appPath]);
-      await new Promise((resolve) => { appProcess.once('exit', resolve); });
+      await emittedOnce(appProcess, 'exit');
     });
 
     it('does not crash or throw when passed an invalid icon', async () => {

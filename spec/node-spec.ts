@@ -104,7 +104,7 @@ describe('node feature', () => {
       it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = require('child_process').fork('--eval', [source]);
-        const message = await new Promise(resolve => forked.once('message', resolve));
+        const [message] = await emittedOnce(forked, 'message');
         expect(message)
           .to.have.own.property('electron')
           .that.is.a('string')
