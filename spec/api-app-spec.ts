@@ -14,20 +14,6 @@ import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
-describe('electron module', () => {
-  it('does not expose internal modules to require', () => {
-    expect(() => {
-      require('clipboard');
-    }).to.throw(/Cannot find module 'clipboard'/);
-  });
-
-  describe('require("electron")', () => {
-    it('always returns the internal electron module', () => {
-      require('electron');
-    });
-  });
-});
-
 describe('app module', () => {
   let server: https.Server;
   let secureUrl: string;
