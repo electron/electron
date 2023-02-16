@@ -12,6 +12,20 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (25.0)
+
+### Removed: app `renderer-process-crashed` event
+
+The deprecated `renderer-process-crashed` event on app has been removed. It is replaced by [`render-process-gone`](api/app.md#event-render-process-gone).
+
+```js
+// Removed in Electron 25.0
+app.on('renderer-process-crashed', (event, webContents, killed) => {})
+
+// Replace with
+app.on('render-process-gone', (event, webContents, details) => {})
+```
+
 ## Planned Breaking API Changes (23.0)
 
 ### Removed: Windows 7 / 8 / 8.1 support

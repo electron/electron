@@ -661,10 +661,6 @@ WebContents.prototype._init = function () {
     ipcMain.emit(channel, event, message);
   });
 
-  this.on('crashed', (event, ...args) => {
-    app.emit('renderer-process-crashed', event, this, ...args);
-  });
-
   this.on('render-process-gone', (event, details) => {
     app.emit('render-process-gone', event, this, details);
 

@@ -115,4 +115,3 @@ for (const name of events) {
 
 // Deprecation.
 deprecate.event(app, 'gpu-process-crashed', 'child-process-gone');
-deprecate.event(app, 'renderer-process-crashed', 'render-process-gone');
