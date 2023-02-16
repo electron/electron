@@ -2184,7 +2184,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('returns null for webContents without a BrowserWindow', () => {
-      const contents = (webContents as any).create({});
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
       try {
         expect(BrowserWindow.fromWebContents(contents)).to.be.null('BrowserWindow.fromWebContents(contents)');
       } finally {

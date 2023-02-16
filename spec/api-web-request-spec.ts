@@ -52,7 +52,7 @@ describe('webRequest module', () => {
   let contents: WebContents = null as unknown as WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(async () => {
-    contents = (webContents as any).create({ sandbox: true });
+    contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
   after(() => contents.destroy());
@@ -529,7 +529,7 @@ describe('webRequest module', () => {
         }
       });
 
-      const contents = (webContents as any).create({
+      const contents = (webContents as typeof ElectronInternal.WebContents).create({
         session: ses,
         nodeIntegration: true,
         webSecurity: false,
