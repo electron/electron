@@ -2226,8 +2226,8 @@ describe('webContents module', () => {
 
   describe('crashed event', () => {
     it('does not crash main process when destroying WebContents in it', (done) => {
-      const contents = (webContents as any).create({ nodeIntegration: true });
-      contents.once('crashed', () => {
+      const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
+      contents.once('render-process-gone', () => {
         contents.destroy();
         done();
       });
