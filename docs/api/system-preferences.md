@@ -394,8 +394,6 @@ system default and override the value of `getEffectiveAppearance`.
 
 Returns `boolean` - whether or not this device has the ability to use Touch ID.
 
-**NOTE:** This API will return `false` on macOS systems older than Sierra 10.12.2.
-
 ### `systemPreferences.promptTouchID(reason)` _macOS_
 
 * `reason` string - The reason you are asking for Touch ID authentication
@@ -414,8 +412,6 @@ systemPreferences.promptTouchID('To get consent for a Security-Gated Thing').the
 
 This API itself will not protect your user data; rather, it is a mechanism to allow you to do so. Native apps will need to set [Access Control Constants](https://developer.apple.com/documentation/security/secaccesscontrolcreateflags?language=objc) like [`kSecAccessControlUserPresence`](https://developer.apple.com/documentation/security/secaccesscontrolcreateflags/ksecaccesscontroluserpresence?language=objc) on their keychain entry so that reading it would auto-prompt for Touch ID biometric consent. This could be done with [`node-keytar`](https://github.com/atom/node-keytar), such that one would store an encryption key with `node-keytar` and only fetch it if `promptTouchID()` resolves.
 
-**NOTE:** This API will return a rejected Promise on macOS systems older than Sierra 10.12.2.
-
 ### `systemPreferences.isTrustedAccessibilityClient(prompt)` _macOS_
 
 * `prompt` boolean - whether or not the user will be informed via prompt if the current process is untrusted.
@@ -428,7 +424,7 @@ Returns `boolean` - `true` if the current process is a trusted accessibility cli
 
 Returns `string` - Can be `not-determined`, `granted`, `denied`, `restricted` or `unknown`.
 
-This user consent was not required on macOS 10.13 High Sierra or lower so this method will always return `granted`.
+This user consent was not required on macOS 10.13 High Sierra so this method will always return `granted`.
 macOS 10.14 Mojave or higher requires consent for `microphone` and `camera` access.
 macOS 10.15 Catalina or higher requires consent for `screen` access.
 
@@ -443,7 +439,7 @@ Returns `Promise<boolean>` - A promise that resolves with `true` if consent was 
 
 **Important:** In order to properly leverage this API, you [must set](https://developer.apple.com/documentation/avfoundation/cameras_and_media_capture/requesting_authorization_for_media_capture_on_macos?language=objc) the `NSMicrophoneUsageDescription` and `NSCameraUsageDescription` strings in your app's `Info.plist` file. The values for these keys will be used to populate the permission dialogs so that the user will be properly informed as to the purpose of the permission request. See [Electron Application Distribution](../tutorial/application-distribution.md#rebranding-with-downloaded-binaries) for more information about how to set these in the context of Electron.
 
-This user consent was not required until macOS 10.14 Mojave, so this method will always return `true` if your system is running 10.13 High Sierra or lower.
+This user consent was not required until macOS 10.14 Mojave, so this method will always return `true` if your system is running 10.13 High Sierra.
 
 ### `systemPreferences.getAnimationSettings()`
 
