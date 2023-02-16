@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index e3fc48cfbed717126e134d1d95c33f1c1db1461f..e592b8ba6c781c7e7e529313a1d9da82a829a6e0 100644
+index 878e611223447d14a410d49a53b9cea3e201c6ef..31d06b52a9ee4c2d52be37831d3173705477a8a4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1024,6 +1024,7 @@ component("base") {
+@@ -1028,6 +1028,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 74b30a0d050468ad1f450d86621308c090a699b5..a1f555b07519ad07441c0bca0c20ddd5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 58b04957b62ba88520066d74911804ab348a63c7..f549a179e76774a3464d6b8cd9326e85dba87598 100644
+index 7ae821ca1e83d114e8af69d47a494eeee68acef8..0a1f5f1fb9fdcfd2badeae22478d4866f44bccc5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -57,6 +57,7 @@ source_set("browser") {
@@ -92,7 +92,7 @@ index 2a38c8929258489e4dbe43c0fd6dfc3a96c08cff..a894759d4b371af806b41d2a6ff5265f
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 338152c7de5855ecf3209fd2b17da679e2c324e3..aa39937fba22edb488638fe5043f1afe18b6a74f 100644
+index 35dabfa2379b846da6b1a79136db89195b6b2de2..83564a9bdbe24aa1648705bcfa660df834fbe4db 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 4dac30c7bb4e505da486cbb5b79d7e16e355b1e3..ccdd0c44b829ad3f38db4a462f5dd215d0969924 100644
+index d99aba7b8da009d5f98835ed48a4887e1862b34b..29708f497bc0084d0a1a96b887cdeb38c47d1a98 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -300,6 +300,7 @@ component("core") {
@@ -218,7 +218,7 @@ index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682c
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 825a270b6ea62ca41210c6349d72d200e007f9f1..077b070c645b4080546b91bc473d343b1e887ae9 100644
+index cf70a8003d1547ff12c93c04a0b41a113ae6d903..ba7005e1440a3631a0c2c0a354c4799088700a5b 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -347,6 +347,7 @@ component("base") {
@@ -230,7 +230,7 @@ index 825a270b6ea62ca41210c6349d72d200e007f9f1..077b070c645b4080546b91bc473d343b
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 6b87e743531f9c1f312ce6d63cfb6b013069f3ba..87509969e2d6baab8ebcd2f56a83a4985fb84272 100644
+index 4855e6bf6a9a9e9e572e99e7a018db7909d09f2e..6e5175a74bc0a41b02e3143d04429ea284c07f46 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -56,6 +56,10 @@ component("display") {

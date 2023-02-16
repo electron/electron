@@ -44,7 +44,7 @@ index 3600a7ce7b3e6540767f64c631f352aa62240459..3147961f3d1c2c1690b5adf16a9a58f7
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index c4f6d20a70429d18f8b9211d0ad7fddd3447fccc..00150c6b8a9e5e572b395650cbbe0a8da223fdff 100644
+index 5a56e018a33a1214cb04c7119c12b373cc8d8534..e3b1a5c0cf7640b3f034bf12fd378d6f2f7cf051 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -566,10 +566,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -197,7 +197,7 @@ index a8778abda838d76099d0b3c705c8e8bf677059e9..4aa1593c04b07da4219af456cbb3bab1
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index fef36c6b150d23f05cec30bd35c3f882d86298bb..825a270b6ea62ca41210c6349d72d200e007f9f1 100644
+index 6a5d2b0d11af3dabf3cdcd21b666fbb5dfe288c1..cf70a8003d1547ff12c93c04a0b41a113ae6d903 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -360,6 +360,13 @@ component("base") {
@@ -235,7 +235,7 @@ index aa09619a3137d1878c9f5c111a348703965dd16f..6553de29e861c15028564ffe4a4b9b01
 +
  #endif  // UI_BASE_COCOA_REMOTE_ACCESSIBILITY_API_H_
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index 7e00f0c59713bc62083fcdf469ae07e2283cf151..1ae8ef5a98de3bf4538b224728547c71e0da8400 100644
+index 988718c2f9bcf8a8590481ee899544c273483f6d..89147049d32bf7b90dc2245f5ed424c42a45d1ab 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -32,7 +32,9 @@
@@ -248,7 +248,7 @@ index 7e00f0c59713bc62083fcdf469ae07e2283cf151..1ae8ef5a98de3bf4538b224728547c71
  @class NSView;
  
  namespace remote_cocoa {
-@@ -455,11 +457,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+@@ -460,11 +462,13 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    mojo::AssociatedRemote<remote_cocoa::mojom::NativeWidgetNSWindow>
        remote_ns_window_remote_;
  
@@ -263,10 +263,10 @@ index 7e00f0c59713bc62083fcdf469ae07e2283cf151..1ae8ef5a98de3bf4538b224728547c71
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index 99d2008d8edb269bbcea4ce7a3c46857444fdd6a..ab5575f2e2cf5134fa969df0f936a11927d682f1 100644
+index 2e9596d92e379298a1b6c80a4cb574926845ae14..d4fcfe068a2bfe4a0d337f4fef14d70f9aac7edc 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -337,14 +337,22 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -345,14 +345,22 @@ void BubbleAnchorViewContainedInWidget(
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();
@@ -289,7 +289,7 @@ index 99d2008d8edb269bbcea4ce7a3c46857444fdd6a..ab5575f2e2cf5134fa969df0f936a119
  }
  
  remote_cocoa::mojom::NativeWidgetNSWindow*
-@@ -1330,6 +1338,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1338,6 +1346,7 @@ void BubbleAnchorViewContainedInWidget(
  void NativeWidgetMacNSWindowHost::SetRemoteAccessibilityTokens(
      const std::vector<uint8_t>& window_token,
      const std::vector<uint8_t>& view_token) {
@@ -297,7 +297,7 @@ index 99d2008d8edb269bbcea4ce7a3c46857444fdd6a..ab5575f2e2cf5134fa969df0f936a119
    remote_window_accessible_ =
        ui::RemoteAccessibility::GetRemoteElementFromToken(window_token);
    remote_view_accessible_ =
-@@ -1337,14 +1346,17 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -1345,14 +1354,17 @@ void BubbleAnchorViewContainedInWidget(
    [remote_view_accessible_ setWindowUIElement:remote_window_accessible_.get()];
    [remote_view_accessible_
        setTopLevelUIElement:remote_window_accessible_.get()];
