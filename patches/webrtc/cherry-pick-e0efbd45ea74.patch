@@ -1,0 +1,57 @@
+From e0efbd45ea7421fb944c7343254ac5dc22bee541 Mon Sep 17 00:00:00 2001
+From: Henrik Boström <hbos@webrtc.org>
+Date: Fri, 20 Jan 2023 10:48:31 +0100
+Subject: [PATCH] [Merge-110] [Stats] Handle the case of missing certificates.
+
+Certificates being missing is a sign of a bug (e.g. webrtc:14844, to be
+fixed separately) which is why we have a DCHECK. But this DCHECK does
+not protect against accessing the invalid iterator if it is a release
+build. This CL makes that safe.
+
+# Mobile bots not running properly
+NOTRY=True
+
+(cherry picked from commit 124d7c3fe5bdc79a355c9df02d07f25331631a68)
+
+Bug: chromium:1408392
+Change-Id: I97a82786028e41c58ef8ef15002c3f959bbec7f1
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/291109
+Reviewed-by: Mirko Bonadei <mbonadei@webrtc.org>
+Commit-Queue: Henrik Boström <hbos@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#39159}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/291380
+Cr-Commit-Position: refs/branch-heads/5481@{#2}
+Cr-Branched-From: 2e1a9a4ae0234d4b1ea7a6fd4188afa1fb20379d-refs/heads/main@{#38901}
+---
+
+diff --git a/pc/rtc_stats_collector.cc b/pc/rtc_stats_collector.cc
+index d500a7b..1d88566 100644
+--- a/pc/rtc_stats_collector.cc
++++ b/pc/rtc_stats_collector.cc
+@@ -2192,16 +2192,17 @@
+     // exist.
+     const auto& certificate_stats_it =
+         transport_cert_stats.find(transport_name);
++    std::string local_certificate_id, remote_certificate_id;
+     RTC_DCHECK(certificate_stats_it != transport_cert_stats.cend());
+-    std::string local_certificate_id;
+-    if (certificate_stats_it->second.local) {
+-      local_certificate_id = RTCCertificateIDFromFingerprint(
+-          certificate_stats_it->second.local->fingerprint);
+-    }
+-    std::string remote_certificate_id;
+-    if (certificate_stats_it->second.remote) {
+-      remote_certificate_id = RTCCertificateIDFromFingerprint(
+-          certificate_stats_it->second.remote->fingerprint);
++    if (certificate_stats_it != transport_cert_stats.cend()) {
++      if (certificate_stats_it->second.local) {
++        local_certificate_id = RTCCertificateIDFromFingerprint(
++            certificate_stats_it->second.local->fingerprint);
++      }
++      if (certificate_stats_it->second.remote) {
++        remote_certificate_id = RTCCertificateIDFromFingerprint(
++            certificate_stats_it->second.remote->fingerprint);
++      }
+     }
+ 
+     // There is one transport stats for each channel.
