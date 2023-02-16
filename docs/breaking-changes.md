@@ -146,6 +146,13 @@ webContents.printToPDF({
 
 ## Planned Breaking API Changes (20.0)
 
+### Removed: macOS 10.11 / 10.12 support
+
+macOS 10.11 (El Capitan) and macOS 10.12 (Sierra) are no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/3646050).
+
+Older versions of Electron will continue to run on these operating systems, but macOS 10.13 (High Sierra)
+or later will be required to run Electron v20.0.0 and higher.
+
 ### Default Changed: renderers without `nodeIntegration: true` are sandboxed by default
 
 Previously, renderers that specified a preload script defaulted to being

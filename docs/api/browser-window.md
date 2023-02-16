@@ -269,7 +269,7 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     zoom to the width of the screen. This will also affect the behavior when
     calling `maximize()` directly. Default is `false`.
   * `tabbingIdentifier` string (optional) _macOS_ - Tab group name, allows
-    opening the window as a native tab on macOS 10.12+. Windows with the same
+    opening the window as a native tab. Windows with the same
     tabbing identifier will be grouped together. This also adds a native new
     tab button to your window's tab bar and allows your `app` and window to
     receive the `new-window-for-tab` event.
@@ -1847,7 +1847,7 @@ frameless window.
 
 Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
-machine has a touch bar and is running on macOS 10.12.1+.
+machine has a touch bar.
 
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
