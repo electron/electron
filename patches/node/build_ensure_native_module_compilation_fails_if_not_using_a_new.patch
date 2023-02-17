@@ -40,7 +40,7 @@ index b661dc4a1b3149e780eef46033e70e68038417b0..15b6155017233ed9d4c60c2453f498ba
          'defines': [
            'V8_COMPRESS_POINTERS',
 diff --git a/configure.py b/configure.py
-index 171afd04030e6933da054db866d44428ae808acf..363bf746101c85630a6c52146303986e7e0dcdce 100755
+index bfa20f5fc7a64b30b464327f4086a027e9a23359..f9d849260c3d7b1368d375125ae587eaa396c49e 100755
 --- a/configure.py
 +++ b/configure.py
 @@ -1517,6 +1517,7 @@ def configure_library(lib, output, pkgname=None):
