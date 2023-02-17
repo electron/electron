@@ -1842,16 +1842,36 @@ will remove the vibrancy effect on the window.
 Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
 deprecated and will be removed in an upcoming version of macOS.
 
-#### `win.setTrafficLightPosition(position)` _macOS_
+#### `win.setWindowButtonPosition(position)` _macOS_
+
+* `position` [Point](structures/point.md) | null
+
+Set a custom position for the traffic light buttons in frameless window.
+Passing `null` will reset the position to default.
+
+#### `win.getWindowButtonPosition()` _macOS_
+
+Returns `Point | null` - The custom position for the traffic light buttons in
+frameless window, `null` will be returned when there is no custom position.
+
+#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
 
 * `position` [Point](structures/point.md)
 
 Set a custom position for the traffic light buttons in frameless window.
+Passing `{ x: 0, y: 0 }` will reset the position to default.
 
-#### `win.getTrafficLightPosition()` _macOS_
+> **Note**
+> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
+
+#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
 
 Returns `Point` - The custom position for the traffic light buttons in
-frameless window.
+frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
+position.
+
+> **Note**
+> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 
