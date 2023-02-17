@@ -62,10 +62,10 @@ describe('modules support', () => {
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
-        await new Promise<void>(resolve => child.once('exit', (exitCode) => {
-          expect(exitCode).to.equal(0);
-          resolve();
+        const exitCode = await new Promise<number | null>(resolve => child.once('exit', (exitCode) => {
+          resolve(exitCode);
         }));
+        expect(exitCode).to.equal(0);
       });
     });
 
