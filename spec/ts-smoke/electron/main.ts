@@ -4,6 +4,7 @@ import {
   BrowserWindow,
   contentTracing,
   dialog,
+  desktopCapturer,
   globalShortcut,
   ipcMain,
   Menu,
@@ -13,17 +14,14 @@ import {
   powerSaveBlocker,
   protocol,
   Tray,
-  clipboard,
-  crashReporter,
-  nativeImage,
   screen,
-  shell,
   session,
   systemPreferences,
   webContents,
   TouchBar
-} from 'electron';
+} from 'electron/main';
 
+import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
 import * as path from 'path';
 
 // Quick start
@@ -507,6 +505,11 @@ dialog.showOpenDialog(win3, {
 }).then(ret => {
   console.log(ret);
 });
+
+// desktopCapturer
+// https://github.com/electron/electron/blob/main/docs/api/desktop-capturer.md
+
+ipcMain.handle('get-sources', (event, options) => desktopCapturer.getSources(options));
 
 // global-shortcut
 // https://github.com/electron/electron/blob/main/docs/api/global-shortcut.md

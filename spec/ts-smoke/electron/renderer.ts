@@ -1,12 +1,6 @@
 
-import {
-  desktopCapturer,
-  ipcRenderer,
-  webFrame,
-  clipboard,
-  crashReporter,
-  shell
-} from 'electron';
+import { ipcRenderer, webFrame } from 'electron/renderer';
+import { clipboard, crashReporter, shell } from 'electron/common';
 
 // In renderer process (web page).
 // https://github.com/electron/electron/blob/main/docs/api/ipc-renderer.md
@@ -79,7 +73,7 @@ crashReporter.start({
 // desktopCapturer
 // https://github.com/electron/electron/blob/main/docs/api/desktop-capturer.md
 
-desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
+getSources({ types: ['window', 'screen'] }).then(sources => {
   for (let i = 0; i < sources.length; ++i) {
     if (sources[i].name === 'Electron') {
       (navigator as any).webkitGetUserMedia({
@@ -99,6 +93,10 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }).then(sources => {
     }
   }
 });
+
+function getSources (options: Electron.SourcesOptions) {
+  return ipcRenderer.invoke('get-sources', options) as Promise<Electron.DesktopCapturerSource[]>;
+}
 
 function gotStream (stream: any) {
   (document.querySelector('video') as HTMLVideoElement).src = URL.createObjectURL(stream);
