@@ -364,7 +364,7 @@ describe('webContents module', () => {
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      await new Promise(resolve => setTimeout(resolve));
+      await delay();
       await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
     });
 

@@ -1774,6 +1774,14 @@ describe('<webview> tag', function () {
     describe('<webview>.goForward()', () => {
       useRemoteContext({ webPreferences: { webviewTag: true } });
       itremote('should work after a replaced history entry', async (fixtures: string) => {
+        function waitForEvent (target: EventTarget, event: string) {
+          return new Promise<any>(resolve => target.addEventListener(event, resolve, { once: true }));
+        }
+
+        function waitForEvents (target: EventTarget, ...events: string[]) {
+          return Promise.all(events.map(event => waitForEvent(webview, event)));
+        }
+
         const webview = new WebView();
 
         webview.setAttribute('nodeintegration', 'on');
@@ -1782,10 +1790,7 @@ describe('<webview> tag', function () {
         document.body.appendChild(webview);
 
         {
-          const [e] = await Promise.all([
-            new Promise<any>(resolve => webview.addEventListener('ipc-message', resolve, { once: true })),
-            new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }))
-          ]);
+          const [e] = await waitForEvents(webview, 'ipc-message', 'did-stop-loading');
           expect(e.channel).to.equal('history');
           expect(e.args[0]).to.equal(1);
           expect(webview.canGoBack()).to.be.false();
@@ -1802,10 +1807,7 @@ describe('<webview> tag', function () {
         webview.goBack();
 
         {
-          const [e] = await Promise.all([
-            new Promise<any>(resolve => webview.addEventListener('ipc-message', resolve, { once: true })),
-            new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }))
-          ]);
+          const [e] = await waitForEvents(webview, 'ipc-message', 'did-stop-loading');
           expect(e.channel).to.equal('history');
           expect(e.args[0]).to.equal(2);
           expect(webview.canGoBack()).to.be.false();
