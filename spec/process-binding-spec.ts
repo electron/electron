@@ -2,26 +2,6 @@ import { expect } from 'chai';
 import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 
-describe('feature-string parsing', () => {
-  it('is indifferent to whitespace around keys and values', () => {
-    const { parseCommaSeparatedKeyValue } = require('../lib/browser/parse-features-string');
-    const checkParse = (string: string, parsed: Record<string, string | boolean>) => {
-      const features = parseCommaSeparatedKeyValue(string);
-      expect(features).to.deep.equal(parsed);
-    };
-    checkParse('a=yes,c=d', { a: true, c: 'd' });
-    checkParse('a=yes ,c=d', { a: true, c: 'd' });
-    checkParse('a=yes, c=d', { a: true, c: 'd' });
-    checkParse('a=yes , c=d', { a: true, c: 'd' });
-    checkParse(' a=yes , c=d', { a: true, c: 'd' });
-    checkParse(' a= yes , c=d', { a: true, c: 'd' });
-    checkParse(' a = yes , c=d', { a: true, c: 'd' });
-    checkParse(' a = yes , c =d', { a: true, c: 'd' });
-    checkParse(' a = yes , c = d', { a: true, c: 'd' });
-    checkParse(' a = yes , c = d ', { a: true, c: 'd' });
-  });
-});
-
 describe('process._linkedBinding', () => {
   describe('in the main process', () => {
     it('can access electron_browser bindings', () => {
