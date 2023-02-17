@@ -97,8 +97,8 @@ describe('window.postMessage', () => {
 });
 
 describe('focus handling', () => {
-  let webviewContents: WebContents = null as unknown as WebContents;
-  let w: BrowserWindow = null as unknown as BrowserWindow;
+  let webviewContents: WebContents;
+  let w: BrowserWindow;
 
   beforeEach(async () => {
     w = new BrowserWindow({
