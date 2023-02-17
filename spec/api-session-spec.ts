@@ -299,7 +299,7 @@ describe('session module', () => {
       expect(itemUrl).to.equal(url);
       expect(itemFilename).to.equal('mockFile.txt');
       // Delay till the next tick.
-      await new Promise<void>(resolve => setImmediate(() => resolve()));
+      await new Promise(setImmediate);
       expect(() => item.getURL()).to.throw('DownloadItem used after being destroyed');
     });
   });

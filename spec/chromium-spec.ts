@@ -474,7 +474,7 @@ describe('command line switches', () => {
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
       pipe.send({ id: 1, method: 'Browser.close', params: {} });
-      await new Promise(resolve => { appProcess!.on('exit', resolve); });
+      await emittedOnce(appProcess, 'exit');
     });
   });
 
@@ -2658,7 +2658,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   async function waitForBadgeCount (value: number) {
     let badgeCount = app.getBadgeCount();
     while (badgeCount !== value) {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await delay(10);
       badgeCount = app.getBadgeCount();
     }
     return badgeCount;

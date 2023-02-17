@@ -6,7 +6,7 @@ import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } 
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce, emittedNTimes } from './lib/events-helpers';
 import { AddressInfo } from 'net';
-import { defer, ifit, waitUntil } from './lib/spec-helpers';
+import { defer, delay, ifit, waitUntil } from './lib/spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -297,7 +297,7 @@ describe('webFrameMain module', () => {
       const { mainFrame } = w.webContents;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay();
       expect(() => mainFrame.url).to.throw();
     });
 
@@ -338,7 +338,7 @@ describe('webFrameMain module', () => {
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
       // A short wait seems to be required to reproduce the crash.
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await delay(100);
       await w.webContents.loadURL(crossOriginUrl);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);
