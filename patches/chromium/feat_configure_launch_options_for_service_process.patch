@@ -621,7 +621,7 @@ index ea5342394f2aaf6d612f58ab886440473ed12647..0a5a4fbdcebbb2ec5d06206f1854de58
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index af0e77625decfb943b136e3b852c525d0a7a7761..a05418e3991fb7af398aae06d8cdf1fd83579e09 100644
+index ab87f74e3e4099bfc62d095e78703132d083b0e4..846fd8adaae8b987cec3e9f996ccaf5821d6f734 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -732,11 +732,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
@@ -687,15 +687,15 @@ index af0e77625decfb943b136e3b852c525d0a7a7761..a05418e3991fb7af398aae06d8cdf1fd
                                  process);
    }
  
-@@ -1023,7 +1028,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+@@ -1022,7 +1027,7 @@ ResultCode SandboxWin::StartSandboxedProcess(
+ 
    auto policy = g_broker_services->CreatePolicy(tag);
-   auto time_policy_created = timer.Elapsed();
    ResultCode result = GeneratePolicyForSandboxedProcess(
 -      cmd_line, process_type, handles_to_inherit, delegate, policy.get());
 +      cmd_line, process_type, options, delegate, policy.get());
    if (SBOX_ALL_OK != result)
      return result;
-   auto time_policy_generated = timer.Elapsed();
+ 
 diff --git a/sandbox/policy/win/sandbox_win.h b/sandbox/policy/win/sandbox_win.h
 index d8842ebdd1bd4ebd2ba9e33b8bcf390033dbf4d4..771c6f366559641544f775c3b45eba617923ebdb 100644
 --- a/sandbox/policy/win/sandbox_win.h

@@ -170,7 +170,7 @@ index 284cc1a6369e8fecce41f94643b77be7abbf25b0..d331a4bbe7fec9a870e84b7ed96048e2
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index bab253b1c49d69498298081fb6ed1d3d0631ac27..308c63b10842dd263786558248d3157f0c1cba93 100644
+index 95d74c90b324760a0fafcf92fe3f40071ffa0187..cb138579bdb5b552a198d47fde220d8148e67d12 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -181,7 +181,7 @@ index bab253b1c49d69498298081fb6ed1d3d0631ac27..308c63b10842dd263786558248d3157f
  
  namespace gfx {
  
-@@ -158,6 +159,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
+@@ -152,6 +153,14 @@ void IOSurfaceMachPortTraits::Release(mach_port_t port) {
  // Common method used by IOSurfaceSetColorSpace and IOSurfaceCanSetColorSpace.
  bool IOSurfaceSetColorSpace(IOSurfaceRef io_surface,
                              const ColorSpace& color_space) {
@@ -196,7 +196,7 @@ index bab253b1c49d69498298081fb6ed1d3d0631ac27..308c63b10842dd263786558248d3157f
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -328,6 +337,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -322,6 +331,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 1ee116f157b7bcd0aee978ebf6d18b4f9286ad45..35fca3791c6c127d1c8c2fce3b0010457c239fc7 100644
+index c7279d9c23315f3257c9b85d4325c875971921e4..4d365481373e485e89dd522c252413aa460941bb 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6933,10 +6933,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -6931,10 +6931,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,10 +37,10 @@ index 1ee116f157b7bcd0aee978ebf6d18b4f9286ad45..35fca3791c6c127d1c8c2fce3b001045
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 50acc9793a1edf3d6f1b9d31602e2bcc9dd4136f..ffbcc119d7ec46d312a46b8c8cf243151333ac67 100644
+index 4ad11451c2210d682242cf6deb15e7d112bd85c9..99da28556bc7b148ccac95df8cbc826df0eccc3b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2803,6 +2803,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2798,6 +2798,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // frame. Can only be called on a frame with a committed navigation.
    net::CookieSettingOverrides GetCookieSettingOverrides();
  
@@ -58,7 +58,7 @@ index 50acc9793a1edf3d6f1b9d31602e2bcc9dd4136f..ffbcc119d7ec46d312a46b8c8cf24315
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3121,17 +3132,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3116,17 +3127,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
