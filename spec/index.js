@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const v8 = require('v8');
 
@@ -64,6 +65,18 @@ app.whenReady().then(async () => {
     };
   }
   const mocha = new Mocha(mochaOptions);
+
+  // Add a root hook on mocha to skip any tests that are disabled
+  const disabledTests = new Set(
+    JSON.parse(
+      fs.readFileSync(path.join(__dirname, 'disabled-tests.json'), 'utf8')
+    )
+  );
+  mocha.suite.beforeEach(function () {
+    if (disabledTests.has(this.currentTest?.fullTitle())) {
+      this.skip();
+    }
+  });
 
   // The cleanup method is registered this way rather than through an
   // `afterEach` at the top level so that it can run before other `afterEach`
