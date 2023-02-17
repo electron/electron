@@ -181,7 +181,8 @@ struct Converter<ClearStorageDataOptions> {
     if (!ConvertFromV8(isolate, val, &options))
       return false;
     if (GURL storage_origin; options.Get("origin", &storage_origin))
-      out->storage_key = blink::StorageKey(url::Origin::Create(storage_origin));
+      out->storage_key = blink::StorageKey::CreateFirstParty(
+          url::Origin::Create(storage_origin));
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);
