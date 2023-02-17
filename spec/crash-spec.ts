@@ -8,7 +8,7 @@ const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
 
-const runFixtureAndEnsureCleanExit = (args: string[]) => {
+const runFixtureAndEnsureCleanExit = async (args: string[]) => {
   let out = '';
   const child = cp.spawn(process.execPath, args);
   children.push(child);
@@ -18,17 +18,20 @@ const runFixtureAndEnsureCleanExit = (args: string[]) => {
   child.stderr.on('data', (chunk: Buffer) => {
     out += chunk.toString();
   });
-  return new Promise<void>((resolve) => {
+
+  type CodeAndSignal = {code: number | null, signal: NodeJS.Signals | null};
+  const { code, signal } = await new Promise<CodeAndSignal>((resolve) => {
     child.on('exit', (code, signal) => {
-      if (code !== 0 || signal !== null) {
-        console.error(out);
-      }
-      expect(signal).to.equal(null, 'exit signal should be null');
-      expect(code).to.equal(0, 'should have exited with code 0');
-      children = children.filter(c => c !== child);
-      resolve();
+      resolve({ code, signal });
     });
   });
+  if (code !== 0 || signal !== null) {
+    console.error(out);
+  }
+  children = children.filter(c => c !== child);
+
+  expect(signal).to.equal(null, 'exit signal should be null');
+  expect(code).to.equal(0, 'should have exited with code 0');
 };
 
 const shouldRunCase = (crashCase: string) => {
