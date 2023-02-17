@@ -145,13 +145,16 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case DIR_SESSION_DATA:
       // By default and for backward, equivalent to DIR_USER_DATA.
       return base::PathService::Get(chrome::DIR_USER_DATA, result);
+    case DIR_SESSION_CACHE:
+      // By default and for backward, equivalent to DIR_USER_DATA.
+      return base::PathService::Get(chrome::DIR_USER_DATA, result);
     case DIR_USER_CACHE: {
 #if BUILDFLAG(IS_POSIX)
       int parent_key = base::DIR_CACHE;
 #else
       // On Windows, there's no OS-level centralized location for caches, so
       // store the cache in the app data directory.
-      int parent_key = base::DIR_ROAMING_APP_DATA;
+      int parent_key = base::DIR_LOCAL_APP_DATA;
 #endif
       if (!base::PathService::Get(parent_key, &cur))
         return false;

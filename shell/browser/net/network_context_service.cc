@@ -81,7 +81,7 @@ void NetworkContextService::ConfigureNetworkContextParams(
   if (!in_memory) {
     // Configure the HTTP cache path and size.
     network_context_params->http_cache_directory =
-        path.Append(chrome::kCacheDirname);
+        browser_context_->cache_path().Append(chrome::kCacheDirname);
     network_context_params->http_cache_max_size =
         browser_context_->GetMaxCacheSize();
 

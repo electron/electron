@@ -12,6 +12,25 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (24.0)
+
+### Behavior Changed: Locations of undocumented `cache`/`userCache` paths changed
+
+The `cache`/`userCache` paths of `app.getPath` API were undocumented and
+pointing to wrong locations on Windows in previous versions, if your app was
+relying on the undocumented behavior you might need to add code to clear old
+cache data and check if the new locations would cause conflicts.
+
+```js
+// On Windows in Electron 24
+app.getPath('cache') // returns %LOCALAPPDATA%
+app.getPath('userCache') // returns %LOCALAPPDATA%/AppName
+
+// On Windows in Electron 23
+app.getPath('cache') // returns %APPDATA%
+app.getPath('userCache') // returns %APPDATA%/AppName
+```
+
 ## Planned Breaking API Changes (23.0)
 
 ### Removed: Windows 7 / 8 / 8.1 support

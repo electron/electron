@@ -1044,51 +1044,95 @@ describe('app module', () => {
       expect(() => { app.getPath(badPath as any); }).to.throw();
     });
 
-    describe('sessionData', () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
-      const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
-      const userDataPath = path.join(app.getPath('appData'), appName);
-      const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+    describe('localUserData', () => {
+      it('has correct value', () => {
+        const localUserData = app.getPath('localUserData');
+        if (process.platform === 'win32') {
+          expect(localUserData.startsWith(String(process.env.LOCALAPPDATA))).to.equal(true);
+        } else {
+          expect(localUserData).to.equal(app.getPath('userData'));
+        }
+      });
+    });
 
+    const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
+    const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
+    const userDataPath = path.join(app.getPath('appData'), appName);
+    const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
+
+    const hasAllFiles = (dir: string, files: string[]) => files.every(f => fs.existsSync(path.join(dir, f)));
+    const hasNoFiles = (dir: string, files: string[]) => files.every(f => !fs.existsSync(path.join(dir, f)));
+
+    beforeEach(() => {
+      fs.removeSync(userDataPath);
+      fs.removeSync(tempBrowserDataPath);
+    });
+
+    describe('sessionData', () => {
       const sessionFiles = [
         'Preferences',
-        'Code Cache',
         'Local Storage',
         'IndexedDB',
         'Service Worker'
       ];
-      const hasSessionFiles = (dir: string) => {
-        for (const file of sessionFiles) {
-          if (!fs.existsSync(path.join(dir, file))) {
-            return false;
-          }
-        }
-        return true;
-      };
-
-      beforeEach(() => {
-        fs.removeSync(userDataPath);
-        fs.removeSync(tempBrowserDataPath);
-      });
 
       it('writes to userData by default', () => {
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasNoFiles(userDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath]);
-        expect(hasSessionFiles(userDataPath)).to.equal(true);
+        expect(hasAllFiles(userDataPath, sessionFiles));
+      });
+
+      it('includes no http cache', () => {
+        const cachePath = path.join(tempBrowserDataPath, 'Cache');
+        expect(fs.existsSync(cachePath)).to.equal(false);
+        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
+        expect(fs.existsSync(cachePath)).to.equal(false);
       });
 
       it('can be changed', () => {
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasNoFiles(userDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+        expect(hasNoFiles(userDataPath, sessionFiles));
+        expect(hasAllFiles(tempBrowserDataPath, sessionFiles));
       });
 
       it('changing userData affects default sessionData', () => {
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
+        expect(hasNoFiles(userDataPath, sessionFiles));
         cp.spawnSync(process.execPath, [appPath, 'userData', tempBrowserDataPath]);
-        expect(hasSessionFiles(userDataPath)).to.equal(false);
-        expect(hasSessionFiles(tempBrowserDataPath)).to.equal(true);
+        expect(hasNoFiles(userDataPath, sessionFiles));
+        expect(hasAllFiles(tempBrowserDataPath, sessionFiles));
+      });
+
+      it('stores data of partition in child dir', () => {
+        const partition = 'partition';
+        const partitionDataPath = path.join(tempBrowserDataPath, 'Partitions', partition);
+        expect(hasNoFiles(partitionDataPath, sessionFiles));
+        cp.spawnSync(process.execPath, [appPath, 'sessionData', tempBrowserDataPath, partition]);
+        expect(hasAllFiles(partitionDataPath, sessionFiles));
+      });
+    });
+
+    describe('sessionCache', () => {
+      const cacheDirs = ['Cache', 'Code Cache'];
+
+      it('writes to userData by default', () => {
+        expect(hasNoFiles(userDataPath, cacheDirs));
+        cp.spawnSync(process.execPath, [appPath]);
+        expect(hasAllFiles(userDataPath, cacheDirs));
+      });
+
+      it('stores http cache', () => {
+        expect(hasNoFiles(tempBrowserDataPath, cacheDirs));
+        cp.spawnSync(process.execPath, [appPath, 'sessionCache', tempBrowserDataPath]);
+        expect(hasAllFiles(tempBrowserDataPath, cacheDirs));
+      });
+
+      it('stores http cache of partition in child dir', () => {
+        const partition = 'partition';
+        const partitionDir = path.join(tempBrowserDataPath, 'Partitions', partition);
+        expect(hasNoFiles(partitionDir, cacheDirs));
+        cp.spawnSync(process.execPath, [appPath, 'sessionCache', tempBrowserDataPath, partition]);
+        expect(hasAllFiles(partitionDir, cacheDirs));
       });
     });
   });

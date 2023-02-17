@@ -136,6 +136,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::ReduceAcceptLanguageControllerDelegate*
   GetReduceAcceptLanguageControllerDelegate() override;
 
+  const base::FilePath& cache_path() const { return cache_path_; }
   CookieChangeNotifier* cookie_change_notifier() const {
     return cookie_change_notifier_.get();
   }
@@ -221,6 +222,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   absl::optional<std::string> user_agent_;
   base::FilePath path_;
+  base::FilePath cache_path_;
   bool in_memory_ = false;
   bool use_cache_ = true;
   int max_cache_size_ = 0;

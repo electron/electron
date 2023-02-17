@@ -596,8 +596,8 @@ std::string ElectronBrowserClient::GetGeolocationApiKey() {
 content::GeneratedCodeCacheSettings
 ElectronBrowserClient::GetGeneratedCodeCacheSettings(
     content::BrowserContext* context) {
-  // TODO(deepak1556): Use platform cache directory.
-  base::FilePath cache_path = context->GetPath();
+  const base::FilePath& cache_path =
+      static_cast<ElectronBrowserContext*>(context)->cache_path();
   // If we pass 0 for size, disk_cache will pick a default size using the
   // heuristics based on available disk size. These are implemented in
   // disk_cache::PreferredCacheSize in net/disk_cache/cache_util.cc.
@@ -1036,10 +1036,18 @@ void ElectronBrowserClient::OnNetworkServiceCreated(
 std::vector<base::FilePath>
 ElectronBrowserClient::GetNetworkContextsParentDirectory() {
   base::FilePath session_data;
+  base::FilePath session_cache;
   base::PathService::Get(DIR_SESSION_DATA, &session_data);
+  base::PathService::Get(DIR_SESSION_CACHE, &session_cache);
   DCHECK(!session_data.empty());
+  DCHECK(!session_cache.empty());
 
-  return {session_data};
+  // On some platforms, the cache is a child of the user_data_dir so only
+  // return the one path.
+  if (session_data.IsParent(session_cache))
+    return {session_data};
+  else
+    return {session_data, session_cache};
 }
 
 std::string ElectronBrowserClient::GetProduct() {
