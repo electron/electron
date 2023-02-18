@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 let bluetoothPinCallback
 let selectBluetoothCallback

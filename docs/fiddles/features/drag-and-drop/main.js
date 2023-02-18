@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
-const fs = require('fs')
-const https = require('https')
+const path = require('node:path')
+const fs = require('node:fs')
+const https = require('node:https')
 
 function createWindow () {
   const win = new BrowserWindow({

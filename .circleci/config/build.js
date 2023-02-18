@@ -1,6 +1,6 @@
-const cp = require('child_process');
+const cp = require('node:child_process');
 const fs = require('fs-extra');
-const path = require('path');
+const path = require('node:path');
 const yaml = require('js-yaml');
 
 const STAGING_DIR = path.resolve(__dirname, '..', 'config-staging');

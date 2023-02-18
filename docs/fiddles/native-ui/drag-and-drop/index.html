@@ -54,7 +54,7 @@ dragFileLink.addEventListener('dragstart', (event) => {
           <pre>
             <code>
 const {ipcMain} = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 ipcMain.on('ondragstart', (event, filepath) => {
   const iconName = 'codeIcon.png'

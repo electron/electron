@@ -2,7 +2,7 @@
 
 const electron = require('./');
 
-const proc = require('child_process');
+const proc = require('node:child_process');
 
 const child = proc.spawn(electron, process.argv.slice(2), { stdio: 'inherit', windowsHide: false });
 child.on('close', function (code, signal) {
