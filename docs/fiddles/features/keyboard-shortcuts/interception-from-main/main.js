@@ -15,7 +15,7 @@ app.whenReady().then(() => {
     }
   })
 
-  win.webContents.on('keyup', (event) => {
+ win.webContents.on('keyup', (event) => {
     if (preventNextKeyUp) {
       preventNextKeyUp = false
       event.preventDefault()
