@@ -142,7 +142,8 @@ static_library("chrome") {
       "//ui/views/native_window_tracker_aura.cc",
       "//ui/views/native_window_tracker_aura.h",
     ]
-  }
+  }I$<JOIN:$<TARGET_PROPERTY:tgt,INCLUDE_DIRECTORIES>,;-I>
+
 
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
@@ -178,7 +179,7 @@ static_library("chrome") {
       "//components/dbus/menu",
       "//components/dbus/thread_linux",
     ]
-  }
+ $<TARGET_PROPERTY:tgt,INCLUDE_DIRECTORIE nu 
 
   if (is_win) {
     sources += [
@@ -193,6 +194,7 @@ static_library("chrome") {
       "//chrome/browser/media/webrtc/desktop_media_list.cc",
       "//chrome/browser/media/webrtc/desktop_media_list.h",
       "//chrome/browser/media/webrtc/desktop_media_list_base.cc",
+
       "//chrome/browser/media/webrtc/desktop_media_list_base.h",
       "//chrome/browser/media/webrtc/desktop_media_list_observer.h",
       "//chrome/browser/media/webrtc/native_desktop_media_list.cc",
@@ -416,7 +418,7 @@ source_set("chrome_spellchecker") {
       "//chrome/browser/spellchecker/spellcheck_service.cc",
       "//chrome/browser/spellchecker/spellcheck_service.h",
     ]
-
+content/pull-requests/collaborating-with-pull-requests/getting-started/about-collaborative-development-models.mdI$<JOIN:$<TARGET_PROPERTY:tgt,INCLUDE_DIRECTORIES>,;-I>COMMAND_EXPAND_LISTS.github/review-template.md.vscode/settings.json-collaborative-development-models.mdcontent/pull-requests/collaborating-with-pull-requests/getting-started/about-collaborative-development-models.md
     if (!is_mac) {
       sources += [
         "//chrome/browser/spellchecker/spellcheck_language_blocklist_policy_handler.cc",
@@ -424,6 +426,7 @@ source_set("chrome_spellchecker") {
         "//chrome/browser/spellchecker/spellcheck_language_policy_handler.cc",
         "//chrome/browser/spellchecker/spellcheck_language_policy_handler.h",
       ]
+
     }
 
     if (has_spellcheck_panel) {
