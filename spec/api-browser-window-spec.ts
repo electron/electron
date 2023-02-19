@@ -94,7 +94,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.close()', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     });
@@ -149,8 +149,8 @@ describe('BrowserWindow module', () => {
     });
 
     describe('when invoked synchronously inside navigation observer', () => {
-      let server: http.Server = null as unknown as http.Server;
-      let url: string = null as unknown as string;
+      let server: http.Server;
+      let url: string;
 
       before(async () => {
         server = http.createServer((request, response) => {
@@ -208,7 +208,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('window.close()', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     });
@@ -234,7 +234,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.destroy()', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     });
@@ -272,7 +272,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.loadURL(url)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     const scheme = 'other';
     const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
     before(() => {
@@ -292,8 +292,8 @@ describe('BrowserWindow module', () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
     });
-    let server = null as unknown as http.Server;
-    let url = null as unknown as string;
+    let server: http.Server;
+    let url: string;
     let postData = null as any;
     before(async () => {
       const filePath = path.join(fixtures, 'pages', 'a.html');
@@ -470,7 +470,7 @@ describe('BrowserWindow module', () => {
 
   for (const sandbox of [false, true]) {
     describe(`navigation events${sandbox ? ' with sandbox' : ''}`, () => {
-      let w = null as unknown as BrowserWindow;
+      let w: BrowserWindow;
       beforeEach(() => {
         w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, sandbox } });
       });
@@ -480,8 +480,8 @@ describe('BrowserWindow module', () => {
       });
 
       describe('will-navigate event', () => {
-        let server = null as unknown as http.Server;
-        let url = null as unknown as string;
+        let server: http.Server;
+        let url: string;
         before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate-top') {
@@ -584,8 +584,8 @@ describe('BrowserWindow module', () => {
       });
 
       describe('will-redirect event', () => {
-        let server = null as unknown as http.Server;
-        let url = null as unknown as string;
+        let server: http.Server;
+        let url: string;
         before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/302') {
@@ -671,7 +671,7 @@ describe('BrowserWindow module', () => {
   }
 
   describe('focus and visibility', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -1003,7 +1003,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('sizing', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     beforeEach(() => {
       w = new BrowserWindow({ show: false, width: 400, height: 400 });
@@ -1605,7 +1605,7 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('tabbed windows', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -1798,7 +1798,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.setProgressBar(progress)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     before(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -1837,7 +1837,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     afterEach(closeAllWindows);
 
@@ -1885,10 +1885,10 @@ describe('BrowserWindow module', () => {
   });
 
   describe('preconnect feature', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
-    let server = null as unknown as http.Server;
-    let url = null as unknown as string;
+    let server: http.Server;
+    let url: string;
     let connections = 0;
 
     beforeEach(async () => {
@@ -1937,7 +1937,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -2927,8 +2927,8 @@ describe('BrowserWindow module', () => {
     describe('"sandbox" option', () => {
       const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
-      let server: http.Server = null as unknown as http.Server;
-      let serverUrl: string = null as unknown as string;
+      let server: http.Server;
+      let serverUrl: string;
 
       before(async () => {
         server = http.createServer((request, response) => {
@@ -3197,7 +3197,7 @@ describe('BrowserWindow module', () => {
       });
 
       describe('event handling', () => {
-        let w: BrowserWindow = null as unknown as BrowserWindow;
+        let w: BrowserWindow;
         beforeEach(() => {
           w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         });
@@ -3298,7 +3298,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('child windows', () => {
-      let w: BrowserWindow = null as unknown as BrowserWindow;
+      let w: BrowserWindow;
 
       beforeEach(() => {
         w = new BrowserWindow({
@@ -3498,7 +3498,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('beforeunload handler', function () {
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     });
@@ -4456,8 +4456,8 @@ describe('BrowserWindow module', () => {
     });
 
     describe('loading main frame state', () => {
-      let server: http.Server = null as unknown as http.Server;
-      let serverUrl: string = null as unknown as string;
+      let server: http.Server;
+      let serverUrl: string;
 
       before(async () => {
         server = http.createServer((request, response) => {

@@ -12,7 +12,7 @@ const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
-    let w = (null as unknown as BrowserWindow);
+    let w: BrowserWindow;
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -126,7 +126,7 @@ describe('ipc module', () => {
   });
 
   describe('ordering', () => {
-    let w = (null as unknown as BrowserWindow);
+    let w: BrowserWindow;
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });

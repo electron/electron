@@ -46,7 +46,7 @@ describe('webRequest module', () => {
     protocol.unregisterProtocol('cors');
   });
 
-  let contents: WebContents = null as unknown as WebContents;
+  let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(async () => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });

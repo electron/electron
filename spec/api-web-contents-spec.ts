@@ -292,8 +292,8 @@ describe('webContents module', () => {
       });
       afterEach(closeAllWindows);
 
-      let server: http.Server = null as unknown as http.Server;
-      let serverUrl: string = null as unknown as string;
+      let server: http.Server;
+      let serverUrl: string;
 
       before(async () => {
         server = http.createServer((request, response) => {

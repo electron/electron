@@ -69,7 +69,7 @@ function defer (): Promise<any> & {resolve: Function, reject: Function} {
 }
 
 describe('protocol module', () => {
-  let contents: WebContents = null as unknown as WebContents;
+  let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(() => { contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true }); });
   after(() => contents.destroy());
@@ -816,7 +816,7 @@ describe('protocol module', () => {
     const imageURL = `${origin}/test.png`;
     const filePath = path.join(fixturesPath, 'pages', 'b.html');
     const fileContent = '<img src="/test.png" />';
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     beforeEach(() => {
       w = new BrowserWindow({
@@ -891,7 +891,7 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
@@ -996,7 +996,7 @@ describe('protocol module', () => {
     const pagePath = path.join(fixturesPath, 'pages', 'video.html');
     const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
     const videoPath = path.join(fixturesPath, 'video.webm');
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     before(async () => {
       // generate test video

@@ -13,7 +13,7 @@ describe('session.serviceWorkers', () => {
   let ses: Electron.Session;
   let server: http.Server;
   let baseUrl: string;
-  let w: WebContents = null as unknown as WebContents;
+  let w: WebContents;
 
   before(async () => {
     ses = session.fromPartition(partition);
