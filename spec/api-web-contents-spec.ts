@@ -6,7 +6,7 @@ import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
 import { emittedOnce } from './lib/events-helpers';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, delay, defer, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, delay, defer, waitUntil, listen } from './lib/spec-helpers';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -295,13 +295,11 @@ describe('webContents module', () => {
       let server: http.Server;
       let serverUrl: string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           response.end();
-        }).listen(0, '127.0.0.1', () => {
-          serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+        serverUrl = (await listen(server)).url;
       });
 
       after(() => {
@@ -430,8 +428,7 @@ describe('webContents module', () => {
 
     it('rejects if the load is aborted', async () => {
       const s = http.createServer(() => { /* never complete the request */ });
-      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
-      const { port } = s.address() as AddressInfo;
+      const { port } = await listen(s);
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
       // first load to be aborted.
@@ -448,8 +445,7 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
-      const { port } = s.address() as AddressInfo;
+      const { port } = await listen(s);
       const p = new Promise<void>(resolve => {
         w.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL, isMainFrame) => {
           if (!isMainFrame) {
@@ -472,8 +468,7 @@ describe('webContents module', () => {
         resp = res;
         // don't end the response yet
       });
-      await new Promise<void>(resolve => s.listen(0, '127.0.0.1', resolve));
-      const { port } = s.address() as AddressInfo;
+      const { port } = await listen(s);
       const p = new Promise<void>(resolve => {
         w.webContents.on('did-frame-finish-load', (event, isMainFrame) => {
           if (!isMainFrame) {
@@ -841,11 +836,12 @@ describe('webContents module', () => {
 
   describe('inspectElement()', () => {
     afterEach(closeAllWindows);
-    it('supports inspecting an element in the devtools', (done) => {
+    it('supports inspecting an element in the devtools', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
-      w.webContents.once('devtools-opened', () => { done(); });
+      const event = emittedOnce(w.webContents, 'devtools-opened');
       w.webContents.inspectElement(10, 10);
+      await event;
     });
   });
 
@@ -1234,15 +1230,12 @@ describe('webContents module', () => {
       let serverUrl: string;
       let crossSiteUrl: string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((req, res) => {
           setTimeout(() => res.end('hey'), 0);
         });
-        server.listen(0, '127.0.0.1', () => {
-          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-          crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
-          done();
-        });
+        serverUrl = (await listen(server)).url;
+        crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
       });
 
       after(() => {
@@ -1340,7 +1333,7 @@ describe('webContents module', () => {
     let serverUrl: string;
     let crossSiteUrl: string;
 
-    before((done) => {
+    before(async () => {
       server = http.createServer((req, res) => {
         const respond = () => {
           if (req.url === '/redirect-cross-site') {
@@ -1359,11 +1352,8 @@ describe('webContents module', () => {
         };
         setTimeout(respond, 0);
       });
-      server.listen(0, '127.0.0.1', () => {
-        serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-        crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
-        done();
-      });
+      serverUrl = (await listen(server)).url;
+      crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
     });
 
     after(() => {
@@ -2110,7 +2100,7 @@ describe('webContents module', () => {
     let proxyServer: http.Server;
     let proxyServerPort: number;
 
-    before((done) => {
+    before(async () => {
       server = http.createServer((request, response) => {
         if (request.url === '/no-auth') {
           return response.end('ok');
@@ -2122,14 +2112,11 @@ describe('webContents module', () => {
         response
           .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
           .end('401');
-      }).listen(0, '127.0.0.1', () => {
-        serverPort = (server.address() as AddressInfo).port;
-        serverUrl = `http://127.0.0.1:${serverPort}`;
-        done();
       });
+      ({ port: serverPort, url: serverUrl } = await listen(server));
     });
 
-    before((done) => {
+    before(async () => {
       proxyServer = http.createServer((request, response) => {
         if (request.headers['proxy-authorization']) {
           response.writeHead(200, { 'Content-type': 'text/plain' });
@@ -2138,10 +2125,8 @@ describe('webContents module', () => {
         response
           .writeHead(407, { 'Proxy-Authenticate': 'Basic realm="Foo"' })
           .end();
-      }).listen(0, '127.0.0.1', () => {
-        proxyServerPort = (proxyServer.address() as AddressInfo).port;
-        done();
       });
+      proxyServerPort = (await listen(proxyServer)).port;
     });
 
     afterEach(async () => {
@@ -2225,13 +2210,13 @@ describe('webContents module', () => {
   });
 
   describe('crashed event', () => {
-    it('does not crash main process when destroying WebContents in it', (done) => {
+    it('does not crash main process when destroying WebContents in it', async () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
-      contents.once('render-process-gone', () => {
-        contents.destroy();
-        done();
-      });
-      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
+      const crashEvent = emittedOnce(contents, 'render-process-gone');
+      await contents.loadURL('about:blank');
+      contents.forcefullyCrashRenderer();
+      await crashEvent;
+      contents.destroy();
     });
   });
 

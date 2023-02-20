@@ -3,10 +3,9 @@ import { expect } from 'chai';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce } from './lib/events-helpers';
-import { defer } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import * as path from 'path';
 import * as http from 'http';
-import { AddressInfo } from 'net';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -644,8 +643,7 @@ describe('ipc module', () => {
         res.setHeader('content-type', 'text/html');
         res.end('');
       });
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       defer(() => {
         server.close();
       });
@@ -745,8 +743,7 @@ describe('ipc module', () => {
         res.setHeader('content-type', 'text/html');
         res.end('');
       });
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       defer(() => {
         server.close();
       });

@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron/main';
-import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
@@ -12,7 +11,7 @@ import { EventEmitter } from 'events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { emittedOnce } from './lib/events-helpers';
 import { WebmGenerator } from './lib/video-helpers';
-import { delay } from './lib/spec-helpers';
+import { delay, listen } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -324,10 +323,8 @@ describe('protocol module', () => {
           res.end(text);
           server.close();
         });
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        const { url } = await listen(server);
 
-        const port = (server.address() as AddressInfo).port;
-        const url = 'http://127.0.0.1:' + port;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
         const r = await ajax(protocolName + '://fake-host');
         expect(r.data).to.equal(text);
@@ -354,9 +351,7 @@ describe('protocol module', () => {
           }
         });
         after(() => server.close());
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-
-        const port = (server.address() as AddressInfo).port;
+        const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;
         const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
@@ -653,10 +648,7 @@ describe('protocol module', () => {
         server.close();
       });
       after(() => server.close());
-      server.listen(0, '127.0.0.1');
-
-      const port = (server.address() as AddressInfo).port;
-      const url = `http://127.0.0.1:${port}`;
+      const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
           url: url,
@@ -874,9 +866,8 @@ describe('protocol module', () => {
         server.close();
         requestReceived.resolve();
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
-      const content = `<script>fetch("http://127.0.0.1:${port}")</script>`;
+      const { url } = await listen(server);
+      const content = `<script>fetch(${JSON.stringify(url)})</script>`;
       registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
       await w.loadURL(origin);
       await requestReceived;
