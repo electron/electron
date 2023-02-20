@@ -1205,6 +1205,7 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
   return CreateFrom(isolate, browser_context);
 }
 
+// static
 absl::optional<gin::Handle<Session>> Session::FromPath(
     v8::Isolate* isolate,
     const base::FilePath& path,
