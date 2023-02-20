@@ -1,7 +1,10 @@
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
+import * as https from 'https';
+import * as net from 'net';
 import * as v8 from 'v8';
+import * as url from 'url';
 import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
@@ -190,4 +193,12 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     })()`);
     if (!ok) { throw new AssertionError(message); }
   });
+}
+
+export async function listen (server: http.Server | https.Server) {
+  const hostname = '127.0.0.1';
+  await new Promise<void>(resolve => server.listen(0, hostname, () => resolve()));
+  const { port } = server.address() as net.AddressInfo;
+  const protocol = (server instanceof https.Server) ? 'https' : 'http';
+  return { port, url: url.format({ protocol, hostname, port }) };
 }

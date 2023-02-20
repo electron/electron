@@ -12,7 +12,7 @@ hide_title: true
 <!-- ✍ Update this section if you want to provide more details -->
 
 This guide will take you through the process of setting your Electron app as the default
-handler for a specific [protocol](https://www.electronjs.org/docs/api/protocol).
+handler for a specific [protocol](../api/protocol.md).
 
 By the end of this tutorial, we will have set our app to intercept and handle
 any clicked URLs that start with a specific protocol. In this guide, the protocol

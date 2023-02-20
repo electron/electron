@@ -4,8 +4,8 @@ import * as path from 'path';
 import { session, webContents, WebContents } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
-import { AddressInfo } from 'net';
 import { emittedOnce, emittedNTimes } from './lib/events-helpers';
+import { listen } from './lib/spec-helpers';
 
 const partition = 'service-workers-spec';
 
@@ -13,7 +13,7 @@ describe('session.serviceWorkers', () => {
   let ses: Electron.Session;
   let server: http.Server;
   let baseUrl: string;
-  let w: WebContents = null as unknown as WebContents;
+  let w: WebContents;
 
   before(async () => {
     ses = session.fromPartition(partition);
@@ -32,14 +32,10 @@ describe('session.serviceWorkers', () => {
       }
       res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)));
     });
-    await new Promise<void>(resolve => {
-      server.listen(0, '127.0.0.1', () => {
-        baseUrl = `http://localhost:${(server.address() as AddressInfo).port}/${uuid}`;
-        resolve();
-      });
-    });
+    const { port } = await listen(server);
+    baseUrl = `http://localhost:${port}/${uuid}`;
 
-    w = (webContents as any).create({ session: ses });
+    w = (webContents as typeof ElectronInternal.WebContents).create({ session: ses });
   });
 
   afterEach(async () => {

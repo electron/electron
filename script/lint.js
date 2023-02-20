@@ -22,10 +22,7 @@ process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
-  ['spec', 'ts-smoke', 'electron', 'main.ts'],
-  ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
-  ['spec', 'ts-smoke', 'runner.js']
+  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js']
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
@@ -86,11 +83,8 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
-    }
+    const clangFormatFlags = opts.fix ? ['--fix'] : [];
+    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
     const filter = [
       '-readability/braces',
       '-readability/casting',

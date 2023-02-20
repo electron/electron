@@ -9,7 +9,7 @@ import * as cp from 'child_process';
 
 import { closeWindow } from './lib/window-helpers';
 import { emittedOnce } from './lib/events-helpers';
-import { AddressInfo } from 'net';
+import { listen } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
 
@@ -17,13 +17,14 @@ describe('contextBridge', () => {
   let w: BrowserWindow;
   let dir: string;
   let server: http.Server;
+  let serverUrl: string;
 
   before(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
       res.end('');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    serverUrl = (await listen(server)).url;
   });
 
   after(async () => {
@@ -76,7 +77,7 @@ describe('contextBridge', () => {
         const gc=require('vm').runInNewContext('gc');
         renderer_1.webFrame.setIsolatedWorldInfo(${worldId}, {
           name: "Isolated World"
-        });  
+        });
         renderer_1.contextBridge.exposeInIsolatedWorld(${worldId}, 'GCRunner', {
           run: () => gc()
         });`}
@@ -95,7 +96,7 @@ describe('contextBridge', () => {
             additionalArguments: ['--unsafely-expose-electron-internals-for-testing']
           }
         });
-        await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+        await w.loadURL(serverUrl);
       };
 
       const callWithBindings = (fn: Function, worldId: number = 0) =>

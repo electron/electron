@@ -15,10 +15,10 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index c74b81af691aee95609913519e36498ec578620a..7e1e6ad49ebddb9a4d86789939663b8208d057d5 100644
+index 6268851494a0bbc0b3e693782dae6171f6347657..87ae3db7aec96577856804aa3718e53e3ccf66d3 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -73,7 +73,8 @@ IsolateHolder::IsolateHolder(
+@@ -72,7 +72,8 @@ IsolateHolder::IsolateHolder(
      IsolateType isolate_type,
      IsolateCreationMode isolate_creation_mode,
      v8::CreateHistogramCallback create_histogram_callback,
@@ -28,7 +28,7 @@ index c74b81af691aee95609913519e36498ec578620a..7e1e6ad49ebddb9a4d86789939663b82
      : IsolateHolder(task_runner,
                      access_mode,
                      isolate_type,
-@@ -81,14 +82,16 @@ IsolateHolder::IsolateHolder(
+@@ -80,14 +81,16 @@ IsolateHolder::IsolateHolder(
                                               atomics_wait_mode,
                                               create_histogram_callback,
                                               add_histogram_sample_callback),
@@ -47,7 +47,7 @@ index c74b81af691aee95609913519e36498ec578620a..7e1e6ad49ebddb9a4d86789939663b82
      : access_mode_(access_mode), isolate_type_(isolate_type) {
    CHECK(Initialized())
        << "You need to invoke gin::IsolateHolder::Initialize first";
-@@ -99,7 +102,7 @@ IsolateHolder::IsolateHolder(
+@@ -98,7 +101,7 @@ IsolateHolder::IsolateHolder(
    v8::ArrayBuffer::Allocator* allocator = params->array_buffer_allocator;
    DCHECK(allocator);
  

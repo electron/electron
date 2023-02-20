@@ -9,7 +9,7 @@ import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { emittedOnce } from './lib/events-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -33,7 +33,7 @@ describe('app module', () => {
   let secureUrl: string;
   const certPath = path.join(fixturesPath, 'certificates');
 
-  before((done) => {
+  before(async () => {
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -55,11 +55,7 @@ describe('app module', () => {
       }
     });
 
-    server.listen(0, '127.0.0.1', () => {
-      const port = (server.address() as net.AddressInfo).port;
-      secureUrl = `https://127.0.0.1:${port}`;
-      done();
-    });
+    secureUrl = (await listen(server)).url;
   });
 
   after(done => {
@@ -1516,6 +1512,7 @@ describe('app module', () => {
         // to the Docker invocation allows the syscalls that Chrome needs, but
         // are probably more permissive than we'd like.
         this.skip();
+        return;
       }
       fs.unlink(socketPath, () => {
         server = net.createServer();
@@ -1527,13 +1524,17 @@ describe('app module', () => {
     afterEach(done => {
       if (appProcess != null) appProcess.kill();
 
-      server.close(() => {
-        if (process.platform === 'win32') {
-          done();
-        } else {
-          fs.unlink(socketPath, () => done());
-        }
-      });
+      if (server) {
+        server.close(() => {
+          if (process.platform === 'win32') {
+            done();
+          } else {
+            fs.unlink(socketPath, () => done());
+          }
+        });
+      } else {
+        done();
+      }
     });
 
     describe('when app.enableSandbox() is called', () => {
@@ -1932,7 +1933,7 @@ describe('default behavior', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before((done) => {
+    before(async () => {
       server = http.createServer((request, response) => {
         if (request.headers.authorization) {
           return response.end('ok');
@@ -1940,10 +1941,9 @@ describe('default behavior', () => {
         response
           .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
           .end();
-      }).listen(0, '127.0.0.1', () => {
-        serverUrl = 'http://127.0.0.1:' + (server.address() as net.AddressInfo).port;
-        done();
       });
+
+      serverUrl = (await listen(server)).url;
     });
 
     it('should emit a login event on app when a WebContents hits a 401', async () => {

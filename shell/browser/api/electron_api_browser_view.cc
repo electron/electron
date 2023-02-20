@@ -192,10 +192,9 @@ v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> BrowserView::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "BrowserView", templ)
+void BrowserView::FillObjectTemplate(v8::Isolate* isolate,
+                                     v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "BrowserView", templ)
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
@@ -222,4 +221,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_browser_view, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_browser_view, Initialize)

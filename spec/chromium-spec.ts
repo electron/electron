@@ -10,8 +10,7 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, defer, delay, itremote } from './lib/spec-helpers';
-import { AddressInfo } from 'net';
+import { ifit, ifdescribe, defer, delay, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 
@@ -60,18 +59,17 @@ describe('reporting api', () => {
       // "deprecation" report.
       res.end('<script>webkitRequestAnimationFrame(() => {})</script>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const { url } = await listen(server);
     const bw = new BrowserWindow({
       show: false
     });
     try {
       const reportGenerated = emittedOnce(reports, 'report');
-      const url = `https://localhost:${(server.address() as any).port}/a`;
       await bw.loadURL(url);
       const [report] = await reportGenerated;
       expect(report).to.be.an('array');
       expect(report[0].type).to.equal('deprecation');
-      expect(report[0].url).to.equal(url);
+      expect(report[0].url).to.equal(`${url}/a`);
       expect(report[0].body.id).to.equal('PrefixedRequestAnimationFrame');
     } finally {
       bw.destroy();
@@ -97,8 +95,8 @@ describe('window.postMessage', () => {
 });
 
 describe('focus handling', () => {
-  let webviewContents: WebContents = null as unknown as WebContents;
-  let w: BrowserWindow = null as unknown as BrowserWindow;
+  let webviewContents: WebContents;
+  let w: BrowserWindow;
 
   beforeEach(async () => {
     w = new BrowserWindow({
@@ -218,8 +216,7 @@ describe('web security', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
   after(() => {
     server.close();
@@ -474,7 +471,7 @@ describe('command line switches', () => {
       const stdio = appProcess.stdio as unknown as [NodeJS.ReadableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.WritableStream, NodeJS.ReadableStream];
       const pipe = new PipeTransport(stdio[3], stdio[4]);
       pipe.send({ id: 1, method: 'Browser.close', params: {} });
-      await new Promise(resolve => { appProcess!.on('exit', resolve); });
+      await emittedOnce(appProcess, 'exit');
     });
   });
 
@@ -518,7 +515,7 @@ describe('chromium features', () => {
     it('does not crash', (done) => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('did-finish-load', () => { done(); });
-      w.webContents.once('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'external-string.html'));
     });
   });
@@ -558,7 +555,7 @@ describe('chromium features', () => {
     it('does not crash', (done) => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('did-finish-load', () => { done(); });
-      w.webContents.once('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.once('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'jquery.html'));
     });
   });
@@ -596,7 +593,7 @@ describe('chromium features', () => {
           }).then(() => done());
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
 
@@ -637,7 +634,7 @@ describe('chromium features', () => {
           });
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'index.html'));
     });
 
@@ -673,7 +670,7 @@ describe('chromium features', () => {
           });
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'custom-scheme-index.html'));
     });
 
@@ -847,8 +844,7 @@ describe('chromium features', () => {
           res.end(`body:${body}`);
         });
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      serverUrl = `http://localhost:${(server.address() as any).port}`;
+      serverUrl = (await listen(server)).url;
     });
     after(async () => {
       server.close();
@@ -1213,16 +1209,13 @@ describe('chromium features', () => {
       let serverURL: string;
       let server: any;
 
-      beforeEach((done) => {
+      beforeEach(async () => {
         server = http.createServer((req, res) => {
           res.writeHead(200);
           const filePath = path.join(fixturesPath, 'pages', 'window-opener-targetOrigin.html');
           res.end(fs.readFileSync(filePath, 'utf8'));
         });
-        server.listen(0, '127.0.0.1', () => {
-          serverURL = `http://127.0.0.1:${server.address().port}`;
-          done();
-        });
+        serverURL = (await listen(server)).url;
       });
 
       afterEach(() => {
@@ -1325,7 +1318,7 @@ describe('chromium features', () => {
     it('fails with "not supported" for getDisplayMedia', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
-      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))');
+      const { ok, err } = await w.webContents.executeJavaScript('navigator.mediaDevices.getDisplayMedia({video: true}).then(s => ({ok: true}), e => ({ok: false, err: e.message}))', true);
       expect(ok).to.be.false();
       expect(err).to.equal('Not supported');
     });
@@ -1472,7 +1465,7 @@ describe('chromium features', () => {
       });
 
       beforeEach(() => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           nodeIntegration: true,
           contextIsolation: false
         });
@@ -1523,7 +1516,7 @@ describe('chromium features', () => {
       let server: http.Server;
       let serverUrl: string;
       let serverCrossSiteUrl: string;
-      before((done) => {
+      before(async () => {
         server = http.createServer((req, res) => {
           const respond = () => {
             if (req.url === '/redirect-cross-site') {
@@ -1538,11 +1531,8 @@ describe('chromium features', () => {
           };
           setTimeout(respond, 0);
         });
-        server.listen(0, '127.0.0.1', () => {
-          serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-          serverCrossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}`;
-          done();
-        });
+        serverUrl = (await listen(server)).url;
+        serverCrossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
       });
 
       after(() => {
@@ -1559,7 +1549,7 @@ describe('chromium features', () => {
             ...extraPreferences
           });
           let redirected = false;
-          w.webContents.on('crashed', () => {
+          w.webContents.on('render-process-gone', () => {
             expect.fail('renderer crashed / was killed');
           });
           w.webContents.on('did-redirect-navigation', (event, url) => {
@@ -1603,7 +1593,7 @@ describe('chromium features', () => {
       });
 
       it('default value allows websql', async () => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           session: sqlSession,
           nodeIntegration: true,
           contextIsolation: false
@@ -1614,7 +1604,7 @@ describe('chromium features', () => {
       });
 
       it('when set to false can disallow websql', async () => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           session: sqlSession,
           nodeIntegration: true,
           enableWebSQL: false,
@@ -1626,7 +1616,7 @@ describe('chromium features', () => {
       });
 
       it('when set to false does not disable indexedDB', async () => {
-        contents = (webContents as any).create({
+        contents = (webContents as typeof ElectronInternal.WebContents).create({
           session: sqlSession,
           nodeIntegration: true,
           enableWebSQL: false,
@@ -1935,8 +1925,7 @@ describe('chromium features', () => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      serverUrl = `http://localhost:${(server.address() as any).port}`;
+      serverUrl = (await listen(server)).url;
     });
     after(() => {
       server.close();
@@ -2027,7 +2016,8 @@ describe('chromium features', () => {
     });
   });
 
-  ifdescribe(process.platform !== 'win32' && process.platform !== 'linux')('webgl', () => {
+  // This is intentionally disabled on arm macs: https://chromium-review.googlesource.com/c/chromium/src/+/4143761
+  ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('webgl', () => {
     it('can be gotten as context in canvas', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
@@ -2056,8 +2046,7 @@ describe('chromium features', () => {
   describe('websockets', () => {
     it('has user agent', async () => {
       const server = http.createServer();
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       const wss = new ws.Server({ server: server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
@@ -2080,8 +2069,7 @@ describe('chromium features', () => {
         res.end('test');
       });
       defer(() => server.close());
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       const w = new BrowserWindow({ show: false });
       w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const x = await w.webContents.executeJavaScript(`
@@ -2267,19 +2255,20 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   const fullscreenChildHtml = promisify(fs.readFile)(
     path.join(fixturesPath, 'pages', 'fullscreen-oopif.html')
   );
-  let w: BrowserWindow, server: http.Server;
+  let w: BrowserWindow;
+  let server: http.Server;
+  let crossSiteUrl: string;
 
-  before(() => {
+  beforeEach(async () => {
     server = http.createServer(async (_req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.write(await fullscreenChildHtml);
       res.end();
     });
 
-    server.listen(8989, '127.0.0.1');
-  });
+    const serverUrl = (await listen(server)).url;
+    crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
 
-  beforeEach(() => {
     w = new BrowserWindow({
       show: true,
       fullscreen: true,
@@ -2300,7 +2289,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
   ifit(process.platform !== 'darwin')('can fullscreen from out-of-process iframes (non-macOS)', async () => {
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
-      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+      `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
     w.loadURL(`data:text/html,${html}`);
     await fullscreenChange;
 
@@ -2325,7 +2314,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
     await emittedOnce(w, 'enter-full-screen');
     const fullscreenChange = emittedOnce(ipcMain, 'fullscreenChange');
     const html =
-      '<iframe style="width: 0" frameborder=0 src="http://localhost:8989" allowfullscreen></iframe>';
+      `<iframe style="width: 0" frameborder=0 src="${crossSiteUrl}" allowfullscreen></iframe>`;
     w.loadURL(`data:text/html,${html}`);
     await fullscreenChange;
 
@@ -2544,14 +2533,10 @@ describe('window.getScreenDetails', () => {
   });
 });
 
-describe('navigator.clipboard', () => {
+describe('navigator.clipboard.read', () => {
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({
-      webPreferences: {
-        enableBlinkFeatures: 'Serial'
-      }
-    });
+    w = new BrowserWindow();
     await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
   });
 
@@ -2596,6 +2581,54 @@ describe('navigator.clipboard', () => {
   });
 });
 
+describe('navigator.clipboard.write', () => {
+  let w: BrowserWindow;
+  before(async () => {
+    w = new BrowserWindow();
+    await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+  });
+
+  const writeClipboard: any = () => {
+    return w.webContents.executeJavaScript(`
+      navigator.clipboard.writeText('Hello World!').catch(err => err.message);
+    `, true);
+  };
+
+  after(closeAllWindows);
+  afterEach(() => {
+    session.defaultSession.setPermissionRequestHandler(null);
+  });
+
+  it('returns clipboard contents when a PermissionRequestHandler is not defined', async () => {
+    const clipboard = await writeClipboard();
+    expect(clipboard).to.not.equal('Write permission denied.');
+  });
+
+  it('returns an error when permission denied', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-sanitized-write') {
+        callback(false);
+      } else {
+        callback(true);
+      }
+    });
+    const clipboard = await writeClipboard();
+    expect(clipboard).to.equal('Write permission denied.');
+  });
+
+  it('returns clipboard contents when permission is granted', async () => {
+    session.defaultSession.setPermissionRequestHandler((wc, permission, callback) => {
+      if (permission === 'clipboard-sanitized-write') {
+        callback(true);
+      } else {
+        callback(false);
+      }
+    });
+    const clipboard = await writeClipboard();
+    expect(clipboard).to.not.equal('Write permission denied.');
+  });
+});
+
 ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.setAppBadge/clearAppBadge', () => {
   let w: BrowserWindow;
 
@@ -2611,7 +2644,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   async function waitForBadgeCount (value: number) {
     let badgeCount = app.getBadgeCount();
     while (badgeCount !== value) {
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await delay(10);
       badgeCount = app.getBadgeCount();
     }
     return badgeCount;
@@ -2683,7 +2716,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
           }).then(() => done());
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?setBadge' });
     });
 
@@ -2704,7 +2737,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
           }).then(() => done());
         }
       });
-      w.webContents.on('crashed', () => done(new Error('WebContents crashed.')));
+      w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
       w.loadFile(path.join(fixturesPath, 'pages', 'service-worker', 'badge-index.html'), { search: '?clearBadge' });
     });
   });
@@ -2744,8 +2777,7 @@ describe('navigator.hid', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
 
   const requestDevices: any = () => {
@@ -2786,7 +2818,7 @@ describe('navigator.hid', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-hid-device', (event, details, callback) => {
-      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;
@@ -2809,7 +2841,7 @@ describe('navigator.hid', () => {
       w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(frame).to.not.be.empty();
+      expect(!!frame).to.be.true();
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.hid.getDevices()');
         expect(grantedDevicesOnNewPage).to.be.empty();
@@ -2943,8 +2975,7 @@ describe('navigator.usb', () => {
       res.setHeader('Content-Type', 'text/html');
       res.end('<body>');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
 
   const requestDevices: any = () => {
@@ -2987,7 +3018,7 @@ describe('navigator.usb', () => {
     let haveDevices = false;
     let selectFired = false;
     w.webContents.session.on('select-usb-device', (event, details, callback) => {
-      expect(details.frame).to.have.ownProperty('frameTreeNodeId').that.is.a('number');
+      expect(details.frame).to.have.property('frameTreeNodeId').that.is.a('number');
       selectFired = true;
       if (details.deviceList.length > 0) {
         haveDevices = true;
@@ -3010,7 +3041,7 @@ describe('navigator.usb', () => {
       w.loadURL(serverUrl);
       const [,,,,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-navigate');
       const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
-      expect(frame).to.not.be.empty();
+      expect(!!frame).to.be.true();
       if (frame) {
         const grantedDevicesOnNewPage = await frame.executeJavaScript('navigator.usb.getDevices()');
         expect(grantedDevicesOnNewPage).to.be.empty();

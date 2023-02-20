@@ -8,7 +8,7 @@
 #include <utility>
 #include <vector>
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/native_window.h"

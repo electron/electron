@@ -17,7 +17,7 @@ Upstreams:
 - https://github.com/nodejs/node/pull/39136
 
 diff --git a/src/crypto/crypto_cipher.cc b/src/crypto/crypto_cipher.cc
-index 81ba818a2dc7d31aa6cadfb3a3c547e10631ecf3..6d5fbe2ffa81f379f7899b29f4b26bfbf590bc4e 100644
+index 2685f5ea0bea998094453a5a29d23b1aaae55667..0ad4ba47b50a87bcf9e31a73c20a3a51be4ab96e 100644
 --- a/src/crypto/crypto_cipher.cc
 +++ b/src/crypto/crypto_cipher.cc
 @@ -27,7 +27,8 @@ using v8::Value;
@@ -191,7 +191,7 @@ index dd69323b80076d7333b80453c9cc9ef5b680ce27..6431b768c83fa27b2287588e936f93ae
      UNREACHABLE();
    }
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index 862c091b05f5886479cedb8b95b756e4fd1547ee..c4cf3a59677ae9640e444f2649f89de3ab3c5c9e 100644
+index 6839283fbf4ca7ee7dd586e749c80671ad965658..4e186abdf13613cbe576da5b7d547408c0ee9f93 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
 @@ -40,7 +40,7 @@ namespace crypto {
@@ -228,7 +228,7 @@ index 2f9e9aacb1e652202d72c69b46f8e76d6c5405a8..5f19c38a78e37d3e8d92bcc20ae1357f
      THROW_ERR_CRYPTO_OPERATION_FAILED(env, "could not generate prime");
      return Nothing<bool>();
 diff --git a/src/crypto/crypto_rsa.cc b/src/crypto/crypto_rsa.cc
-index 4eacb1f142b6e04d6db17ca267d1fb6814666a01..79ad930c8bea22cf1ca645373438cc2706777c12 100644
+index 47a42246eddfc795b735f5efd08edf2832bbf6c1..7e6afaa1d3a4612fd567924b40438a318ac93bac 100644
 --- a/src/crypto/crypto_rsa.cc
 +++ b/src/crypto/crypto_rsa.cc
 @@ -610,10 +610,11 @@ Maybe<bool> GetRsaKeyDetail(
@@ -308,11 +308,23 @@ index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960a
  }
  }  // namespace
  
+diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
+index fd014e703454dd1988e9b5a013b937881c1f514a..0adbe57d582eff906476330083258716e5bcae99 100644
+--- a/src/crypto/crypto_util.h
++++ b/src/crypto/crypto_util.h
+@@ -15,6 +15,7 @@
+ #include <openssl/err.h>
+ #include <openssl/evp.h>
+ #include <openssl/ec.h>
++#include <openssl/hmac.h>
+ #include <openssl/kdf.h>
+ #include <openssl/rsa.h>
+ #include <openssl/dsa.h>
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index d4c8ccde21d3973f3099ee3075dc3c11d55cb514..d57435a73e17c21dad2a7c8fb2c6e8a356630d88 100644
+index ed28871c385532b13e102200ba549bb7d7e901e6..c69d3f1867cd1b86194b109351643d9520c661e7 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
-@@ -10,7 +10,7 @@
+@@ -13,7 +13,7 @@
  #include "v8.h"
  #include "zlib.h"
  
@@ -322,7 +334,7 @@ index d4c8ccde21d3973f3099ee3075dc3c11d55cb514..d57435a73e17c21dad2a7c8fb2c6e8a3
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 89c2d36611ee7bca78fc0c818e720188d0cbd6fc..a40121abd28ae7c51f91eabae39db947ab0b12d5 100644
+index 2a924141d6edbaade371dd29d553eb1107ff5f75..be37169bb1d5e70e11601ccf00db0552ee3511ed 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -6,7 +6,7 @@
@@ -335,7 +347,7 @@ index 89c2d36611ee7bca78fc0c818e720188d0cbd6fc..a40121abd28ae7c51f91eabae39db947
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 633c574c8199c1f57b6e55b732ea6f3792bf9317..d0af2849045fbe0287836dffe5c5d0083f35557d 100644
+index def333cfddef800fefb4244d7fad6e489a5dafed..99f5274aec7512956a5e13a5ca9c0b593a57cc7a 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -5,7 +5,7 @@
@@ -348,7 +360,7 @@ index 633c574c8199c1f57b6e55b732ea6f3792bf9317..d0af2849045fbe0287836dffe5c5d008
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 6c9c929399f336dda2da4fe095d69c8f87970103..431536297e1a18b65f3c7a10883a736abcebe84d 100644
+index 2e4da9decf3b4b05b89a586cda194a475e0cd41d..8fabd68975721ed27fd99ff50dbbfcb3158336e7 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

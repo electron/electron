@@ -15,10 +15,10 @@
 #include <shlobj.h>
 #include <wrl/client.h>
 
-#include "base/bind.h"
-#include "base/callback_helpers.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
+#include "base/functional/callback_helpers.h"
 #include "base/logging.h"
 #include "base/stl_util.h"
 #include "base/strings/escape.h"
@@ -246,10 +246,19 @@ std::string OpenExternalOnWorkerThread(
       L"\"";
   std::wstring working_dir = options.working_dir.value();
 
-  if (reinterpret_cast<ULONG_PTR>(
-          ShellExecuteW(nullptr, L"open", escaped_url.c_str(), nullptr,
-                        working_dir.empty() ? nullptr : working_dir.c_str(),
-                        SW_SHOWNORMAL)) <= 32) {
+  SHELLEXECUTEINFO info = {};
+  info.cbSize = sizeof(SHELLEXECUTEINFO);
+  info.fMask = SEE_MASK_NOASYNC | SEE_MASK_FLAG_NO_UI;
+  info.lpVerb = L"open";
+  info.lpFile = escaped_url.c_str();
+  info.lpDirectory = working_dir.empty() ? nullptr : working_dir.c_str();
+  info.nShow = SW_SHOWNORMAL;
+
+  if (options.log_usage) {
+    info.fMask |= SEE_MASK_FLAG_LOG_USAGE;
+  }
+
+  if (!ShellExecuteEx(&info)) {
     return "Failed to open: " +
            logging::SystemErrorCodeToString(logging::GetLastSystemErrorCode());
   }

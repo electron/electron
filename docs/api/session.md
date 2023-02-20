@@ -561,7 +561,7 @@ Clears the session’s HTTP cache.
   * `origin` string (optional) - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
   * `storages` string[] (optional) - The types of storages to clear, can contain:
-    `appcache`, `cookies`, `filesystem`, `indexdb`, `localstorage`,
+    `cookies`, `filesystem`, `indexdb`, `localstorage`,
     `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
     specified, clear all storage types.
   * `quotas` string[] (optional) - The types of quotas to clear, can contain:
@@ -731,6 +731,43 @@ Returns `Promise<void>` - Resolves when all connections are closed.
 
 **Note:** It will terminate / fail all requests currently in flight.
 
+#### `ses.fetch(input[, init])`
+
+* `input` string | [GlobalRequest](https://nodejs.org/api/globals.html#request)
+* `init` [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/fetch#options) (optional)
+
+Returns `Promise<GlobalResponse>` - see [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
+
+Sends a request, similarly to how `fetch()` works in the renderer, using
+Chrome's network stack. This differs from Node's `fetch()`, which uses
+Node.js's HTTP stack.
+
+Example:
+
+```js
+async function example () {
+  const response = await net.fetch('https://my.app')
+  if (response.ok) {
+    const body = await response.json()
+    // ... use the result.
+  }
+}
+```
+
+See also [`net.fetch()`](net.md#netfetchinput-init), a convenience method which
+issues requests from the [default session](#sessiondefaultsession).
+
+See the MDN documentation for
+[`fetch()`](https://developer.mozilla.org/en-US/docs/Web/API/fetch) for more
+details.
+
+Limitations:
+
+* `net.fetch()` does not support the `data:` or `blob:` schemes.
+* The value of the `integrity` option is ignored.
+* The `.type` and `.url` values of the returned `Response` object are
+  incorrect.
+
 #### `ses.disableNetworkEmulation()`
 
 Disables any network emulation already active for the `session`. Resets to
@@ -784,6 +821,7 @@ win.webContents.session.setCertificateVerifyProc((request, callback) => {
   * `webContents` [WebContents](web-contents.md) - WebContents requesting the permission.  Please note that if the request comes from a subframe you should use `requestingUrl` to check the request origin.
   * `permission` string - The type of requested permission.
     * `clipboard-read` - Request access to read from the clipboard.
+    * `clipboard-sanitized-write` - Request access to write to the clipboard.
     * `media` -  Request access to media devices such as camera, microphone and speakers.
     * `display-capture` - Request access to capture the screen.
     * `mediaKeySystem` - Request access to DRM protected content.

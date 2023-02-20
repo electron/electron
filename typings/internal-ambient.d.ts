@@ -130,11 +130,13 @@ declare namespace NodeJS {
     url: string;
     extraHeaders?: Record<string, string>;
     useSessionCookies?: boolean;
-    credentials?: 'include' | 'omit';
+    credentials?: 'include' | 'omit' | 'same-origin';
     body: Uint8Array | BodyFunc;
     session?: Electron.Session;
     partition?: string;
     referrer?: string;
+    referrerPolicy?: string;
+    cache?: string;
     origin?: string;
     hasUserActivation?: boolean;
     mode?: string;
@@ -197,10 +199,6 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_desktop_capturer'): {
       createDesktopCapturer(): ElectronInternal.DesktopCapturer;
     };
-    _linkedBinding(name: 'electron_browser_event'): {
-      createWithSender(sender: Electron.WebContents): Electron.Event;
-      createEmpty(): Electron.Event;
-    };
     _linkedBinding(name: 'electron_browser_event_emitter'): {
       setEventEmitterPrototype(prototype: Object): void;
     };
@@ -228,7 +226,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };
     _linkedBinding(name: 'electron_browser_push_notifications'): { pushNotifications: Electron.PushNotifications };
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
-    _linkedBinding(name: 'electron_browser_session'): typeof Electron.Session;
+    _linkedBinding(name: 'electron_browser_session'): {fromPartition: typeof Electron.Session.fromPartition, Session: typeof Electron.Session};
     _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };

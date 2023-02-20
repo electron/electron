@@ -6,7 +6,7 @@ function createWindow () {
     width: 800,
     height: 600
   })
-  
+
   mainWindow.webContents.session.on('select-serial-port', (event, portList, webContents, callback) => {
 
     //Add listeners to handle ports being added or removed before the callback for `select-serial-port`
@@ -15,7 +15,7 @@ function createWindow () {
       console.log('serial-port-added FIRED WITH', port)
       //Optionally update portList to add the new port
     })
-  
+
     mainWindow.webContents.session.on('serial-port-removed', (event, port) => {
       console.log('serial-port-removed FIRED WITH', port)
       //Optionally update portList to remove the port
@@ -33,7 +33,7 @@ function createWindow () {
     if (permission === 'serial' && details.securityOrigin === 'file:///') {
       return true
     }
-    
+
     return false
   })
 
@@ -41,10 +41,10 @@ function createWindow () {
     if (details.deviceType === 'serial' && details.origin === 'file://') {
       return true
     }
-    
+
     return false
   })
-  
+
   mainWindow.loadFile('index.html')
 
   mainWindow.webContents.openDevTools()
@@ -52,7 +52,7 @@ function createWindow () {
 
 app.whenReady().then(() => {
   createWindow()
-  
+
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

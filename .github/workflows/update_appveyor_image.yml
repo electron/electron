@@ -2,6 +2,7 @@ name: Update AppVeyor Image
 
 # Run chron daily Mon-Fri
 on:
+  workflow_dispatch:
   schedule:
     - cron: '0 8 * * 1-5' # runs 8:00 every business day (see https://crontab.guru)
 

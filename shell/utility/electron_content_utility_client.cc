@@ -8,7 +8,6 @@
 
 #include "base/command_line.h"
 #include "base/no_destructor.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "content/public/utility/utility_thread.h"
 #include "mojo/public/cpp/bindings/service_factory.h"
 #include "sandbox/policy/mojom/sandbox.mojom.h"
@@ -85,8 +84,7 @@ ElectronContentUtilityClient::ElectronContentUtilityClient() = default;
 ElectronContentUtilityClient::~ElectronContentUtilityClient() = default;
 
 // The guts of this came from the chromium implementation
-// https://cs.chromium.org/chromium/src/chrome/utility/
-// chrome_content_utility_client.cc?sq=package:chromium&dr=CSs&g=0&l=142
+// https://source.chromium.org/chromium/chromium/src/+/main:chrome/utility/chrome_content_utility_client.cc
 void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
     mojo::BinderMap* binders) {
 #if BUILDFLAG(IS_WIN)
@@ -102,7 +100,7 @@ void ElectronContentUtilityClient::ExposeInterfacesToBrowser(
 #if BUILDFLAG(ENABLE_PRINTING) && BUILDFLAG(IS_WIN)
     binders->Add<printing::mojom::PdfToEmfConverterFactory>(
         base::BindRepeating(printing::PdfToEmfConverterFactory::Create),
-        base::ThreadTaskRunnerHandle::Get());
+        base::SingleThreadTaskRunner::GetCurrentDefault());
 #endif
   }
 }

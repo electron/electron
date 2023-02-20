@@ -7,9 +7,8 @@ import * as url from 'url';
 import { BrowserWindow, WebPreferences } from 'electron/main';
 
 import { closeWindow } from './lib/window-helpers';
-import { AddressInfo } from 'net';
 import { emittedUntil } from './lib/events-helpers';
-import { delay } from './lib/spec-helpers';
+import { delay, listen } from './lib/spec-helpers';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;
@@ -25,7 +24,7 @@ describe('security warnings', () => {
   let useCsp = true;
   let serverUrl: string;
 
-  before((done) => {
+  before(async () => {
     // Create HTTP Server
     server = http.createServer((request, response) => {
       const uri = url.parse(request.url!).pathname!;
@@ -57,10 +56,9 @@ describe('security warnings', () => {
           response.end();
         });
       });
-    }).listen(0, '127.0.0.1', () => {
-      serverUrl = `http://localhost2:${(server.address() as AddressInfo).port}`;
-      done();
     });
+
+    serverUrl = `http://localhost2:${(await listen(server)).port}`;
   });
 
   after(() => {

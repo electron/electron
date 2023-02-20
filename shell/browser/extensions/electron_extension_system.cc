@@ -8,9 +8,9 @@
 #include <string>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/json/json_string_value_serializer.h"
 #include "base/path_service.h"
 #include "base/values.h"

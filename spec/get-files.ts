@@ -1,4 +1,5 @@
 import * as walkdir from 'walkdir';
+import { emittedOnce } from './lib/events-helpers';
 
 export async function getFiles (directoryPath: string, { filter = null }: {filter?: ((file: string) => boolean) | null} = {}) {
   const files: string[] = [];
@@ -8,6 +9,6 @@ export async function getFiles (directoryPath: string, { filter = null }: {filte
   walker.on('file', (file) => {
     if (!filter || filter(file)) { files.push(file); }
   });
-  await new Promise((resolve) => walker.on('end', resolve));
+  await emittedOnce(walker, 'end');
   return files;
 }

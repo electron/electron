@@ -163,7 +163,7 @@ describe('asar package', function () {
       fs = require('fs')
       path = require('path')
       asarDir = ${JSON.stringify(asarDir)}
-    
+
       // This is used instead of util.promisify for some tests to dodge the
       // util.promisify.custom behavior.
       promisify = (f) => {
@@ -174,7 +174,7 @@ describe('asar package', function () {
           })
         })
       }
-    
+
       null
     `
   });
@@ -899,7 +899,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar');
         const dirs = fs.readdirSync(p, { withFileTypes: true });
         for (const dir of dirs) {
-          expect(dir instanceof fs.Dirent).to.be.true();
+          expect(dir).to.be.an.instanceof(fs.Dirent);
         }
         const names = dirs.map(a => a.name);
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);
@@ -909,7 +909,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar', 'dir3');
         const dirs = fs.readdirSync(p, { withFileTypes: true });
         for (const dir of dirs) {
-          expect(dir instanceof fs.Dirent).to.be.true();
+          expect(dir).to.be.an.instanceof(fs.Dirent);
         }
         const names = dirs.map(a => a.name);
         expect(names).to.deep.equal(['file1', 'file2', 'file3']);
@@ -941,7 +941,7 @@ describe('asar package', function () {
 
         const dirs = await promisify(fs.readdir)(p, { withFileTypes: true });
         for (const dir of dirs) {
-          expect(dir instanceof fs.Dirent).to.be.true();
+          expect(dir).to.be.an.instanceof(fs.Dirent);
         }
 
         const names = dirs.map((a: any) => a.name);
@@ -1004,7 +1004,7 @@ describe('asar package', function () {
         const p = path.join(asarDir, 'a.asar');
         const dirs = await fs.promises.readdir(p, { withFileTypes: true });
         for (const dir of dirs) {
-          expect(dir instanceof fs.Dirent).to.be.true();
+          expect(dir).to.be.an.instanceof(fs.Dirent);
         }
         const names = dirs.map(a => a.name);
         expect(names).to.deep.equal(['dir1', 'dir2', 'dir3', 'file1', 'file2', 'file3', 'link1', 'link2', 'ping.js']);

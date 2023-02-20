@@ -17,7 +17,8 @@ sys.path.append(
 
 from zipfile import ZipFile
 from lib.config import PLATFORM, get_target_arch, \
-                       get_zip_name, enable_verbose_mode, get_platform_key
+                       get_zip_name, enable_verbose_mode, \
+                       is_verbose_mode, get_platform_key
 from lib.util import get_electron_branding, execute, get_electron_version, \
                      store_artifact, get_electron_exec, get_out_dir, \
                      SRC_DIR, ELECTRON_DIR, TS_NODE
@@ -75,10 +76,11 @@ def main():
   electron_zip = os.path.join(OUT_DIR, DIST_NAME)
   shutil.copy2(os.path.join(OUT_DIR, 'dist.zip'), electron_zip)
   upload_electron(release, electron_zip, args)
-  if get_target_arch() != 'mips64el':
-    symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
-    shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
-    upload_electron(release, symbols_zip, args)
+
+  symbols_zip = os.path.join(OUT_DIR, SYMBOLS_NAME)
+  shutil.copy2(os.path.join(OUT_DIR, 'symbols.zip'), symbols_zip)
+  upload_electron(release, symbols_zip, args)
+
   if PLATFORM == 'darwin':
     if get_platform_key() == 'darwin' and get_target_arch() == 'x64':
       api_path = os.path.join(ELECTRON_DIR, 'electron-api.json')
@@ -93,7 +95,7 @@ def main():
 
     dsym_snapshot_zip = os.path.join(OUT_DIR, DSYM_SNAPSHOT_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'dsym-snapshot.zip'), dsym_snapshot_zip)
-    upload_electron(release, dsym_snapshot_zip, args)    
+    upload_electron(release, dsym_snapshot_zip, args)
   elif PLATFORM == 'win32':
     pdb_zip = os.path.join(OUT_DIR, PDB_NAME)
     shutil.copy2(os.path.join(OUT_DIR, 'pdb.zip'), pdb_zip)
@@ -382,7 +384,14 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
 def get_release(version):
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'find-github-release.js')
-  release_info = execute(['node', script_path, version])
+
+  # Strip warnings from stdout to ensure the only output is the desired object
+  release_env = os.environ.copy()
+  release_env['NODE_NO_WARNINGS'] = '1'
+  release_info = execute(['node', script_path, version], release_env)
+  if is_verbose_mode():
+    print('Release info for version: {}:\n'.format(version))
+    print(release_info)
   release = json.loads(release_info)
   return release
 

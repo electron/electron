@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as util from 'util';
 import { emittedOnce } from './lib/events-helpers';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { webContents, WebContents } from 'electron/main';
+import { webContents } from 'electron/main';
 import { EventEmitter } from 'stream';
 
 const features = process._linkedBinding('electron_common_features');
@@ -104,7 +104,7 @@ describe('node feature', () => {
       it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = require('child_process').fork('--eval', [source]);
-        const message = await new Promise(resolve => forked.once('message', resolve));
+        const [message] = await emittedOnce(forked, 'message');
         expect(message)
           .to.have.own.property('electron')
           .that.is.a('string')
@@ -780,7 +780,7 @@ describe('node feature', () => {
           // NOTE: temporary debug logging to try to catch flake.
           child.stderr.on('data', (m) => console.log(m.toString()));
           child.stdout.on('data', (m) => console.log(m.toString()));
-          const w = (webContents as any).create({}) as WebContents;
+          const w = (webContents as typeof ElectronInternal.WebContents).create();
           w.loadURL('about:blank')
             .then(() => w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})

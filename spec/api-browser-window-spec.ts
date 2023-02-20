@@ -4,11 +4,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
-import { AddressInfo } from 'net';
+import * as os from 'os';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
 import { emittedOnce, emittedUntil, emittedNTimes } from './lib/events-helpers';
-import { ifit, ifdescribe, defer, delay } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, delay, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 
@@ -61,7 +61,7 @@ describe('BrowserWindow module', () => {
     ifit(process.platform === 'linux')('does not crash when setting large window icons', async () => {
       const appPath = path.join(fixtures, 'apps', 'xwindow-icon');
       const appProcess = childProcess.spawn(process.execPath, [appPath]);
-      await new Promise((resolve) => { appProcess.once('exit', resolve); });
+      await emittedOnce(appProcess, 'exit');
     });
 
     it('does not crash or throw when passed an invalid icon', async () => {
@@ -94,7 +94,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.close()', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     });
@@ -149,10 +149,10 @@ describe('BrowserWindow module', () => {
     });
 
     describe('when invoked synchronously inside navigation observer', () => {
-      let server: http.Server = null as unknown as http.Server;
-      let url: string = null as unknown as string;
+      let server: http.Server;
+      let url: string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           switch (request.url) {
             case '/net-error':
@@ -174,10 +174,9 @@ describe('BrowserWindow module', () => {
             default:
               throw new Error(`unsupported endpoint: ${request.url}`);
           }
-        }).listen(0, '127.0.0.1', () => {
-          url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+
+        url = (await listen(server)).url;
       });
 
       after(() => {
@@ -209,7 +208,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('window.close()', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
     });
@@ -235,7 +234,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.destroy()', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     });
@@ -273,7 +272,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.loadURL(url)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     const scheme = 'other';
     const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
     before(() => {
@@ -293,10 +292,10 @@ describe('BrowserWindow module', () => {
       await closeWindow(w);
       w = null as unknown as BrowserWindow;
     });
-    let server = null as unknown as http.Server;
-    let url = null as unknown as string;
+    let server: http.Server;
+    let url: string;
     let postData = null as any;
-    before((done) => {
+    before(async () => {
       const filePath = path.join(fixtures, 'pages', 'a.html');
       const fileStats = fs.statSync(filePath);
       postData = [
@@ -339,10 +338,8 @@ describe('BrowserWindow module', () => {
         }
         setTimeout(respond, req.url && req.url.includes('slow') ? 200 : 0);
       });
-      server.listen(0, '127.0.0.1', () => {
-        url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-        done();
-      });
+
+      url = (await listen(server)).url;
     });
 
     after(() => {
@@ -473,7 +470,7 @@ describe('BrowserWindow module', () => {
 
   for (const sandbox of [false, true]) {
     describe(`navigation events${sandbox ? ' with sandbox' : ''}`, () => {
-      let w = null as unknown as BrowserWindow;
+      let w: BrowserWindow;
       beforeEach(() => {
         w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: false, sandbox } });
       });
@@ -483,9 +480,9 @@ describe('BrowserWindow module', () => {
       });
 
       describe('will-navigate event', () => {
-        let server = null as unknown as http.Server;
-        let url = null as unknown as string;
-        before((done) => {
+        let server: http.Server;
+        let url: string;
+        before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate-top') {
               res.end('<a target=_top href="/">navigate _top</a>');
@@ -493,22 +490,18 @@ describe('BrowserWindow module', () => {
               res.end('');
             }
           });
-          server.listen(0, '127.0.0.1', () => {
-            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-            done();
-          });
+          url = (await listen(server)).url;
         });
 
         after(() => {
           server.close();
         });
 
-        it('allows the window to be closed from the event listener', (done) => {
-          w.webContents.once('will-navigate', () => {
-            w.close();
-            done();
-          });
+        it('allows the window to be closed from the event listener', async () => {
+          const event = emittedOnce(w.webContents, 'will-navigate');
           w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          await event;
+          w.close();
         });
 
         it('can be prevented', (done) => {
@@ -540,7 +533,7 @@ describe('BrowserWindow module', () => {
               resolve(url);
             });
           });
-          expect(navigatedTo).to.equal(url);
+          expect(navigatedTo).to.equal(url + '/');
           expect(w.webContents.getURL()).to.match(/^file:/);
         });
 
@@ -553,12 +546,12 @@ describe('BrowserWindow module', () => {
               resolve(url);
             });
           });
-          expect(navigatedTo).to.equal(url);
+          expect(navigatedTo).to.equal(url + '/');
           expect(w.webContents.getURL()).to.equal('about:blank');
         });
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
-          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await w.loadURL(`data:text/html,<iframe src="${url}/navigate-top"></iframe>`);
           await delay(1000);
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -591,9 +584,9 @@ describe('BrowserWindow module', () => {
       });
 
       describe('will-redirect event', () => {
-        let server = null as unknown as http.Server;
-        let url = null as unknown as string;
-        before((done) => {
+        let server: http.Server;
+        let url: string;
+        before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/302') {
               res.setHeader('Location', '/200');
@@ -605,10 +598,7 @@ describe('BrowserWindow module', () => {
               res.end();
             }
           });
-          server.listen(0, '127.0.0.1', () => {
-            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-            done();
-          });
+          url = (await listen(server)).url;
         });
 
         after(() => {
@@ -642,12 +632,11 @@ describe('BrowserWindow module', () => {
           expect(stopCalled).to.equal(false, 'should not have called did-stop-loading first');
         });
 
-        it('allows the window to be closed from the event listener', (done) => {
-          w.webContents.once('will-redirect', () => {
-            w.close();
-            done();
-          });
+        it('allows the window to be closed from the event listener', async () => {
+          const event = emittedOnce(w.webContents, 'will-redirect');
           w.loadURL(`${url}/302`);
+          await event;
+          w.close();
         });
 
         it('can be prevented', (done) => {
@@ -682,7 +671,7 @@ describe('BrowserWindow module', () => {
   }
 
   describe('focus and visibility', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -1014,7 +1003,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('sizing', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     beforeEach(() => {
       w = new BrowserWindow({ show: false, width: 400, height: 400 });
@@ -1616,7 +1605,7 @@ describe('BrowserWindow module', () => {
   });
 
   ifdescribe(process.platform === 'darwin')('tabbed windows', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -1789,7 +1778,6 @@ describe('BrowserWindow module', () => {
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
       await emittedOnce(w, 'ready-to-show');
 
-      w.webContents.incrementCapturerCount();
       const image = await w.capturePage();
       expect(image.isEmpty()).to.equal(false);
     });
@@ -1807,18 +1795,10 @@ describe('BrowserWindow module', () => {
       // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
       expect(imgBuffer[25]).to.equal(6);
     });
-
-    it('should increase the capturer count', () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.incrementCapturerCount();
-      expect(w.webContents.isBeingCaptured()).to.be.true();
-      w.webContents.decrementCapturerCount();
-      expect(w.webContents.isBeingCaptured()).to.be.false();
-    });
   });
 
   describe('BrowserWindow.setProgressBar(progress)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     before(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -1857,7 +1837,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.setAlwaysOnTop(flag, level)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     afterEach(closeAllWindows);
 
@@ -1905,10 +1885,10 @@ describe('BrowserWindow module', () => {
   });
 
   describe('preconnect feature', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
-    let server = null as unknown as http.Server;
-    let url = null as unknown as string;
+    let server: http.Server;
+    let url: string;
     let connections = 0;
 
     beforeEach(async () => {
@@ -1922,9 +1902,7 @@ describe('BrowserWindow module', () => {
         res.end();
       });
       server.on('connection', () => { connections++; });
-
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => resolve()));
-      url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      url = (await listen(server)).url;
     });
     afterEach(async () => {
       server.close();
@@ -1959,7 +1937,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('BrowserWindow.setAutoHideCursor(autoHide)', () => {
-    let w = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
@@ -2095,7 +2073,52 @@ describe('BrowserWindow module', () => {
     const pos = { x: 10, y: 10 };
     afterEach(closeAllWindows);
 
+    describe('BrowserWindow.getWindowButtonPosition(pos)', () => {
+      it('returns null when there is no custom position', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.getWindowButtonPosition()).to.be.null('getWindowButtonPosition');
+      });
+
+      it('gets position property for "hidden" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
+        expect(w.getWindowButtonPosition()).to.deep.equal(pos);
+      });
+
+      it('gets position property for "customButtonsOnHover" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
+        expect(w.getWindowButtonPosition()).to.deep.equal(pos);
+      });
+    });
+
+    describe('BrowserWindow.setWindowButtonPosition(pos)', () => {
+      it('resets the position when null is passed', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
+        w.setWindowButtonPosition(null);
+        expect(w.getWindowButtonPosition()).to.be.null('setWindowButtonPosition');
+      });
+
+      it('sets position property for "hidden" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
+        const newPos = { x: 20, y: 20 };
+        w.setWindowButtonPosition(newPos);
+        expect(w.getWindowButtonPosition()).to.deep.equal(newPos);
+      });
+
+      it('sets position property for "customButtonsOnHover" titleBarStyle', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
+        const newPos = { x: 20, y: 20 };
+        w.setWindowButtonPosition(newPos);
+        expect(w.getWindowButtonPosition()).to.deep.equal(newPos);
+      });
+    });
+
+    // The set/getTrafficLightPosition APIs are deprecated.
     describe('BrowserWindow.getTrafficLightPosition(pos)', () => {
+      it('returns { x: 0, y: 0 } when there is no custom position', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
+      });
+
       it('gets position property for "hidden" titleBarStyle', () => {
         const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
         expect(w.getTrafficLightPosition()).to.deep.equal(pos);
@@ -2108,6 +2131,12 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.setTrafficLightPosition(pos)', () => {
+      it('resets the position when { x: 0, y: 0 } is passed', () => {
+        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
+        w.setTrafficLightPosition({ x: 0, y: 0 });
+        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
+      });
+
       it('sets position property for "hidden" titleBarStyle', () => {
         const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
         const newPos = { x: 20, y: 20 };
@@ -2192,7 +2221,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('returns null for webContents without a BrowserWindow', () => {
-      const contents = (webContents as any).create({});
+      const contents = (webContents as typeof ElectronInternal.WebContents).create();
       try {
         expect(BrowserWindow.fromWebContents(contents)).to.be.null('BrowserWindow.fromWebContents(contents)');
       } finally {
@@ -2898,10 +2927,10 @@ describe('BrowserWindow module', () => {
     describe('"sandbox" option', () => {
       const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 
-      let server: http.Server = null as unknown as http.Server;
-      let serverUrl: string = null as unknown as string;
+      let server: http.Server;
+      let serverUrl: string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           switch (request.url) {
             case '/cross-site':
@@ -2910,10 +2939,8 @@ describe('BrowserWindow module', () => {
             default:
               throw new Error(`unsupported endpoint: ${request.url}`);
           }
-        }).listen(0, '127.0.0.1', () => {
-          serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+        serverUrl = (await listen(server)).url;
       });
 
       after(() => {
@@ -3170,7 +3197,7 @@ describe('BrowserWindow module', () => {
       });
 
       describe('event handling', () => {
-        let w: BrowserWindow = null as unknown as BrowserWindow;
+        let w: BrowserWindow;
         beforeEach(() => {
           w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
         });
@@ -3271,7 +3298,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('child windows', () => {
-      let w: BrowserWindow = null as unknown as BrowserWindow;
+      let w: BrowserWindow;
 
       beforeEach(() => {
         w = new BrowserWindow({
@@ -3471,7 +3498,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('beforeunload handler', function () {
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(() => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
     });
@@ -3939,13 +3966,24 @@ describe('BrowserWindow module', () => {
     });
 
     it('should save page to disk with MHTML', async () => {
+      /* Use temp directory for saving MHTML file since the write handle
+       * gets passed to untrusted process and chromium will deny exec access to
+       * the path. To perform this task, chromium requires that the path is one
+       * of the browser controlled paths, refs https://chromium-review.googlesource.com/c/chromium/src/+/3774416
+       */
+      const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-mhtml-save-'));
+      const savePageMHTMLPath = path.join(tmpDir, 'save_page.html');
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
-      await w.webContents.savePage(savePageHtmlPath, 'MHTML');
+      await w.webContents.savePage(savePageMHTMLPath, 'MHTML');
 
-      expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
+      expect(fs.existsSync(savePageMHTMLPath)).to.be.true('html path');
       expect(fs.existsSync(savePageJsPath)).to.be.false('js path');
       expect(fs.existsSync(savePageCssPath)).to.be.false('css path');
+      try {
+        await fs.promises.unlink(savePageMHTMLPath);
+        await fs.promises.rmdir(tmpDir);
+      } catch {}
     });
 
     it('should save page to disk with HTMLComplete', async () => {
@@ -4418,16 +4456,14 @@ describe('BrowserWindow module', () => {
     });
 
     describe('loading main frame state', () => {
-      let server: http.Server = null as unknown as http.Server;
-      let serverUrl: string = null as unknown as string;
+      let server: http.Server;
+      let serverUrl: string;
 
-      before((done) => {
+      before(async () => {
         server = http.createServer((request, response) => {
           response.end();
-        }).listen(0, '127.0.0.1', () => {
-          serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
-          done();
         });
+        serverUrl = (await listen(server)).url;
       });
 
       after(() => {
