@@ -512,24 +512,20 @@ such as `--original-process-start-time`.
 Returns:
 
 * `event` Event
-* `appUserModelId` string - contains App module ID
-* `invokedArgs` string - contains arguments(in case of any) for toast button or data property in case of non-persistent notification
-* `dataCount` integer - contains amount of token pairs present inputData string (not null, default value 0 - which means abcense of inputData)
-* `inputData` string - valid JSON-string which contains result of User input into toast Reply fields. Empty string in case of absence of User input (i.e for case dataCount == 0)
+* `activationArguments` string - contains arguments(in case of any) for toast button or data property in case of non-persistent notification
+* `replyData` string - valid JSON-string which contains result of User input into toast Reply fields. Empty string in case of absence of User input
 
 Emitted after each completed user choise on notification.
 
 ```javascript
 const { app } = require('electron')
 
-app.on('notification-activation', (event, appUserModelId, invokedArgs, dataCount, inputData) => {
+app.on('notification-activation', (event, activationArguments, replyData) => {
   console.log('app.on : notification-activation')
-  console.log('appUserModelId : ' + appUserModelId)
-  console.log('invokedArgs : ' + invokedArgs)
-  console.log('dataCount : ' + dataCount)
-  console.log('inputData : ' + inputData)
-  if (dataCount) {
-    const jsonObj = JSON.parse(inputData)
+  console.log('activationArguments : ' + activationArguments)
+  console.log('replyData : ' + replyData)
+  if (replyData.length) {
+    const jsonObj = JSON.parse(replyData)
     console.log('jsonObj : ', jsonObj)
     Object.values(jsonObj).forEach((item) => {
       console.log('item : ', item)
@@ -625,7 +621,7 @@ Hides all application windows without minimizing them.
 
 ### `app.isHidden()` _macOS_
 
-Returns `boolean` - `true` if the application???including all of its windows???is hidden (e.g. with `Command-H`), `false` otherwise.
+Returns `boolean` - `true` if the application-including all of its windows???is hidden (e.g. with `Command-H`), `false` otherwise.
 
 ### `app.show()` _macOS_
 
@@ -1609,8 +1605,16 @@ your application when they are mistakenly running the x64 version under Rosetta 
 
 ### `app.notificationsComServerCLSID` _Windows_
 
-A `string` which contains fully formed CLSID for notifications COM server.
-This is necessary only for apps with persistent notifications support.
-The current default value for this property is `empty` (not `nil`). It means that by the default no persistent notifications support is exist.
+A `string` which contains a fully formed CLSID used for the notifications COM server.
+This is only necessary for apps that need persistent notifications support.
+The current default value for this property is an empty string `''`. This means that by default persistent notifications are not supported on Windows.
 
-Changing for property value should be provided earlier than `ready` event triggered. Preferably changing for `app.notificationsComServerCLSID` is need to be provided into `will-finish-launching` event handler.
+This value should be set before the `ready` event.
+
+### `app.notificationsComDisplayName` _Windows_
+
+A `string` which contains a desired display name in System/Notifications & Actions Windows settings.
+Same name will be displayed as title for each toast created by Electron application.
+The current default value for this property is an empty string `''`. This means that by default toast titles will be displayed with application user model id.
+
+This value should be set before the `ready` event.
