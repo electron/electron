@@ -11,7 +11,7 @@ If removing this patch causes no sync failures, it's safe to delete :+1:
 Ref https://chromium-review.googlesource.com/c/chromium/src/+/2953903
 
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index f7172dbe204a75457bb1e53ed6bd18b5ad305e7e..cc25fcbfe57dbaf5375db20c37bcfeef40f51466 100755
+index 4fcaaab9a43d4c0ca302e67fc99ff48b952d40c2..44dfe2f1f6df6397ec4c2684f682ab458f357f54 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -302,6 +302,8 @@ def GetDefaultHostOs():

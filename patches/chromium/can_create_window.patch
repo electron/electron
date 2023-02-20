@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index dedae3e5d4857b382f7e5aab2468631554403a68..dd0b656709f20852323fb1cfbd989b02d6d67d52 100644
+index 5d5bfe7d609609390d89bdd25cab09600a22134d..64d13347682631c4151906101cc1b47225908ee7 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7603,6 +7603,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7577,6 +7577,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index dedae3e5d4857b382f7e5aab2468631554403a68..dd0b656709f20852323fb1cfbd989b02
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e35a25f3de308bd8b71e9a51428a0835c10f1462..496271c5ebeae476dfda3159a060922b1702b1af 100644
+index f3815af38015c29a4ccee7ddb7b59e7569acb9e1..93c613127ba42148ebff39cd3159922fa9820eff 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4130,6 +4130,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -100,7 +100,7 @@ index 20f825d288157ed234f0da811be32f49c7716445..e46bdf7e58631f16d239764d41afb80b
        bool opener_suppressed,
        bool* no_javascript_access);
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 67aae42aae2c865ff9bb5eaf7c00a88ef233f1a5..56f63548c47914d718c146d3a1d310219af2a336 100644
+index 53619a29db7ac34852fadf1574fdea8fe9f379eb..0d0af32724ff4cf2d8fd671aabe4c6c04c39a9ec 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
 @@ -27,6 +27,17 @@ namespace content {
@@ -122,7 +122,7 @@ index 67aae42aae2c865ff9bb5eaf7c00a88ef233f1a5..56f63548c47914d718c146d3a1d31021
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 66611f56cb9346f6cf788249f8f51fcc8759b28d..927366b347e9b9f6ac6566a266da1cc297925701 100644
+index b7325f818a2649f931abc0a5e508d6d2cd1db101..3c97a61d5747a1ca1cb7b81b5aa4f5d97f420fca 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
