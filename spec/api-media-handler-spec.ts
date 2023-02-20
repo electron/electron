@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import * as http from 'http';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, listen } from './lib/spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -17,8 +17,7 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
       res.setHeader('Content-Type', 'text/html');
       res.end('');
     });
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-    serverUrl = `http://localhost:${(server.address() as any).port}`;
+    serverUrl = (await listen(server)).url;
   });
   after(() => {
     server.close();

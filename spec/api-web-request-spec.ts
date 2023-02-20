@@ -5,8 +5,9 @@ import * as path from 'path';
 import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo, Socket } from 'net';
+import { Socket } from 'net';
 import { emittedOnce } from './lib/events-helpers';
+import { listen } from './lib/spec-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -35,13 +36,9 @@ describe('webRequest module', () => {
   });
   let defaultURL: string;
 
-  before((done) => {
+  before(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
-    server.listen(0, '127.0.0.1', () => {
-      const port = (server.address() as AddressInfo).port;
-      defaultURL = `http://127.0.0.1:${port}/`;
-      done();
-    });
+    defaultURL = (await listen(server)).url + '/';
   });
 
   after(() => {
@@ -489,8 +486,7 @@ describe('webRequest module', () => {
       });
 
       // Start server.
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = String((server.address() as AddressInfo).port);
+      const { port } = await listen(server);
 
       // Use a separate session for testing.
       const ses = session.fromPartition('WebRequestWebSocket');
@@ -548,7 +544,7 @@ describe('webRequest module', () => {
         ses.webRequest.onCompleted(null);
       });
 
-      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port } });
+      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } });
       await emittedOnce(ipcMain, 'websocket-success');
 
       expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket');

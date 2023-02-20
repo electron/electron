@@ -3,9 +3,9 @@ import * as dns from 'dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
-import { AddressInfo, Socket } from 'net';
+import { Socket } from 'net';
 import { emittedOnce } from './lib/events-helpers';
-import { defer, delay } from './lib/spec-helpers';
+import { defer, delay, listen } from './lib/spec-helpers';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -53,26 +53,22 @@ function collectStreamBodyBuffer (response: Electron.IncomingMessage | http.Inco
   });
 }
 
-function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
-  return new Promise((resolve) => {
-    const server = http.createServer((request, response) => {
-      fn(request, response);
-      // don't close if a redirect was returned
-      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
-        n--;
-        server.close();
-      }
-    });
-    server.listen(0, '127.0.0.1', () => {
-      resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
-    });
-    const sockets: Socket[] = [];
-    server.on('connection', s => sockets.push(s));
-    defer(() => {
+async function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
+  const server = http.createServer((request, response) => {
+    fn(request, response);
+    // don't close if a redirect was returned
+    if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
+      n--;
       server.close();
-      sockets.forEach(s => s.destroy());
-    });
+    }
   });
+  const sockets: Socket[] = [];
+  server.on('connection', s => sockets.push(s));
+  defer(() => {
+    server.close();
+    sockets.forEach(s => s.destroy());
+  });
+  return (await listen(server)).url;
 }
 
 function respondOnce (fn: http.RequestListener) {

@@ -4,8 +4,7 @@ import * as http from 'http';
 import { emittedNTimes, emittedOnce } from './lib/events-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { app, BrowserWindow, ipcMain } from 'electron/main';
-import { AddressInfo } from 'net';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, listen } from './lib/spec-helpers';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {
@@ -218,15 +217,12 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let crossSiteUrl: string;
   let serverUrl: string;
 
-  before(function (done) {
+  before(async function () {
     server = http.createServer((req, res) => {
       res.end(`<iframe name="frame" src="${crossSiteUrl}" />`);
     });
-    server.listen(0, '127.0.0.1', () => {
-      serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-      crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}/`;
-      done();
-    });
+    serverUrl = (await listen(server)).url;
+    crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
   });
 
   after(() => {

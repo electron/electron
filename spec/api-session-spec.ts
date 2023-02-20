@@ -9,8 +9,7 @@ import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce } from './lib/events-helpers';
-import { defer, delay } from './lib/spec-helpers';
-import { AddressInfo } from 'net';
+import { defer, delay, listen } from './lib/spec-helpers';
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -59,8 +58,7 @@ describe('session module', () => {
         res.end('finished');
         server.close();
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const { port } = server.address() as AddressInfo;
+      const { port } = await listen(server);
       const w = new BrowserWindow({ show: false });
       await w.loadURL(`${url}:${port}`);
       const list = await w.webContents.session.cookies.get({ url });
@@ -283,10 +281,7 @@ describe('session module', () => {
         res.end(mockFile);
         downloadServer.close();
       });
-      await new Promise<void>(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
-
-      const port = (downloadServer.address() as AddressInfo).port;
-      const url = `http://127.0.0.1:${port}/`;
+      const url = (await listen(downloadServer)).url;
 
       const downloadPrevented: Promise<{itemUrl: string, itemFilename: string, item: Electron.DownloadItem}> = new Promise(resolve => {
         w.webContents.session.once('will-download', function (e, item) {
@@ -296,7 +291,7 @@ describe('session module', () => {
       });
       w.loadURL(url);
       const { item, itemUrl, itemFilename } = await downloadPrevented;
-      expect(itemUrl).to.equal(url);
+      expect(itemUrl).to.equal(url + '/');
       expect(itemFilename).to.equal('mockFile.txt');
       // Delay till the next tick.
       await new Promise(setImmediate);
@@ -400,15 +395,15 @@ describe('session module', () => {
         });
         res.end(pac);
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const { url } = await listen(server);
       {
-        const config = { pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+        const config = { pacScript: url };
         await customSession.setProxy(config);
         const proxy = await customSession.resolveProxy('https://google.com');
         expect(proxy).to.equal('PROXY myproxy:8132');
       }
       {
-        const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+        const config = { mode: 'pac_script' as any, pacScript: url };
         await customSession.setProxy(config);
         const proxy = await customSession.resolveProxy('https://google.com');
         expect(proxy).to.equal('PROXY myproxy:8132');
@@ -474,8 +469,8 @@ describe('session module', () => {
         });
         res.end(pac);
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const config = { mode: 'pac_script' as any, pacScript: `http://127.0.0.1:${(server.address() as AddressInfo).port}` };
+      const { url } = await listen(server);
+      const config = { mode: 'pac_script' as any, pacScript: url };
       await customSession.setProxy(config);
       {
         const proxy = await customSession.resolveProxy('https://google.com');
@@ -583,8 +578,9 @@ describe('session module', () => {
 
   describe('ses.setCertificateVerifyProc(callback)', () => {
     let server: http.Server;
+    let serverUrl: string;
 
-    beforeEach((done) => {
+    beforeEach(async () => {
       const certPath = path.join(fixtures, 'certificates');
       const options = {
         key: fs.readFileSync(path.join(certPath, 'server.key')),
@@ -600,7 +596,7 @@ describe('session module', () => {
         res.writeHead(200);
         res.end('<title>hello</title>');
       });
-      server.listen(0, '127.0.0.1', done);
+      serverUrl = (await listen(server)).url;
     });
 
     afterEach((done) => {
@@ -621,7 +617,7 @@ describe('session module', () => {
       });
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await w.loadURL(`https://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      await w.loadURL(serverUrl);
       expect(w.webContents.getTitle()).to.equal('hello');
       expect(validate!).not.to.be.undefined();
       validate!();
@@ -648,10 +644,9 @@ describe('session module', () => {
         callback(-2);
       });
 
-      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await expect(w.loadURL(url)).to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(w.webContents.getTitle()).to.equal(url);
+      await expect(w.loadURL(serverUrl)).to.eventually.be.rejectedWith(/ERR_FAILED/);
+      expect(w.webContents.getTitle()).to.equal(serverUrl);
       expect(validate!).not.to.be.undefined();
       validate!();
     });
@@ -665,12 +660,11 @@ describe('session module', () => {
         callback(-2);
       });
 
-      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
-      await expect(w.loadURL(url), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      await expect(w.loadURL(serverUrl), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       await emittedOnce(w.webContents, 'did-stop-loading');
-      await expect(w.loadURL(url + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(w.webContents.getTitle()).to.equal(url + '/test');
+      await expect(w.loadURL(serverUrl + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
+      expect(w.webContents.getTitle()).to.equal(serverUrl + '/test');
       expect(numVerificationRequests).to.equal(1);
     });
 
@@ -679,8 +673,7 @@ describe('session module', () => {
       ses1.setCertificateVerifyProc((opts, cb) => cb(0));
       const ses2 = session.fromPartition(`${Math.random()}`);
 
-      const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      const req = net.request({ url, session: ses1, credentials: 'include' });
+      const req = net.request({ url: serverUrl, session: ses1, credentials: 'include' });
       req.end();
       setTimeout(() => {
         ses2.setCertificateVerifyProc((opts, callback) => callback(0));
@@ -709,8 +702,7 @@ describe('session module', () => {
           res.end('authenticated');
         }
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       const fetch = (url: string) => new Promise((resolve, reject) => {
         const request = net.request({ url, session: ses });
         request.on('response', (response) => {
@@ -750,7 +742,7 @@ describe('session module', () => {
     const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
     const protocolName = 'custom-dl';
     const contentDisposition = 'inline; filename="mock.pdf"';
-    let address: AddressInfo;
+    let port: number;
     let downloadServer: http.Server;
     before(async () => {
       downloadServer = http.createServer((req, res) => {
@@ -761,8 +753,7 @@ describe('session module', () => {
         });
         res.end(mockPDF);
       });
-      await new Promise<void>(resolve => downloadServer.listen(0, '127.0.0.1', resolve));
-      address = downloadServer.address() as AddressInfo;
+      port = (await listen(downloadServer)).port;
     });
     after(async () => {
       await new Promise(resolve => downloadServer.close(resolve));
@@ -780,7 +771,7 @@ describe('session module', () => {
       if (isCustom) {
         expect(item.getURL()).to.equal(`${protocolName}://item`);
       } else {
-        expect(item.getURL()).to.be.equal(`${url}:${address.port}/`);
+        expect(item.getURL()).to.be.equal(`${url}:${port}/`);
       }
       expect(item.getMimeType()).to.equal('application/pdf');
       expect(item.getReceivedBytes()).to.equal(mockPDF.length);
@@ -791,7 +782,6 @@ describe('session module', () => {
     };
 
     it('can download using session.downloadURL', (done) => {
-      const port = address.port;
       session.defaultSession.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
         item.on('done', function (e, state) {
@@ -807,7 +797,6 @@ describe('session module', () => {
     });
 
     it('can download using WebContents.downloadURL', (done) => {
-      const port = address.port;
       const w = new BrowserWindow({ show: false });
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
@@ -825,7 +814,6 @@ describe('session module', () => {
 
     it('can download from custom protocols using WebContents.downloadURL', (done) => {
       const protocol = session.defaultSession.protocol;
-      const port = address.port;
       const handler = (ignoredError: any, callback: Function) => {
         callback({ url: `${url}:${port}` });
       };
@@ -846,7 +834,6 @@ describe('session module', () => {
     });
 
     it('can download using WebView.downloadURL', async () => {
-      const port = address.port;
       const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
       await w.loadURL('about:blank');
       function webviewDownload ({ fixtures, url, port }: {fixtures: string, url: string, port: string}) {
@@ -871,7 +858,6 @@ describe('session module', () => {
     });
 
     it('can cancel download', (done) => {
-      const port = address.port;
       const w = new BrowserWindow({ show: false });
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
@@ -900,7 +886,6 @@ describe('session module', () => {
         return done();
       }
 
-      const port = address.port;
       const w = new BrowserWindow({ show: false });
       w.webContents.session.once('will-download', function (e, item) {
         item.savePath = downloadFilePath;
@@ -919,7 +904,6 @@ describe('session module', () => {
 
     it('can set options for the save dialog', (done) => {
       const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
-      const port = address.port;
       const options = {
         window: null,
         title: 'title',
@@ -1007,8 +991,7 @@ describe('session module', () => {
           .on('error', (error: any) => { throw error; }).pipe(res);
       });
       try {
-        await new Promise<void>(resolve => rangeServer.listen(0, '127.0.0.1', resolve));
-        const port = (rangeServer.address() as AddressInfo).port;
+        const { url } = await listen(rangeServer);
         const w = new BrowserWindow({ show: false });
         const downloadCancelled: Promise<Electron.DownloadItem> = new Promise((resolve) => {
           w.webContents.session.once('will-download', function (e, item) {
@@ -1019,7 +1002,7 @@ describe('session module', () => {
             item.cancel();
           });
         });
-        const downloadUrl = `http://127.0.0.1:${port}/assets/logo.png`;
+        const downloadUrl = `${url}/assets/logo.png`;
         w.webContents.downloadURL(downloadUrl);
         const item = await downloadCancelled;
         expect(item.getState()).to.equal('cancelled');
@@ -1070,8 +1053,7 @@ describe('session module', () => {
         res.setHeader('Content-Type', 'text/html');
         res.end('');
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      serverUrl = `http://localhost:${(server.address() as any).port}`;
+      serverUrl = (await listen(server)).url;
     });
     after(() => {
       server.close();
@@ -1277,8 +1259,8 @@ describe('session module', () => {
         res.end();
         server.close();
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      await w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      const { url } = await listen(server);
+      await w.loadURL(url);
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
     });
@@ -1343,9 +1325,8 @@ describe('session module', () => {
       }, (req, res) => {
         res.end('hi');
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+      const { port } = await listen(server);
       defer(() => server.close());
-      const { port } = server.address() as AddressInfo;
 
       function request () {
         return new Promise((resolve, reject) => {

@@ -2,12 +2,11 @@ import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce } from './lib/events-helpers';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit, listen } from './lib/spec-helpers';
 import * as http from 'http';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
-import { AddressInfo } from 'net';
 import { expect } from 'chai';
 
 describe('shell module', () => {
@@ -51,9 +50,8 @@ describe('shell module', () => {
         const server = http.createServer((req, res) => {
           res.end();
         });
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        url = (await listen(server)).url;
         requestReceived = new Promise<void>(resolve => server.on('connection', () => resolve()));
-        url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
       }
 
       await Promise.all<void>([

@@ -2,12 +2,11 @@ import { expect } from 'chai';
 import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import * as http from 'http';
-import { AddressInfo } from 'net';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as WebSocket from 'ws';
 import { emittedOnce, emittedNTimes, emittedUntil } from './lib/events-helpers';
-import { ifit } from './lib/spec-helpers';
+import { ifit, listen } from './lib/spec-helpers';
 
 const uuid = require('uuid');
 
@@ -19,7 +18,7 @@ describe('chrome extensions', () => {
   // NB. extensions are only allowed on http://, https:// and ftp:// (!) urls by default.
   let server: http.Server;
   let url: string;
-  let port: string;
+  let port: number;
   before(async () => {
     server = http.createServer((req, res) => {
       if (req.url === '/cors') {
@@ -37,11 +36,7 @@ describe('chrome extensions', () => {
       });
     });
 
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', () => {
-      port = String((server.address() as AddressInfo).port);
-      url = `http://127.0.0.1:${port}`;
-      resolve();
-    }));
+    ({ port, url } = await listen(server));
   });
   after(() => {
     server.close();
@@ -324,7 +319,7 @@ describe('chrome extensions', () => {
           customSession.webRequest.onBeforeSendHeaders(() => {
             resolve();
           });
-          await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
+          await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port: `${port}` } });
           await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
         })();
       });
@@ -332,7 +327,7 @@ describe('chrome extensions', () => {
 
     describe('WebSocket', () => {
       it('can be proxied', async () => {
-        await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port } });
+        await w.loadFile(path.join(fixtures, 'api', 'webrequest.html'), { query: { port: `${port}` } });
         await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-webRequest-wss'));
         customSession.webRequest.onSendHeaders((details) => {
           if (details.url.startsWith('ws://')) {
