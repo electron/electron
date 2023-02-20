@@ -16,7 +16,7 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 71c48ed69f2ee9586620966333c744a6d1533cad..25d80eda83182936548d6098a3875f4292e35f6f 100644
+index 71c48ed69f2ee9586620966333c744a6d1533cad..9faceb49307104653a8431638fbb3a0974e86bc8 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
 @@ -18,7 +18,9 @@
@@ -29,19 +29,32 @@ index 71c48ed69f2ee9586620966333c744a6d1533cad..25d80eda83182936548d6098a3875f42
  @class CALayer;
  
  namespace ui {
-@@ -88,7 +90,7 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
+@@ -88,10 +90,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
  
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
 -#if BUILDFLAG(IS_MAC)
 +#if BUILDFLAG(IS_MAC) && !IS_MAS_BUILD()
    bool use_remote_layer_api_;
- #endif
+-#endif
    base::scoped_nsobject<CAContext> ca_context_;
++#endif
+   std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
+ 
+   gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index b726596b926d5cd4d7131997dc07beaf04757612..39858ca20bc4fba50fc5bc5cf8ed4279799f5041 100644
+index b726596b926d5cd4d7131997dc07beaf04757612..1d0cf2a718f35e3939a3da436486438dd82f73ab 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
+@@ -56,7 +56,7 @@
+     base::WeakPtr<ImageTransportSurfaceDelegate> delegate)
+     : gl::Presenter(display, gfx::Size()),
+       delegate_(delegate),
+-#if BUILDFLAG(IS_MAC)
++#if BUILDFLAG(IS_MAC) && !IS_MAS_BUILD()
+       use_remote_layer_api_(ui::RemoteLayerAPISupported()),
+ #endif
+       scale_factor_(1),
 @@ -74,7 +74,7 @@
             ->workarounds()
             .disable_av_sample_buffer_display_layer;
