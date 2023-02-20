@@ -7,7 +7,7 @@
 // and released it as MIT to the world.
 
 #include "shell/browser/notifications/win/windows_toast_notification.h"
-// SAP-14036 upgrade for headers necessary for persistent notifications
+// feat: Upgrade for headers necessary for persistent notifications
 // functionality
 #include <NotificationActivationCallback.h>
 #include <Psapi.h>
@@ -98,7 +98,7 @@ using Microsoft::WRL::Wrappers::HStringReference;
 
 namespace std {
 wostream& operator<<(wostream& out, const NOTIFICATION_USER_INPUT_DATA& data) {
-  // SAP-15908 refine notification-activation for cold start
+  // feat: Refine notification-activation for cold start
   out << L"{";  // open brace for key-value pair
   out << L"\"" << data.Key << L"\"";
   out << L":";  // json delimeter (i.e colon) between key value
@@ -115,7 +115,7 @@ namespace {
 bool IsDebuggingNotifications() {
   return base::Environment::Create()->HasVar("ELECTRON_DEBUG_NOTIFICATIONS");
 }
-// SAP-15501 : Clear notifications
+// feat: Clear notifications
 std::wstring HexStringFromStdHash(std::size_t hash) {
   std::wstringstream ss;
   ss << std::hex << hash;
@@ -135,9 +135,8 @@ ComPtr<ABI::Windows::UI::Notifications::IToastNotificationManagerStatics2>
 // static
 ComPtr<ABI::Windows::UI::Notifications::IToastNotifier>
     WindowsToastNotification::toast_notifier_;
-// SAP-14036 add COM server regestration
+// feat: Add runtime(dynamic) COM server regestration
 class NotificationActivator;
-// SAP-15762 support COM server registration at runtime
 class NotificationActivatorFactory;
 class NotificationRegistrator {
  public:
@@ -155,7 +154,7 @@ class NotificationRegistrator {
   }
 
   HSTRING AppId() { return app_id_; }
-  // SAP-16574 : Allow App icon into Action center and System Notifications
+  // feat: Allow App icon into Action center and System Notifications
   // settings
   NotificationRegistrator() {
     wchar_t appPath[MAX_PATH] = {0};
@@ -171,7 +170,7 @@ class NotificationRegistrator {
 
  private:
   ScopedHString app_id_;
-  // SAP-16574 : Allow App icon into Action center and System Notifications
+  // feat: Allow App icon into Action center and System Notifications
   // settings
   std::wstring app_path_;
   std::wstring tmp_path_;
@@ -205,11 +204,11 @@ bool WindowsToastNotification::Initialize() {
     ScopedHString app_id;
     if (!GetAppUserModelID(&app_id))
       return false;
-    // SAP-15762: Support COM activation registration at runtime
+    // feat: Support COM activation registration at runtime
     std::wstring notificationsCOMServerCLSID;
-    // SAP-21094: Application name displays in incorrect format on notification
+    // feat: Application name displays in incorrect format on notification
     std::wstring notificationsCOMDisplayName;
-    // SAP-15318: Make the com registration system activable
+    // feat: Make the com registration system activable
     auto* client = ElectronBrowserClient::Get();
     if (client) {
       const auto& clsid_str = client->GetNotificationsComServerCLSID();
@@ -226,7 +225,7 @@ bool WindowsToastNotification::Initialize() {
     if (!notificationsCOMServerCLSID.empty() &&
         SUCCEEDED(
             CLSIDFromString(notificationsCOMServerCLSID.c_str(), &clsid))) {
-      // SAP-15762: Support COM activation registration at runtime
+      // feat: Add runtime(dynamic) COM server regestration
       DWORD registration{};
       // Register callback
       if (FAILED(CoRegisterClassObject(
@@ -235,7 +234,7 @@ bool WindowsToastNotification::Initialize() {
                   Make<electron::NotificationActivatorFactory>().Get()),
               CLSCTX_LOCAL_SERVER, REGCLS_MULTIPLEUSE, &registration)))
         return false;
-      // SAP-14036 support COM server regestration
+      // feat: Support COM server regestration
       registrator_ = std::make_unique<NotificationRegistrator>();
       if (!registrator_->RegisterAppForNotificationSupport(
               WindowsGetStringRawBuffer((HSTRING)app_id, NULL),
@@ -303,7 +302,7 @@ HRESULT WindowsToastNotification::ShowInternal(
     std::wstring image_path =
         presenter_win->SaveIconToFilesystem(options.image, options.image_url);
 
-    // SAP-15259 : Add the reply field on a notification
+    // feat: Add the reply field on a notification
     // Win XML toast scheme requires that inputs will follow befor buttons
     // code bellow provide smart sorting without lost of initial inputs/buttons
     // relative order
@@ -367,7 +366,7 @@ HRESULT WindowsToastNotification::ShowInternal(
       toast_notification2_->put_Tag(HStringReference(hex_str.c_str()).Get()),
       "WinAPI: put_Tag failed");
 
-  // 16-SAP-18595: display toast according to Notification.renotify
+  // feat: Display toast according to Notification.renotify
   REPORT_AND_RETURN_IF_FAILED(
       toast_notification2_->put_SuppressPopup(!options.should_be_presented),
       "WinAPI: setup put_Suppress failed");
@@ -376,7 +375,7 @@ HRESULT WindowsToastNotification::ShowInternal(
                               "WinAPI: SetupCallbacks failed");
 
   if (options.require_interaction && !options.silent) {
-    // SAP-17738 - Can not require interaction on Windows
+    // feat: Can not require interaction on Windows
     // Workaround to silent system IncommingCall sound and play Default sound by
     // custom PlaySound call
     // https://docs.microsoft.com/en-us/previous-versions/dd743680(v=vs.85)
@@ -434,7 +433,6 @@ HRESULT WindowsToastNotification::SetToastXml(
   }
 
   if (require_interaction) {
-    // Reimplement for SAP-17772 SAP-19442
     const bool use_reminder =
         !actions_list.empty() &&
         actions_list[0].type != NotificationAction::sTYPE_TEXT;
@@ -447,10 +445,10 @@ HRESULT WindowsToastNotification::SetToastXml(
 
   // Configure the toast's notification sound
   if (silent || require_interaction) {
-    // SAP-17738 - Can not require interaction on Windows
+    // feat: Can not require interaction on Windows
     // Workaround to silent system IncommingCall sound and play Default sound by
     // custom PlaySound call
-    // SAP-21082 - Notification showing up with strange sounds when
+    // feat: Notification showing up with strange sounds when
     // requireInteraction is true require_interaction is necessary to fix side
     // effect from applying incomingcall
     REPORT_AND_RETURN_IF_FAILED(
@@ -1089,12 +1087,12 @@ static const std::wstring kReplyTextType{L"text"};
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     IInspectable* args) {
-  // SAP-14036 upgrade for get_Activated callback
+  // feat: Upgrade for get_Activated callback
   if (options_.is_persistent) {
     // click on persistent notification toast
     if (options_.has_reply) {
       // Notification::NotificationReplied scope
-      // SAP-15259 : Add the reply field on a notification
+      // feat: Add the reply field on a notification
       ComPtr<IToastActivatedEventArgs2> activatedEventArgs2;
       RETURN_IF_FAILED(
           args->QueryInterface(activatedEventArgs2.GetAddressOf()));
@@ -1177,11 +1175,11 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastDismissedEventArgs* e) {
   ToastDismissalReason reason;
-  // SAP-14036 upgrade for get_Dismissed callback
+  // feat: Upgrade for get_Dismissed callback
   if (SUCCEEDED(e->get_Reason(&reason)) &&
       // we need to post dismissed only for that case
       reason == ToastDismissalReason::ToastDismissalReason_UserCanceled) {
-    // SAP-15501 : Clear notifications
+    // feat: Clear notifications
     ComPtr<ABI::Windows::UI::Notifications::IToastNotificationHistory> hist;
     RETURN_IF_FAILED(toast_manager_->get_History(&hist));
 
@@ -1197,11 +1195,11 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
     unsigned size = 0;
     RETURN_IF_FAILED(hist_view->get_Size(&size));
 
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotification2> n2;
-    RETURN_IF_FAILED(sender->QueryInterface(IID_PPV_ARGS(&n2)));
+    ComPtr<ABI::Windows::UI::Notifications::IToastNotification2> notif2;
+    RETURN_IF_FAILED(sender->QueryInterface(IID_PPV_ARGS(&notif2)));
 
     HSTRING ref;
-    RETURN_IF_FAILED(n2->get_Tag(&ref));
+    RETURN_IF_FAILED(notif2->get_Tag(&ref));
 
     bool notification_is_exisit(false);
     for (unsigned i = 0; !notification_is_exisit && i < size; i++) {
@@ -1236,7 +1234,7 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 IFACEMETHODIMP ToastEventHandler::Invoke(
     ABI::Windows::UI::Notifications::IToastNotification* sender,
     ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) {
-  // SAP-14036 upgrade for get_Failed callback
+  // feat: Upgrade for get_Failed callback
   HRESULT error;
   e->get_ErrorCode(&error);
   std::string errorMessage =
@@ -1280,24 +1278,21 @@ class NotificationActivator final
            ULONG dataCount) override {
     // packing user input structs into stream
     std::wstringstream stm;
-    // SAP-15908 refine notification-activation for cold start
-    if (dataCount) {
-      stm << L"[";  // json array open brace
-      std::for_each(data, data + dataCount,
-                    [&](const NOTIFICATION_USER_INPUT_DATA& item) {
-                      stm << item
-                          // avoid problem with last delimeter
-                          << std::wstring((static_cast<ULONG>(&item - data +
-                                                              1) == dataCount)
-                                              ? L""
-                                              : L",");
-                    });
-      stm << L"]";  // json array close brace
-    }
+    // feat: Refine notification-activation for cold start
+    stm << L"[";  // json array open brace
+    std::for_each(
+        data, data + dataCount, [&](const NOTIFICATION_USER_INPUT_DATA& item) {
+          stm << item
+              // note: c-tor for empty string is fully valid
+              // according to standard, test is here https://ideone.com/6yi3PL
+              // avoid problem with last
+              << std::wstring((&item + 1 == data + dataCount) ? L"" : L",");
+        });
+    stm << L"]";  // json array close brace
     auto* app = api::App::Get();
     if (app)
-      app->Emit("notification-activation", std::wstring(appUserModelId),
-                std::wstring(invokedArgs), dataCount, stm.str());
+      app->Emit("notification-activation", std::wstring(invokedArgs),
+                stm.str());
     return S_OK;
   }
 };
@@ -1345,7 +1340,7 @@ bool NotificationRegistrator::RegisterAppForNotificationSupport(
   if (!SetRegistryKeyValue(HKEY_CURRENT_USER, subKey, L"CustomActivator",
                            clsid))
     return false;
-  // SAP-16574 : Allow App icon into Action center and System Notifications
+  // feat: Allow App icon into Action center and System Notifications
   // settings
   if (ExtractAppIconToTempFile(clsid) &&
       // Some incformation about IconUri can be found on the link
@@ -1354,7 +1349,7 @@ bool NotificationRegistrator::RegisterAppForNotificationSupport(
     // there is no nesecity to fail register at all in case if icon was not set
     DeleteFile(ico_path_.c_str());
 
-  // SAP-15501 : Clear notifications
+  // feat: Clear notifications
   return app_id_.Reset(appId), true;
 }
 

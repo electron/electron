@@ -50,20 +50,21 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     options.image = image;
     options.silent = audio_muted ? true : data.silent;
     options.has_reply = false;
+    // feat: Correct processing for the persistent notification without
+    // actions
     options.is_persistent = is_persistent;
-    // feat: configuration toast show time according to
+    // feat: Configuration toast show time according to
     // Notification.requireInteraction property
     options.require_interaction = data.require_interaction;
-    // feat: display toast according to Notification.renotify
+    // feat: Display toast according to Notification.renotify
     options.should_be_presented = data.renotify ? true : !is_replacing;
-    // feat: support Notification.data property
+    // feat: Support Notification.data property
     // header calculation bellow is caused by presence some not described hader
     // into data received see ReadData in
     // ./electron/src/third_party/blink/common/notifications/notification_mojom_traits.cc
     std::size_t data_start_pos(0);
-    if (data.data.size() > blink_data_header.size() &&  // blink::PlatformNotificationData::data header
-        std::equal(data.data.begin(), data.data.begin() + blink_data_header.size(),
-                   blink_data_header.data())) {
+    if (data.data.size() > 4 &&  // blink::PlatformNotificationData::data header
+        std::equal(data.data.begin(), data.data.begin() + 3, "\xFF\x14\xFF")) {
       // simple algorithm to find data start position after variable length
       // header
       if (data.data.size() > SHRT_MAX)
@@ -78,7 +79,7 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     std::transform(data.data.begin() + data_start_pos, data.data.end(),
                    std::back_inserter(options.data),
                    [](const char ch) { return ch; });
-    // feat: support for actions(buttons) in toast
+    // feat: Support for actions(buttons) in toast
     std::transform(
         data.actions.begin(), data.actions.end(),
         std::back_inserter(options.actions),
@@ -164,7 +165,7 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
  private:
   std::string notification_id_;
   content::BrowserContext*
-      context_;  // feat: context is necessary for Event dispatching
+      context_;  // context is necessary for Event dispatching
   GURL origin_;
 };
 
@@ -224,7 +225,7 @@ void PlatformNotificationService::DisplayPersistentNotification(
     const GURL& origin,
     const blink::PlatformNotificationData& notification_data,
     const blink::NotificationResources& notification_resources) {
-  absl::optional<int> proc_id = browser_client_->GetRenderFrameProcessID();
+  absl::optional<int> proc_id = browser_client_->GetRenderFrameProcessID(service_worker_scope);
   if (!proc_id.has_value())
     return;
 
@@ -246,7 +247,7 @@ void PlatformNotificationService::DisplayPersistentNotification(
         browser_client_->GetWebContentsFromProcessID(proc_id.value());
     if (web_ctx)
       delegate->SetBrowserContext(web_ctx->GetBrowserContext());
-    // feat: correct processing for the persistent notification without
+    // feat: Correct processing for the persistent notification without
     // actions
     const bool is_persistent(true);
     const bool is_replacing(prev_notif_count > curr_notif_count);

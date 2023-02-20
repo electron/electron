@@ -714,7 +714,7 @@ void App::OnFinishLaunching(base::Value::Dict launch_info) {
   // applications. Only affects pulseaudio currently.
   media::AudioManager::SetGlobalAppName(Browser::Get()->GetName());
 #endif
-  // SAP-14667 handling notification from previous session requires
+  // Handling notification from previous session requires
   // ASAP COM server registration instead deffered call as exisit now
   // GetNotificationPresenter will trigger WindowsToastNotification::Initialize
   // and as result will register COM server too

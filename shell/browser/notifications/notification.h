@@ -19,7 +19,7 @@ class NotificationDelegate;
 class NotificationPresenter;
 
 struct NotificationAction {
-  // SAP-15259 : Add the reply field on a notification
+  // feat: Add the reply field on a notification
   std::u16string type;  // type of the action (button or text input).
   std::u16string text;  // title of the button.
   std::u16string
@@ -53,17 +53,13 @@ struct NotificationOptions {
   std::u16string reply_placeholder;
   std::u16string sound;
   std::u16string urgency;  // Linux
-  std::u16string data;     // SAP-14775: support Notification.data property
+  std::u16string data;     // feat: Support Notification.data property
   std::vector<NotificationAction> actions;
   std::u16string close_button_text;
   std::u16string toast_xml;
-  bool is_persistent;  // 12-SAP-15399: correct processing for the persistent
-                       // notification without actions
-  bool require_interaction;  // SAP-17772: configuration toast show time
-                             // according to
-                             // Notification.requireInteraction property
-  bool should_be_presented;  // 16-SAP-18595: display toast according to
-                             // Notification.renotify
+  bool is_persistent;
+  bool require_interaction;
+  bool should_be_presented;
 
   NotificationOptions();
   ~NotificationOptions();
@@ -83,7 +79,7 @@ class Notification {
   void NotificationClicked();
   void NotificationDismissed(bool is_persistent = false);
   void NotificationFailed(const std::string& error = "");
-  // SAP-14036: Notification was replied to
+  // feat: Notification was replied to
   void NotificationReplied(const std::string& reply);
   void NotificationAction(int index);
 

@@ -137,18 +137,18 @@ class ToastEventHandler : public RuntimeClass<RuntimeClassFlags<ClassicCom>,
   IFACEMETHODIMP Invoke(
       ABI::Windows::UI::Notifications::IToastNotification* sender,
       ABI::Windows::UI::Notifications::IToastFailedEventArgs* e) override;
-  // SAP-14036
+  // feat: Upgrade for persistent notifications support
   void SetNotificationOptions(const NotificationOptions& options) {
     options_ = options;
   }
 
  private:
-  // SAP-15501 : Clear notifications
+  // feat: Clear notifications
   friend class WindowsToastNotification;
   static ComPtr<
       ABI::Windows::UI::Notifications::IToastNotificationManagerStatics2>
       toast_manager_;
-  // SAP-14036 upgrade for persistent notifications support
+  // feat: Upgrade for persistent notifications support
   NotificationOptions options_;
   base::WeakPtr<Notification> notification_;  // weak ref.
 };
