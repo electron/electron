@@ -25,6 +25,10 @@
 
 class SkRegion;
 
+namespace base {
+class DictionaryValue;
+}
+
 namespace content {
 struct NativeWebKeyboardEvent;
 }
@@ -348,11 +352,6 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_type_;
   }
 
-  SkRegion const* draggable_region() const { return draggable_region_.get(); }
-
-  void UpdateDraggableRegions(
-      const std::vector<mojom::DraggableRegionPtr>& regions);
-
   views::Widget* widget() const { return widget_.get(); }
   views::View* content_view() const { return content_view_; }
 
@@ -490,10 +489,6 @@ class NativeWindow : public base::SupportsUserData,
   std::u16string accessible_title_;
 
   gfx::Rect overlay_rect_;
-
-  // For custom drag, the whole window is non-draggable and the draggable region
-  // has to been explicitly provided.
-  std::unique_ptr<SkRegion> draggable_region_;  // used in custom drag.
 
   base::WeakPtrFactory<NativeWindow> weak_factory_{this};
 };
