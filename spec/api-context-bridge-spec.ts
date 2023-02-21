@@ -10,7 +10,6 @@ import * as cp from 'child_process';
 import { closeWindow } from './lib/window-helpers';
 import { listen } from './lib/spec-helpers';
 import { once } from 'events';
-import { emittedOnce } from './lib/events-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
 
@@ -46,7 +45,8 @@ describe('contextBridge', () => {
         preload: path.resolve(fixturesPath, 'can-bind-preload.js')
       }
     });
-    const [, bound] = await emittedOnce(ipcMain, 'context-bridge-bound', () => w.loadFile(path.resolve(fixturesPath, 'empty.html')));
+    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(false);
   });
 
@@ -58,7 +58,8 @@ describe('contextBridge', () => {
         preload: path.resolve(fixturesPath, 'can-bind-preload.js')
       }
     });
-    const [, bound] = await emittedOnce(ipcMain, 'context-bridge-bound', () => w.loadFile(path.resolve(fixturesPath, 'empty.html')));
+    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(true);
   });
 
@@ -106,7 +107,8 @@ describe('contextBridge', () => {
       const getGCInfo = async (): Promise<{
         trackedValues: number;
       }> => {
-        const [, info] = await emittedOnce(ipcMain, 'gc-info', () => w.webContents.send('get-gc-info'));
+        w.webContents.send('get-gc-info');
+        const [, info] = await once(ipcMain, 'gc-info');
         return info;
       };
 

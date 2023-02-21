@@ -14,15 +14,6 @@ export const waitForEvent = (target: EventTarget, eventName: string) => {
   });
 };
 
-/**
- * @param {!EventEmitter} emitter
- * @param {string} eventName
- * @return {!Promise<!Array>} With Event as the first item.
- */
-export const emittedOnce = (emitter: NodeJS.EventEmitter, eventName: string, trigger?: () => void) => {
-  return emittedNTimes(emitter, eventName, 1, trigger).then(([result]) => result);
-};
-
 export const emittedNTimes = async (emitter: NodeJS.EventEmitter, eventName: string, times: number, trigger?: () => void) => {
   const events: any[][] = [];
   const p = new Promise<any[][]>(resolve => {

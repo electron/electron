@@ -12,7 +12,6 @@ import { promisify } from 'util';
 import { ifit, ifdescribe, defer, delay, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
-import { emittedOnce } from './lib/events-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -1268,7 +1267,8 @@ describe('chromium features', () => {
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'));
       const [, firstDeviceIds] = await once(ipcMain, 'deviceIds');
-      const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds', () => w.webContents.reload());
+      w.webContents.reload();
+      const [, secondDeviceIds] = await once(ipcMain, 'deviceIds');
       expect(firstDeviceIds).to.deep.equal(secondDeviceIds);
     });
 
@@ -1285,7 +1285,8 @@ describe('chromium features', () => {
       w.loadFile(path.join(fixturesPath, 'pages', 'media-id-reset.html'));
       const [, firstDeviceIds] = await once(ipcMain, 'deviceIds');
       await ses.clearStorageData({ storages: ['cookies'] });
-      const [, secondDeviceIds] = await emittedOnce(ipcMain, 'deviceIds', () => w.webContents.reload());
+      w.webContents.reload();
+      const [, secondDeviceIds] = await once(ipcMain, 'deviceIds');
       expect(firstDeviceIds).to.not.deep.equal(secondDeviceIds);
     });
 

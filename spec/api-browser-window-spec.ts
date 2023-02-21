@@ -7,7 +7,7 @@ import * as http from 'http';
 import * as os from 'os';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
 
-import { emittedUntil, emittedNTimes, emittedOnce } from './lib/events-helpers';
+import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, delay, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
@@ -683,11 +683,15 @@ describe('BrowserWindow module', () => {
 
     describe('BrowserWindow.show()', () => {
       it('should focus on window', async () => {
-        await emittedOnce(w, 'focus', () => w.show());
+        const p = once(w, 'focus');
+        w.show();
+        await p;
         expect(w.isFocused()).to.equal(true);
       });
       it('should make the window visible', async () => {
-        await emittedOnce(w, 'focus', () => w.show());
+        const p = once(w, 'focus');
+        w.show();
+        await p;
         expect(w.isVisible()).to.equal(true);
       });
       it('emits when window is shown', async () => {
@@ -883,7 +887,9 @@ describe('BrowserWindow module', () => {
 
     describe('BrowserWindow.getFocusedWindow()', () => {
       it('returns the opener window when dev tools window is focused', async () => {
-        await emittedOnce(w, 'focus', () => w.show());
+        const p = once(w, 'focus');
+        w.show();
+        await p;
         w.webContents.openDevTools({ mode: 'undocked' });
         await once(w.webContents, 'devtools-focused');
         expect(BrowserWindow.getFocusedWindow()).to.equal(w);
@@ -2258,7 +2264,7 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.open(""); null');
-      const [win, winFromWebContents] = await new Promise((resolve) => {
+      const [win, winFromWebContents] = await new Promise<any>((resolve) => {
         app.once('browser-window-created', (e, win) => {
           resolve([win, BrowserWindow.fromWebContents(win.webContents)]);
         });

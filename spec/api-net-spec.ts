@@ -6,7 +6,6 @@ import * as url from 'url';
 import { Socket } from 'net';
 import { defer, delay, listen } from './lib/spec-helpers';
 import { once } from 'events';
-import { emittedOnce } from './lib/events-helpers';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -1087,10 +1086,10 @@ describe('net module', () => {
         requestAbortEventEmitted = true;
       });
 
-      await emittedOnce(urlRequest, 'close', () => {
-        urlRequest!.chunkedEncoding = true;
-        urlRequest!.write(randomString(kOneKiloByte));
-      });
+      const p = once(urlRequest, 'close');
+      urlRequest.chunkedEncoding = true;
+      urlRequest.write(randomString(kOneKiloByte));
+      await p;
       expect(requestReceivedByServer).to.equal(true);
       expect(requestAbortEventEmitted).to.equal(true);
     });

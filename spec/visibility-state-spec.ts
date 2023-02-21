@@ -6,7 +6,6 @@ import * as path from 'path';
 import { closeWindow } from './lib/window-helpers';
 import { ifdescribe, delay } from './lib/spec-helpers';
 import { once } from 'events';
-import { emittedOnce } from './lib/events-helpers';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
@@ -94,7 +93,9 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     const [, initialState] = await once(ipcMain, 'initial-visibility-state');
     expect(initialState).to.equal('visible');
     w.minimize();
-    await emittedOnce(ipcMain, 'visibility-change-hidden', () => w.minimize());
+    const p = once(ipcMain, 'visibility-change-hidden');
+    w.minimize();
+    await p;
   });
 
   itWithOptions('should become visible when a window is restored', {}, async () => {
