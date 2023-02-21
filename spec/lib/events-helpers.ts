@@ -3,17 +3,6 @@
  * with events in async/await manner.
  */
 
-/**
- * @param {!EventTarget} target
- * @param {string} eventName
- * @return {!Promise<!Event>}
- */
-export const waitForEvent = (target: EventTarget, eventName: string) => {
-  return new Promise(resolve => {
-    target.addEventListener(eventName, resolve, { once: true });
-  });
-};
-
 export const emittedNTimes = async (emitter: NodeJS.EventEmitter, eventName: string, times: number, trigger?: () => void) => {
   const events: any[][] = [];
   const p = new Promise<any[][]>(resolve => {
