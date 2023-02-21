@@ -1616,8 +1616,7 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   //
   // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
-  auto* web_frame =
-      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(new_host);
   if (web_frame) {
     web_frame->UpdateRenderFrameHost(new_host);
   }
@@ -1791,12 +1790,15 @@ bool WebContents::EmitNavigationEvent(
       gin_helper::internal::Event::New(isolate);
   v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
 
-  gin::Dictionary dict(isolate, event_object);
+  gin_helper::Dictionary dict(isolate, event_object);
   dict.Set("url", url);
   dict.Set("isSameDocument", is_same_document);
   dict.Set("isMainFrame", is_main_frame);
   dict.Set("frame", frame_host);
-  dict.Set("initiator", initiator_frame_host);
+  dict.Set("initiatorURL", navigation_handle->GetInitiatorBaseUrl());
+  dict.Set("hadInitiator",
+           navigation_handle->GetInitiatorFrameToken().has_value());
+  dict.SetGetter("initiator", initiator_frame_host);
 
   EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
                    frame_process_id, frame_routing_id);
