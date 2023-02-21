@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Wed, 15 Feb 2023 11:30:56 +0900
+Subject: fix: restoring a X11 window should not remove its previous maximized
+ state
+
+On Linux after minimizing a maximized window, it will have both the
+"maximized" and "hidden" states, and restoring the window should only remove
+the "hidden" state, which makes it back a maximized window.
+
+However in the implementation of `X11Window::Restore`, both "maximized" and
+"hidden" states are removed, and a maximized window that was minimized will
+be resized to its normal size after calling Restore, while the correct
+behavior should be going back to the maximized state.
+
+Backported from:
+https://chromium-review.googlesource.com/c/chromium/src/+/4252946
+
+diff --git a/ui/ozone/platform/x11/x11_window.cc b/ui/ozone/platform/x11/x11_window.cc
+index cbf300db6ec3aa6c108233006c8249231b9a8aa1..f681a199951f448604f887e1c1c64250608f095e 100644
+--- a/ui/ozone/platform/x11/x11_window.cc
++++ b/ui/ozone/platform/x11/x11_window.cc
+@@ -731,11 +731,16 @@ void X11Window::Minimize() {
+ }
+ 
+ void X11Window::Restore() {
+-  should_maximize_after_map_ = false;
+-  restore_in_flight_ = true;
+-  SetWMSpecState(false, x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT"),
+-                 x11::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ"));
+-  SetWMSpecState(false, x11::GetAtom("_NET_WM_STATE_HIDDEN"), x11::Atom::None);
++  if (IsMinimized()) {
++    restore_in_flight_ = true;
++    SetWMSpecState(false, x11::GetAtom("_NET_WM_STATE_HIDDEN"),
++                   x11::Atom::None);
++  } else if (IsMaximized()) {
++    restore_in_flight_ = true;
++    should_maximize_after_map_ = false;
++    SetWMSpecState(false, x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT"),
++                   x11::GetAtom("_NET_WM_STATE_MAXIMIZED_HORZ"));
++  }
+ }
+ 
+ PlatformWindowState X11Window::GetPlatformWindowState() const {
+@@ -1890,6 +1895,10 @@ bool X11Window::IsMinimized() const {
+ }
+ 
+ bool X11Window::IsMaximized() const {
++  // In X11, if a maximized window is minimized, it will have both the "hidden"
++  // and "maximized" states.
++  if (IsMinimized())
++    return false;
+   return (HasWMSpecProperty(window_properties_,
+                             x11::GetAtom("_NET_WM_STATE_MAXIMIZED_VERT")) &&
+           HasWMSpecProperty(window_properties_,
