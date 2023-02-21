@@ -3,33 +3,21 @@
  * with events in async/await manner.
  */
 
+import { on } from 'events';
+
 export const emittedNTimes = async (emitter: NodeJS.EventEmitter, eventName: string, times: number, trigger?: () => void) => {
   const events: any[][] = [];
-  const p = new Promise<any[][]>(resolve => {
-    const handler = (...args: any[]) => {
-      events.push(args);
-      if (events.length === times) {
-        emitter.removeListener(eventName, handler);
-        resolve(events);
-      }
-    };
-    emitter.on(eventName, handler);
-  });
-  if (trigger) {
-    await Promise.resolve(trigger());
+  const iter = on(emitter, eventName);
+  if (trigger) await Promise.resolve(trigger());
+  for await (const args of iter) {
+    events.push(args);
+    if (events.length === times) { break; }
   }
-  return p;
+  return events;
 };
 
 export const emittedUntil = async (emitter: NodeJS.EventEmitter, eventName: string, untilFn: Function) => {
-  const p = new Promise<any[]>(resolve => {
-    const handler = (...args: any[]) => {
-      if (untilFn(...args)) {
-        emitter.removeListener(eventName, handler);
-        resolve(args);
-      }
-    };
-    emitter.on(eventName, handler);
-  });
-  return p;
+  for await (const args of on(emitter, eventName)) {
+    if (untilFn(...args)) { return args; }
+  }
 };
