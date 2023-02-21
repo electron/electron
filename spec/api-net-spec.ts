@@ -2108,10 +2108,22 @@ describe('net module', () => {
   });
 
   describe('non-http schemes', () => {
+    it('should be rejected by net.request', async () => {
+      expect(() => {
+        net.request('file://bar');
+      }).to.throw('ClientRequest only supports http: and https: protocols');
+    });
+
+    it('should be rejected by net.request when passed in url:', async () => {
+      expect(() => {
+        net.request({ url: 'file://bar' });
+      }).to.throw('ClientRequest only supports http: and https: protocols');
+    });
+
     it('can request file:// URLs', async () => {
-      const r = net.request(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
-      const body = await collectStreamBody(await getResponse(r));
-      expect(body).to.equal('hello world\n');
+      const resp = await net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
+      expect(resp.ok).to.be.true();
+      expect(await resp.text()).to.equal('hello world\n');
     });
 
     it('can make requests to custom protocols', async () => {
@@ -2119,9 +2131,8 @@ describe('net module', () => {
       defer(() => {
         protocol.unregisterProtocol('electron-test');
       });
-      const r = net.request('electron-test://foo');
-      const body = await collectStreamBody(await getResponse(r));
-      expect(body).to.equal('hello electron-test:foo/');
+      const body = await net.fetch('electron-test://foo').then(r => r.text());
+      expect(body).to.equal('hello electron-test://foo');
     });
 
     it('runs through intercept handlers', async () => {
@@ -2129,8 +2140,7 @@ describe('net module', () => {
       defer(() => {
         protocol.uninterceptProtocol('http');
       });
-      const r = net.request('http://foo');
-      const body = await collectStreamBody(await getResponse(r));
+      const body = await net.fetch('http://foo').then(r => r.text());
       expect(body).to.equal('hello http://foo/');
     });
 
@@ -2139,8 +2149,7 @@ describe('net module', () => {
       defer(() => {
         protocol.uninterceptProtocol('file');
       });
-      const r = net.request('file://foo');
-      const body = await collectStreamBody(await getResponse(r));
+      const body = await net.fetch('file://foo').then(r => r.text());
       expect(body).to.equal('hello file://foo/');
     });
 
@@ -2153,12 +2162,11 @@ describe('net module', () => {
       defer(() => {
         protocol.unregisterProtocol('electron-test');
       });
-      const r = net.request('file://foo');
-      const body = await collectStreamBody(await getResponse(r));
+      const body = await net.fetch('file://foo').then(r => r.text());
       expect(body).to.equal('hello electron-test://bar');
     });
 
-    it('should not follow redirect when request is canceled in redirect handler', async () => {
+    it('should not follow redirect when redirect: error', async () => {
       protocol.registerStringProtocol('electron-test', (req, cb) => {
         if (/redirect/.test(req.url)) return cb({ statusCode: 302, headers: { location: 'electron-test://bar' } });
         cb('hello ' + req.url);
@@ -2166,14 +2174,7 @@ describe('net module', () => {
       defer(() => {
         protocol.unregisterProtocol('electron-test');
       });
-      const urlRequest = net.request('electron-test://redirect');
-      urlRequest.end();
-      urlRequest.on('redirect', () => { urlRequest.abort(); });
-      urlRequest.on('error', () => {});
-      urlRequest.on('response', () => {
-        expect.fail('Unexpected response');
-      });
-      await emittedOnce(urlRequest, 'abort');
+      await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).to.eventually.be.rejectedWith('Attempted to redirect, but redirect policy was \'error\'');
     });
 
     it('a 307 redirected POST request preserves the body', async () => {
@@ -2187,14 +2188,12 @@ describe('net module', () => {
       defer(() => {
         protocol.unregisterProtocol('electron-test');
       });
-      const urlRequest = net.request({
+      const response = await net.fetch('electron-test://redirect', {
         method: 'POST',
-        url: 'electron-test://redirect'
+        body: bodyData
       });
-      urlRequest.write(bodyData);
-      const response = await getResponse(urlRequest);
-      expect(response.statusCode).to.equal(200);
-      await collectStreamBody(response);
+      expect(response.status).to.equal(200);
+      await response.text();
       expect(postedBodyData).to.equal(bodyData);
     });
   });
