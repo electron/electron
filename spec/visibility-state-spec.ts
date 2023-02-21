@@ -3,9 +3,10 @@ import * as cp from 'child_process';
 import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron/main';
 import * as path from 'path';
 
-import { emittedOnce } from './lib/events-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { ifdescribe, delay } from './lib/spec-helpers';
+import { once } from 'events';
+import { emittedOnce } from './lib/events-helpers';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
@@ -35,7 +36,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
   itWithOptions('should be visible when the window is initially shown by default', {}, async () => {
     load();
-    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, state] = await once(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('visible');
   });
 
@@ -43,7 +44,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     show: true
   }, async () => {
     load();
-    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, state] = await once(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('visible');
   });
 
@@ -51,7 +52,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     show: false
   }, async () => {
     load();
-    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, state] = await once(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
   });
 
@@ -60,7 +61,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
   }, async () => {
     w.show();
     load();
-    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, state] = await once(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('visible');
   });
 
@@ -74,23 +75,23 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     }
     w.hide();
     load();
-    const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, state] = await once(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
   });
 
   itWithOptions('should be toggle between visible and hidden as the window is hidden and shown', {}, async () => {
     load();
-    const [, initialState] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, initialState] = await once(ipcMain, 'initial-visibility-state');
     expect(initialState).to.equal('visible');
     w.hide();
-    await emittedOnce(ipcMain, 'visibility-change-hidden');
+    await once(ipcMain, 'visibility-change-hidden');
     w.show();
-    await emittedOnce(ipcMain, 'visibility-change-visible');
+    await once(ipcMain, 'visibility-change-visible');
   });
 
   itWithOptions('should become hidden when a window is minimized', {}, async () => {
     load();
-    const [, initialState] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, initialState] = await once(ipcMain, 'initial-visibility-state');
     expect(initialState).to.equal('visible');
     w.minimize();
     await emittedOnce(ipcMain, 'visibility-change-hidden', () => w.minimize());
@@ -98,12 +99,12 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
 
   itWithOptions('should become visible when a window is restored', {}, async () => {
     load();
-    const [, initialState] = await emittedOnce(ipcMain, 'initial-visibility-state');
+    const [, initialState] = await once(ipcMain, 'initial-visibility-state');
     expect(initialState).to.equal('visible');
     w.minimize();
-    await emittedOnce(ipcMain, 'visibility-change-hidden');
+    await once(ipcMain, 'visibility-change-hidden');
     w.restore();
-    await emittedOnce(ipcMain, 'visibility-change-visible');
+    await once(ipcMain, 'visibility-change-visible');
   });
 
   describe('on platforms that support occlusion detection', () => {
@@ -141,7 +142,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         height: 200
       });
       load();
-      const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+      const [, state] = await once(ipcMain, 'initial-visibility-state');
       expect(state).to.equal('visible');
     });
 
@@ -158,7 +159,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         height: 200
       });
       load();
-      const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+      const [, state] = await once(ipcMain, 'initial-visibility-state');
       expect(state).to.equal('visible');
     });
 
@@ -170,7 +171,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     }, async function () {
       this.timeout(240000);
       load();
-      const [, state] = await emittedOnce(ipcMain, 'initial-visibility-state');
+      const [, state] = await once(ipcMain, 'initial-visibility-state');
       expect(state).to.equal('visible');
       makeOtherWindow({
         x: 0,
@@ -178,7 +179,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
         width: 300,
         height: 300
       });
-      await emittedOnce(ipcMain, 'visibility-change-hidden');
+      await once(ipcMain, 'visibility-change-hidden');
     });
   });
 });

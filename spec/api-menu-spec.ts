@@ -3,9 +3,9 @@ import * as path from 'path';
 import { expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
-import { emittedOnce } from './lib/events-helpers';
 import { ifit, delay } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
+import { once } from 'events';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -929,7 +929,7 @@ describe('Menu module', function () {
       appProcess.stdout.on('data', data => { output += data; });
       appProcess.stderr.on('data', data => { output += data; });
 
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const [code] = await once(appProcess, 'exit');
       if (!output.includes('Window has no menu')) {
         console.log(code, output);
       }

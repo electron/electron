@@ -4,7 +4,7 @@ import * as path from 'path';
 import { session, webContents, WebContents } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
-import { emittedOnce, emittedNTimes } from './lib/events-helpers';
+import { emittedNTimes, emittedOnce } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
 
 const partition = 'service-workers-spec';

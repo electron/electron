@@ -7,7 +7,7 @@ import * as ChildProcess from 'child_process';
 import { session, net } from 'electron/main';
 import { Socket } from 'net';
 import { ifit, listen } from './lib/spec-helpers';
-import { emittedOnce } from './lib/events-helpers';
+import { once } from 'events';
 
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');
@@ -127,7 +127,7 @@ describe('netLog module', () => {
         }
       });
 
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
     expect(fs.existsSync(dumpFile)).to.be.true('dump file exists');
   });
 
@@ -142,7 +142,7 @@ describe('netLog module', () => {
         }
       });
 
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
     expect(fs.existsSync(dumpFile)).to.be.true('dump file exists');
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists');
   });
@@ -156,7 +156,7 @@ describe('netLog module', () => {
         }
       });
 
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists');
   });
 });

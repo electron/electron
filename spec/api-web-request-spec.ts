@@ -6,8 +6,8 @@ import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { Socket } from 'net';
-import { emittedOnce } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -545,7 +545,7 @@ describe('webRequest module', () => {
       });
 
       contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } });
-      await emittedOnce(ipcMain, 'websocket-success');
+      await once(ipcMain, 'websocket-success');
 
       expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket');
       expect(receivedHeaders['/'].foo1[0]).to.equal('bar1');

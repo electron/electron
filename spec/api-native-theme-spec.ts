@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import { nativeTheme, systemPreferences, BrowserWindow, ipcMain } from 'electron/main';
+import { once } from 'events';
 import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
 
 import { delay, ifdescribe } from './lib/spec-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('nativeTheme module', () => {
@@ -37,10 +37,10 @@ describe('nativeTheme module', () => {
 
     it('should emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value changes', async () => {
       nativeTheme.themeSource = 'light';
-      let updatedEmitted = emittedOnce(nativeTheme, 'updated');
+      let updatedEmitted = once(nativeTheme, 'updated');
       nativeTheme.themeSource = 'dark';
       await updatedEmitted;
-      updatedEmitted = emittedOnce(nativeTheme, 'updated');
+      updatedEmitted = once(nativeTheme, 'updated');
       nativeTheme.themeSource = 'light';
       await updatedEmitted;
     });
@@ -83,15 +83,15 @@ describe('nativeTheme module', () => {
           .addEventListener('change', () => require('electron').ipcRenderer.send('theme-change'))
       `);
       const originalSystemIsDark = await getPrefersColorSchemeIsDark(w);
-      let changePromise: Promise<any[]> = emittedOnce(ipcMain, 'theme-change');
+      let changePromise: Promise<any[]> = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'dark';
       if (!originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(true);
-      changePromise = emittedOnce(ipcMain, 'theme-change');
+      changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'light';
       await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(false);
-      changePromise = emittedOnce(ipcMain, 'theme-change');
+      changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'system';
       if (originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(originalSystemIsDark);

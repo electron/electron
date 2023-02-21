@@ -4,8 +4,9 @@ import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce, emittedNTimes } from './lib/events-helpers';
+import { emittedNTimes } from './lib/events-helpers';
 import { defer, delay, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { once } from 'events';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -141,7 +142,7 @@ describe('webFrameMain module', () => {
     it('should show parent origin when child page is about:blank', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
-      const webContentsCreated: Promise<[unknown, WebContents]> = emittedOnce(app, 'web-contents-created') as any;
+      const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
       expect(w.webContents.mainFrame.origin).to.equal('file://');
       await w.webContents.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
@@ -161,7 +162,7 @@ describe('webFrameMain module', () => {
       expect(mainFrame.origin).to.equal(serverA.url.replace(/\/$/, ''));
       const [childFrame] = mainFrame.frames;
       expect(childFrame.origin).to.equal(serverB.url.replace(/\/$/, ''));
-      const webContentsCreated: Promise<[unknown, WebContents]> = emittedOnce(app, 'web-contents-created') as any;
+      const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
       await childFrame.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
       expect(childWebContents.mainFrame.origin).to.equal(childFrame.origin);
@@ -257,7 +258,7 @@ describe('webFrameMain module', () => {
 
       await webFrame.executeJavaScript('window.TEMP = 1', false);
       expect(webFrame.reload()).to.be.true();
-      await emittedOnce(w.webContents, 'dom-ready');
+      await once(w.webContents, 'dom-ready');
       expect(await webFrame.executeJavaScript('window.TEMP', false)).to.be.null();
     });
   });
@@ -273,7 +274,7 @@ describe('webFrameMain module', () => {
       });
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
-      const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+      const pongPromise = once(ipcMain, 'preload-pong');
       webFrame.send('preload-ping');
       const [, routingId] = await pongPromise;
       expect(routingId).to.equal(webFrame.routingId);
@@ -314,7 +315,7 @@ describe('webFrameMain module', () => {
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;
       await w.webContents.loadURL(server.url);
-      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      const crashEvent = once(w.webContents, 'render-process-gone');
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
       await w.webContents.loadURL(server.url);
@@ -330,7 +331,7 @@ describe('webFrameMain module', () => {
       // Keep reference to mainFrame alive throughout crash and recovery.
       const { mainFrame } = w.webContents;
       await w.webContents.loadURL(server.url);
-      const crashEvent = emittedOnce(w.webContents, 'render-process-gone');
+      const crashEvent = once(w.webContents, 'render-process-gone');
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
       // A short wait seems to be required to reproduce the crash.
@@ -366,7 +367,7 @@ describe('webFrameMain module', () => {
   describe('"frame-created" event', () => {
     it('emits when the main frame is created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedOnce(w.webContents, 'frame-created');
+      const promise = once(w.webContents, 'frame-created');
       w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
       const [, details] = await promise;
       expect(details.frame).to.equal(w.webContents.mainFrame);
@@ -406,7 +407,7 @@ describe('webFrameMain module', () => {
   describe('"dom-ready" event', () => {
     it('emits for top-level frame', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedOnce(w.webContents.mainFrame, 'dom-ready');
+      const promise = once(w.webContents.mainFrame, 'dom-ready');
       w.webContents.loadURL('about:blank');
       await promise;
     });

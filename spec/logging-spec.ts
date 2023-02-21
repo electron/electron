@@ -1,11 +1,11 @@
 import { app } from 'electron';
 import { expect } from 'chai';
-import { emittedOnce } from './lib/events-helpers';
 import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as uuid from 'uuid';
+import { once } from 'events';
 
 function isTestingBindingAvailable () {
   try {
@@ -87,7 +87,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       setTimeout(() => { app.quit(); });
       return app.getPath('userData');
     });
-    await emittedOnce(rc.process, 'exit');
+    await once(rc.process, 'exit');
     const logFilePath = path.join(userDataDir, 'electron_debug.log');
     const stat = await fs.stat(logFilePath);
     expect(stat.isFile()).to.be.true();
@@ -103,7 +103,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       setTimeout(() => { app.quit(); });
       return app.getPath('userData');
     });
-    await emittedOnce(rc.process, 'exit');
+    await once(rc.process, 'exit');
     const logFilePath = path.join(userDataDir, 'electron_debug.log');
     const stat = await fs.stat(logFilePath);
     expect(stat.isFile()).to.be.true();
@@ -118,7 +118,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
       setTimeout(() => { require('electron').app.quit(); });
     });
-    await emittedOnce(rc.process, 'exit');
+    await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
     expect(stat.isFile()).to.be.true();
     const contents = await fs.readFile(logFilePath, 'utf8');
@@ -132,7 +132,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       process._linkedBinding('electron_common_testing').log(0, 'TEST_LOG');
       setTimeout(() => { require('electron').app.quit(); });
     });
-    await emittedOnce(rc.process, 'exit');
+    await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
     expect(stat.isFile()).to.be.true();
     const contents = await fs.readFile(logFilePath, 'utf8');
@@ -146,7 +146,7 @@ ifdescribe(isTestingBindingAvailable())('logging', () => {
       process._linkedBinding('electron_common_testing').log(0, 'LATER_LOG');
       setTimeout(() => { require('electron').app.quit(); });
     });
-    await emittedOnce(rc.process, 'exit');
+    await once(rc.process, 'exit');
     const stat = await fs.stat(logFilePath);
     expect(stat.isFile()).to.be.true();
     const contents = await fs.readFile(logFilePath, 'utf8');

@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
-import { emittedOnce } from './lib/events-helpers';
 import { defer } from './lib/spec-helpers';
+import { once } from 'events';
 
 describe('webFrame module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -17,7 +17,7 @@ describe('webFrame module', () => {
       }
     });
     defer(() => w.close());
-    const isSafe = emittedOnce(ipcMain, 'executejs-safe');
+    const isSafe = once(ipcMain, 'executejs-safe');
     w.loadURL('about:blank');
     const [, wasSafe] = await isSafe;
     expect(wasSafe).to.equal(true);
@@ -33,7 +33,7 @@ describe('webFrame module', () => {
       }
     });
     defer(() => w.close());
-    const execError = emittedOnce(ipcMain, 'executejs-safe');
+    const execError = once(ipcMain, 'executejs-safe');
     w.loadURL('about:blank');
     const [, error] = await execError;
     expect(error).to.not.equal(null, 'Error should not be null');

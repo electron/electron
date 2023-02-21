@@ -5,8 +5,8 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { closeWindow } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { ifit, ifdescribe, delay, listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -17,7 +17,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   let w: BrowserWindow;
 
   async function rightClick () {
-    const contextMenuPromise = emittedOnce(w.webContents, 'context-menu');
+    const contextMenuPromise = once(w.webContents, 'context-menu');
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',

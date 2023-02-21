@@ -8,8 +8,9 @@ import * as path from 'path';
 import * as cp from 'child_process';
 
 import { closeWindow } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
+import { once } from 'events';
+import { emittedOnce } from './lib/events-helpers';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
 
@@ -686,7 +687,7 @@ describe('contextBridge', () => {
             });
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
-          const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
+          const loadPromise = once(ipcMain, 'window-ready-for-tasking');
           expect((await getGCInfo()).trackedValues).to.equal(0);
           await callWithBindings((root: any) => {
             root.example.track(root.example.getFunction());
@@ -1263,7 +1264,7 @@ describe('ContextBridgeMutability', () => {
 
     let output = '';
     appProcess.stdout.on('data', data => { output += data; });
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
 
     expect(output).to.include('some-modified-text');
     expect(output).to.include('obj-modified-prop');
@@ -1276,7 +1277,7 @@ describe('ContextBridgeMutability', () => {
 
     let output = '';
     appProcess.stdout.on('data', data => { output += data; });
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
 
     expect(output).to.include('some-text');
     expect(output).to.include('obj-prop');

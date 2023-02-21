@@ -8,8 +8,8 @@ import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFr
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { defer, delay, listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -184,11 +184,11 @@ describe('session module', () => {
       const name = 'foo';
       const value = 'bar';
 
-      const a = emittedOnce(cookies, 'changed');
+      const a = once(cookies, 'changed');
       await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
       const [, setEventCookie, setEventCause, setEventRemoved] = await a;
 
-      const b = emittedOnce(cookies, 'changed');
+      const b = once(cookies, 'changed');
       await cookies.remove(url, name);
       const [, removeEventCookie, removeEventCause, removeEventRemoved] = await b;
 
@@ -331,7 +331,7 @@ describe('session module', () => {
       customSession = session.fromPartition(partitionName);
       await customSession.protocol.registerStringProtocol(protocolName, handler);
       w.loadURL(`${protocolName}://fake-host`);
-      await emittedOnce(ipcMain, 'hello');
+      await once(ipcMain, 'hello');
     });
   });
 
@@ -654,7 +654,7 @@ describe('session module', () => {
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(serverUrl), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
-      await emittedOnce(w.webContents, 'did-stop-loading');
+      await once(w.webContents, 'did-stop-loading');
       await expect(w.loadURL(serverUrl + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       expect(w.webContents.getTitle()).to.equal(serverUrl + '/test');
       expect(numVerificationRequests).to.equal(1);
@@ -963,7 +963,7 @@ describe('session module', () => {
         length: 5242880
       };
       const w = new BrowserWindow({ show: false });
-      const p = emittedOnce(w.webContents.session, 'will-download');
+      const p = once(w.webContents.session, 'will-download');
       w.webContents.session.createInterruptedDownload(options);
       const [, item] = await p;
       expect(item.getState()).to.equal('interrupted');
@@ -1070,7 +1070,7 @@ describe('session module', () => {
         cb(`<html><script>(${remote})()</script></html>`);
       });
 
-      const result = emittedOnce(require('electron').ipcMain, 'message');
+      const result = once(require('electron').ipcMain, 'message');
 
       function remote () {
         (navigator as any).requestMIDIAccess({ sysex: true }).then(() => {}, (err: any) => {
@@ -1197,7 +1197,7 @@ describe('session module', () => {
         document.body.appendChild(iframe);
         null;
       `);
-      const [,, frameProcessId, frameRoutingId] = await emittedOnce(w.webContents, 'did-frame-finish-load');
+      const [,, frameProcessId, frameRoutingId] = await once(w.webContents, 'did-frame-finish-load');
       const state = await readClipboardPermission(webFrameMain.fromId(frameProcessId, frameRoutingId));
       expect(state).to.equal('granted');
       expect(handlerDetails!.requestingUrl).to.equal(loadUrl);
@@ -1260,7 +1260,7 @@ describe('session module', () => {
 
   describe('session-created event', () => {
     it('is emitted when a session is created', async () => {
-      const sessionCreated = emittedOnce(app, 'session-created');
+      const sessionCreated = once(app, 'session-created');
       const session1 = session.fromPartition('' + Math.random());
       const [session2] = await sessionCreated;
       expect(session1).to.equal(session2);
