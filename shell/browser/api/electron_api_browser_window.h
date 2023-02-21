@@ -51,6 +51,8 @@ class BrowserWindow : public BaseWindow,
 
   // ExtendedWebContentsObserver:
   void OnCloseContents() override;
+  void OnDraggableRegionsUpdated(
+      const std::vector<mojom::DraggableRegionPtr>& regions) override;
   void OnSetContentBounds(const gfx::Rect& rect) override;
   void OnActivateContents() override;
   void OnPageTitleUpdated(const std::u16string& title,
@@ -87,6 +89,10 @@ class BrowserWindow : public BaseWindow,
 
  private:
   // Helpers.
+
+  // Called when the window needs to update its draggable region.
+  void UpdateDraggableRegions(
+      const std::vector<mojom::DraggableRegionPtr>& regions);
 
   // Schedule a notification unresponsive event.
   void ScheduleUnresponsiveEvent(int ms);

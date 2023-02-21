@@ -76,18 +76,29 @@ gfx::Rect FramelessView::GetWindowBoundsForClientBounds(
   return window_bounds;
 }
 
-int FramelessView::NonClientHitTest(const gfx::Point& point) {
+int FramelessView::NonClientHitTest(const gfx::Point& cursor) {
   if (frame_->IsFullscreen())
     return HTCLIENT;
 
-  int contents_hit_test = window_->NonClientHitTest(point);
-  if (contents_hit_test != HTNOWHERE)
-    return contents_hit_test;
+  // Check attached BrowserViews for potential draggable areas.
+  for (auto* view : window_->inspectable_views()) {
+    auto* inspectable_view =
+        static_cast<InspectableWebContentsViewViews*>(view);
+    if (inspectable_view->IsContainedInDraggableRegion(window_->content_view(),
+                                                       cursor))
+      return HTCAPTION;
+  }
 
   // Support resizing frameless window by dragging the border.
-  int frame_component = ResizingBorderHitTest(point);
+  int frame_component = ResizingBorderHitTest(cursor);
   if (frame_component != HTNOWHERE)
     return frame_component;
+
+  // Check for possible draggable region in the client area for the frameless
+  // window.
+  const SkRegion* draggable_region = window_->draggable_region();
+  if (draggable_region && draggable_region->contains(cursor.x(), cursor.y()))
+    return HTCAPTION;
 
   return HTCLIENT;
 }

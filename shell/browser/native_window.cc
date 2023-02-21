@@ -21,7 +21,6 @@
 #include "shell/common/gin_helper/persistent_dictionary.h"
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
-#include "ui/base/hit_test.h"
 #include "ui/views/widget/widget.h"
 
 #if BUILDFLAG(IS_WIN)
@@ -692,28 +691,9 @@ void NativeWindow::NotifyWindowMessage(UINT message,
 }
 #endif
 
-int NativeWindow::NonClientHitTest(const gfx::Point& point) {
-  for (auto* provider : draggable_region_providers_) {
-    int hit = provider->NonClientHitTest(point);
-    if (hit != HTNOWHERE)
-      return hit;
-  }
-  return HTNOWHERE;
-}
-
-void NativeWindow::AddDraggableRegionProvider(
-    DraggableRegionProvider* provider) {
-  if (std::find(draggable_region_providers_.begin(),
-                draggable_region_providers_.end(),
-                provider) == draggable_region_providers_.end()) {
-    draggable_region_providers_.push_back(provider);
-  }
-}
-
-void NativeWindow::RemoveDraggableRegionProvider(
-    DraggableRegionProvider* provider) {
-  draggable_region_providers_.remove_if(
-      [&provider](DraggableRegionProvider* p) { return p == provider; });
+void NativeWindow::UpdateDraggableRegions(
+    const std::vector<mojom::DraggableRegionPtr>& regions) {
+  draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
 views::Widget* NativeWindow::GetWidget() {

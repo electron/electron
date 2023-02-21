@@ -77,8 +77,6 @@ class Arguments;
 
 class ExclusiveAccessManager;
 
-class SkRegion;
-
 namespace electron {
 
 class ElectronBrowserContext;
@@ -441,8 +439,6 @@ class WebContents : public ExclusiveAccessContext,
 
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
-
-  SkRegion* draggable_region() { return draggable_region_.get(); }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -823,8 +819,6 @@ class WebContents : public ExclusiveAccessContext,
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
-
-  std::unique_ptr<SkRegion> draggable_region_;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };
