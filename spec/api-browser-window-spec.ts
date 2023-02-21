@@ -5014,6 +5014,42 @@ describe('BrowserWindow module', () => {
         await done;
       });
 
+      it('handles HTML fullscreen transitions when fullscreenable is false', async () => {
+        const w = new BrowserWindow({ fullscreenable: false });
+        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+        expect(w.isFullScreen()).to.be.false('is fullscreen');
+
+        let enterCount = 0;
+        let exitCount = 0;
+
+        const done = new Promise<void>((resolve, reject) => {
+          const checkDone = () => {
+            if (enterCount === 2 && exitCount === 2) resolve();
+          };
+
+          w.webContents.on('enter-html-full-screen', async () => {
+            enterCount++;
+            if (w.isFullScreen()) reject(new Error('w.isFullScreen should be false'));
+            const isFS = await w.webContents.executeJavaScript('!!document.fullscreenElement');
+            if (!isFS) reject(new Error('Document should have fullscreen element'));
+            checkDone();
+          });
+
+          w.webContents.on('leave-html-full-screen', () => {
+            exitCount++;
+            if (w.isFullScreen()) reject(new Error('w.isFullScreen should be false'));
+            checkDone();
+          });
+        });
+
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await w.webContents.executeJavaScript('document.exitFullscreen()');
+        await w.webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
+        await w.webContents.executeJavaScript('document.exitFullscreen()');
+        await expect(done).to.eventually.be.fulfilled();
+      });
+
       it('does not crash when exiting simpleFullScreen (properties)', async () => {
         const w = new BrowserWindow();
         w.setSimpleFullScreen(true);

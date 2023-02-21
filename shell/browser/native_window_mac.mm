@@ -619,7 +619,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
     return;
   }
 
-  if (fullscreen == IsFullscreen())
+  if (fullscreen == IsFullscreen() || !IsFullScreenable())
     return;
 
   // Take note of the current window size
