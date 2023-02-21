@@ -3,9 +3,9 @@ import * as dns from 'dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
-import { AddressInfo, Socket } from 'net';
+import { Socket } from 'net';
 import { emittedOnce } from './lib/events-helpers';
-import { defer, delay } from './lib/spec-helpers';
+import { defer, delay, listen } from './lib/spec-helpers';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -53,26 +53,22 @@ function collectStreamBodyBuffer (response: Electron.IncomingMessage | http.Inco
   });
 }
 
-function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
-  return new Promise((resolve) => {
-    const server = http.createServer((request, response) => {
-      fn(request, response);
-      // don't close if a redirect was returned
-      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
-        n--;
-        server.close();
-      }
-    });
-    server.listen(0, '127.0.0.1', () => {
-      resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
-    });
-    const sockets: Socket[] = [];
-    server.on('connection', s => sockets.push(s));
-    defer(() => {
+async function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
+  const server = http.createServer((request, response) => {
+    fn(request, response);
+    // don't close if a redirect was returned
+    if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
+      n--;
       server.close();
-      sockets.forEach(s => s.destroy());
-    });
+    }
   });
+  const sockets: Socket[] = [];
+  server.on('connection', s => sockets.push(s));
+  defer(() => {
+    server.close();
+    sockets.forEach(s => s.destroy());
+  });
+  return (await listen(server)).url;
 }
 
 function respondOnce (fn: http.RequestListener) {
@@ -878,6 +874,39 @@ describe('net module', () => {
       expect(cookies[0].name).to.equal('cookie2');
     });
 
+    it('should be able correctly filter out cookies that are httpOnly', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await Promise.all([
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie1',
+          value: '1',
+          httpOnly: true
+        }),
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie2',
+          value: '2',
+          httpOnly: false
+        })
+      ]);
+
+      const httpOnlyCookies = await sess.cookies.get({
+        httpOnly: true
+      });
+      expect(httpOnlyCookies).to.have.lengthOf(1);
+      expect(httpOnlyCookies[0].name).to.equal('cookie1');
+
+      const cookies = await sess.cookies.get({
+        httpOnly: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+      expect(cookies[0].name).to.equal('cookie2');
+    });
+
     describe('when {"credentials":"omit"}', () => {
       it('should not send cookies');
       it('should not store cookies');
@@ -1614,7 +1643,15 @@ describe('net module', () => {
         response.statusMessage = 'OK';
         response.end();
       });
-      const urlRequest = net.request(serverUrl);
+      // The referrerPolicy must be unsafe-url because the referrer's origin
+      // doesn't match the loaded page. With the default referrer policy
+      // (strict-origin-when-cross-origin), the request will be canceled by the
+      // network service when the referrer header is invalid.
+      // See:
+      // - https://source.chromium.org/chromium/chromium/src/+/main:net/url_request/url_request.cc;l=682-683;drc=ae587fa7cd2e5cc308ce69353ee9ce86437e5d41
+      // - https://source.chromium.org/chromium/chromium/src/+/main:services/network/public/mojom/network_context.mojom;l=316-318;drc=ae5c7fcf09509843c1145f544cce3a61874b9698
+      // - https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer
+      const urlRequest = net.request({ url: serverUrl, referrerPolicy: 'unsafe-url' });
       urlRequest.setHeader('referer', referrerURL);
       urlRequest.end();
 
@@ -2037,6 +2074,97 @@ describe('net module', () => {
       urlRequest.chunkedEncoding = true;
       urlRequest.write(randomBuffer(kOneMegaByte));
       await collectStreamBody(await getResponse(urlRequest));
+    });
+  });
+
+  describe('net.fetch', () => {
+    // NB. there exist much more comprehensive tests for fetch() in the form of
+    // the WPT: https://github.com/web-platform-tests/wpt/tree/master/fetch
+    // It's possible to run these tests against net.fetch(), but the test
+    // harness to do so is quite complex and hasn't been munged to smoothly run
+    // inside the Electron test runner yet.
+    //
+    // In the meantime, here are some tests for basic functionality and
+    // Electron-specific behavior.
+
+    describe('basic', () => {
+      it('can fetch http urls', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.end('test');
+        });
+        const resp = await net.fetch(serverUrl);
+        expect(resp.ok).to.be.true();
+        expect(await resp.text()).to.equal('test');
+      });
+
+      it('can upload a string body', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          request.on('data', chunk => response.write(chunk));
+          request.on('end', () => response.end());
+        });
+        const resp = await net.fetch(serverUrl, {
+          method: 'POST',
+          body: 'anchovies'
+        });
+        expect(await resp.text()).to.equal('anchovies');
+      });
+
+      it('can read response as an array buffer', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          request.on('data', chunk => response.write(chunk));
+          request.on('end', () => response.end());
+        });
+        const resp = await net.fetch(serverUrl, {
+          method: 'POST',
+          body: 'anchovies'
+        });
+        expect(new TextDecoder().decode(new Uint8Array(await resp.arrayBuffer()))).to.equal('anchovies');
+      });
+
+      it('can read response as form data', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.setHeader('content-type', 'application/x-www-form-urlencoded');
+          response.end('foo=bar');
+        });
+        const resp = await net.fetch(serverUrl);
+        const result = await resp.formData();
+        expect(result.get('foo')).to.equal('bar');
+      });
+
+      it('should be able to use a session cookie store', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.setHeader('x-cookie', request.headers.cookie!);
+          response.end();
+        });
+        const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+        const cookieVal = `${Date.now()}`;
+        await sess.cookies.set({
+          url: serverUrl,
+          name: 'wild_cookie',
+          value: cookieVal
+        });
+        const response = await sess.fetch(serverUrl, {
+          credentials: 'include'
+        });
+        expect(response.headers.get('x-cookie')).to.equal(`wild_cookie=${cookieVal}`);
+      });
+
+      it('should reject promise on DNS failure', async () => {
+        const r = net.fetch('https://i.do.not.exist');
+        await expect(r).to.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+      });
+
+      it('should reject body promise when stream fails', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.write('first chunk');
+          setTimeout(() => response.destroy());
+        });
+        const r = await net.fetch(serverUrl);
+        expect(r.status).to.equal(200);
+        await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
+      });
     });
   });
 });

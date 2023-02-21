@@ -22,10 +22,7 @@ process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
-  ['spec', 'ts-smoke', 'electron', 'main.ts'],
-  ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
-  ['spec', 'ts-smoke', 'runner.js']
+  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js']
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';

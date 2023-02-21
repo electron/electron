@@ -3,10 +3,9 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly } from './lib/spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly, listen } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
-import { AddressInfo } from 'net';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
@@ -89,11 +88,7 @@ const startServer = async () => {
     req.pipe(busboy);
   });
 
-  await new Promise<void>(resolve => {
-    server.listen(0, '127.0.0.1', () => { resolve(); });
-  });
-
-  const port = (server.address() as AddressInfo).port;
+  const { port } = await listen(server);
 
   defer(() => { server.close(); });
 

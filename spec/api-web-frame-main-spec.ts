@@ -5,8 +5,7 @@ import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedOnce, emittedNTimes } from './lib/events-helpers';
-import { AddressInfo } from 'net';
-import { defer, ifit, waitUntil } from './lib/spec-helpers';
+import { defer, delay, ifit, listen, waitUntil } from './lib/spec-helpers';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -17,7 +16,7 @@ describe('webFrameMain module', () => {
   type Server = { server: http.Server, url: string }
 
   /** Creates an HTTP server whose handler embeds the given iframe src. */
-  const createServer = () => new Promise<Server>(resolve => {
+  const createServer = async () => {
     const server = http.createServer((req, res) => {
       const params = new URLSearchParams(url.parse(req.url || '').search || '');
       if (params.has('frameSrc')) {
@@ -26,11 +25,8 @@ describe('webFrameMain module', () => {
         res.end('');
       }
     });
-    server.listen(0, '127.0.0.1', () => {
-      const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-      resolve({ server, url });
-    });
-  });
+    return { server, url: (await listen(server)).url + '/' };
+  };
 
   afterEach(closeAllWindows);
 
@@ -297,7 +293,7 @@ describe('webFrameMain module', () => {
       const { mainFrame } = w.webContents;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await delay();
       expect(() => mainFrame.url).to.throw();
     });
 
@@ -338,7 +334,7 @@ describe('webFrameMain module', () => {
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
       // A short wait seems to be required to reproduce the crash.
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await delay(100);
       await w.webContents.loadURL(crossOriginUrl);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);
@@ -390,7 +386,7 @@ describe('webFrameMain module', () => {
 
       // HACK: Use 'localhost' instead of '127.0.0.1' so Chromium treats it as
       // a separate origin because differing ports aren't enough 🤔
-      const secondUrl = `http://localhost:${new URL(server.url).port}`;
+      const secondUrl = server.url.replace('127.0.0.1', 'localhost');
 
       const w = new BrowserWindow({ show: false });
       await w.webContents.loadURL(server.url);

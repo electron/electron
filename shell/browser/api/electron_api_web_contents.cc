@@ -112,6 +112,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -1222,7 +1223,9 @@ void WebContents::CloseContents(content::WebContents* source) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
 
-  Destroy();
+  // If there are observers, OnCloseContents will call Destroy()
+  if (observers_.empty())
+    Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1305,7 +1308,10 @@ Profile* WebContents::GetProfile() {
 }
 
 bool WebContents::IsFullscreen() const {
-  return owner_window_ && owner_window_->IsFullscreen();
+  if (!owner_window())
+    return false;
+
+  return owner_window()->IsFullscreen() || is_html_fullscreen();
 }
 
 void WebContents::EnterFullscreen(const GURL& url,
@@ -1351,7 +1357,7 @@ void WebContents::OnEnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
-  if (!allowed || !owner_window_)
+  if (!allowed || !owner_window())
     return;
 
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
@@ -1375,7 +1381,7 @@ void WebContents::OnEnterFullscreenModeForTab(
 }
 
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
-  if (!owner_window_)
+  if (!owner_window())
     return;
 
   // This needs to be called before we exit fullscreen on the native window,
@@ -3679,14 +3685,14 @@ void WebContents::EnumerateDirectory(
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
   if (!owner_window())
-    return html_fullscreen_;
+    return is_html_fullscreen();
 
   bool in_transition = owner_window()->fullscreen_transition_state() !=
                        NativeWindow::FullScreenTransitionState::NONE;
   bool is_html_transition = owner_window()->fullscreen_transition_type() ==
                             NativeWindow::FullScreenTransitionType::HTML;
 
-  return html_fullscreen_ || (in_transition && is_html_transition);
+  return is_html_fullscreen() || (in_transition && is_html_transition);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
@@ -3976,7 +3982,7 @@ void WebContents::OnDevToolsSearchCompleted(
 
 void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
-  if (enter_fullscreen && owner_window_->IsFullscreen()) {
+  if (enter_fullscreen && owner_window()->IsFullscreen()) {
     native_fullscreen_ = true;
     UpdateHtmlApiFullscreen(true);
     return;

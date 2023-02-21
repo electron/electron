@@ -101,6 +101,9 @@ void WebFrameMain::MarkRenderFrameDisposed() {
 void WebFrameMain::UpdateRenderFrameHost(content::RenderFrameHost* rfh) {
   // Should only be called when swapping frames.
   render_frame_disposed_ = false;
+  LOG(INFO) << "old rfh token: " << render_frame_->GetFrameToken();
+  LOG(INFO) << "new rfh token: " << rfh->GetFrameToken();
+  LOG(INFO) << "rfhs equal " << (render_frame_ == rfh ? "true" : "false");
   render_frame_ = rfh;
   TeardownMojoConnection();
   MaybeSetupMojoConnection();

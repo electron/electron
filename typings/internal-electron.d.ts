@@ -249,7 +249,6 @@ declare namespace ElectronInternal {
 
   interface ModuleEntry {
     name: string;
-    private?: boolean;
     loader: ModuleLoader;
   }
 
@@ -280,7 +279,7 @@ declare namespace ElectronInternal {
   }
 
   class WebContents extends Electron.WebContents {
-    static create(opts: Electron.WebPreferences): Electron.WebContents;
+    static create(opts?: Electron.WebPreferences): Electron.WebContents;
   }
 }
 

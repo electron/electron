@@ -30,10 +30,6 @@ def get_target_arch():
   return arch
 
 
-def get_env_var(name):
-  return os.environ.get('ELECTRON_' + name, '')
-
-
 def enable_verbose_mode():
   print('Running in verbose mode')
   global verbose_mode
