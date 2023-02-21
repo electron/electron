@@ -1507,7 +1507,14 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {
-  Emit("-audio-state-changed", audible);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  gin::Dictionary dict(isolate, event_object);
+  dict.Set("audible", audible);
+  EmitWithoutEvent("audio-state-changed", event);
 }
 
 void WebContents::BeforeUnloadFired(bool proceed,
