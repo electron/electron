@@ -1179,8 +1179,7 @@ gin::Handle<Session> Session::CreateFrom(
   // to use partition strings, instead of using the Session object directly.
   handle->Pin(isolate);
 
-  App::Get()->EmitCustomEvent("session-created",
-                              handle.ToV8().As<v8::Object>());
+  App::Get()->EmitWithoutEvent("session-created", handle);
 
   return handle;
 }
@@ -1205,10 +1204,16 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
   return CreateFrom(isolate, browser_context);
 }
 
-gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
-    v8::Isolate* isolate) {
-  return gin_helper::EventEmitterMixin<Session>::GetObjectTemplateBuilder(
-             isolate)
+// static
+gin::Handle<Session> Session::New() {
+  gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+      .ThrowError("Session objects cannot be created with 'new'");
+  return gin::Handle<Session>();
+}
+
+void Session::FillObjectTemplate(v8::Isolate* isolate,
+                                 v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Session", templ)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)
@@ -1278,7 +1283,8 @@ gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
       .SetProperty("protocol", &Session::Protocol)
       .SetProperty("serviceWorkers", &Session::ServiceWorkerContext)
       .SetProperty("webRequest", &Session::WebRequest)
-      .SetProperty("storagePath", &Session::GetPath);
+      .SetProperty("storagePath", &Session::GetPath)
+      .Build();
 }
 
 const char* Session::GetTypeName() {
@@ -1309,6 +1315,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
+  dict.Set("Session", Session::GetConstructor(context));
   dict.SetMethod("fromPartition", &FromPartition);
 }
 

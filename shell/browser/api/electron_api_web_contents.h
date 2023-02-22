@@ -352,19 +352,25 @@ class WebContents : public ExclusiveAccessContext,
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
   bool EmitWithSender(base::StringPiece name,
-                      content::RenderFrameHost* sender,
+                      content::RenderFrameHost* frame,
                       electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Object> wrapper;
-    if (!GetWrapper(isolate).ToLocal(&wrapper))
+
+    gin::Handle<gin_helper::internal::Event> event =
+        MakeEventWithSender(isolate, frame, std::move(callback));
+    if (event.IsEmpty())
       return false;
-    v8::Local<v8::Object> event = gin_helper::internal::CreateNativeEvent(
-        isolate, wrapper, sender, std::move(callback));
-    return EmitCustomEvent(name, event, std::forward<Args>(args)...);
+    EmitWithoutEvent(name, event, std::forward<Args>(args)...);
+    return event->GetDefaultPrevented();
   }
+
+  gin::Handle<gin_helper::internal::Event> MakeEventWithSender(
+      v8::Isolate* isolate,
+      content::RenderFrameHost* frame,
+      electron::mojom::ElectronApiIPC::InvokeCallback callback);
 
   WebContents* embedder() { return embedder_; }
 

@@ -203,13 +203,13 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().AddWithID(this, pid_);
   if (stdout_read_fd_ != -1) {
-    EmitWithoutCustomEvent("stdout", stdout_read_fd_);
+    EmitWithoutEvent("stdout", stdout_read_fd_);
   }
   if (stderr_read_fd_ != -1) {
-    EmitWithoutCustomEvent("stderr", stderr_read_fd_);
+    EmitWithoutEvent("stderr", stderr_read_fd_);
   }
   // Emit 'spawn' event
-  EmitWithoutCustomEvent("spawn");
+  EmitWithoutEvent("spawn");
 }
 
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
@@ -219,7 +219,7 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
     GetAllUtilityProcessWrappers().Remove(pid_);
   CloseConnectorPort();
   // Emit 'exit' event
-  EmitWithoutCustomEvent("exit", error_code);
+  EmitWithoutEvent("exit", error_code);
   Unpin();
 }
 
@@ -238,7 +238,7 @@ void UtilityProcessWrapper::Shutdown(int exit_code) {
   node_service_remote_.reset();
   CloseConnectorPort();
   // Emit 'exit' event
-  EmitWithoutCustomEvent("exit", exit_code);
+  EmitWithoutEvent("exit", exit_code);
   Unpin();
 }
 
@@ -311,7 +311,7 @@ bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
-  EmitWithoutCustomEvent("message", message_value);
+  EmitWithoutEvent("message", message_value);
   return true;
 }
 

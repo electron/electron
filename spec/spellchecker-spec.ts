@@ -4,10 +4,9 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
-import { AddressInfo } from 'net';
 import { closeWindow } from './lib/window-helpers';
 import { emittedOnce } from './lib/events-helpers';
-import { ifit, ifdescribe, delay } from './lib/spec-helpers';
+import { ifit, ifdescribe, delay, listen } from './lib/spec-helpers';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -57,8 +56,9 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
       res.end(data);
     });
   });
-  before((done) => {
-    server.listen(0, '127.0.0.1', () => done());
+  let serverUrl: string;
+  before(async () => {
+    serverUrl = (await listen(server)).url;
   });
   after(() => server.close());
 
@@ -77,7 +77,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
             sandbox
           }
         });
-        w.webContents.session.setSpellCheckerDictionaryDownloadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+        w.webContents.session.setSpellCheckerDictionaryDownloadURL(serverUrl);
         w.webContents.session.setSpellCheckerLanguages(['en-US']);
         await w.loadFile(path.resolve(__dirname, './fixtures/chromium/spellchecker.html'));
       });

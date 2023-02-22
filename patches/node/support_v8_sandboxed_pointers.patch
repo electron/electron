@@ -155,7 +155,7 @@ index ece9a4cfd45bf885169fdd278e09c467c6b4bbab..0c0dac67c0834ab7feba426079629245
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 6864f2d88b34abfa4090780d6993684cd0b366a3..1cdd436b343861a96582a803b460aefe1e81cdd0 100644
+index 6864f2d88b34abfa4090780d6993684cd0b366a3..0249574c4431fb5b98852699f1368f71b49691c1 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;
@@ -165,7 +165,7 @@ index 6864f2d88b34abfa4090780d6993684cd0b366a3..1cdd436b343861a96582a803b460aefe
 +v8::ArrayBuffer::Allocator* GetAllocator() {
 +  static v8::ArrayBuffer::Allocator* allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 +  return allocator;
-+};
++}
 +
  class SerializerContext : public BaseObject,
                            public ValueSerializer::Delegate {

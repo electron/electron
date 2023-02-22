@@ -40,6 +40,8 @@ Open the given file in the desktop's default manner.
 * `options` Object (optional)
   * `activate` boolean (optional) _macOS_ - `true` to bring the opened application to the foreground. The default is `true`.
   * `workingDirectory` string (optional) _Windows_ - The working directory.
+  * `logUsage` boolean (optional) _Windows_ - Indicates a user initiated launch that enables tracking of frequently used programs and other behaviors.
+                                              The default is `false`.
 
 Returns `Promise<void>`
 

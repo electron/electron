@@ -41,7 +41,7 @@ describe('BrowserView module', () => {
   });
 
   it('can be created with an existing webContents', async () => {
-    const wc = (webContents as any).create({ sandbox: true });
+    const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);

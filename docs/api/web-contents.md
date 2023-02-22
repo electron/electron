@@ -831,7 +831,7 @@ Emitted when the preload script `preloadPath` throws an unhandled exception `err
 
 Returns:
 
-* `event` Event
+* `event` [IpcMainEvent](structures/ipc-main-event.md)
 * `channel` string
 * `...args` any[]
 
@@ -843,7 +843,7 @@ See also [`webContents.ipc`](#contentsipc-readonly), which provides an [`IpcMain
 
 Returns:
 
-* `event` Event
+* `event` [IpcMainEvent](structures/ipc-main-event.md)
 * `channel` string
 * `...args` any[]
 
@@ -1409,8 +1409,8 @@ Returns `Promise<PrinterInfo[]>` - Resolves with a [`PrinterInfo[]`](structures/
     * `vertical` number (optional) - The vertical dpi.
   * `header` string (optional) - string to be printed as page header.
   * `footer` string (optional) - string to be printed as page footer.
-  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A3`,
-  `A4`, `A5`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width`.
+  * `pageSize` string | Size (optional) - Specify page size of the printed document. Can be `A0`, `A1`, `A2`, `A3`,
+  `A4`, `A5`, `A6`, `Legal`, `Letter`, `Tabloid` or an Object containing `height` and `width`.
 * `callback` Function (optional)
   * `success` boolean - Indicates success of the print call.
   * `failureReason` string - Error description called back if the print fails.
