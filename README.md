@@ -22,7 +22,7 @@ behavior to [coc@electronjs.org](mailto:coc@electronjs.org).
 
 ## Installation
 
-To install prebuilt Electron binaries, use [`npm`](https://docs.npmjs.com/).
+To install prebuilt Electron binaries,use [`npm`](https://docs.npmjs.com/).
 The preferred method is to install Electron as a development dependency in your
 app:
 
