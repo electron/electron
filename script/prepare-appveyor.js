@@ -14,8 +14,8 @@ const ROLLER_BRANCH_PATTERN = /^roller\/chromium$/;
 
 const DEFAULT_BUILD_CLOUD_ID = '1598';
 const DEFAULT_BUILD_CLOUD = 'electronhq-16-core';
-const DEFAULT_BAKE_BASE_IMAGE = 'e-111.0.5560.0-node18';
-const DEFAULT_BUILD_IMAGE = 'e-111.0.5560.0-node18';
+const DEFAULT_BAKE_BASE_IMAGE = 'e-112.0.5607.0-vs2022';
+const DEFAULT_BUILD_IMAGE = 'e-112.0.5607.0-vs2022';
 
 const appveyorBakeJob = 'electron-bake-image';
 const appVeyorJobs = {
