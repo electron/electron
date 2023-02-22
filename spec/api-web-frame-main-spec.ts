@@ -5,8 +5,9 @@ import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedNTimes } from './lib/events-helpers';
-import { defer, delay, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -294,7 +295,7 @@ describe('webFrameMain module', () => {
       const { mainFrame } = w.webContents;
       w.destroy();
       // Wait for WebContents, and thus RenderFrameHost, to be destroyed.
-      await delay();
+      await setTimeout();
       expect(() => mainFrame.url).to.throw();
     });
 
@@ -335,7 +336,7 @@ describe('webFrameMain module', () => {
       w.webContents.forcefullyCrashRenderer();
       await crashEvent;
       // A short wait seems to be required to reproduce the crash.
-      await delay(100);
+      await setTimeout(100);
       await w.webContents.loadURL(crossOriginUrl);
       // Log just to keep mainFrame in scope.
       console.log('mainFrame.url', mainFrame.url);

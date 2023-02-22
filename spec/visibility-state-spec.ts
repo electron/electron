@@ -4,8 +4,9 @@ import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electro
 import * as path from 'path';
 
 import { closeWindow } from './lib/window-helpers';
-import { ifdescribe, delay } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
@@ -70,7 +71,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     // TODO(MarshallOfSound): Figure out if we can work around this 1 tick issue for users
     if (process.platform === 'darwin') {
       // Wait for a tick, the window being "shown" takes 1 tick on macOS
-      await delay(10000);
+      await setTimeout(10000);
     }
     w.hide();
     load();

@@ -4,8 +4,9 @@ import { once } from 'events';
 import * as os from 'os';
 import * as path from 'path';
 import * as semver from 'semver';
+import { setTimeout } from 'timers/promises';
 
-import { delay, ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('nativeTheme module', () => {
@@ -19,7 +20,7 @@ describe('nativeTheme module', () => {
     afterEach(async () => {
       nativeTheme.themeSource = 'system';
       // Wait for any pending events to emit
-      await delay(20);
+      await setTimeout(20);
 
       closeAllWindows();
     });
@@ -48,14 +49,14 @@ describe('nativeTheme module', () => {
     it('should not emit the "updated" event when it is set and the resulting "shouldUseDarkColors" value is the same', async () => {
       nativeTheme.themeSource = 'dark';
       // Wait a few ticks to allow an async events to flush
-      await delay(20);
+      await setTimeout(20);
       let called = false;
       nativeTheme.once('updated', () => {
         called = true;
       });
       nativeTheme.themeSource = 'dark';
       // Wait a few ticks to allow an async events to flush
-      await delay(20);
+      await setTimeout(20);
       expect(called).to.equal(false);
     });
 

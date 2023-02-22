@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
 import { once } from 'events';
-import { delay, ifdescribe, ifit } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -227,7 +228,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
           w.focus();
           w.moveAbove(next.getMediaSourceId());
           // Ensure the window has time to move.
-          await delay(2000);
+          await setTimeout(2000);
         }
       }
 

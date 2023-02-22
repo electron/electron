@@ -3,11 +3,12 @@ import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedUntil } from './lib/events-helpers';
-import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
 import { expect } from 'chai';
 import * as http from 'http';
 import * as auth from 'basic-auth';
 import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -486,7 +487,7 @@ describe('<webview> tag', function () {
     afterEach(async () => {
       // The leaving animation is un-observable but can interfere with future tests
       // Specifically this is async on macOS but can be on other platforms too
-      await delay(1000);
+      await setTimeout(1000);
 
       closeAllWindows();
     });
@@ -535,7 +536,7 @@ describe('<webview> tag', function () {
       const leaveFullScreen = once(w, 'leave-full-screen');
       await webview.executeJavaScript('document.exitFullscreen()', true);
       await leaveFullScreen;
-      await delay(0);
+      await setTimeout();
       expect(w.isFullScreen()).to.be.false();
 
       const close = once(w, 'closed');
@@ -553,7 +554,7 @@ describe('<webview> tag', function () {
       const leaveFullScreen = once(w, 'leave-full-screen');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFullScreen;
-      await delay(0);
+      await setTimeout();
       expect(w.isFullScreen()).to.be.false();
 
       const close = once(w, 'closed');
@@ -1643,7 +1644,7 @@ describe('<webview> tag', function () {
       itremote('does not emit when src is not changed', async () => {
         const webview = new WebView();
         document.body.appendChild(webview);
-        await new Promise(resolve => setTimeout(resolve));
+        await setTimeout();
         const expectedErrorMessage = 'The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.';
         expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
       });

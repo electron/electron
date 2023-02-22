@@ -9,9 +9,10 @@ import * as url from 'url';
 import * as ChildProcess from 'child_process';
 import { EventEmitter, once } from 'events';
 import { promisify } from 'util';
-import { ifit, ifdescribe, defer, delay, itremote, listen } from './lib/spec-helpers';
+import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
+import { setTimeout } from 'timers/promises';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -1530,7 +1531,7 @@ describe('chromium features', () => {
               res.end();
             }
           };
-          setTimeout(respond, 0);
+          setTimeout().then(respond);
         });
         serverUrl = (await listen(server)).url;
         serverCrossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
@@ -1754,7 +1755,7 @@ describe('chromium features', () => {
           // failed to detect a real problem (perhaps related to DOM storage data caching)
           // wherein calling `getItem` immediately after `setItem` would appear to work
           // but then later (e.g. next tick) it would not.
-          await delay(1);
+          await setTimeout(1);
           try {
             const storedLength = await w.webContents.executeJavaScript(`${storageName}.getItem(${JSON.stringify(testKeyName)}).length`);
             expect(storedLength).to.equal(length);
@@ -2303,7 +2304,7 @@ describe('iframe using HTML fullscreen API while window is OS-fullscreened', () 
       "document.querySelector('iframe').contentWindow.postMessage('exitFullscreen', '*')"
     );
 
-    await delay(500);
+    await setTimeout(500);
 
     const width = await w.webContents.executeJavaScript(
       "document.querySelector('iframe').offsetWidth"
@@ -2645,7 +2646,7 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
   async function waitForBadgeCount (value: number) {
     let badgeCount = app.getBadgeCount();
     while (badgeCount !== value) {
-      await delay(10);
+      await setTimeout(10);
       badgeCount = app.getBadgeCount();
     }
     return badgeCount;

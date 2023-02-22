@@ -10,7 +10,8 @@ import * as stream from 'stream';
 import { EventEmitter, once } from 'events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { WebmGenerator } from './lib/video-helpers';
-import { delay, listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -36,7 +37,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
 
   async function sendChunks () {
-    await delay(0); // the stream protocol API breaks if you send data immediately.
+    await setTimeout(0); // the stream protocol API breaks if you send data immediately.
     let buf = Buffer.from(data as any); // nodejs typings are wrong, Buffer.from can take a Buffer
     for (;;) {
       body.push(buf.slice(0, chunkSize));
@@ -45,7 +46,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
         break;
       }
       // emulate some network delay
-      await delay(10);
+      await setTimeout(10);
     }
     body.push(null);
   }
@@ -712,7 +713,7 @@ describe('protocol module', () => {
     it('can execute redirects', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               data: '',
               statusCode: 302,
@@ -720,7 +721,7 @@ describe('protocol module', () => {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(1, 'redirect'));
@@ -733,14 +734,14 @@ describe('protocol module', () => {
     it('should discard post data after redirection', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               statusCode: 302,
               headers: {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(3, request.method));
@@ -984,7 +985,7 @@ describe('protocol module', () => {
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }
@@ -1086,7 +1087,7 @@ describe('protocol module', () => {
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }

@@ -8,8 +8,9 @@ import { app, session, BrowserWindow, net, ipcMain, Session, webFrameMain, WebFr
 import * as send from 'send';
 import * as auth from 'basic-auth';
 import { closeAllWindows } from './lib/window-helpers';
-import { defer, delay, listen } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -345,7 +346,7 @@ describe('session module', () => {
       if (!created) {
         // Work around for https://github.com/electron/electron/issues/26166 to
         // reduce flake
-        await delay(100);
+        await setTimeout(100);
         created = true;
       }
     });
@@ -667,7 +668,7 @@ describe('session module', () => {
 
       const req = net.request({ url: serverUrl, session: ses1, credentials: 'include' });
       req.end();
-      setTimeout(() => {
+      setTimeout().then(() => {
         ses2.setCertificateVerifyProc((opts, callback) => callback(0));
       });
       await expect(new Promise<void>((resolve, reject) => {

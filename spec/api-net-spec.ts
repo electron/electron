@@ -4,8 +4,9 @@ import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOpt
 import * as http from 'http';
 import * as url from 'url';
 import { Socket } from 'net';
-import { defer, delay, listen } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -1616,7 +1617,7 @@ describe('net module', () => {
             reject(new Error(`Unexpected ${evName} event`));
           });
         });
-        setTimeout(resolve, 50);
+        setTimeout(50).then(resolve);
       });
     });
 
@@ -1929,7 +1930,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.on('response', () => {});
       urlRequest.end();
-      await delay(2000);
+      await setTimeout(2000);
       // TODO(nornagon): I think this ought to max out at 20, but in practice
       // it seems to exceed that sometimes. This is at 25 to avoid test flakes,
       // but we should investigate if there's actually something broken here and
@@ -2159,7 +2160,7 @@ describe('net module', () => {
       it('should reject body promise when stream fails', async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
           response.write('first chunk');
-          setTimeout(() => response.destroy());
+          setTimeout().then(() => response.destroy());
         });
         const r = await net.fetch(serverUrl);
         expect(r.status).to.equal(200);

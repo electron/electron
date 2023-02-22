@@ -8,7 +8,8 @@ import { BrowserWindow, WebPreferences } from 'electron/main';
 
 import { closeWindow } from './lib/window-helpers';
 import { emittedUntil } from './lib/events-helpers';
-import { delay, listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;
@@ -140,7 +141,7 @@ describe('security warnings', () => {
         w.webContents.on('console-message', () => {
           didNotWarn = false;
         });
-        await delay(500);
+        await setTimeout(500);
         expect(didNotWarn).to.equal(true);
       });
 

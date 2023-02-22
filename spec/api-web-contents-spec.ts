@@ -5,8 +5,9 @@ import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, delay, defer, waitUntil, listen } from './lib/spec-helpers';
+import { ifdescribe, defer, waitUntil, listen } from './lib/spec-helpers';
 import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -171,9 +172,9 @@ describe('webContents module', () => {
         }
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
-      setTimeout(() => {
+      setTimeout(50).then(() => {
         w.webContents.send('test');
-      }, 50);
+      });
     });
   });
 
@@ -362,7 +363,7 @@ describe('webContents module', () => {
 
     it('resolves when navigating within the page', async () => {
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
-      await delay();
+      await setTimeout();
       await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
     });
 
@@ -516,7 +517,7 @@ describe('webContents module', () => {
       expect(() => { webContents.getFocusedWebContents(); }).to.not.throw();
 
       // Work around https://github.com/electron/electron/issues/19985
-      await delay();
+      await setTimeout();
 
       const devToolsClosed = once(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
@@ -1175,9 +1176,9 @@ describe('webContents module', () => {
     it('can persist when it contains iframe', (done) => {
       const w = new BrowserWindow({ show: false });
       const server = http.createServer((req, res) => {
-        setTimeout(() => {
+        setTimeout(200).then(() => {
           res.end();
-        }, 200);
+        });
       });
       server.listen(0, '127.0.0.1', () => {
         const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
@@ -1232,7 +1233,7 @@ describe('webContents module', () => {
 
       before(async () => {
         server = http.createServer((req, res) => {
-          setTimeout(() => res.end('hey'), 0);
+          setTimeout().then(() => res.end('hey'));
         });
         serverUrl = (await listen(server)).url;
         crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
@@ -1350,7 +1351,7 @@ describe('webContents module', () => {
             res.end();
           }
         };
-        setTimeout(respond, 0);
+        setTimeout().then(respond);
       });
       serverUrl = (await listen(server)).url;
       crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
