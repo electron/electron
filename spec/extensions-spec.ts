@@ -5,8 +5,9 @@ import * as http from 'http';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as WebSocket from 'ws';
-import { emittedOnce, emittedNTimes, emittedUntil } from './lib/events-helpers';
+import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 const uuid = require('uuid');
 
@@ -53,7 +54,7 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     await w.loadURL('about:blank');
 
-    const promise = emittedOnce(app, 'web-contents-created');
+    const promise = once(app, 'web-contents-created');
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const args: any = await promise;
     const wc: Electron.WebContents = args[1];
@@ -73,7 +74,7 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     await w.loadURL('about:blank');
 
-    const promise = emittedOnce(app, 'web-contents-created');
+    const promise = once(app, 'web-contents-created');
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const args: any = await promise;
     const wc: Electron.WebContents = args[1];
@@ -151,7 +152,7 @@ describe('chrome extensions', () => {
   it('emits extension lifecycle events', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
 
-    const loadedPromise = emittedOnce(customSession, 'extension-loaded');
+    const loadedPromise = once(customSession, 'extension-loaded');
     const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'red-bg'));
     const [, loadedExtension] = await loadedPromise;
     const [, readyExtension] = await emittedUntil(customSession, 'extension-ready', (event: Event, extension: Extension) => {
@@ -161,7 +162,7 @@ describe('chrome extensions', () => {
     expect(loadedExtension).to.deep.equal(extension);
     expect(readyExtension).to.deep.equal(extension);
 
-    const unloadedPromise = emittedOnce(customSession, 'extension-unloaded');
+    const unloadedPromise = once(customSession, 'extension-unloaded');
     await customSession.removeExtension(extension.id);
     const [, unloadedExtension] = await unloadedPromise;
     expect(unloadedExtension).to.deep.equal(extension);
@@ -199,7 +200,7 @@ describe('chrome extensions', () => {
     let w: BrowserWindow;
     let extension: Extension;
     const exec = async (name: string) => {
-      const p = emittedOnce(ipcMain, 'success');
+      const p = once(ipcMain, 'success');
       await w.webContents.executeJavaScript(`exec('${name}')`);
       const [, result] = await p;
       return result;
@@ -224,7 +225,7 @@ describe('chrome extensions', () => {
   describe('chrome.runtime', () => {
     let w: BrowserWindow;
     const exec = async (name: string) => {
-      const p = emittedOnce(ipcMain, 'success');
+      const p = once(ipcMain, 'success');
       await w.webContents.executeJavaScript(`exec('${name}')`);
       const [, result] = await p;
       return result;
@@ -262,7 +263,7 @@ describe('chrome extensions', () => {
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-storage'));
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       try {
-        const p = emittedOnce(ipcMain, 'storage-success');
+        const p = once(ipcMain, 'storage-success');
         await w.loadURL(url);
         const [, v] = await p;
         expect(v).to.equal('value');
@@ -352,7 +353,7 @@ describe('chrome extensions', () => {
       const message = { method: 'executeScript', args: ['1 + 2'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response).to.equal(3);
@@ -366,7 +367,7 @@ describe('chrome extensions', () => {
       const message = { method: 'connectTab', args: [portName] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const [,, responseString] = await once(w.webContents, 'console-message');
       const response = responseString.split(',');
       expect(response[0]).to.equal(portName);
       expect(response[1]).to.equal('howdy');
@@ -379,7 +380,7 @@ describe('chrome extensions', () => {
       const message = { method: 'sendMessage', args: ['Hello World!'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response.message).to.equal('Hello World!');
@@ -393,12 +394,12 @@ describe('chrome extensions', () => {
       const w2 = new BrowserWindow({ show: false, webPreferences: { session: customSession } });
       await w2.loadURL('about:blank');
 
-      const w2Navigated = emittedOnce(w2.webContents, 'did-navigate');
+      const w2Navigated = once(w2.webContents, 'did-navigate');
 
       const message = { method: 'update', args: [w2.webContents.id, { url }] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       await w2Navigated;
@@ -416,7 +417,7 @@ describe('chrome extensions', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       try {
         w.loadURL(url);
-        const [, resp] = await emittedOnce(ipcMain, 'bg-page-message-response');
+        const [, resp] = await once(ipcMain, 'bg-page-message-response');
         expect(resp.message).to.deep.equal({ some: 'message' });
         expect(resp.sender.id).to.be.a('string');
         expect(resp.sender.origin).to.equal(url);
@@ -455,18 +456,18 @@ describe('chrome extensions', () => {
 
     it('has session in background page', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      const promise = emittedOnce(app, 'web-contents-created');
+      const promise = once(app, 'web-contents-created');
       const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
-      await emittedOnce(bgPageContents, 'did-finish-load');
+      await once(bgPageContents, 'did-finish-load');
       expect(bgPageContents.getURL()).to.equal(`chrome-extension://${id}/_generated_background_page.html`);
       expect(bgPageContents.session).to.not.equal(undefined);
     });
 
     it('can open devtools of background page', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      const promise = emittedOnce(app, 'web-contents-created');
+      const promise = once(app, 'web-contents-created');
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
@@ -508,7 +509,7 @@ describe('chrome extensions', () => {
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads a devtools extension', async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
       customSession.loadExtension(path.join(fixtures, 'extensions', 'devtools-extension'));
-      const winningMessage = emittedOnce(ipcMain, 'winning');
+      const winningMessage = once(ipcMain, 'winning');
       const w = new BrowserWindow({ show: true, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
       w.webContents.openDevTools();

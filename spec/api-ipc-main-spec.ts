@@ -2,9 +2,9 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as cp from 'child_process';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { defer } from './lib/spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
+import { once } from 'events';
 
 describe('ipc main module', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -57,7 +57,7 @@ describe('ipc main module', () => {
       let output = '';
       appProcess.stdout.on('data', (data) => { output += data; });
 
-      await emittedOnce(appProcess.stdout, 'end');
+      await once(appProcess.stdout, 'end');
 
       output = JSON.parse(output);
       expect(output).to.deep.equal(['error']);

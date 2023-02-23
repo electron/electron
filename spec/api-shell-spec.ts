@@ -1,13 +1,13 @@
 import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { ifdescribe, ifit, listen } from './lib/spec-helpers';
 import * as http from 'http';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
 import { expect } from 'chai';
+import { once } from 'events';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
@@ -45,7 +45,7 @@ describe('shell module', () => {
         // https://github.com/electron/electron/pull/19969#issuecomment-526278890),
         // so use a blur event as a crude proxy.
         const w = new BrowserWindow({ show: true });
-        requestReceived = emittedOnce(w, 'blur');
+        requestReceived = once(w, 'blur');
       } else {
         const server = http.createServer((req, res) => {
           res.end();

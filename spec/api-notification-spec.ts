@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Notification } from 'electron/main';
-import { emittedOnce } from './lib/events-helpers';
+import { once } from 'events';
 import { ifit } from './lib/spec-helpers';
 
 describe('Notification module', () => {
@@ -123,12 +123,12 @@ describe('Notification module', () => {
       silent: true
     });
     {
-      const e = emittedOnce(n, 'show');
+      const e = once(n, 'show');
       n.show();
       await e;
     }
     {
-      const e = emittedOnce(n, 'close');
+      const e = once(n, 'close');
       n.close();
       await e;
     }
@@ -139,7 +139,7 @@ describe('Notification module', () => {
       toastXml: 'not xml'
     });
     {
-      const e = emittedOnce(n, 'failed');
+      const e = once(n, 'failed');
       n.show();
       await e;
     }

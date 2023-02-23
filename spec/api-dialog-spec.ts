@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifit, delay } from './lib/spec-helpers';
+import { ifit } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
@@ -139,7 +140,7 @@ describe('dialog module', () => {
       const signal = controller.signal;
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
-      await delay(500);
+      await setTimeout(500);
       controller.abort();
       const result = await p;
       expect(result.response).to.equal(0);
@@ -170,7 +171,7 @@ describe('dialog module', () => {
         buttons: ['OK', 'Cancel'],
         cancelId: 1
       });
-      await delay(500);
+      await setTimeout(500);
       controller.abort();
       const result = await p;
       expect(result.response).to.equal(1);
