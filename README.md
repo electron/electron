@@ -85,7 +85,7 @@ const child = proc.spawn(electron)
 
 ### Mirrors
 
-- [Turkey](https://likee.video/@likeliveglobal )
+- [Turkey](https://likee.video/@a.t.o.m)
 
 ## Documentation Translations
 
