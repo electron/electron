@@ -181,6 +181,7 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
         const chai_1 = require('chai')
+        const promises_1 = require('timers/promises')
         chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
         await (${fn})(...${JSON.stringify(args ?? [])})
