@@ -1801,9 +1801,6 @@ bool WebContents::EmitNavigationEvent(
   dict.Set("isSameDocument", is_same_document);
   dict.Set("isMainFrame", is_main_frame);
   dict.Set("frame", frame_host);
-  dict.Set("initiatorURL", navigation_handle->GetInitiatorBaseUrl());
-  dict.Set("hadInitiator",
-           navigation_handle->GetInitiatorFrameToken().has_value());
   dict.SetGetter("initiator", initiator_frame_host);
 
   EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
