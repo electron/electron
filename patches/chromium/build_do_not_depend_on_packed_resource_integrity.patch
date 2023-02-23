@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index ab4e032c195dd72978ccf2c131d61633e00f72fc..07f3f09cb60c99da45469915ae56c0dedde906be 100644
+index 53363189fe649fa92040811ee9e858e9363f29e7..48883669d54ec7b7421b88fcaf7776e7b3d55bee 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -187,11 +187,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index ab4e032c195dd72978ccf2c131d61633e00f72fc..07f3f09cb60c99da45469915ae56c0de
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 0a96817c209e3ee729a2120f3f305ca41e3eed8e..d052d79b5889c377c8cf407f53f0cb9dd9337b4c 100644
+index 916b7c8a46975d128a0c83ba856210d85b2f9f39..e4f2182cb126bdda35fb71aa34b669c8f5aa8359 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4571,7 +4571,7 @@ static_library("browser") {
+@@ -4574,7 +4574,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,18 +46,18 @@ index 0a96817c209e3ee729a2120f3f305ca41e3eed8e..d052d79b5889c377c8cf407f53f0cb9d
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index aff2aeb9ed9ecfa3814ed2037b8396cb0ad2d48d..c84038a34f95c016e987050c6ae262db648bf1cc 100644
+index b1c71fe3038027a40d4f5cdd922c080bef46ddb5..42cb9dcceb8ec18199f8c648c883c0c411a09798 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6292,7 +6292,6 @@ test("unit_tests") {
+@@ -6296,7 +6296,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
 -      "//chrome:packed_resources_integrity",
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
-       "//chrome/app:crash_reporter_client_win_unit_tests",
-@@ -6318,6 +6317,10 @@ test("unit_tests") {
+       "//chrome/app:win_unit_tests",
+@@ -6322,6 +6321,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index aff2aeb9ed9ecfa3814ed2037b8396cb0ad2d48d..c84038a34f95c016e987050c6ae262db
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7236,7 +7239,7 @@ test("unit_tests") {
+@@ -7240,7 +7243,7 @@ test("unit_tests") {
      }
  
      deps += [
@@ -77,7 +77,7 @@ index aff2aeb9ed9ecfa3814ed2037b8396cb0ad2d48d..c84038a34f95c016e987050c6ae262db
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
        "//chrome/browser/enterprise/connectors/analysis:features",
-@@ -7369,6 +7372,10 @@ test("unit_tests") {
+@@ -7373,6 +7376,10 @@ test("unit_tests") {
      }
    }
  

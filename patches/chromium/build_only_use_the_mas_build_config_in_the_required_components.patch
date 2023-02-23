@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index d8b947bb87bc9d3057dc78ae15c025dc166453f5..d5ae0ec7cae8affcd9a0315fba70d80a80e85835 100644
+index 5866d2f2fe04b6143a963ae58bf8f2a2614fe47c..3ab393ab54afc04c93ebb88a79c5b307a8016ecc 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1028,6 +1028,7 @@ component("base") {
+@@ -1025,6 +1025,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -68,7 +68,7 @@ index 74b30a0d050468ad1f450d86621308c090a699b5..a1f555b07519ad07441c0bca0c20ddd5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index c4b3d2237b9e700eaaa2fba97e9868e498b410f4..f9e4ac936f3c33354d4ae542243db5b622b0e756 100644
+index 7c070ed1b76e18b05a28001297a10a916de2f816..0aab8262261997221b9245d2bb2ef3d61b2131d9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -57,6 +57,7 @@ source_set("browser") {

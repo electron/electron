@@ -84,10 +84,10 @@ index 6d8aa39ab75edcba3e34134566c9fcbe56a7ec57..30912cc39806b13c47b85ba1bfc848a2
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 57a5e8afaa0a87b1f2189b6f1e973114639a8d65..9e8d0480604e695b9393bcdb3917b51c0da5d0ff 100644
+index 27cfd077c8c9c935e7eeb07d20b030758e8f56d2..0f250a06ebd3b69bec47537c144065a9ac069f20 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
-@@ -121,7 +121,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -122,7 +122,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        'mojo', base::MachRendezvousPort(endpoint.TakeMachReceiveRight())));
  
    options->environment = delegate_->GetEnvironment();
@@ -97,7 +97,7 @@ index 57a5e8afaa0a87b1f2189b6f1e973114639a8d65..9e8d0480604e695b9393bcdb3917b51c
    options->disclaim_responsibility = delegate_->DisclaimResponsibility();
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
-@@ -182,6 +183,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -183,6 +184,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
          base::StringPrintf("%s%d", sandbox::switches::kSeatbeltClient, pipe));
    }
  

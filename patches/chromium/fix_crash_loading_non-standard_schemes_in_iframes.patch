@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index a4dc9781f9499fb24a245b844d62445d0d4ae538..2d6e456a126f8ee54063be2f5e3a092c4d9a137b 100644
+index a02a6e4a5eb91dfc4defe8befa1532edb39391db..787b4b5afcf9ee1075de1f86425228cfc6bd8993 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -6977,10 +6977,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -7026,10 +7026,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,12 +37,12 @@ index a4dc9781f9499fb24a245b844d62445d0d4ae538..2d6e456a126f8ee54063be2f5e3a092c
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 609642d2edea2e2099e3699898be297910535cf6..6baf430980da74c6020f417320ff6d7cf2e0d026 100644
+index baecec586a9d9c75ed0b7c2020faef20e026bfc6..ec4a090a581b9337893bce287a9e1aa05b69f753 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2782,6 +2782,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-   // frame. Can only be called on a frame with a committed navigation.
-   net::CookieSettingOverrides GetCookieSettingOverrides();
+@@ -2827,6 +2827,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // last committed document.
+   CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
  
 +  // Returns whether the given origin and URL is allowed to commit in the
 +  // current RenderFrameHost. The |url| is used to ensure it matches the origin
@@ -58,7 +58,7 @@ index 609642d2edea2e2099e3699898be297910535cf6..6baf430980da74c6020f417320ff6d7c
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3100,17 +3111,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3150,17 +3161,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
