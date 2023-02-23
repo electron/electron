@@ -46,6 +46,7 @@
 #include "net/http/http_util.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/mojom/clear_data_filter.mojom.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_cookies.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
