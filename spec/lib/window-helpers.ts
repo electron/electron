@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron/main';
-import { emittedOnce } from './events-helpers';
+import { once } from 'events';
 
 async function ensureWindowIsClosed (window: BrowserWindow | null) {
   if (window && !window.isDestroyed()) {
@@ -10,7 +10,7 @@ async function ensureWindowIsClosed (window: BrowserWindow | null) {
       // <webview> children which need to be destroyed first. In that case, we
       // await the 'closed' event which signals the complete shutdown of the
       // window.
-      const isClosed = emittedOnce(window, 'closed');
+      const isClosed = once(window, 'closed');
       window.destroy();
       await isClosed;
     } else {

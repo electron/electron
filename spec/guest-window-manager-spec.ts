@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { expect, assert } from 'chai';
 import { closeAllWindows } from './lib/window-helpers';
-const { emittedOnce } = require('./lib/events-helpers');
+import { once } from 'events';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;
@@ -173,13 +173,13 @@ describe('webContents.setWindowOpenHandler', () => {
       browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
     });
 
-    await emittedOnce(browserWindow.webContents, 'did-create-window');
+    await once(browserWindow.webContents, 'did-create-window');
   });
 
   it('can change webPreferences of child windows', async () => {
     browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 
-    const didCreateWindow = emittedOnce(browserWindow.webContents, 'did-create-window');
+    const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
     browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
     const [childWindow] = await didCreateWindow;
 

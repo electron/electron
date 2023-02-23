@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as path from 'path';
-import { emittedOnce } from './lib/events-helpers';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
 import { areColorsSimilar, captureScreen, getPixelColor } from './lib/screen-helpers';
+import { once } from 'events';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -25,13 +25,13 @@ describe('BrowserView module', () => {
   });
 
   afterEach(async () => {
-    const p = emittedOnce(w.webContents, 'destroyed');
+    const p = once(w.webContents, 'destroyed');
     await closeWindow(w);
     w = null as any;
     await p;
 
     if (view && view.webContents) {
-      const p = emittedOnce(view.webContents, 'destroyed');
+      const p = once(view.webContents, 'destroyed');
       view.webContents.destroy();
       view = null as any;
       await p;
@@ -231,7 +231,7 @@ describe('BrowserView module', () => {
 
       w.addBrowserView(view);
       view.webContents.loadURL('about:blank');
-      await emittedOnce(view.webContents, 'did-finish-load');
+      await once(view.webContents, 'did-finish-load');
 
       const w2 = new BrowserWindow({ show: false });
       w2.addBrowserView(view);
@@ -239,7 +239,7 @@ describe('BrowserView module', () => {
       w.close();
 
       view.webContents.loadURL(`file://${fixtures}/pages/blank.html`);
-      await emittedOnce(view.webContents, 'did-finish-load');
+      await once(view.webContents, 'did-finish-load');
 
       // Clean up - the afterEach hook assumes the webContents on w is still alive.
       w = new BrowserWindow({ show: false });
@@ -326,7 +326,7 @@ describe('BrowserView module', () => {
           app.quit();
         });
       });
-      const [code] = await emittedOnce(rc.process, 'exit');
+      const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
     });
 
@@ -342,7 +342,7 @@ describe('BrowserView module', () => {
           app.quit();
         });
       });
-      const [code] = await emittedOnce(rc.process, 'exit');
+      const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
     });
   });

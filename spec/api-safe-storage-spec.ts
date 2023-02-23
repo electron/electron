@@ -2,9 +2,9 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
-import { emittedOnce } from './lib/events-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 import * as fs from 'fs-extra';
+import { once } from 'events';
 
 /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
 * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
@@ -24,7 +24,7 @@ describe('safeStorage module', () => {
     appProcess.stdout.on('data', data => { output += data; });
     appProcess.stderr.on('data', data => { output += data; });
 
-    const code = (await emittedOnce(appProcess, 'exit'))[0] ?? 1;
+    const code = (await once(appProcess, 'exit'))[0] ?? 1;
 
     if (code !== 0 && output) {
       console.log(output);
@@ -98,7 +98,7 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
       encryptAppProcess.stderr.on('data', data => { stdout += data; });
 
       try {
-        await emittedOnce(encryptAppProcess, 'exit');
+        await once(encryptAppProcess, 'exit');
 
         const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
         const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
@@ -107,7 +107,7 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
         relaunchedAppProcess.stdout.on('data', data => { output += data; });
         relaunchedAppProcess.stderr.on('data', data => { output += data; });
 
-        const [code] = await emittedOnce(relaunchedAppProcess, 'exit');
+        const [code] = await once(relaunchedAppProcess, 'exit');
 
         if (!output.includes('plaintext')) {
           console.log(code, output);
