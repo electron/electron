@@ -2,11 +2,13 @@ import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce, emittedUntil } from './lib/events-helpers';
-import { ifit, ifdescribe, delay, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import { emittedUntil } from './lib/events-helpers';
+import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
 import { expect } from 'chai';
 import * as http from 'http';
 import * as auth from 'basic-auth';
+import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -85,7 +87,7 @@ describe('<webview> tag', function () {
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
-      await emittedOnce(ipcMain, 'pong');
+      await once(ipcMain, 'pong');
     });
 
     it('works with sandbox', async () => {
@@ -97,7 +99,7 @@ describe('<webview> tag', function () {
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
-      await emittedOnce(ipcMain, 'pong');
+      await once(ipcMain, 'pong');
     });
 
     it('works with contextIsolation', async () => {
@@ -109,7 +111,7 @@ describe('<webview> tag', function () {
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
-      await emittedOnce(ipcMain, 'pong');
+      await once(ipcMain, 'pong');
     });
 
     it('works with contextIsolation + sandbox', async () => {
@@ -122,7 +124,7 @@ describe('<webview> tag', function () {
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
-      await emittedOnce(ipcMain, 'pong');
+      await once(ipcMain, 'pong');
     });
 
     it('works with Trusted Types', async () => {
@@ -133,7 +135,7 @@ describe('<webview> tag', function () {
         }
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
-      await emittedOnce(ipcMain, 'pong');
+      await once(ipcMain, 'pong');
     });
 
     it('is disabled by default', async () => {
@@ -145,7 +147,7 @@ describe('<webview> tag', function () {
         }
       });
 
-      const webview = emittedOnce(ipcMain, 'webview');
+      const webview = once(ipcMain, 'webview');
       w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
       const [, type] = await webview;
 
@@ -163,11 +165,11 @@ describe('<webview> tag', function () {
 
     it('updates when the window is shown after the ready-to-show event', async () => {
       const w = new BrowserWindow({ show: false });
-      const readyToShowSignal = emittedOnce(w, 'ready-to-show');
-      const pongSignal1 = emittedOnce(ipcMain, 'pong');
+      const readyToShowSignal = once(w, 'ready-to-show');
+      const pongSignal1 = once(ipcMain, 'pong');
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
       await pongSignal1;
-      const pongSignal2 = emittedOnce(ipcMain, 'pong');
+      const pongSignal2 = once(ipcMain, 'pong');
       await readyToShowSignal;
       w.show();
 
@@ -179,13 +181,13 @@ describe('<webview> tag', function () {
     it('inherits the parent window visibility state and receives visibilitychange events', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
-      const [, visibilityState, hidden] = await emittedOnce(ipcMain, 'pong');
+      const [, visibilityState, hidden] = await once(ipcMain, 'pong');
       expect(visibilityState).to.equal('hidden');
       expect(hidden).to.be.true();
 
       // We have to start waiting for the event
       // before we ask the webContents to resize.
-      const getResponse = emittedOnce(ipcMain, 'pong');
+      const getResponse = once(ipcMain, 'pong');
       w.webContents.emit('-window-visibility-change', 'visible');
 
       return getResponse.then(([, visibilityState, hidden]) => {
@@ -206,8 +208,8 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview');
-      const webviewDomReady = emittedOnce(ipcMain, 'webview-dom-ready');
+      const didAttachWebview = once(w.webContents, 'did-attach-webview');
+      const webviewDomReady = once(ipcMain, 'webview-dom-ready');
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
       const [, webContents] = await didAttachWebview;
@@ -305,7 +307,7 @@ describe('<webview> tag', function () {
         });
       });
 
-      const [, { runtimeId, tabId }] = await emittedOnce(ipcMain, 'answer');
+      const [, { runtimeId, tabId }] = await once(ipcMain, 'answer');
       expect(runtimeId).to.match(/^[a-z]{32}$/);
       expect(tabId).to.equal(childWebContentsId);
       await w.webContents.executeJavaScript('webview.closeDevTools()');
@@ -340,7 +342,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const zoomEventPromise = emittedOnce(ipcMain, 'webview-parent-zoom-level');
+      const zoomEventPromise = once(ipcMain, 'webview-parent-zoom-level');
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'));
 
       const [, zoomFactor, zoomLevel] = await zoomEventPromise;
@@ -417,7 +419,7 @@ describe('<webview> tag', function () {
       });
       w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'));
 
-      const [, zoomLevel] = await emittedOnce(ipcMain, 'webview-origin-zoom-level');
+      const [, zoomLevel] = await once(ipcMain, 'webview-origin-zoom-level');
       expect(zoomLevel).to.equal(2.0);
     });
 
@@ -432,8 +434,8 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
-      const readyPromise = emittedOnce(ipcMain, 'dom-ready');
+      const attachPromise = once(w.webContents, 'did-attach-webview');
+      const readyPromise = once(ipcMain, 'dom-ready');
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
       const [, webview] = await attachPromise;
       await readyPromise;
@@ -451,7 +453,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
+      const attachPromise = once(w.webContents, 'did-attach-webview');
       await w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
       await attachPromise;
       await w.webContents.executeJavaScript('view.remove()');
@@ -470,9 +472,9 @@ describe('<webview> tag', function () {
         }
       });
 
-      const attachPromise = emittedOnce(w.webContents, 'did-attach-webview');
-      const loadPromise = emittedOnce(w.webContents, 'did-finish-load');
-      const readyPromise = emittedOnce(ipcMain, 'webview-ready');
+      const attachPromise = once(w.webContents, 'did-attach-webview');
+      const loadPromise = once(w.webContents, 'did-finish-load');
+      const readyPromise = once(ipcMain, 'webview-ready');
 
       w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
 
@@ -485,7 +487,7 @@ describe('<webview> tag', function () {
     afterEach(async () => {
       // The leaving animation is un-observable but can interfere with future tests
       // Specifically this is async on macOS but can be on other platforms too
-      await delay(1000);
+      await setTimeout(1000);
 
       closeAllWindows();
     });
@@ -494,13 +496,13 @@ describe('<webview> tag', function () {
       const [w, webview] = await loadWebViewWindow();
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
 
-      const parentFullscreen = emittedOnce(ipcMain, 'fullscreenchange');
+      const parentFullscreen = once(ipcMain, 'fullscreenchange');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await parentFullscreen;
 
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
 
-      const close = emittedOnce(w, 'closed');
+      const close = once(w, 'closed');
       w.close();
       await close;
     });
@@ -509,9 +511,9 @@ describe('<webview> tag', function () {
       const [w, webview] = await loadWebViewWindow();
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.false();
 
-      const parentFullscreen = emittedOnce(ipcMain, 'fullscreenchange');
-      const enterHTMLFS = emittedOnce(w.webContents, 'enter-html-full-screen');
-      const leaveHTMLFS = emittedOnce(w.webContents, 'leave-html-full-screen');
+      const parentFullscreen = once(ipcMain, 'fullscreenchange');
+      const enterHTMLFS = once(w.webContents, 'enter-html-full-screen');
+      const leaveHTMLFS = once(w.webContents, 'leave-html-full-screen');
 
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       expect(await w.webContents.executeJavaScript('isIframeFullscreen()')).to.be.true();
@@ -519,7 +521,7 @@ describe('<webview> tag', function () {
       await webview.executeJavaScript('document.exitFullscreen()');
       await Promise.all([enterHTMLFS, leaveHTMLFS, parentFullscreen]);
 
-      const close = emittedOnce(w, 'closed');
+      const close = once(w, 'closed');
       w.close();
       await close;
     });
@@ -527,17 +529,17 @@ describe('<webview> tag', function () {
     // FIXME(zcbenz): Fullscreen events do not work on Linux.
     ifit(process.platform !== 'linux')('exiting fullscreen should unfullscreen window', async () => {
       const [w, webview] = await loadWebViewWindow();
-      const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+      const enterFullScreen = once(w, 'enter-full-screen');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await enterFullScreen;
 
-      const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+      const leaveFullScreen = once(w, 'leave-full-screen');
       await webview.executeJavaScript('document.exitFullscreen()', true);
       await leaveFullScreen;
-      await delay(0);
+      await setTimeout();
       expect(w.isFullScreen()).to.be.false();
 
-      const close = emittedOnce(w, 'closed');
+      const close = once(w, 'closed');
       w.close();
       await close;
     });
@@ -545,17 +547,17 @@ describe('<webview> tag', function () {
     // Sending ESC via sendInputEvent only works on Windows.
     ifit(process.platform === 'win32')('pressing ESC should unfullscreen window', async () => {
       const [w, webview] = await loadWebViewWindow();
-      const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+      const enterFullScreen = once(w, 'enter-full-screen');
       await webview.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await enterFullScreen;
 
-      const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+      const leaveFullScreen = once(w, 'leave-full-screen');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFullScreen;
-      await delay(0);
+      await setTimeout();
       expect(w.isFullScreen()).to.be.false();
 
-      const close = emittedOnce(w, 'closed');
+      const close = once(w, 'closed');
       w.close();
       await close;
     });
@@ -570,24 +572,24 @@ describe('<webview> tag', function () {
         }
       });
 
-      const didAttachWebview = emittedOnce(w.webContents, 'did-attach-webview');
+      const didAttachWebview = once(w.webContents, 'did-attach-webview');
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
       const [, webContents] = await didAttachWebview;
 
-      const enterFSWindow = emittedOnce(w, 'enter-html-full-screen');
-      const enterFSWebview = emittedOnce(webContents, 'enter-html-full-screen');
+      const enterFSWindow = once(w, 'enter-html-full-screen');
+      const enterFSWebview = once(webContents, 'enter-html-full-screen');
       await webContents.executeJavaScript('document.getElementById("div").requestFullscreen()', true);
       await enterFSWindow;
       await enterFSWebview;
 
-      const leaveFSWindow = emittedOnce(w, 'leave-html-full-screen');
-      const leaveFSWebview = emittedOnce(webContents, 'leave-html-full-screen');
+      const leaveFSWindow = once(w, 'leave-html-full-screen');
+      const leaveFSWebview = once(webContents, 'leave-html-full-screen');
       webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Escape' });
       await leaveFSWebview;
       await leaveFSWindow;
 
-      const close = emittedOnce(w, 'closed');
+      const close = once(w, 'closed');
       w.close();
       await close;
     });
@@ -595,14 +597,14 @@ describe('<webview> tag', function () {
     it('should support user gesture', async () => {
       const [w, webview] = await loadWebViewWindow();
 
-      const waitForEnterHtmlFullScreen = emittedOnce(webview, 'enter-html-full-screen');
+      const waitForEnterHtmlFullScreen = once(webview, 'enter-html-full-screen');
 
       const jsScript = "document.querySelector('video').webkitRequestFullscreen()";
       webview.executeJavaScript(jsScript, true);
 
       await waitForEnterHtmlFullScreen;
 
-      const close = emittedOnce(w, 'closed');
+      const close = once(w, 'closed');
       w.close();
       await close;
     });
@@ -625,7 +627,7 @@ describe('<webview> tag', function () {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-blank.html')}`
       });
 
-      const [, content] = await emittedOnce(ipcMain, 'answer');
+      const [, content] = await once(ipcMain, 'answer');
       expect(content).to.equal('Hello');
     });
 
@@ -638,7 +640,7 @@ describe('<webview> tag', function () {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-file.html')}`
       });
 
-      const [, content] = await emittedOnce(ipcMain, 'answer');
+      const [, content] = await once(ipcMain, 'answer');
       expect(content).to.equal('Hello');
     });
 
@@ -650,7 +652,7 @@ describe('<webview> tag', function () {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')}`
       });
 
-      const [, { windowOpenReturnedNull }] = await emittedOnce(ipcMain, 'answer');
+      const [, { windowOpenReturnedNull }] = await once(ipcMain, 'answer');
       expect(windowOpenReturnedNull).to.be.true();
     });
 
@@ -663,7 +665,7 @@ describe('<webview> tag', function () {
         src: `file://${path.join(fixtures, 'api', 'native-window-open-cross-origin.html')}`
       });
 
-      const [, content] = await emittedOnce(ipcMain, 'answer');
+      const [, content] = await once(ipcMain, 'answer');
       const expectedContent =
           'Blocked a frame with origin "file://" from accessing a cross-origin frame.';
 
@@ -678,7 +680,7 @@ describe('<webview> tag', function () {
         src: `file://${fixtures}/pages/window-open.html`
       });
 
-      await emittedOnce(app, 'browser-window-created');
+      await once(app, 'browser-window-created');
     });
 
     it('emits a web-contents-created event', async () => {
@@ -699,7 +701,7 @@ describe('<webview> tag', function () {
         allowpopups: 'on',
         src: `file://${path.join(fixtures, 'api', 'native-window-open-noopener.html')}`
       });
-      await emittedOnce(app, 'browser-window-created');
+      await once(app, 'browser-window-created');
     });
   });
 
@@ -719,7 +721,7 @@ describe('<webview> tag', function () {
         webpreferences: 'contextIsolation=yes'
       });
 
-      const [, data] = await emittedOnce(ipcMain, 'isolated-world');
+      const [, data] = await once(ipcMain, 'isolated-world');
       expect(data).to.deep.equal({
         preloadContext: {
           preloadProperty: 'number',
@@ -784,55 +786,55 @@ describe('<webview> tag', function () {
     // "PermissionDeniedError". It should be re-enabled if we find a way to mock
     // the presence of a microphone & camera.
     xit('emits when using navigator.getUserMedia api', async () => {
-      const errorFromRenderer = emittedOnce(ipcMain, 'message');
+      const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/media.html`,
         partition,
         nodeintegration: 'on'
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'media');
       const [, errorName] = await errorFromRenderer;
       expect(errorName).to.equal('PermissionDeniedError');
     });
 
     it('emits when using navigator.geolocation api', async () => {
-      const errorFromRenderer = emittedOnce(ipcMain, 'message');
+      const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/geolocation.html`,
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'geolocation');
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('User denied Geolocation');
     });
 
     it('emits when using navigator.requestMIDIAccess without sysex api', async () => {
-      const errorFromRenderer = emittedOnce(ipcMain, 'message');
+      const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/midi.html`,
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'midi');
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('SecurityError');
     });
 
     it('emits when using navigator.requestMIDIAccess with sysex api', async () => {
-      const errorFromRenderer = emittedOnce(ipcMain, 'message');
+      const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/midi-sysex.html`,
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created');
       setUpRequestHandler(webViewContents.id, 'midiSysex');
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('SecurityError');
@@ -843,19 +845,19 @@ describe('<webview> tag', function () {
         src: 'magnet:test',
         partition
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created');
       await setUpRequestHandler(webViewContents.id, 'openExternal');
     });
 
     it('emits when using Notification.requestPermission', async () => {
-      const errorFromRenderer = emittedOnce(ipcMain, 'message');
+      const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
         src: `file://${fixtures}/pages/permissions/notification.html`,
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await emittedOnce(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created');
 
       await setUpRequestHandler(webViewContents.id, 'notifications');
 
@@ -1141,12 +1143,12 @@ describe('<webview> tag', function () {
         w.setAttribute('preload', `file://${fixtures}/module/preload-ipc.js`);
         w.setAttribute('src', `file://${fixtures}/pages/ipc-message.html`);
         document.body.appendChild(w);
-        const { frameId } = await new Promise(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
+        const { frameId } = await new Promise<any>(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
 
         const message = 'boom!';
 
         w.sendToFrame(frameId, 'ping', message);
-        const { channel, args } = await new Promise(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
+        const { channel, args } = await new Promise<any>(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
 
         expect(channel).to.equal('pong');
         expect(args).to.deep.equal([message]);
@@ -1642,7 +1644,7 @@ describe('<webview> tag', function () {
       itremote('does not emit when src is not changed', async () => {
         const webview = new WebView();
         document.body.appendChild(webview);
-        await new Promise(resolve => setTimeout(resolve));
+        await setTimeout();
         const expectedErrorMessage = 'The WebView must be attached to the DOM and the dom-ready event emitted before this method can be called.';
         expect(() => { webview.stop(); }).to.throw(expectedErrorMessage);
       });

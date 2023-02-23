@@ -7,11 +7,11 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as stream from 'stream';
-import { EventEmitter } from 'events';
+import { EventEmitter, once } from 'events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { WebmGenerator } from './lib/video-helpers';
-import { delay, listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -37,7 +37,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
 
   async function sendChunks () {
-    await delay(0); // the stream protocol API breaks if you send data immediately.
+    await setTimeout(0); // the stream protocol API breaks if you send data immediately.
     let buf = Buffer.from(data as any); // nodejs typings are wrong, Buffer.from can take a Buffer
     for (;;) {
       body.push(buf.slice(0, chunkSize));
@@ -46,7 +46,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
         break;
       }
       // emulate some network delay
-      await delay(10);
+      await setTimeout(10);
     }
     body.push(null);
   }
@@ -499,7 +499,7 @@ describe('protocol module', () => {
             data: createStream()
           });
         });
-        const hasEndedPromise = emittedOnce(events, 'end');
+        const hasEndedPromise = once(events, 'end');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasEndedPromise;
       });
@@ -520,8 +520,8 @@ describe('protocol module', () => {
           events.emit('respond');
         });
 
-        const hasRespondedPromise = emittedOnce(events, 'respond');
-        const hasClosedPromise = emittedOnce(events, 'close');
+        const hasRespondedPromise = once(events, 'respond');
+        const hasClosedPromise = once(events, 'close');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasRespondedPromise;
         await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
@@ -713,7 +713,7 @@ describe('protocol module', () => {
     it('can execute redirects', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               data: '',
               statusCode: 302,
@@ -721,7 +721,7 @@ describe('protocol module', () => {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(1, 'redirect'));
@@ -734,14 +734,14 @@ describe('protocol module', () => {
     it('should discard post data after redirection', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               statusCode: 302,
               headers: {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(3, request.method));
@@ -770,7 +770,7 @@ describe('protocol module', () => {
       let stderr = '';
       appProcess.stdout.on('data', data => { process.stdout.write(data); stdout += data; });
       appProcess.stderr.on('data', data => { process.stderr.write(data); stderr += data; });
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const [code] = await once(appProcess, 'exit');
       if (code !== 0) {
         console.log('Exit code : ', code);
         console.log('stdout : ', stdout);
@@ -979,13 +979,13 @@ describe('protocol module', () => {
       newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
       try {
         newContents.loadURL(standardScheme + '://fake-host');
-        const [, response] = await emittedOnce(ipcMain, 'response');
+        const [, response] = await once(ipcMain, 'response');
         expect(response).to.deep.equal(expected);
         expect(consoleMessages.join('\n')).to.match(expectedConsole);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }
@@ -1082,12 +1082,12 @@ describe('protocol module', () => {
 
       try {
         newContents.loadURL(testingScheme + '://fake-host');
-        const [, response] = await emittedOnce(ipcMain, 'result');
+        const [, response] = await once(ipcMain, 'result');
         expect(response).to.deep.equal(expected);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }

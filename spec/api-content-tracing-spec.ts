@@ -2,7 +2,8 @@ import { expect } from 'chai';
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
 import * as fs from 'fs';
 import * as path from 'path';
-import { ifdescribe, delay } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
+import { ifdescribe } from './lib/spec-helpers';
 
 // FIXME: The tests are skipped on arm/arm64 and ia32.
 ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing', () => {
@@ -10,7 +11,7 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
     await app.whenReady();
 
     await contentTracing.startRecording(options);
-    await delay(recordTimeInMilliseconds);
+    await setTimeout(recordTimeInMilliseconds);
     const resultFilePath = await contentTracing.stopRecording(outputFilePath);
 
     return resultFilePath;
@@ -131,7 +132,7 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
         let n = 0;
         const f = () => {};
         while (+new Date() - start < 200 || n < 500) {
-          await delay(0);
+          await setTimeout(0);
           f();
           n++;
         }
