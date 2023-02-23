@@ -3977,6 +3977,24 @@ describe('BrowserWindow module', () => {
       w.hide();
       w.show();
     });
+
+    // TODO(zcbenz):
+    // This test does not run on Linux CI. See:
+    // https://github.com/electron/electron/issues/28699
+    ifit(process.platform === 'linux' && !process.env.CI)('should bring a minimized maximized window back to maximized state', async () => {
+      const w = new BrowserWindow({});
+      const maximize = emittedOnce(w, 'maximize');
+      w.maximize();
+      await maximize;
+      const minimize = emittedOnce(w, 'minimize');
+      w.minimize();
+      await minimize;
+      expect(w.isMaximized()).to.equal(false);
+      const restore = emittedOnce(w, 'restore');
+      w.restore();
+      await restore;
+      expect(w.isMaximized()).to.equal(true);
+    });
   });
 
   // TODO(dsanders11): Enable once maximize event works on Linux again on CI
