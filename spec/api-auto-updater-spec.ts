@@ -1,12 +1,12 @@
 import { autoUpdater } from 'electron/main';
 import { expect } from 'chai';
 import { ifit, ifdescribe } from './lib/spec-helpers';
-import { emittedOnce } from './lib/events-helpers';
+import { once } from 'events';
 
 ifdescribe(!process.mas)('autoUpdater module', function () {
   describe('checkForUpdates', function () {
     ifit(process.platform === 'win32')('emits an error on Windows if the feed URL is not set', async function () {
-      const errorEvent = emittedOnce(autoUpdater, 'error');
+      const errorEvent = once(autoUpdater, 'error');
       autoUpdater.setFeedURL({ url: '' });
       autoUpdater.checkForUpdates();
       const [error] = await errorEvent;
@@ -56,7 +56,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
 
     ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('on Mac', function () {
       it('emits an error when the application is unsigned', async () => {
-        const errorEvent = emittedOnce(autoUpdater, 'error');
+        const errorEvent = once(autoUpdater, 'error');
         autoUpdater.setFeedURL({ url: '' });
         const [error] = await errorEvent;
         expect(error.message).equal('Could not get code signature for running application');
@@ -80,7 +80,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
 
   describe('quitAndInstall', () => {
     ifit(process.platform === 'win32')('emits an error on Windows when no update is available', async function () {
-      const errorEvent = emittedOnce(autoUpdater, 'error');
+      const errorEvent = once(autoUpdater, 'error');
       autoUpdater.quitAndInstall();
       const [error] = await errorEvent;
       expect(error.message).to.equal('No update available, can\'t quit and install');

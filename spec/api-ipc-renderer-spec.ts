@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
-import { emittedOnce } from './lib/events-helpers';
 import { closeWindow } from './lib/window-helpers';
+import { once } from 'events';
 
 describe('ipcRenderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -27,7 +27,7 @@ describe('ipcRenderer module', () => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', ${JSON.stringify(obj)})
       }`);
-      const [, received] = await emittedOnce(ipcMain, 'message');
+      const [, received] = await once(ipcMain, 'message');
       expect(received).to.deep.equal(obj);
     });
 
@@ -37,7 +37,7 @@ describe('ipcRenderer module', () => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', new Date(${JSON.stringify(isoDate)}))
       }`);
-      const [, received] = await emittedOnce(ipcMain, 'message');
+      const [, received] = await once(ipcMain, 'message');
       expect(received.toISOString()).to.equal(isoDate);
     });
 
@@ -47,7 +47,7 @@ describe('ipcRenderer module', () => {
         const { ipcRenderer } = require('electron')
         ipcRenderer.send('message', Buffer.from(${JSON.stringify(data)}))
       }`);
-      const [, received] = await emittedOnce(ipcMain, 'message');
+      const [, received] = await once(ipcMain, 'message');
       expect(received).to.be.an.instanceOf(Uint8Array);
       expect(Buffer.from(data).equals(received)).to.be.true();
     });
@@ -88,7 +88,7 @@ describe('ipcRenderer module', () => {
       const bar = { name: 'bar', child: child };
       const array = [foo, bar];
 
-      const [, arrayValue, fooValue, barValue, childValue] = await emittedOnce(ipcMain, 'message');
+      const [, arrayValue, fooValue, barValue, childValue] = await once(ipcMain, 'message');
       expect(arrayValue).to.deep.equal(array);
       expect(fooValue).to.deep.equal(foo);
       expect(barValue).to.deep.equal(bar);
@@ -106,7 +106,7 @@ describe('ipcRenderer module', () => {
         ipcRenderer.send('message', array, child)
       }`);
 
-      const [, arrayValue, childValue] = await emittedOnce(ipcMain, 'message');
+      const [, arrayValue, childValue] = await once(ipcMain, 'message');
       expect(arrayValue[0]).to.equal(5);
       expect(arrayValue[1]).to.equal(arrayValue);
 

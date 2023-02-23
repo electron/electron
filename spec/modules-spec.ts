@@ -4,8 +4,8 @@ import * as fs from 'fs';
 import { BrowserWindow } from 'electron/main';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import * as childProcess from 'child_process';
+import { once } from 'events';
 
 const Module = require('module');
 
@@ -30,7 +30,7 @@ describe('modules support', () => {
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'));
-        const [msg] = await emittedOnce(child, 'message');
+        const [msg] = await once(child, 'message');
         expect(msg).to.equal('ok');
       });
 
@@ -62,7 +62,7 @@ describe('modules support', () => {
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
-        const [exitCode] = await emittedOnce(child, 'exit');
+        const [exitCode] = await once(child, 'exit');
         expect(exitCode).to.equal(0);
       });
     });

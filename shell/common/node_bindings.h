@@ -85,7 +85,7 @@ class NodeBindings {
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
-  void Initialize();
+  void Initialize(v8::Local<v8::Context> context);
 
   void SetNodeCliFlags();
 

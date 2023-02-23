@@ -1,8 +1,8 @@
 import { BrowserWindow } from 'electron';
 import * as path from 'path';
-import { delay } from './lib/spec-helpers';
 import { expect } from 'chai';
 import { closeAllWindows } from './lib/window-helpers';
+import { setTimeout } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -17,7 +17,7 @@ describe('autofill', () => {
     const inputText = 'clap';
     for (const keyCode of inputText) {
       w.webContents.sendInputEvent({ type: 'char', keyCode });
-      await delay(100);
+      await setTimeout(100);
     }
 
     w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Down' });
@@ -36,7 +36,7 @@ describe('autofill', () => {
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' });
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode });
       w.webContents.sendInputEvent({ type: 'char', keyCode });
-      await delay(100);
+      await setTimeout(100);
     }
 
     w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Tab' });

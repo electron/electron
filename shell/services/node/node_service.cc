@@ -47,7 +47,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 
   v8::HandleScope scope(js_env_->isolate());
 
-  node_bindings_->Initialize();
+  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();
