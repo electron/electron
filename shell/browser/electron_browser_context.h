@@ -65,6 +65,9 @@ using DisplayMediaResponseCallbackJs =
 using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  DisplayMediaResponseCallbackJs)>;
+using PartitionOrPath =
+    std::variant<std::reference_wrapper<const std::string>,
+                 std::reference_wrapper<const base::FilePath>>;
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
@@ -92,6 +95,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   };
   using BrowserContextMap =
       std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>;
+  using BrowserContextPathMap =
+      std::map<PartitionKey, std::unique_ptr<ElectronBrowserContext>>;
 
   // Get or create the BrowserContext according to its |partition| and
   // |in_memory|. The |options| will be passed to constructor when there is no
@@ -103,10 +108,11 @@ class ElectronBrowserContext : public content::BrowserContext {
   // Get or create the BrowserContext using the |path|.
   // The |options| will be passed to constructor when there is no
   // existing BrowserContext.
-  static ElectronBrowserContext* FromPath(base::FilePath path,
+  static ElectronBrowserContext* FromPath(const base::FilePath& path,
                                           base::Value::Dict options = {});
 
   static BrowserContextMap& browser_context_map();
+  static BrowserContextPathMap& browser_context_path_map();
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
@@ -196,11 +202,9 @@ class ElectronBrowserContext : public content::BrowserContext {
                              blink::PermissionType permissionType);
 
  private:
-  ElectronBrowserContext(const std::string& partition,
+  ElectronBrowserContext(const PartitionOrPath partition_location,
                          bool in_memory,
                          base::Value::Dict options);
-
-  ElectronBrowserContext(base::FilePath partition, base::Value::Dict options);
 
   static void DisplayMediaDeviceChosen(
       const content::MediaStreamRequest& request,
