@@ -25,17 +25,3 @@ newPRWelcomeComment: |
 # Comment to be posted to on pull requests merged by a first time user
 firstPRMergeComment: >
   Congrats on merging your first pull request! 🎉🎉🎉
-
-# Users authorized to run manual trop backports
-authorizedUsers:
-  - alexeykuzmin
-  - ckerr
-  - codebytere
-  - deepak1556
-  - jkleinsc
-  - loc
-  - MarshallOfSound
-  - miniak
-  - mlaurencin
-  - nornagon
-  - zcbenz
