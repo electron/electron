@@ -8,6 +8,7 @@
 DEPS                                    @electron/wg-upgrades
 
 # Releases WG
+/docs/breaking-changes.md               @electron/wg-releases
 /npm/                                   @electron/wg-releases
 /script/release                         @electron/wg-releases
 
