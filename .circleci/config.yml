@@ -51,7 +51,7 @@ jobs:
     steps:
       - checkout
       - path-filtering/set-parameters:
-          base-revision: main
+          base-revision: origin/24-x-y
           mapping: |
             ^((?!docs/).)*$ run-build-mac true
             ^((?!docs/).)*$ run-build-linux true
