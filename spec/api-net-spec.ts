@@ -3,9 +3,10 @@ import * as dns from 'dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
-import { AddressInfo, Socket } from 'net';
-import { emittedOnce } from './lib/events-helpers';
-import { defer, delay } from './lib/spec-helpers';
+import { Socket } from 'net';
+import { defer, listen } from './lib/spec-helpers';
+import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -53,26 +54,22 @@ function collectStreamBodyBuffer (response: Electron.IncomingMessage | http.Inco
   });
 }
 
-function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
-  return new Promise((resolve) => {
-    const server = http.createServer((request, response) => {
-      fn(request, response);
-      // don't close if a redirect was returned
-      if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
-        n--;
-        server.close();
-      }
-    });
-    server.listen(0, '127.0.0.1', () => {
-      resolve(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
-    });
-    const sockets: Socket[] = [];
-    server.on('connection', s => sockets.push(s));
-    defer(() => {
+async function respondNTimes (fn: http.RequestListener, n: number): Promise<string> {
+  const server = http.createServer((request, response) => {
+    fn(request, response);
+    // don't close if a redirect was returned
+    if ((response.statusCode < 300 || response.statusCode >= 399) && n <= 0) {
+      n--;
       server.close();
-      sockets.forEach(s => s.destroy());
-    });
+    }
   });
+  const sockets: Socket[] = [];
+  server.on('connection', s => sockets.push(s));
+  defer(() => {
+    server.close();
+    sockets.forEach(s => s.destroy());
+  });
+  return (await listen(server)).url;
 }
 
 function respondOnce (fn: http.RequestListener) {
@@ -416,9 +413,9 @@ describe('net module', () => {
 
       const urlRequest = net.request(serverUrl);
       // request close event
-      const closePromise = emittedOnce(urlRequest, 'close');
+      const closePromise = once(urlRequest, 'close');
       // request finish event
-      const finishPromise = emittedOnce(urlRequest, 'close');
+      const finishPromise = once(urlRequest, 'close');
       // request "response" event
       const response = await getResponse(urlRequest);
       response.on('error', (error: Error) => {
@@ -878,6 +875,39 @@ describe('net module', () => {
       expect(cookies[0].name).to.equal('cookie2');
     });
 
+    it('should be able correctly filter out cookies that are httpOnly', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await Promise.all([
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie1',
+          value: '1',
+          httpOnly: true
+        }),
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie2',
+          value: '2',
+          httpOnly: false
+        })
+      ]);
+
+      const httpOnlyCookies = await sess.cookies.get({
+        httpOnly: true
+      });
+      expect(httpOnlyCookies).to.have.lengthOf(1);
+      expect(httpOnlyCookies[0].name).to.equal('cookie1');
+
+      const cookies = await sess.cookies.get({
+        httpOnly: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+      expect(cookies[0].name).to.equal('cookie2');
+    });
+
     describe('when {"credentials":"omit"}', () => {
       it('should not send cookies');
       it('should not store cookies');
@@ -1027,7 +1057,7 @@ describe('net module', () => {
       urlRequest.on('response', () => {
         expect.fail('unexpected response event');
       });
-      const aborted = emittedOnce(urlRequest, 'abort');
+      const aborted = once(urlRequest, 'abort');
       urlRequest.abort();
       urlRequest.write('');
       urlRequest.end();
@@ -1057,10 +1087,10 @@ describe('net module', () => {
         requestAbortEventEmitted = true;
       });
 
-      await emittedOnce(urlRequest, 'close', () => {
-        urlRequest!.chunkedEncoding = true;
-        urlRequest!.write(randomString(kOneKiloByte));
-      });
+      const p = once(urlRequest, 'close');
+      urlRequest.chunkedEncoding = true;
+      urlRequest.write(randomString(kOneKiloByte));
+      await p;
       expect(requestReceivedByServer).to.equal(true);
       expect(requestAbortEventEmitted).to.equal(true);
     });
@@ -1090,7 +1120,7 @@ describe('net module', () => {
         expect.fail('Unexpected error event');
       });
       urlRequest.end(randomString(kOneKiloByte));
-      await emittedOnce(urlRequest, 'abort');
+      await once(urlRequest, 'abort');
       expect(requestFinishEventEmitted).to.equal(true);
       expect(requestReceivedByServer).to.equal(true);
     });
@@ -1131,7 +1161,7 @@ describe('net module', () => {
         expect.fail('Unexpected error event');
       });
       urlRequest.end(randomString(kOneKiloByte));
-      await emittedOnce(urlRequest, 'abort');
+      await once(urlRequest, 'abort');
       expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
       expect(requestReceivedByServer).to.be.true('request should be received by the server');
       expect(requestResponseEventEmitted).to.be.true('"response" event should be emitted');
@@ -1163,7 +1193,7 @@ describe('net module', () => {
         abortsEmitted++;
       });
       urlRequest.end(randomString(kOneKiloByte));
-      await emittedOnce(urlRequest, 'abort');
+      await once(urlRequest, 'abort');
       expect(requestFinishEventEmitted).to.be.true('request should emit "finish" event');
       expect(requestReceivedByServer).to.be.true('request should be received by server');
       expect(abortsEmitted).to.equal(1, 'request should emit exactly 1 "abort" event');
@@ -1185,7 +1215,7 @@ describe('net module', () => {
       });
       const eventHandlers = Promise.all([
         bodyCheckPromise,
-        emittedOnce(urlRequest, 'close')
+        once(urlRequest, 'close')
       ]);
 
       urlRequest.end();
@@ -1416,7 +1446,7 @@ describe('net module', () => {
       urlRequest.end();
       urlRequest.on('redirect', () => { urlRequest.abort(); });
       urlRequest.on('error', () => {});
-      await emittedOnce(urlRequest, 'abort');
+      await once(urlRequest, 'abort');
     });
 
     it('should not follow redirect when mode is error', async () => {
@@ -1430,7 +1460,7 @@ describe('net module', () => {
         redirect: 'error'
       });
       urlRequest.end();
-      await emittedOnce(urlRequest, 'error');
+      await once(urlRequest, 'error');
     });
 
     it('should follow redirect when handler calls callback', async () => {
@@ -1530,7 +1560,7 @@ describe('net module', () => {
       const nodeRequest = http.request(nodeServerUrl);
       const nodeResponse = await getResponse(nodeRequest as any) as any as http.ServerResponse;
       const netRequest = net.request(netServerUrl);
-      const responsePromise = emittedOnce(netRequest, 'response');
+      const responsePromise = once(netRequest, 'response');
       // TODO(@MarshallOfSound) - FIXME with #22730
       nodeResponse.pipe(netRequest as any);
       const [netResponse] = await responsePromise;
@@ -1547,7 +1577,7 @@ describe('net module', () => {
       const netRequest = net.request({ url: serverUrl, method: 'POST' });
       expect(netRequest.getUploadProgress()).to.have.property('active', false);
       netRequest.end(Buffer.from('hello'));
-      const [position, total] = await emittedOnce(netRequest, 'upload-progress');
+      const [position, total] = await once(netRequest, 'upload-progress');
       expect(netRequest.getUploadProgress()).to.deep.equal({ active: true, started: true, current: position, total });
     });
 
@@ -1557,7 +1587,7 @@ describe('net module', () => {
       });
       const urlRequest = net.request(serverUrl);
       urlRequest.end();
-      const [error] = await emittedOnce(urlRequest, 'error');
+      const [error] = await once(urlRequest, 'error');
       expect(error.message).to.equal('net::ERR_EMPTY_RESPONSE');
     });
 
@@ -1568,7 +1598,7 @@ describe('net module', () => {
       });
       const urlRequest = net.request(serverUrl);
       urlRequest.end(randomBuffer(kOneMegaByte));
-      const [error] = await emittedOnce(urlRequest, 'error');
+      const [error] = await once(urlRequest, 'error');
       expect(error.message).to.be.oneOf(['net::ERR_FAILED', 'net::ERR_CONNECTION_RESET', 'net::ERR_CONNECTION_ABORTED']);
     });
 
@@ -1580,14 +1610,14 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.end();
 
-      await emittedOnce(urlRequest, 'close');
+      await once(urlRequest, 'close');
       await new Promise((resolve, reject) => {
         ['finish', 'abort', 'close', 'error'].forEach(evName => {
           urlRequest.on(evName as any, () => {
             reject(new Error(`Unexpected ${evName} event`));
           });
         });
-        setTimeout(resolve, 50);
+        setTimeout(50).then(resolve);
       });
     });
 
@@ -1614,7 +1644,15 @@ describe('net module', () => {
         response.statusMessage = 'OK';
         response.end();
       });
-      const urlRequest = net.request(serverUrl);
+      // The referrerPolicy must be unsafe-url because the referrer's origin
+      // doesn't match the loaded page. With the default referrer policy
+      // (strict-origin-when-cross-origin), the request will be canceled by the
+      // network service when the referrer header is invalid.
+      // See:
+      // - https://source.chromium.org/chromium/chromium/src/+/main:net/url_request/url_request.cc;l=682-683;drc=ae587fa7cd2e5cc308ce69353ee9ce86437e5d41
+      // - https://source.chromium.org/chromium/chromium/src/+/main:services/network/public/mojom/network_context.mojom;l=316-318;drc=ae5c7fcf09509843c1145f544cce3a61874b9698
+      // - https://w3c.github.io/webappsec-referrer-policy/#determine-requests-referrer
+      const urlRequest = net.request({ url: serverUrl, referrerPolicy: 'unsafe-url' });
       urlRequest.setHeader('referer', referrerURL);
       urlRequest.end();
 
@@ -1865,7 +1903,7 @@ describe('net module', () => {
         port: serverUrl.port
       };
       const nodeRequest = http.request(nodeOptions);
-      const nodeResponsePromise = emittedOnce(nodeRequest, 'response');
+      const nodeResponsePromise = once(nodeRequest, 'response');
       // TODO(@MarshallOfSound) - FIXME with #22730
       (netResponse as any).pipe(nodeRequest);
       const [nodeResponse] = await nodeResponsePromise;
@@ -1892,7 +1930,7 @@ describe('net module', () => {
       const urlRequest = net.request(serverUrl);
       urlRequest.on('response', () => {});
       urlRequest.end();
-      await delay(2000);
+      await setTimeout(2000);
       // TODO(nornagon): I think this ought to max out at 20, but in practice
       // it seems to exceed that sometimes. This is at 25 to avoid test flakes,
       // but we should investigate if there's actually something broken here and
@@ -2037,6 +2075,97 @@ describe('net module', () => {
       urlRequest.chunkedEncoding = true;
       urlRequest.write(randomBuffer(kOneMegaByte));
       await collectStreamBody(await getResponse(urlRequest));
+    });
+  });
+
+  describe('net.fetch', () => {
+    // NB. there exist much more comprehensive tests for fetch() in the form of
+    // the WPT: https://github.com/web-platform-tests/wpt/tree/master/fetch
+    // It's possible to run these tests against net.fetch(), but the test
+    // harness to do so is quite complex and hasn't been munged to smoothly run
+    // inside the Electron test runner yet.
+    //
+    // In the meantime, here are some tests for basic functionality and
+    // Electron-specific behavior.
+
+    describe('basic', () => {
+      it('can fetch http urls', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.end('test');
+        });
+        const resp = await net.fetch(serverUrl);
+        expect(resp.ok).to.be.true();
+        expect(await resp.text()).to.equal('test');
+      });
+
+      it('can upload a string body', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          request.on('data', chunk => response.write(chunk));
+          request.on('end', () => response.end());
+        });
+        const resp = await net.fetch(serverUrl, {
+          method: 'POST',
+          body: 'anchovies'
+        });
+        expect(await resp.text()).to.equal('anchovies');
+      });
+
+      it('can read response as an array buffer', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          request.on('data', chunk => response.write(chunk));
+          request.on('end', () => response.end());
+        });
+        const resp = await net.fetch(serverUrl, {
+          method: 'POST',
+          body: 'anchovies'
+        });
+        expect(new TextDecoder().decode(new Uint8Array(await resp.arrayBuffer()))).to.equal('anchovies');
+      });
+
+      it('can read response as form data', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.setHeader('content-type', 'application/x-www-form-urlencoded');
+          response.end('foo=bar');
+        });
+        const resp = await net.fetch(serverUrl);
+        const result = await resp.formData();
+        expect(result.get('foo')).to.equal('bar');
+      });
+
+      it('should be able to use a session cookie store', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.statusCode = 200;
+          response.statusMessage = 'OK';
+          response.setHeader('x-cookie', request.headers.cookie!);
+          response.end();
+        });
+        const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+        const cookieVal = `${Date.now()}`;
+        await sess.cookies.set({
+          url: serverUrl,
+          name: 'wild_cookie',
+          value: cookieVal
+        });
+        const response = await sess.fetch(serverUrl, {
+          credentials: 'include'
+        });
+        expect(response.headers.get('x-cookie')).to.equal(`wild_cookie=${cookieVal}`);
+      });
+
+      it('should reject promise on DNS failure', async () => {
+        const r = net.fetch('https://i.do.not.exist');
+        await expect(r).to.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
+      });
+
+      it('should reject body promise when stream fails', async () => {
+        const serverUrl = await respondOnce.toSingleURL((request, response) => {
+          response.write('first chunk');
+          setTimeout().then(() => response.destroy());
+        });
+        const r = await net.fetch(serverUrl);
+        expect(r.status).to.equal(200);
+        await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
+      });
     });
   });
 });

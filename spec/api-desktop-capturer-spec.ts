@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
-import { delay, ifdescribe, ifit } from './lib/spec-helpers';
-import { emittedOnce } from './lib/events-helpers';
+import { once } from 'events';
+import { setTimeout } from 'timers/promises';
+import { ifdescribe, ifit } from './lib/spec-helpers';
 
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -74,7 +75,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   it('disabling thumbnail should return empty images', async () => {
     const w2 = new BrowserWindow({ show: false, width: 200, height: 200, webPreferences: { contextIsolation: false } });
-    const wShown = emittedOnce(w2, 'show');
+    const wShown = once(w2, 'show');
     w2.show();
     await wShown;
 
@@ -90,8 +91,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   it('getMediaSourceId should match DesktopCapturerSource.id', async () => {
     const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
-    const wShown = emittedOnce(w, 'show');
-    const wFocused = emittedOnce(w, 'focus');
+    const wShown = once(w, 'show');
+    const wFocused = once(w, 'focus');
     w.show();
     w.focus();
     await wShown;
@@ -121,8 +122,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
   it('getSources should not incorrectly duplicate window_id', async () => {
     const w = new BrowserWindow({ show: false, width: 100, height: 100, webPreferences: { contextIsolation: false } });
-    const wShown = emittedOnce(w, 'show');
-    const wFocused = emittedOnce(w, 'focus');
+    const wShown = once(w, 'show');
+    const wFocused = once(w, 'focus');
     w.show();
     w.focus();
     await wShown;
@@ -176,8 +177,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
 
       // Show and focus all the windows.
       for (const w of wList) {
-        const wShown = emittedOnce(w, 'show');
-        const wFocused = emittedOnce(w, 'focus');
+        const wShown = once(w, 'show');
+        const wFocused = once(w, 'focus');
 
         w.show();
         w.focus();
@@ -227,7 +228,7 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
           w.focus();
           w.moveAbove(next.getMediaSourceId());
           // Ensure the window has time to move.
-          await delay(2000);
+          await setTimeout(2000);
         }
       }
 

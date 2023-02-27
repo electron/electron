@@ -186,8 +186,8 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   std::string GetAlwaysOnTopLevel();
   void SetWindowButtonVisibility(bool visible);
   bool GetWindowButtonVisibility() const;
-  void SetTrafficLightPosition(const gfx::Point& position);
-  gfx::Point GetTrafficLightPosition() const;
+  void SetWindowButtonPosition(absl::optional<gfx::Point> position);
+  absl::optional<gfx::Point> GetWindowButtonPosition() const;
 #endif
 
 #if BUILDFLAG(IS_MAC)

@@ -448,7 +448,13 @@ class WebContents : public ExclusiveAccessContext,
   void OnInputEvent(const blink::WebInputEvent& event) override;
 
   void SetBackgroundColor(absl::optional<SkColor> color);
-  SkRegion* draggable_region() { return draggable_region_.get(); }
+  SkRegion* draggable_region() {
+    return force_non_draggable_ ? nullptr : draggable_region_.get();
+  }
+
+  void SetForceNonDraggable(bool force_non_draggable) {
+    force_non_draggable_ = force_non_draggable;
+  }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -831,6 +837,8 @@ class WebContents : public ExclusiveAccessContext,
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;
+
+  bool force_non_draggable_ = false;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

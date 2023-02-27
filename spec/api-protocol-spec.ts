@@ -1,18 +1,17 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain } from 'electron/main';
-import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as stream from 'stream';
-import { EventEmitter } from 'events';
+import { EventEmitter, once } from 'events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { WebmGenerator } from './lib/video-helpers';
-import { delay } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -38,7 +37,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
 
   async function sendChunks () {
-    await delay(0); // the stream protocol API breaks if you send data immediately.
+    await setTimeout(0); // the stream protocol API breaks if you send data immediately.
     let buf = Buffer.from(data as any); // nodejs typings are wrong, Buffer.from can take a Buffer
     for (;;) {
       body.push(buf.slice(0, chunkSize));
@@ -47,7 +46,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
         break;
       }
       // emulate some network delay
-      await delay(10);
+      await setTimeout(10);
     }
     body.push(null);
   }
@@ -70,9 +69,9 @@ function defer (): Promise<any> & {resolve: Function, reject: Function} {
 }
 
 describe('protocol module', () => {
-  let contents: WebContents = null as unknown as WebContents;
+  let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => { contents = (webContents as any).create({ sandbox: true }); });
+  before(() => { contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true }); });
   after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
@@ -324,10 +323,8 @@ describe('protocol module', () => {
           res.end(text);
           server.close();
         });
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        const { url } = await listen(server);
 
-        const port = (server.address() as AddressInfo).port;
-        const url = 'http://127.0.0.1:' + port;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
         const r = await ajax(protocolName + '://fake-host');
         expect(r.data).to.equal(text);
@@ -354,9 +351,7 @@ describe('protocol module', () => {
           }
         });
         after(() => server.close());
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-
-        const port = (server.address() as AddressInfo).port;
+        const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;
         const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
@@ -504,7 +499,7 @@ describe('protocol module', () => {
             data: createStream()
           });
         });
-        const hasEndedPromise = emittedOnce(events, 'end');
+        const hasEndedPromise = once(events, 'end');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasEndedPromise;
       });
@@ -525,8 +520,8 @@ describe('protocol module', () => {
           events.emit('respond');
         });
 
-        const hasRespondedPromise = emittedOnce(events, 'respond');
-        const hasClosedPromise = emittedOnce(events, 'close');
+        const hasRespondedPromise = once(events, 'respond');
+        const hasClosedPromise = once(events, 'close');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasRespondedPromise;
         await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
@@ -653,10 +648,7 @@ describe('protocol module', () => {
         server.close();
       });
       after(() => server.close());
-      server.listen(0, '127.0.0.1');
-
-      const port = (server.address() as AddressInfo).port;
-      const url = `http://127.0.0.1:${port}`;
+      const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
           url: url,
@@ -721,7 +713,7 @@ describe('protocol module', () => {
     it('can execute redirects', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               data: '',
               statusCode: 302,
@@ -729,7 +721,7 @@ describe('protocol module', () => {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(1, 'redirect'));
@@ -742,14 +734,14 @@ describe('protocol module', () => {
     it('should discard post data after redirection', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               statusCode: 302,
               headers: {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(3, request.method));
@@ -778,7 +770,7 @@ describe('protocol module', () => {
       let stderr = '';
       appProcess.stdout.on('data', data => { process.stdout.write(data); stdout += data; });
       appProcess.stderr.on('data', data => { process.stderr.write(data); stderr += data; });
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const [code] = await once(appProcess, 'exit');
       if (code !== 0) {
         console.log('Exit code : ', code);
         console.log('stdout : ', stdout);
@@ -824,7 +816,7 @@ describe('protocol module', () => {
     const imageURL = `${origin}/test.png`;
     const filePath = path.join(fixturesPath, 'pages', 'b.html');
     const fileContent = '<img src="/test.png" />';
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     beforeEach(() => {
       w = new BrowserWindow({
@@ -874,9 +866,8 @@ describe('protocol module', () => {
         server.close();
         requestReceived.resolve();
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
-      const content = `<script>fetch("http://127.0.0.1:${port}")</script>`;
+      const { url } = await listen(server);
+      const content = `<script>fetch(${JSON.stringify(url)})</script>`;
       registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
       await w.loadURL(origin);
       await requestReceived;
@@ -900,7 +891,7 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
@@ -980,18 +971,21 @@ describe('protocol module', () => {
         callback('');
       });
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
+      const newContents = (webContents as typeof ElectronInternal.WebContents).create({
+        nodeIntegration: true,
+        contextIsolation: false
+      });
       const consoleMessages: string[] = [];
       newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
       try {
         newContents.loadURL(standardScheme + '://fake-host');
-        const [, response] = await emittedOnce(ipcMain, 'response');
+        const [, response] = await once(ipcMain, 'response');
         expect(response).to.deep.equal(expected);
         expect(consoleMessages.join('\n')).to.match(expectedConsole);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }
@@ -1002,7 +996,7 @@ describe('protocol module', () => {
     const pagePath = path.join(fixturesPath, 'pages', 'video.html');
     const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
     const videoPath = path.join(fixturesPath, 'video.webm');
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     before(async () => {
       // generate test video
@@ -1081,15 +1075,19 @@ describe('protocol module', () => {
       await registerStreamProtocol(standardScheme, protocolHandler);
       await registerStreamProtocol('stream', protocolHandler);
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
+      const newContents = (webContents as typeof ElectronInternal.WebContents).create({
+        nodeIntegration: true,
+        contextIsolation: false
+      });
+
       try {
         newContents.loadURL(testingScheme + '://fake-host');
-        const [, response] = await emittedOnce(ipcMain, 'result');
+        const [, response] = await once(ipcMain, 'result');
         expect(response).to.deep.equal(expected);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }

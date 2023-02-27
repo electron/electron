@@ -121,11 +121,6 @@ class TestsList():
         for binary in binaries])
     return suite_returncode
 
-  def run_only(self, binary_name, output_dir=None, verbosity=Verbosity.CHATTY,
-      disabled_tests_policy=DisabledTestsPolicy.DISABLE):
-    return self.run([binary_name], output_dir, verbosity,
-                    disabled_tests_policy)
-
   def run_all(self, output_dir=None, verbosity=Verbosity.CHATTY,
       disabled_tests_policy=DisabledTestsPolicy.DISABLE):
     return self.run(self.get_for_current_platform(), output_dir, verbosity,
