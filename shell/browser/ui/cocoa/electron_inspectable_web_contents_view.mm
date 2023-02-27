@@ -5,10 +5,12 @@
 #include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 
 #include "content/public/browser/render_widget_host_view.h"
+#include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view_mac.h"
+#include "ui/base/cocoa/base_view.h"
 #include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
 @implementation ElectronInspectableWebContentsView
@@ -271,6 +273,27 @@
   if ([self window] == parentWindow && devtools_docked_ &&
       devtools_is_first_responder_)
     [self notifyDevToolsFocused];
+}
+
+- (void)redispatchContextMenuEvent:(NSEvent*)event {
+  DCHECK(event.type == NSEventTypeRightMouseDown ||
+         (event.type == NSEventTypeLeftMouseDown &&
+          (event.modifierFlags & NSEventModifierFlagControl)));
+  content::WebContents* contents =
+      inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
+  electron::api::WebContents* api_contents =
+      electron::api::WebContents::From(contents);
+  if (api_contents) {
+    // Temporarily pretend that the WebContents is fully non-draggable while we
+    // re-send the mouse event. This allows the re-dispatched event to "land"
+    // on the WebContents, instead of "falling through" back to the window.
+    api_contents->SetForceNonDraggable(true);
+    BaseView* contentsView = (BaseView*)contents->GetRenderWidgetHostView()
+                                 ->GetNativeView()
+                                 .GetNativeNSView();
+    [contentsView mouseEvent:event];
+    api_contents->SetForceNonDraggable(false);
+  }
 }
 
 #pragma mark - NSWindowDelegate
