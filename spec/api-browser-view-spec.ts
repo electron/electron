@@ -345,6 +345,15 @@ describe('BrowserView module', () => {
       const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
     });
+
+    it('emits the destroyed event when webContents.close() is called', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      view.webContents.close();
+      await once(view.webContents, 'destroyed');
+    });
   });
 
   describe('window.open()', () => {
