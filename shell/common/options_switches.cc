@@ -195,6 +195,8 @@ const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
 
 const char ktitleBarOverlay[] = "titleBarOverlay";
 
+const char kDisableAllowsVibrancy[] = "disableAllowsVibrancy";
+
 }  // namespace options
 
 namespace switches {

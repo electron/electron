@@ -16,6 +16,7 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gfx_converter.h"
+#include "shell/common/gin_converters/native_window_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
@@ -152,6 +153,40 @@ void BrowserView::SetAutoResize(AutoResizeFlags flags) {
   view_->SetAutoResizeFlags(flags);
 }
 
+void BrowserView::ShowPopoverWindow(gin_helper::ErrorThrower thrower,
+                                    const gin_helper::Dictionary& options) {
+  NativeWindow* positioning_window = nullptr;
+  if (!options.Get("positioningWindow", &positioning_window)) {
+    thrower.ThrowError("Cannot show popover without positioning window");
+    return;
+  }
+
+  gfx::Size size;
+  if (!options.Get("size", &size)) {
+    thrower.ThrowError("Cannot show popover without specified size");
+    return;
+  }
+
+  gfx::Rect positioning_rect;
+  options.Get("positioningRect", &positioning_rect);
+
+  std::string preferred_edge = "max-x-edge";
+  options.Get("preferredEdge", &preferred_edge);
+
+  std::string behavior = "application-defined";
+  options.Get("behavior", &behavior);
+
+  bool animate = false;
+  options.Get("animate", &animate);
+
+  view_->ShowPopoverWindow(positioning_window, positioning_rect, size,
+                           preferred_edge, behavior, animate);
+}
+
+void BrowserView::ClosePopoverWindow() {
+  view_->ClosePopoverWindow();
+}
+
 void BrowserView::SetBounds(const gfx::Rect& bounds) {
   view_->SetBounds(bounds);
 }
@@ -199,6 +234,8 @@ void BrowserView::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
+      .SetMethod("showPopoverWindow", &BrowserView::ShowPopoverWindow)
+      .SetMethod("closePopoverWindow", &BrowserView::ClosePopoverWindow)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .Build();
 }

@@ -164,6 +164,7 @@ void WebContentsPreferences::Clear() {
       blink::mojom::ImageAnimationPolicy::kImageAnimationPolicyAllowed;
   preload_path_ = absl::nullopt;
   v8_cache_options_ = blink::mojom::V8CacheOptions::kDefault;
+  disable_allow_vibrancy_ = false;
 
 #if BUILDFLAG(IS_MAC)
   scroll_bounce_ = false;
@@ -263,6 +264,9 @@ void WebContentsPreferences::SetFromDictionary(
 
   web_preferences.Get("v8CacheOptions", &v8_cache_options_);
 
+  web_preferences.Get(options::kDisableAllowsVibrancy,
+                      &disable_allow_vibrancy_);
+
 #if BUILDFLAG(IS_MAC)
   web_preferences.Get(options::kScrollBounce, &scroll_bounce_);
 #endif
@@ -314,6 +318,10 @@ bool WebContentsPreferences::IsSandboxed() const {
   bool sandbox_disabled_by_default =
       node_integration_ || node_integration_in_worker_;
   return !sandbox_disabled_by_default;
+}
+
+bool WebContentsPreferences::IsDisableAllowsVibrancy() const {
+  return disable_allow_vibrancy_;
 }
 
 // static

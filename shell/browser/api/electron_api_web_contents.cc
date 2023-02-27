@@ -905,6 +905,11 @@ void WebContents::InitWithSessionAndOptions(
       SetOwnerWindow(owner_window);
   }
 
+  auto* web_preferences = WebContentsPreferences::From(web_contents());
+  if (web_preferences->IsDisableAllowsVibrancy()) {
+    DisableAllowsVibrancy();
+  }
+
   web_contents()->SetUserData(kElectronApiWebContentsKey,
                               std::make_unique<UserDataLink>(GetWeakPtr()));
 }
@@ -2137,6 +2142,10 @@ void WebContents::DevToolsResized() {
     observer.OnDevToolsResized();
 }
 
+void WebContents::PopoverClosed() {
+  Emit("popover-closed");
+}
+
 void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
   SetOwnerWindow(GetWebContents(), owner_window);
 }
@@ -3133,6 +3142,8 @@ bool WebContents::IsFocused() const {
 
   return view->HasFocus();
 }
+
+void WebContents::DisableAllowsVibrancy() {}
 #endif
 
 void WebContents::SendInputEvent(v8::Isolate* isolate,

@@ -642,6 +642,7 @@ class WebContents : public ExclusiveAccessContext,
   void DevToolsOpened() override;
   void DevToolsClosed() override;
   void DevToolsResized() override;
+  void PopoverClosed() override;
 
   ElectronBrowserContext* GetBrowserContext() const;
 
@@ -716,6 +717,8 @@ class WebContents : public ExclusiveAccessContext,
                             const std::string& file_system_path,
                             const std::string& query) override;
   void DevToolsSetEyeDropperActive(bool active) override;
+
+  void DisableAllowsVibrancy();
 
   // InspectableWebContentsViewDelegate:
 #if defined(TOOLKIT_VIEWS) && !BUILDFLAG(IS_MAC)

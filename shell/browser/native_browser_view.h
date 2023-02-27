@@ -5,10 +5,12 @@
 #ifndef ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 
+#include <string>
 #include <vector>
 
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
+#include "shell/browser/native_window.h"
 #include "third_party/skia/include/core/SkColor.h"
 
 namespace gfx {
@@ -48,6 +50,14 @@ class NativeBrowserView : public content::WebContentsObserver {
   virtual void SetBounds(const gfx::Rect& bounds) = 0;
   virtual gfx::Rect GetBounds() = 0;
   virtual void SetBackgroundColor(SkColor color) = 0;
+
+  virtual void ShowPopoverWindow(NativeWindow* positioning_window,
+                                 const gfx::Rect& positioning_rect,
+                                 const gfx::Size& size,
+                                 const std::string& preferred_edge,
+                                 const std::string& behavior,
+                                 bool animate) {}
+  virtual void ClosePopoverWindow() {}
 
  protected:
   explicit NativeBrowserView(InspectableWebContents* inspectable_web_contents);

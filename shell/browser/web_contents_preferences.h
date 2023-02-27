@@ -79,6 +79,7 @@ class WebContentsPreferences
   bool IsWebSecurityEnabled() const { return web_security_; }
   bool GetPreloadPath(base::FilePath* path) const;
   bool IsSandboxed() const;
+  bool IsDisableAllowsVibrancy() const;
 
  private:
   friend class content::WebContentsUserData<WebContentsPreferences>;
@@ -133,6 +134,7 @@ class WebContentsPreferences
   blink::mojom::ImageAnimationPolicy image_animation_policy_;
   absl::optional<base::FilePath> preload_path_;
   blink::mojom::V8CacheOptions v8_cache_options_;
+  bool disable_allow_vibrancy_;
 
 #if BUILDFLAG(IS_MAC)
   bool scroll_bounce_;

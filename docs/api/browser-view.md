@@ -101,3 +101,30 @@ Examples of valid `color` values:
     * e.g. `blueviolet` or `red`
 
 **Note:** Hex format with alpha takes `AARRGGBB` or `ARGB`, _not_ `RRGGBBA` or `RGA`.
+
+#### `view.showPopoverWindow(options)` _Experimental_ _macOS_
+
+* `options` Object
+  * `positioningWindow` BrowserWindow - The window relative to which the popover
+    should be positioned.
+  * `positioningRect` Rectangle (optional) - The rectangle within
+    `positioningWindow` relative to which the popover should be positioned. If
+    not set, defaults to the bounds of `positioningWindow`.
+  * `size` Size - The size of the popover when opened.
+  * `preferredEdge` string (optional) - The edge of `positioningWindow` the
+    popover should prefer to be anchored to. Possible values are `max-x-edge`,
+    `max-y-edge`, `min-x-edge`, `min-y-edge`. Default is `max-x-edge`.
+  * `behavior` string (optional) - Specifies the behavior of the popover.
+    Possible values are `application-defined`, `transient`. Default is
+    `application-defined`.
+  * `animate` boolean (optional) - Whether to animate to showing and closing of
+    a popover. Default is `false`.
+
+Shows the popover anchored to the specified position relative to a window .
+
+**Note:** This method's parameters follow the corresponding macOS API's
+parameters. See the [documentation](https://developer.apple.com/documentation/appkit/nspopover/1532113-showrelativetorect?language=objc) for further details.
+
+#### `view.closePopoverWindow()` _Experimental_ _macOS_
+
+Closes the popover.

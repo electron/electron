@@ -77,6 +77,9 @@ class BrowserView : public gin::Wrappable<BrowserView>,
   gfx::Rect GetBounds();
   void SetBackgroundColor(const std::string& color_name);
   v8::Local<v8::Value> GetWebContents(v8::Isolate*);
+  void ShowPopoverWindow(gin_helper::ErrorThrower thrower,
+                         const gin_helper::Dictionary& options);
+  void ClosePopoverWindow();
 
   v8::Global<v8::Value> web_contents_;
   class WebContents* api_web_contents_ = nullptr;

@@ -2,6 +2,8 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#import "content/app_shim_remote_cocoa/web_contents_view_cocoa.h"
+
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
@@ -77,6 +79,16 @@ bool WebContents::PlatformHandleKeyboardEvent(
   }
 
   return false;
+}
+
+void WebContents::DisableAllowsVibrancy() {
+  WebContentsViewCocoa* web_contents_view_cocoa =
+      static_cast<WebContentsViewCocoa*>(
+          web_contents()->GetNativeView().GetNativeNSView());
+
+  if (web_contents_view_cocoa) {
+    [web_contents_view_cocoa setAllowsVibrancy:NO];
+  }
 }
 
 }  // namespace electron::api

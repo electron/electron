@@ -1,0 +1,62 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gellert Hegyi <gellert.hegyi@around.co>
+Date: Mon, 27 Feb 2023 11:20:25 +0100
+Subject: adds setAllowsVibrancy method to WebContentsViewCocoa
+
+This patch adds a setAllowsVibrancy method to WebContentsViewCocoa so allowsVibrancy can be disabled for a View for a transparent popover.
+
+diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.h b/content/app_shim_remote_cocoa/web_contents_view_cocoa.h
+index 06c2294a06539d379e7fdc934cb5f783de70175a..95adc722ae87514655ae712bb99743a95b7e111b 100644
+--- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.h
++++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.h
+@@ -86,6 +86,8 @@ CONTENT_EXPORT
+ // immediately or in the near future.
+ - (void)updateWebContentsVisibility:(remote_cocoa::mojom::Visibility)visibility;
+ 
++- (void)setAllowsVibrancy:(BOOL)allows;
++
+ @end
+ 
+ @interface NSWindow (WebContentsViewCocoa)
+diff --git a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+index 81c2cae0d90dc095e0d412c676f1514165d2b6ac..6c2d1bc77d1060afd3d27608ae22a7bc3125352a 100644
+--- a/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/web_contents_view_cocoa.mm
+@@ -107,6 +107,7 @@ @implementation WebContentsViewCocoa {
+   // is enabled by default.
+   BOOL _inFullScreenTransition;
+   BOOL _willSetWebContentsOccludedAfterDelay;
++  BOOL _allowsVibrancy;
+ }
+ 
+ + (void)initialize {
+@@ -128,6 +129,9 @@ - (instancetype)initWithViewsHostableView:(ui::ViewsHostableView*)v {
+                name:kViewDidBecomeFirstResponder
+              object:nil];
+   }
++
++  _allowsVibrancy = YES;
++
+   return self;
+ }
+ 
+@@ -179,7 +183,7 @@ - (BOOL)allowsVibrancy {
+   // incorporated into a view hierarchy that uses vibrancy, it will have no
+   // effect otherwise.
+   // For details see Apple documentation on NSView and NSVisualEffectView.
+-  return YES;
++  return _allowsVibrancy;
+ }
+ 
+ // Registers for the view for the appropriate drag types.
+@@ -476,6 +480,10 @@ - (void)legacyUpdateWebContentsVisibility {
+   _host->OnWindowVisibilityChanged(visibility);
+ }
+ 
++- (void)setAllowsVibrancy:(BOOL)allows {
++  _allowsVibrancy = allows;
++}
++
+ - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
+   // Subviews do not participate in auto layout unless the the size this view
+   // changes. This allows RenderWidgetHostViewMac::SetBounds(..) to select a

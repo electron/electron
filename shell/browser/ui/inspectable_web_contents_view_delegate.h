@@ -20,6 +20,7 @@ class InspectableWebContentsViewDelegate {
   virtual void DevToolsOpened() {}
   virtual void DevToolsClosed() {}
   virtual void DevToolsResized() {}
+  virtual void PopoverClosed() {}
 
   // Returns the icon of devtools window.
   virtual ui::ImageModel GetDevToolsWindowIcon();

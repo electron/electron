@@ -874,6 +874,10 @@ Returns:
 
 Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<iframe>`, or a nested `<iframe>` is loaded within the page.
 
+#### Event: 'popover-closed'
+
+Emitted when a `BrowserView` popover is closed. See further info in [opening popover](browser-view.md)
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
