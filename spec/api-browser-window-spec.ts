@@ -562,7 +562,7 @@ describe('BrowserWindow module', () => {
           });
           const subframe = w.webContents.mainFrame.frames[0];
           subframe.executeJavaScript('document.getElementsByTagName("a")[0].click()', true);
-          await emittedOnce(w.webContents, 'did-navigate');
+          await once(w.webContents, 'did-navigate');
           expect(initiator).not.to.be.undefined();
           expect(initiator).to.equal(subframe);
         });
