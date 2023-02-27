@@ -401,7 +401,7 @@ describe('BrowserView module', () => {
       view.webContents.close();
       w2.addBrowserView(view);
       w2.webContents.loadURL('about:blank');
-      await emittedOnce(w2.webContents, 'did-finish-load');
+      await once(w2.webContents, 'did-finish-load');
       w2.close();
     });
   });
