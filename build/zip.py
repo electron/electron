@@ -34,7 +34,10 @@ PATHS_TO_SKIP = [
   # Skip because these are outputs that we don't need.
   'resources/inspector',
   'gen/third_party/devtools-frontend/src',
-  'gen/ui/webui'
+  'gen/ui/webui',
+  # These are only needed for Chromium tests we don't run.
+  'dbgcore.dll',
+  'dbghelp.dll',
 ]
 
 def skip_path(dep, dist_zip, target_cpu):
