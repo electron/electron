@@ -66,23 +66,34 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(null);
     });
 
+    const cancel = (details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+      callback({ cancel: true });
+    };
+
     it('can cancel the request', async () => {
-      ses.webRequest.onBeforeRequest((details, callback) => {
-        callback({
-          cancel: true
-        });
-      });
+      ses.webRequest.onBeforeRequest(cancel);
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
     });
 
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
-      ses.webRequest.onBeforeRequest(filter, (details, callback) => {
-        callback({ cancel: true });
-      });
+      ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs and types', async () => {
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['xhr'] };
+      ses.webRequest.onBeforeRequest(filter1, cancel);
+      const { data } = await ajax(`${defaultURL}nofilter/test`);
+      expect(data).to.equal('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
+      ses.webRequest.onBeforeRequest(filter2, cancel);
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
     });
 
     it('receives details object', async () => {
