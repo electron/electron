@@ -2248,7 +2248,8 @@ describe('net module', () => {
     it('can request file:// URLs', async () => {
       const resp = await net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
       expect(resp.ok).to.be.true();
-      expect(await resp.text()).to.equal('hello world\n');
+      // trimRight instead of asserting the whole string to avoid line ending shenanigans on WOA
+      expect((await resp.text()).trimRight()).to.equal('hello world');
     });
 
     it('can make requests to custom protocols', async () => {
