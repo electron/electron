@@ -3591,7 +3591,11 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   if (!file.IsValid()) {
     promise.RejectWithErrorMessage(
         "Failed to take heap snapshot with invalid file path " +
+#if BUILDFLAG(IS_WIN)
+        base::WideToUTF8(file_path.value()));
+#else
         file_path.value());
+#endif
     return handle;
   }
 
