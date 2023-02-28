@@ -1334,7 +1334,7 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
       .ToV8();
 }
 
-v8::Local<v8::Value> FromPath(const base::FilePath& partition,
+v8::Local<v8::Value> FromPath(const base::FilePath& path,
                               gin::Arguments* args) {
   if (!electron::Browser::Get()->is_ready()) {
     args->ThrowTypeError("Session can only be received when app is ready");
@@ -1343,7 +1343,7 @@ v8::Local<v8::Value> FromPath(const base::FilePath& partition,
   base::Value::Dict options;
   args->GetNext(&options);
   absl::optional<gin::Handle<Session>> session_handle =
-      Session::FromPath(args->isolate(), partition, std::move(options));
+      Session::FromPath(args->isolate(), path, std::move(options));
 
   if (session_handle)
     return session_handle.value().ToV8();
