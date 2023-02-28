@@ -418,10 +418,6 @@ WebContents.prototype.loadFile = function (filePath, options = {}) {
 };
 
 WebContents.prototype.loadURL = function (url, options) {
-  if (!options) {
-    options = {};
-  }
-
   const p = new Promise<void>((resolve, reject) => {
     const resolveAndCleanup = () => {
       removeListeners();
@@ -488,7 +484,7 @@ WebContents.prototype.loadURL = function (url, options) {
   });
   // Add a no-op rejection handler to silence the unhandled rejection error.
   p.catch(() => {});
-  this._loadURL(url, options);
+  this._loadURL(url, options ?? {});
   return p;
 };
 

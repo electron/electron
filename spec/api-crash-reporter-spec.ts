@@ -3,12 +3,13 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, delay, repeatedly, listen } from './lib/spec-helpers';
+import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
+import { setTimeout } from 'timers/promises';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -298,7 +299,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           ignoreSystemCrashHandler: true,
           extra: { longParam: 'a'.repeat(100000) }
         });
-        setTimeout(() => process.crash());
+        setTimeout().then(() => process.crash());
       }, port);
       const crash = await waitForCrash();
       expect(stitchLongCrashParam(crash, 'longParam')).to.have.lengthOf(160 * 127, 'crash should have truncated longParam');
@@ -320,7 +321,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           }
         });
         require('electron').crashReporter.addExtraParameter('c'.repeat(kKeyLengthMax + 10), 'value');
-        setTimeout(() => process.crash());
+        setTimeout().then(() => process.crash());
       }, port, kKeyLengthMax);
       const crash = await waitForCrash();
       expect(crash).not.to.have.property('a'.repeat(kKeyLengthMax + 10));
@@ -375,7 +376,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     waitForCrash().then(() => expect.fail('expected not to receive a dump'));
     await runCrashApp('renderer', port, ['--no-upload']);
     // wait a sec in case the crash reporter is about to upload a crash
-    await delay(1000);
+    await setTimeout(1000);
     expect(getCrashes()).to.have.length(0);
   });
 
@@ -502,7 +503,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     function crash (processType: string, remotely: Function) {
       if (processType === 'main') {
         return remotely(() => {
-          setTimeout(() => { process.crash(); });
+          setTimeout().then(() => { process.crash(); });
         });
       } else if (processType === 'renderer') {
         return remotely(() => {

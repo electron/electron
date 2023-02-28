@@ -4,9 +4,9 @@ import * as url from 'url';
 import { Worker } from 'worker_threads';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { getRemoteContext, ifdescribe, itremote, useRemoteContext } from './lib/spec-helpers';
 import * as importedFs from 'fs';
+import { once } from 'events';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -32,7 +32,7 @@ describe('asar package', () => {
         }
       });
       const p = path.resolve(asarDir, 'web.asar', 'index.html');
-      const dirnameEvent = emittedOnce(ipcMain, 'dirname');
+      const dirnameEvent = once(ipcMain, 'dirname');
       w.loadFile(p);
       const [, dirname] = await dirnameEvent;
       expect(dirname).to.equal(path.dirname(p));
@@ -53,7 +53,7 @@ describe('asar package', () => {
         }
       });
       const p = path.resolve(asarDir, 'script.asar', 'index.html');
-      const ping = emittedOnce(ipcMain, 'ping');
+      const ping = once(ipcMain, 'ping');
       w.loadFile(p);
       const [, message] = await ping;
       expect(message).to.equal('pong');
@@ -77,7 +77,7 @@ describe('asar package', () => {
       });
       const p = path.resolve(asarDir, 'video.asar', 'index.html');
       w.loadFile(p);
-      const [, message, error] = await emittedOnce(ipcMain, 'asar-video');
+      const [, message, error] = await once(ipcMain, 'asar-video');
       if (message === 'ended') {
         expect(error).to.be.null();
       } else if (message === 'error') {
@@ -1514,7 +1514,7 @@ describe('asar package', function () {
     /*
     ifit(features.isRunAsNodeEnabled())('is available in forked scripts', async function () {
       const child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'));
-      const message = emittedOnce(child, 'message');
+      const message = once(child, 'message');
       child.send('message');
       const [msg] = await message;
       expect(msg).to.equal('object');

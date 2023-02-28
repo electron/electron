@@ -8,8 +8,8 @@ import * as path from 'path';
 import * as cp from 'child_process';
 
 import { closeWindow } from './lib/window-helpers';
-import { emittedOnce } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
 
@@ -45,7 +45,8 @@ describe('contextBridge', () => {
         preload: path.resolve(fixturesPath, 'can-bind-preload.js')
       }
     });
-    const [, bound] = await emittedOnce(ipcMain, 'context-bridge-bound', () => w.loadFile(path.resolve(fixturesPath, 'empty.html')));
+    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(false);
   });
 
@@ -57,7 +58,8 @@ describe('contextBridge', () => {
         preload: path.resolve(fixturesPath, 'can-bind-preload.js')
       }
     });
-    const [, bound] = await emittedOnce(ipcMain, 'context-bridge-bound', () => w.loadFile(path.resolve(fixturesPath, 'empty.html')));
+    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(true);
   });
 
@@ -105,7 +107,8 @@ describe('contextBridge', () => {
       const getGCInfo = async (): Promise<{
         trackedValues: number;
       }> => {
-        const [, info] = await emittedOnce(ipcMain, 'gc-info', () => w.webContents.send('get-gc-info'));
+        w.webContents.send('get-gc-info');
+        const [, info] = await once(ipcMain, 'gc-info');
         return info;
       };
 
@@ -686,7 +689,7 @@ describe('contextBridge', () => {
             });
             require('electron').ipcRenderer.send('window-ready-for-tasking');
           });
-          const loadPromise = emittedOnce(ipcMain, 'window-ready-for-tasking');
+          const loadPromise = once(ipcMain, 'window-ready-for-tasking');
           expect((await getGCInfo()).trackedValues).to.equal(0);
           await callWithBindings((root: any) => {
             root.example.track(root.example.getFunction());
@@ -1263,7 +1266,7 @@ describe('ContextBridgeMutability', () => {
 
     let output = '';
     appProcess.stdout.on('data', data => { output += data; });
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
 
     expect(output).to.include('some-modified-text');
     expect(output).to.include('obj-modified-prop');
@@ -1276,7 +1279,7 @@ describe('ContextBridgeMutability', () => {
 
     let output = '';
     appProcess.stdout.on('data', data => { output += data; });
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
 
     expect(output).to.include('some-text');
     expect(output).to.include('obj-prop');

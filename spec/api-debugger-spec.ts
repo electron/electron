@@ -3,8 +3,9 @@ import * as http from 'http';
 import * as path from 'path';
 import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedOnce, emittedUntil } from './lib/events-helpers';
+import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -45,7 +46,7 @@ describe('debugger module', () => {
 
   describe('debugger.detach', () => {
     it('fires detach event', async () => {
-      const detach = emittedOnce(w.webContents.debugger, 'detach');
+      const detach = once(w.webContents.debugger, 'detach');
       w.webContents.debugger.attach();
       w.webContents.debugger.detach();
       const [, reason] = await detach;
@@ -55,7 +56,7 @@ describe('debugger module', () => {
 
     it('doesn\'t disconnect an active devtools session', async () => {
       w.webContents.loadURL('about:blank');
-      const detach = emittedOnce(w.webContents.debugger, 'detach');
+      const detach = once(w.webContents.debugger, 'detach');
       w.webContents.debugger.attach();
       w.webContents.openDevTools();
       w.webContents.once('devtools-opened', () => {
@@ -94,7 +95,7 @@ describe('debugger module', () => {
       w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach();
 
-      const opened = emittedOnce(w.webContents, 'devtools-opened');
+      const opened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await opened;
 
@@ -183,7 +184,7 @@ describe('debugger module', () => {
     it('uses empty sessionId by default', async () => {
       w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach();
-      const onMessage = emittedOnce(w.webContents.debugger, 'message');
+      const onMessage = once(w.webContents.debugger, 'message');
       await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
       const [, method, params, sessionId] = await onMessage;
       expect(method).to.equal('Target.targetCreated');

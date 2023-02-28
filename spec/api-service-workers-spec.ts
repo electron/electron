@@ -4,8 +4,8 @@ import * as path from 'path';
 import { session, webContents, WebContents } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
-import { emittedOnce, emittedNTimes } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
+import { on, once } from 'events';
 
 const partition = 'service-workers-spec';
 
@@ -50,7 +50,8 @@ describe('session.serviceWorkers', () => {
     });
 
     it('should report one as running once you load a page with a service worker', async () => {
-      await emittedOnce(ses.serviceWorkers, 'console-message', () => w.loadURL(`${baseUrl}/index.html`));
+      w.loadURL(`${baseUrl}/index.html`);
+      await once(ses.serviceWorkers, 'console-message');
       const workers = ses.serviceWorkers.getAllRunning();
       const ids = Object.keys(workers) as any[] as number[];
       expect(ids).to.have.lengthOf(1, 'should have one worker running');
@@ -59,7 +60,8 @@ describe('session.serviceWorkers', () => {
 
   describe('getFromVersionID()', () => {
     it('should report the correct script url and scope', async () => {
-      const eventInfo = await emittedOnce(ses.serviceWorkers, 'console-message', () => w.loadURL(`${baseUrl}/index.html`));
+      w.loadURL(`${baseUrl}/index.html`);
+      const eventInfo = await once(ses.serviceWorkers, 'console-message');
       const details: Electron.MessageDetails = eventInfo[1];
       const worker = ses.serviceWorkers.getFromVersionID(details.versionId);
       expect(worker).to.not.equal(null);
@@ -71,11 +73,11 @@ describe('session.serviceWorkers', () => {
   describe('console-message event', () => {
     it('should correctly keep the source, message and level', async () => {
       const messages: Record<string, Electron.MessageDetails> = {};
-      const events = await emittedNTimes(ses.serviceWorkers, 'console-message', 4, () => w.loadURL(`${baseUrl}/logs.html`));
-      for (const event of events) {
-        messages[event[1].message] = event[1];
-
-        expect(event[1]).to.have.property('source', 'console-api');
+      w.loadURL(`${baseUrl}/logs.html`);
+      for await (const [, details] of on(ses.serviceWorkers, 'console-message')) {
+        messages[details.message] = details;
+        expect(details).to.have.property('source', 'console-api');
+        if (Object.keys(messages).length >= 4) break;
       }
 
       expect(messages).to.have.property('log log');
