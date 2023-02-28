@@ -513,8 +513,7 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
 }
 
 void Browser::ShowAboutPanel() {
-  NSDictionary* options =
-      DictionaryValueToNSDictionary(about_panel_options_.GetDict());
+  NSDictionary* options = DictionaryValueToNSDictionary(about_panel_options_);
 
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
@@ -537,13 +536,13 @@ void Browser::ShowAboutPanel() {
 }
 
 void Browser::SetAboutPanelOptions(base::Value::Dict options) {
-  about_panel_options_.GetDict().clear();
+  about_panel_options_.clear();
 
   for (const auto pair : options) {
     std::string key = pair.first;
     if (!key.empty() && pair.second.is_string()) {
       key[0] = base::ToUpperASCII(key[0]);
-      about_panel_options_.GetDict().Set(key, pair.second.Clone());
+      about_panel_options_.Set(key, pair.second.Clone());
     }
   }
 }

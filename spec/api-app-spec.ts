@@ -1863,6 +1863,19 @@ describe('app module', () => {
       })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
     });
   });
+
+  describe('about panel', () => {
+    it('app.setAboutPanelOptions() does not crash', () => {
+      app.setAboutPanelOptions({
+        applicationName: 'electron!!',
+        version: '1.2.3'
+      });
+    });
+
+    it('app.showAboutPanel() does not crash', () => {
+      app.showAboutPanel();
+    });
+  });
 });
 
 describe('default behavior', () => {
