@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Kleinschmidt <jkleinsc@electronjs.org>
+Date: Thu, 2 Mar 2023 15:26:46 -0500
+Subject: chore: defer USB service GetDevices request until USB service is
+ ready.
+
+On macOS we need to wait until the USB service is ready before the list of
+devices is available. This should no longer be necessary if/when
+https://crbug.com/1096743 is completed.
+
+diff --git a/services/device/usb/usb_service_impl.cc b/services/device/usb/usb_service_impl.cc
+index 99456d1baa098e8a48b4a31cc8f5661586f7fc82..11d98208c85093598813897a144812c76bc67bea 100644
+--- a/services/device/usb/usb_service_impl.cc
++++ b/services/device/usb/usb_service_impl.cc
+@@ -198,7 +198,7 @@ void UsbServiceImpl::GetDevices(GetDevicesCallback callback) {
+     return;
+   }
+ 
+-  if (enumeration_in_progress_) {
++  if (enumeration_in_progress_ || !enumeration_ready_) {
+     pending_enumeration_callbacks_.push_back(std::move(callback));
+     return;
+   }
