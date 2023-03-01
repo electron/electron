@@ -519,13 +519,16 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       devices.audio_device =
           blink::MediaStreamDevice(request.audio_type, id, name);
     } else if (result_dict.Get("audio", &rfh)) {
-      devices.audio_device = blink::MediaStreamDevice(
-          request.audio_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID(),
-                                             /* disable_local_echo= */ true)
-              .ToString(),
-          "Tab audio");
+      bool enable_local_echo = false;
+      result_dict.Get("enableLocalEcho", &enable_local_echo);
+      bool disable_local_echo = !enable_local_echo;
+      devices.audio_device =
+          blink::MediaStreamDevice(request.audio_type,
+                                   content::WebContentsMediaCaptureId(
+                                       rfh->GetProcess()->GetID(),
+                                       rfh->GetRoutingID(), disable_local_echo)
+                                       .ToString(),
+                                   "Tab audio");
     } else if (result_dict.Get("audio", &id)) {
       devices.audio_device =
           blink::MediaStreamDevice(request.audio_type, id, "System audio");

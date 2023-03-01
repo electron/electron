@@ -5,7 +5,8 @@ import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as http from 'http';
 import * as os from 'os';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents } from 'electron/main';
+import { AddressInfo } from 'net';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
@@ -553,35 +554,17 @@ describe('BrowserWindow module', () => {
         });
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
-          await w.loadURL(`data:text/html,<iframe src="${url}/navigate-top"></iframe>`);
-          await setTimeout(1000);
-          w.webContents.debugger.attach('1.1');
-          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
-          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
-          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
-            targetId: iframeTarget.targetId,
-            flatten: true
+          w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await emittedUntil(w.webContents, 'did-frame-finish-load', (e: any, isMainFrame: boolean) => !isMainFrame);
+          let initiator: WebFrameMain | undefined;
+          w.webContents.on('will-navigate', (e) => {
+            initiator = e.initiator;
           });
-          let willNavigateEmitted = false;
-          w.webContents.on('will-navigate', () => {
-            willNavigateEmitted = true;
-          });
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mousePressed',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
-          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
-            type: 'mouseReleased',
-            x: 10,
-            y: 10,
-            clickCount: 1,
-            button: 'left'
-          }, sessionId);
+          const subframe = w.webContents.mainFrame.frames[0];
+          subframe.executeJavaScript('document.getElementsByTagName("a")[0].click()', true);
           await once(w.webContents, 'did-navigate');
-          expect(willNavigateEmitted).to.be.true();
+          expect(initiator).not.to.be.undefined();
+          expect(initiator).to.equal(subframe);
         });
       });
 
