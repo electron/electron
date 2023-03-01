@@ -1222,9 +1222,7 @@ void WebContents::CloseContents(content::WebContents* source) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
 
-  // If there are observers, OnCloseContents will call Destroy()
-  if (observers_.empty())
-    Destroy();
+  Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
