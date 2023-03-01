@@ -527,10 +527,10 @@ index f9dd844cd6b665a5566cf6f46830287cffedc0ca..5b74259b2650fc4a525ba3a1be61d3d9
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 0b0c6d676f83f49eb3c846ee79430089b5a5bc0f..3427494a6b6d1df803d9b6bdae81ceaf296028ae 100644
+index d4c0be621ecd9462a9a8fab76a83e9ca72cc1bf7..f6b9692f5615d3d0ab88ae8b2117ec07d3d5983c 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -399,8 +399,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -397,8 +397,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -560,7 +560,7 @@ index 83c153d99c1e2be2b139330cd4eedf129fcac2ce..14466dd30eb6b63638d351dcf7caf93a
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index ebb40d253e3870250d8dbe21dc26e7be5566297a..fd29e465522e7d219d1012d3e993d13d45c5e7e5 100644
+index 71d79e79e3d68679696977682b85cad1b09e99ef..b7fd9f45394925949398cb467f9388f856f64e94 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {

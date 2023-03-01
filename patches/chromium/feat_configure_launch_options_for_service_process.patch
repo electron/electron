@@ -323,7 +323,7 @@ index c0abba2466c7dba5f3e41f95ede3f983ce0050e0..0f3bb9b69597aec460ad26d569b281b0
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 051f08d67c6186a8e874ded8752c1fd355e26cd7..fad86c948f6f2ee3a51680f367ad6440649141a4 100644
+index 68db1862fd51f9b6c8c8c9fbd4055490fccd5f9a..5fb93015c780124ced9781ff5ae3e9cb821bb6e7 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -346,7 +346,7 @@ index 051f08d67c6186a8e874ded8752c1fd355e26cd7..fad86c948f6f2ee3a51680f367ad6440
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -96,11 +98,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -97,11 +99,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -621,7 +621,7 @@ index ea5342394f2aaf6d612f58ab886440473ed12647..0a5a4fbdcebbb2ec5d06206f1854de58
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 38601d04959aac61fbeba7b99482831833b9f564..3fbc8482465a03716cdeb434995dbcff30c32cec 100644
+index cf16e2e25fec6d0e17bf9376039a066f1af2173c..dae10c7f734aa5ccb8573669ec31fbd368531243 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -742,11 +742,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
