@@ -270,7 +270,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   v8::HandleScope scope(js_env_->isolate());
 
-  node_bindings_->Initialize();
+  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform());

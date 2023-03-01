@@ -23,6 +23,7 @@ class DelayedNativeViewHost : public views::NativeViewHost {
   // views::View:
   void ViewHierarchyChanged(
       const views::ViewHierarchyChangedDetails& details) override;
+  bool OnMousePressed(const ui::MouseEvent& event) override;
 
  private:
   gfx::NativeView native_view_;

@@ -21,8 +21,6 @@ const addOnly = <T>(fn: Function): T => {
 export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
 export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
 
-export const delay = (time: number = 0) => new Promise(resolve => setTimeout(resolve, time));
-
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];
 export async function runCleanupFunctions () {
@@ -183,6 +181,7 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
         const chai_1 = require('chai')
+        const promises_1 = require('timers/promises')
         chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
         await (${fn})(...${JSON.stringify(args ?? [])})

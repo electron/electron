@@ -415,7 +415,7 @@ void NodeBindings::SetNodeCliFlags() {
   }
 }
 
-void NodeBindings::Initialize() {
+void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
 
@@ -463,8 +463,7 @@ void NodeBindings::Initialize() {
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
 
-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::internal::Event::GetConstructor(isolate->GetCurrentContext());
+  gin_helper::internal::Event::GetConstructor(context);
 
   g_is_initialized = true;
 }
