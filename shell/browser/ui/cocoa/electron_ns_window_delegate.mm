@@ -128,16 +128,17 @@ using FullScreenTransitionState =
 - (NSSize)windowWillResize:(NSWindow*)sender toSize:(NSSize)frameSize {
   NSSize newSize = frameSize;
   double aspectRatio = shell_->GetAspectRatio();
+  NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
 
   if (aspectRatio > 0.0) {
     gfx::Size windowSize = shell_->GetSize();
     gfx::Size contentSize = shell_->GetContentSize();
     gfx::Size extraSize = shell_->GetAspectRatioExtraSize();
 
+    double titleBarHeight = windowSize.height() - contentSize.height();
     double extraWidthPlusFrame =
         windowSize.width() - contentSize.width() + extraSize.width();
-    double extraHeightPlusFrame =
-        windowSize.height() - contentSize.height() + extraSize.height();
+    double extraHeightPlusFrame = titleBarHeight + extraSize.height();
 
     newSize.width =
         roundf((frameSize.height - extraHeightPlusFrame) * aspectRatio +
@@ -145,10 +146,44 @@ using FullScreenTransitionState =
     newSize.height =
         roundf((newSize.width - extraWidthPlusFrame) / aspectRatio +
                extraHeightPlusFrame);
+
+    // Clamp to minimum width/height while ensuring aspect ratio remains.
+    NSSize minSize = [window minSize];
+    NSSize zeroSize =
+        shell_->has_frame() ? NSMakeSize(0, titleBarHeight) : NSZeroSize;
+    if (!NSEqualSizes(minSize, zeroSize)) {
+      double minWidthForAspectRatio =
+          (minSize.height - titleBarHeight) * aspectRatio;
+      bool atMinHeight =
+          minSize.height > zeroSize.height && newSize.height <= minSize.height;
+      newSize.width = atMinHeight ? minWidthForAspectRatio
+                                  : std::max(newSize.width, minSize.width);
+
+      double minHeightForAspectRatio = minSize.width / aspectRatio;
+      bool atMinWidth =
+          minSize.width > zeroSize.width && newSize.width <= minSize.width;
+      newSize.height = atMinWidth ? minHeightForAspectRatio
+                                  : std::max(newSize.height, minSize.height);
+    }
+
+    // Clamp to maximum width/height while ensuring aspect ratio remains.
+    NSSize maxSize = [window maxSize];
+    if (!NSEqualSizes(maxSize, NSMakeSize(FLT_MAX, FLT_MAX))) {
+      double maxWidthForAspectRatio = maxSize.height * aspectRatio;
+      bool atMaxHeight =
+          maxSize.height < FLT_MAX && newSize.height >= maxSize.height;
+      newSize.width = atMaxHeight ? maxWidthForAspectRatio
+                                  : std::min(newSize.width, maxSize.width);
+
+      double maxHeightForAspectRatio = maxSize.width / aspectRatio;
+      bool atMaxWidth =
+          maxSize.width < FLT_MAX && newSize.width >= maxSize.width;
+      newSize.height = atMaxWidth ? maxHeightForAspectRatio
+                                  : std::min(newSize.height, maxSize.height);
+    }
   }
 
   if (!resizingHorizontally_) {
-    NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     const auto widthDelta = frameSize.width - [window frame].size.width;
     const auto heightDelta = frameSize.height - [window frame].size.height;
     resizingHorizontally_ = std::abs(widthDelta) > std::abs(heightDelta);
