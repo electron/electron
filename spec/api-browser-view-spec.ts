@@ -352,7 +352,16 @@ describe('BrowserView module', () => {
       await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
 
       view.webContents.close();
-      await once(view.webContents, 'destroyed');
+      await emittedOnce(view.webContents, 'destroyed');
+    });
+
+    it('emits the destroyed event when window.close() is called', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      view.webContents.executeJavaScript('window.close()');
+      await emittedOnce(view.webContents, 'destroyed');
     });
   });
 
