@@ -279,7 +279,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
   // We do not want to crash the main process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn";
+  env->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
