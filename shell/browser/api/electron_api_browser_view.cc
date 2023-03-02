@@ -126,6 +126,9 @@ BrowserView::~BrowserView() {
 }
 
 void BrowserView::WebContentsDestroyed() {
+  if (owner_window())
+    owner_window()->window()->RemoveDraggableRegionProvider(this);
+
   api_web_contents_ = nullptr;
   web_contents_.Reset();
   Unpin();
