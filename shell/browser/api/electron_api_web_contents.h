@@ -326,6 +326,9 @@ class WebContents : public ExclusiveAccessContext,
                                           const base::FilePath& file_path);
   v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
 
+  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
+                         const content::ContextMenuParams& params) override;
+
   // Properties.
   int32_t ID() const { return id_; }
   v8::Local<v8::Value> Session(v8::Isolate* isolate);
@@ -551,8 +554,6 @@ class WebContents : public ExclusiveAccessContext,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
-                         const content::ContextMenuParams& params) override;
   void FindReply(content::WebContents* web_contents,
                  int request_id,
                  int number_of_matches,
