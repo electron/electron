@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@electronjs.org>
 Date: Thu, 2 Mar 2023 16:03:51 -0500
-Subject: [intl] Revert date formatting behavior change from ICU 72
+Subject: Revert date formatting behavior change from ICU 72
 
 https://chromium-review.googlesource.com/c/v8/v8/+/4240360
 
