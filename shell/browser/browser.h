@@ -363,7 +363,7 @@ class Browser : public WindowListObserver {
   base::Time last_dock_show_;
 #endif
 
-  base::Value about_panel_options_;
+  base::Value::Dict about_panel_options_;
 
 #if BUILDFLAG(IS_WIN)
   void UpdateBadgeContents(HWND hwnd,

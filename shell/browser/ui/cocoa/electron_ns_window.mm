@@ -11,6 +11,9 @@
 #include "shell/browser/ui/cocoa/root_view_mac.h"
 #include "ui/base/cocoa/window_size_constants.h"
 
+#import <objc/message.h>
+#import <objc/runtime.h>
+
 namespace electron {
 
 int ScopedDisableResize::disable_resize_ = 0;
@@ -19,7 +22,64 @@ int ScopedDisableResize::disable_resize_ = 0;
 
 @interface NSWindow (PrivateAPI)
 - (NSImage*)_cornerMask;
+- (int64_t)_resizeDirectionForMouseLocation:(CGPoint)location;
 @end
+
+#if IS_MAS_BUILD()
+// See components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
+@interface NSView (CRFrameViewAdditions)
+- (void)cr_mouseDownOnFrameView:(NSEvent*)event;
+@end
+
+typedef void (*MouseDownImpl)(id, SEL, NSEvent*);
+
+namespace {
+MouseDownImpl g_nsthemeframe_mousedown;
+MouseDownImpl g_nsnextstepframe_mousedown;
+}  // namespace
+
+// This class is never instantiated, it's just a container for our swizzled
+// mouseDown method.
+@interface SwizzledMouseDownHolderClass : NSView
+@end
+
+@implementation SwizzledMouseDownHolderClass
+- (void)swiz_nsthemeframe_mouseDown:(NSEvent*)event {
+  if ([self.window respondsToSelector:@selector(shell)]) {
+    electron::NativeWindowMac* shell =
+        (electron::NativeWindowMac*)[(id)self.window shell];
+    if (shell && !shell->has_frame())
+      [self cr_mouseDownOnFrameView:event];
+    g_nsthemeframe_mousedown(self, @selector(mouseDown:), event);
+  }
+}
+
+- (void)swiz_nsnextstepframe_mouseDown:(NSEvent*)event {
+  if ([self.window respondsToSelector:@selector(shell)]) {
+    electron::NativeWindowMac* shell =
+        (electron::NativeWindowMac*)[(id)self.window shell];
+    if (shell && !shell->has_frame()) {
+      [self cr_mouseDownOnFrameView:event];
+    }
+    g_nsnextstepframe_mousedown(self, @selector(mouseDown:), event);
+  }
+}
+@end
+
+namespace {
+void SwizzleMouseDown(NSView* frame_view,
+                      SEL swiz_selector,
+                      MouseDownImpl* orig_impl) {
+  Method original_mousedown =
+      class_getInstanceMethod([frame_view class], @selector(mouseDown:));
+  *orig_impl = (MouseDownImpl)method_getImplementation(original_mousedown);
+  Method new_mousedown = class_getInstanceMethod(
+      [SwizzledMouseDownHolderClass class], swiz_selector);
+  method_setImplementation(original_mousedown,
+                           method_getImplementation(new_mousedown));
+}
+}  // namespace
+#endif  // IS_MAS_BUILD
 
 @implementation ElectronNSWindow
 
@@ -36,6 +96,37 @@ int ScopedDisableResize::disable_resize_ = 0;
                                styleMask:styleMask
                                  backing:NSBackingStoreBuffered
                                    defer:NO])) {
+#if IS_MAS_BUILD()
+    // The first time we create a frameless window, we swizzle the
+    // implementation of -[NSNextStepFrame mouseDown:], replacing it with our
+    // own.
+    // This is only necessary on MAS where we can't directly refer to
+    // NSNextStepFrame or NSThemeFrame, as they are private APIs.
+    // See components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm for
+    // the non-MAS-compatible way of doing this.
+    if (styleMask & NSWindowStyleMaskTitled) {
+      if (!g_nsthemeframe_mousedown) {
+        NSView* theme_frame = [[self contentView] superview];
+        DCHECK(strcmp(class_getName([theme_frame class]), "NSThemeFrame") == 0)
+            << "Expected NSThemeFrame but was "
+            << class_getName([theme_frame class]);
+        SwizzleMouseDown(theme_frame, @selector(swiz_nsthemeframe_mouseDown:),
+                         &g_nsthemeframe_mousedown);
+      }
+    } else {
+      if (!g_nsnextstepframe_mousedown) {
+        NSView* nextstep_frame = [[self contentView] superview];
+        DCHECK(strcmp(class_getName([nextstep_frame class]),
+                      "NSNextStepFrame") == 0)
+            << "Expected NSNextStepFrame but was "
+            << class_getName([nextstep_frame class]);
+        SwizzleMouseDown(nextstep_frame,
+                         @selector(swiz_nsnextstepframe_mouseDown:),
+                         &g_nsnextstepframe_mousedown);
+      }
+    }
+#endif  // IS_MAS_BUILD
+
     shell_ = shell;
   }
   return self;

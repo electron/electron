@@ -207,8 +207,23 @@ See [`window.open()`](window-open.md) for more details and how to use this in co
 
 Returns:
 
-* `event` Event
-* `url` string
+* `details` Event<>
+  * `url` string - The URL the frame is navigating to.
+  * `isSameDocument` boolean - Whether the navigation happened without changing
+    document. Examples of same document navigations are reference fragment
+    navigations, pushState/replaceState, and same page history navigation.
+  * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
+  * `frame` WebFrameMain - The frame to be navigated.
+  * `initiator` WebFrameMain (optional) - The frame which initiated the
+    navigation, which can be a parent frame (e.g. via `window.open` with a
+    frame's name), or null if the navigation was not initiated by a frame. This
+    can also be null if the initiating frame was deleted before the event was
+    emitted.
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when a user or the page wants to start navigation. It can happen when
 the `window.location` object is changed or a user clicks a link in the page.
@@ -226,26 +241,47 @@ Calling `event.preventDefault()` will prevent the navigation.
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event<>
+  * `url` string - The URL the frame is navigating to.
+  * `isSameDocument` boolean - Whether the navigation happened without changing
+    document. Examples of same document navigations are reference fragment
+    navigations, pushState/replaceState, and same page history navigation.
+  * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
+  * `frame` WebFrameMain - The frame to be navigated.
+  * `initiator` WebFrameMain (optional) - The frame which initiated the
+    navigation, which can be a parent frame (e.g. via `window.open` with a
+    frame's name), or null if the navigation was not initiated by a frame. This
+    can also be null if the initiating frame was deleted before the event was
+    emitted.
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
-Emitted when any frame (including main) starts navigating. `isInPlace` will be
-`true` for in-page navigations.
+Emitted when any frame (including main) starts navigating.
 
 #### Event: 'will-redirect'
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event<>
+  * `url` string - The URL the frame is navigating to.
+  * `isSameDocument` boolean - Whether the navigation happened without changing
+    document. Examples of same document navigations are reference fragment
+    navigations, pushState/replaceState, and same page history navigation.
+  * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
+  * `frame` WebFrameMain - The frame to be navigated.
+  * `initiator` WebFrameMain (optional) - The frame which initiated the
+    navigation, which can be a parent frame (e.g. via `window.open` with a
+    frame's name), or null if the navigation was not initiated by a frame. This
+    can also be null if the initiating frame was deleted before the event was
+    emitted.
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted when a server side redirect occurs during navigation.  For example a 302
 redirect.
@@ -260,12 +296,23 @@ redirect).
 
 Returns:
 
-* `event` Event
-* `url` string
-* `isInPlace` boolean
-* `isMainFrame` boolean
-* `frameProcessId` Integer
-* `frameRoutingId` Integer
+* `details` Event<>
+  * `url` string - The URL the frame is navigating to.
+  * `isSameDocument` boolean - Whether the navigation happened without changing
+    document. Examples of same document navigations are reference fragment
+    navigations, pushState/replaceState, and same page history navigation.
+  * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
+  * `frame` WebFrameMain - The frame to be navigated.
+  * `initiator` WebFrameMain (optional) - The frame which initiated the
+    navigation, which can be a parent frame (e.g. via `window.open` with a
+    frame's name), or null if the navigation was not initiated by a frame. This
+    can also be null if the initiating frame was deleted before the event was
+    emitted.
+* `url` string _Deprecated_
+* `isInPlace` boolean _Deprecated_
+* `isMainFrame` boolean _Deprecated_
+* `frameProcessId` Integer _Deprecated_
+* `frameRoutingId` Integer _Deprecated_
 
 Emitted after a server side redirect occurs during navigation.  For example a 302
 redirect.

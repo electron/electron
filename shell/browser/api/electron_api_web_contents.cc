@@ -112,6 +112,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -1597,8 +1598,7 @@ void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
   //
   // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
-  auto* web_frame =
-      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(new_host);
   if (web_frame) {
     web_frame->UpdateRenderFrameHost(new_host);
   }
@@ -1737,7 +1737,7 @@ void WebContents::DidStopLoading() {
 }
 
 bool WebContents::EmitNavigationEvent(
-    const std::string& event,
+    const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -1758,8 +1758,30 @@ bool WebContents::EmitNavigationEvent(
   }
   bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
-              frame_routing_id);
+  content::RenderFrameHost* initiator_frame_host =
+      navigation_handle->GetInitiatorFrameToken().has_value()
+          ? content::RenderFrameHost::FromFrameToken(
+                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorFrameToken().value())
+          : nullptr;
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("url", url);
+  dict.Set("isSameDocument", is_same_document);
+  dict.Set("isMainFrame", is_main_frame);
+  dict.Set("frame", frame_host);
+  dict.SetGetter("initiator", initiator_frame_host);
+
+  EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
+                   frame_process_id, frame_routing_id);
+  return event->GetDefaultPrevented();
 }
 
 void WebContents::Message(bool internal,
@@ -1813,22 +1835,23 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   }
   const char* GetTypeName() override { return "ReplyChannel"; }
 
+  void SendError(const std::string& msg) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    // If there's no current context, it means we're shutting down, so we
+    // don't need to send an event.
+    if (!isolate->GetCurrentContext().IsEmpty()) {
+      v8::HandleScope scope(isolate);
+      auto message = gin::DataObjectBuilder(isolate).Set("error", msg).Build();
+      SendReply(isolate, message);
+    }
+  }
+
  private:
   explicit ReplyChannel(InvokeCallback callback)
       : callback_(std::move(callback)) {}
   ~ReplyChannel() override {
-    if (callback_) {
-      v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-      // If there's no current context, it means we're shutting down, so we
-      // don't need to send an event.
-      if (!isolate->GetCurrentContext().IsEmpty()) {
-        v8::HandleScope scope(isolate);
-        auto message = gin::DataObjectBuilder(isolate)
-                           .Set("error", "reply was never sent")
-                           .Build();
-        SendReply(isolate, message);
-      }
-    }
+    if (callback_)
+      SendError("reply was never sent");
   }
 
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
@@ -1853,8 +1876,14 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
     content::RenderFrameHost* frame,
     electron::mojom::ElectronApiIPC::InvokeCallback callback) {
   v8::Local<v8::Object> wrapper;
-  if (!GetWrapper(isolate).ToLocal(&wrapper))
+  if (!GetWrapper(isolate).ToLocal(&wrapper)) {
+    if (callback) {
+      // We must always invoke the callback if present.
+      ReplyChannel::Create(isolate, std::move(callback))
+          ->SendError("WebContents was destroyed");
+    }
     return gin::Handle<gin_helper::internal::Event>();
+  }
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
@@ -3586,18 +3615,26 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   flags = base::File::AddFlagsForPassingToUntrustedProcess(flags);
   base::File file(file_path, flags);
   if (!file.IsValid()) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with invalid file path " +
+#if BUILDFLAG(IS_WIN)
+        base::WideToUTF8(file_path.value()));
+#else
+        file_path.value());
+#endif
     return handle;
   }
 
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with invalid webContents main frame");
     return handle;
   }
 
   if (!frame_host->IsRenderFrameLive()) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with nonexistent render frame");
     return handle;
   }
 
@@ -3617,7 +3654,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
             if (success) {
               promise.Resolve();
             } else {
-              promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+              promise.RejectWithErrorMessage("Failed to take heap snapshot");
             }
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));
