@@ -3528,18 +3528,26 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   base::File file(file_path,
                   base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
   if (!file.IsValid()) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with invalid file path " +
+#if BUILDFLAG(IS_WIN)
+        base::WideToUTF8(file_path.value()));
+#else
+        file_path.value());
+#endif
     return handle;
   }
 
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with invalid webContents main frame");
     return handle;
   }
 
   if (!frame_host->IsRenderFrameLive()) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with nonexistent render frame");
     return handle;
   }
 
@@ -3559,7 +3567,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
             if (success) {
               promise.Resolve();
             } else {
-              promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+              promise.RejectWithErrorMessage("Failed to take heap snapshot");
             }
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));

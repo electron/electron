@@ -1836,8 +1836,24 @@ describe('webContents module', () => {
 
       await w.loadURL('about:blank');
 
-      const promise = w.webContents.takeHeapSnapshot('');
-      return expect(promise).to.be.eventually.rejectedWith(Error, 'takeHeapSnapshot failed');
+      const badPath = path.join('i', 'am', 'a', 'super', 'bad', 'path');
+      const promise = w.webContents.takeHeapSnapshot(badPath);
+      return expect(promise).to.be.eventually.rejectedWith(Error, `Failed to take heap snapshot with invalid file path ${badPath}`);
+    });
+
+    it('fails with invalid render process', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          sandbox: true
+        }
+      });
+
+      const filePath = path.join(app.getPath('temp'), 'test.heapsnapshot');
+
+      w.webContents.destroy();
+      const promise = w.webContents.takeHeapSnapshot(filePath);
+      return expect(promise).to.be.eventually.rejectedWith(Error, 'Failed to take heap snapshot with nonexistent render frame');
     });
   });
 
