@@ -37,10 +37,10 @@ index cee8f0967790ce620a21c52dc69d327a01a5cbda..a4a75cde0abf4562b824a5b7d61ef752
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 581301fb8424e83c3922e1bce8242923b2068a06..799566814f31f0e463ff3aa72551959d85fb94ba 100644
+index a9cbd42bd6f22211d1623178a4b39ea96ee3c60f..2cfbf5e996c5dfd8c498aebd1dfa7f1fc15bebda 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2787,6 +2787,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2795,6 +2795,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // used on primary main frames.
    bool IsPageReadyToBeClosed();
  
@@ -58,7 +58,7 @@ index 581301fb8424e83c3922e1bce8242923b2068a06..799566814f31f0e463ff3aa72551959d
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3105,17 +3116,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3118,17 +3129,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
