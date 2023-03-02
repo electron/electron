@@ -101,6 +101,10 @@ Limitations:
 * The `.type` and `.url` values of the returned `Response` object are
   incorrect.
 
+Requests made with `net.fetch` can be made to [custom protocols](protocol.md)
+as well as `file:`, and will trigger [webRequest](web-request.md) handlers if
+present.
+
 ### `net.isOnline()`
 
 Returns `boolean` - Whether there is currently internet connection.
