@@ -22,7 +22,7 @@ int ScopedDisableResize::disable_resize_ = 0;
 
 @interface NSWindow (PrivateAPI)
 - (NSImage*)_cornerMask;
-- (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
+- (int64_t)_resizeDirectionForMouseLocation:(CGPoint)location;
 @end
 
 #if IS_MAS_BUILD()
