@@ -660,9 +660,9 @@ describe('BrowserWindow module', () => {
           await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
           const navigatedTo = await new Promise(resolve => {
-            w.webContents.once('will-frame-navigate', (e, url) => {
+            w.webContents.once('will-frame-navigate', (e) => {
               e.preventDefault();
-              resolve(url);
+              resolve(e.url);
             });
           });
           expect(navigatedTo).to.equal(url);
@@ -673,9 +673,9 @@ describe('BrowserWindow module', () => {
           await w.loadURL('about:blank');
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
           const navigatedTo = await new Promise(resolve => {
-            w.webContents.once('will-frame-navigate', (e, url) => {
+            w.webContents.once('will-frame-navigate', (e) => {
               e.preventDefault();
-              resolve(url);
+              resolve(e.url);
             });
           });
           expect(navigatedTo).to.equal(url);
@@ -688,9 +688,9 @@ describe('BrowserWindow module', () => {
 
           let willFrameNavigateEmitted = false;
           let isMainFrameValue;
-          w.webContents.on('will-frame-navigate', (_event, _url, { isMainFrame }) => {
+          w.webContents.on('will-frame-navigate', (event) => {
             willFrameNavigateEmitted = true;
-            isMainFrameValue = isMainFrame;
+            isMainFrameValue = event.isMainFrame;
           });
           const didNavigatePromise = emittedOnce(w.webContents, 'did-navigate');
 
@@ -728,9 +728,9 @@ describe('BrowserWindow module', () => {
 
           let willNavigateEmitted = false;
           let isMainFrameValue;
-          w.webContents.on('will-frame-navigate', (_event, _url, { isMainFrame }) => {
+          w.webContents.on('will-frame-navigate', (event) => {
             willNavigateEmitted = true;
-            isMainFrameValue = isMainFrame;
+            isMainFrameValue = event.isMainFrame;
           });
           const didNavigatePromise = emittedOnce(w.webContents, 'did-frame-navigate');
 

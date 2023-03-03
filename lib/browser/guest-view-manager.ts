@@ -164,12 +164,12 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   });
 
   // Dispatch guest's frame navigation event to embedder.
-  guest.on('will-frame-navigate', function (event, url, details: Electron.WillFrameNavigateDetails) {
+  guest.on('will-frame-navigate', function (event: Electron.WebContentsWillFrameNavigateEventParams) {
     sendToEmbedder(IPC_MESSAGES.GUEST_VIEW_INTERNAL_DISPATCH_EVENT, 'will-frame-navigate', {
-      url,
-      isMainFrame: details.isMainFrame,
-      frameProcessId: details.frame.processId,
-      frameRoutingId: details.frame.routingId
+      url: event.url,
+      isMainFrame: event.isMainFrame,
+      frameProcessId: event.frame.processId,
+      frameRoutingId: event.frame.routingId
     });
   });
 
