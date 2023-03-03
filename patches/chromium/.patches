@@ -128,3 +128,4 @@ expose_v8initializer_codegenerationcheckcallbackinmainthread.patch
 cherry-pick-43637378b14e.patch
 axselectedtextmarkerrange_should_not_be_backwards.patch
 fix_x11_window_restore_minimized_maximized_window.patch
+cherry-pick-06851790480e.patch
