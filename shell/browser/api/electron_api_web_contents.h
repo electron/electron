@@ -346,9 +346,6 @@ class WebContents : public ExclusiveAccessContext,
       observers_.RemoveObserver(obs);
   }
 
-  bool EmitNavigationEventDetails(const std::string& event,
-                                  content::NavigationHandle* navigation_handle);
-
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
 

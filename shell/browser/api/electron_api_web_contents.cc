@@ -1782,22 +1782,6 @@ void WebContents::DidStopLoading() {
   Emit("did-stop-loading");
 }
 
-bool WebContents::EmitNavigationEventDetails(
-    const std::string& event,
-    content::NavigationHandle* navigation_handle) {
-  bool is_main_frame = navigation_handle->IsInMainFrame();
-  auto url = navigation_handle->GetURL();
-  content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
-
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary details = gin::Dictionary::CreateEmpty(isolate);
-  details.Set("isMainFrame", is_main_frame);
-  details.SetGetter("frame", frame_host);
-
-  return Emit(event, url, details);
-}
-
 bool WebContents::EmitNavigationEvent(
     const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
