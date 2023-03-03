@@ -446,10 +446,10 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..7d80d7fa8337523c3a70f317f883f0cc
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index fe043e6dc2203a9054ae367b70a3854b8560c9c7..6cc51d9df176512f6f296e0eb82bc31b5a9515fa 100644
+index 2b4c110a3f7e1eb4f125bb94204affd112c85073..4d480e5f2dc8f49b02e2404bdb5186de4415f4d6 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -88,6 +88,7 @@
+@@ -95,6 +95,7 @@
      }
    }
  
@@ -457,7 +457,7 @@ index fe043e6dc2203a9054ae367b70a3854b8560c9c7..6cc51d9df176512f6f296e0eb82bc31b
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -96,6 +97,7 @@
+@@ -103,6 +104,7 @@
    // AXTextMarkerRange
    if (IsAXTextMarkerRange(value))
      return AXTextMarkerRangeToBaseValue(value, indexer);

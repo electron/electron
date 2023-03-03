@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 29344e62d32b50cceef20c5c869c77f992880667..90dbf4ad6f38f6380aa65679d8114fd8cb230444 100644
+index 1f0e5cc5f0faeea26cd9ce5f3fd02796c34a31e1..45d3407852233e66d9c239dfbd7e408a317579b4 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1485,6 +1485,7 @@ component("base") {
@@ -18,7 +18,7 @@ index 29344e62d32b50cceef20c5c869c77f992880667..90dbf4ad6f38f6380aa65679d8114fd8
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 5a4570c4699cde1376c21fb50954b6562acd999f..7172c144eacccf8efce6cc85545599ecf14c5d4a 100644
+index 68d467f75faa3fddd385632b536373bd9167d881..7699ea2310308b1b42e12bf26a6a0ed2e261cbc6 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -43,7 +43,7 @@ index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 1adfddd0fa65aac18e4bc98a38e52dfd62701ff4..6ac3d77d7259970394537e164097cd8dbefec6b0 100644
+index 7f9176a723dbe87bfa89d6892fa93f9bebeb2bcf..4728583dc810cd565b33487f8c1f751627e30333 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -68,7 +68,7 @@ index c320ce10cfcd8b62dc516871bae900f6da9600f5..c9347d61c76098c9df5e0142872b5078
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9ba992e9ce8e107949db8dfc928a478b50fea35a..564467c1dda1210085488aed47d64052c457bd8a 100644
+index 860c0422b9b7e7a3a12c3b8a68bad23583b2d4f5..2555491f97ed8ca9ff9c7b4d4c0672efa8734820 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -57,6 +57,7 @@ source_set("browser") {
@@ -257,10 +257,10 @@ index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675c
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 36bc22a122193bf5ccd7e86df08cce7e5451a035..6d64206ee17042b6eef9ba15977eba0458903c75 100644
+index accb869030e59007935fa2363b8138c1508d7396..bd0be0ce3d7becea13096d46a44a019fe71c0172 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -664,6 +664,7 @@ component("views") {
+@@ -668,6 +668,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
