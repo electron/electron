@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dale Curtis <dalecurtis@chromium.org>
 Date: Mon, 20 Feb 2023 10:08:49 +0000
-Subject: [M108-LTS] Simplify WebMediaPlayerMSCompositor destruction.
+Subject: Simplify WebMediaPlayerMSCompositor destruction.
 
 The code was only sometimes calling StopUsingProvider() and posted
 the submitter destruction unnecessarily.

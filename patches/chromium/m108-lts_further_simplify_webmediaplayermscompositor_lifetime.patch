@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dale Curtis <dalecurtis@chromium.org>
 Date: Mon, 20 Feb 2023 13:16:32 +0000
-Subject: [M108-LTS] Further simplify WebMediaPlayerMSCompositor lifetime.
+Subject: Further simplify WebMediaPlayerMSCompositor lifetime.
 
 M108 merge issues:
   third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc:
