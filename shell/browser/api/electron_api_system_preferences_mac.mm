@@ -23,7 +23,6 @@
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
-#include "shell/browser/ui/cocoa/NSColor+Hex.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
