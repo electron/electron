@@ -27,7 +27,7 @@ Cr-Commit-Position: refs/branch-heads/5481@{#1119}
 Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
 
 diff --git a/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc
-index 84a64950db48dfa43f55793033dcf26af3b4a725..9997a8e1e8e69d4d1571798c834fa53bb45cea7c 100644
+index 84a64950db48dfa43f55793033dcf26af3b4a725..bfe2080e5ab844f3f9a7ccad8cfe7b4336ed68f1 100644
 --- a/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc
 +++ b/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc
 @@ -80,6 +80,11 @@ class AngleVulkanImageBacking : public ClearTrackingSharedImageBacking,
