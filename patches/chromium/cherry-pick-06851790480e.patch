@@ -1,7 +1,7 @@
-From 06851790480e8e16a2913461d271437d525451a2 Mon Sep 17 00:00:00 2001
-From: Tommy C. Li <tommycli@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Tommy C. Li" <tommycli@chromium.org>
 Date: Tue, 21 Feb 2023 18:55:00 +0000
-Subject: [PATCH] [search_engines] Exclude Policy and Play API engines from Sync merging
+Subject: Exclude Policy and Play API engines from Sync merging
 
 There's a security bug in which the call to ResetTemplateURLGUID can
 cause a policy-created engine to be deleted. This means that after
@@ -29,13 +29,12 @@ Reviewed-by: Tommy Li <tommycli@chromium.org>
 Commit-Queue: Krishna Govind <govind@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5481@{#1238}
 Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
----
 
 diff --git a/chrome/browser/search_engines/template_url_service_sync_unittest.cc b/chrome/browser/search_engines/template_url_service_sync_unittest.cc
-index 2de150b..b552f1d 100644
+index cc36b62044b14b07b08a176d36d606b96147526b..fb56b5cee060972e17d945d84d26247746277256 100644
 --- a/chrome/browser/search_engines/template_url_service_sync_unittest.cc
 +++ b/chrome/browser/search_engines/template_url_service_sync_unittest.cc
-@@ -732,6 +732,34 @@
+@@ -732,6 +732,34 @@ TEST_F(TemplateURLServiceSyncTest, MergeAddFromNewerSyncData) {
              processor()->change_for_guid("localguid3").change_type());
  }
  
@@ -71,10 +70,10 @@ index 2de150b..b552f1d 100644
    // We initially have no data.
    MergeAndExpectNotify({}, 0);
 diff --git a/components/search_engines/template_url_service.cc b/components/search_engines/template_url_service.cc
-index f52cada..463f87a1 100644
+index 9d84529033d3883ad007025fe766d4b9571b1439..4f2dbf6d2b2e5b51d967eec29b2e59c163bb46fa 100644
 --- a/components/search_engines/template_url_service.cc
 +++ b/components/search_engines/template_url_service.cc
-@@ -2207,7 +2207,14 @@
+@@ -2143,7 +2143,14 @@ void TemplateURLService::MergeInSyncTemplateURL(
        keyword_to_turl_and_length_.equal_range(sync_turl->keyword());
    for (auto it = match_range.first; it != match_range.second; ++it) {
      TemplateURL* local_turl = it->second.first;
