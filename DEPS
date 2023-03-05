@@ -149,5 +149,4 @@ hooks = [
 
 recursedeps = [
   'src',
-  'src/third_party/squirrel.mac',
 ]
