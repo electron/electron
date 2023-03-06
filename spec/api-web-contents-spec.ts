@@ -565,11 +565,11 @@ describe('webContents module', () => {
         oscillator.connect(context.destination)
         oscillator.start()
       `);
-      let p = once(w.webContents, '-audio-state-changed');
+      let p = once(w.webContents, 'audio-state-changed');
       w.webContents.executeJavaScript('context.resume()');
       await p;
       expect(w.webContents.isCurrentlyAudible()).to.be.true();
-      p = once(w.webContents, '-audio-state-changed');
+      p = once(w.webContents, 'audio-state-changed');
       w.webContents.executeJavaScript('oscillator.stop()');
       await p;
       expect(w.webContents.isCurrentlyAudible()).to.be.false();

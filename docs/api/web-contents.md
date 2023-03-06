@@ -635,6 +635,15 @@ Emitted when media starts playing.
 
 Emitted when media is paused or done playing.
 
+#### Event: 'audio-state-changed'
+
+Returns:
+
+* `event` Event<>
+  * `audible` boolean - True if one or more frames or child `webContents` are emitting audio.
+
+Emitted when media becomes audible or inaudible.
+
 #### Event: 'did-change-theme-color'
 
 Returns:
