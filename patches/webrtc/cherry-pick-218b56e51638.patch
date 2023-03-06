@@ -1,0 +1,60 @@
+From 218b56e516386cd57c7513197528c3124bcd7ef3 Mon Sep 17 00:00:00 2001
+From: Alexander Cooper <alcooper@chromium.org>
+Date: Wed, 08 Feb 2023 14:16:01 -0800
+Subject: [PATCH] Fix Destruction inside WGC Callback
+
+If we are notified of the destruction of the window before a
+CaptureFrame call can fail, then we may end up attempting to destroy the
+underlying WGC object inside it's own event handler. This can be
+problematic, as the class itself may want to run other code. Instead,
+we just unsubscribe and signal that any future CaptureFrame calls should
+reject.
+
+This also removes setting "is_capture_started_=false" in the item closed
+handler, as all that served to do is cause the WgcCapturerWin code to
+attempt to restart the capturer, and somewhat muddies up our metrics.
+
+(cherry picked from commit 318cf28945d80a0ac6f09382e507c95e649cc4c1)
+
+Bug: chromium:1413005
+No-Try: True
+Change-Id: Ibccb7a2e7ce531ba80b4b331b9bc2cda0ff75f4e
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/292762
+Auto-Submit: Alexander Cooper <alcooper@chromium.org>
+Reviewed-by: Mark Foltz <mfoltz@chromium.org>
+Commit-Queue: Mark Foltz <mfoltz@chromium.org>
+Commit-Queue: Alexander Cooper <alcooper@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#39275}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/293246
+Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5481@{#5}
+Cr-Branched-From: 2e1a9a4ae0234d4b1ea7a6fd4188afa1fb20379d-refs/heads/main@{#38901}
+---
+
+diff --git a/modules/desktop_capture/win/wgc_capture_session.cc b/modules/desktop_capture/win/wgc_capture_session.cc
+index e165291..ea5565c 100644
+--- a/modules/desktop_capture/win/wgc_capture_session.cc
++++ b/modules/desktop_capture/win/wgc_capture_session.cc
+@@ -397,17 +397,14 @@
+ 
+   RTC_LOG(LS_INFO) << "Capture target has been closed.";
+   item_closed_ = true;
+-  is_capture_started_ = false;
+ 
+   RemoveEventHandlers();
+ 
+-  mapped_texture_ = nullptr;
+-  session_ = nullptr;
+-  frame_pool_ = nullptr;
+-  direct3d_device_ = nullptr;
+-  item_ = nullptr;
+-  d3d11_device_ = nullptr;
+-
++  // Do not attempt to free resources in the OnItemClosed handler, as this
++  // causes a race where we try to delete the item that is calling us. Removing
++  // the event handlers and setting `item_closed_` above is sufficient to ensure
++  // that the resources are no longer used, and the next time the capturer tries
++  // to get a frame, we will report a permanent failure and be destroyed.
+   return S_OK;
+ }
+ 
