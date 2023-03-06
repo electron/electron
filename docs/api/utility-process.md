@@ -24,9 +24,9 @@ Process: [Main](../glossary.md#main-process)<br />
     `stderr` to either `pipe`, `inherit` or `ignore`. Configuring `stdin` is not supported; `stdin` will
     always be ignored.
     For example, the supported values will be processed as following:
-    * `pipe`: equivalent to ['ignore', 'pipe', 'pipe'] (the default)
-    * `ignore`: equivalent to 'ignore', 'ignore', 'ignore']
-    * `inherit`: equivalent to ['ignore', 'inherit', 'inherit']
+    * `pipe`: equivalent to \['ignore', 'pipe', 'pipe'] (the default)
+    * `ignore`: equivalent to \['ignore', 'ignore', 'ignore']
+    * `inherit`: equivalent to \['ignore', 'inherit', 'inherit']
   * `serviceName` string (optional) - Name of the process that will appear in `name` property of
     [`child-process-gone` event of `app`](app.md#event-child-process-gone).
     Default is `node.mojom.NodeService`.
@@ -90,7 +90,7 @@ the child process exits, then the value is `undefined` after the `exit` event is
 #### `child.stdout`
 
 A `NodeJS.ReadableStream | null` that represents the child process's stdout.
-If the child was spawned with options.stdio[1] set to anything other than 'pipe', then this will be `null`.
+If the child was spawned with options.stdio\[1] set to anything other than 'pipe', then this will be `null`.
 When the child process exits, then the value is `null` after the `exit` event is emitted.
 
 ```js
@@ -105,7 +105,7 @@ child.stdout.on('data', (data) => {
 #### `child.stderr`
 
 A `NodeJS.ReadableStream | null` that represents the child process's stderr.
-If the child was spawned with options.stdio[2] set to anything other than 'pipe', then this will be `null`.
+If the child was spawned with options.stdio\[2] set to anything other than 'pipe', then this will be `null`.
 When the child process exits, then the value is `null` after the `exit` event is emitted.
 
 ### Instance Events
@@ -132,7 +132,7 @@ Returns:
 Emitted when the child process sends a message using [`process.parentPort.postMessage()`](process.md#processparentport).
 
 [`child_process.fork`]: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processforkmodulepath-args-options
-[Services API]: https://chromium.googlesource.com/chromium/src/+/master/docs/mojo_and_services.md
+[Services API]: https://chromium.googlesource.com/chromium/src/+/main/docs/mojo_and_services.md
 [stdio]: https://nodejs.org/dist/latest/docs/api/child_process.html#optionsstdio
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [`MessagePortMain`]: message-port-main.md

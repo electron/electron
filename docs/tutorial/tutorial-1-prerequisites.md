@@ -49,7 +49,7 @@ continuing, we recommend the following resources:
 
 ### Code editor
 
-You will need a text editor to write your code. We recommend using [Visual Studio Code],
+You will need a text editor to write your code. We recommend using [Visual Studio Code][],
 although you can choose whichever one you prefer.
 
 ### Command line
@@ -73,8 +73,8 @@ on in the tutorial. Therefore, we'll require you to:
 - [Create a GitHub account](https://github.com/join)
 - [Install Git](https://github.com/git-guides/install-git)
 
-If you're unfamiliar with how Git works, we recommend reading GitHub's [Git guides]. You can also
-use the [GitHub Desktop] app if you prefer using a visual interface over the command line.
+If you're unfamiliar with how Git works, we recommend reading GitHub's [Git guides][]. You can also
+use the [GitHub Desktop][] app if you prefer using a visual interface over the command line.
 
 We recommend that you create a local Git repository and publish it to GitHub before starting
 the tutorial, and commit your code after every step.
@@ -96,8 +96,8 @@ use the latest long-term support (LTS) version.
 
 Please install Node.js using pre-built installers for your platform.
 You may encounter incompatibility issues with different development tools otherwise.
-If you are using macOS, we recommend using a package manager like [Homebrew] or
-[nvm] to avoid any directory permission issues.
+If you are using macOS, we recommend using a package manager like [Homebrew][] or
+[nvm][] to avoid any directory permission issues.
 
 :::
 
@@ -120,8 +120,8 @@ comes bundled with its own Node.js runtime. This means that your end users do no
 need to install Node.js themselves as a prerequisite to running your app.
 
 To check which version of Node.js is running in your app, you can access the global
-[`process.versions`] variable in the main process or preload script. You can also reference
-the list of versions in the [electron/releases] repository.
+[`process.versions`][] variable in the main process or preload script. You can also reference
+the list of versions in the [electron/releases][] repository.
 
 :::
 
@@ -135,9 +135,7 @@ the list of versions in the [electron/releases] repository.
 [node-guide]: https://nodejs.dev/en/learn/
 [node-download]: https://nodejs.org/en/download/
 [nvm]: https://github.com/nvm-sh/nvm
-[process-model]: ./process-model.md
 [`process.versions`]: https://nodejs.org/api/process.html#processversions
-[github]: https://github.com/
 [git guides]: https://github.com/git-guides/
 [github desktop]: https://desktop.github.com/
 [visual studio code]: https://code.visualstudio.com/

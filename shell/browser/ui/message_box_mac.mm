@@ -71,9 +71,6 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   int button_count = static_cast<int>([ns_buttons count]);
 
   if (settings.default_id >= 0 && settings.default_id < button_count) {
-    // Highlight the button at default_id
-    [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
-
     // The first button added gets set as the default selected, so remove
     // that and set the button @ default_id to be default.
     [[ns_buttons objectAtIndex:0] setKeyEquivalent:@""];
@@ -84,6 +81,11 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
   if (button_count > 1 && settings.cancel_id >= 0 &&
       settings.cancel_id < button_count) {
     [[ns_buttons objectAtIndex:settings.cancel_id] setKeyEquivalent:@"\e"];
+  }
+
+  // TODO(@codebytere): This behavior violates HIG & should be deprecated.
+  if (settings.cancel_id >= 0 && settings.cancel_id == settings.default_id) {
+    [[ns_buttons objectAtIndex:settings.default_id] highlight:YES];
   }
 
   if (!settings.checkbox_label.empty()) {

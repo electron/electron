@@ -58,7 +58,7 @@ For more information, check out the [Process Sandboxing](./sandbox.md) guide.
 
 Preload scripts are injected before a web page loads in the renderer,
 similar to a Chrome extension's [content scripts][content-script]. To add features to your renderer
-that require privileged access, you can define [global] objects through the
+that require privileged access, you can define [global][] objects through the
 [contextBridge][contextbridge] API.
 
 To demonstrate this concept, you will create a preload script that exposes your app's
@@ -81,7 +81,7 @@ contextBridge.exposeInMainWorld('versions', {
 To attach this script to your renderer process, pass its path to the
 `webPreferences.preload` option in the BrowserWindow constructor:
 
-```js {8-10} title="main.js"
+```js {2,8-10} title="main.js"
 const { app, BrowserWindow } = require('electron')
 const path = require('path')
 
@@ -115,7 +115,7 @@ There are two Node.js concepts that are used here:
 
 At this point, the renderer has access to the `versions` global, so let's display that
 information in the window. This variable can be accessed via `window.versions` or simply
-`versions`. Create a `renderer.js` script that uses the [`document.getElementById`]
+`versions`. Create a `renderer.js` script that uses the [`document.getElementById`][]
 DOM API to replace the displayed text for the HTML element with `info` as its `id` property.
 
 ```js title="renderer.js"
@@ -202,7 +202,7 @@ Then, set up your `handle` listener in the main process. We do this _before_
 loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
-```js {1,11} title="main.js"
+```js {1,12} title="main.js"
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
@@ -254,32 +254,15 @@ functionality to your app, then teaching you distributing your app to users.
 
 <!-- Links -->
 
-[advanced-installation]: ./installation.md
-[application debugging]: ./application-debugging.md
-[app]: ../api/app.md
-[app-ready]: ../api/app.md#event-ready
-[app-when-ready]: ../api/app.md#appwhenready
-[browser-window]: ../api/browser-window.md
-[commonjs]: https://nodejs.org/docs/latest/api/modules.html#modules_modules_commonjs_modules
-[compound task]: https://code.visualstudio.com/Docs/editor/tasks#_compound-tasks
 [content-script]: https://developer.chrome.com/docs/extensions/mv3/content_scripts/
 [contextbridge]: ../api/context-bridge.md
-[context-isolation]: ./context-isolation.md
 [`document.getelementbyid`]: https://developer.mozilla.org/en-US/docs/Web/API/Document/getElementById
-[devtools-extension]: ./devtools-extension.md
 [dirname]: https://nodejs.org/api/modules.html#modules_dirname
 [global]: https://developer.mozilla.org/en-US/docs/Glossary/Global_object
 [ipc]: ./ipc.md
-[mdn-csp]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
 [modules]: ../api/app.md
 [node-api]: https://nodejs.org/dist/latest/docs/api/
-[package-json-main]: https://docs.npmjs.com/cli/v7/configuring-npm/package-json#main
-[package-scripts]: https://docs.npmjs.com/cli/v7/using-npm/scripts
 [path-join]: https://nodejs.org/api/path.html#path_path_join_paths
-[process-model]: ./process-model.md
-[react]: https://reactjs.org
-[sandbox]: ./sandbox.md
-[webpack]: https://webpack.js.org
 
 <!-- Tutorial links -->
 

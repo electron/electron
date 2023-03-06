@@ -48,10 +48,10 @@ index cfd1862d4bd031dffb4e7d0cfd0aadcb61200c47..d14c8cd02171daf26ed9460b890b8247
  void SSL_CTX_set_tmp_rsa_callback(SSL_CTX *ctx,
                                    RSA *(*cb)(SSL *ssl, int is_export,
 diff --git a/ssl/ssl_test.cc b/ssl/ssl_test.cc
-index 51366a4fdf73041abd69184fef6bbc99ee5554db..c61bc3c979f9339014d63419034b0897e4f1c3ba 100644
+index 89273853c368ebd2c3c0098cc2a23af0490b7b87..5003607d4aded4ed885b6e362d224497932f1626 100644
 --- a/ssl/ssl_test.cc
 +++ b/ssl/ssl_test.cc
-@@ -8433,11 +8433,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+@@ -8435,11 +8435,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
    EXPECT_EQ(ret, 0);
    EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
  
@@ -63,7 +63,7 @@ index 51366a4fdf73041abd69184fef6bbc99ee5554db..c61bc3c979f9339014d63419034b0897
    // Although the client has seen close_notify, it should continue to report
    // |SSL_ERROR_SYSCALL| when its writes fail.
    ret = SSL_write(client.get(), data, sizeof(data));
-@@ -8445,22 +8440,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+@@ -8447,22 +8442,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
    EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
    EXPECT_TRUE(write_failed);
    write_failed = false;

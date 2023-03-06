@@ -28,7 +28,7 @@ it also meant that one website crashing or hanging would affect the entire brows
 To solve this problem, the Chrome team decided that each tab would render in its own
 process, limiting the harm that buggy or malicious code on a web page could cause to
 the app as a whole. A single browser process then controls these processes, as well
-as the application lifecycle as a whole. This diagram below from the [Chrome Comic]
+as the application lifecycle as a whole. This diagram below from the [Chrome Comic][]
 visualizes this model:
 
 ![Chrome's multi-process architecture](../images/chrome-processes.png)
@@ -235,4 +235,3 @@ there is need to fork a child process from the main process.
 [context-bridge]: ../api/context-bridge.md
 [ipcrenderer]: ../api/ipc-renderer.md
 [UtilityProcess]: ../api/utility-process.md
-[tutorial]: ./tutorial-1-prerequisites.md

@@ -18,7 +18,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index ba1f0d6e958cdb534b8af7717a0d6d8f2ee296bf..626f771ffbd88f1cf2e9475b745456f98575cda1 100644
+index 626108008f8358ac6006b9161c544199d15dcec7..0b379093357ddd9261f4c33fa6bdba322d06a32f 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -31,6 +31,7 @@
@@ -42,7 +42,7 @@ index ba1f0d6e958cdb534b8af7717a0d6d8f2ee296bf..626f771ffbd88f1cf2e9475b745456f9
    // in the child process.
    // Currently only supported on Linux, ChromeOS and Android platforms.
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index cfadd28fca9f80bf57578db78d5472c4f75414e1..4925dc5cafbf312c3c9640d5873d62193e87f636 100644
+index 008ba5bef67adbd166919ca4708452faa4bb85b5..c1de4bba95c862cc38589efd503c0392f7c9e8d2 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -73,7 +73,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -56,10 +56,10 @@ index cfadd28fca9f80bf57578db78d5472c4f75414e1..4925dc5cafbf312c3c9640d5873d6219
    return true;
  }
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index d74a40c0e5731281b132cc1c3dc2416f9dc2b083..dd8a9d35af617441c6643ed643b459a35b612969 100644
+index faddc7a513b0c36fb1ef1b109e412f1e02e5e9e4..7a58d41af76196ba8249bb4d2cd09f22cc86f643 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
-@@ -73,7 +73,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -117,7 +117,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        'mojo', base::MachRendezvousPort(endpoint.TakeMachReceiveRight())));
  
    options->environment = delegate_->GetEnvironment();
@@ -70,7 +70,7 @@ index d74a40c0e5731281b132cc1c3dc2416f9dc2b083..dd8a9d35af617441c6643ed643b459a3
    options->enable_cpu_security_mitigations =
        delegate_->EnableCpuSecurityMitigations();
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index 799ad0a6e0b5c629d10f481d10dd4d6959d40b42..13c610ae1bb24fb6d274a082562dcd103df50513 100644
+index d9a3feec1955ebfea5b1dcf707b804933a3b14ac..39bf5fbd7e19e13dfcdabcf5914003498dbcecb5 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -19,6 +19,8 @@
@@ -572,7 +572,7 @@ index 1e8f3994764a2b4e4efb87a08c522cc0e0103e18..83cc16ffbf484aa78b1c350d20a5a15f
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index f20c7697746d13d67057f2be8f72d9a494234061..658f9cb2c9ccc65273012c76128823f4c18b9471 100644
+index aac49f712187a62e2fd1f908420b1632a6c357b7..ca02e5c7c42c6a53bc8a74c11b3f03cbdf6ed55f 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -810,11 +810,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,

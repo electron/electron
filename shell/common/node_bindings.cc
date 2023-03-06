@@ -192,11 +192,11 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
 void ErrorMessageListener(v8::Local<v8::Message> message,
                           v8::Local<v8::Value> data) {
   v8::Isolate* isolate = v8::Isolate::GetCurrent();
-  gin_helper::MicrotasksScope microtasks_scope(
-      isolate, v8::MicrotasksScope::kDoNotRunMicrotasks);
   node::Environment* env = node::Environment::GetCurrent(isolate);
-
   if (env) {
+    gin_helper::MicrotasksScope microtasks_scope(
+        isolate, env->context()->GetMicrotaskQueue(),
+        v8::MicrotasksScope::kDoNotRunMicrotasks);
     // Emit the after() hooks now that the exception has been handled.
     // Analogous to node/lib/internal/process/execution.js#L176-L180
     if (env->async_hooks()->fields()[node::AsyncHooks::kAfter]) {
@@ -684,9 +684,10 @@ void NodeBindings::UvRunOnce() {
   // checkpoints after every call into JavaScript. Since we use a different
   // policy in the renderer - switch to `kExplicit` and then drop back to the
   // previous policy value.
-  auto old_policy = env->isolate()->GetMicrotasksPolicy();
-  DCHECK_EQ(v8::MicrotasksScope::GetCurrentDepth(env->isolate()), 0);
-  env->isolate()->SetMicrotasksPolicy(v8::MicrotasksPolicy::kExplicit);
+  v8::MicrotaskQueue* microtask_queue = env->context()->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
   if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_BEGIN0("devtools.timeline", "FunctionCall");
@@ -697,7 +698,7 @@ void NodeBindings::UvRunOnce() {
   if (browser_env_ != BrowserEnvironment::kBrowser)
     TRACE_EVENT_END0("devtools.timeline", "FunctionCall");
 
-  env->isolate()->SetMicrotasksPolicy(old_policy);
+  microtask_queue->set_microtasks_policy(old_policy);
 
   if (r == 0)
     base::RunLoop().QuitWhenIdle();  // Quit from uv.

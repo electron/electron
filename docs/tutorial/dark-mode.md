@@ -13,7 +13,7 @@ from the OS.
 
 If your app has its own dark mode, you should toggle it on and off in sync with
 the system's dark mode setting. You can do this by using the
-[prefers-color-scheme] CSS media query.
+[prefers-color-scheme][] CSS media query.
 
 ### Manually update your own interfaces
 
@@ -50,7 +50,7 @@ of this theming, due to the use of the macOS 10.14 SDK.
 This example demonstrates an Electron application that derives its theme colors from the
 `nativeTheme`. Additionally, it provides theme toggle and reset controls using IPC channels.
 
-```javascript fiddle='docs/fiddles/features/macos-dark-mode'
+```javascript fiddle='docs/fiddles/features/dark-mode'
 
 ```
 

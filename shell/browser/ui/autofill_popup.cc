@@ -33,12 +33,14 @@
 
 namespace electron {
 
+namespace {
+
 void CalculatePopupXAndWidthHorizontallyCentered(
     int popup_preferred_width,
     const gfx::Rect& content_area_bounds,
     const gfx::Rect& element_bounds,
     bool is_rtl,
-    gfx::Rect* bubble_bounds) {
+    gfx::Rect* popup_bounds) {
   // The preferred horizontal starting point for the pop-up is at the horizontal
   // center of the field.
   int preferred_starting_point =
@@ -66,15 +68,15 @@ void CalculatePopupXAndWidthHorizontallyCentered(
   int amount_to_grow_in_unpreferred_direction =
       std::max(0, popup_width - space_to_grow_in_preferred_direction);
 
-  bubble_bounds->set_width(popup_width);
+  popup_bounds->set_width(popup_width);
   if (is_rtl) {
     // Note, in RTL the |pop_up_width| must be subtracted to achieve
     // right-alignment of the pop-up with the element.
-    bubble_bounds->set_x(preferred_starting_point - popup_width +
-                         amount_to_grow_in_unpreferred_direction);
+    popup_bounds->set_x(preferred_starting_point - popup_width +
+                        amount_to_grow_in_unpreferred_direction);
   } else {
-    bubble_bounds->set_x(preferred_starting_point -
-                         amount_to_grow_in_unpreferred_direction);
+    popup_bounds->set_x(preferred_starting_point -
+                        amount_to_grow_in_unpreferred_direction);
   }
 }
 
@@ -82,7 +84,7 @@ void CalculatePopupXAndWidth(int popup_preferred_width,
                              const gfx::Rect& content_area_bounds,
                              const gfx::Rect& element_bounds,
                              bool is_rtl,
-                             gfx::Rect* bubble_bounds) {
+                             gfx::Rect* popup_bounds) {
   int right_growth_start = base::clamp(
       element_bounds.x(), content_area_bounds.x(), content_area_bounds.right());
   int left_growth_end =
@@ -107,15 +109,15 @@ void CalculatePopupXAndWidth(int popup_preferred_width,
         right_available < popup_width && right_available < left_available;
   }
 
-  bubble_bounds->set_width(popup_width);
-  bubble_bounds->set_x(grow_left ? left_growth_end - popup_width
-                                 : right_growth_start);
+  popup_bounds->set_width(popup_width);
+  popup_bounds->set_x(grow_left ? left_growth_end - popup_width
+                                : right_growth_start);
 }
 
 void CalculatePopupYAndHeight(int popup_preferred_height,
                               const gfx::Rect& content_area_bounds,
                               const gfx::Rect& element_bounds,
-                              gfx::Rect* bubble_bounds) {
+                              gfx::Rect* popup_bounds) {
   int top_growth_end = base::clamp(element_bounds.y(), content_area_bounds.y(),
                                    content_area_bounds.bottom());
   int bottom_growth_start =
@@ -125,18 +127,18 @@ void CalculatePopupYAndHeight(int popup_preferred_height,
   int top_available = top_growth_end - content_area_bounds.y();
   int bottom_available = content_area_bounds.bottom() - bottom_growth_start;
 
-  bubble_bounds->set_height(popup_preferred_height);
-  bubble_bounds->set_y(top_growth_end);
+  popup_bounds->set_height(popup_preferred_height);
+  popup_bounds->set_y(top_growth_end);
 
   if (bottom_available >= popup_preferred_height ||
       bottom_available >= top_available) {
-    bubble_bounds->AdjustToFit(
-        gfx::Rect(bubble_bounds->x(), element_bounds.bottom(),
-                  bubble_bounds->width(), bottom_available));
+    popup_bounds->AdjustToFit(
+        gfx::Rect(popup_bounds->x(), element_bounds.bottom(),
+                  popup_bounds->width(), bottom_available));
   } else {
-    bubble_bounds->AdjustToFit(
-        gfx::Rect(bubble_bounds->x(), content_area_bounds.y(),
-                  bubble_bounds->width(), top_available));
+    popup_bounds->AdjustToFit(gfx::Rect(popup_bounds->x(),
+                                        content_area_bounds.y(),
+                                        popup_bounds->width(), top_available));
   }
 }
 
@@ -145,21 +147,23 @@ gfx::Rect CalculatePopupBounds(const gfx::Size& desired_size,
                                const gfx::Rect& element_bounds,
                                bool is_rtl,
                                bool horizontally_centered) {
-  gfx::Rect bubble_bounds;
+  gfx::Rect popup_bounds;
 
   if (horizontally_centered) {
     CalculatePopupXAndWidthHorizontallyCentered(
         desired_size.width(), content_area_bounds, element_bounds, is_rtl,
-        &bubble_bounds);
+        &popup_bounds);
   } else {
     CalculatePopupXAndWidth(desired_size.width(), content_area_bounds,
-                            element_bounds, is_rtl, &bubble_bounds);
+                            element_bounds, is_rtl, &popup_bounds);
   }
   CalculatePopupYAndHeight(desired_size.height(), content_area_bounds,
-                           element_bounds, &bubble_bounds);
+                           element_bounds, &popup_bounds);
 
-  return bubble_bounds;
+  return popup_bounds;
 }
+
+}  // namespace
 
 AutofillPopup::AutofillPopup() {
   bold_font_list_ = gfx::FontList().DeriveWithWeight(gfx::Font::Weight::BOLD);
@@ -242,16 +246,12 @@ void AutofillPopup::UpdatePopupBounds() {
   views::View::ConvertPointToScreen(parent_, &origin);
 
   gfx::Rect bounds(origin, element_bounds_.size());
-  gfx::Rect window_bounds = parent_->GetBoundsInScreen();
-
   gfx::Size preferred_size =
       gfx::Size(GetDesiredPopupWidth(), GetDesiredPopupHeight());
 
-  popup_bounds_ = CalculatePopupBounds(preferred_size, window_bounds, bounds,
-                                       base::i18n::IsRTL(), true);
-  CalculatePopupXAndWidthHorizontallyCentered(
-      preferred_size.width(), window_bounds, element_bounds_,
-      base::i18n::IsRTL(), &popup_bounds_);
+  popup_bounds_ =
+      CalculatePopupBounds(preferred_size, parent_->GetBoundsInScreen(), bounds,
+                           base::i18n::IsRTL(), false);
 }
 
 gfx::Rect AutofillPopup::popup_bounds_in_view() {
