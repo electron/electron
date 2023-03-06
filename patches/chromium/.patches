@@ -147,3 +147,5 @@ cherry-pick-57c54ae221d6.patch
 cherry-pick-ca2b108a0f1f.patch
 cherry-pick-d652130c4bc2.patch
 cherry-pick-06851790480e.patch
+m108-lts_simplify_webmediaplayermscompositor_destruction.patch
+m108-lts_further_simplify_webmediaplayermscompositor_lifetime.patch
