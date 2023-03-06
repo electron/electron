@@ -6,7 +6,7 @@ Subject: allow new privileges in unsandboxed child processes
 This allows unsandboxed child process to launch setuid processes on Linux.
 
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index b7f21237e87fa994b304a26fea8fec2531bca8de..7f6a4197aa7da2ba6a16cd83b78243e49ec1f2f4 100644
+index 1b4f9c8e3b79abcab08b9bfb80109d7f032d9d5f..6d8aa39ab75edcba3e34134566c9fcbe56a7ec57 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
 @@ -62,6 +62,15 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(

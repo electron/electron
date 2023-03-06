@@ -148,12 +148,12 @@ index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 79021074867df91e3090bc6bbea6114364e6e78d..44635f13048890b20c74870d26c4e74bab363ddb 100644
+index f1b4cd5055d00df425926e83a3b2e7f32af4c2e6..cfe1a9e3328418d91aa4dba0bbb02fc2ee6e79a9 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -176,6 +176,12 @@ source_set("audio") {
-       "mac/scoped_audio_unit.cc",
-       "mac/scoped_audio_unit.h",
+@@ -193,6 +193,12 @@ source_set("audio") {
+       "mac/coreaudio_dispatch_override.cc",
+       "mac/coreaudio_dispatch_override.h",
      ]
 +    if (is_mas_build) {
 +      sources -= [
@@ -161,11 +161,11 @@ index 79021074867df91e3090bc6bbea6114364e6e78d..44635f13048890b20c74870d26c4e74b
 +        "mac/coreaudio_dispatch_override.h",
 +      ]
 +    }
-     frameworks = [
-       "AudioToolbox.framework",
-       "AudioUnit.framework",
+     frameworks += [ "AudioUnit.framework" ]
+   }
+ 
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 2cd163bf82f16a44456d0f98505514489ba8f751..636096ec3d6425b858bbcb9f732be44cbab077e7 100644
+index 46fda99c2e550cf5b818bf4ff7d40b364d4bf1bb..276515871683976410c4defeb4895259434219dc 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -975,7 +975,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(

@@ -20,7 +20,7 @@ index 2ca14efae5ea478f43794a81883b00dfdb1a37b0..d73055fbf39334925ef4b4804bbaca57
  
      case ssl_open_record_error:
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index 0f0f5b1c32f88ec019fc3eab0977c9bb64c095ed..e25b72ec1e43c52d329d4f396776698526685439 100644
+index 86e8eb33e2f99b9a6173550027cfd0812a39614e..f2aac85c096bef42a015135b02936e3d4e9a4c56 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
 @@ -1320,7 +1320,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
@@ -32,7 +32,7 @@ index 0f0f5b1c32f88ec019fc3eab0977c9bb64c095ed..e25b72ec1e43c52d329d4f3967766985
        return SSL_ERROR_ZERO_RETURN;
      }
      // An EOF was observed which violates the protocol, and the underlying
-@@ -2598,13 +2598,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
+@@ -2597,13 +2597,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
    return CRYPTO_get_ex_data(&ctx->ex_data, idx);
  }
  
@@ -48,10 +48,10 @@ index 0f0f5b1c32f88ec019fc3eab0977c9bb64c095ed..e25b72ec1e43c52d329d4f3967766985
  void SSL_CTX_set_tmp_rsa_callback(SSL_CTX *ctx,
                                    RSA *(*cb)(SSL *ssl, int is_export,
 diff --git a/ssl/ssl_test.cc b/ssl/ssl_test.cc
-index 17209298f84bcd248c0367a4cc8fb88074705b5e..fa6d7d22a26c520896ea8b8b1f0e5cf816a52812 100644
+index f51c11efc12209377773204808b85c9cbf5d3bff..d19fd1f9643f99fdd56753a942fccefff08728ac 100644
 --- a/ssl/ssl_test.cc
 +++ b/ssl/ssl_test.cc
-@@ -8437,11 +8437,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+@@ -8460,11 +8460,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
    EXPECT_EQ(ret, 0);
    EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
  
@@ -63,7 +63,7 @@ index 17209298f84bcd248c0367a4cc8fb88074705b5e..fa6d7d22a26c520896ea8b8b1f0e5cf8
    // Although the client has seen close_notify, it should continue to report
    // |SSL_ERROR_SYSCALL| when its writes fail.
    ret = SSL_write(client.get(), data, sizeof(data));
-@@ -8449,22 +8444,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
+@@ -8472,22 +8467,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
    EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
    EXPECT_TRUE(write_failed);
    write_failed = false;

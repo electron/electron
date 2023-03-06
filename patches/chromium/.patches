@@ -25,7 +25,6 @@ mas_disable_remote_accessibility.patch
 mas_disable_custom_window_frame.patch
 mas_avoid_usage_of_private_macos_apis.patch
 mas_use_public_apis_to_determine_if_a_font_is_a_system_font.patch
-chrome_key_systems.patch
 add_didinstallconditionalfeatures.patch
 desktop_media_list.patch
 proxy_config_monitor.patch
