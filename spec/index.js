@@ -73,6 +73,7 @@ app.whenReady().then(async () => {
     )
   );
   mocha.suite.beforeEach(function () {
+    // TODO(clavin): add support for disabling suites by title
     if (disabledTests.has(this.currentTest?.fullTitle())) {
       this.skip();
     }
