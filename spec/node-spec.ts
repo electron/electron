@@ -226,6 +226,42 @@ describe('node feature', () => {
         }));
         expect(result).to.equal('hello');
       });
+
+      it('does not log the warning more than once when the rejection is unhandled', async () => {
+        const appPath = path.join(mainFixturesPath, 'api', 'unhandled-rejection.js');
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+        let output = '';
+        const out = (data: string) => {
+          output += data;
+          if (/UnhandledPromiseRejectionWarning/.test(data)) {
+            appProcess.kill();
+          }
+        };
+        appProcess.stdout!.on('data', out);
+        appProcess.stderr!.on('data', out);
+
+        await emittedOnce(appProcess, 'exit');
+        expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(true);
+        const matches = output.match(/Error: oops/gm);
+        expect(matches).to.have.lengthOf(1);
+      });
+
+      it('does not log the warning more than once when the rejection is handled', async () => {
+        const appPath = path.join(mainFixturesPath, 'api', 'unhandled-rejection-handled.js');
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+        let output = '';
+        const out = (data: string) => { output += data; };
+        appProcess.stdout!.on('data', out);
+        appProcess.stderr!.on('data', out);
+
+        const [code] = await emittedOnce(appProcess, 'exit');
+        expect(code).to.equal(0);
+        expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(false);
+        const matches = output.match(/Error: oops/gm);
+        expect(matches).to.have.lengthOf(1);
+      });
     });
   });
 
