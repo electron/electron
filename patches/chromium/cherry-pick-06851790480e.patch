@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Tommy C. Li" <tommycli@chromium.org>
+Date: Tue, 21 Feb 2023 18:55:00 +0000
+Subject: Exclude Policy and Play API engines from Sync merging
+
+There's a security bug in which the call to ResetTemplateURLGUID can
+cause a policy-created engine to be deleted. This means that after
+the call, either the current `conflicting_turl` pointer, or future
+iterations in the loop may point to an already-freed TemplateURL,
+causing the use-after free bug.
+
+This CL addresses that by forbidding Policy-created and Play API
+engines from being merged into Synced engines.
+
+Although Play API engines aren't directly affected, they seem to also
+not be something that should be merged to Synced engines.
+
+(cherry picked from commit 315632458eb795ef9d9dce3fd1062f9e6f2c2077)
+
+Bug: 1414224
+Change-Id: Ide43d71e9844e04a7ffe2e7ad2a522b6ca1535a3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4250623
+Reviewed-by: Matthew Denton <mpdenton@chromium.org>
+Reviewed-by: Mikel Astiz <mastiz@chromium.org>
+Commit-Queue: Tommy Li <tommycli@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1106249}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4274984
+Reviewed-by: Tommy Li <tommycli@chromium.org>
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5481@{#1238}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/chrome/browser/search_engines/template_url_service_sync_unittest.cc b/chrome/browser/search_engines/template_url_service_sync_unittest.cc
+index 2de150bbca0bf9032e207754203e60f2ee1f115f..b552f1d844e44b34eadaca850408754488b9d27b 100644
+--- a/chrome/browser/search_engines/template_url_service_sync_unittest.cc
++++ b/chrome/browser/search_engines/template_url_service_sync_unittest.cc
+@@ -732,6 +732,34 @@ TEST_F(TemplateURLServiceSyncTest, MergeAddFromNewerSyncData) {
+             processor()->change_for_guid("localguid3").change_type());
+ }
+ 
++TEST_F(TemplateURLServiceSyncTest, MergeIgnoresPolicyAndPlayAPIEngines) {
++  // Add a policy-created engine.
++  model()->Add(CreateTestTemplateURL(u"key1", "http://key1.com", "localguid1",
++                                     base::Time::FromTimeT(100),
++                                     /*safe_for_autoreplace=*/false,
++                                     /*created_by_policy=*/true));
++
++  {
++    auto play_api_engine = CreateTestTemplateURL(
++        u"key2", "http://key2.com", "localguid2", base::Time::FromTimeT(100));
++    TemplateURLData data(play_api_engine->data());
++    data.created_from_play_api = true;
++    play_api_engine = std::make_unique<TemplateURL>(data);
++    model()->Add(std::move(play_api_engine));
++  }
++
++  ASSERT_EQ(1U, model()->GetAllSyncData(syncer::SEARCH_ENGINES).size());
++  MergeAndExpectNotify(CreateInitialSyncData(), 1);
++
++  // The policy engine should be ignored when it comes to conflict resolution.
++  EXPECT_TRUE(model()->GetTemplateURLForGUID("guid1"));
++  EXPECT_TRUE(model()->GetTemplateURLForGUID("localguid1"));
++
++  // The Play API engine should be ignored when it comes to conflict resolution.
++  EXPECT_TRUE(model()->GetTemplateURLForGUID("guid2"));
++  EXPECT_TRUE(model()->GetTemplateURLForGUID("localguid2"));
++}
++
+ TEST_F(TemplateURLServiceSyncTest, ProcessChangesEmptyModel) {
+   // We initially have no data.
+   MergeAndExpectNotify({}, 0);
+diff --git a/components/search_engines/template_url_service.cc b/components/search_engines/template_url_service.cc
+index 61e7fabfed76c251ee2e3186ab60c56da54be551..824383536eed1560aa50b6892603e3a1aa601c53 100644
+--- a/components/search_engines/template_url_service.cc
++++ b/components/search_engines/template_url_service.cc
+@@ -2175,7 +2175,14 @@ void TemplateURLService::MergeInSyncTemplateURL(
+       keyword_to_turl_and_length_.equal_range(sync_turl->keyword());
+   for (auto it = match_range.first; it != match_range.second; ++it) {
+     TemplateURL* local_turl = it->second.first;
+-    if (local_turl->type() == TemplateURL::NORMAL) {
++    // The conflict resolution code below sometimes resets the TemplateURL's
++    // GUID, which can trigger deleting any Policy-created engines. Avoid this
++    // use-after-free bug by excluding any Policy-created engines. Also exclude
++    // Play API created engines, as those also seem local-only and should not
++    // be merged into Synced engines. crbug.com/1414224.
++    if (local_turl->type() == TemplateURL::NORMAL &&
++        !local_turl->created_by_policy() &&
++        !local_turl->created_from_play_api()) {
+       local_duplicates.push_back(local_turl);
+     }
+   }
