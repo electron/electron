@@ -130,3 +130,4 @@ axselectedtextmarkerrange_should_not_be_backwards.patch
 fix_x11_window_restore_minimized_maximized_window.patch
 m108-lts_simplify_webmediaplayermscompositor_destruction.patch
 m108-lts_further_simplify_webmediaplayermscompositor_lifetime.patch
+cherry-pick-aeec1ba5893d.patch
