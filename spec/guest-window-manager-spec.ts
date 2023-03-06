@@ -176,6 +176,35 @@ describe('webContents.setWindowOpenHandler', () => {
     await once(browserWindow.webContents, 'did-create-window');
   });
 
+  it('does not crash when used in conjunction with the vm module', async () => {
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        contextIsolation: false,
+        nodeIntegration: true
+      }
+    });
+
+    await w.loadURL('about:blank');
+
+    const didCreateWindow = once(w.webContents, 'did-create-window');
+    w.webContents.executeJavaScript("window.open('')");
+    await didCreateWindow;
+
+    const result = await w.webContents.executeJavaScript(`
+      const vm = require('node:vm')
+      const run = () => {
+          const context = { x: 2 }
+          vm.createContext(context)
+          vm.runInContext('x += 40', context)
+          return context.x
+      }
+      run()
+    `);
+
+    expect(result).to.equal(42);
+  });
+
   it('can change webPreferences of child windows', async () => {
     browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 

@@ -96,7 +96,7 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
   // actual page has started to load.
   auto* web_frame =
       static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
-  if (web_frame->Opener() && web_frame->IsOnInitialEmptyDocument()) {
+  if (web_frame->Opener()) {
     // FIXME(zcbenz): Chromium does not do any browser side navigation for
     // window.open('about:blank'), so there is no way to override WebPreferences
     // of it. We should not delay Node.js initialization as there will be no
@@ -104,7 +104,11 @@ void ElectronRenderFrameObserver::DidInstallConditionalFeatures(
     // Please check http://crbug.com/1215096 for updates which may help remove
     // this hack.
     GURL url = web_frame->GetDocument().Url();
-    if (!url.IsAboutBlank()) {
+    bool is_only_initially_blank =
+        web_frame->IsOnInitialEmptyDocument() && !url.IsAboutBlank();
+    bool is_intentionally_blank =
+        !web_frame->IsOnInitialEmptyDocument() && url.IsAboutBlank();
+    if (is_only_initially_blank || is_intentionally_blank) {
       has_delayed_node_initialization_ = true;
       return;
     }
