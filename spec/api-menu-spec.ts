@@ -900,8 +900,8 @@ describe('Menu module', function () {
       expect(Menu.getApplicationMenu()).to.not.be.null('application menu');
     });
 
-    // TODO(nornagon): this causes the focus handling tests to fail
-    it.skip('unsets a menu with null', () => {
+    // FIXME(nornagon): this causes the focus handling tests to fail
+    it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null);
       expect(Menu.getApplicationMenu()).to.be.null('application menu');
     });

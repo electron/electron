@@ -19,9 +19,9 @@ const features = process._linkedBinding('electron_common_features');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('reporting api', () => {
-  // TODO(nornagon): this started failing a lot on CI. Figure out why and fix
+  // FIXME(nornagon): this started failing a lot on CI. Figure out why and fix
   // it.
-  it.skip('sends a report for a deprecation', async () => {
+  it('sends a report for a deprecation', async () => {
     const reports = new EventEmitter();
 
     // The Reporting API only works on https with valid certs. To dodge having
@@ -1061,8 +1061,8 @@ describe('chromium features', () => {
       expect(frameName).to.equal('__proto__');
     });
 
-    // TODO(nornagon): I'm not sure this ... ever was correct?
-    it.skip('inherit options of parent window', async () => {
+    // FIXME(nornagon): I'm not sure this ... ever was correct?
+    xit('inherit options of parent window', async () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });
       w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       const url = `file://${fixturesPath}/pages/window-open-size.html`;
@@ -2168,14 +2168,11 @@ describe('chromium features', () => {
     });
   });
 
+  // FIXME(nornagon): this is broken on CI, it triggers:
+  // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
+  // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
+  // (null text in SpeechSynthesisUtterance struct).
   ifdescribe(features.isTtsEnabled())('SpeechSynthesis', () => {
-    before(function () {
-      // TODO(nornagon): this is broken on CI, it triggers:
-      // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
-      // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
-      // (null text in SpeechSynthesisUtterance struct).
-      this.skip();
-    });
     itremote('should emit lifecycle events', async () => {
       const sentence = `long sentence which will take at least a few seconds to
           utter so that it's possible to pause and resume before the end`;
