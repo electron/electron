@@ -686,7 +686,6 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeRedirect(
 
   factory_->web_request_api()->OnBeforeRedirect(&info_.value(), request_,
                                                 redirect_info.new_url);
-  LOG(INFO) << "PULF::IPR::CTBR";
   target_client_->OnReceiveRedirect(redirect_info, current_response_.Clone());
   request_.url = redirect_info.new_url;
   request_.method = redirect_info.new_method;
