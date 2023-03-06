@@ -1867,6 +1867,10 @@ describe('app module', () => {
         version: '1.2.3'
       });
     });
+
+    it('app.showAboutPanel() does not crash & runs asynchronously', () => {
+      app.showAboutPanel();
+    });
   });
 });
 
