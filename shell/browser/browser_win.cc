@@ -2,6 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
+#include "base/functional/bind.h"
 #include "shell/browser/browser.h"
 
 // must come before other includes. fixes bad #defines from <shlwapi.h>.
@@ -765,7 +766,8 @@ void Browser::ShowAboutPanel() {
   settings.message = aboutMessage;
   settings.icon = image;
   settings.type = electron::MessageBoxType::kInformation;
-  electron::ShowMessageBoxSync(settings);
+  electron::ShowMessageBox(settings,
+                           base::BindOnce([](int, bool) { /* do nothing. */ }));
 }
 
 void Browser::SetAboutPanelOptions(base::Value::Dict options) {
