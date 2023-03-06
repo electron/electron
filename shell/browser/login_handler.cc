@@ -6,8 +6,8 @@
 
 #include <utility>
 
-#include "base/callback.h"
-#include "base/threading/sequenced_task_runner_handle.h"
+#include "base/functional/callback.h"
+#include "base/task/sequenced_task_runner.h"
 #include "gin/arguments.h"
 #include "gin/dictionary.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -34,7 +34,7 @@ LoginHandler::LoginHandler(
       auth_required_callback_(std::move(auth_required_callback)) {
   DCHECK_CURRENTLY_ON(BrowserThread::UI);
 
-  base::SequencedTaskRunnerHandle::Get()->PostTask(
+  base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
       FROM_HERE,
       base::BindOnce(&LoginHandler::EmitEvent, weak_factory_.GetWeakPtr(),
                      auth_info, is_main_frame, url, response_headers,

@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
-import { AddressInfo } from 'net';
 import * as ChildProcess from 'child_process';
 import * as path from 'path';
 import * as url from 'url';
@@ -9,11 +8,11 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as qs from 'querystring';
 import * as stream from 'stream';
-import { EventEmitter } from 'events';
-import { closeAllWindows, closeWindow } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { WebmGenerator } from './video-helpers';
-import { defer, delay } from './spec-helpers';
+import { EventEmitter, once } from 'events';
+import { closeAllWindows, closeWindow } from './lib/window-helpers';
+import { WebmGenerator } from './lib/video-helpers';
+import { listen, defer } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -35,37 +34,11 @@ const postData = {
   type: 'string'
 };
 
-async function getResponse (urlRequest: Electron.ClientRequest) {
-  return new Promise<Electron.IncomingMessage>((resolve, reject) => {
-    urlRequest.on('error', reject);
-    urlRequest.on('abort', reject);
-    urlRequest.on('response', (response) => resolve(response));
-    urlRequest.end();
-  });
-}
-
-async function collectStreamBody (response: Electron.IncomingMessage | http.IncomingMessage) {
-  return (await collectStreamBodyBuffer(response)).toString();
-}
-
-function collectStreamBodyBuffer (response: Electron.IncomingMessage | http.IncomingMessage) {
-  return new Promise<Buffer>((resolve, reject) => {
-    response.on('error', reject);
-    (response as NodeJS.EventEmitter).on('aborted', reject);
-    const data: Buffer[] = [];
-    response.on('data', (chunk) => data.push(chunk));
-    response.on('end', (chunk?: Buffer) => {
-      if (chunk) data.push(chunk);
-      resolve(Buffer.concat(data));
-    });
-  });
-}
-
 function getStream (chunkSize = text.length, data: Buffer | string = text) {
   const body = new stream.PassThrough();
 
   async function sendChunks () {
-    await delay(0); // the stream protocol API breaks if you send data immediately.
+    await setTimeout(0); // the stream protocol API breaks if you send data immediately.
     let buf = Buffer.from(data as any); // nodejs typings are wrong, Buffer.from can take a Buffer
     for (;;) {
       body.push(buf.slice(0, chunkSize));
@@ -74,7 +47,7 @@ function getStream (chunkSize = text.length, data: Buffer | string = text) {
         break;
       }
       // emulate some network delay
-      await delay(10);
+      await setTimeout(10);
     }
     body.push(null);
   }
@@ -97,9 +70,9 @@ function deferPromise (): Promise<any> & {resolve: Function, reject: Function} {
 }
 
 describe('protocol module', () => {
-  let contents: WebContents = null as unknown as WebContents;
+  let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
-  before(() => { contents = (webContents as any).create({ sandbox: true }); });
+  before(() => { contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true }); });
   after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
@@ -351,10 +324,8 @@ describe('protocol module', () => {
           res.end(text);
           server.close();
         });
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+        const { url } = await listen(server);
 
-        const port = (server.address() as AddressInfo).port;
-        const url = 'http://127.0.0.1:' + port;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url }));
         const r = await ajax(protocolName + '://fake-host');
         expect(r.data).to.equal(text);
@@ -381,9 +352,7 @@ describe('protocol module', () => {
           }
         });
         after(() => server.close());
-        await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-
-        const port = (server.address() as AddressInfo).port;
+        const { port } = await listen(server);
         const url = `${protocolName}://fake-host`;
         const redirectURL = `http://127.0.0.1:${port}/serverRedirect`;
         registerHttpProtocol(protocolName, (request, callback) => callback({ url: redirectURL }));
@@ -531,7 +500,7 @@ describe('protocol module', () => {
             data: createStream()
           });
         });
-        const hasEndedPromise = emittedOnce(events, 'end');
+        const hasEndedPromise = once(events, 'end');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasEndedPromise;
       });
@@ -552,8 +521,8 @@ describe('protocol module', () => {
           events.emit('respond');
         });
 
-        const hasRespondedPromise = emittedOnce(events, 'respond');
-        const hasClosedPromise = emittedOnce(events, 'close');
+        const hasRespondedPromise = once(events, 'respond');
+        const hasClosedPromise = once(events, 'close');
         ajax(protocolName + '://fake-host').catch(() => {});
         await hasRespondedPromise;
         await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
@@ -680,10 +649,7 @@ describe('protocol module', () => {
         server.close();
       });
       after(() => server.close());
-      server.listen(0, '127.0.0.1');
-
-      const port = (server.address() as AddressInfo).port;
-      const url = `http://127.0.0.1:${port}`;
+      const { url } = await listen(server);
       interceptHttpProtocol('http', (request, callback) => {
         const data: Electron.ProtocolResponse = {
           url: url,
@@ -748,7 +714,7 @@ describe('protocol module', () => {
     it('can execute redirects', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               data: '',
               statusCode: 302,
@@ -756,7 +722,7 @@ describe('protocol module', () => {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(1, 'redirect'));
@@ -769,14 +735,14 @@ describe('protocol module', () => {
     it('should discard post data after redirection', async () => {
       interceptStreamProtocol('http', (request, callback) => {
         if (request.url.indexOf('http://fake-host') === 0) {
-          setTimeout(() => {
+          setTimeout(300).then(() => {
             callback({
               statusCode: 302,
               headers: {
                 Location: 'http://fake-redirect'
               }
             });
-          }, 300);
+          });
         } else {
           expect(request.url.indexOf('http://fake-redirect')).to.equal(0);
           callback(getStream(3, request.method));
@@ -805,7 +771,7 @@ describe('protocol module', () => {
       let stderr = '';
       appProcess.stdout.on('data', data => { process.stdout.write(data); stdout += data; });
       appProcess.stderr.on('data', data => { process.stderr.write(data); stderr += data; });
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const [code] = await once(appProcess, 'exit');
       if (code !== 0) {
         console.log('Exit code : ', code);
         console.log('stdout : ', stdout);
@@ -851,7 +817,7 @@ describe('protocol module', () => {
     const imageURL = `${origin}/test.png`;
     const filePath = path.join(fixturesPath, 'pages', 'b.html');
     const fileContent = '<img src="/test.png" />';
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     beforeEach(() => {
       w = new BrowserWindow({
@@ -901,9 +867,8 @@ describe('protocol module', () => {
         server.close();
         requestReceived.resolve();
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
-      const content = `<script>fetch("http://127.0.0.1:${port}")</script>`;
+      const { url } = await listen(server);
+      const content = `<script>fetch(${JSON.stringify(url)})</script>`;
       registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
       await w.loadURL(origin);
       await requestReceived;
@@ -927,7 +892,7 @@ describe('protocol module', () => {
   });
 
   describe('protocol.registerSchemesAsPrivileged cors-fetch', function () {
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false });
     });
@@ -1007,18 +972,21 @@ describe('protocol module', () => {
         callback('');
       });
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
+      const newContents = (webContents as typeof ElectronInternal.WebContents).create({
+        nodeIntegration: true,
+        contextIsolation: false
+      });
       const consoleMessages: string[] = [];
       newContents.on('console-message', (e, level, message) => consoleMessages.push(message));
       try {
         newContents.loadURL(standardScheme + '://fake-host');
-        const [, response] = await emittedOnce(ipcMain, 'response');
+        const [, response] = await once(ipcMain, 'response');
         expect(response).to.deep.equal(expected);
         expect(consoleMessages.join('\n')).to.match(expectedConsole);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }
@@ -1029,7 +997,7 @@ describe('protocol module', () => {
     const pagePath = path.join(fixturesPath, 'pages', 'video.html');
     const videoSourceImagePath = path.join(fixturesPath, 'video-source-image.webp');
     const videoPath = path.join(fixturesPath, 'video.webm');
-    let w: BrowserWindow = null as unknown as BrowserWindow;
+    let w: BrowserWindow;
 
     before(async () => {
       // generate test video
@@ -1108,15 +1076,19 @@ describe('protocol module', () => {
       await registerStreamProtocol(standardScheme, protocolHandler);
       await registerStreamProtocol('stream', protocolHandler);
 
-      const newContents: WebContents = (webContents as any).create({ nodeIntegration: true, contextIsolation: false });
+      const newContents = (webContents as typeof ElectronInternal.WebContents).create({
+        nodeIntegration: true,
+        contextIsolation: false
+      });
+
       try {
         newContents.loadURL(testingScheme + '://fake-host');
-        const [, response] = await emittedOnce(ipcMain, 'result');
+        const [, response] = await once(ipcMain, 'result');
         expect(response).to.deep.equal(expected);
       } finally {
         // This is called in a timeout to avoid a crash that happens when
         // calling destroy() in a microtask.
-        setTimeout(() => {
+        setTimeout().then(() => {
           newContents.destroy();
         });
       }
@@ -1129,8 +1101,8 @@ describe('protocol module', () => {
     it('receives requests to a custom scheme', async () => {
       protocol.handle('test-scheme', (req) => { return { body: 'hello ' + req.url }; });
       defer(() => { protocol.unhandle('test-scheme'); });
-      const resp = await getResponse(net.request('test-scheme://foo'));
-      expect(resp.statusCode).to.equal(200);
+      const resp = await net.fetch('test-scheme://foo');
+      expect(resp.status).to.equal(200);
     });
     it('can be unhandled', async () => {
       protocol.handle('test-scheme', (req) => { return { body: 'hello ' + req.url }; });
@@ -1141,15 +1113,15 @@ describe('protocol module', () => {
           protocol.unhandle('test-scheme');
         } catch (_ignored) { /* ignore */ }
       });
-      const resp1 = await getResponse(net.request('test-scheme://foo'));
-      expect(resp1.statusCode).to.equal(200);
+      const resp1 = await net.fetch('test-scheme://foo');
+      expect(resp1.status).to.equal(200);
       protocol.unhandle('test-scheme');
-      await expect(getResponse(net.request('test-scheme://foo'))).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
+      await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
     });
     it('receives requests to an existing scheme', async () => {
       protocol.handle('https', (req) => { return { body: 'hello ' + req.url }; });
       defer(() => { protocol.unhandle('https'); });
-      const body = await collectStreamBody(await getResponse(net.request('https://foo')));
+      const body = await net.fetch('https://foo').then(r => r.text());
       expect(body).to.equal('hello https://foo/');
     });
     it('receives requests to an existing scheme when navigating', async () => {
@@ -1162,52 +1134,43 @@ describe('protocol module', () => {
     it('can send buffer body', async () => {
       protocol.handle('test-scheme', (req) => { return { body: Buffer.from('hello ' + req.url) }; });
       defer(() => { protocol.unhandle('test-scheme'); });
-      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
-      expect(body).to.equal('hello test-scheme:foo/');
+      const body = await net.fetch('test-scheme://foo').then(r => r.text());
+      expect(body).to.equal('hello test-scheme://foo');
     });
     it('can send stream body', async () => {
       protocol.handle('test-scheme', () => { return { body: getStream() }; });
       defer(() => { protocol.unhandle('test-scheme'); });
-      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
+      const body = await net.fetch('test-scheme://foo').then(r => r.text());
       expect(body).to.equal(text);
     });
     it('can send errors', async () => {
       protocol.handle('test-scheme', () => { return { error: -802 }; });
       defer(() => { protocol.unhandle('test-scheme'); });
-      await expect(getResponse(net.request('test-scheme://foo'))).to.eventually.be.rejectedWith('net::ERR_DNS_SERVER_FAILED'); // it's always DNS
+      await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith('net::ERR_DNS_SERVER_FAILED'); // it's always DNS
     });
     it('correctly sets statusCode', async () => {
       protocol.handle('test-scheme', () => { return { statusCode: 201 }; });
       defer(() => { protocol.unhandle('test-scheme'); });
-      const resp = await getResponse(net.request('test-scheme://foo'));
-      expect(resp.statusCode).to.equal(201);
+      const resp = await net.fetch('test-scheme://foo');
+      expect(resp.status).to.equal(201);
     });
     it('correctly sets content-type and charset', async () => {
       protocol.handle('test-scheme', () => { return { headers: { 'content-type': 'text/html; charset=testcharset' } }; });
       defer(() => { protocol.unhandle('test-scheme'); });
-      const resp = await getResponse(net.request('test-scheme://foo'));
-      expect(resp.headers).to.have.property('content-type').which.equals('text/html; charset=testcharset');
+      const resp = await net.fetch('test-scheme://foo');
+      expect(resp.headers.get('content-type')).to.equal('text/html; charset=testcharset');
     });
-    it('can forward an http request', async () => {
+    it('can forward to http', async () => {
       const server = http.createServer((req, res) => {
         expect(req.headers.accept).to.not.equal('');
         res.end(text);
       });
       defer(() => { server.close(); });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
-      const url = 'http://127.0.0.1:' + port;
+      const { url } = await listen(server);
 
-      protocol.handle('test-scheme', async (req) => {
-        const upstreamReq = net.request({ ...req, url });
-        upstreamReq.end();
-        const resp = await new Promise<any>(resolve => upstreamReq.on('response', resolve));
-        return {
-          body: resp
-        };
-      });
+      protocol.handle('test-scheme', () => net.fetch(url));
       defer(() => { protocol.unhandle('test-scheme'); });
-      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
+      const body = await net.fetch('test-scheme://foo').then(r => r.text());
       expect(body).to.equal(text);
     });
     it('can forward an http request with headers', async () => {
@@ -1216,37 +1179,24 @@ describe('protocol module', () => {
         res.end(text);
       });
       defer(() => { server.close(); });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
-      const url = 'http://127.0.0.1:' + port;
+      const { url } = await listen(server);
 
       protocol.handle('test-scheme', async (req) => {
-        const upstreamReq = net.request({ ...req, url });
-        upstreamReq.end();
-        const resp = await new Promise<any>(resolve => upstreamReq.on('response', resolve));
-        return {
-          headers: resp.headers,
-          body: resp
-        };
+        return await net.fetch(url, { headers: req.headers });
       });
       defer(() => { protocol.unhandle('test-scheme'); });
 
-      const resp = await getResponse(net.request('test-scheme://foo'));
-      expect(resp.headers.foo).to.equal('bar');
+      const resp = await net.fetch('test-scheme://foo');
+      expect(resp.headers.get('foo')).to.equal('bar');
     });
     it('can forward to file', async () => {
       protocol.handle('test-scheme', async () => {
-        const upstreamReq = net.request({ url: url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString() });
-        upstreamReq.end();
-        const resp = await new Promise<any>(resolve => upstreamReq.on('response', resolve));
-        return {
-          body: resp
-        };
+        return await net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
       });
       defer(() => { protocol.unhandle('test-scheme'); });
 
-      const body = await collectStreamBody(await getResponse(net.request('test-scheme://foo')));
-      expect(body).to.equal('hello world\n');
+      const body = await net.fetch('test-scheme://foo').then(r => r.text());
+      expect(body.trimEnd()).to.equal('hello world');
     });
   });
 });

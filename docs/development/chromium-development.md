@@ -18,8 +18,8 @@ See also [V8 Development](v8-development.md)
 
 ### Code Resources
 
-- [Code Search](https://cs.chromium.org/) - Indexed and searchable source code for Chromium and associated projects.
-- [Source Code](https://cs.chromium.org/chromium/src/) - The source code for Chromium itself.
+- [Code Search](https://source.chromium.org/chromium) - Indexed and searchable source code for Chromium and associated projects.
+- [Source Code](https://source.chromium.org/chromium/chromium/src) - The source code for Chromium itself.
 - [Chromium Review](https://chromium-review.googlesource.com) - The searchable code host which facilitates code reviews for Chromium and related projects.
 
 ### Informational Resources

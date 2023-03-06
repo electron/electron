@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index 2e6f4a5c4b894a7425db110b3aadbe734f137327..c0c422e969543dcd570dabfd8ff0755abe37face 100644
+index e0bacccd4514fcc9122f6b6e7a613141b2510157..e3c42d892eed8dd605301348c08ad24f4362a7aa 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -86,6 +86,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -105,10 +105,10 @@ index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 716b40be50cdc2ebbd249e5a9d562385169f77ad..271b8b9c0e4b2b613fdc82c4ed0e7bc7cb9bba4f 100644
+index 0adbe57d582eff906476330083258716e5bcae99..e2fb3e67900cc1dd0e77b81dd9fad225ea0ac272 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
-@@ -279,7 +279,7 @@ class ByteSource {
+@@ -280,7 +280,7 @@ class ByteSource {
    // Creates a v8::BackingStore that takes over responsibility for
    // any allocated data. The ByteSource will be reset with size = 0
    // after being called.
@@ -118,7 +118,7 @@ index 716b40be50cdc2ebbd249e5a9d562385169f77ad..271b8b9c0e4b2b613fdc82c4ed0e7bc7
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index 808f1fa8d77718e0d44033203485fb2c2796d8e1..56ea735e74fe6d4296d3b179ccb9792daac568b5 100644
+index d5d8943f1c66159ad8f345d8909275137b097ec2..21a99269711035b02efabe87309a62c27e3d8cb0 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {
@@ -131,7 +131,7 @@ index 808f1fa8d77718e0d44033203485fb2c2796d8e1..56ea735e74fe6d4296d3b179ccb9792d
      return ret;
  
 diff --git a/src/node_internals.h b/src/node_internals.h
-index efbdbeabf5a6afb658cbdc7888f94952e55f4f71..8b37639361e8902d7e1481071d3ec24be30339e0 100644
+index ece9a4cfd45bf885169fdd278e09c467c6b4bbab..0c0dac67c0834ab7feba4260796292456a24c08d 100644
 --- a/src/node_internals.h
 +++ b/src/node_internals.h
 @@ -99,7 +99,9 @@ v8::Maybe<bool> InitializePrimordials(v8::Local<v8::Context> context);
@@ -155,7 +155,7 @@ index efbdbeabf5a6afb658cbdc7888f94952e55f4f71..8b37639361e8902d7e1481071d3ec24b
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index 45a16d9de43703c2115dde85c9faae3a04be2a88..0cd76078218433b46c17f350e3ba6073987438cf 100644
+index 6864f2d88b34abfa4090780d6993684cd0b366a3..0249574c4431fb5b98852699f1368f71b49691c1 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;
@@ -165,7 +165,7 @@ index 45a16d9de43703c2115dde85c9faae3a04be2a88..0cd76078218433b46c17f350e3ba6073
 +v8::ArrayBuffer::Allocator* GetAllocator() {
 +  static v8::ArrayBuffer::Allocator* allocator = v8::ArrayBuffer::Allocator::NewDefaultAllocator();
 +  return allocator;
-+};
++}
 +
  class SerializerContext : public BaseObject,
                            public ValueSerializer::Delegate {
@@ -219,17 +219,32 @@ index 45a16d9de43703c2115dde85c9faae3a04be2a88..0cd76078218433b46c17f350e3ba6073
  Maybe<bool> SerializerContext::WriteHostObject(Isolate* isolate,
                                                 Local<Object> input) {
    MaybeLocal<Value> ret;
-@@ -211,7 +240,12 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -209,9 +238,14 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+   // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
+   // as the underlying allocator.
    std::pair<uint8_t*, size_t> ret = ctx->serializer_.Release();
-   auto buf = Buffer::New(ctx->env(),
-                          reinterpret_cast<char*>(ret.first),
+-  auto buf = Buffer::New(ctx->env(),
+-                         reinterpret_cast<char*>(ret.first),
 -                         ret.second);
-+                         ret.second,
-+                         [](char* data, void* hint){
-+                           if (data)
-+                             GetAllocator()->Free(data, reinterpret_cast<size_t>(hint));
-+                         },
-+                         reinterpret_cast<void*>(ctx->last_length_));
++  std::unique_ptr<v8::BackingStore> bs =
++      v8::ArrayBuffer::NewBackingStore(reinterpret_cast<char*>(ret.first), ret.second,
++        [](void* data, size_t length, void* deleter_data) {
++          if (data) GetAllocator()->Free(reinterpret_cast<char*>(data), length);
++        }, nullptr);
++  Local<ArrayBuffer> ab = v8::ArrayBuffer::New(ctx->env()->isolate(), std::move(bs));
++
++  auto buf = Buffer::New(ctx->env(), ab, 0, ret.second);
  
    if (!buf.IsEmpty()) {
      args.GetReturnValue().Set(buf.ToLocalChecked());
+diff --git a/test/parallel/test-v8-serialize-leak.js b/test/parallel/test-v8-serialize-leak.js
+index 696dbfea65ba95b1157cb6f469762d4a6e196199..b342ec59100809187689d0770a462b0b99e75e58 100644
+--- a/test/parallel/test-v8-serialize-leak.js
++++ b/test/parallel/test-v8-serialize-leak.js
+@@ -25,5 +25,5 @@ if (process.config.variables.asan) {
+ } else if (process.config.variables.node_builtin_modules_path) {
+   assert(after < before * 4, `node_builtin_modules_path: before=${before} after=${after}`);
+ } else {
+-  assert(after < before * 2, `before=${before} after=${after}`);
++  assert(after < before * 3, `before=${before} after=${after}`);
+ }

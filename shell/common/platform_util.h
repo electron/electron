@@ -7,8 +7,8 @@
 
 #include <string>
 
-#include "base/callback_forward.h"
 #include "base/files/file_path.h"
+#include "base/functional/callback_forward.h"
 #include "build/build_config.h"
 
 class GURL;
@@ -28,6 +28,7 @@ void OpenPath(const base::FilePath& full_path, OpenCallback callback);
 struct OpenExternalOptions {
   bool activate = true;
   base::FilePath working_dir;
+  bool log_usage = false;
 };
 
 // Open the given external protocol URL in the desktop's default manner.

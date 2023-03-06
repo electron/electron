@@ -4,10 +4,10 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
-import { AddressInfo } from 'net';
-import { closeWindow } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { ifit, ifdescribe, delay } from './spec-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { ifit, ifdescribe, listen } from './lib/spec-helpers';
+import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -18,7 +18,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   let w: BrowserWindow;
 
   async function rightClick () {
-    const contextMenuPromise = emittedOnce(w.webContents, 'context-menu');
+    const contextMenuPromise = once(w.webContents, 'context-menu');
     w.webContents.sendInputEvent({
       type: 'mouseDown',
       button: 'right',
@@ -36,7 +36,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
     const timeout = (process.env.IS_ASAN ? 180 : 10) * 1000;
     let contextMenuParams = await rightClick();
     while (!fn(contextMenuParams) && (Date.now() - now < timeout)) {
-      await delay(100);
+      await setTimeout(100);
       contextMenuParams = await rightClick();
     }
     return contextMenuParams;
@@ -57,8 +57,9 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
       res.end(data);
     });
   });
-  before((done) => {
-    server.listen(0, '127.0.0.1', () => done());
+  let serverUrl: string;
+  before(async () => {
+    serverUrl = (await listen(server)).url;
   });
   after(() => server.close());
 
@@ -77,7 +78,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
             sandbox
           }
         });
-        w.webContents.session.setSpellCheckerDictionaryDownloadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}/`);
+        w.webContents.session.setSpellCheckerDictionaryDownloadURL(serverUrl);
         w.webContents.session.setSpellCheckerLanguages(['en-US']);
         await w.loadFile(path.resolve(__dirname, './fixtures/chromium/spellchecker.html'));
       });
@@ -107,7 +108,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
 
       ifit(shouldRun)('should detect incorrectly spelled words as incorrect after disabling all languages and re-enabling', async () => {
         w.webContents.session.setSpellCheckerLanguages([]);
-        await delay(500);
+        await setTimeout(500);
         w.webContents.session.setSpellCheckerLanguages(['en-US']);
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").value = "typograpy"');
         await w.webContents.executeJavaScript('document.body.querySelector("textarea").focus()');
@@ -147,13 +148,13 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
           // spellCheckerEnabled is sent to renderer asynchronously and there is
           // no event notifying when it is finished, so wait a little while to
           // ensure the setting has been changed in renderer.
-          await delay(500);
+          await setTimeout(500);
           expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(false);
 
           w.webContents.session.spellCheckerEnabled = true;
           v8Util.runUntilIdle();
           expect(w.webContents.session.spellCheckerEnabled).to.be.true();
-          await delay(500);
+          await setTimeout(500);
           expect(await callWebFrameFn('isWordMisspelled("typograpy")')).to.equal(true);
         });
       });

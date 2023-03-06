@@ -5,8 +5,9 @@ import * as path from 'path';
 import * as url from 'url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo, Socket } from 'net';
-import { emittedOnce } from './events-helpers';
+import { Socket } from 'net';
+import { listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -35,13 +36,9 @@ describe('webRequest module', () => {
   });
   let defaultURL: string;
 
-  before((done) => {
+  before(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
-    server.listen(0, '127.0.0.1', () => {
-      const port = (server.address() as AddressInfo).port;
-      defaultURL = `http://127.0.0.1:${port}/`;
-      done();
-    });
+    defaultURL = (await listen(server)).url + '/';
   });
 
   after(() => {
@@ -49,10 +46,10 @@ describe('webRequest module', () => {
     protocol.unregisterProtocol('cors');
   });
 
-  let contents: WebContents = null as unknown as WebContents;
+  let contents: WebContents;
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(async () => {
-    contents = (webContents as any).create({ sandbox: true });
+    contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
   });
   after(() => contents.destroy());
@@ -66,23 +63,34 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest(null);
     });
 
+    const cancel = (details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) => {
+      callback({ cancel: true });
+    };
+
     it('can cancel the request', async () => {
-      ses.webRequest.onBeforeRequest((details, callback) => {
-        callback({
-          cancel: true
-        });
-      });
+      ses.webRequest.onBeforeRequest(cancel);
       await expect(ajax(defaultURL)).to.eventually.be.rejected();
     });
 
     it('can filter URLs', async () => {
       const filter = { urls: [defaultURL + 'filter/*'] };
-      ses.webRequest.onBeforeRequest(filter, (details, callback) => {
-        callback({ cancel: true });
-      });
+      ses.webRequest.onBeforeRequest(filter, cancel);
       const { data } = await ajax(`${defaultURL}nofilter/test`);
       expect(data).to.equal('/nofilter/test');
       await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+    });
+
+    it('can filter URLs and types', async () => {
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['xhr'] };
+      ses.webRequest.onBeforeRequest(filter1, cancel);
+      const { data } = await ajax(`${defaultURL}nofilter/test`);
+      expect(data).to.equal('/nofilter/test');
+      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
+      ses.webRequest.onBeforeRequest(filter2, cancel);
+      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
+      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
     });
 
     it('receives details object', async () => {
@@ -489,8 +497,7 @@ describe('webRequest module', () => {
       });
 
       // Start server.
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
-      const port = String((server.address() as AddressInfo).port);
+      const { port } = await listen(server);
 
       // Use a separate session for testing.
       const ses = session.fromPartition('WebRequestWebSocket');
@@ -529,7 +536,7 @@ describe('webRequest module', () => {
         }
       });
 
-      const contents = (webContents as any).create({
+      const contents = (webContents as typeof ElectronInternal.WebContents).create({
         session: ses,
         nodeIntegration: true,
         webSecurity: false,
@@ -548,8 +555,8 @@ describe('webRequest module', () => {
         ses.webRequest.onCompleted(null);
       });
 
-      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port } });
-      await emittedOnce(ipcMain, 'websocket-success');
+      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } });
+      await once(ipcMain, 'websocket-success');
 
       expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket');
       expect(receivedHeaders['/'].foo1[0]).to.equal('bar1');

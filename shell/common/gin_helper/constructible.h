@@ -7,7 +7,7 @@
 
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
-#include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/event_emitter_template.h"
 #include "shell/common/gin_helper/function_template_extensions.h"
 
 namespace gin_helper {
@@ -24,7 +24,7 @@ class EventEmitterMixin;
 //                   public gin_helper::Constructible<Example> {
 //    public:
 //     static gin::Handle<Tray> New(...usual gin method arguments...);
-//     static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+//     static void FillObjectTemplate(
 //         v8::Isolate*,
 //         v8::Local<v8::ObjectTemplate>);
 //   }
@@ -55,9 +55,8 @@ class Constructible {
       }
       constructor->InstanceTemplate()->SetInternalFieldCount(
           gin::kNumberOfInternalFields);
-      v8::Local<v8::ObjectTemplate> obj_templ =
-          T::FillObjectTemplate(isolate, constructor->InstanceTemplate());
-      data->SetObjectTemplate(wrapper_info, obj_templ);
+      T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
+      data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
       data->SetFunctionTemplate(wrapper_info, constructor);
     }
     return constructor->GetFunction(context).ToLocalChecked();

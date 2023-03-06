@@ -18,7 +18,7 @@ index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc71
  
  /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 7cec4e9a3e3675ba75d66a44ed4e142d13ca1821..0c7aad193442a7e5cab62638441969a7d4983ef9 100644
+index 646b12382f6ebd073fe5968f8c1c0f36dbc64eac..15415e0652864d059390bc7383e073c86f5d0c03 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -824,6 +824,8 @@ function parsePackageName(specifier, base) {
@@ -51,7 +51,7 @@ index 7cec4e9a3e3675ba75d66a44ed4e142d13ca1821..0c7aad193442a7e5cab62638441969a7
    }
  }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..d1527b859bbea15fdf30622fc8f2700bde5b4591 100644
+index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..010fa8f78a21a8146879849e2e887332e2694e51 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -154,7 +154,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
@@ -63,15 +63,19 @@ index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..d1527b859bbea15fdf30622fc8f2700b
      [...exportNames] : ['default', ...exportNames];
  
    return new ModuleWrap(url, undefined, namesWithDefault, function() {
-@@ -173,7 +173,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
+@@ -173,9 +173,9 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
        }
      }
  
 -    for (const exportName of exportNames) {
+-      if (!ObjectPrototypeHasOwnProperty(exports, exportName) ||
+-          exportName === 'default')
 +    for (const exportName of namesWithDefault) {
-       if (!ObjectPrototypeHasOwnProperty(exports, exportName) ||
-           exportName === 'default')
++      if (exportName === 'default' ||
++          !ObjectPrototypeHasOwnProperty(exports, exportName))
          continue;
+       // We might trigger a getter -> dont fail.
+       let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
 index 40b25f6890b5db721923ba2e9cc351e514ca22bc..288f3253b4c686d1b061dfcdf18dc95794943d87 100644
 --- a/lib/internal/url.js

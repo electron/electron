@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { ifit, delay } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { ifit } from './lib/spec-helpers';
+import { setTimeout } from 'timers/promises';
 
 describe('dialog module', () => {
   describe('showOpenDialog', () => {
@@ -80,7 +81,7 @@ describe('dialog module', () => {
     afterEach(closeAllWindows);
 
     // parentless message boxes are synchronous on macOS
-    // dangling message boxes on windows cause a DCHECK: https://cs.chromium.org/chromium/src/base/win/message_window.cc?l=68&rcl=7faa4bf236a866d007dc5672c9ce42660e67a6a6
+    // dangling message boxes on windows cause a DCHECK: https://source.chromium.org/chromium/chromium/src/+/main:base/win/message_window.cc;drc=7faa4bf236a866d007dc5672c9ce42660e67a6a6;l=68
     ifit(process.platform !== 'darwin' && process.platform !== 'win32')('should not throw for a parentless message box', () => {
       expect(() => {
         dialog.showMessageBox({ message: 'i am message' });
@@ -139,7 +140,7 @@ describe('dialog module', () => {
       const signal = controller.signal;
       const w = new BrowserWindow();
       const p = dialog.showMessageBox(w, { signal, message: 'i am message' });
-      await delay(500);
+      await setTimeout(500);
       controller.abort();
       const result = await p;
       expect(result.response).to.equal(0);
@@ -170,7 +171,7 @@ describe('dialog module', () => {
         buttons: ['OK', 'Cancel'],
         cancelId: 1
       });
-      await delay(500);
+      await setTimeout(500);
       controller.abort();
       const result = await p;
       expect(result.response).to.equal(1);

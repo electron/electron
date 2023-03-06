@@ -6,7 +6,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-110.0.5451.0
+image: e-111.0.5560.0-node18
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -16,22 +16,58 @@ environment:
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
   DEPOT_TOOLS_WIN_TOOLCHAIN: 0
   PYTHONIOENCODING: UTF-8
-# Uncomment these lines and set APPVEYOR_RDP_PASSWORD in project settings to enable RDP before bake begins
-# install:
-#  - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))  
+
+# The following lines are needed when baking from a completely new image (eg MicrosoftWindowsServer:WindowsServer:2019-Datacenter:latest via image: base-windows-server2019)
+# init:
+#   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+#   - appveyor version
+#   - ps: $ErrorActionPreference = 'Stop'
+#   - ps: 'Write-Host "OS Build: $((Get-CimInstance Win32_OperatingSystem).BuildNumber)"'
+
+# clone_folder: '%USERPROFILE%\image-bake-scripts'
+
+# clone_script:  
+#   - ps: Invoke-WebRequest "https://github.com/appveyor/build-images/archive/1f90d94e74c8243c909a09b994e527584dfcb838.zip" -OutFile "$env:temp\scripts.zip"
+#   - ps: Expand-Archive -Path "$env:temp\scripts.zip" -DestinationPath "$env:temp\scripts" -Force
+#   - ps: Copy-Item -Path "$env:temp\scripts\build-images-1f90d94e74c8243c909a09b994e527584dfcb838\scripts\Windows\*" -Destination $env:APPVEYOR_BUILD_FOLDER -Recurse  
+
 build_script:
-  # Uncomment/change the following line if the hard drive/partition size needs to change
-  # - ps: Resize-Partition -DriveLetter C -Size (256GB) # ensure initial partition size
+# The following lines are needed when baking from a completely new image (eg MicrosoftWindowsServer:WindowsServer:2019-Datacenter:latest via image: base-windows-server2019)
+  # - ps: .\init_server.ps1
+  # - ps: .\extend_system_volume.ps1
+
+  # # Restart VM
+  # - ps: Start-Sleep -s 5; Restart-Computer
+  # - ps: Start-Sleep -s 5
+
+  # - appveyor version
+  # - ps: .\install_path_utils.ps1
+  # - ps: .\install_powershell_core.ps1
+  # - ps: .\install_powershell_get.ps1
+  # - ps: .\install_7zip.ps1
+  # - ps: .\install_chocolatey.ps1
+  # - ps: .\install_webpi.ps1
+  # - ps: .\install_nuget.ps1
+  # - ps: .\install_pstools.ps1
+
+  # - ps: .\install_git.ps1
+  # - ps: .\install_git_lfs.ps1
+
+  # # Restart VM
+  # - ps: Start-Sleep -s 5; Restart-Computer
+  # - ps: Start-Sleep -s 5
+# END LINES FOR COMPLETELY NEW IMAGE
+
   - git config --global core.longpaths true
-  - cd ..
   - ps: >-
-      if (-not (Test-Path -Path .\src)) {
-        New-Item -Path .\src -ItemType Directory
+      if (-not (Test-Path -Path C:\projects\src)) {
+        New-Item -Path C:\projects\src -ItemType Directory
       }
-  - ps: git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git  
-  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"  
+  - cd C:\projects\
+  - git clone -q --branch=%APPVEYOR_REPO_BRANCH% https://github.com/electron/electron.git C:\projects\src\electron
+  - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+  - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
   - update_depot_tools.bat
-  - ps: Move-Item $env:APPVEYOR_BUILD_FOLDER -Destination src\electron
   # Uncomment the following line if windows deps change
   # - src\electron\script\setup-win-for-dev.bat
   - >-
@@ -47,20 +83,25 @@ build_script:
   - ps: cd ..\..
   - gclient sync --with_branch_heads --with_tags --nohooks
   - ps: regsvr32 /s "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\DIA SDK\bin\amd64\msdia140.dll"
-  - ps: |
-      $env:appveyor_user = "appveyor"
 
-      $env:appveyor_password = [Guid]::NewGuid().ToString('B')
+# The following lines are needed when baking from a completely new image (eg MicrosoftWindowsServer:WindowsServer:2019-Datacenter:latest via image: base-windows-server2019)
+  # # Restart VM
+  # - ps: Start-Sleep -s 5; Restart-Computer 
+  # - ps: Start-Sleep -s 5
 
-      Set-LocalUser -Name $env:appveyor_user -Password (ConvertTo-SecureString -AsPlainText $env:appveyor_password -Force) -PasswordNeverExpires:$true
-
-      iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/build-images/master/scripts/Windows/enable_autologon.ps1'))
+  # - cd %USERPROFILE%\image-bake-scripts
+  # - appveyor version
+  # - ps: .\optimize_dotnet_runtime.ps1
+  # - ps: .\disable_windows_background_services.ps1
+  # - ps: .\enforce_windows_firewall.ps1
+  # - ps: .\cleanup_windows.ps1  
+# END LINES FOR COMPLETELY NEW IMAGE  
 on_image_bake:
   - ps: >-
       echo "Baking image: $env:APPVEYOR_BAKE_IMAGE at dir $PWD"
-  - ps: Remove-Item -Recurse -Force $pwd\depot_tools
-  - ps: Remove-Item -Recurse -Force $pwd\src\electron
+  - ps: Remove-Item -Recurse -Force C:\projects\depot_tools
+  - ps: Remove-Item -Recurse -Force C:\projects\src\electron
 # Uncomment these lines and set APPVEYOR_RDP_PASSWORD in project settings to enable RDP after bake is done
-#on_finish:
-#  - ps: >-
-#       $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
+# # on_finish:
+#   - ps: >-
+#        $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))

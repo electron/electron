@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron';
 import { expect, assert } from 'chai';
-import { closeAllWindows } from './window-helpers';
-const { emittedOnce } = require('./events-helpers');
+import { closeAllWindows } from './lib/window-helpers';
+import { once } from 'events';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;
@@ -173,20 +173,19 @@ describe('webContents.setWindowOpenHandler', () => {
       browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
     });
 
-    await emittedOnce(browserWindow.webContents, 'did-create-window');
+    await once(browserWindow.webContents, 'did-create-window');
   });
 
-  it('can change webPreferences of child windows', (done) => {
+  it('can change webPreferences of child windows', async () => {
     browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 
-    browserWindow.webContents.on('did-create-window', async (childWindow) => {
-      await childWindow.webContents.executeJavaScript("document.write('hello')");
-      const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
-      expect(size).to.equal('30px');
-      done();
-    });
-
+    const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
     browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
+    const [childWindow] = await didCreateWindow;
+
+    await childWindow.webContents.executeJavaScript("document.write('hello')");
+    const size = await childWindow.webContents.executeJavaScript("getComputedStyle(document.querySelector('body')).fontSize");
+    expect(size).to.equal('30px');
   });
 
   it('does not hang parent window when denying window.open', async () => {

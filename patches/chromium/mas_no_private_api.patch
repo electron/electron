@@ -33,24 +33,6 @@ index 6840358c3187522c63dff66b5a85567aaadc5c12..72c57fbc5fbb267f96ff9e21915fb801
    return true;
  }
  
-diff --git a/content/common/pseudonymization_salt.cc b/content/common/pseudonymization_salt.cc
-index c7e4ef224e76b4df4fa08bb7fa8dd78605ea8de1..8a15ee3e062e108824c6b2fadc2ffa807ff03ade 100644
---- a/content/common/pseudonymization_salt.cc
-+++ b/content/common/pseudonymization_salt.cc
-@@ -41,11 +41,13 @@ uint32_t GetPseudonymizationSalt() {
-   uint32_t salt = g_salt.load();
- 
-   if (salt == 0) {
-+#if !IS_MAS_BUILD()
- #if DCHECK_IS_ON()
-     // Only the Browser process needs to initialize the `salt` on demand.
-     // Other processes (identified via the IsProcessSandboxed heuristic) should
-     // receive the salt from their parent processes.
-     DCHECK(!sandbox::policy::Sandbox::IsProcessSandboxed());
-+#endif
- #endif
-     salt = InitializeSalt();
-   }
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
 index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef225b0ca59 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
@@ -122,10 +104,10 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..752b575cf341546bdcc46e6dfff28fe4
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index dced377388d22f825ce228dd615056ba0548986d..00724d8e6e597441d93c8a2c9b2f9415783213d8 100644
+index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77d21347fb 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -41,6 +41,7 @@
+@@ -42,6 +42,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -133,7 +115,7 @@ index dced377388d22f825ce228dd615056ba0548986d..00724d8e6e597441d93c8a2c9b2f9415
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -54,6 +55,7 @@
+@@ -55,6 +56,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -141,7 +123,7 @@ index dced377388d22f825ce228dd615056ba0548986d..00724d8e6e597441d93c8a2c9b2f9415
  
  namespace {
  
-@@ -113,8 +115,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -114,8 +116,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -152,7 +134,7 @@ index dced377388d22f825ce228dd615056ba0548986d..00724d8e6e597441d93c8a2c9b2f9415
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        low_energy_discovery_manager_(
-@@ -355,8 +359,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -356,8 +360,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -166,7 +148,7 @@ index dced377388d22f825ce228dd615056ba0548986d..00724d8e6e597441d93c8a2c9b2f9415
  
  void BluetoothAdapterMac::RemovePairingDelegateInternal(
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 855b1e004a82d21a79d7278d957c391e87def2be..3cc3a2de26e0988ab23245f4b6019b80585a50c3 100644
+index 79021074867df91e3090bc6bbea6114364e6e78d..44635f13048890b20c74870d26c4e74bab363ddb 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -176,6 +176,12 @@ source_set("audio") {
@@ -183,10 +165,10 @@ index 855b1e004a82d21a79d7278d957c391e87def2be..3cc3a2de26e0988ab23245f4b6019b80
        "AudioToolbox.framework",
        "AudioUnit.framework",
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index b5ad37cb3e8064d180ff987ab7a96da3886dc7f9..b6da8a68fabaec5ecf71b2c2fcaa1b0e52d2fcbe 100644
+index 2cd163bf82f16a44456d0f98505514489ba8f751..636096ec3d6425b858bbcb9f732be44cbab077e7 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -895,7 +895,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -975,7 +975,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -196,7 +178,7 @@ index b5ad37cb3e8064d180ff987ab7a96da3886dc7f9..b6da8a68fabaec5ecf71b2c2fcaa1b0e
  }
  
 diff --git a/net/dns/dns_config_service_posix.cc b/net/dns/dns_config_service_posix.cc
-index a8a223d1d9ea6de51a27f148c008ee8be38af29a..328200858bd7aa4077bf6824bfc1367bda748920 100644
+index a93e7cd74d2a9d692304ecf10279fae8e96bb695..3506d6ca555701bad6623cc1c614e0081892e42b 100644
 --- a/net/dns/dns_config_service_posix.cc
 +++ b/net/dns/dns_config_service_posix.cc
 @@ -130,8 +130,8 @@ class DnsConfigServicePosix::Watcher : public DnsConfigService::Watcher {
@@ -240,10 +222,159 @@ index f35d9ef2a2df3db8ecbf1d7b909c7b1cf33f3cd9..a710b8b4f851666fd65bb37f69ec2fa7
  
  bool SandboxCompiler::CompilePolicyToProto(mac::SandboxPolicy& policy,
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 15c835e118456394c0a00ac98c11241c14ca75bd..49332a94219fc3e64ab05baa04681325edddfeb0 100644
+index 15c835e118456394c0a00ac98c11241c14ca75bd..83759e5fbc252fa57ca2fa122873dfac3d61d46d 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
-@@ -175,7 +175,11 @@ void Seatbelt::FreeError(char* errorbuf) {
+@@ -9,7 +9,7 @@
+ 
+ extern "C" {
+ #include <sandbox.h>
+-
++#if !IS_MAS_BUILD()
+ int sandbox_init_with_parameters(const char* profile,
+                                  uint64_t flags,
+                                  const char* const parameters[],
+@@ -40,13 +40,13 @@ sandbox_profile_t* sandbox_compile_string(const char* data,
+                                           char** error);
+ int sandbox_apply(sandbox_profile_t*);
+ void sandbox_free_profile(sandbox_profile_t*);
+-
++#endif
+ }  // extern "C"
+ 
+ namespace sandbox {
+ 
+ namespace {
+-
++#if !IS_MAS_BUILD()
+ bool HandleSandboxResult(int rv, char* errorbuf, std::string* error) {
+   if (rv == 0) {
+     if (error)
+@@ -74,36 +74,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
+   }
+   return false;
+ }
+-
++#endif
+ }  // namespace
+ 
+ // static
+ Seatbelt::Parameters Seatbelt::Parameters::Create() {
+   Parameters params;
++#if !IS_MAS_BUILD()
+   params.params_ = ::sandbox_create_params();
++#endif
+   return params;
+ }
+ 
+ Seatbelt::Parameters::Parameters() = default;
+ 
+ Seatbelt::Parameters::Parameters(Seatbelt::Parameters&& other) {
++#if !IS_MAS_BUILD()
+   params_ = std::exchange(other.params_, nullptr);
++#endif
+ }
+ 
+ Seatbelt::Parameters& Seatbelt::Parameters::operator=(
+     Seatbelt::Parameters&& other) {
++#if !IS_MAS_BUILD()
+   params_ = std::exchange(other.params_, nullptr);
++#endif
+   return *this;
+ }
+ 
+ bool Seatbelt::Parameters::Set(const char* key, const char* value) {
++#if !IS_MAS_BUILD()
+   return ::sandbox_set_param(params_, key, value) == 0;
++#else
++  return true;
++#endif
+ }
+ 
+ Seatbelt::Parameters::~Parameters() {
++#if !IS_MAS_BUILD()
+   if (params_) {
+     ::sandbox_free_params(params_);
+   }
++#endif
+ }
+ 
+ // Initialize the static member variables.
+@@ -114,6 +126,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
+ 
+ // static
+ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
++#if !IS_MAS_BUILD()
+ // OS X deprecated these functions, but did not provide a suitable replacement,
+ // so ignore the deprecation warning.
+ #pragma clang diagnostic push
+@@ -122,6 +135,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
+   int rv = ::sandbox_init(profile, flags, &errorbuf);
+   return HandleSandboxResult(rv, errorbuf, error);
+ #pragma clang diagnostic pop
++#else
++  return true;
++#endif
+ }
+ 
+ // static
+@@ -129,10 +145,14 @@ bool Seatbelt::InitWithParams(const char* profile,
+                               uint64_t flags,
+                               const char* const parameters[],
+                               std::string* error) {
++#if !IS_MAS_BUILD()
+   char* errorbuf = nullptr;
+   int rv =
+       ::sandbox_init_with_parameters(profile, flags, parameters, &errorbuf);
+   return HandleSandboxResult(rv, errorbuf, error);
++#else
++  return true;
++#endif
+ }
+ 
+ // static
+@@ -140,6 +160,7 @@ bool Seatbelt::Compile(const char* profile,
+                        const Seatbelt::Parameters& params,
+                        std::string& compiled_profile,
+                        std::string* error) {
++#if !IS_MAS_BUILD()
+   char* errorbuf = nullptr;
+   sandbox_profile_t* sandbox_profile =
+       ::sandbox_compile_string(profile, params.params(), &errorbuf);
+@@ -149,33 +170,44 @@ bool Seatbelt::Compile(const char* profile,
+   compiled_profile.assign(reinterpret_cast<const char*>(sandbox_profile->data),
+                           sandbox_profile->size);
+   ::sandbox_free_profile(sandbox_profile);
++#endif
+   return true;
+ }
+ 
+ // static
+ bool Seatbelt::ApplyCompiledProfile(const std::string& profile,
+                                     std::string* error) {
++#if !IS_MAS_BUILD()
+   sandbox_profile_t sbox_profile = {
+       .builtin = nullptr,
+       .data = reinterpret_cast<const uint8_t*>(profile.data()),
+       .size = profile.size()};
+   return HandleSandboxErrno(::sandbox_apply(&sbox_profile),
+                             "sandbox_apply: ", error);
++#else
++  return true;
++#endif
+ }
+ 
+ // static
+ void Seatbelt::FreeError(char* errorbuf) {
++#if !IS_MAS_BUILD()
+ // OS X deprecated these functions, but did not provide a suitable replacement,
+ // so ignore the deprecation warning.
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   return ::sandbox_free_error(errorbuf);
+ #pragma clang diagnostic pop
++#endif
+ }
  
  // static
  bool Seatbelt::IsSandboxed() {

@@ -78,6 +78,7 @@ The following methods are available on instances of `Cookies`:
   * `path` string (optional) - Retrieves cookies whose path matches `path`.
   * `secure` boolean (optional) - Filters cookies by their Secure property.
   * `session` boolean (optional) - Filters out session or persistent cookies.
+  * `httpOnly` boolean (optional) - Filters cookies by httpOnly.
 
 Returns `Promise<Cookie[]>` - A promise which resolves an array of cookie objects.
 

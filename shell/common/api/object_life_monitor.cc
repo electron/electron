@@ -5,7 +5,7 @@
 
 #include "shell/common/api/object_life_monitor.h"
 
-#include "base/bind.h"
+#include "base/functional/bind.h"
 
 namespace electron {
 

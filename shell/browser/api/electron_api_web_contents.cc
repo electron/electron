@@ -20,8 +20,6 @@
 #include "base/task/current_thread.h"
 #include "base/task/thread_pool.h"
 #include "base/threading/scoped_blocking_call.h"
-#include "base/threading/sequenced_task_runner_handle.h"
-#include "base/threading/thread_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
@@ -114,6 +112,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -1307,7 +1306,10 @@ Profile* WebContents::GetProfile() {
 }
 
 bool WebContents::IsFullscreen() const {
-  return owner_window_ && owner_window_->IsFullscreen();
+  if (!owner_window())
+    return false;
+
+  return owner_window()->IsFullscreen() || is_html_fullscreen();
 }
 
 void WebContents::EnterFullscreen(const GURL& url,
@@ -1353,7 +1355,7 @@ void WebContents::OnEnterFullscreenModeForTab(
     content::RenderFrameHost* requesting_frame,
     const blink::mojom::FullscreenOptions& options,
     bool allowed) {
-  if (!allowed || !owner_window_)
+  if (!allowed || !owner_window())
     return;
 
   auto* source = content::WebContents::FromRenderFrameHost(requesting_frame);
@@ -1377,7 +1379,7 @@ void WebContents::OnEnterFullscreenModeForTab(
 }
 
 void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
-  if (!owner_window_)
+  if (!owner_window())
     return;
 
   // This needs to be called before we exit fullscreen on the native window,
@@ -1505,7 +1507,14 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {
-  Emit("-audio-state-changed", audible);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  gin::Dictionary dict(isolate, event_object);
+  dict.Set("audible", audible);
+  EmitWithoutEvent("audio-state-changed", event);
 }
 
 void WebContents::BeforeUnloadFired(bool proceed,
@@ -1605,14 +1614,20 @@ void WebContents::RenderFrameDeleted(
 
 void WebContents::RenderFrameHostChanged(content::RenderFrameHost* old_host,
                                          content::RenderFrameHost* new_host) {
+  if (new_host->IsInPrimaryMainFrame()) {
+    if (old_host)
+      old_host->GetRenderWidgetHost()->RemoveInputEventObserver(this);
+    if (new_host)
+      new_host->GetRenderWidgetHost()->AddInputEventObserver(this);
+  }
+
   // During cross-origin navigation, a FrameTreeNode will swap out its RFH.
   // If an instance of WebFrameMain exists, it will need to have its RFH
   // swapped as well.
   //
   // |old_host| can be a nullptr so we use |new_host| for looking up the
   // WebFrameMain instance.
-  auto* web_frame =
-      WebFrameMain::FromFrameTreeNodeId(new_host->GetFrameTreeNodeId());
+  auto* web_frame = WebFrameMain::FromRenderFrameHost(new_host);
   if (web_frame) {
     web_frame->UpdateRenderFrameHost(new_host);
   }
@@ -1702,14 +1717,6 @@ void WebContents::OnWebContentsLostFocus(
   Emit("blur");
 }
 
-void WebContents::RenderViewHostChanged(content::RenderViewHost* old_host,
-                                        content::RenderViewHost* new_host) {
-  if (old_host)
-    old_host->GetWidget()->RemoveInputEventObserver(this);
-  if (new_host)
-    new_host->GetWidget()->AddInputEventObserver(this);
-}
-
 void WebContents::DOMContentLoaded(
     content::RenderFrameHost* render_frame_host) {
   auto* web_frame = WebFrameMain::FromRenderFrameHost(render_frame_host);
@@ -1759,7 +1766,7 @@ void WebContents::DidStopLoading() {
 }
 
 bool WebContents::EmitNavigationEvent(
-    const std::string& event,
+    const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
   int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
@@ -1780,8 +1787,30 @@ bool WebContents::EmitNavigationEvent(
   }
   bool is_same_document = navigation_handle->IsSameDocument();
   auto url = navigation_handle->GetURL();
-  return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
-              frame_routing_id);
+  content::RenderFrameHost* initiator_frame_host =
+      navigation_handle->GetInitiatorFrameToken().has_value()
+          ? content::RenderFrameHost::FromFrameToken(
+                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorFrameToken().value())
+          : nullptr;
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("url", url);
+  dict.Set("isSameDocument", is_same_document);
+  dict.Set("isMainFrame", is_main_frame);
+  dict.Set("frame", frame_host);
+  dict.SetGetter("initiator", initiator_frame_host);
+
+  EmitWithoutEvent(event_name, event, url, is_same_document, is_main_frame,
+                   frame_process_id, frame_routing_id);
+  return event->GetDefaultPrevented();
 }
 
 void WebContents::Message(bool internal,
@@ -1813,6 +1842,88 @@ void WebContents::OnFirstNonEmptyLayout(
   if (render_frame_host == web_contents()->GetPrimaryMainFrame()) {
     Emit("ready-to-show");
   }
+}
+
+// This object wraps the InvokeCallback so that if it gets GC'd by V8, we can
+// still call the callback and send an error. Not doing so causes a Mojo DCHECK,
+// since Mojo requires callbacks to be called before they are destroyed.
+class ReplyChannel : public gin::Wrappable<ReplyChannel> {
+ public:
+  using InvokeCallback = electron::mojom::ElectronApiIPC::InvokeCallback;
+  static gin::Handle<ReplyChannel> Create(v8::Isolate* isolate,
+                                          InvokeCallback callback) {
+    return gin::CreateHandle(isolate, new ReplyChannel(std::move(callback)));
+  }
+
+  // gin::Wrappable
+  static gin::WrapperInfo kWrapperInfo;
+  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
+      v8::Isolate* isolate) override {
+    return gin::Wrappable<ReplyChannel>::GetObjectTemplateBuilder(isolate)
+        .SetMethod("sendReply", &ReplyChannel::SendReply);
+  }
+  const char* GetTypeName() override { return "ReplyChannel"; }
+
+  void SendError(const std::string& msg) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    // If there's no current context, it means we're shutting down, so we
+    // don't need to send an event.
+    if (!isolate->GetCurrentContext().IsEmpty()) {
+      v8::HandleScope scope(isolate);
+      auto message = gin::DataObjectBuilder(isolate).Set("error", msg).Build();
+      SendReply(isolate, message);
+    }
+  }
+
+ private:
+  explicit ReplyChannel(InvokeCallback callback)
+      : callback_(std::move(callback)) {}
+  ~ReplyChannel() override {
+    if (callback_)
+      SendError("reply was never sent");
+  }
+
+  bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
+    if (!callback_)
+      return false;
+    blink::CloneableMessage message;
+    if (!gin::ConvertFromV8(isolate, arg, &message)) {
+      return false;
+    }
+
+    std::move(callback_).Run(std::move(message));
+    return true;
+  }
+
+  InvokeCallback callback_;
+};
+
+gin::WrapperInfo ReplyChannel::kWrapperInfo = {gin::kEmbedderNativeGin};
+
+gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
+    v8::Isolate* isolate,
+    content::RenderFrameHost* frame,
+    electron::mojom::ElectronApiIPC::InvokeCallback callback) {
+  v8::Local<v8::Object> wrapper;
+  if (!GetWrapper(isolate).ToLocal(&wrapper)) {
+    if (callback) {
+      // We must always invoke the callback if present.
+      ReplyChannel::Create(isolate, std::move(callback))
+          ->SendError("WebContents was destroyed");
+    }
+    return gin::Handle<gin_helper::internal::Event>();
+  }
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());
+  if (callback)
+    dict.Set("_replyChannel",
+             ReplyChannel::Create(isolate, std::move(callback)));
+  if (frame) {
+    dict.Set("frameId", frame->GetRoutingID());
+    dict.Set("processId", frame->GetProcess()->GetID());
+  }
+  return event;
 }
 
 void WebContents::ReceivePostMessage(
@@ -3237,54 +3348,11 @@ v8::Local<v8::Promise> WebContents::CapturePage(gin::Arguments* args) {
   return handle;
 }
 
-// TODO(codebytere): remove in Electron v23.
-void WebContents::IncrementCapturerCount(gin::Arguments* args) {
-  EmitWarning(node::Environment::GetCurrent(args->isolate()),
-              "webContents.incrementCapturerCount() is deprecated and will be "
-              "removed in v23",
-              "electron");
-
-  gfx::Size size;
-  bool stay_hidden = false;
-  bool stay_awake = false;
-
-  // get size arguments if they exist
-  args->GetNext(&size);
-  // get stayHidden arguments if they exist
-  args->GetNext(&stay_hidden);
-  // get stayAwake arguments if they exist
-  args->GetNext(&stay_awake);
-
-  std::ignore = web_contents()
-                    ->IncrementCapturerCount(size, stay_hidden, stay_awake)
-                    .Release();
-}
-
-// TODO(codebytere): remove in Electron v23.
-void WebContents::DecrementCapturerCount(gin::Arguments* args) {
-  EmitWarning(node::Environment::GetCurrent(args->isolate()),
-              "webContents.decrementCapturerCount() is deprecated and will be "
-              "removed in v23",
-              "electron");
-
-  bool stay_hidden = false;
-  bool stay_awake = false;
-
-  // get stayHidden arguments if they exist
-  args->GetNext(&stay_hidden);
-  // get stayAwake arguments if they exist
-  args->GetNext(&stay_awake);
-
-  web_contents()->DecrementCapturerCount(stay_hidden, stay_awake);
-}
-
 bool WebContents::IsBeingCaptured() {
   return web_contents()->IsBeingCaptured();
 }
 
-void WebContents::OnCursorChanged(const content::WebCursor& webcursor) {
-  const ui::Cursor& cursor = webcursor.cursor();
-
+void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
     Emit("cursor-changed", CursorTypeToString(cursor),
          gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
@@ -3550,21 +3618,31 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   ScopedAllowBlockingForElectron allow_blocking;
-  base::File file(file_path,
-                  base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE);
+  uint32_t flags = base::File::FLAG_CREATE_ALWAYS | base::File::FLAG_WRITE;
+  // The snapshot file is passed to an untrusted process.
+  flags = base::File::AddFlagsForPassingToUntrustedProcess(flags);
+  base::File file(file_path, flags);
   if (!file.IsValid()) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with invalid file path " +
+#if BUILDFLAG(IS_WIN)
+        base::WideToUTF8(file_path.value()));
+#else
+        file_path.value());
+#endif
     return handle;
   }
 
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
   if (!frame_host) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with invalid webContents main frame");
     return handle;
   }
 
   if (!frame_host->IsRenderFrameLive()) {
-    promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+    promise.RejectWithErrorMessage(
+        "Failed to take heap snapshot with nonexistent render frame");
     return handle;
   }
 
@@ -3584,7 +3662,7 @@ v8::Local<v8::Promise> WebContents::TakeHeapSnapshot(
             if (success) {
               promise.Resolve();
             } else {
-              promise.RejectWithErrorMessage("takeHeapSnapshot failed");
+              promise.RejectWithErrorMessage("Failed to take heap snapshot");
             }
           },
           base::Owned(std::move(electron_renderer)), std::move(promise)));
@@ -3624,14 +3702,14 @@ void WebContents::EnumerateDirectory(
 bool WebContents::IsFullscreenForTabOrPending(
     const content::WebContents* source) {
   if (!owner_window())
-    return html_fullscreen_;
+    return is_html_fullscreen();
 
   bool in_transition = owner_window()->fullscreen_transition_state() !=
                        NativeWindow::FullScreenTransitionState::NONE;
   bool is_html_transition = owner_window()->fullscreen_transition_type() ==
                             NativeWindow::FullScreenTransitionType::HTML;
 
-  return html_fullscreen_ || (in_transition && is_html_transition);
+  return is_html_fullscreen() || (in_transition && is_html_transition);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
@@ -3825,6 +3903,10 @@ void WebContents::DevToolsStopIndexing(int request_id) {
   devtools_indexing_jobs_.erase(it);
 }
 
+void WebContents::DevToolsOpenInNewTab(const std::string& url) {
+  Emit("devtools-open-url", url);
+}
+
 void WebContents::DevToolsSearchInPath(int request_id,
                                        const std::string& file_system_path,
                                        const std::string& query) {
@@ -3917,7 +3999,7 @@ void WebContents::OnDevToolsSearchCompleted(
 
 void WebContents::SetHtmlApiFullscreen(bool enter_fullscreen) {
   // Window is already in fullscreen mode, save the state.
-  if (enter_fullscreen && owner_window_->IsFullscreen()) {
+  if (enter_fullscreen && owner_window()->IsFullscreen()) {
     native_fullscreen_ = true;
     UpdateHtmlApiFullscreen(true);
     return;
@@ -3981,9 +4063,8 @@ void WebContents::UpdateHtmlApiFullscreen(bool fullscreen) {
 }
 
 // static
-v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
+void WebContents::FillObjectTemplate(v8::Isolate* isolate,
+                                     v8::Local<v8::ObjectTemplate> templ) {
   gin::InvokerOptions options;
   options.holder_is_first_argument = true;
   options.holder_type = "WebContents";
@@ -3995,7 +4076,7 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
   // We use gin_helper::ObjectTemplateBuilder instead of
   // gin::ObjectTemplateBuilder here to handle the fact that WebContents is
   // destroyable.
-  return gin_helper::ObjectTemplateBuilder(isolate, templ)
+  gin_helper::ObjectTemplateBuilder(isolate, templ)
       .SetMethod("destroy", &WebContents::Destroy)
       .SetMethod("close", &WebContents::Close)
       .SetMethod("getBackgroundThrottling",
@@ -4102,8 +4183,6 @@ v8::Local<v8::ObjectTemplate> WebContents::FillObjectTemplate(
       .SetMethod("setEmbedder", &WebContents::SetEmbedder)
       .SetMethod("setDevToolsWebContents", &WebContents::SetDevToolsWebContents)
       .SetMethod("getNativeView", &WebContents::GetNativeView)
-      .SetMethod("incrementCapturerCount", &WebContents::IncrementCapturerCount)
-      .SetMethod("decrementCapturerCount", &WebContents::DecrementCapturerCount)
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
@@ -4287,4 +4366,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_web_contents, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_web_contents, Initialize)

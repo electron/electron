@@ -7,14 +7,14 @@
 #include <map>
 #include <utility>
 
-#include "base/bind.h"
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/no_destructor.h"
 #include "base/process/kill.h"
 #include "base/process/launch.h"
 #include "base/process/process.h"
+#include "content/public/browser/child_process_host.h"
 #include "content/public/browser/service_process_host.h"
-#include "content/public/common/child_process_host.h"
 #include "content/public/common/result_codes.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -187,7 +187,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   connector_ = std::make_unique<mojo::Connector>(
       host_port_.TakeHandleToEntangleWithEmbedder(),
       mojo::Connector::SINGLE_THREADED_SEND,
-      base::ThreadTaskRunnerHandle::Get());
+      base::SingleThreadTaskRunner::GetCurrentDefault());
   connector_->set_incoming_receiver(this);
   connector_->set_connection_error_handler(base::BindOnce(
       &UtilityProcessWrapper::CloseConnectorPort, weak_factory_.GetWeakPtr()));
@@ -203,13 +203,13 @@ void UtilityProcessWrapper::OnServiceProcessLaunched(
   pid_ = process.Pid();
   GetAllUtilityProcessWrappers().AddWithID(this, pid_);
   if (stdout_read_fd_ != -1) {
-    EmitWithoutCustomEvent("stdout", stdout_read_fd_);
+    EmitWithoutEvent("stdout", stdout_read_fd_);
   }
   if (stderr_read_fd_ != -1) {
-    EmitWithoutCustomEvent("stderr", stderr_read_fd_);
+    EmitWithoutEvent("stderr", stderr_read_fd_);
   }
   // Emit 'spawn' event
-  EmitWithoutCustomEvent("spawn");
+  EmitWithoutEvent("spawn");
 }
 
 void UtilityProcessWrapper::OnServiceProcessDisconnected(
@@ -219,7 +219,7 @@ void UtilityProcessWrapper::OnServiceProcessDisconnected(
     GetAllUtilityProcessWrappers().Remove(pid_);
   CloseConnectorPort();
   // Emit 'exit' event
-  EmitWithoutCustomEvent("exit", error_code);
+  EmitWithoutEvent("exit", error_code);
   Unpin();
 }
 
@@ -238,7 +238,7 @@ void UtilityProcessWrapper::Shutdown(int exit_code) {
   node_service_remote_.reset();
   CloseConnectorPort();
   // Emit 'exit' event
-  EmitWithoutCustomEvent("exit", exit_code);
+  EmitWithoutEvent("exit", exit_code);
   Unpin();
 }
 
@@ -311,7 +311,7 @@ bool UtilityProcessWrapper::Accept(mojo::Message* mojo_message) {
   v8::HandleScope handle_scope(isolate);
   v8::Local<v8::Value> message_value =
       electron::DeserializeV8Value(isolate, message);
-  EmitWithoutCustomEvent("message", message_value);
+  EmitWithoutEvent("message", message_value);
   return true;
 }
 
@@ -417,4 +417,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_utility_process, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_utility_process, Initialize)

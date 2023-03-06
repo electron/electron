@@ -1,11 +1,11 @@
 import { expect } from 'chai';
 import * as path from 'path';
 import * as http from 'http';
-import { emittedNTimes, emittedOnce } from './events-helpers';
-import { closeWindow } from './window-helpers';
+import { emittedNTimes } from './lib/events-helpers';
+import { closeWindow } from './lib/window-helpers';
 import { app, BrowserWindow, ipcMain } from 'electron/main';
-import { AddressInfo } from 'net';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe, listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {
@@ -58,7 +58,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const [event1] = await detailsPromise;
-        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].reply('preload-ping');
         const [, frameId] = await pongPromise;
         expect(frameId).to.equal(event1[0].frameId);
@@ -68,7 +68,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const [event1] = await detailsPromise;
-        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].senderFrame.send('preload-ping');
         const [, frameId] = await pongPromise;
         expect(frameId).to.equal(event1[0].frameId);
@@ -78,7 +78,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const [, event2] = await detailsPromise;
-        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].reply('preload-ping');
         const [, frameId] = await pongPromise;
         expect(frameId).to.equal(event2[0].frameId);
@@ -88,7 +88,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 2);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
         const [, event2] = await detailsPromise;
-        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].senderFrame.send('preload-ping');
         const [, frameId] = await pongPromise;
         expect(frameId).to.equal(event2[0].frameId);
@@ -98,7 +98,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
         const [, , event3] = await detailsPromise;
-        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].reply('preload-ping');
         const [, frameId] = await pongPromise;
         expect(frameId).to.equal(event3[0].frameId);
@@ -108,7 +108,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         const detailsPromise = emittedNTimes(ipcMain, 'preload-ran', 3);
         w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
         const [, , event3] = await detailsPromise;
-        const pongPromise = emittedOnce(ipcMain, 'preload-pong');
+        const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].senderFrame.send('preload-ping');
         const [, frameId] = await pongPromise;
         expect(frameId).to.equal(event3[0].frameId);
@@ -202,8 +202,8 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     });
 
     it('should not load preload scripts', async () => {
-      const promisePass = emittedOnce(ipcMain, 'webview-loaded');
-      const promiseFail = emittedOnce(ipcMain, 'preload-in-frame').then(() => {
+      const promisePass = once(ipcMain, 'webview-loaded');
+      const promiseFail = once(ipcMain, 'preload-in-frame').then(() => {
         throw new Error('preload loaded in internal frame');
       });
       await w.loadURL('about:blank');
@@ -218,15 +218,12 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
   let crossSiteUrl: string;
   let serverUrl: string;
 
-  before(function (done) {
+  before(async function () {
     server = http.createServer((req, res) => {
       res.end(`<iframe name="frame" src="${crossSiteUrl}" />`);
     });
-    server.listen(0, '127.0.0.1', () => {
-      serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-      crossSiteUrl = `http://localhost:${(server.address() as AddressInfo).port}/`;
-      done();
-    });
+    serverUrl = (await listen(server)).url;
+    crossSiteUrl = serverUrl.replace('127.0.0.1', 'localhost');
   });
 
   after(() => {

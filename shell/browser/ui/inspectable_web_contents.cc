@@ -723,7 +723,10 @@ void InspectableWebContents::SetIsDocked(DispatchCallback callback,
     std::move(callback).Run(nullptr);
 }
 
-void InspectableWebContents::OpenInNewTab(const std::string& url) {}
+void InspectableWebContents::OpenInNewTab(const std::string& url) {
+  if (delegate_)
+    delegate_->DevToolsOpenInNewTab(url);
+}
 
 void InspectableWebContents::ShowItemInFolder(
     const std::string& file_system_path) {

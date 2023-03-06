@@ -113,7 +113,7 @@ expect streaming responses.
 
 * `scheme` string - scheme to handle, for example `https` or `my-app`. This is
   the bit before the `:` in a URL.
-* `handler` Function<HandleProtocolResponse | Promise<HandleProtocolResponse>>
+* `handler` Function<HandleProtocolResponse | GlobalResponse | Promise<HandleProtocolResponse> | Promise<GlobalResponse>>
   * `request` [ProtocolRequest](structures/protocol-request.md)
 
 Register a protocol handler for `scheme`. Requests made to URLs with this

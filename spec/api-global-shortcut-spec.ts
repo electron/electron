@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { globalShortcut } from 'electron/main';
-import { ifdescribe } from './spec-helpers';
+import { ifdescribe } from './lib/spec-helpers';
 
 ifdescribe(process.platform !== 'win32')('globalShortcut module', () => {
   beforeEach(() => {

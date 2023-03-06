@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import * as path from 'path';
-import { emittedOnce } from './events-helpers';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
-import { closeWindow } from './window-helpers';
-import { defer, ifit, startRemoteControlApp } from './spec-helpers';
-import { areColorsSimilar, captureScreen, getPixelColor } from './screen-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { areColorsSimilar, captureScreen, getPixelColor } from './lib/screen-helpers';
+import { once } from 'events';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -25,13 +25,13 @@ describe('BrowserView module', () => {
   });
 
   afterEach(async () => {
-    const p = emittedOnce(w.webContents, 'destroyed');
+    const p = once(w.webContents, 'destroyed');
     await closeWindow(w);
     w = null as any;
     await p;
 
     if (view && view.webContents) {
-      const p = emittedOnce(view.webContents, 'destroyed');
+      const p = once(view.webContents, 'destroyed');
       view.webContents.destroy();
       view = null as any;
       await p;
@@ -41,7 +41,7 @@ describe('BrowserView module', () => {
   });
 
   it('can be created with an existing webContents', async () => {
-    const wc = (webContents as any).create({ sandbox: true });
+    const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     await wc.loadURL('about:blank');
 
     view = new BrowserView({ webContents: wc } as any);
@@ -231,7 +231,7 @@ describe('BrowserView module', () => {
 
       w.addBrowserView(view);
       view.webContents.loadURL('about:blank');
-      await emittedOnce(view.webContents, 'did-finish-load');
+      await once(view.webContents, 'did-finish-load');
 
       const w2 = new BrowserWindow({ show: false });
       w2.addBrowserView(view);
@@ -239,7 +239,7 @@ describe('BrowserView module', () => {
       w.close();
 
       view.webContents.loadURL(`file://${fixtures}/pages/blank.html`);
-      await emittedOnce(view.webContents, 'did-finish-load');
+      await once(view.webContents, 'did-finish-load');
 
       // Clean up - the afterEach hook assumes the webContents on w is still alive.
       w = new BrowserWindow({ show: false });
@@ -326,7 +326,7 @@ describe('BrowserView module', () => {
           app.quit();
         });
       });
-      const [code] = await emittedOnce(rc.process, 'exit');
+      const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
     });
 
@@ -342,8 +342,26 @@ describe('BrowserView module', () => {
           app.quit();
         });
       });
-      const [code] = await emittedOnce(rc.process, 'exit');
+      const [code] = await once(rc.process, 'exit');
       expect(code).to.equal(0);
+    });
+
+    it('emits the destroyed event when webContents.close() is called', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      view.webContents.close();
+      await once(view.webContents, 'destroyed');
+    });
+
+    it('emits the destroyed event when window.close() is called', async () => {
+      view = new BrowserView();
+      w.setBrowserView(view);
+      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+
+      view.webContents.executeJavaScript('window.close()');
+      await once(view.webContents, 'destroyed');
     });
   });
 
@@ -398,28 +416,8 @@ describe('BrowserView module', () => {
       });
       await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
 
-      view.webContents.incrementCapturerCount();
       const image = await view.webContents.capturePage();
       expect(image.isEmpty()).to.equal(false);
-    });
-
-    it('should increase the capturer count', () => {
-      view = new BrowserView({
-        webPreferences: {
-          backgroundThrottling: false
-        }
-      });
-      w.setBrowserView(view);
-      view.setBounds({
-        ...w.getBounds(),
-        x: 0,
-        y: 0
-      });
-
-      view.webContents.incrementCapturerCount();
-      expect(view.webContents.isBeingCaptured()).to.be.true();
-      view.webContents.decrementCapturerCount();
-      expect(view.webContents.isBeingCaptured()).to.be.false();
     });
   });
 });

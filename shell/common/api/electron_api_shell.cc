@@ -64,6 +64,7 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
     if (args->GetNext(&obj)) {
       obj.Get("activate", &options.activate);
       obj.Get("workingDirectory", &options.working_dir);
+      obj.Get("logUsage", &options.log_usage);
     }
   }
 
@@ -186,4 +187,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_common_shell, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_common_shell, Initialize)

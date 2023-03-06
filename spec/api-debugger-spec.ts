@@ -1,10 +1,11 @@
 import { expect } from 'chai';
 import * as http from 'http';
 import * as path from 'path';
-import { AddressInfo } from 'net';
 import { BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce, emittedUntil } from './events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { emittedUntil } from './lib/events-helpers';
+import { listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -45,7 +46,7 @@ describe('debugger module', () => {
 
   describe('debugger.detach', () => {
     it('fires detach event', async () => {
-      const detach = emittedOnce(w.webContents.debugger, 'detach');
+      const detach = once(w.webContents.debugger, 'detach');
       w.webContents.debugger.attach();
       w.webContents.debugger.detach();
       const [, reason] = await detach;
@@ -55,7 +56,7 @@ describe('debugger module', () => {
 
     it('doesn\'t disconnect an active devtools session', async () => {
       w.webContents.loadURL('about:blank');
-      const detach = emittedOnce(w.webContents.debugger, 'detach');
+      const detach = once(w.webContents.debugger, 'detach');
       w.webContents.debugger.attach();
       w.webContents.openDevTools();
       w.webContents.once('devtools-opened', () => {
@@ -94,7 +95,7 @@ describe('debugger module', () => {
       w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach();
 
-      const opened = emittedOnce(w.webContents, 'devtools-opened');
+      const opened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await opened;
 
@@ -138,9 +139,9 @@ describe('debugger module', () => {
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.end('\u0024');
       });
-      await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
 
-      w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
+      const { url } = await listen(server);
+      w.loadURL(url);
       // If we do this synchronously, it's fast enough to attach and enable
       // network capture before the load. If we do it before the loadURL, for
       // some reason network capture doesn't get enabled soon enough and we get
@@ -155,19 +156,17 @@ describe('debugger module', () => {
       expect(body).to.equal('\u0024');
     });
 
-    it('does not crash for invalid unicode characters in message', (done) => {
-      try {
-        w.webContents.debugger.attach();
-      } catch (err) {
-        done(`unexpected error : ${err}`);
-      }
+    it('does not crash for invalid unicode characters in message', async () => {
+      w.webContents.debugger.attach();
 
-      w.webContents.debugger.on('message', (event, method) => {
-        // loadingFinished indicates that page has been loaded and it did not
-        // crash because of invalid UTF-8 data
-        if (method === 'Network.loadingFinished') {
-          done();
-        }
+      const loadingFinished = new Promise<void>(resolve => {
+        w.webContents.debugger.on('message', (event, method) => {
+          // loadingFinished indicates that page has been loaded and it did not
+          // crash because of invalid UTF-8 data
+          if (method === 'Network.loadingFinished') {
+            resolve();
+          }
+        });
       });
 
       server = http.createServer((req, res) => {
@@ -175,16 +174,17 @@ describe('debugger module', () => {
         res.end('\uFFFF');
       });
 
-      server.listen(0, '127.0.0.1', () => {
-        w.webContents.debugger.sendCommand('Network.enable');
-        w.loadURL(`http://127.0.0.1:${(server.address() as AddressInfo).port}`);
-      });
+      const { url } = await listen(server);
+      w.webContents.debugger.sendCommand('Network.enable');
+      w.loadURL(url);
+
+      await loadingFinished;
     });
 
     it('uses empty sessionId by default', async () => {
       w.webContents.loadURL('about:blank');
       w.webContents.debugger.attach();
-      const onMessage = emittedOnce(w.webContents.debugger, 'message');
+      const onMessage = once(w.webContents.debugger, 'message');
       await w.webContents.debugger.sendCommand('Target.setDiscoverTargets', { discover: true });
       const [, method, params, sessionId] = await onMessage;
       expect(method).to.equal('Target.targetCreated');

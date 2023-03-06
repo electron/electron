@@ -123,7 +123,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& bounds,
                    const gfx::Rect& anchor_rect) override;
-  void UpdateCursor(const content::WebCursor&) override;
+  void UpdateCursor(const ui::Cursor&) override;
   void SetIsLoading(bool is_loading) override;
   void TextInputStateChanged(const ui::mojom::TextInputState& params) override;
   void ImeCancelComposition(void) override;

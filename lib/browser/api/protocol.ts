@@ -1,4 +1,6 @@
 import { session } from 'electron/main';
+import { Readable } from 'stream';
+import { ReadableStream } from 'stream/web';
 
 // Global protocol APIs.
 const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._linkedBinding('electron_browser_protocol');
@@ -16,8 +18,8 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
     }
     const { error, body, headers, statusCode } = res;
     cb({
-      data: body,
-      headers,
+      data: body instanceof ReadableStream ? Readable.fromWeb(body) : body,
+      headers: headers instanceof Headers ? Object.fromEntries(headers) : headers,
       error,
       statusCode
     });

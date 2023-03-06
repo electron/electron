@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const v8 = require('v8');
 
@@ -49,7 +50,12 @@ app.whenReady().then(async () => {
     .argv;
 
   const Mocha = require('mocha');
-  const mochaOptions = {};
+  const mochaOptions = {
+    forbidOnly: process.env.CI
+  };
+  if (process.env.CI) {
+    mochaOptions.retries = 3;
+  }
   if (process.env.MOCHA_REPORTER) {
     mochaOptions.reporter = process.env.MOCHA_REPORTER;
   }
@@ -60,6 +66,18 @@ app.whenReady().then(async () => {
   }
   const mocha = new Mocha(mochaOptions);
 
+  // Add a root hook on mocha to skip any tests that are disabled
+  const disabledTests = new Set(
+    JSON.parse(
+      fs.readFileSync(path.join(__dirname, 'disabled-tests.json'), 'utf8')
+    )
+  );
+  mocha.suite.beforeEach(function () {
+    if (disabledTests.has(this.currentTest?.fullTitle())) {
+      this.skip();
+    }
+  });
+
   // The cleanup method is registered this way rather than through an
   // `afterEach` at the top level so that it can run before other `afterEach`
   // methods.
@@ -68,7 +86,7 @@ app.whenReady().then(async () => {
   // 1. test completes,
   // 2. `defer()`-ed methods run, in reverse order,
   // 3. regular `afterEach` hooks run.
-  const { runCleanupFunctions } = require('./spec-helpers');
+  const { runCleanupFunctions } = require('./lib/spec-helpers');
   mocha.suite.on('suite', function attach (suite) {
     suite.afterEach('cleanup', runCleanupFunctions);
     suite.on('suite', attach);

@@ -5,11 +5,10 @@ const { GitProcess } = require('dugite');
 const childProcess = require('child_process');
 const { ESLint } = require('eslint');
 const fs = require('fs');
-const klaw = require('klaw');
 const minimist = require('minimist');
 const path = require('path');
 
-const { chunkFilenames } = require('./lib/utils');
+const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
 const ELECTRON_ROOT = path.normalize(path.dirname(__dirname));
 const SOURCE_ROOT = path.resolve(ELECTRON_ROOT, '..');
@@ -23,10 +22,7 @@ process.env.PATH = `${process.env.PATH}${path.delimiter}${DEPOT_TOOLS}`;
 const IGNORELIST = new Set([
   ['shell', 'browser', 'resources', 'win', 'resource.h'],
   ['shell', 'common', 'node_includes.h'],
-  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js'],
-  ['spec', 'ts-smoke', 'electron', 'main.ts'],
-  ['spec', 'ts-smoke', 'electron', 'renderer.ts'],
-  ['spec', 'ts-smoke', 'runner.js']
+  ['spec', 'fixtures', 'pages', 'jquery-3.6.0.min.js']
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
@@ -87,11 +83,8 @@ const LINTERS = [{
   roots: ['shell'],
   test: filename => filename.endsWith('.mm') || (filename.endsWith('.h') && isObjCHeader(filename)),
   run: (opts, filenames) => {
-    if (opts.fix) {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', '--fix', ...filenames]);
-    } else {
-      spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...filenames]);
-    }
+    const clangFormatFlags = opts.fix ? ['--fix'] : [];
+    spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
     const filter = [
       '-readability/braces',
       '-readability/casting',
@@ -277,21 +270,6 @@ async function findChangedFiles (top) {
   const relativePaths = result.stdout.split(/\r\n|\r|\n/g);
   const absolutePaths = relativePaths.map(x => path.join(top, x));
   return new Set(absolutePaths);
-}
-
-async function findMatchingFiles (top, test) {
-  return new Promise((resolve, reject) => {
-    const matches = [];
-    klaw(top, {
-      filter: f => path.basename(f) !== '.bin'
-    })
-      .on('end', () => resolve(matches))
-      .on('data', item => {
-        if (test(item.path)) {
-          matches.push(item.path);
-        }
-      });
-  });
 }
 
 async function findFiles (args, linter) {

@@ -2,10 +2,10 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
 import { BrowserWindow } from 'electron/main';
-import { ifdescribe, ifit } from './spec-helpers';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { ifdescribe, ifit } from './lib/spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 import * as childProcess from 'child_process';
+import { once } from 'events';
 
 const Module = require('module');
 
@@ -30,7 +30,7 @@ describe('modules support', () => {
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'));
-        const [msg] = await emittedOnce(child, 'message');
+        const [msg] = await once(child, 'message');
         expect(msg).to.equal('ok');
       });
 
@@ -62,10 +62,8 @@ describe('modules support', () => {
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
-        await new Promise<void>(resolve => child.once('exit', (exitCode) => {
-          expect(exitCode).to.equal(0);
-          resolve();
-        }));
+        const [exitCode] = await once(child, 'exit');
+        expect(exitCode).to.equal(0);
       });
     });
 

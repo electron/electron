@@ -120,10 +120,6 @@
 #include "ui/native_theme/native_theme.h"
 #include "v8/include/v8.h"
 
-#if BUILDFLAG(IS_WIN)
-#include "sandbox/win/src/sandbox_policy.h"
-#endif
-
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "net/ssl/client_cert_store_nss.h"
 #elif BUILDFLAG(IS_WIN)
@@ -182,8 +178,8 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
-#include "content/common/mac_helpers.h"
-#include "content/public/common/child_process_host.h"
+#include "content/browser/mac_helpers.h"
+#include "content/public/browser/child_process_host.h"
 #endif
 
 #if BUILDFLAG(IS_LINUX)
@@ -1434,19 +1430,6 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
   extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
 }
-
-#if BUILDFLAG(IS_WIN)
-bool ElectronBrowserClient::PreSpawnChild(sandbox::TargetPolicy* policy,
-                                          sandbox::mojom::Sandbox sandbox_type,
-                                          ChildSpawnFlags flags) {
-  sandbox::ResultCode result = policy->GetConfig()->AddRule(
-      sandbox::SubSystem::kFiles, sandbox::Semantics::kFilesAllowAny,
-      L"\\??\\pipe\\crashpad_*");
-  if (result != sandbox::SBOX_ALL_OK)
-    return false;
-  return true;
-}
-#endif  // BUILDFLAG(IS_WIN)
 
 void ElectronBrowserClient::
     RegisterAssociatedInterfaceBindersForRenderFrameHost(

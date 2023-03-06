@@ -25,11 +25,8 @@ ELECTRON_DIR = os.path.abspath(
 TS_NODE = os.path.join(ELECTRON_DIR, 'node_modules', '.bin', 'ts-node')
 SRC_DIR = os.path.abspath(os.path.join(__file__, '..', '..', '..', '..'))
 
-NPM = 'npm'
 if sys.platform in ['win32', 'cygwin']:
-  NPM += '.cmd'
   TS_NODE += '.cmd'
-
 
 @contextlib.contextmanager
 def scoped_cwd(path):
@@ -39,18 +36,6 @@ def scoped_cwd(path):
     yield
   finally:
     os.chdir(cwd)
-
-
-@contextlib.contextmanager
-def scoped_env(key, value):
-  origin = ''
-  if key in os.environ:
-    origin = os.environ[key]
-  os.environ[key] = value
-  try:
-    yield
-  finally:
-    os.environ[key] = origin
 
 
 def download(text, url, path):

@@ -1357,7 +1357,7 @@ This API must be called after the `ready` event is emitted.
 
 ### `app.showAboutPanel()`
 
-Show the app's about panel options. These options can be overridden with `app.setAboutPanelOptions(options)`.
+Show the app's about panel options. These options can be overridden with `app.setAboutPanelOptions(options)`. This function runs asynchronously.
 
 ### `app.setAboutPanelOptions(options)`
 

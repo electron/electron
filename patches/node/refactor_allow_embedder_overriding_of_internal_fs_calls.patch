@@ -7,10 +7,10 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index cbca692e0ef458aad9beea30d04e1152e1fed5e5..9cf2c2d71208ad960f54965ddefa98bea51bfa6a 100644
+index 81b441a554e34556fc41066fc8761c713acb0ced..7dd89d5f134b09da2678dd54fa9139466fea179c 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -104,6 +104,10 @@ process.domain = null;
+@@ -101,6 +101,10 @@ process.domain = null;
  }
  process._exiting = false;
  
@@ -22,7 +22,7 @@ index cbca692e0ef458aad9beea30d04e1152e1fed5e5..9cf2c2d71208ad960f54965ddefa98be
  // release cycle, remove the Proxy and setter and update the
  // getter to either return a read-only object or always return
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index eb73c774118653c0746f78d4b72b31cb7c4f41f2..44e4c22ebf39fc9c52f789173a2cc50300bcd181 100644
+index 6b9aef981cfa934e1321916828d4f921008134d6..c19cd5e5d8a818c52406c78b95d96bae1b1f41bd 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -94,7 +94,7 @@ const fs = require('fs');
@@ -34,7 +34,7 @@ index eb73c774118653c0746f78d4b72b31cb7c4f41f2..44e4c22ebf39fc9c52f789173a2cc503
  const packageJsonReader = require('internal/modules/package_json_reader');
  const { safeGetenv } = internalBinding('credentials');
  const {
-@@ -171,7 +171,7 @@ function stat(filename) {
+@@ -190,7 +190,7 @@ function stat(filename) {
      const result = statCache.get(filename);
      if (result !== undefined) return result;
    }

@@ -31,7 +31,6 @@ class Handle;
 namespace network {
 class SimpleURLLoader;
 struct ResourceRequest;
-class ResourceRequestBody;
 class SharedURLLoaderFactory;
 }  // namespace network
 
@@ -124,7 +123,6 @@ class SimpleURLLoaderWrapper
   ElectronBrowserContext* browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;
-  scoped_refptr<network::ResourceRequestBody> request_body_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;

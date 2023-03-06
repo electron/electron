@@ -5,9 +5,9 @@ import * as os from 'os';
 import * as path from 'path';
 import * as ChildProcess from 'child_process';
 import { session, net } from 'electron/main';
-import { Socket, AddressInfo } from 'net';
-import { ifit } from './spec-helpers';
-import { emittedOnce } from './events-helpers';
+import { Socket } from 'net';
+import { ifit, listen } from './lib/spec-helpers';
+import { once } from 'events';
 
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');
@@ -20,12 +20,8 @@ describe('netLog module', () => {
   let serverUrl: string;
   const connections: Set<Socket> = new Set();
 
-  before(done => {
+  before(async () => {
     server = http.createServer();
-    server.listen(0, '127.0.0.1', () => {
-      serverUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
-      done();
-    });
     server.on('connection', (connection) => {
       connections.add(connection);
       connection.once('close', () => {
@@ -35,6 +31,7 @@ describe('netLog module', () => {
     server.on('request', (request, response) => {
       response.end();
     });
+    serverUrl = (await listen(server)).url;
   });
 
   after(done => {
@@ -130,7 +127,7 @@ describe('netLog module', () => {
         }
       });
 
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
     expect(fs.existsSync(dumpFile)).to.be.true('dump file exists');
   });
 
@@ -145,7 +142,7 @@ describe('netLog module', () => {
         }
       });
 
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
     expect(fs.existsSync(dumpFile)).to.be.true('dump file exists');
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists');
   });
@@ -159,7 +156,7 @@ describe('netLog module', () => {
         }
       });
 
-    await emittedOnce(appProcess, 'exit');
+    await once(appProcess, 'exit');
     expect(fs.existsSync(dumpFileDynamic)).to.be.true('dynamic dump file exists');
   });
 });

@@ -37,6 +37,8 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "third_party/blink/public/common/loader/referrer_utils.h"
+#include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
 
 namespace gin {
 
@@ -64,11 +66,80 @@ struct Converter<network::mojom::CredentialsMode> {
       *out = network::mojom::CredentialsMode::kOmit;
     else if (mode == "include")
       *out = network::mojom::CredentialsMode::kInclude;
+    else if (mode == "same-origin")
+      // Note: This only makes sense if the request specifies the "origin"
+      // option.
+      *out = network::mojom::CredentialsMode::kSameOrigin;
     else
-      // "same-origin" is technically a member of this enum as well, but it
-      // doesn't make sense in the context of `net.request()`, so don't convert
-      // it.
       return false;
+    return true;
+  }
+};
+
+template <>
+struct Converter<blink::mojom::FetchCacheMode> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     blink::mojom::FetchCacheMode* out) {
+    std::string cache;
+    if (!ConvertFromV8(isolate, val, &cache))
+      return false;
+    if (cache == "default") {
+      *out = blink::mojom::FetchCacheMode::kDefault;
+    } else if (cache == "no-store") {
+      *out = blink::mojom::FetchCacheMode::kNoStore;
+    } else if (cache == "reload") {
+      *out = blink::mojom::FetchCacheMode::kBypassCache;
+    } else if (cache == "no-cache") {
+      *out = blink::mojom::FetchCacheMode::kValidateCache;
+    } else if (cache == "force-cache") {
+      *out = blink::mojom::FetchCacheMode::kForceCache;
+    } else if (cache == "only-if-cached") {
+      *out = blink::mojom::FetchCacheMode::kOnlyIfCached;
+    } else {
+      return false;
+    }
+    return true;
+  }
+};
+
+template <>
+struct Converter<net::ReferrerPolicy> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::ReferrerPolicy* out) {
+    std::string referrer_policy;
+    if (!ConvertFromV8(isolate, val, &referrer_policy))
+      return false;
+    if (base::CompareCaseInsensitiveASCII(referrer_policy, "no-referrer") ==
+        0) {
+      *out = net::ReferrerPolicy::NO_REFERRER;
+    } else if (base::CompareCaseInsensitiveASCII(
+                   referrer_policy, "no-referrer-when-downgrade") == 0) {
+      *out = net::ReferrerPolicy::CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE;
+    } else if (base::CompareCaseInsensitiveASCII(referrer_policy, "origin") ==
+               0) {
+      *out = net::ReferrerPolicy::ORIGIN;
+    } else if (base::CompareCaseInsensitiveASCII(
+                   referrer_policy, "origin-when-cross-origin") == 0) {
+      *out = net::ReferrerPolicy::ORIGIN_ONLY_ON_TRANSITION_CROSS_ORIGIN;
+    } else if (base::CompareCaseInsensitiveASCII(referrer_policy,
+                                                 "unsafe-url") == 0) {
+      *out = net::ReferrerPolicy::NEVER_CLEAR;
+    } else if (base::CompareCaseInsensitiveASCII(referrer_policy,
+                                                 "same-origin") == 0) {
+      *out = net::ReferrerPolicy::CLEAR_ON_TRANSITION_CROSS_ORIGIN;
+    } else if (base::CompareCaseInsensitiveASCII(referrer_policy,
+                                                 "strict-origin") == 0) {
+      *out = net::ReferrerPolicy::
+          ORIGIN_CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE;
+    } else if (referrer_policy == "" ||
+               base::CompareCaseInsensitiveASCII(
+                   referrer_policy, "strict-origin-when-cross-origin") == 0) {
+      *out = net::ReferrerPolicy::REDUCE_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN;
+    } else {
+      return false;
+    }
     return true;
   }
 };
@@ -288,7 +359,7 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
   // raw headers in the URLLoader.
-  request->trusted_params->report_raw_headers = true;
+  request_->trusted_params->report_raw_headers = true;
   Start();
 }
 
@@ -458,6 +529,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   opts.Get("url", &request->url);
   request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
+  request->referrer_policy =
+      blink::ReferrerUtils::GetDefaultNetReferrerPolicy();
+  opts.Get("referrerPolicy", &request->referrer_policy);
   std::string origin;
   opts.Get("origin", &origin);
   if (!origin.empty()) {
@@ -539,6 +613,36 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       }
       request->headers.SetHeader(it.first, it.second);
     }
+  }
+
+  blink::mojom::FetchCacheMode cache_mode =
+      blink::mojom::FetchCacheMode::kDefault;
+  opts.Get("cache", &cache_mode);
+  switch (cache_mode) {
+    case blink::mojom::FetchCacheMode::kNoStore:
+      request->load_flags |= net::LOAD_DISABLE_CACHE;
+      break;
+    case blink::mojom::FetchCacheMode::kValidateCache:
+      request->load_flags |= net::LOAD_VALIDATE_CACHE;
+      break;
+    case blink::mojom::FetchCacheMode::kBypassCache:
+      request->load_flags |= net::LOAD_BYPASS_CACHE;
+      break;
+    case blink::mojom::FetchCacheMode::kForceCache:
+      request->load_flags |= net::LOAD_SKIP_CACHE_VALIDATION;
+      break;
+    case blink::mojom::FetchCacheMode::kOnlyIfCached:
+      request->load_flags |=
+          net::LOAD_ONLY_FROM_CACHE | net::LOAD_SKIP_CACHE_VALIDATION;
+      break;
+    case blink::mojom::FetchCacheMode::kUnspecifiedOnlyIfCachedStrict:
+      request->load_flags |= net::LOAD_ONLY_FROM_CACHE;
+      break;
+    case blink::mojom::FetchCacheMode::kDefault:
+      break;
+    case blink::mojom::FetchCacheMode::kUnspecifiedForceCacheMiss:
+      request->load_flags |= net::LOAD_ONLY_FROM_CACHE | net::LOAD_BYPASS_CACHE;
+      break;
   }
 
   bool use_session_cookies = false;

@@ -1,19 +1,17 @@
-import { EventEmitter } from 'events';
+import { EventEmitter, once } from 'events';
 import { expect } from 'chai';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
-import { defer } from './spec-helpers';
+import { closeAllWindows } from './lib/window-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import * as path from 'path';
 import * as http from 'http';
-import { AddressInfo } from 'net';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
-    let w = (null as unknown as BrowserWindow);
+    let w: BrowserWindow;
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -121,13 +119,13 @@ describe('ipc module', () => {
         /* never resolve */
       }));
       w.webContents.executeJavaScript(`(${rendererInvoke})()`);
-      const [, { error }] = await emittedOnce(ipcMain, 'result');
+      const [, { error }] = await once(ipcMain, 'result');
       expect(error).to.match(/reply was never sent/);
     });
   });
 
   describe('ordering', () => {
-    let w = (null as unknown as BrowserWindow);
+    let w: BrowserWindow;
 
     before(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -209,7 +207,7 @@ describe('ipc module', () => {
     it('can send a port to the main process', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      const p = emittedOnce(ipcMain, 'port');
+      const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(`(${function () {
         const channel = new MessageChannel();
         require('electron').ipcRenderer.postMessage('port', 'hi', [channel.port1]);
@@ -226,7 +224,7 @@ describe('ipc module', () => {
     it('can sent a message without a transfer', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      const p = emittedOnce(ipcMain, 'port');
+      const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(`(${function () {
         require('electron').ipcRenderer.postMessage('port', 'hi');
       }})()`);
@@ -239,7 +237,7 @@ describe('ipc module', () => {
     it('can communicate between main and renderer', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
-      const p = emittedOnce(ipcMain, 'port');
+      const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(`(${function () {
         const channel = new MessageChannel();
         (channel.port2 as any).onmessage = (ev: any) => {
@@ -253,7 +251,7 @@ describe('ipc module', () => {
       const [port] = ev.ports;
       port.start();
       port.postMessage(42);
-      const [ev2] = await emittedOnce(port, 'message');
+      const [ev2] = await once(port, 'message');
       expect(ev2.data).to.equal(84);
     });
 
@@ -268,11 +266,11 @@ describe('ipc module', () => {
         require('electron').ipcRenderer.postMessage('port', '', [channel1.port1]);
       }
       w.webContents.executeJavaScript(`(${fn})()`);
-      const [{ ports: [port1] }] = await emittedOnce(ipcMain, 'port');
+      const [{ ports: [port1] }] = await once(ipcMain, 'port');
       port1.start();
-      const [{ ports: [port2] }] = await emittedOnce(port1, 'message');
+      const [{ ports: [port2] }] = await once(port1, 'message');
       port2.start();
-      const [{ data }] = await emittedOnce(port2, 'message');
+      const [{ data }] = await once(port2, 'message');
       expect(data).to.equal('matryoshka');
     });
 
@@ -288,14 +286,14 @@ describe('ipc module', () => {
         };
         require('electron').ipcRenderer.postMessage('port', '', [channel.port1]);
       }})()`);
-      const [{ ports: [port] }] = await emittedOnce(ipcMain, 'port');
+      const [{ ports: [port] }] = await once(ipcMain, 'port');
       await w2.webContents.executeJavaScript(`(${function () {
         require('electron').ipcRenderer.on('port', ({ ports: [port] }: any) => {
           port.postMessage('a message');
         });
       }})()`);
       w2.webContents.postMessage('port', '', [port]);
-      const [, data] = await emittedOnce(ipcMain, 'message received');
+      const [, data] = await once(ipcMain, 'message received');
       expect(data).to.equal('a message');
     });
 
@@ -317,7 +315,7 @@ describe('ipc module', () => {
           const { port1, port2 } = new MessageChannelMain();
           w.webContents.postMessage('port', null, [port2]);
           port1.close();
-          await emittedOnce(ipcMain, 'closed');
+          await once(ipcMain, 'closed');
         });
 
         it('is emitted when the other end of a port is garbage-collected', async () => {
@@ -361,7 +359,7 @@ describe('ipc module', () => {
         const { port1, port2 } = new MessageChannelMain();
         port2.postMessage('hello');
         port1.start();
-        const [ev] = await emittedOnce(port1, 'message');
+        const [ev] = await once(port1, 'message');
         expect(ev.data).to.equal('hello');
       });
 
@@ -380,7 +378,7 @@ describe('ipc module', () => {
         const { port1, port2 } = new MessageChannelMain();
         port1.postMessage('hello');
         w.webContents.postMessage('port', null, [port2]);
-        await emittedOnce(ipcMain, 'done');
+        await once(ipcMain, 'done');
       });
 
       it('can be passed over another channel', async () => {
@@ -401,7 +399,7 @@ describe('ipc module', () => {
         port1.postMessage(null, [port4]);
         port3.postMessage('hello');
         w.webContents.postMessage('port', null, [port2]);
-        const [, message] = await emittedOnce(ipcMain, 'done');
+        const [, message] = await once(ipcMain, 'done');
         expect(message).to.equal('hello');
       });
 
@@ -482,7 +480,7 @@ describe('ipc module', () => {
             });
           }})()`);
           postMessage(w.webContents)('foo', { some: 'message' });
-          const [, msg] = await emittedOnce(ipcMain, 'bar');
+          const [, msg] = await once(ipcMain, 'bar');
           expect(msg).to.deep.equal({ some: 'message' });
         });
 
@@ -576,7 +574,7 @@ describe('ipc module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.send(\'test\', 42)');
-      const [, num] = await emittedOnce(w.webContents.ipc, 'test');
+      const [, num] = await once(w.webContents.ipc, 'test');
       expect(num).to.equal(42);
     });
 
@@ -594,7 +592,7 @@ describe('ipc module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.postMessage(\'test\', null, [(new MessageChannel).port1])');
-      const [event] = await emittedOnce(w.webContents.ipc, 'test');
+      const [event] = await once(w.webContents.ipc, 'test');
       expect(event.ports.length).to.equal(1);
     });
 
@@ -644,8 +642,7 @@ describe('ipc module', () => {
         res.setHeader('content-type', 'text/html');
         res.end('');
       });
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       defer(() => {
         server.close();
       });
@@ -653,7 +650,7 @@ describe('ipc module', () => {
       // Preloads don't run in about:blank windows, and file:// urls can't be loaded in iframes, so use a blank http page.
       await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
       w.webContents.mainFrame.frames[0].executeJavaScript('ipc.send(\'test\', 42)');
-      const [, arg] = await emittedOnce(w.webContents.ipc, 'test');
+      const [, arg] = await once(w.webContents.ipc, 'test');
       expect(arg).to.equal(42);
     });
   });
@@ -664,7 +661,7 @@ describe('ipc module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.send(\'test\', 42)');
-      const [, arg] = await emittedOnce(w.webContents.mainFrame.ipc, 'test');
+      const [, arg] = await once(w.webContents.mainFrame.ipc, 'test');
       expect(arg).to.equal(42);
     });
 
@@ -682,7 +679,7 @@ describe('ipc module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('require(\'electron\').ipcRenderer.postMessage(\'test\', null, [(new MessageChannel).port1])');
-      const [event] = await emittedOnce(w.webContents.mainFrame.ipc, 'test');
+      const [event] = await once(w.webContents.mainFrame.ipc, 'test');
       expect(event.ports.length).to.equal(1);
     });
 
@@ -745,8 +742,7 @@ describe('ipc module', () => {
         res.setHeader('content-type', 'text/html');
         res.end('');
       });
-      await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-      const port = (server.address() as AddressInfo).port;
+      const { port } = await listen(server);
       defer(() => {
         server.close();
       });
@@ -755,7 +751,7 @@ describe('ipc module', () => {
       await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
       w.webContents.mainFrame.frames[0].executeJavaScript('ipc.send(\'test\', 42)');
       w.webContents.mainFrame.ipc.on('test', () => { throw new Error('should not be called'); });
-      const [, arg] = await emittedOnce(w.webContents.mainFrame.frames[0].ipc, 'test');
+      const [, arg] = await once(w.webContents.mainFrame.frames[0].ipc, 'test');
       expect(arg).to.equal(42);
     });
   });

@@ -39,7 +39,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7d6375d90 100644
+index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593e14fb701 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@
@@ -47,7 +47,7 @@ index 7ce85cdc4c546d8f1d4e477becaa2be3900ef4e8..45a7731474932c48fce6076d1cf894c7
  CFTypeID SecKeyGetTypeID();
  #if !BUILDFLAG(IS_IOS)
 -// The NSFont/CTFont toll-free bridging is broken before 10.15.
--// http://www.openradar.me/15341349 rdar://15341349
+-// https://openradar.appspot.com/15341349
 -//
 -// TODO(https://crbug.com/1076527): This is fixed in 10.15. When 10.15 is the
 -// minimum OS for Chromium, remove this SPI declaration.
@@ -142,7 +142,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
    std::vector<char*> argv_cstr;
    argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index fa83b9cd51c1d3ad1ccee49772424390ef05e46f..604bc712f14283282253bd88580123160483f530 100644
+index 72b78e9a7b80a37247c4c8e5468e17a5464e9d12..71fb7cfe4a0a8cd329940af5b0b371731ee2567a 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@

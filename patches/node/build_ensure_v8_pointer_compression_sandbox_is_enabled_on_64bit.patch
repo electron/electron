@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index cbbc7264c6ad097c5da4902ac1bdbdcebfdd36af..6704d96142f806be9c0605f0b41206e77f492b96 100644
+index 2c2f3218a8ae387802af3d154ede601aedcb52dd..b661dc4a1b3149e780eef46033e70e68038417b0 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@
@@ -42,14 +42,14 @@ index cbbc7264c6ad097c5da4902ac1bdbdcebfdd36af..6704d96142f806be9c0605f0b41206e7
          'defines': ['V8_31BIT_SMIS_ON_64BIT_ARCH'],
        }],
 diff --git a/configure.py b/configure.py
-index 81d54a14b7af51b77b6340a4f7bf605d6f1656bc..bae674fd264ff0bfbe025c286279182358872b23 100755
+index 62c01aaf6a386d24e82289554520140f03699c95..bfa20f5fc7a64b30b464327f4086a027e9a23359 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1524,6 +1524,7 @@ def configure_v8(o):
+@@ -1530,6 +1530,7 @@ def configure_v8(o):
    o['variables']['v8_use_siphash'] = 0 if options.without_siphash else 1
    o['variables']['v8_enable_pointer_compression'] = 1 if options.enable_pointer_compression else 0
    o['variables']['v8_enable_31bit_smis_on_64bit_arch'] = 1 if options.enable_pointer_compression else 0
 +  o['variables']['v8_enable_sandbox'] = 1 if options.enable_pointer_compression else 0
-   o['variables']['v8_enable_shared_ro_heap'] = 0 if options.enable_pointer_compression else 1
+   o['variables']['v8_enable_shared_ro_heap'] = 0 if options.enable_pointer_compression or options.disable_shared_ro_heap else 1
    o['variables']['v8_trace_maps'] = 1 if options.trace_maps else 0
    o['variables']['node_use_v8_platform'] = b(not options.without_v8_platform)

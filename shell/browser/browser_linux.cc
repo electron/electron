@@ -162,31 +162,25 @@ bool Browser::IsEmojiPanelSupported() {
 void Browser::ShowAboutPanel() {
   const auto& opts = about_panel_options_;
 
-  if (!opts.is_dict()) {
-    LOG(WARNING) << "Called showAboutPanel(), but didn't use "
-                    "setAboutPanelSettings() first";
-    return;
-  }
-
   GtkWidget* dialogWidget = gtk_about_dialog_new();
   GtkAboutDialog* dialog = GTK_ABOUT_DIALOG(dialogWidget);
 
   const std::string* str;
-  const base::Value* val;
+  const base::Value::List* list;
 
-  if ((str = opts.FindStringKey("applicationName"))) {
+  if ((str = opts.FindString("applicationName"))) {
     gtk_about_dialog_set_program_name(dialog, str->c_str());
   }
-  if ((str = opts.FindStringKey("applicationVersion"))) {
+  if ((str = opts.FindString("applicationVersion"))) {
     gtk_about_dialog_set_version(dialog, str->c_str());
   }
-  if ((str = opts.FindStringKey("copyright"))) {
+  if ((str = opts.FindString("copyright"))) {
     gtk_about_dialog_set_copyright(dialog, str->c_str());
   }
-  if ((str = opts.FindStringKey("website"))) {
+  if ((str = opts.FindString("website"))) {
     gtk_about_dialog_set_website(dialog, str->c_str());
   }
-  if ((str = opts.FindStringKey("iconPath"))) {
+  if ((str = opts.FindString("iconPath"))) {
     GError* error = nullptr;
     constexpr int width = 64;   // width of about panel icon in pixels
     constexpr int height = 64;  // height of about panel icon in pixels
@@ -203,9 +197,9 @@ void Browser::ShowAboutPanel() {
     }
   }
 
-  if ((val = opts.FindListKey("authors"))) {
+  if ((list = opts.FindList("authors"))) {
     std::vector<const char*> cstrs;
-    for (const auto& authorVal : val->GetList()) {
+    for (const auto& authorVal : *list) {
       if (authorVal.is_string()) {
         cstrs.push_back(authorVal.GetString().c_str());
       }
@@ -218,12 +212,15 @@ void Browser::ShowAboutPanel() {
     }
   }
 
-  gtk_dialog_run(GTK_DIALOG(dialog));
-  gtk_widget_destroy(dialogWidget);
+  // destroy the widget when it closes
+  g_signal_connect_swapped(dialogWidget, "response",
+                           G_CALLBACK(gtk_widget_destroy), dialogWidget);
+
+  gtk_widget_show_all(dialogWidget);
 }
 
 void Browser::SetAboutPanelOptions(base::Value::Dict options) {
-  about_panel_options_ = base::Value(std::move(options));
+  about_panel_options_ = std::move(options);
 }
 
 }  // namespace electron

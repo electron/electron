@@ -16,7 +16,6 @@
 #include "base/path_service.h"
 #include "base/strings/escape.h"
 #include "base/strings/string_util.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/pref_names.h"
 #include "components/keyed_service/content/browser_context_dependency_manager.h"
@@ -502,13 +501,16 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       devices.audio_device =
           blink::MediaStreamDevice(request.audio_type, id, name);
     } else if (result_dict.Get("audio", &rfh)) {
-      devices.audio_device = blink::MediaStreamDevice(
-          request.audio_type,
-          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
-                                             rfh->GetRoutingID(),
-                                             /* disable_local_echo= */ true)
-              .ToString(),
-          "Tab audio");
+      bool enable_local_echo = false;
+      result_dict.Get("enableLocalEcho", &enable_local_echo);
+      bool disable_local_echo = !enable_local_echo;
+      devices.audio_device =
+          blink::MediaStreamDevice(request.audio_type,
+                                   content::WebContentsMediaCaptureId(
+                                       rfh->GetProcess()->GetID(),
+                                       rfh->GetRoutingID(), disable_local_echo)
+                                       .ToString(),
+                                   "Tab audio");
     } else if (result_dict.Get("audio", &id)) {
       devices.audio_device =
           blink::MediaStreamDevice(request.audio_type, id, "System audio");

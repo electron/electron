@@ -20,7 +20,7 @@ function parseCommandLine () {
         --bump=patch to increment patch version\n
         --version={version} to set version number directly\n
         --dryRun to print the next version without updating files
-      Note that you can use both --bump and --stable  simultaneously. 
+      Note that you can use both --bump and --stable  simultaneously.
     `);
     process.exit(0);
   }

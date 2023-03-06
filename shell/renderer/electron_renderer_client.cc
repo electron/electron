@@ -76,7 +76,7 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
-    node_bindings_->Initialize();
+    node_bindings_->Initialize(renderer_context);
     node_bindings_->PrepareEmbedThread();
   }
 
@@ -96,7 +96,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   env->options()->force_context_aware = true;
 
   // We do not want to crash the renderer process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn";
+  env->options()->unhandled_rejections = "warn-with-error-code";
 
   environments_.insert(env);
 
@@ -168,7 +168,12 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
   // that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
-    WebWorkerObserver::GetCurrent()->WorkerScriptReadyForEvaluation(context);
+    // WorkerScriptReadyForEvaluationOnWorkerThread can be invoked multiple
+    // times for the same thread, so we need to create a new observer each time
+    // this happens. We use a ThreadLocalOwnedPointer to ensure that the old
+    // observer for a given thread gets destructed when swapping with the new
+    // observer in WebWorkerObserver::Create.
+    WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
   }
 }
 
@@ -182,7 +187,9 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
   // with webPreferences that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
-    WebWorkerObserver::GetCurrent()->ContextWillDestroy(context);
+    auto* current = WebWorkerObserver::GetCurrent();
+    if (current)
+      current->ContextWillDestroy(context);
   }
 }
 

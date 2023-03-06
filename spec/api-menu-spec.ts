@@ -3,9 +3,10 @@ import * as path from 'path';
 import { expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
-import { emittedOnce } from './events-helpers';
-import { ifit, delay } from './spec-helpers';
-import { closeWindow } from './window-helpers';
+import { ifit } from './lib/spec-helpers';
+import { closeWindow } from './lib/window-helpers';
+import { once } from 'events';
+import { setTimeout } from 'timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -817,7 +818,7 @@ describe('Menu module', function () {
       menu.on('menu-will-close', () => { done(); });
       menu.popup({ window: w });
       // https://github.com/electron/electron/issues/19411
-      setTimeout(() => {
+      setTimeout().then(() => {
         menu.closePopup();
       });
     });
@@ -849,7 +850,7 @@ describe('Menu module', function () {
       expect(x).to.equal(100);
       expect(y).to.equal(101);
       // https://github.com/electron/electron/issues/19411
-      setTimeout(() => {
+      setTimeout().then(() => {
         menu.closePopup();
       });
     });
@@ -857,7 +858,7 @@ describe('Menu module', function () {
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
       menu.popup({ window: w, callback: () => done() });
       // https://github.com/electron/electron/issues/19411
-      setTimeout(() => {
+      setTimeout().then(() => {
         menu.closePopup();
       });
     });
@@ -870,14 +871,14 @@ describe('Menu module', function () {
       // eslint-disable-next-line no-undef
       const wr = new WeakRef(menu);
 
-      await delay();
+      await setTimeout();
 
       // Do garbage collection, since |menu| is not referenced in this closure
       // it would be gone after next call.
       const v8Util = process._linkedBinding('electron_common_v8_util');
       v8Util.requestGarbageCollectionForTesting();
 
-      await delay();
+      await setTimeout();
 
       // Try to receive menu from weak reference.
       if (wr.deref()) {
@@ -929,7 +930,7 @@ describe('Menu module', function () {
       appProcess.stdout.on('data', data => { output += data; });
       appProcess.stderr.on('data', data => { output += data; });
 
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const [code] = await once(appProcess, 'exit');
       if (!output.includes('Window has no menu')) {
         console.log(code, output);
       }

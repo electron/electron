@@ -15,17 +15,14 @@
 #import <Security/Security.h>
 
 #include "base/mac/scoped_cftyperef.h"
-#include "base/mac/sdk_forward_declarations.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
-#include "base/threading/sequenced_task_runner_handle.h"
 #include "base/values.h"
 #include "chrome/browser/media/webrtc/system_media_capture_permissions_mac.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
-#include "shell/browser/ui/cocoa/NSColor+Hex.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -425,9 +422,10 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 
 bool SystemPreferences::CanPromptTouchID() {
   base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-  if (![context
-          canEvaluatePolicy:LAPolicyDeviceOwnerAuthenticationWithBiometrics
-                      error:nil])
+  LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
+  if (@available(macOS 10.15, *))
+    auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+  if (![context canEvaluatePolicy:auth_policy error:nil])
     return false;
   if (@available(macOS 10.13.2, *))
     return [context biometryType] == LABiometryTypeTouchID;
@@ -449,7 +447,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
               nullptr));
 
   scoped_refptr<base::SequencedTaskRunner> runner =
-      base::SequencedTaskRunnerHandle::Get();
+      base::SequencedTaskRunner::GetCurrentDefault();
 
   __block gin_helper::Promise<void> p = std::move(promise);
   [context

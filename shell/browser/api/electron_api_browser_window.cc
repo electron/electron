@@ -4,7 +4,7 @@
 
 #include "shell/browser/api/electron_api_browser_window.h"
 
-#include "base/threading/thread_task_runner_handle.h"
+#include "base/task/single_thread_task_runner.h"
 #include "content/browser/renderer_host/render_widget_host_impl.h"  // nogncheck
 #include "content/browser/renderer_host/render_widget_host_owner_delegate.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_impl.h"  // nogncheck
@@ -198,7 +198,11 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 
   // Trigger beforeunload events for associated BrowserViews.
   for (NativeBrowserView* view : window_->browser_views()) {
-    auto* vwc = view->GetInspectableWebContents()->GetWebContents();
+    auto* iwc = view->GetInspectableWebContents();
+    if (!iwc)
+      continue;
+
+    auto* vwc = iwc->GetWebContents();
     auto* api_web_contents = api::WebContents::From(vwc);
 
     // Required to make beforeunload handler work.
@@ -402,7 +406,7 @@ void BrowserWindow::ScheduleUnresponsiveEvent(int ms) {
 
   window_unresponsive_closure_.Reset(base::BindRepeating(
       &BrowserWindow::NotifyWindowUnresponsive, GetWeakPtr()));
-  base::ThreadTaskRunnerHandle::Get()->PostDelayedTask(
+  base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
       FROM_HERE, window_unresponsive_closure_.callback(),
       base::Milliseconds(ms));
 }
@@ -488,4 +492,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_window, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_window, Initialize)
