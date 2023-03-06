@@ -492,13 +492,34 @@ void Browser::DockSetMenu(ElectronMenuModel* model) {
 }
 
 void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
-  gfx::Image image;
+  NSImage* image = nil;
 
+  bool should_set = false;
   if (!icon->IsNull()) {
     api::NativeImage* native_image = nullptr;
-    if (!api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image))
-      return;
-    image = native_image->image();
+    if (api::NativeImage::TryConvertNativeImage(isolate, icon, &native_image)) {
+      image = native_image->image().AsNSImage();
+      should_set = true;
+    } else {
+      // Specifically for setting a dock icon we want to support icns files to
+      // allow for hidpi x2 etc. support We could populate a NativeImage with
+      // multiple representations but it's better to just support loading icns
+      // files directly
+      std::string path;
+      if (gin::ConvertFromV8(isolate, icon, &path)) {
+        NSString* icns_path = base::SysUTF8ToNSString(path);
+        if ([[icns_path pathExtension] isEqualToString:"icns"]) {
+          image = [[NSImage alloc] initWithContentsOfFile:];
+          if (image) {
+            should_set = true;
+          }
+        }
+      }
+    }
+  }
+
+  if (!should_set) {
+    return;
   }
 
   // This is needed when this fn is called before the browser
@@ -508,8 +529,7 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
   if (!is_ready())
     gfx::ImageSkia::SetSupportedScales({1.0f});
 
-  [[AtomApplication sharedApplication]
-      setApplicationIconImage:image.AsNSImage()];
+  [[AtomApplication sharedApplication] setApplicationIconImage:image];
 }
 
 void Browser::ShowAboutPanel() {
