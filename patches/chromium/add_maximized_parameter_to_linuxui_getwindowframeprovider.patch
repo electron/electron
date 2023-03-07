@@ -8,7 +8,7 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index 31917ffefc42e5073c12ff153ec1db9bf0876ff6..7bb201598cdc7ddf3e1c9bea57ca2af6bcc166f5 100644
+index 99d3dc38ca60dbdc68bcb679067e8fd64e43b06a..7f5c3b103da21d213aa19fe8a4320bec0b7ebeb5 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
 @@ -480,12 +480,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
@@ -171,7 +171,7 @@ index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf
  
  }  // namespace gtk
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index b5fd57741d2f47bda9499cf10e73cc9b3dd1b4dc..35e5bedb719af699485b575ece4bdb4f90df07df 100644
+index 82d40cb5fa1b9ad54e43502793a7d1d3e94e2ebb..6f6296c4f8334e59e1522abe291d65bb508f9541 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
 @@ -273,7 +273,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {

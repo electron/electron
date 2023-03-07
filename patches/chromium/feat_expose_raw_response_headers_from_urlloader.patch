@@ -112,10 +112,10 @@ index 48d273dd5db3b9db89fc543b04d47d1da9ccfede..0b95993bc7e5b8bd675e295f8d4acd2a
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index 3ba1bff2400eca47220679658345b2881f1455d7..5cd349a7e5d0c9dd758cb330e44015beaad3b2b4 100644
+index c920828b2553946d794eca9398d46c609465a5ab..bb373f49f6c9bbdbec9495c877c2c6d820b46d80 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -646,6 +646,7 @@ URLLoader::URLLoader(
+@@ -641,6 +641,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index 3ba1bff2400eca47220679658345b2881f1455d7..5cd349a7e5d0c9dd758cb330e44015be
    }
  
    throttling_token_ = network::ScopedThrottlingToken::MaybeCreate(
-@@ -712,7 +713,7 @@ URLLoader::URLLoader(
+@@ -707,7 +708,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  

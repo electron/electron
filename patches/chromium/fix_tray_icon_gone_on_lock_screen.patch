@@ -6,10 +6,10 @@ Subject: Re-register status item when owner of status watcher is changed
 https://chromium-review.googlesource.com/c/chromium/src/+/4022621
 
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-index cba134dd8c10e9f05d4d2547fd39cc51f83ba054..797953fd2ddef1f827e504c5116a666e0d5e90fb 100644
+index 3e22390f3b8b83f65e8404881a684d2d77697018..ce2e13052d375d3b03fdd7dffaa84cbd2a5dc155 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
-@@ -361,6 +361,13 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
+@@ -360,6 +360,13 @@ void StatusIconLinuxDbus::OnInitialized(bool success) {
      return;
    }
  
@@ -23,7 +23,7 @@ index cba134dd8c10e9f05d4d2547fd39cc51f83ba054..797953fd2ddef1f827e504c5116a666e
    dbus::MethodCall method_call(kInterfaceStatusNotifierWatcher,
                                 kMethodRegisterStatusNotifierItem);
    dbus::MessageWriter writer(&method_call);
-@@ -376,6 +383,14 @@ void StatusIconLinuxDbus::OnRegistered(dbus::Response* response) {
+@@ -375,6 +382,14 @@ void StatusIconLinuxDbus::OnRegistered(dbus::Response* response) {
      delegate_->OnImplInitializationFailed();
  }
  

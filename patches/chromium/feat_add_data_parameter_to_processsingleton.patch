@@ -179,10 +179,10 @@ index 0e1baf024e7aee3bc1edad1e0620bd56647d042b..2302cd0b1c536f5c5bc5125a7bbe133e
    if (!WriteToSocket(socket.fd(), to_send.data(), to_send.length())) {
      // Try to kill the other process, because it might have been dead.
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 51a109504c1c8f79ef8748641ef21efed3a9315d..7df5b345b7e6a2360c226e0aaf48bcdf95c99afa 100644
+index 3dff138357d9e1ae8d572df7630aa6ec429728a3..ae123a441bcf7939fad222d84e4bd6ec84bf6422 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
-@@ -81,10 +81,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
+@@ -80,10 +80,12 @@ BOOL CALLBACK BrowserWindowEnumeration(HWND window, LPARAM param) {
  
  bool ParseCommandLine(const COPYDATASTRUCT* cds,
                        base::CommandLine* parsed_command_line,
@@ -197,7 +197,7 @@ index 51a109504c1c8f79ef8748641ef21efed3a9315d..7df5b345b7e6a2360c226e0aaf48bcdf
    static const int min_message_size = 7;
    if (cds->cbData < min_message_size * sizeof(wchar_t) ||
        cds->cbData % sizeof(wchar_t) != 0) {
-@@ -134,6 +136,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
+@@ -133,6 +135,37 @@ bool ParseCommandLine(const COPYDATASTRUCT* cds,
      const std::wstring cmd_line =
          msg.substr(second_null + 1, third_null - second_null);
      *parsed_command_line = base::CommandLine::FromString(cmd_line);
@@ -235,7 +235,7 @@ index 51a109504c1c8f79ef8748641ef21efed3a9315d..7df5b345b7e6a2360c226e0aaf48bcdf
      return true;
    }
    return false;
-@@ -155,13 +188,14 @@ bool ProcessLaunchNotification(
+@@ -154,13 +187,14 @@ bool ProcessLaunchNotification(
  
    base::CommandLine parsed_command_line(base::CommandLine::NO_PROGRAM);
    base::FilePath current_directory;
@@ -253,7 +253,7 @@ index 51a109504c1c8f79ef8748641ef21efed3a9315d..7df5b345b7e6a2360c226e0aaf48bcdf
    return true;
  }
  
-@@ -267,9 +301,11 @@ bool ProcessSingleton::EscapeVirtualization(
+@@ -264,9 +298,11 @@ bool ProcessSingleton::EscapeVirtualization(
  ProcessSingleton::ProcessSingleton(
      const std::string& program_name,
      const base::FilePath& user_data_dir,
@@ -265,7 +265,7 @@ index 51a109504c1c8f79ef8748641ef21efed3a9315d..7df5b345b7e6a2360c226e0aaf48bcdf
        program_name_(program_name),
        is_app_sandboxed_(is_app_sandboxed),
        is_virtualized_(false),
-@@ -296,7 +332,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
+@@ -293,7 +329,7 @@ ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
      return PROCESS_NONE;
    }
  

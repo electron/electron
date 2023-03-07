@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5866d2f2fe04b6143a963ae58bf8f2a2614fe47c..3ab393ab54afc04c93ebb88a79c5b307a8016ecc 100644
+index cd62aecd572f867c836aec8580cd54d3fa5fb981..8ccb2179125c045c30e72d9de102fea70bcc9417 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1025,6 +1025,7 @@ component("base") {
@@ -43,7 +43,7 @@ index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 7f9176a723dbe87bfa89d6892fa93f9bebeb2bcf..4728583dc810cd565b33487f8c1f751627e30333 100644
+index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -68,10 +68,10 @@ index 74b30a0d050468ad1f450d86621308c090a699b5..a1f555b07519ad07441c0bca0c20ddd5
  
    if (is_android || use_ozone) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7c070ed1b76e18b05a28001297a10a916de2f816..0aab8262261997221b9245d2bb2ef3d61b2131d9 100644
+index 5648b47389a22845d37f4bdbc2287aadc4ecfed7..45bd73e24d2374348040b9ab846d1e362bb67bb8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -57,6 +57,7 @@ source_set("browser") {
+@@ -56,6 +56,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -80,7 +80,7 @@ index 7c070ed1b76e18b05a28001297a10a916de2f816..0aab8262261997221b9245d2bb2ef3d6
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 2a38c8929258489e4dbe43c0fd6dfc3a96c08cff..a894759d4b371af806b41d2a6ff5265fda2b4f7a 100644
+index 9b4c78c06f49ade480d956025e68cb7efac336db..0bf304daf0ea68ba7b086a92dd0e95ab8f377bbd 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -170,6 +170,7 @@ source_set("common") {
@@ -92,7 +92,7 @@ index 2a38c8929258489e4dbe43c0fd6dfc3a96c08cff..a894759d4b371af806b41d2a6ff5265f
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 35dabfa2379b846da6b1a79136db89195b6b2de2..83564a9bdbe24aa1648705bcfa660df834fbe4db 100644
+index 3ec54c242fb920a53fcaa6d8040f2ec88c2727df..27dee1596183d2ead5290a60c08e47e69e905d21 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -104,10 +104,10 @@ index 35dabfa2379b846da6b1a79136db89195b6b2de2..83564a9bdbe24aa1648705bcfa660df8
  
    public_deps = [
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index b434121d8f4ea51f880932eed7936a05b1e16dc6..25d778eb8afd5e2158e00eda81c5cd5644e4f0e0 100644
+index 832844a63a72788789e36a030c042d1ee17e4d1f..c58ad5686852563b7424f07dcde6b9798e7eb87c 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -249,6 +249,7 @@ component("bluetooth") {
+@@ -251,6 +251,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
@@ -140,7 +140,7 @@ index f1b4cd5055d00df425926e83a3b2e7f32af4c2e6..a80aaa7fde1fd9c70e7038aef4e322f1
  
    if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aaeea1a49a 100644
+index a8193d411da14f4ff0087fba81e63809832d1806..94c410b59ab7b40654fb214a6a9d828170fe2095 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -173,6 +173,8 @@ source_set("dns") {
@@ -181,7 +181,7 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d99aba7b8da009d5f98835ed48a4887e1862b34b..29708f497bc0084d0a1a96b887cdeb38c47d1a98 100644
+index c3d960bf0c7f76e54b2e43cf25c066df345db3ae..7133d697d01d35a47689345f5deecaa42286712f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -300,6 +300,7 @@ component("core") {
@@ -218,7 +218,7 @@ index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682c
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index cf70a8003d1547ff12c93c04a0b41a113ae6d903..ba7005e1440a3631a0c2c0a354c4799088700a5b 100644
+index f563f390a0bafc963aea88bdb29ad85cac60d14d..740bf400458ce9089bd18b83759fa46e22dc35e7 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -347,6 +347,7 @@ component("base") {
@@ -230,7 +230,7 @@ index cf70a8003d1547ff12c93c04a0b41a113ae6d903..ba7005e1440a3631a0c2c0a354c47990
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 4855e6bf6a9a9e9e572e99e7a018db7909d09f2e..6e5175a74bc0a41b02e3143d04429ea284c07f46 100644
+index 7bd65e6d61d0845cf3a557a43b377ee7894fd7d1..91a470467ddd5e2118a08b5b63f96e5e94c554bc 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -56,6 +56,10 @@ component("display") {
@@ -245,10 +245,10 @@ index 4855e6bf6a9a9e9e572e99e7a018db7909d09f2e..6e5175a74bc0a41b02e3143d04429ea2
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index b9ea2dc1321018f9ef821fc0dfa5165b255f244d..59bfe93d312312dc2a5d9e9fa16e1bca8762a064 100644
+index af0e7466f1a265c9d55ba81f3b2c9c68dafa7767..d991513ee82f4406f578a4751bf30fac1910c741 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -189,6 +189,7 @@ component("gfx") {
+@@ -193,6 +193,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]
@@ -257,7 +257,7 @@ index b9ea2dc1321018f9ef821fc0dfa5165b255f244d..59bfe93d312312dc2a5d9e9fa16e1bca
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index e981d829dea3cea5d1155b9c9409f2807554e6ae..b6d846f160e13147c2b54c38acc11236d3968804 100644
+index ce2250d2ab0d16034e4334f04ab035f19dc83697..f89fa55ef193d4c027a3fec44bce57580deaa561 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -670,6 +670,7 @@ component("views") {

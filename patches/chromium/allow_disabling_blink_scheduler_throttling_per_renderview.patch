@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 39bd6ef7be6ecb0f22692ace3c77845d76a59391..d51a7418fe874102f0458d1aedbca26e85669da6 100644
+index 462a6c201f4c79a2654a6717649551f74a57d1c7..0a3fb2966cab309e2a6a8364ed0ddfb011f4a1df 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -689,6 +689,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -22,7 +22,7 @@ index 39bd6ef7be6ecb0f22692ace3c77845d76a59391..d51a7418fe874102f0458d1aedbca26e
    return is_active();
  }
 diff --git a/content/browser/renderer_host/render_view_host_impl.h b/content/browser/renderer_host/render_view_host_impl.h
-index 574e1f33f7eb9302fc6b64efca23426676821afc..c8509989003da8ca3bbfd13c802f5bd8b81460e5 100644
+index 180abdc9f983887c83fd9d4a596472222e9ab472..00842717a7570561ee9e3eca11190ab5e1c76fb8 100644
 --- a/content/browser/renderer_host/render_view_host_impl.h
 +++ b/content/browser/renderer_host/render_view_host_impl.h
 @@ -136,6 +136,7 @@ class CONTENT_EXPORT RenderViewHostImpl
@@ -48,10 +48,10 @@ index 9979c25ecd57e68331b628a518368635db5c2027..32733bf951af3eff7da5fd5758bbcbaa
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
-index 4f543309beff68f67ca310a968b6c0efefdf28cb..e1f132606d2b8c478207b13fdd1464347486cc0b 100644
+index d18c66114870de83c7eef21578e9e2b8d5606a8b..e1defb3992289427df85963f44a705e3d9257342 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
 +++ b/third_party/blink/public/mojom/page/page.mojom
-@@ -141,4 +141,7 @@ interface PageBroadcast {
+@@ -149,4 +149,7 @@ interface PageBroadcast {
      mojo_base.mojom.UnguessableToken devtools_frame_token,
      RemoteFrameInterfacesFromBrowser remote_frame_interfaces,
      RemoteMainFrameInterfaces remote_main_frame_interfaces);
@@ -72,10 +72,10 @@ index c8655d9270b812df04f27025ff29a2fb6d2a4066..2f83e5ce40f8217ff5d53f7205299ad7
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 823d6d2ab3772c29b75e60794862a4e02fc62495..0dd3a74473fc73a75b7bb3dfe8a10844ebc34079 100644
+index f40d632e9cacb4c5b722aa9163995e52bcb8546e..f299f1103edfd5f53cfc8bafff1dcb907cbd5437 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3875,13 +3875,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -3889,13 +3889,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  

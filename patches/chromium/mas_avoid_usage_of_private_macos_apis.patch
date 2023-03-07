@@ -39,7 +39,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593e14fb701 100644
+index d6f794edb5767e4c2986c93251f41af778f4c767..40739896b38b326d69643b5fa92c06abfc3303b0 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@
@@ -65,7 +65,7 @@ index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593
    return ns_val;
  }
  
-@@ -387,9 +380,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -389,9 +382,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  
@@ -76,10 +76,10 @@ index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c479b8f03 100644
+index a6e71128fb047fcaf476f4846baeb48e1330c3e9..638e244b66e57d18d32e6a66cce2282a42569806 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -19,14 +19,19 @@
+@@ -20,14 +20,19 @@
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/base_tracing.h"
@@ -99,7 +99,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -95,13 +100,27 @@ class PosixSpawnFileActions {
+@@ -96,13 +101,27 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -127,7 +127,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
  }
  
  struct GetAppOutputOptions {
-@@ -221,11 +240,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -222,11 +241,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
@@ -142,7 +142,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
    std::vector<char*> argv_cstr;
    argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 5d90f7b2d46105d2626471bd812d5a45a04a945b..354b94225efab5b65b4f3874631bf8001ab58ce2 100644
+index 27ddd89cdbbbb55d7784e6f3937bcf0c7034d2ba..2367e275a86a64b9e3a3cb23b3f19b828407a512 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@

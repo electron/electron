@@ -42,7 +42,7 @@ index ad5b92f58eacf71c854a4559df44cf12cd59becf..beafe321328aabf6751508b3a5a75662
  
      auto file_data = std::make_unique<ChildProcessLauncherFileData>();
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
-index 83f3f0d60d9832112f50fbd4ef9fff98ef09d7c4..3ab11ff1a934192d439db7d2102248fa73b47183 100644
+index ef00d5539e5b859d23c6d137c179a88c7c41fd4c..aa2372ec406bdbd9b1b9a672784ca2df704892ff 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.cc
 @@ -33,6 +33,9 @@ namespace content {
@@ -55,7 +55,7 @@ index 83f3f0d60d9832112f50fbd4ef9fff98ef09d7c4..3ab11ff1a934192d439db7d2102248fa
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();
    base::CommandLine::StringType renderer_prefix =
-@@ -62,6 +65,9 @@ RendererSandboxedProcessLauncherDelegateWin::
+@@ -63,6 +66,9 @@ RendererSandboxedProcessLauncherDelegateWin::
            GetContentClient()->browser()->IsRendererCodeIntegrityEnabled()),
        renderer_app_container_disabled_(
            GetContentClient()->browser()->IsRendererAppContainerDisabled()) {

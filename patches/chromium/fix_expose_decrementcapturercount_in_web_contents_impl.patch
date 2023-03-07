@@ -8,10 +8,10 @@ we invoke it in order to expose contents.decrementCapturerCount([stayHidden, sta
 to users. We should try to upstream this.
 
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index 430f82529d7c0c927fff89b5f09492a28896cbbf..d38b1e3a89278d1c7998b5fb0d2b12a299434dae 100644
+index 1cee21e45f577a4d3d07ade888c6c5f4d3086213..a91c4e9a3bbdda073be73324a0cdd21f37dad460 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -1862,7 +1862,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -1866,7 +1866,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    // IncrementCapturerCount() is destructed.
    void DecrementCapturerCount(bool stay_hidden,
                                bool stay_awake,
@@ -21,10 +21,10 @@ index 430f82529d7c0c927fff89b5f09492a28896cbbf..d38b1e3a89278d1c7998b5fb0d2b12a2
    // Calculates the PageVisibilityState for |visibility|, taking the capturing
    // state into account.
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 2a2a077740932bfda48e81db8f86fc867b2885fe..8d0bae8430fd1de72c28ad23cb182180b5227816 100644
+index ac139f0d0b01f92b03c188f4506c87c5e3f4b267..25467d7df67cc2ef15dbb35b3bcc996b79be0f3f 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
-@@ -702,6 +702,10 @@ class WebContents : public PageNavigator,
+@@ -703,6 +703,10 @@ class WebContents : public PageNavigator,
        bool stay_awake,
        bool is_activity = true) = 0;
  
