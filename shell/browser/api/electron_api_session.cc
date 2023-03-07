@@ -876,9 +876,10 @@ v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
 
 v8::Local<v8::Value> Session::GetAllExtensions() {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
-  auto installed_extensions = registry->GenerateInstalledExtensionsSet();
+  const extensions::ExtensionSet extensions =
+      registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
-  for (const auto& extension : *installed_extensions) {
+  for (const auto& extension : extensions) {
     if (extension->location() !=
         extensions::mojom::ManifestLocation::kComponent)
       extensions_vector.emplace_back(extension.get());
