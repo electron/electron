@@ -16,7 +16,7 @@ Linux or Windows to un-fullscreen in some circumstances without this
 change.
 
 diff --git a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
-index 0255e13e061293cd57de670b6a817b3e822dd8c5..e72c644e0adb9b447d60021d0e511479f0479c0d 100644
+index c9d65125cee23ed0545608d6acde964f786d1b70..f6a2e6c7a182935a3b71d14ce8bcbcf28b9aaee7 100644
 --- a/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 +++ b/chrome/browser/ui/exclusive_access/fullscreen_controller.cc
 @@ -16,12 +16,16 @@
@@ -34,8 +34,8 @@ index 0255e13e061293cd57de670b6a817b3e822dd8c5..e72c644e0adb9b447d60021d0e511479
  #include "chrome/browser/ui/tabs/tab_strip_model.h"
 +#endif
  #include "chrome/common/chrome_switches.h"
+ #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/navigation_details.h"
- #include "content/public/browser/navigation_entry.h"
 @@ -179,10 +183,12 @@ void FullscreenController::EnterFullscreenModeForTab(
      return;
    }
