@@ -946,8 +946,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
   url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkAnonymizationKey(net::SchemefulSite(origin),
-                                    net::SchemefulSite(origin))}};
+       net::NetworkAnonymizationKey::CreateSameSite(
+           net::SchemefulSite(origin))}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 
