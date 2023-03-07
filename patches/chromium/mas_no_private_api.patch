@@ -104,7 +104,7 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..752b575cf341546bdcc46e6dfff28fe4
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..1a353f94f857513eb0cc88784a7b28df07aa4786 100644
+index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..a4c2867b4bb6c2c2dcd6565873ccccd940712449 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -37,6 +37,7 @@
@@ -134,7 +134,7 @@ index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..1a353f94f857513eb0cc88784a7b28df
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        device_paired_status_callback_(
-@@ -249,8 +253,11 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -249,8 +253,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -143,6 +143,7 @@ index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..1a353f94f857513eb0cc88784a7b28df
    return true;
 +#else
 +  return false;
++#endif
  }
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
