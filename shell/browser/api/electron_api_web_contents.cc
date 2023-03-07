@@ -1507,7 +1507,14 @@ content::JavaScriptDialogManager* WebContents::GetJavaScriptDialogManager(
 }
 
 void WebContents::OnAudioStateChanged(bool audible) {
-  Emit("-audio-state-changed", audible);
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+  gin::Handle<gin_helper::internal::Event> event =
+      gin_helper::internal::Event::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+  gin::Dictionary dict(isolate, event_object);
+  dict.Set("audible", audible);
+  EmitWithoutEvent("audio-state-changed", event);
 }
 
 void WebContents::BeforeUnloadFired(bool proceed,
@@ -1857,22 +1864,23 @@ class ReplyChannel : public gin::Wrappable<ReplyChannel> {
   }
   const char* GetTypeName() override { return "ReplyChannel"; }
 
+  void SendError(const std::string& msg) {
+    v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
+    // If there's no current context, it means we're shutting down, so we
+    // don't need to send an event.
+    if (!isolate->GetCurrentContext().IsEmpty()) {
+      v8::HandleScope scope(isolate);
+      auto message = gin::DataObjectBuilder(isolate).Set("error", msg).Build();
+      SendReply(isolate, message);
+    }
+  }
+
  private:
   explicit ReplyChannel(InvokeCallback callback)
       : callback_(std::move(callback)) {}
   ~ReplyChannel() override {
-    if (callback_) {
-      v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
-      // If there's no current context, it means we're shutting down, so we
-      // don't need to send an event.
-      if (!isolate->GetCurrentContext().IsEmpty()) {
-        v8::HandleScope scope(isolate);
-        auto message = gin::DataObjectBuilder(isolate)
-                           .Set("error", "reply was never sent")
-                           .Build();
-        SendReply(isolate, message);
-      }
-    }
+    if (callback_)
+      SendError("reply was never sent");
   }
 
   bool SendReply(v8::Isolate* isolate, v8::Local<v8::Value> arg) {
@@ -1897,8 +1905,14 @@ gin::Handle<gin_helper::internal::Event> WebContents::MakeEventWithSender(
     content::RenderFrameHost* frame,
     electron::mojom::ElectronApiIPC::InvokeCallback callback) {
   v8::Local<v8::Object> wrapper;
-  if (!GetWrapper(isolate).ToLocal(&wrapper))
+  if (!GetWrapper(isolate).ToLocal(&wrapper)) {
+    if (callback) {
+      // We must always invoke the callback if present.
+      ReplyChannel::Create(isolate, std::move(callback))
+          ->SendError("WebContents was destroyed");
+    }
     return gin::Handle<gin_helper::internal::Event>();
+  }
   gin::Handle<gin_helper::internal::Event> event =
       gin_helper::internal::Event::New(isolate);
   gin_helper::Dictionary dict(isolate, event.ToV8().As<v8::Object>());

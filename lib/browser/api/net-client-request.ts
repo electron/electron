@@ -10,7 +10,7 @@ const {
 } = process._linkedBinding('electron_browser_net');
 const { Session } = process._linkedBinding('electron_browser_session');
 
-const kSupportedProtocols = new Set(['http:', 'https:']);
+const kHttpProtocols = new Set(['http:', 'https:']);
 
 // set of headers that Node.js discards duplicates for
 // see https://nodejs.org/api/http.html#http_message_headers
@@ -195,7 +195,20 @@ class ChunkedBodyStream extends Writable {
 
 type RedirectPolicy = 'manual' | 'follow' | 'error';
 
-function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & { redirectPolicy: RedirectPolicy, headers: Record<string, { name: string, value: string | string[] }> } {
+const kAllowNonHttpProtocols = Symbol('kAllowNonHttpProtocols');
+export function allowAnyProtocol (opts: ClientRequestConstructorOptions): ClientRequestConstructorOptions {
+  return {
+    ...opts,
+    [kAllowNonHttpProtocols]: true
+  } as any;
+}
+
+type ExtraURLLoaderOptions = {
+   redirectPolicy: RedirectPolicy;
+   headers: Record<string, { name: string, value: string | string[] }>;
+   allowNonHttpProtocols: boolean;
+}
+function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & ExtraURLLoaderOptions {
   const options: any = typeof optionsIn === 'string' ? url.parse(optionsIn) : { ...optionsIn };
 
   let urlStr: string = options.url;
@@ -203,9 +216,6 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
   if (!urlStr) {
     const urlObj: url.UrlObject = {};
     const protocol = options.protocol || 'http:';
-    if (!kSupportedProtocols.has(protocol)) {
-      throw new Error('Protocol "' + protocol + '" not supported');
-    }
     urlObj.protocol = protocol;
 
     if (options.host) {
@@ -247,7 +257,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     throw new TypeError('headers must be an object');
   }
 
-  const urlLoaderOptions: NodeJS.CreateURLLoaderOptions & { redirectPolicy: RedirectPolicy, headers: Record<string, { name: string, value: string | string[] }> } = {
+  const urlLoaderOptions: NodeJS.CreateURLLoaderOptions & { redirectPolicy: RedirectPolicy, headers: Record<string, { name: string, value: string | string[] }>, allowNonHttpProtocols: boolean } = {
     method: (options.method || 'GET').toUpperCase(),
     url: urlStr,
     redirectPolicy,
@@ -257,7 +267,8 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     credentials: options.credentials,
     origin: options.origin,
     referrerPolicy: options.referrerPolicy,
-    cache: options.cache
+    cache: options.cache,
+    allowNonHttpProtocols: Object.prototype.hasOwnProperty.call(options, kAllowNonHttpProtocols)
   };
   const headers: Record<string, string | string[]> = options.headers || {};
   for (const [name, value] of Object.entries(headers)) {
@@ -308,6 +319,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
     }
 
     const { redirectPolicy, ...urlLoaderOptions } = parseOptions(options);
+    const urlObj = new URL(urlLoaderOptions.url);
+    if (!urlLoaderOptions.allowNonHttpProtocols && !kHttpProtocols.has(urlObj.protocol)) {
+      throw new Error('ClientRequest only supports http: and https: protocols');
+    }
     if (urlLoaderOptions.credentials === 'same-origin' && !urlLoaderOptions.origin) { throw new Error('credentials: same-origin requires origin to be set'); }
     this._urlLoaderOptions = urlLoaderOptions;
     this._redirectPolicy = redirectPolicy;

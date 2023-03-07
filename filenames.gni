@@ -175,8 +175,6 @@ filenames = {
     "shell/browser/ui/cocoa/electron_touch_bar.mm",
     "shell/browser/ui/cocoa/event_dispatching_window.h",
     "shell/browser/ui/cocoa/event_dispatching_window.mm",
-    "shell/browser/ui/cocoa/NSColor+Hex.h",
-    "shell/browser/ui/cocoa/NSColor+Hex.mm",
     "shell/browser/ui/cocoa/NSString+ANSI.h",
     "shell/browser/ui/cocoa/NSString+ANSI.mm",
     "shell/browser/ui/cocoa/root_view_mac.h",

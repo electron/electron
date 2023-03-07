@@ -212,8 +212,11 @@ void Browser::ShowAboutPanel() {
     }
   }
 
-  gtk_dialog_run(GTK_DIALOG(dialog));
-  gtk_widget_destroy(dialogWidget);
+  // destroy the widget when it closes
+  g_signal_connect_swapped(dialogWidget, "response",
+                           G_CALLBACK(gtk_widget_destroy), dialogWidget);
+
+  gtk_widget_show_all(dialogWidget);
 }
 
 void Browser::SetAboutPanelOptions(base::Value::Dict options) {

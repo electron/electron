@@ -1,8 +1,9 @@
 import { expect } from 'chai';
 import * as dns from 'dns';
-import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions } from 'electron/main';
+import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions, protocol } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
+import * as path from 'path';
 import { Socket } from 'net';
 import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
@@ -163,9 +164,9 @@ describe('net module', () => {
 
     it('should post the correct data in a POST request', async () => {
       const bodyData = 'Hello World!';
+      let postedBodyData: string = '';
       const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
-        const postedBodyData = await collectStreamBody(request);
-        expect(postedBodyData).to.equal(bodyData);
+        postedBodyData = await collectStreamBody(request);
         response.end();
       });
       const urlRequest = net.request({
@@ -175,16 +176,72 @@ describe('net module', () => {
       urlRequest.write(bodyData);
       const response = await getResponse(urlRequest);
       expect(response.statusCode).to.equal(200);
+      expect(postedBodyData).to.equal(bodyData);
+    });
+
+    it('a 307 redirected POST request preserves the body', async () => {
+      const bodyData = 'Hello World!';
+      let postedBodyData: string = '';
+      let methodAfterRedirect: string | undefined;
+      const serverUrl = await respondNTimes.toRoutes({
+        '/redirect': (req, res) => {
+          res.statusCode = 307;
+          res.setHeader('location', serverUrl);
+          return res.end();
+        },
+        '/': async (req, res) => {
+          methodAfterRedirect = req.method;
+          postedBodyData = await collectStreamBody(req);
+          res.end();
+        }
+      }, 2);
+      const urlRequest = net.request({
+        method: 'POST',
+        url: serverUrl + '/redirect'
+      });
+      urlRequest.write(bodyData);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+      expect(methodAfterRedirect).to.equal('POST');
+      expect(postedBodyData).to.equal(bodyData);
+    });
+
+    it('a 302 redirected POST request DOES NOT preserve the body', async () => {
+      const bodyData = 'Hello World!';
+      let postedBodyData: string = '';
+      let methodAfterRedirect: string | undefined;
+      const serverUrl = await respondNTimes.toRoutes({
+        '/redirect': (req, res) => {
+          res.statusCode = 302;
+          res.setHeader('location', serverUrl);
+          return res.end();
+        },
+        '/': async (req, res) => {
+          methodAfterRedirect = req.method;
+          postedBodyData = await collectStreamBody(req);
+          res.end();
+        }
+      }, 2);
+      const urlRequest = net.request({
+        method: 'POST',
+        url: serverUrl + '/redirect'
+      });
+      urlRequest.write(bodyData);
+      const response = await getResponse(urlRequest);
+      expect(response.statusCode).to.equal(200);
+      await collectStreamBody(response);
+      expect(methodAfterRedirect).to.equal('GET');
+      expect(postedBodyData).to.equal('');
     });
 
     it('should support chunked encoding', async () => {
+      let receivedRequest: http.IncomingMessage = null as any;
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200;
         response.statusMessage = 'OK';
         response.chunkedEncoding = true;
-        expect(request.method).to.equal('POST');
-        expect(request.headers['transfer-encoding']).to.equal('chunked');
-        expect(request.headers['content-length']).to.equal(undefined);
+        receivedRequest = request;
         request.on('data', (chunk: Buffer) => {
           response.write(chunk);
         });
@@ -210,6 +267,9 @@ describe('net module', () => {
       }
 
       const response = await getResponse(urlRequest);
+      expect(receivedRequest.method).to.equal('POST');
+      expect(receivedRequest.headers['transfer-encoding']).to.equal('chunked');
+      expect(receivedRequest.headers['content-length']).to.equal(undefined);
       expect(response.statusCode).to.equal(200);
       const received = await collectStreamBodyBuffer(response);
       expect(sent.equals(received)).to.be.true();
@@ -1446,6 +1506,9 @@ describe('net module', () => {
       urlRequest.end();
       urlRequest.on('redirect', () => { urlRequest.abort(); });
       urlRequest.on('error', () => {});
+      urlRequest.on('response', () => {
+        expect.fail('Unexpected response');
+      });
       await once(urlRequest, 'abort');
     });
 
@@ -2078,6 +2141,20 @@ describe('net module', () => {
     });
   });
 
+  describe('non-http schemes', () => {
+    it('should be rejected by net.request', async () => {
+      expect(() => {
+        net.request('file://bar');
+      }).to.throw('ClientRequest only supports http: and https: protocols');
+    });
+
+    it('should be rejected by net.request when passed in url:', async () => {
+      expect(() => {
+        net.request({ url: 'file://bar' });
+      }).to.throw('ClientRequest only supports http: and https: protocols');
+    });
+  });
+
   describe('net.fetch', () => {
     // NB. there exist much more comprehensive tests for fetch() in the form of
     // the WPT: https://github.com/web-platform-tests/wpt/tree/master/fetch
@@ -2166,6 +2243,84 @@ describe('net module', () => {
         expect(r.status).to.equal(200);
         await expect(r.text()).to.be.rejectedWith(/ERR_INCOMPLETE_CHUNKED_ENCODING/);
       });
+    });
+
+    it('can request file:// URLs', async () => {
+      const resp = await net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
+      expect(resp.ok).to.be.true();
+      // trimRight instead of asserting the whole string to avoid line ending shenanigans on WOA
+      expect((await resp.text()).trimRight()).to.equal('hello world');
+    });
+
+    it('can make requests to custom protocols', async () => {
+      protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.unregisterProtocol('electron-test');
+      });
+      const body = await net.fetch('electron-test://foo').then(r => r.text());
+      expect(body).to.equal('hello electron-test://foo');
+    });
+
+    it('runs through intercept handlers', async () => {
+      protocol.interceptStringProtocol('http', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.uninterceptProtocol('http');
+      });
+      const body = await net.fetch('http://foo').then(r => r.text());
+      expect(body).to.equal('hello http://foo/');
+    });
+
+    it('file: runs through intercept handlers', async () => {
+      protocol.interceptStringProtocol('file', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.uninterceptProtocol('file');
+      });
+      const body = await net.fetch('file://foo').then(r => r.text());
+      expect(body).to.equal('hello file://foo/');
+    });
+
+    it('can be redirected', async () => {
+      protocol.interceptStringProtocol('file', (req, cb) => { cb({ statusCode: 302, headers: { location: 'electron-test://bar' } }); });
+      defer(() => {
+        protocol.uninterceptProtocol('file');
+      });
+      protocol.registerStringProtocol('electron-test', (req, cb) => { cb('hello ' + req.url); });
+      defer(() => {
+        protocol.unregisterProtocol('electron-test');
+      });
+      const body = await net.fetch('file://foo').then(r => r.text());
+      expect(body).to.equal('hello electron-test://bar');
+    });
+
+    it('should not follow redirect when redirect: error', async () => {
+      protocol.registerStringProtocol('electron-test', (req, cb) => {
+        if (/redirect/.test(req.url)) return cb({ statusCode: 302, headers: { location: 'electron-test://bar' } });
+        cb('hello ' + req.url);
+      });
+      defer(() => {
+        protocol.unregisterProtocol('electron-test');
+      });
+      await expect(net.fetch('electron-test://redirect', { redirect: 'error' })).to.eventually.be.rejectedWith('Attempted to redirect, but redirect policy was \'error\'');
+    });
+
+    it('a 307 redirected POST request preserves the body', async () => {
+      const bodyData = 'Hello World!';
+      let postedBodyData: any;
+      protocol.registerStringProtocol('electron-test', async (req, cb) => {
+        if (/redirect/.test(req.url)) return cb({ statusCode: 307, headers: { location: 'electron-test://bar' } });
+        postedBodyData = req.uploadData![0].bytes.toString();
+        cb('hello ' + req.url);
+      });
+      defer(() => {
+        protocol.unregisterProtocol('electron-test');
+      });
+      const response = await net.fetch('electron-test://redirect', {
+        method: 'POST',
+        body: bodyData
+      });
+      expect(response.status).to.equal(200);
+      await response.text();
+      expect(postedBodyData).to.equal(bodyData);
     });
   });
 });
