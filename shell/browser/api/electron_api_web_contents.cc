@@ -3851,8 +3851,8 @@ void WebContents::DevToolsIndexPath(
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
   std::vector<std::string> excluded_folders;
-  std::unique_ptr<base::Value> parsed_excluded_folders =
-      base::JSONReader::ReadDeprecated(excluded_folders_message);
+  absl::optional<base::Value> parsed_excluded_folders =
+      base::JSONReader::Read(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
       if (folder_path.is_string())
