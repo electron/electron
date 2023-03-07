@@ -8,12 +8,12 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index b842aea32366182edd993f7de9ebad8612f29dd6..fbadeec8d06bf69e872d261447efd52ab770e6e5 100644
+index f1d5af4fc31b8a3ce361777c42db835033b733b5..d78e2b376682b2f91170015427db776c41356624 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -21,6 +21,7 @@
- #include "third_party/blink/public/common/page/drag_operation.h"
+@@ -22,6 +22,7 @@
  #include "third_party/blink/public/mojom/frame/lifecycle.mojom.h"
+ #include "third_party/blink/public/mojom/input/input_handler.mojom-shared.h"
  #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 +#include "ui/base/cursor/cursor.h"
  #include "ui/gfx/native_widget_types.h"
