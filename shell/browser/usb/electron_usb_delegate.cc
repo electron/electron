@@ -153,9 +153,9 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
     content::RenderFrameHost* frame,
     std::vector<uint8_t>& classes) {
   // Isolated Apps have unrestricted access to any USB interface class.
-  if (frame && frame->GetWebExposedIsolationLevel() >=
-                   content::RenderFrameHost::WebExposedIsolationLevel::
-                       kMaybeIsolatedApplication) {
+  if (frame &&
+      frame->GetWebExposedIsolationLevel() >=
+          content::WebExposedIsolationLevel::kMaybeIsolatedApplication) {
     // TODO(https://crbug.com/1236706): Should the list of interface classes the
     // app expects to claim be encoded in the Web App Manifest?
     classes.clear();
