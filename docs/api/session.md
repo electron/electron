@@ -880,8 +880,9 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
         currently only supported on Windows. If a WebFrameMain is specified,
         will capture audio from that frame.
       * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
-         and if this is set to `false`, then prevents input from being echoed in the local output
-         stream (e.g., speaker). Defaults to `false`.
+         and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
+         to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
+         while recording). Default is `false`.
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the
