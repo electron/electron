@@ -9,10 +9,9 @@ Desktop Capturer behaves inconsistently on Wayland. PipeWire does not
 always successfully start; if it does not, we return a nullptr rather
 than falling back on the X11 capturer, crashing the application.
 
-In addition to this patch, we should also more gracefully handle the
-nullptr return to avoid a hard crash. However, at minimum, we should
-try to fallback to X11 for desktop capturer, rather than just defaulting
-to nullptr.
+If the X11 capturer is enabled, we should at minimum try to fallback
+to X11 for desktop capturer. This patch re-enables that fallback,
+which was previously default behavior.
 
 This patch can be removed when 1) this fix is upstreamed, or 2) the
 stability of PipeWire initialization is improved upstream.
