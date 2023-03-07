@@ -173,6 +173,32 @@ index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf
  };
  
  }  // namespace gtk
+diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
+index ee3e7b96eba0ade61e229aea05f5417e7822a5f5..b393cc2fbc039afa062a8b3ab880c7ff9db8b681 100644
+--- a/ui/linux/fallback_linux_ui.cc
++++ b/ui/linux/fallback_linux_ui.cc
+@@ -134,7 +134,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
+ }
+ 
+ ui::WindowFrameProvider* FallbackLinuxUi::GetWindowFrameProvider(
+-    bool solid_frame) {
++    bool solid_frame, bool maximized) {
+   return nullptr;
+ }
+ 
+diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
+index d5b12df3f4e32aef6d974986ceeb666edecc4e11..e836f661a17f2e9916685d497ee5f487c4000661 100644
+--- a/ui/linux/fallback_linux_ui.h
++++ b/ui/linux/fallback_linux_ui.h
+@@ -67,7 +67,7 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
+   void GetInactiveSelectionFgColor(SkColor* color) const override;
+   bool PreferDarkTheme() const override;
+   std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
+-  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame) override;
++  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame, bool maximized) override;
+ 
+  private:
+   std::string default_font_family_;
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
 index 82d40cb5fa1b9ad54e43502793a7d1d3e94e2ebb..6f6296c4f8334e59e1522abe291d65bb508f9541 100644
 --- a/ui/linux/linux_ui.h
