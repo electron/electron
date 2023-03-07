@@ -22,13 +22,13 @@ However, the patch would need to be reviewed by the security team, as it
 does touch a security-sensitive class.
 
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 90ac14a3f4b1d61d613eb0e9033ed74b3d6667e7..70b267942974b420856f78c899e0e44f780ee75b 100644
+index ad5b92f58eacf71c854a4559df44cf12cd59becf..beafe321328aabf6751508b3a5a756626b3670e8 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -1800,9 +1800,15 @@ bool RenderProcessHostImpl::Init() {
+@@ -1798,9 +1798,15 @@ bool RenderProcessHostImpl::Init() {
      std::unique_ptr<SandboxedProcessLauncherDelegate> sandbox_delegate =
          std::make_unique<RendererSandboxedProcessLauncherDelegateWin>(
-             cmd_line.get(), IsJitDisabled());
+             *cmd_line, IsJitDisabled());
 +#else
 +#if BUILDFLAG(USE_ZYGOTE)
 +    bool use_zygote = !cmd_line->HasSwitch(switches::kNoZygote);
@@ -66,7 +66,7 @@ index 83f3f0d60d9832112f50fbd4ef9fff98ef09d7c4..3ab11ff1a934192d439db7d2102248fa
      dynamic_code_can_be_disabled_ = true;
      return;
 diff --git a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
-index 8f6531e5aa2ce7f9faf4c6b24652366fe74941b1..9377b8aefbf3c67ce6a24f0804e913069c0594d2 100644
+index bd21850f7c700c537445cb6541446b2e9793750e..0d86702e124014b518382500c6ce1dac1a9a5276 100644
 --- a/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 +++ b/content/browser/renderer_host/renderer_sandboxed_process_launcher_delegate.h
 @@ -18,6 +18,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
@@ -81,9 +81,9 @@ index 8f6531e5aa2ce7f9faf4c6b24652366fe74941b1..9377b8aefbf3c67ce6a24f0804e91306
    ~RendererSandboxedProcessLauncherDelegate() override = default;
  
  #if BUILDFLAG(USE_ZYGOTE)
-@@ -29,6 +34,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
- #endif  // BUILDFLAG(IS_MAC)
+@@ -30,6 +35,11 @@ class CONTENT_EXPORT RendererSandboxedProcessLauncherDelegate
  
+   // sandbox::policy::SandboxDelegate:
    sandbox::mojom::Sandbox GetSandboxType() override;
 +
 + private:
