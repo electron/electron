@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Date: Fri, 10 Feb 2023 17:36:57 +0000
+Subject: CHECK that YUV readback finished synchronously
+
+DoReadbackYUVImagePixelsINTERNAL is implemented using skia asynchronous
+readback and to make it synchronous we use sync cpu and gpu. In some
+edge cases on linux we saw that doesn't happen if readback triggered
+vulkan device lost.
+
+To avoid use after free, CHECK that callback was actually called. In
+case of device-lost gpu process will restart anyway, so while this is
+not proper fix of the problem, it doesn't result in worse user visible
+behaviour.
+
+(cherry picked from commit 081df1e7d3712131bcaa575bda2e37ec7f6aa83d)
+
+Bug: 1399742
+Change-Id: Ie2172539bb907b9696ef62c70d398aca3967177c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4143606
+Reviewed-by: Peng Huang <penghuang@chromium.org>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1093064}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4239960
+Cr-Commit-Position: refs/branch-heads/5481@{#1084}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/gpu/command_buffer/service/raster_decoder.cc b/gpu/command_buffer/service/raster_decoder.cc
+index d2ac0ac70902d68b95417d2a95da153a7fc38128..ef79b5cbcc83d5ed12a9627ce76692476ace10a0 100644
+--- a/gpu/command_buffer/service/raster_decoder.cc
++++ b/gpu/command_buffer/service/raster_decoder.cc
+@@ -2485,6 +2485,7 @@ void RasterDecoderImpl::DoReadbackARGBImagePixelsINTERNAL(
+ namespace {
+ struct YUVReadbackResult {
+   std::unique_ptr<const SkImage::AsyncReadResult> async_result;
++  bool finished = false;
+ };
+ 
+ void OnReadYUVImagePixelsDone(
+@@ -2492,6 +2493,7 @@ void OnReadYUVImagePixelsDone(
+     std::unique_ptr<const SkImage::AsyncReadResult> async_result) {
+   YUVReadbackResult* context = reinterpret_cast<YUVReadbackResult*>(raw_ctx);
+   context->async_result = std::move(async_result);
++  context->finished = true;
+ }
+ }  // namespace
+ 
+@@ -2689,6 +2691,10 @@ void RasterDecoderImpl::DoReadbackYUVImagePixelsINTERNAL(
+   // asynchronous by removing this flush and implementing a query that can
+   // signal back to client process.
+   gr_context()->flushAndSubmit(true);
++
++  // The call above will sync up gpu and CPU, resulting in callback being run
++  // during flushAndSubmit. To prevent UAF make sure it indeed happened.
++  CHECK(yuv_result.finished);
+   if (!yuv_result.async_result) {
+     LOCAL_SET_GL_ERROR(GL_INVALID_OPERATION, "glReadbackYUVImagePixels",
+                        "Failed to read pixels from SkImage");
