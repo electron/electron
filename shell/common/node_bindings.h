@@ -124,6 +124,8 @@ class NodeBindings {
   NodeBindings(const NodeBindings&) = delete;
   NodeBindings& operator=(const NodeBindings&) = delete;
 
+  void JoinAppCode();
+
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
 
@@ -138,6 +140,8 @@ class NodeBindings {
 
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
+
+  void SetAppCodeLoaded();
 
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
@@ -154,6 +158,10 @@ class NodeBindings {
 
   // Indicates whether polling thread has been created.
   bool initialized_ = false;
+
+  // Indicates whether the app code has finished loading
+  // for ESM this is async after the module is loaded
+  bool app_code_loaded_ = false;
 
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;

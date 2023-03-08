@@ -248,9 +248,9 @@ if (option.file && !option.webdriver) {
   const protocol = url.parse(file).protocol;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
-    loadApplicationByURL(file);
+    await loadApplicationByURL(file);
   } else if (extension === '.html' || extension === '.htm') {
-    loadApplicationByFile(path.resolve(file));
+    await loadApplicationByFile(path.resolve(file));
   } else {
     loadApplicationPackage(file);
   }
@@ -284,5 +284,5 @@ Options:
     console.log(welcomeMessage);
   }
 
-  loadApplicationByFile('index.html');
+  await loadApplicationByFile('index.html');
 }

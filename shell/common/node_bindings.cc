@@ -29,6 +29,7 @@
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/electron_command_line.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
@@ -632,6 +633,12 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
+  if (browser_env_ == BrowserEnvironment::kBrowser) {
+    process.SetMethod("appCodeLoaded",
+                      base::BindRepeating(&NodeBindings::SetAppCodeLoaded,
+                                          base::Unretained(this)));
+  }
+
   return env;
 }
 
@@ -687,6 +694,35 @@ void NodeBindings::StartPolling() {
 
   // Run uv loop for once to give the uv__io_poll a chance to add all events.
   UvRunOnce();
+}
+
+void NodeBindings::SetAppCodeLoaded() {
+  app_code_loaded_ = true;
+}
+
+void NodeBindings::JoinAppCode() {
+  // We can only "join" app code to the main thread in the browser process
+  if (browser_env_ != BrowserEnvironment::kBrowser) {
+    return;
+  }
+
+  auto* browser = Browser::Get();
+  node::Environment* env = uv_env();
+
+  if (!env)
+    return;
+
+  v8::HandleScope handle_scope(env->isolate());
+  // Enter node context while dealing with uv events.
+  v8::Context::Scope context_scope(env->context());
+
+  // Pump the event loop until we get the signal that the app code has finished
+  // loading
+  while (!app_code_loaded_ && !browser->is_shutting_down()) {
+    int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
+    if (r == 0)
+      base::RunLoop().QuitWhenIdle();  // Quit from uv.
+  }
 }
 
 void NodeBindings::UvRunOnce() {

@@ -254,6 +254,8 @@ declare namespace NodeJS {
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;
+
+    appCodeLoaded?: () => void;
   }
 }
 

@@ -293,6 +293,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   // Load everything.
   node_bindings_->LoadEnvironment(env);
 
+  // Wait for app
+  node_bindings_->JoinAppCode();
+
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
   // switches at that point. Lets reinitialize it here to pick up the
