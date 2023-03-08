@@ -1,5 +1,4 @@
 const {app, BrowserWindow} = require('electron')
-const e = require('express')
 const path = require('path')
 
 function createWindow () {
@@ -43,7 +42,6 @@ function createWindow () {
       return true
     }
   })
-
 
   mainWindow.webContents.session.setDevicePermissionHandler((details) => {
     if (details.deviceType === 'usb' && details.origin === 'file://') {

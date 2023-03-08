@@ -768,6 +768,10 @@ Limitations:
 * The `.type` and `.url` values of the returned `Response` object are
   incorrect.
 
+Requests made with `ses.fetch` can be made to [custom protocols](protocol.md)
+as well as `file:`, and will trigger [webRequest](web-request.md) handlers if
+present.
+
 #### `ses.disableNetworkEmulation()`
 
 Disables any network emulation already active for the `session`. Resets to
@@ -916,6 +920,10 @@ session.fromPartition('some-partition').setPermissionCheckHandler((webContents, 
         Specifying a loopback device will capture system audio, and is
         currently only supported on Windows. If a WebFrameMain is specified,
         will capture audio from that frame.
+      * `enableLocalEcho` Boolean (optional) - If `audio` is a [WebFrameMain](web-frame-main.md)
+         and this is set to `true`, then local playback of audio will not be muted (e.g. using `MediaRecorder`
+         to record `WebFrameMain` with this flag set to `true` will allow audio to pass through to the speakers
+         while recording). Default is `false`.
 
 This handler will be called when web content requests access to display media
 via the `navigator.mediaDevices.getDisplayMedia` API. Use the

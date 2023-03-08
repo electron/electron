@@ -18,14 +18,19 @@
 #include "mojo/public/cpp/system/data_pipe_producer.h"
 #include "net/base/load_flags.h"
 #include "net/http/http_util.h"
+#include "net/url_request/redirect_util.h"
 #include "services/network/public/cpp/resource_request.h"
 #include "services/network/public/cpp/simple_url_loader.h"
+#include "services/network/public/cpp/url_util.h"
+#include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/api/electron_api_session.h"
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -336,34 +341,49 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
+    ElectronBrowserContext* browser_context,
     std::unique_ptr<network::ResourceRequest> request,
-    network::mojom::URLLoaderFactory* url_loader_factory,
-    int options) {
-  if (!request->trusted_params)
-    request->trusted_params = network::ResourceRequest::TrustedParams();
+    int options)
+    : browser_context_(browser_context),
+      request_options_(options),
+      request_(std::move(request)) {
+  if (!request_->trusted_params)
+    request_->trusted_params = network::ResourceRequest::TrustedParams();
   mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
       url_loader_network_observer_remote;
   url_loader_network_observer_receivers_.Add(
       this,
       url_loader_network_observer_remote.InitWithNewPipeAndPassReceiver());
-  request->trusted_params->url_loader_network_observer =
+  request_->trusted_params->url_loader_network_observer =
       std::move(url_loader_network_observer_remote);
   // Chromium filters headers using browser rules, while for net module we have
   // every header passed. The following setting will allow us to capture the
   // raw headers in the URLLoader.
-  request->trusted_params->report_raw_headers = true;
-  // SimpleURLLoader wants to control the request body itself. We have other
-  // ideas.
-  auto request_body = std::move(request->request_body);
-  auto* request_ref = request.get();
+  request_->trusted_params->report_raw_headers = true;
+  Start();
+}
+
+void SimpleURLLoaderWrapper::Start() {
+  // Make a copy of the request; we'll need to re-send it if we get redirected.
+  auto request = std::make_unique<network::ResourceRequest>();
+  *request = *request_;
+
+  // SimpleURLLoader has no way to set a data pipe as the request body, which
+  // we need to do for streaming upload, so instead we "cheat" and pretend to
+  // SimpleURLLoader like there is no request_body when we construct it. Later,
+  // we will sneakily put the request_body back while it isn't looking.
+  scoped_refptr<network::ResourceRequestBody> request_body =
+      std::move(request->request_body);
+
+  network::ResourceRequest* request_ref = request.get();
   loader_ =
       network::SimpleURLLoader::Create(std::move(request), kTrafficAnnotation);
-  if (request_body) {
+
+  if (request_body)
     request_ref->request_body = std::move(request_body);
-  }
 
   loader_->SetAllowHttpErrorResults(true);
-  loader_->SetURLLoaderFactoryOptions(options);
+  loader_->SetURLLoaderFactoryOptions(request_options_);
   loader_->SetOnResponseStartedCallback(base::BindOnce(
       &SimpleURLLoaderWrapper::OnResponseStarted, base::Unretained(this)));
   loader_->SetOnRedirectCallback(base::BindRepeating(
@@ -373,7 +393,8 @@ SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
       &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
 
-  loader_->DownloadAsStream(url_loader_factory, this);
+  url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
+  loader_->DownloadAsStream(url_loader_factory_.get(), this);
 }
 
 void SimpleURLLoaderWrapper::Pin() {
@@ -457,6 +478,42 @@ void SimpleURLLoaderWrapper::Cancel() {
   pinned_chunk_pipe_getter_.Reset();
   // This ensures that no further callbacks will be called, so there's no need
   // for additional guards.
+}
+scoped_refptr<network::SharedURLLoaderFactory>
+SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory;
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context_);
+  // Explicitly handle intercepted protocols here, even though
+  // ProxyingURLLoaderFactory would handle them later on, so that we can
+  // correctly intercept file:// scheme URLs.
+  if (protocol_registry->IsProtocolIntercepted(url.scheme())) {
+    auto& protocol_handler =
+        protocol_registry->intercept_handlers().at(url.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (protocol_registry->IsProtocolRegistered(url.scheme())) {
+    auto& protocol_handler = protocol_registry->handlers().at(url.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (url.SchemeIsFile()) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        AsarURLLoaderFactory::Create();
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else {
+    url_loader_factory = browser_context_->GetURLLoaderFactory();
+  }
+  return url_loader_factory;
 }
 
 // static
@@ -634,12 +691,9 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
       session = Session::FromPartition(args->isolate(), "");
   }
 
-  auto url_loader_factory = session->browser_context()->GetURLLoaderFactory();
-
   auto ret = gin::CreateHandle(
-      args->isolate(),
-      new SimpleURLLoaderWrapper(std::move(request), url_loader_factory.get(),
-                                 options));
+      args->isolate(), new SimpleURLLoaderWrapper(session->browser_context(),
+                                                  std::move(request), options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
@@ -692,6 +746,45 @@ void SimpleURLLoaderWrapper::OnRedirect(
     const network::mojom::URLResponseHead& response_head,
     std::vector<std::string>* removed_headers) {
   Emit("redirect", redirect_info, response_head.headers.get());
+
+  if (!loader_)
+    // The redirect was aborted by JS.
+    return;
+
+  // Optimization: if both the old and new URLs are handled by the network
+  // service, just FollowRedirect.
+  if (network::IsURLHandledByNetworkService(redirect_info.new_url) &&
+      network::IsURLHandledByNetworkService(request_->url))
+    return;
+
+  // Otherwise, restart the request (potentially picking a new
+  // URLLoaderFactory). See
+  // https://source.chromium.org/chromium/chromium/src/+/main:content/browser/loader/navigation_url_loader_impl.cc;l=534-550;drc=fbaec92ad5982f83aa4544d5c88d66d08034a9f4
+
+  bool should_clear_upload = false;
+  net::RedirectUtil::UpdateHttpRequest(
+      request_->url, request_->method, redirect_info, *removed_headers,
+      /* modified_headers = */ absl::nullopt, &request_->headers,
+      &should_clear_upload);
+  if (should_clear_upload) {
+    // The request body is no longer applicable.
+    request_->request_body.reset();
+  }
+
+  request_->url = redirect_info.new_url;
+  request_->method = redirect_info.new_method;
+  request_->site_for_cookies = redirect_info.new_site_for_cookies;
+
+  // See if navigation network isolation key needs to be updated.
+  request_->trusted_params->isolation_info =
+      request_->trusted_params->isolation_info.CreateForRedirect(
+          url::Origin::Create(request_->url));
+
+  request_->referrer = GURL(redirect_info.new_referrer);
+  request_->referrer_policy = redirect_info.new_referrer_policy;
+  request_->navigation_redirect_chain.push_back(redirect_info.new_url);
+
+  Start();
 }
 
 void SimpleURLLoaderWrapper::OnUploadProgress(uint64_t position,
