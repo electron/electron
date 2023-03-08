@@ -482,10 +482,10 @@ gin::WrapperInfo ChunkedDataPipeReadableStream::kWrapperInfo = {
 v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequestBody& val) {
-  auto& elements = *val.elements();
+  const auto& elements = *val.elements();
   v8::Local<v8::Array> arr = v8::Array::New(isolate, elements.size());
   for (size_t i = 0; i < elements.size(); ++i) {
-    auto& element = elements[i];
+    const auto& element = elements[i];
     gin::Dictionary upload_data(isolate, v8::Object::New(isolate));
     switch (element.type()) {
       case network::mojom::DataElement::Tag::kFile: {
@@ -522,6 +522,9 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
       }
       case network::mojom::DataElement::Tag::kChunkedDataPipe: {
         upload_data.Set("type", "stream");
+        // ReleaseChunkedDataPipeGetter mutates the element, but unfortunately
+        // gin converters are only allowed const references, so we need to cast
+        // off the const here.
         auto& mutable_element =
             const_cast<network::DataElementChunkedDataPipe&>(
                 element.As<network::DataElementChunkedDataPipe>());
