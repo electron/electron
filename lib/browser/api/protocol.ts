@@ -71,17 +71,21 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
       body,
       duplex: body instanceof ReadableStream ? 'half' : undefined
     } as any);
-    const res = await handler(req);
-    if (!res || typeof res !== 'object') {
-      return cb({ error: ERR_UNEXPECTED });
-    }
-    if (res.type === 'error') { cb({ error: ERR_FAILED }); } else {
-      cb({
-        data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
-        headers: Object.fromEntries(res.headers),
-        statusCode: res.status,
-        statusText: res.statusText
-      });
+    try {
+      const res = await handler(req);
+      if (!res || typeof res !== 'object') {
+        return cb({ error: ERR_UNEXPECTED });
+      }
+      if (res.type === 'error') { cb({ error: ERR_FAILED }); } else {
+        cb({
+          data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
+          headers: Object.fromEntries(res.headers),
+          statusCode: res.status,
+          statusText: res.statusText
+        });
+      }
+    } catch (e) {
+      cb({ error: ERR_UNEXPECTED });
     }
   });
   if (!success) throw new Error(`Failed to register protocol: ${scheme}`);

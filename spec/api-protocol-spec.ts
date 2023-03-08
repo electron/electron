@@ -1160,6 +1160,20 @@ describe('protocol module', () => {
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith('net::ERR_FAILED');
     });
 
+    it('handles a synchronous error in the handler', async () => {
+      protocol.handle('test-scheme', () => { throw new Error('test'); });
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const body = await net.fetch('test-scheme://foo').then(r => r.text());
+      expect(body).to.equal('hello test-scheme://foo');
+    });
+
+    it('handles an asynchronous error in the handler', async () => {
+      protocol.handle('test-scheme', () => Promise.reject(new Error('rejected promise')));
+      defer(() => { protocol.unhandle('test-scheme'); });
+      const body = await net.fetch('test-scheme://foo').then(r => r.text());
+      expect(body).to.equal('hello test-scheme://foo');
+    });
+
     it('correctly sets statusCode', async () => {
       protocol.handle('test-scheme', () => { return new Response(null, { status: 201 }); });
       defer(() => { protocol.unhandle('test-scheme'); });
