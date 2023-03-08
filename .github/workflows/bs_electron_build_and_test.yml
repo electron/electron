@@ -125,7 +125,7 @@ jobs:
         echo "Setting up build type as release"
         echo 'OUTPUT_FOLDER=out/Release' >> $GITHUB_ENV
         echo 'GN_IMPORT=//electron/build/args/release.gn' >> $GITHUB_ENV
-        echo 'SOURCE_RELEASE_TAR_NAME=${{ env.ELECTRON_VERSION }}.tar.gz' >> $GITHUB_ENV
+        echo 'SOURCE_RELEASE_FILE_NAME=${{ env.ELECTRON_VERSION }}' >> $GITHUB_ENV
         echo 'RELEASE_SRC_FOLDER=${{ env.ELECTRON_VERSION }}' >> $GITHUB_ENV
         echo 'RELEASE_DST_FOLDER=${{ env.ELECTRON_VERSION }}' >> $GITHUB_ENV
         echo 'SCCACHE_BUCKET=${{ env.SCCACHE_RELEASE_BUILD_BUCKET_NAME }}' >> $GITHUB_ENV
@@ -178,13 +178,20 @@ jobs:
       run: |
         tar --use-compress-program=pigz -cf $GIT_CACHE_FILENAME ./$GIT_CACHE_FOLDER_NAME
         aws s3 cp $GIT_CACHE_FILENAME s3://${{ env.GIT_CACHE_BUCKET_NAME }}/$GIT_CACHE_FILENAME --storage-class ONEZONE_IA --quiet
-        
 
-    - name: Save source tarball
+    - name: Create source tarball and copy to artifacts bucket
       if: inputs.build_type == 'release'
       run: |
         mkdir -p ${{ env.RELEASE_SRC_FOLDER }}
-        tar --exclude .svn --exclude .git --use-compress-program=pigz -cf $RELEASE_SRC_FOLDER/$SOURCE_RELEASE_TAR_NAME ./src
+
+        echo "Fetching chromium build tools to get export_tarball.py"
+        git clone https://chromium.googlesource.com/chromium/tools/build --depth 1
+
+        echo "Running export_tarball.py"
+        ./build/recipes/recipe_modules/chromium/resources/export_tarball.py $RELEASE_SRC_FOLDER/${{ env.SOURCE_RELEASE_FILE_NAME }} --basename src --src-dir=./src --version=${{ env.ELECTRON_VERSION }} --remove-nonessential-files    
+
+        echo "Uploading source tarball"
+        aws s3 cp ${{ env.RELEASE_SRC_FOLDER }}/${{ env.SOURCE_RELEASE_FILE_NAME }}.tar.xz s3://${{ env.ARTIFACT_BUCKET_NAME }}/${{ env.RELEASE_DST_FOLDER }}/ --acl public-read --quiet
 
     - name: Set CHROMIUM_BUILDTOOLS_PATH env var
       run: echo 'CHROMIUM_BUILDTOOLS_PATH='"$PWD"'/src/buildtools' >> $GITHUB_ENV  
@@ -227,10 +234,6 @@ jobs:
         cd src/electron
         xvfb-run node script/node-spec-runner.js --default
 
-    - name: Copy source tarball to artifacts bucket
-      if: inputs.build_type == 'release'
-      run: aws s3 cp ${{ env.RELEASE_SRC_FOLDER }}/${{ env.SOURCE_RELEASE_TAR_NAME }} s3://${{ env.ARTIFACT_BUCKET_NAME }}/${{ env.RELEASE_DST_FOLDER }}/ --acl public-read --quiet
-
     - name: Prepare release dist and upload
       if: inputs.build_type == 'release'
       run: |
@@ -259,7 +262,6 @@ jobs:
         echo "Checking dist_zip.${target_os}.${target_cpu}.manifest"
         echo "TARGET_OS_CPU=${target_os}-${target_cpu}" >> $GITHUB_ENV
         electron/script/zip_manifests/check-zip-manifest.py $OUTPUT_FOLDER/dist.zip electron/script/zip_manifests/dist_zip.$target_os.$target_cpu.manifest
-        aws s3 cp $OUTPUT_FOLDER/dist.zip s3://${{ env.ARTIFACT_BUCKET_NAME }}/${{ env.RELEASE_DST_FOLDER }}/dist-$target_os-$target_cpu.zip --acl public-read --quiet
 
     - name: Prepare release package and upload to artifacts bucket
       if: inputs.build_type == 'release'
@@ -288,7 +290,7 @@ jobs:
         echo "$(jq '. += {"keywords": [ "electron" ] }' package.json)" > package.json
         echo "$(jq '. += {"version": "${{ env.ELECTRON_VERSION }}"}' package.json)" > package.json
 
-        electron_package_name="electron-package-${{ env.TARGET_OS_CPU }}-${{ env.SOURCE_RELEASE_TAR_NAME }}"
+        electron_package_name="electron-package-${{ env.TARGET_OS_CPU }}-${{ env.SOURCE_RELEASE_FILE_NAME }}.tar.gz"
         echo "Creating $electron_package_name"
         tar --use-compress-program=pigz -cf "../$electron_package_name" .
         cd ..
