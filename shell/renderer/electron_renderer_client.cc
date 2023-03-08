@@ -115,6 +115,8 @@ void ElectronRendererClient::DidCreateScriptContext(
     // Give the node loop a run to make sure everything is ready.
     node_bindings_->StartPolling();
   }
+
+  node_bindings_->JoinAppCode();
 }
 
 void ElectronRendererClient::WillReleaseScriptContext(

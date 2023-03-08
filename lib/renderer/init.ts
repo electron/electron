@@ -122,15 +122,27 @@ if (nodeIntegration) {
   }
 }
 
+const { appCodeLoaded } = process;
+delete process.appCodeLoaded;
+
 const { preloadPaths } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+const preloadPromises: Promise<void>[] = [];
 // Load the preload scripts.
 for (const preloadScript of preloadPaths) {
-  try {
-    Module._load(preloadScript);
-  } catch (error) {
-    console.error(`Unable to load preload script: ${preloadScript}`);
-    console.error(error);
+  // Finally load app's main.js and transfer control to C++.
+  const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
+  preloadPromises.push(loadESM((esmLoader: any) => {
+    return esmLoader.import(preloadScript, undefined, Object.create(null)).catch((err: Error) => {
+      console.error(`Unable to load preload script: ${preloadScript}`);
+      console.error(err);
 
-    ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
-  }
+      ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
+    });
+  }));
+}
+
+if (preloadPromises.length) {
+  Promise.all(preloadPromises).then(() => appCodeLoaded!());
+} else {
+  appCodeLoaded!();
 }

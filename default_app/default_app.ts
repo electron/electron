@@ -53,7 +53,8 @@ async function createWindow (backgroundColor?: string) {
     webPreferences: {
       preload: new URL('preload.js', import.meta.url).pathname,
       contextIsolation: true,
-      sandbox: true
+      sandbox: false,
+      nodeIntegration: true
     },
     useContentSize: true,
     show: false

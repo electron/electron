@@ -40,6 +40,7 @@
 #include "shell/common/node_includes.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
+#include "third_party/electron_node/src/module_wrap.h"
 
 #if !IS_MAS_BUILD()
 #include "shell/common/crash_keys.h"
@@ -179,6 +180,43 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
   }
 
   return node::AllowWasmCodeGenerationCallback(context, source);
+}
+
+v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+    v8::Local<v8::Context> context,
+    v8::Local<v8::Data> v8_host_defined_options,
+    v8::Local<v8::Value> v8_referrer_resource_url,
+    v8::Local<v8::String> v8_specifier,
+    v8::Local<v8::FixedArray> v8_import_assertions) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  if (node::Environment::GetCurrent(context) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return v8::MaybeLocal<v8::Promise>();
+    return blink::V8Initializer::HostImportModuleDynamically(
+        context, v8_host_defined_options, v8_referrer_resource_url,
+        v8_specifier, v8_import_assertions);
+  }
+
+  return node::loader::ImportModuleDynamically(
+      context, v8_host_defined_options, v8_referrer_resource_url, v8_specifier,
+      v8_import_assertions);
+}
+
+void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
+                                    v8::Local<v8::Module> module,
+                                    v8::Local<v8::Object> meta) {
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  if (node::Environment::GetCurrent(context) == nullptr) {
+    if (gin_helper::Locker::IsBrowserProcess())
+      return;
+    return blink::V8Initializer::HostGetImportMetaProperties(context, module,
+                                                             meta);
+  }
+
+  return node::loader::ModuleWrap::HostInitializeImportMetaObjectCallback(
+      context, module, meta);
 }
 
 v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
@@ -520,7 +558,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
                    node::EnvironmentFlags::kHideConsoleWindows |
-                   node::EnvironmentFlags::kNoGlobalSearchPaths;
+                   node::EnvironmentFlags::kNoGlobalSearchPaths |
+                   node::EnvironmentFlags::kNoRegisterESMLoader;
 
   if (browser_env_ == BrowserEnvironment::kRenderer ||
       browser_env_ == BrowserEnvironment::kWorker) {
@@ -532,8 +571,7 @@ node::Environment* NodeBindings::CreateEnvironment(
     // for processes that already have these defined by DOM.
     // Check //third_party/electron_node/lib/internal/bootstrap/node.js
     // for the list of overrides on globalThis.
-    flags |= node::EnvironmentFlags::kNoRegisterESMLoader |
-             node::EnvironmentFlags::kNoBrowserGlobals |
+    flags |= node::EnvironmentFlags::kNoBrowserGlobals |
              node::EnvironmentFlags::kNoCreateInspector;
   }
 
@@ -624,6 +662,10 @@ node::Environment* NodeBindings::CreateEnvironment(
   }
 
   node::SetIsolateUpForNode(context->GetIsolate(), is);
+  context->GetIsolate()->SetHostImportModuleDynamicallyCallback(
+      HostImportModuleDynamically);
+  context->GetIsolate()->SetHostInitializeImportMetaObjectCallback(
+      HostInitializeImportMetaObject);
 
   gin_helper::Dictionary process(context->GetIsolate(), env->process_object());
   process.SetReadOnly("type", process_type);
@@ -633,7 +675,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
-  if (browser_env_ == BrowserEnvironment::kBrowser) {
+  if (browser_env_ == BrowserEnvironment::kBrowser ||
+      browser_env_ == BrowserEnvironment::kRenderer) {
     process.SetMethod("appCodeLoaded",
                       base::BindRepeating(&NodeBindings::SetAppCodeLoaded,
                                           base::Unretained(this)));

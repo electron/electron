@@ -42,6 +42,9 @@ const getOrCreateArchive = (archivePath: string) => {
 const asarRe = /\.asar/i;
 
 const { getValidatedPath } = __non_webpack_require__('internal/fs/utils');
+// In the renderer node internals use the node global URL but we do not set that to be
+// the global URL instance.  We need to do instanceof checks against the internal URL impl
+const { URL: NodeURL } = __non_webpack_require__('internal/url');
 
 // Separate asar package's path from full path.
 const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
@@ -53,7 +56,7 @@ const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   if (Buffer.isBuffer(archivePathOrBuffer)) {
     archivePath = archivePathOrBuffer.toString();
   }
-  if (archivePath instanceof URL) {
+  if (archivePath instanceof NodeURL) {
     archivePath = getValidatedPath(archivePath);
   }
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
