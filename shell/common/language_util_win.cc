@@ -18,8 +18,7 @@ namespace electron {
 
 bool GetPreferredLanguagesUsingGlobalization(
     std::vector<std::wstring>* languages) {
-  if (!base::win::ResolveCoreWinRTDelayload() ||
-      !base::win::ScopedHString::ResolveCoreWinRTStringDelayload())
+  if (!base::win::ResolveCoreWinRTDelayload())
     return false;
 
   base::win::ScopedHString guid = base::win::ScopedHString::Create(
