@@ -125,6 +125,12 @@ scheme will delegate to this handler to determine what response should be sent.
 
 Removes a protocol handler registered with `protocol.handle`.
 
+### `protocol.isProtocolHandled(scheme)`
+
+* `scheme` string
+
+Returns `boolean` - Whether `scheme` is already handled.
+
 ### `protocol.registerFileProtocol(scheme, handler)`
 
 * `scheme` string

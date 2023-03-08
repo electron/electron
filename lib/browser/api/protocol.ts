@@ -92,6 +92,11 @@ Protocol.prototype.unhandle = function (this: Electron.Protocol, scheme: string)
   if (!unregister.call(this, scheme)) { throw new Error(`Failed to unhandle protocol: ${scheme}`); }
 };
 
+Protocol.prototype.isProtocolHandled = function (this: Electron.Protocol, scheme: string) {
+  const isRegistered = isBuiltInScheme(scheme) ? this.isProtocolIntercepted : this.isProtocolRegistered;
+  return isRegistered.call(this, scheme);
+};
+
 const protocol = {
   registerSchemesAsPrivileged,
   getStandardSchemes,
@@ -112,7 +117,8 @@ const protocol = {
   uninterceptProtocol: (...args) => session.defaultSession.protocol.uninterceptProtocol(...args),
   isProtocolIntercepted: (...args) => session.defaultSession.protocol.isProtocolIntercepted(...args),
   handle: (...args) => session.defaultSession.protocol.handle(...args),
-  unhandle: (...args) => session.defaultSession.protocol.unhandle(...args)
+  unhandle: (...args) => session.defaultSession.protocol.unhandle(...args),
+  isProtocolHandled: (...args) => session.defaultSession.protocol.isProtocolHandled(...args)
 } as typeof Electron.protocol;
 
 export default protocol;
