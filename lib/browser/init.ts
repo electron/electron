@@ -184,8 +184,18 @@ app.once('will-finish-launching', setDefaultApplicationMenu);
 
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
-  process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
-  Module._load(path.join(packagePath, mainStartupScript), Module, true);
+  if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
+    const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
+    const main = path.join(packagePath, mainStartupScript);
+    loadESM((esmLoader: any) => {
+      return esmLoader.import(main, undefined, Object.create(null)).catch((err: Error) => {
+        process.emit('uncaughtException', err);
+      });
+    });
+  } else {
+    process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
+    Module._load(path.join(packagePath, mainStartupScript), Module, true);
+  }
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)');
   console.error('This normally means you\'ve damaged the Electron package somehow');

@@ -41,8 +41,10 @@ const getOrCreateArchive = (archivePath: string) => {
 
 const asarRe = /\.asar/i;
 
+const { getValidatedPath } = __non_webpack_require__('internal/fs/utils');
+
 // Separate asar package's path from full path.
-const splitPath = (archivePathOrBuffer: string | Buffer) => {
+const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   // Shortcut for disabled asar.
   if (isAsarDisabled()) return { isAsar: <const>false };
 
@@ -50,6 +52,9 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
   let archivePath = archivePathOrBuffer;
   if (Buffer.isBuffer(archivePathOrBuffer)) {
     archivePath = archivePathOrBuffer.toString();
+  }
+  if (archivePath instanceof URL) {
+    archivePath = getValidatedPath(archivePath);
   }
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
   if (!asarRe.test(archivePath)) return { isAsar: <const>false };

@@ -1,6 +1,7 @@
 import * as electron from 'electron/main';
 
 import * as fs from 'fs';
+import { Module } from 'module';
 import * as path from 'path';
 import * as url from 'url';
 const { app, dialog } = electron;
@@ -14,8 +15,6 @@ type DefaultAppOptions = {
   abi: boolean;
   modules: string[];
 }
-
-const Module = require('module');
 
 // Parse command line options.
 const argv = process.argv.slice(1);
@@ -71,7 +70,7 @@ if (nextArgIsRequire) {
 
 // Set up preload modules
 if (option.modules.length > 0) {
-  Module._preloadModules(option.modules);
+  (Module as any)._preloadModules(option.modules);
 }
 
 function loadApplicationPackage (packagePath: string) {
@@ -118,7 +117,7 @@ function loadApplicationPackage (packagePath: string) {
     }
 
     try {
-      const filePath = Module._resolveFilename(packagePath, module, true);
+      const filePath = (Module as any)._resolveFilename(packagePath, module, true);
       app.setAppPath(appPath || path.dirname(filePath));
     } catch (e) {
       showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${(e as Error).message}`);
@@ -126,7 +125,7 @@ function loadApplicationPackage (packagePath: string) {
     }
 
     // Run the app.
-    Module._load(packagePath, module, true);
+    (Module as any)._load(packagePath, module, true);
   } catch (e) {
     console.error('App threw an error during load');
     console.error((e as Error).stack || e);
@@ -141,12 +140,12 @@ function showErrorMessage (message: string) {
 }
 
 async function loadApplicationByURL (appUrl: string) {
-  const { loadURL } = await import('./default_app');
+  const { loadURL } = await import('./default_app.js');
   loadURL(appUrl);
 }
 
 async function loadApplicationByFile (appPath: string) {
-  const { loadFile } = await import('./default_app');
+  const { loadFile } = await import('./default_app.js');
   loadFile(appPath);
 }
 

@@ -1,7 +1,9 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "rootDir": "default_app"
+    "rootDir": "default_app",
+    "module": "es2020",
+    "moduleResolution": "node"
   },
   "include": [
     "default_app",
