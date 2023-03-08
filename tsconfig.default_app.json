@@ -2,7 +2,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "rootDir": "default_app",
-    "module": "es2022",
+    "module": "ESNext",
     "moduleResolution": "node"
   },
   "include": [
