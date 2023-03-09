@@ -51,17 +51,17 @@ async function createWindow (backgroundColor?: string) {
     autoHideMenuBar: true,
     backgroundColor,
     webPreferences: {
-      preload: new URL('preload.js', import.meta.url).pathname,
+      preload: url.fileURLToPath(new URL('preload.js', import.meta.url)),
       contextIsolation: true,
-      sandbox: false,
-      nodeIntegration: true
+      sandbox: true,
+      nodeIntegration: false
     },
     useContentSize: true,
     show: false
   };
 
   if (process.platform === 'linux') {
-    options.icon = new URL('icon.png', import.meta.url).pathname;
+    options.icon = url.fileURLToPath(new URL('icon.png', import.meta.url));
   }
 
   mainWindow = new BrowserWindow(options);
