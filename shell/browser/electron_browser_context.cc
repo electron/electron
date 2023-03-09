@@ -106,13 +106,6 @@ ElectronBrowserContext::browser_context_map() {
   return *browser_context_map;
 }
 
-ElectronBrowserContext::BrowserContextPathMap&
-ElectronBrowserContext::browser_context_path_map() {
-  static base::NoDestructor<ElectronBrowserContext::BrowserContextPathMap>
-      browser_context_path_map;
-  return *browser_context_path_map;
-}
-
 ElectronBrowserContext::ElectronBrowserContext(
     const PartitionOrPath partition_location,
     bool in_memory,
@@ -702,17 +695,16 @@ ElectronBrowserContext* ElectronBrowserContext::From(
 ElectronBrowserContext* ElectronBrowserContext::FromPath(
     const base::FilePath& path,
     base::Value::Dict options) {
-  PartitionKey key(path.AsUTF8Unsafe(), false);
+  PartitionKey key(path);
 
-  ElectronBrowserContext* browser_context =
-      browser_context_path_map()[key].get();
+  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
   if (browser_context) {
     return browser_context;
   }
 
   auto* new_context =
       new ElectronBrowserContext(std::cref(path), false, std::move(options));
-  browser_context_path_map()[key] =
+  browser_context_map()[key] =
       std::unique_ptr<ElectronBrowserContext>(new_context);
   return new_context;
 }
