@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
@@ -131,12 +132,14 @@ if (preloadPaths.length) {
 
   loadESM((esmLoader: any) => {
     // Load the preload scripts.
-    return Promise.all(preloadPaths.map(preloadScript => esmLoader.import(preloadScript, undefined, Object.create(null)).catch((err: Error) => {
-      console.error(`Unable to load preload script: ${preloadScript}`);
-      console.error(err);
+    return Promise.all(preloadPaths.map(preloadScript => {
+      esmLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {
+        console.error(`Unable to load preload script: ${preloadScript}`);
+        console.error(err);
 
-      ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
-    })));
+        ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
+      });
+    }));
   }).then(() => appCodeLoaded!());
 } else {
   appCodeLoaded!();

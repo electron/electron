@@ -189,9 +189,9 @@ if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
     const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
-    const main = path.join(packagePath, mainStartupScript);
+    const main = require('url').pathToFileURL(path.join(packagePath, mainStartupScript));
     loadESM((esmLoader: any) => {
-      return esmLoader.import(main, undefined, Object.create(null)).then(() => {
+      return esmLoader.import(main.toString(), undefined, Object.create(null)).then(() => {
         appCodeLoaded!();
       }).catch((err: Error) => {
         appCodeLoaded!();
