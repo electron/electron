@@ -511,7 +511,8 @@ node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::vector<std::string> args,
-    std::vector<std::string> exec_args) {
+    std::vector<std::string> exec_args,
+    absl::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
   // Feed node the path to initialization script.
   std::string process_type;
   switch (browser_env_) {
@@ -677,9 +678,13 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   if (browser_env_ == BrowserEnvironment::kBrowser ||
       browser_env_ == BrowserEnvironment::kRenderer) {
-    process.SetMethod("appCodeLoaded",
-                      base::BindRepeating(&NodeBindings::SetAppCodeLoaded,
-                                          base::Unretained(this)));
+    if (on_app_code_ready) {
+      process.SetMethod("appCodeLoaded", std::move(*on_app_code_ready));
+    } else {
+      process.SetMethod("appCodeLoaded",
+                        base::BindRepeating(&NodeBindings::SetAppCodeLoaded,
+                                            base::Unretained(this)));
+    }
   }
 
   return env;
@@ -687,7 +692,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
 node::Environment* NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
-    node::MultiIsolatePlatform* platform) {
+    node::MultiIsolatePlatform* platform,
+    absl::optional<base::RepeatingCallback<void()>> on_app_code_ready) {
 #if BUILDFLAG(IS_WIN)
   auto& electron_args = ElectronCommandLine::argv();
   std::vector<std::string> args(electron_args.size());
@@ -696,7 +702,7 @@ node::Environment* NodeBindings::CreateEnvironment(
 #else
   auto args = ElectronCommandLine::argv();
 #endif
-  return CreateEnvironment(context, platform, args, {});
+  return CreateEnvironment(context, platform, args, {}, on_app_code_ready);
 }
 
 void NodeBindings::LoadEnvironment(node::Environment* env) {

@@ -10,7 +10,9 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/functional/callback.h"
 #include "base/memory/weak_ptr.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
 
@@ -90,12 +92,18 @@ class NodeBindings {
   void SetNodeCliFlags();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform,
-                                       std::vector<std::string> args,
-                                       std::vector<std::string> exec_args);
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform);
+  node::Environment* CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform,
+      std::vector<std::string> args,
+      std::vector<std::string> exec_args,
+      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          absl::nullopt);
+  node::Environment* CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform,
+      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          absl::nullopt);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
