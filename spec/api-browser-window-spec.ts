@@ -684,7 +684,7 @@ describe('BrowserWindow module', () => {
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
           await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
-          await delay(1000);
+          await setTimeout(1000);
 
           let willFrameNavigateEmitted = false;
           let isMainFrameValue;
@@ -692,7 +692,7 @@ describe('BrowserWindow module', () => {
             willFrameNavigateEmitted = true;
             isMainFrameValue = event.isMainFrame;
           });
-          const didNavigatePromise = emittedOnce(w.webContents, 'did-navigate');
+          const didNavigatePromise = once(w.webContents, 'did-navigate');
 
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -724,7 +724,7 @@ describe('BrowserWindow module', () => {
 
         it('is triggered when a cross-origin iframe navigates itself', async () => {
           await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe"></iframe>`);
-          await delay(1000);
+          await setTimeout(1000);
 
           let willNavigateEmitted = false;
           let isMainFrameValue;
@@ -732,7 +732,7 @@ describe('BrowserWindow module', () => {
             willNavigateEmitted = true;
             isMainFrameValue = event.isMainFrame;
           });
-          const didNavigatePromise = emittedOnce(w.webContents, 'did-frame-navigate');
+          const didNavigatePromise = once(w.webContents, 'did-frame-navigate');
 
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
@@ -894,9 +894,9 @@ describe('BrowserWindow module', () => {
             'did-navigate'
           ];
           const allEvents = Promise.all(navigationEvents.map(event =>
-            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+            once(w.webContents, event).then(() => firedEvents.push(event))
           ));
-          const timeout = new Promise(resolve => setTimeout(() => resolve(1), 1000));
+          const timeout = setTimeout(1000);
           w.loadURL(url);
           await Promise.race([allEvents, timeout]);
           expect(firedEvents).to.deep.equal(expectedEventOrder);
@@ -912,12 +912,12 @@ describe('BrowserWindow module', () => {
             'did-navigate'
           ];
           w.loadURL(`${url}navigate`);
-          await emittedOnce(w.webContents, 'did-navigate');
-          await delay(1000);
+          await once(w.webContents, 'did-navigate');
+          await setTimeout(1000);
           navigationEvents.forEach(event =>
-            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+            once(w.webContents, event).then(() => firedEvents.push(event))
           );
-          const navigationFinished = emittedOnce(w.webContents, 'did-navigate');
+          const navigationFinished = once(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
           const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
@@ -955,12 +955,12 @@ describe('BrowserWindow module', () => {
             'did-navigate'
           ];
           w.loadURL(`${url}redirect`);
-          await emittedOnce(w.webContents, 'did-navigate');
-          await delay(1000);
+          await once(w.webContents, 'did-navigate');
+          await setTimeout(1000);
           navigationEvents.forEach(event =>
-            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+            once(w.webContents, event).then(() => firedEvents.push(event))
           );
-          const navigationFinished = emittedOnce(w.webContents, 'did-navigate');
+          const navigationFinished = once(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
           const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
@@ -993,12 +993,12 @@ describe('BrowserWindow module', () => {
             'did-navigate-in-page'
           ];
           w.loadURL(`${url}in-page`);
-          await emittedOnce(w.webContents, 'did-navigate');
-          await delay(1000);
+          await once(w.webContents, 'did-navigate');
+          await setTimeout(1000);
           navigationEvents.forEach(event =>
-            emittedOnce(w.webContents, event).then(() => firedEvents.push(event))
+            once(w.webContents, event).then(() => firedEvents.push(event))
           );
-          const navigationFinished = emittedOnce(w.webContents, 'did-navigate-in-page');
+          const navigationFinished = once(w.webContents, 'did-navigate-in-page');
           w.webContents.debugger.attach('1.1');
           const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
           const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
