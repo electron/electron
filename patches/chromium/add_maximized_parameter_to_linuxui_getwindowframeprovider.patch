@@ -8,28 +8,26 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index c61bac00076822ae729882c64f3ad89e0d849e91..28cd9fb14783651ee651917f135c68faa0f2059a 100644
+index 31917ffefc42e5073c12ff153ec1db9bf0876ff6..fedccd7966fe6de7bfe8b0e5664f47c484798652 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -507,13 +507,15 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
-   return nullptr;
+@@ -480,11 +480,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+   return std::make_unique<gtk::NavButtonProviderGtk>();
  }
  
 -ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame) {
 +ui::WindowFrameProvider* GtkUi::GetWindowFrameProvider(bool solid_frame, bool maximized) {
-   if (!GtkCheckVersion(3, 14))
-     return nullptr;
    auto& provider =
 -      solid_frame ? solid_frame_provider_ : transparent_frame_provider_;
 +      maximized
 +        ? (solid_frame ? solid_maximized_frame_provider_ : transparent_maximized_frame_provider_)
 +        : (solid_frame ? solid_frame_provider_ : transparent_frame_provider_);
-   if (!provider)
+   if (!provider) {
 -    provider = std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame);
 +    provider = std::make_unique<gtk::WindowFrameProviderGtk>(solid_frame, maximized);
+   }
    return provider.get();
  }
- 
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
 index ebc31db3dad9ba7904fbd345c6a1ba31ed6fd813..1d2ffc82bb67ed80f508631c8c7d045be76f6761 100644
 --- a/ui/gtk/gtk_ui.h

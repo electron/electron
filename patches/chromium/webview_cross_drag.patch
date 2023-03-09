@@ -24,7 +24,7 @@ index 37b75adc1ef25d1688ea63da083c8dd764e953c8..63175581edc351e3dc13caa97ab0b86d
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 1af80994a4a64cce27dfc8a46e6cb68bbbd51b1b..a2f1aa2f1a9792bb6978173c30cc2b9bb18108ab 100644
+index 6abd9ae6eafe6c5adfaa6a871ffad8e5e7cf44e2..87a97bd14d6ac028eb020197cfe40f41fa9d61a8 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
 @@ -389,9 +389,7 @@ - (void)resetDragStartTrackers {

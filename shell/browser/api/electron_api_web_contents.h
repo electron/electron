@@ -578,8 +578,7 @@ class WebContents : public ExclusiveAccessContext,
                            const gfx::Size& pref_size) override;
 
   // content::WebContentsObserver:
-  void BeforeUnloadFired(bool proceed,
-                         const base::TimeTicks& proceed_time) override;
+  void BeforeUnloadFired(bool proceed) override;
   void OnBackgroundColorChanged() override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;

@@ -9,7 +9,7 @@ at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.
 
 diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
-index 28a5f5e977fd0c31f70f34e5f3c2d329f1abc5ca..8eddf4f4bb5ee8e366de299582f13fe9ae2e1303 100644
+index 807a8f82fd0d6bfd402a5f84b5a9849a0f56f7e9..b351d8d47322d56bb219ad05d19d42c441c4ae0a 100644
 --- a/ui/ozone/platform/x11/ozone_platform_x11.cc
 +++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
 @@ -192,6 +192,7 @@ class OzonePlatformX11 : public OzonePlatform,

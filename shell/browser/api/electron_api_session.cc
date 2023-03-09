@@ -46,6 +46,7 @@
 #include "net/http/http_util.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/mojom/clear_data_filter.mojom.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_cookies.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
@@ -181,7 +182,8 @@ struct Converter<ClearStorageDataOptions> {
     if (!ConvertFromV8(isolate, val, &options))
       return false;
     if (GURL storage_origin; options.Get("origin", &storage_origin))
-      out->storage_key = blink::StorageKey(url::Origin::Create(storage_origin));
+      out->storage_key = blink::StorageKey::CreateFirstParty(
+          url::Origin::Create(storage_origin));
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);

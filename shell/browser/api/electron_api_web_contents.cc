@@ -1509,8 +1509,7 @@ void WebContents::OnAudioStateChanged(bool audible) {
   Emit("-audio-state-changed", audible);
 }
 
-void WebContents::BeforeUnloadFired(bool proceed,
-                                    const base::TimeTicks& proceed_time) {
+void WebContents::BeforeUnloadFired(bool proceed) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
 }
@@ -2820,7 +2819,7 @@ void WebContents::Print(gin::Arguments* args) {
 
   // We've already done necessary parameter sanitization at the
   // JS level, so we can simply pass this through.
-  base::Value media_size(base::Value::Type::DICTIONARY);
+  base::Value media_size(base::Value::Type::DICT);
   if (options.Get("mediaSize", &media_size))
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
 
