@@ -130,16 +130,16 @@ const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>
 if (preloadPaths.length) {
   const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
 
-  loadESM((esmLoader: any) => {
+  loadESM(async (esmLoader: any) => {
     // Load the preload scripts.
-    return Promise.all(preloadPaths.map(preloadScript => {
-      esmLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {
+    for (const preloadScript of preloadPaths) {
+      await esmLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {
         console.error(`Unable to load preload script: ${preloadScript}`);
         console.error(err);
 
         ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
       });
-    }));
+    }
   }).then(() => appCodeLoaded!());
 } else {
   appCodeLoaded!();

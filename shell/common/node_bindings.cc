@@ -769,8 +769,10 @@ void NodeBindings::JoinAppCode() {
   // loading
   while (!app_code_loaded_ && !browser->is_shutting_down()) {
     int r = uv_run(uv_loop_, UV_RUN_NOWAIT);
-    if (r == 0)
+    if (r == 0) {
       base::RunLoop().QuitWhenIdle();  // Quit from uv.
+      break;
+    }
   }
 }
 
