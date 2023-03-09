@@ -1,0 +1,124 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 20 Feb 2023 10:08:49 +0000
+Subject: Simplify WebMediaPlayerMSCompositor destruction.
+
+The code was only sometimes calling StopUsingProvider() and posted
+the submitter destruction unnecessarily.
+
+Destruction now works the same as in VideoFrameCompositor, where the
+class itself is responsible for calling StopUsingProvider() during
+its own destruction.
+
+(cherry picked from commit cbd238e85903b7d94910bd2c6362ff9abf9908cc)
+
+Fixed: 1407701
+Disallow-Recycled-Builds: test-failures
+Change-Id: Ia649cb5532519468eea34e12745ed9c990580d82
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4195824
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1098505}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4225498
+Reviewed-by: Oleh Lamzin <lamzin@google.com>
+Owners-Override: Oleh Lamzin <lamzin@google.com>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1391}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc
+index 01b3e059e339341995deb9c27e248ab272acd1b2..e4eb2b0053384d3e89545928c22bc2e1a12580fa 100644
+--- a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc
++++ b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc
+@@ -412,9 +412,6 @@ WebMediaPlayerMS::~WebMediaPlayerMS() {
+   if (frame_deliverer_)
+     io_task_runner_->DeleteSoon(FROM_HERE, frame_deliverer_.release());
+ 
+-  if (compositor_)
+-    compositor_->StopUsingProvider();
+-
+   if (video_frame_provider_)
+     video_frame_provider_->Stop();
+ 
+diff --git a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc
+index 63957929facc933c23eef3fc200f140b73cb3f50..acbdf1c64f0efed4c665de270d712bf446eb2106 100644
+--- a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc
++++ b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc
+@@ -238,13 +238,8 @@ WebMediaPlayerMSCompositor::WebMediaPlayerMSCompositor(
+ WebMediaPlayerMSCompositor::~WebMediaPlayerMSCompositor() {
+   // Ensured by destructor traits.
+   DCHECK(video_frame_compositor_task_runner_->BelongsToCurrentThread());
+-
+-  if (submitter_) {
+-    video_frame_compositor_task_runner_->DeleteSoon(FROM_HERE,
+-                                                    std::move(submitter_));
+-  } else {
+-    DCHECK(!video_frame_provider_client_)
+-        << "Must call StopUsingProvider() before dtor!";
++  if (video_frame_provider_client_) {
++    video_frame_provider_client_->StopUsingProvider();
+   }
+ }
+ 
+@@ -264,7 +259,7 @@ void WebMediaPlayerMSCompositorTraits::Destruct(
+ 
+ void WebMediaPlayerMSCompositor::InitializeSubmitter() {
+   DCHECK(video_frame_compositor_task_runner_->BelongsToCurrentThread());
+-  submitter_->Initialize(this, /* is_media_stream = */ true);
++  submitter_->Initialize(this, /*is_media_stream=*/true);
+ }
+ 
+ void WebMediaPlayerMSCompositor::SetIsSurfaceVisible(
+@@ -631,15 +626,6 @@ void WebMediaPlayerMSCompositor::ReplaceCurrentFrameWithACopy() {
+           WrapRefCounted(this))));
+ }
+ 
+-void WebMediaPlayerMSCompositor::StopUsingProvider() {
+-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  PostCrossThreadTask(
+-      *video_frame_compositor_task_runner_, FROM_HERE,
+-      CrossThreadBindOnce(
+-          &WebMediaPlayerMSCompositor::StopUsingProviderInternal,
+-          WrapRefCounted(this)));
+-}
+-
+ bool WebMediaPlayerMSCompositor::MapTimestampsToRenderTimeTicks(
+     const std::vector<base::TimeDelta>& timestamps,
+     std::vector<base::TimeTicks>* wall_clock_times) {
+@@ -873,13 +859,6 @@ void WebMediaPlayerMSCompositor::StopRenderingInternal() {
+     video_frame_provider_client_->StopRendering();
+ }
+ 
+-void WebMediaPlayerMSCompositor::StopUsingProviderInternal() {
+-  DCHECK(video_frame_compositor_task_runner_->BelongsToCurrentThread());
+-  if (video_frame_provider_client_)
+-    video_frame_provider_client_->StopUsingProvider();
+-  video_frame_provider_client_ = nullptr;
+-}
+-
+ void WebMediaPlayerMSCompositor::ReplaceCurrentFrameWithACopyInternal() {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   scoped_refptr<media::VideoFrame> current_frame_ref;
+diff --git a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h
+index a82497399be7588298f4c740ef67e18ee429967d..ffeb448be295223f1f997b47eddff37d04bc8f16 100644
+--- a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h
++++ b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h
+@@ -119,10 +119,6 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+   void StopRendering();
+   void ReplaceCurrentFrameWithACopy();
+ 
+-  // Tell |video_frame_provider_client_| to stop using this instance in
+-  // preparation for dtor.
+-  void StopUsingProvider();
+-
+   // Sets a hook to be notified when a new frame is presented, to fulfill a
+   // prending video.requestAnimationFrame() request.
+   // Can be called from any thread.
+@@ -208,7 +204,6 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+ 
+   void StartRenderingInternal();
+   void StopRenderingInternal();
+-  void StopUsingProviderInternal();
+   void ReplaceCurrentFrameWithACopyInternal();
+ 
+   void SetAlgorithmEnabledForTesting(bool algorithm_enabled);

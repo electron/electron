@@ -1,0 +1,381 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Mon, 20 Feb 2023 13:16:32 +0000
+Subject: Further simplify WebMediaPlayerMSCompositor lifetime.
+
+M108 merge issues:
+  third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc:
+    - video_task_runner_ is named io_task_runner_ in 108
+
+  third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc:
+    - video_task_runner_ is named io_task_runner_ in 108 (conflict in ReplaceCurrentFrameWithACopy)
+
+Due to the raw pointer held by VideoFrameSubmitter, there may be
+tasks pending on the compositor task runner after the RefCounted
+traits have "destructed" WebMediaPlayerMSCompositor. Through this
+raw pointer VFS was invoking OnContextLost which attempts to use
+the zero ref count compositor.
+
+The solution here is again similar to VideoFrameCompositor, its
+destruction should be explicit instead of a tangle of RefCounted
+owners.
+
+(cherry picked from commit 1622bffc6534a0cc4f53d07c43e0cd8f49975d10)
+
+Fixed: 1407701, 1411601
+Change-Id: Ic77294d1113d54ab83bc0f5b625a997edf57bf7c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4210508
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1099726}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4225393
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Reviewed-by: Oleh Lamzin <lamzin@google.com>
+Owners-Override: Oleh Lamzin <lamzin@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1392}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/third_party/blink/public/web/modules/mediastream/webmediaplayer_ms.h b/third_party/blink/public/web/modules/mediastream/webmediaplayer_ms.h
+index f8c640d4f866afafa6fab82d67fe5f866810f828..955f867cc24152fa88dd6c20de006425a20b77c5 100644
+--- a/third_party/blink/public/web/modules/mediastream/webmediaplayer_ms.h
++++ b/third_party/blink/public/web/modules/mediastream/webmediaplayer_ms.h
+@@ -211,6 +211,8 @@ class BLINK_MODULES_EXPORT WebMediaPlayerMS
+   static const gfx::Size kUseGpuMemoryBufferVideoFramesMinResolution;
+ #endif  // BUILDFLAG(IS_WIN)
+ 
++  void ReplaceCurrentFrameWithACopy();
++
+   bool IsInPictureInPicture() const;
+ 
+   // Switch to SurfaceLayer, either initially or from VideoLayer.
+@@ -313,7 +315,7 @@ class BLINK_MODULES_EXPORT WebMediaPlayerMS
+   // Used for DCHECKs to ensure methods calls executed in the correct thread.
+   THREAD_CHECKER(thread_checker_);
+ 
+-  scoped_refptr<WebMediaPlayerMSCompositor> compositor_;
++  std::unique_ptr<WebMediaPlayerMSCompositor> compositor_;
+ 
+   const WebString initial_audio_output_device_id_;
+ 
+diff --git a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc
+index e4eb2b0053384d3e89545928c22bc2e1a12580fa..a85406d39037a8003eaffd1a91c8021ad38e0267 100644
+--- a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc
++++ b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms.cc
+@@ -399,8 +399,9 @@ WebMediaPlayerMS::~WebMediaPlayerMS() {
+   SendLogMessage(
+       String::Format("%s() [delegate_id=%d]", __func__, delegate_id_));
+ 
+-  if (!web_stream_.IsNull())
++  if (!web_stream_.IsNull()) {
+     web_stream_.RemoveObserver(this);
++  }
+ 
+   // Destruct compositor resources in the proper order.
+   get_client()->SetCcLayer(nullptr);
+@@ -409,14 +410,35 @@ WebMediaPlayerMS::~WebMediaPlayerMS() {
+     video_layer_->StopUsingProvider();
+   }
+ 
+-  if (frame_deliverer_)
+-    io_task_runner_->DeleteSoon(FROM_HERE, frame_deliverer_.release());
++  if (frame_deliverer_) {
++    io_task_runner_->DeleteSoon(FROM_HERE, std::move(frame_deliverer_));
++  }
+ 
+-  if (video_frame_provider_)
++  if (video_frame_provider_) {
+     video_frame_provider_->Stop();
++  }
+ 
+-  if (audio_renderer_)
++  // This must be destroyed before `compositor_` since it will grab a couple of
++  // final metrics during destruction.
++  watch_time_reporter_.reset();
++
++  if (compositor_) {
++    // `compositor_` receives frames on `io_task_runner_` from
++    // `frame_deliverer_` and operates on the `compositor_task_runner_`, so
++    // must trampoline through both to ensure a safe destruction.
++    PostCrossThreadTask(
++        *io_task_runner_, FROM_HERE,
++        WTF::CrossThreadBindOnce(
++            [](scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++               std::unique_ptr<WebMediaPlayerMSCompositor> compositor) {
++              task_runner->DeleteSoon(FROM_HERE, std::move(compositor));
++            },
++            compositor_task_runner_, std::move(compositor_)));
++  }
++
++  if (audio_renderer_) {
+     audio_renderer_->Stop();
++  }
+ 
+   media_log_->AddEvent<media::MediaLogEvent::kWebMediaPlayerDestroyed>();
+ 
+@@ -457,7 +479,7 @@ WebMediaPlayer::LoadTiming WebMediaPlayerMS::Load(
+ 
+   watch_time_reporter_.reset();
+ 
+-  compositor_ = base::MakeRefCounted<WebMediaPlayerMSCompositor>(
++  compositor_ = std::make_unique<WebMediaPlayerMSCompositor>(
+       compositor_task_runner_, io_task_runner_, web_stream_,
+       std::move(submitter_), use_surface_layer_, weak_this_);
+ 
+@@ -480,7 +502,7 @@ WebMediaPlayer::LoadTiming WebMediaPlayerMS::Load(
+   frame_deliverer_ = std::make_unique<WebMediaPlayerMS::FrameDeliverer>(
+       weak_this_,
+       CrossThreadBindRepeating(&WebMediaPlayerMSCompositor::EnqueueFrame,
+-                               compositor_),
++                               CrossThreadUnretained(compositor_.get())),
+       media_task_runner_, worker_task_runner_, gpu_factories_);
+   video_frame_provider_ = renderer_factory_->GetVideoRenderer(
+       web_stream_,
+@@ -826,7 +848,19 @@ void WebMediaPlayerMS::Pause() {
+     video_frame_provider_->Pause();
+ 
+   compositor_->StopRendering();
+-  compositor_->ReplaceCurrentFrameWithACopy();
++
++  // Bounce this call off of video task runner to since there might still be
++  // frames passed on video task runner.
++  PostCrossThreadTask(
++      *io_task_runner_, FROM_HERE,
++      WTF::CrossThreadBindOnce(
++          [](scoped_refptr<base::SingleThreadTaskRunner> task_runner,
++             WTF::CrossThreadOnceClosure copy_cb) {
++            PostCrossThreadTask(*task_runner, FROM_HERE, std::move(copy_cb));
++          },
++          main_render_task_runner_,
++          WTF::CrossThreadBindOnce(
++              &WebMediaPlayerMS::ReplaceCurrentFrameWithACopy, weak_this_)));
+ 
+   if (audio_renderer_)
+     audio_renderer_->Pause();
+@@ -841,6 +875,11 @@ void WebMediaPlayerMS::Pause() {
+   paused_ = true;
+ }
+ 
++void WebMediaPlayerMS::ReplaceCurrentFrameWithACopy() {
++  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
++  compositor_->ReplaceCurrentFrameWithACopy();
++}
++
+ void WebMediaPlayerMS::Seek(double seconds) {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+ }
+@@ -1192,7 +1231,8 @@ void WebMediaPlayerMS::ActivateSurfaceLayerForVideo(
+   PostCrossThreadTask(
+       *compositor_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&WebMediaPlayerMSCompositor::EnableSubmission,
+-                          compositor_, bridge_->GetSurfaceId(), video_transform,
++                          CrossThreadUnretained(compositor_.get()),
++                          bridge_->GetSurfaceId(), video_transform,
+                           IsInPictureInPicture()));
+ 
+   // If the element is already in Picture-in-Picture mode, it means that it
+diff --git a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc
+index acbdf1c64f0efed4c665de270d712bf446eb2106..67f0c200d85073ecd677e467bc1d624b1817dde0 100644
+--- a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc
++++ b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.cc
+@@ -197,18 +197,18 @@ WebMediaPlayerMSCompositor::WebMediaPlayerMSCompositor(
+       dropped_frame_count_(0),
+       stopped_(true),
+       render_started_(!stopped_) {
++  weak_this_ = weak_ptr_factory_.GetWeakPtr();
+   if (use_surface_layer) {
+     submitter_ = std::move(submitter);
+ 
+     PostCrossThreadTask(
+         *video_frame_compositor_task_runner_, FROM_HERE,
+         CrossThreadBindOnce(&WebMediaPlayerMSCompositor::InitializeSubmitter,
+-                            weak_ptr_factory_.GetWeakPtr()));
++                            weak_this_));
+     update_submission_state_callback_ = base::BindPostTask(
+         video_frame_compositor_task_runner_,
+         ConvertToBaseRepeatingCallback(CrossThreadBindRepeating(
+-            &WebMediaPlayerMSCompositor::SetIsSurfaceVisible,
+-            weak_ptr_factory_.GetWeakPtr())));
++            &WebMediaPlayerMSCompositor::SetIsSurfaceVisible, weak_this_)));
+   }
+ 
+   HeapVector<Member<MediaStreamComponent>> video_components;
+@@ -236,27 +236,12 @@ WebMediaPlayerMSCompositor::WebMediaPlayerMSCompositor(
+ }
+ 
+ WebMediaPlayerMSCompositor::~WebMediaPlayerMSCompositor() {
+-  // Ensured by destructor traits.
+   DCHECK(video_frame_compositor_task_runner_->BelongsToCurrentThread());
+   if (video_frame_provider_client_) {
+     video_frame_provider_client_->StopUsingProvider();
+   }
+ }
+ 
+-// static
+-void WebMediaPlayerMSCompositorTraits::Destruct(
+-    const WebMediaPlayerMSCompositor* compositor) {
+-  if (!compositor->video_frame_compositor_task_runner_
+-           ->BelongsToCurrentThread()) {
+-    PostCrossThreadTask(
+-        *compositor->video_frame_compositor_task_runner_, FROM_HERE,
+-        CrossThreadBindOnce(&WebMediaPlayerMSCompositorTraits::Destruct,
+-                            CrossThreadUnretained(compositor)));
+-    return;
+-  }
+-  delete compositor;
+-}
+-
+ void WebMediaPlayerMSCompositor::InitializeSubmitter() {
+   DCHECK(video_frame_compositor_task_runner_->BelongsToCurrentThread());
+   submitter_->Initialize(this, /*is_media_stream=*/true);
+@@ -302,7 +287,7 @@ void WebMediaPlayerMSCompositor::SetForceBeginFrames(bool enable) {
+     PostCrossThreadTask(
+         *video_frame_compositor_task_runner_, FROM_HERE,
+         CrossThreadBindOnce(&WebMediaPlayerMSCompositor::SetForceBeginFrames,
+-                            weak_ptr_factory_.GetWeakPtr(), enable));
++                            weak_this_, enable));
+     return;
+   }
+ 
+@@ -604,7 +589,7 @@ void WebMediaPlayerMSCompositor::StartRendering() {
+   PostCrossThreadTask(
+       *video_frame_compositor_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&WebMediaPlayerMSCompositor::StartRenderingInternal,
+-                          WrapRefCounted(this)));
++                          weak_this_));
+ }
+ 
+ void WebMediaPlayerMSCompositor::StopRendering() {
+@@ -612,18 +597,7 @@ void WebMediaPlayerMSCompositor::StopRendering() {
+   PostCrossThreadTask(
+       *video_frame_compositor_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&WebMediaPlayerMSCompositor::StopRenderingInternal,
+-                          WrapRefCounted(this)));
+-}
+-
+-void WebMediaPlayerMSCompositor::ReplaceCurrentFrameWithACopy() {
+-  DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+-  // Bounce this call off of IO thread to since there might still be frames
+-  // passed on IO thread.
+-  io_task_runner_->PostTask(
+-      FROM_HERE,
+-      media::BindToCurrentLoop(WTF::BindOnce(
+-          &WebMediaPlayerMSCompositor::ReplaceCurrentFrameWithACopyInternal,
+-          WrapRefCounted(this))));
++                          weak_this_));
+ }
+ 
+ bool WebMediaPlayerMSCompositor::MapTimestampsToRenderTimeTicks(
+@@ -690,7 +664,7 @@ void WebMediaPlayerMSCompositor::RenderWithoutAlgorithm(
+       *video_frame_compositor_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(
+           &WebMediaPlayerMSCompositor::RenderWithoutAlgorithmOnCompositor,
+-          WrapRefCounted(this), std::move(frame), is_copy));
++          weak_this_, std::move(frame), is_copy));
+ }
+ 
+ void WebMediaPlayerMSCompositor::RenderWithoutAlgorithmOnCompositor(
+@@ -790,9 +764,8 @@ void WebMediaPlayerMSCompositor::SetCurrentFrame(
+   PostCrossThreadTask(
+       *video_frame_compositor_task_runner_, FROM_HERE,
+       CrossThreadBindOnce(&WebMediaPlayerMSCompositor::CheckForFrameChanges,
+-                          WrapRefCounted(this), is_first_frame,
+-                          has_frame_size_changed, std::move(new_transform),
+-                          std::move(new_opacity)));
++                          weak_this_, is_first_frame, has_frame_size_changed,
++                          std::move(new_transform), std::move(new_opacity)));
+ }
+ 
+ void WebMediaPlayerMSCompositor::CheckForFrameChanges(
+@@ -859,7 +832,7 @@ void WebMediaPlayerMSCompositor::StopRenderingInternal() {
+     video_frame_provider_client_->StopRendering();
+ }
+ 
+-void WebMediaPlayerMSCompositor::ReplaceCurrentFrameWithACopyInternal() {
++void WebMediaPlayerMSCompositor::ReplaceCurrentFrameWithACopy() {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+   scoped_refptr<media::VideoFrame> current_frame_ref;
+   {
+diff --git a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h
+index ffeb448be295223f1f997b47eddff37d04bc8f16..197a0f0d02e84378f7f697213aa613e73c9f79f7 100644
+--- a/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h
++++ b/third_party/blink/renderer/modules/mediastream/webmediaplayer_ms_compositor.h
+@@ -24,7 +24,6 @@
+ #include "third_party/blink/renderer/modules/mediastream/video_renderer_algorithm_wrapper.h"
+ #include "third_party/blink/renderer/modules/modules_export.h"
+ #include "third_party/blink/renderer/platform/wtf/cross_thread_functional.h"
+-#include "third_party/blink/renderer/platform/wtf/thread_safe_ref_counted.h"
+ 
+ namespace base {
+ class SingleThreadTaskRunner;
+@@ -46,7 +45,6 @@ class SurfaceId;
+ namespace blink {
+ class MediaStreamDescriptor;
+ class WebMediaPlayerMS;
+-struct WebMediaPlayerMSCompositorTraits;
+ 
+ // This class is designed to handle the work load on compositor thread for
+ // WebMediaPlayerMS. It will be instantiated on the main thread, but destroyed
+@@ -58,9 +56,7 @@ struct WebMediaPlayerMSCompositorTraits;
+ // Otherwise, WebMediaPlayerMSCompositor will simply store the most recent
+ // frame, and submit it whenever asked by the compositor.
+ class MODULES_EXPORT WebMediaPlayerMSCompositor
+-    : public cc::VideoFrameProvider,
+-      public WTF::ThreadSafeRefCounted<WebMediaPlayerMSCompositor,
+-                                       WebMediaPlayerMSCompositorTraits> {
++    : public cc::VideoFrameProvider {
+  public:
+   using OnNewFramePresentedCB = base::OnceClosure;
+ 
+@@ -76,6 +72,7 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+       std::unique_ptr<WebVideoFrameSubmitter> submitter,
+       bool use_surface_layer,
+       const base::WeakPtr<WebMediaPlayerMS>& player);
++  ~WebMediaPlayerMSCompositor() override;
+ 
+   WebMediaPlayerMSCompositor(const WebMediaPlayerMSCompositor&) = delete;
+   WebMediaPlayerMSCompositor& operator=(const WebMediaPlayerMSCompositor&) =
+@@ -143,10 +140,7 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+   Metadata GetMetadata();
+ 
+  private:
+-  friend class WTF::ThreadSafeRefCounted<WebMediaPlayerMSCompositor,
+-                                         WebMediaPlayerMSCompositorTraits>;
+   friend class WebMediaPlayerMSTest;
+-  friend struct WebMediaPlayerMSCompositorTraits;
+ 
+   // Struct used to keep information about frames pending in
+   // |rendering_frame_buffer_|.
+@@ -157,8 +151,6 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+     bool is_copy;
+   };
+ 
+-  ~WebMediaPlayerMSCompositor() override;
+-
+   // Ran on the |video_frame_compositor_task_runner_| to initialize
+   // |submitter_|
+   void InitializeSubmitter();
+@@ -204,7 +196,6 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+ 
+   void StartRenderingInternal();
+   void StopRenderingInternal();
+-  void ReplaceCurrentFrameWithACopyInternal();
+ 
+   void SetAlgorithmEnabledForTesting(bool algorithm_enabled);
+   void RecordFrameDisplayedStats(base::TimeTicks frame_displayed_time);
+@@ -314,15 +305,10 @@ class MODULES_EXPORT WebMediaPlayerMSCompositor
+   // |dropped_frame_count_|, |current_metadata_| and |render_started_|.
+   base::Lock current_frame_lock_;
+ 
++  base::WeakPtr<WebMediaPlayerMSCompositor> weak_this_;
+   base::WeakPtrFactory<WebMediaPlayerMSCompositor> weak_ptr_factory_{this};
+ };
+ 
+-struct WebMediaPlayerMSCompositorTraits {
+-  // Ensure destruction occurs on main thread so that "Web" and other resources
+-  // are destroyed on the correct thread.
+-  static void Destruct(const WebMediaPlayerMSCompositor* player);
+-};
+-
+ }  // namespace blink
+ 
+ #endif  // THIRD_PARTY_BLINK_RENDERER_MODULES_MEDIASTREAM_WEBMEDIAPLAYER_MS_COMPOSITOR_H_
