@@ -6,7 +6,7 @@ This document serves to outline the limitations / differences between ESM in Ele
 
 Sandboxed preload scripts are run as plain javascript without an ESM context.  It is reccomended that preload scripts are bundled via something like `webpack` or `vite` for performance reasons regardless, so your preload script should just be a single file that doesn't need to use ESM imports.  Loading the `electron` API is still done via `require('electron')`.
 
-## Non context isolated renderers can't use Node.js ESM imports
+## Non-context-isolated renderers can't use Node.js ESM imports
 
 If your renderer process does not have `contextIsolation` enabled you can not `import` ESM files via the Node.js module loader.  This means that you can't `import('fs')` or `import('./foo')`.  If you want to be able to do so you must enable context isolation.  This is because in the renderer Chromium's `import()` function takes precedence and without context isolation there is no way for Electron to know which loader to route the request to.
 

@@ -132,6 +132,8 @@ class NodeBindings {
   NodeBindings(const NodeBindings&) = delete;
   NodeBindings& operator=(const NodeBindings&) = delete;
 
+  // Blocks until app code is signaled to be loaded via |SetAppCodeLoaded|.
+  // Only has affect if called in the browser process
   void JoinAppCode();
 
  protected:

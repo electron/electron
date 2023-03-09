@@ -11,7 +11,7 @@ it's own blended handler between node / blink.
 Not upstremable.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index c4fe744be1c26c2306e843031192d88f977cd46c..badd978d58049c07716f3a1151da331d31506799 100644
+index c4fe744be1c26c2306e843031192d88f977cd46c..f8218046cbdfbaeb0aaecd50676b6fcb37c8e4d7 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -575,7 +575,7 @@ function initializeESMLoader() {
@@ -19,7 +19,7 @@ index c4fe744be1c26c2306e843031192d88f977cd46c..badd978d58049c07716f3a1151da331d
    internalBinding('module_wrap').callbackMap = new SafeWeakMap();
  
 -  if (getEmbedderOptions().shouldNotRegisterESMLoader) return;
-+  const setOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
++  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
  
    const {
      setImportModuleDynamicallyCallback,
@@ -29,8 +29,8 @@ index c4fe744be1c26c2306e843031192d88f977cd46c..badd978d58049c07716f3a1151da331d
    // track of for different ESM modules.
 -  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject);
 -  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback);
-+  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject, setOnIsolate);
-+  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback, setOnIsolate);
++  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject, shouldSetOnIsolate);
++  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback, shouldSetOnIsolate);
  
    // Patch the vm module when --experimental-vm-modules is on.
    // Please update the comments in vm.js when this block changes.
