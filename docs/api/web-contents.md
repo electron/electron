@@ -722,7 +722,7 @@ cancel the request.
 
 If no event listener is added for this event, all bluetooth requests will be cancelled.
 
-```javascript
+```javascript title='main.js'
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1567,7 +1567,7 @@ ipcMain.on('open-devtools', (event, targetContentsId, devtoolsContentsId) => {
 
 An example of showing devtools in a `BrowserWindow`:
 
-```js
+```js title='main.js'
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1650,40 +1650,14 @@ Algorithm][SCA], just like [`postMessage`][], so prototype chains will not be
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects will throw an exception.
+:::warning
 
-The renderer process can handle the message by listening to `channel` with the
-[`ipcRenderer`](ipc-renderer.md) module.
+Sending non-standard JavaScript types such as DOM objects or
+special Electron objects will throw an exception.
 
-An example of sending messages from the main process to the renderer process:
+:::
 
-```javascript
-// In the main process.
-const { app, BrowserWindow } = require('electron')
-let win = null
-
-app.whenReady().then(() => {
-  win = new BrowserWindow({ width: 800, height: 600 })
-  win.loadURL(`file://${__dirname}/index.html`)
-  win.webContents.on('did-finish-load', () => {
-    win.webContents.send('ping', 'whoooooooh!')
-  })
-})
-```
-
-```html
-<!-- index.html -->
-<html>
-<body>
-  <script>
-    require('electron').ipcRenderer.on('ping', (event, message) => {
-      console.log(message) // Prints 'whoooooooh!'
-    })
-  </script>
-</body>
-</html>
-```
+For additional reading, refer to [Electron's IPC guide](../tutorial/ipc.md).
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 
