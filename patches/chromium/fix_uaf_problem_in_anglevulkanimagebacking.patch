@@ -1,0 +1,85 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Peng Huang <penghuang@chromium.org>
+Date: Mon, 13 Feb 2023 22:10:44 +0000
+Subject: Fix UAF problem in AngleVulkanImageBacking
+
+Right now, we use vulkan fence helper to release the backing.
+It is right, if the last usage of the backing is by skia.
+If the last usage is by gl, the fence helper(skia) isn't aware of
+the submitted work from ANGLE, skia may call flush finish callback
+to release the backing while the backing is still being referenced
+by works in ANGLE. Fix the problem by calling glFinish() if the last
+usage is GL.
+
+Know issue: the finish callback of skia flush() is not always called
+in order. So in edge cases, the UAF problem can still happen.
+
+(cherry picked from commit d5143b14a00807b40eada4dfb0bce610ffc1477a)
+
+Bug: 1309035
+Change-Id: I3562043650dd2b27bde3a370bef45b1226cdd48c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4232858
+Reviewed-by: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Commit-Queue: Peng Huang <penghuang@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1102905}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4245959
+Cr-Commit-Position: refs/branch-heads/5481@{#1119}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc b/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc
+index 84a64950db48dfa43f55793033dcf26af3b4a725..bfe2080e5ab844f3f9a7ccad8cfe7b4336ed68f1 100644
+--- a/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc
++++ b/gpu/command_buffer/service/shared_image/angle_vulkan_image_backing_factory.cc
+@@ -80,6 +80,11 @@ class AngleVulkanImageBacking : public ClearTrackingSharedImageBacking,
+ 
+       passthrough_texture_.reset();
+       egl_image_.reset();
++
++      if (need_gl_finish_before_destroy_ && have_context()) {
++        gl::GLApi* api = gl::g_current_gl_context;
++        api->glFinishFn();
++      }
+     }
+     if (vulkan_image_) {
+       auto* fence_helper = context_state_->vk_context_provider()
+@@ -266,8 +271,9 @@ class AngleVulkanImageBacking : public ClearTrackingSharedImageBacking,
+       --gl_reads_in_process_;
+ 
+       // For the last GL read access, release texture from ANGLE.
+-      if (gl_reads_in_process_ == 0)
++      if (gl_reads_in_process_ == 0) {
+         ReleaseTextureANGLE();
++      }
+ 
+       return;
+     }
+@@ -299,6 +305,9 @@ class AngleVulkanImageBacking : public ClearTrackingSharedImageBacking,
+     GLuint texture = passthrough_texture_->service_id();
+     // Release the texture from ANGLE, so it can be used elsewhere.
+     api->glReleaseTexturesANGLEFn(1, &texture, &layout_);
++    // Releasing the texture will submit all related works to queue, so to be
++    // safe, glFinish() should be called before releasing the VkImage.
++    need_gl_finish_before_destroy_ = true;
+   }
+ 
+   void PrepareBackendTexture() {
+@@ -383,6 +392,11 @@ class AngleVulkanImageBacking : public ClearTrackingSharedImageBacking,
+         return;
+     }
+ 
++    // The backing is used by skia, so skia should submit related work to the
++    // queue, and we can use vulkan fence helper to release the VkImage.
++    // glFinish() is not necessary anymore.
++    need_gl_finish_before_destroy_ = false;
++
+     SyncImageLayoutFromBackendTexture();
+ 
+     if (gl_reads_in_process_ > 0) {
+@@ -449,6 +463,7 @@ class AngleVulkanImageBacking : public ClearTrackingSharedImageBacking,
+   bool is_gl_write_in_process_ = false;
+   int skia_reads_in_process_ = 0;
+   int gl_reads_in_process_ = 0;
++  bool need_gl_finish_before_destroy_ = false;
+ };
+ 
+ class AngleVulkanImageBacking::SkiaAngleVulkanImageRepresentation
