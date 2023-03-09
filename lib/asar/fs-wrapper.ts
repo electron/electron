@@ -392,7 +392,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { exists: nativeExists } = fs;
   fs.exists = function exists (pathArgument: string, callback: any) {
-    const pathInfo = splitPath(pathArgument);
+    let pathInfo: ReturnType<typeof splitPath>;
+    try {
+      pathInfo = splitPath(pathArgument);
+    } catch {
+      nextTick(callback, [false]);
+      return;
+    }
     if (!pathInfo.isAsar) return nativeExists(pathArgument, callback);
     const { asarPath, filePath } = pathInfo;
 
@@ -423,7 +429,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { existsSync } = fs;
   fs.existsSync = (pathArgument: string) => {
-    const pathInfo = splitPath(pathArgument);
+    let pathInfo: ReturnType<typeof splitPath>;
+    try {
+      pathInfo = splitPath(pathArgument);
+    } catch {
+      return false;
+    }
     if (!pathInfo.isAsar) return existsSync(pathArgument);
     const { asarPath, filePath } = pathInfo;
 
