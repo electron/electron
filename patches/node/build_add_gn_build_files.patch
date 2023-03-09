@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..db80a8f00a84bf54f723c21300e7579c994d0514
+index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17f44b0f88
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,438 @@
+@@ -0,0 +1,439 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -223,8 +223,9 @@ index 0000000000000000000000000000000000000000..db80a8f00a84bf54f723c21300e7579c
 +  deps = [
 +    ":node_js2c",
 +    "deps/googletest:gtest",
-+    "deps/uvwasi",
 +    "deps/base64",
++    "deps/simdutf",
++    "deps/uvwasi",
 +    "//third_party/zlib",
 +    "//third_party/brotli:dec",
 +    "//third_party/brotli:enc",
@@ -945,6 +946,32 @@ index 0000000000000000000000000000000000000000..23eed033d31eced6a85c794eee550655
 +    "lib/nghttp2_version.c",
 +  ]
 +}
+diff --git a/deps/simdutf/BUILD.gn b/deps/simdutf/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576a0df7519
+--- /dev/null
++++ b/deps/simdutf/BUILD.gn
+@@ -0,0 +1,20 @@
++config("simdutf_config") {
++  include_dirs = [ "." ]
++}
++
++static_library("simdutf") {
++  include_dirs = [ "." ]
++  sources = [
++    "simdutf.cpp",
++  ]
++
++  public_configs = [ ":simdutf_config" ]
++
++  cflags_cc = [
++    "-Wno-ambiguous-reversed-operator",
++    "-Wno-c++98-compat-extra-semi",
++    "-Wno-unreachable-code-break",
++    "-Wno-unused-const-variable",
++    "-Wno-unused-function",
++  ]
++}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..d6bed57461820ce08391fc424a1f842bd282fa75
@@ -1193,7 +1220,7 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..a991bef2b98766a1cfb248d2af97101af305de82
+index 0000000000000000000000000000000000000000..2a9146e592429c1726527353c6484bd4534731b1
 --- /dev/null
 +++ b/filenames.json
 @@ -0,0 +1,653 @@
@@ -1358,7 +1385,6 @@ index 0000000000000000000000000000000000000000..a991bef2b98766a1cfb248d2af97101a
 +    "lib/internal/assert.js",
 +    "lib/internal/assert/assertion_error.js",
 +    "lib/internal/assert/calltracker.js",
-+    "lib/internal/assert/snapshot.js",
 +    "lib/internal/async_hooks.js",
 +    "lib/internal/blob.js",
 +    "lib/internal/blocklist.js",
@@ -1548,6 +1574,7 @@ index 0000000000000000000000000000000000000000..a991bef2b98766a1cfb248d2af97101a
 +    "lib/internal/test_runner/tap_stream.js",
 +    "lib/internal/test_runner/test.js",
 +    "lib/internal/test_runner/utils.js",
++    "lib/internal/test_runner/yaml_parser.js",
 +    "lib/internal/timers.js",
 +    "lib/internal/tls/secure-context.js",
 +    "lib/internal/tls/secure-pair.js",
@@ -2091,7 +2118,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index d6b2f18cf8599ed7994954c808379565b740ac83..cd73f646bb3e9dbc4d9f4a3f24ef5970ec33b3a5 100644
+index 46e039093716576d3c382dea0cb4bafd42d99799..ff9296f5abac9afda03e457c107f9666e792c21f 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@

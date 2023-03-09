@@ -3,10 +3,10 @@ import * as childProcess from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as util from 'util';
-import { emittedOnce } from './lib/events-helpers';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { webContents, WebContents } from 'electron/main';
+import { webContents } from 'electron/main';
 import { EventEmitter } from 'stream';
+import { once } from 'events';
 
 const features = process._linkedBinding('electron_common_features');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
@@ -18,7 +18,7 @@ describe('node feature', () => {
     describe('child_process.fork', () => {
       it('Works in browser process', async () => {
         const child = childProcess.fork(path.join(fixtures, 'module', 'ping.js'));
-        const message = emittedOnce(child, 'message');
+        const message = once(child, 'message');
         child.send('message');
         const [msg] = await message;
         expect(msg).to.equal('message');
@@ -104,7 +104,7 @@ describe('node feature', () => {
       it('has the electron version in process.versions', async () => {
         const source = 'process.send(process.versions)';
         const forked = require('child_process').fork('--eval', [source]);
-        const message = await new Promise(resolve => forked.once('message', resolve));
+        const [message] = await once(forked, 'message');
         expect(message)
           .to.have.own.property('electron')
           .that.is.a('string')
@@ -158,7 +158,7 @@ describe('node feature', () => {
       cwd: path.join(mainFixturesPath, 'apps', 'libuv-hang'),
       stdio: 'inherit'
     });
-    const [code] = await emittedOnce(appProcess, 'close');
+    const [code] = await once(appProcess, 'close');
     expect(code).to.equal(0);
   });
 
@@ -225,6 +225,42 @@ describe('node feature', () => {
           resolve(error.message);
         }));
         expect(result).to.equal('hello');
+      });
+
+      it('does not log the warning more than once when the rejection is unhandled', async () => {
+        const appPath = path.join(mainFixturesPath, 'api', 'unhandled-rejection.js');
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+        let output = '';
+        const out = (data: string) => {
+          output += data;
+          if (/UnhandledPromiseRejectionWarning/.test(data)) {
+            appProcess.kill();
+          }
+        };
+        appProcess.stdout!.on('data', out);
+        appProcess.stderr!.on('data', out);
+
+        await once(appProcess, 'exit');
+        expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(true);
+        const matches = output.match(/Error: oops/gm);
+        expect(matches).to.have.lengthOf(1);
+      });
+
+      it('does not log the warning more than once when the rejection is handled', async () => {
+        const appPath = path.join(mainFixturesPath, 'api', 'unhandled-rejection-handled.js');
+        const appProcess = childProcess.spawn(process.execPath, [appPath]);
+
+        let output = '';
+        const out = (data: string) => { output += data; };
+        appProcess.stdout!.on('data', out);
+        appProcess.stderr!.on('data', out);
+
+        const [code] = await once(appProcess, 'exit');
+        expect(code).to.equal(0);
+        expect(/UnhandledPromiseRejectionWarning/.test(output)).to.equal(false);
+        const matches = output.match(/Error: oops/gm);
+        expect(matches).to.have.lengthOf(1);
       });
     });
   });
@@ -546,7 +582,7 @@ describe('node feature', () => {
 
       const env = { ...process.env, NODE_OPTIONS: '--v8-options' };
       child = childProcess.spawn(process.execPath, { env });
-      exitPromise = emittedOnce(child, 'exit');
+      exitPromise = once(child, 'exit');
 
       let output = '';
       let success = false;
@@ -609,7 +645,7 @@ describe('node feature', () => {
       };
       // App should exit with code 1.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
-      const [code] = await emittedOnce(child, 'exit');
+      const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
     });
 
@@ -622,7 +658,7 @@ describe('node feature', () => {
       };
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
-      const [code] = await emittedOnce(child, 'exit');
+      const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });
   });
@@ -642,7 +678,7 @@ describe('node feature', () => {
       child = childProcess.spawn(process.execPath, ['--force-fips'], {
         env: { ELECTRON_RUN_AS_NODE: 'true' }
       });
-      exitPromise = emittedOnce(child, 'exit');
+      exitPromise = once(child, 'exit');
 
       let output = '';
       const cleanup = () => {
@@ -723,7 +759,7 @@ describe('node feature', () => {
       child = childProcess.spawn(process.execPath, ['--inspect=17364', path.join(fixtures, 'module', 'run-as-node.js')], {
         env: { ELECTRON_RUN_AS_NODE: 'true' }
       });
-      exitPromise = emittedOnce(child, 'exit');
+      exitPromise = once(child, 'exit');
 
       let output = '';
       const listener = (data: Buffer) => { output += data; };
@@ -734,7 +770,7 @@ describe('node feature', () => {
 
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
-      await emittedOnce(child, 'exit');
+      await once(child, 'exit');
       cleanup();
       if (/^Debugger listening on ws:/m.test(output)) {
         expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
@@ -745,13 +781,13 @@ describe('node feature', () => {
 
     it('Does not start the v8 inspector when --inspect is after a -- argument', async () => {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'noop.js'), '--', '--inspect']);
-      exitPromise = emittedOnce(child, 'exit');
+      exitPromise = once(child, 'exit');
 
       let output = '';
       const listener = (data: Buffer) => { output += data; };
       child.stderr.on('data', listener);
       child.stdout.on('data', listener);
-      await emittedOnce(child, 'exit');
+      await once(child, 'exit');
       if (output.trim().startsWith('Debugger listening on ws://')) {
         throw new Error('Inspector was started when it should not have been');
       }
@@ -762,7 +798,7 @@ describe('node feature', () => {
       child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;
-      exitPromise = emittedOnce(child, 'exit');
+      exitPromise = once(child, 'exit');
 
       const cleanup = () => {
         child.stderr.removeListener('data', listener);
@@ -780,7 +816,7 @@ describe('node feature', () => {
           // NOTE: temporary debug logging to try to catch flake.
           child.stderr.on('data', (m) => console.log(m.toString()));
           child.stdout.on('data', (m) => console.log(m.toString()));
-          const w = (webContents as any).create({}) as WebContents;
+          const w = (webContents as typeof ElectronInternal.WebContents).create();
           w.loadURL('about:blank')
             .then(() => w.executeJavaScript(`new Promise(resolve => {
               const connection = new WebSocket(${JSON.stringify(match[1])})
@@ -809,9 +845,9 @@ describe('node feature', () => {
         env: { ELECTRON_RUN_AS_NODE: 'true' },
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;
-      exitPromise = emittedOnce(child, 'exit');
+      exitPromise = once(child, 'exit');
 
-      const [{ cmd, debuggerEnabled, success }] = await emittedOnce(child, 'message');
+      const [{ cmd, debuggerEnabled, success }] = await once(child, 'message');
       expect(cmd).to.equal('assert');
       expect(debuggerEnabled).to.be.true();
       expect(success).to.be.true();
@@ -828,7 +864,7 @@ describe('node feature', () => {
     const child = childProcess.spawn(process.execPath, [scriptPath], {
       env: { ELECTRON_RUN_AS_NODE: 'true' }
     });
-    const [code, signal] = await emittedOnce(child, 'exit');
+    const [code, signal] = await once(child, 'exit');
     expect(code).to.equal(0);
     expect(signal).to.equal(null);
     child.kill();

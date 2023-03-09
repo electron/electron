@@ -219,8 +219,8 @@ class NativeWindow : public base::SupportsUserData,
 #if BUILDFLAG(IS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;
   virtual bool GetWindowButtonVisibility() const = 0;
-  virtual void SetTrafficLightPosition(absl::optional<gfx::Point> position) = 0;
-  virtual absl::optional<gfx::Point> GetTrafficLightPosition() const = 0;
+  virtual void SetWindowButtonPosition(absl::optional<gfx::Point> position) = 0;
+  virtual absl::optional<gfx::Point> GetWindowButtonPosition() const = 0;
   virtual void RedrawTrafficLights() = 0;
   virtual void UpdateFrame() = 0;
 #endif

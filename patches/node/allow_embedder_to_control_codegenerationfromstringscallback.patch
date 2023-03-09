@@ -8,10 +8,10 @@ This is needed to blend Blink and Node's code generation policy.
 This should be upstreamed.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index c0c422e969543dcd570dabfd8ff0755abe37face..4f14b308d14f3653c8646345a5b375014a51851f 100644
+index e3c42d892eed8dd605301348c08ad24f4362a7aa..c718b9919bb30627e5da2b92a8de58c494bf4b93 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
-@@ -267,11 +267,15 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
+@@ -268,11 +268,15 @@ void SetIsolateErrorHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
  void SetIsolateMiscHandlers(v8::Isolate* isolate, const IsolateSettings& s) {
    isolate->SetMicrotasksPolicy(s.policy);
  

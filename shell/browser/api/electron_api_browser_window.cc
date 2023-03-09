@@ -198,7 +198,11 @@ void BrowserWindow::OnCloseButtonClicked(bool* prevent_default) {
 
   // Trigger beforeunload events for associated BrowserViews.
   for (NativeBrowserView* view : window_->browser_views()) {
-    auto* vwc = view->GetInspectableWebContents()->GetWebContents();
+    auto* iwc = view->GetInspectableWebContents();
+    if (!iwc)
+      continue;
+
+    auto* vwc = iwc->GetWebContents();
     auto* api_web_contents = api::WebContents::From(vwc);
 
     // Required to make beforeunload handler work.
@@ -488,4 +492,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_window, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_window, Initialize)

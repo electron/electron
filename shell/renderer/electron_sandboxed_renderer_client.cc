@@ -36,16 +36,16 @@ namespace electron {
 namespace {
 
 const char kEmitProcessEventKey[] = "emit-process-event";
-const char kModuleCacheKey[] = "native-module-cache";
+const char kBindingCacheKey[] = "native-binding-cache";
 
-v8::Local<v8::Object> GetModuleCache(v8::Isolate* isolate) {
+v8::Local<v8::Object> GetBindingCache(v8::Isolate* isolate) {
   auto context = isolate->GetCurrentContext();
   gin_helper::Dictionary global(isolate, context->Global());
   v8::Local<v8::Value> cache;
 
-  if (!global.GetHidden(kModuleCacheKey, &cache)) {
+  if (!global.GetHidden(kBindingCacheKey, &cache)) {
     cache = v8::Object::New(isolate);
-    global.SetHidden(kModuleCacheKey, cache);
+    global.SetHidden(kBindingCacheKey, cache);
   }
 
   return cache->ToObject(context).ToLocalChecked();
@@ -56,18 +56,19 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
                                 v8::Local<v8::String> key,
                                 gin_helper::Arguments* margs) {
   v8::Local<v8::Object> exports;
-  std::string module_key = gin::V8ToString(isolate, key);
-  gin_helper::Dictionary cache(isolate, GetModuleCache(isolate));
+  std::string binding_key = gin::V8ToString(isolate, key);
+  gin_helper::Dictionary cache(isolate, GetBindingCache(isolate));
 
-  if (cache.Get(module_key.c_str(), &exports)) {
+  if (cache.Get(binding_key.c_str(), &exports)) {
     return exports;
   }
 
-  auto* mod = node::binding::get_linked_module(module_key.c_str());
+  auto* mod = node::binding::get_linked_module(binding_key.c_str());
 
   if (!mod) {
     char errmsg[1024];
-    snprintf(errmsg, sizeof(errmsg), "No such module: %s", module_key.c_str());
+    snprintf(errmsg, sizeof(errmsg), "No such binding: %s",
+             binding_key.c_str());
     margs->ThrowError(errmsg);
     return exports;
   }
@@ -77,7 +78,7 @@ v8::Local<v8::Value> GetBinding(v8::Isolate* isolate,
   DCHECK_NE(mod->nm_context_register_func, nullptr);
   mod->nm_context_register_func(exports, v8::Null(isolate),
                                 isolate->GetCurrentContext(), mod->nm_priv);
-  cache.Set(module_key.c_str(), exports);
+  cache.Set(binding_key.c_str(), exports);
   return exports;
 }
 
@@ -120,8 +121,8 @@ void InvokeEmitProcessEvent(v8::Handle<v8::Context> context,
 }  // namespace
 
 ElectronSandboxedRendererClient::ElectronSandboxedRendererClient() {
-  // Explicitly register electron's builtin modules.
-  NodeBindings::RegisterBuiltinModules();
+  // Explicitly register electron's builtin bindings.
+  NodeBindings::RegisterBuiltinBindings();
   metrics_ = base::ProcessMetrics::CreateCurrentProcessMetrics();
 }
 

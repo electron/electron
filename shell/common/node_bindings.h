@@ -79,13 +79,13 @@ class NodeBindings {
   enum class BrowserEnvironment { kBrowser, kRenderer, kUtility, kWorker };
 
   static NodeBindings* Create(BrowserEnvironment browser_env);
-  static void RegisterBuiltinModules();
+  static void RegisterBuiltinBindings();
   static bool IsInitialized();
 
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
-  void Initialize();
+  void Initialize(v8::Local<v8::Context> context);
 
   void SetNodeCliFlags();
 

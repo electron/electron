@@ -9,7 +9,7 @@ This patch can be removed when Node.js updates to a V8 version containing
 the above CL.
 
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 323fc7d4ff635ca287ee241cee234da0600340a2..36ab78f739f3faecab47eead99f9aa3c403672c0 100644
+index 9f620154ce3696cff90bf308da934147319b1096..806d9700ca4b5faf46042814c0e2ce212945bece 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
 @@ -495,9 +495,9 @@ void OnFatalError(const char* location, const char* message) {
@@ -25,7 +25,7 @@ index 323fc7d4ff635ca287ee241cee234da0600340a2..36ab78f739f3faecab47eead99f9aa3c
    if (location) {
      FPrintF(stderr, "FATAL ERROR: %s %s\n", location, message);
 diff --git a/src/node_errors.h b/src/node_errors.h
-index 926f54286ec72fda98a9a477ac8e22feef522291..f926cc1c70dd6f883c0729c46f09e10972ce6385 100644
+index 850d437acdfe09fc43a7a37790c2926e6109749d..5a33d17b0e90e8ca8dc670e14f93de8fef99d526 100644
 --- a/src/node_errors.h
 +++ b/src/node_errors.h
 @@ -21,7 +21,7 @@ void AppendExceptionLine(Environment* env,

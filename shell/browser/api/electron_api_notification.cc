@@ -253,10 +253,9 @@ bool Notification::IsSupported() {
                ->GetNotificationPresenter();
 }
 
-v8::Local<v8::ObjectTemplate> Notification::FillObjectTemplate(
-    v8::Isolate* isolate,
-    v8::Local<v8::ObjectTemplate> templ) {
-  return gin::ObjectTemplateBuilder(isolate, "Notification", templ)
+void Notification::FillObjectTemplate(v8::Isolate* isolate,
+                                      v8::Local<v8::ObjectTemplate> templ) {
+  gin::ObjectTemplateBuilder(isolate, "Notification", templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -300,4 +299,4 @@ void Initialize(v8::Local<v8::Object> exports,
 
 }  // namespace
 
-NODE_LINKED_MODULE_CONTEXT_AWARE(electron_browser_notification, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_notification, Initialize)

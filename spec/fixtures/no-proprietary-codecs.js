@@ -21,8 +21,8 @@ app.whenReady().then(() => {
     }
   });
 
-  window.webContents.on('crashed', (event, killed) => {
-    console.log(`WebContents crashed (killed=${killed})`);
+  window.webContents.on('render-process-gone', (event, details) => {
+    console.log(`WebContents crashed ${JSON.stringify(details)}`);
     app.exit(1);
   });
 

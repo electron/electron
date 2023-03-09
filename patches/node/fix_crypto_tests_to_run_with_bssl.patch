@@ -31,7 +31,7 @@ index 4e3c32fdcd23fbe3e74bd5e624b739d224689f33..19d65aae7fa8ec9f9b907733ead17a20
  // Test Parallel Execution w/ KeyObject is threadsafe in openssl3
  {
 diff --git a/test/parallel/test-crypto-authenticated.js b/test/parallel/test-crypto-authenticated.js
-index 162b451c5b459c566980c7d3476b3df0cef72871..db59d7fb8b46b5a6d4c77de7b5c492408351816d 100644
+index d358f6b63c0e9f5761157dc200daa484d9c5ead6..7a3e376d04020e7a883f56591bc07d9970d15c9a 100644
 --- a/test/parallel/test-crypto-authenticated.js
 +++ b/test/parallel/test-crypto-authenticated.js
 @@ -50,7 +50,9 @@ const errMessages = {
@@ -715,10 +715,10 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64098ddc6a 100644
+index 2f2e443a7f6482c26f3a065520c8764d8402a91f..ccfe79ac65a223139f293f7dd034096fcdbc81ab 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
-@@ -110,7 +110,7 @@ const der = Buffer.from(
+@@ -111,7 +111,7 @@ const der = Buffer.from(
      '5A:42:63:E0:21:2F:D6:70:63:07:96:6F:27:A7:78:12:08:02:7A:8B'
    );
    assert.strictEqual(x509.keyUsage, undefined);
@@ -727,7 +727,7 @@ index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64
  
    assert.deepStrictEqual(x509.raw, der);
  
-@@ -209,6 +209,16 @@ const der = Buffer.from(
+@@ -253,6 +253,16 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    });
    mc.port2.postMessage(x509);
  
@@ -744,7 +744,7 @@ index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64
    // Verify that legacy encoding works
    const legacyObjectCheck = {
      subject: Object.assign(Object.create(null), {
-@@ -233,16 +243,8 @@ const der = Buffer.from(
+@@ -277,16 +287,8 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        'OCSP - URI': ['http://ocsp.nodejs.org/'],
        'CA Issuers - URI': ['http://ca.nodejs.org/ca.cert']
      }),
@@ -762,7 +762,7 @@ index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64
      exponent: '0x10001',
      valid_from: 'Sep  3 21:40:37 2022 GMT',
      valid_to: 'Jun 17 21:40:37 2296 GMT',
-@@ -254,7 +256,7 @@ const der = Buffer.from(
+@@ -298,7 +300,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
        '51:62:18:39:E2:E2:77:F5:86:11:E8:C0:CA:54:43:7C:76:83:19:05:D0:03:' +
        '24:21:B8:EB:14:61:FB:24:16:EB:BD:51:1A:17:91:04:30:03:EB:68:5F:DC:' +
        '86:E1:D1:7C:FB:AF:78:ED:63:5F:29:9C:32:AF:A1:8E:22:96:D1:02',
@@ -771,7 +771,7 @@ index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64
    };
  
    const legacyObject = x509.toLegacyObject();
-@@ -263,7 +265,7 @@ const der = Buffer.from(
+@@ -307,7 +309,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.deepStrictEqual(legacyObject.subject, legacyObjectCheck.subject);
    assert.deepStrictEqual(legacyObject.issuer, legacyObjectCheck.issuer);
    assert.deepStrictEqual(legacyObject.infoAccess, legacyObjectCheck.infoAccess);
@@ -780,7 +780,7 @@ index 6d92e97115fd537b0469f69132e591d8b1c6a43f..cdeed19099c351e3c3ec3c2d78e12b64
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -272,7 +274,7 @@ const der = Buffer.from(
+@@ -316,7 +318,7 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -958,26 +958,10 @@ index b06f2fa2c53ea72f9a66f0d002dd9281d0259a0f..864fffeebfad75d95416fd47efdea7f2
  
  const server = https.createServer(opts, (req, res) => {
 diff --git a/test/parallel/test-webcrypto-derivebits.js b/test/parallel/test-webcrypto-derivebits.js
-index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685c49be3b7 100644
+index 442423954b10b2ee1696eb7db56eaa4c88492122..cbb96d7de046c80fad608431b7ec0216e2d271fb 100644
 --- a/test/parallel/test-webcrypto-derivebits.js
 +++ b/test/parallel/test-webcrypto-derivebits.js
-@@ -37,6 +37,7 @@ const { subtle } = require('crypto').webcrypto;
-   test('P-521').then(common.mustCall());
- }
- 
-+/*
- // Test HKDF bit derivation
- {
-   async function test(pass, info, salt, hash, length, expected) {
-@@ -68,6 +69,7 @@ const { subtle } = require('crypto').webcrypto;
- 
-   tests.then(common.mustCall());
- }
-+*/
- 
- // Test PBKDF2 bit derivation
- {
-@@ -101,6 +103,7 @@ const { subtle } = require('crypto').webcrypto;
+@@ -101,6 +101,7 @@ const { subtle } = require('crypto').webcrypto;
    tests.then(common.mustCall());
  }
  
@@ -985,32 +969,16 @@ index 442423954b10b2ee1696eb7db56eaa4c88492122..c65610245e7e328d5e844afc48f8f685
  // Test X25519 and X448 bit derivation
  {
    async function test(name) {
-@@ -126,3 +129,4 @@ const { subtle } = require('crypto').webcrypto;
+@@ -126,3 +127,4 @@ const { subtle } = require('crypto').webcrypto;
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-derivekey.js b/test/parallel/test-webcrypto-derivekey.js
-index b819b998d217e0c71e9b41f175de6802d3ac7d90..2afaa9918d7ebd156061094a055dbf076f9965f5 100644
+index b819b998d217e0c71e9b41f175de6802d3ac7d90..fbd32b02abd120aa02b9ac92341ef1331422308d 100644
 --- a/test/parallel/test-webcrypto-derivekey.js
 +++ b/test/parallel/test-webcrypto-derivekey.js
-@@ -46,6 +46,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
-   test('P-521').then(common.mustCall());
- }
- 
-+/*
- // Test HKDF key derivation
- {
-   async function test(pass, info, salt, hash, expected) {
-@@ -82,6 +83,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
- 
-   tests.then(common.mustCall());
- }
-+*/
- 
- // Test PBKDF2 key derivation
- {
-@@ -174,6 +176,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -174,6 +174,7 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    })().then(common.mustCall());
  }
  
@@ -1018,7 +986,7 @@ index b819b998d217e0c71e9b41f175de6802d3ac7d90..2afaa9918d7ebd156061094a055dbf07
  // Test X25519 and X448 key derivation
  {
    async function test(name) {
-@@ -208,3 +211,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
+@@ -208,3 +209,4 @@ const { webcrypto: { subtle }, KeyObject } = require('crypto');
    test('X25519').then(common.mustCall());
    test('X448').then(common.mustCall());
  }

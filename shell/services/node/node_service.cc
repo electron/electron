@@ -33,7 +33,7 @@ NodeService::~NodeService() {
   if (!node_env_stopped_) {
     node_env_->env()->set_trace_sync_io(false);
     js_env_->DestroyMicrotasksRunner();
-    node::Stop(node_env_->env());
+    node::Stop(node_env_->env(), false);
   }
 }
 
@@ -47,7 +47,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 
   v8::HandleScope scope(js_env_->isolate());
 
-  node_bindings_->Initialize();
+  node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
 
   // Append program path for process.argv0
   auto program = base::CommandLine::ForCurrentProcess()->GetProgram();
@@ -59,7 +59,8 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
-      js_env_->context(), js_env_->platform(), params->args, params->exec_args);
+      js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
+      params->args, params->exec_args);
   node_env_ = std::make_unique<NodeEnvironment>(env);
 
   node::SetProcessExitHandler(env,
@@ -67,7 +68,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
                                 // Destroy node platform.
                                 env->set_trace_sync_io(false);
                                 js_env_->DestroyMicrotasksRunner();
-                                node::Stop(env);
+                                node::Stop(env, false);
                                 node_env_stopped_ = true;
                                 receiver_.ResetWithReason(exit_code, "");
                               });

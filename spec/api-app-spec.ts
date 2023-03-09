@@ -7,9 +7,9 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
-import { emittedOnce } from './lib/events-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, waitUntil } from './lib/spec-helpers';
+import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { once } from 'events';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -33,7 +33,7 @@ describe('app module', () => {
   let secureUrl: string;
   const certPath = path.join(fixturesPath, 'certificates');
 
-  before((done) => {
+  before(async () => {
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -55,11 +55,7 @@ describe('app module', () => {
       }
     });
 
-    server.listen(0, '127.0.0.1', () => {
-      const port = (server.address() as net.AddressInfo).port;
-      secureUrl = `https://127.0.0.1:${port}`;
-      done();
-    });
+    secureUrl = (await listen(server)).url;
   });
 
   after(done => {
@@ -173,7 +169,7 @@ describe('app module', () => {
       if (appProcess && appProcess.stdout) {
         appProcess.stdout.on('data', data => { output += data; });
       }
-      const [code] = await emittedOnce(appProcess, 'exit');
+      const [code] = await once(appProcess, 'exit');
 
       if (process.platform !== 'win32') {
         expect(output).to.include('Exit event with code: 123');
@@ -186,7 +182,7 @@ describe('app module', () => {
       const electronPath = process.execPath;
 
       appProcess = cp.spawn(electronPath, [appPath]);
-      const [code, signal] = await emittedOnce(appProcess, 'exit');
+      const [code, signal] = await once(appProcess, 'exit');
 
       expect(signal).to.equal(null, 'exit signal should be null, if you see this please tag @MarshallOfSound');
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
@@ -207,7 +203,7 @@ describe('app module', () => {
       if (appProcess && appProcess.stdout) {
         appProcess.stdout.on('data', () => appProcess!.kill());
       }
-      const [code, signal] = await emittedOnce(appProcess, 'exit');
+      const [code, signal] = await once(appProcess, 'exit');
 
       const message = `code:\n${code}\nsignal:\n${signal}`;
       expect(code).to.equal(0, message);
@@ -233,37 +229,37 @@ describe('app module', () => {
       this.timeout(120000);
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
-      await emittedOnce(first.stdout, 'data');
+      await once(first.stdout, 'data');
       // Start second app when received output.
       const second = cp.spawn(process.execPath, [appPath]);
-      const [code2] = await emittedOnce(second, 'exit');
+      const [code2] = await once(second, 'exit');
       expect(code2).to.equal(1);
-      const [code1] = await emittedOnce(first, 'exit');
+      const [code1] = await once(first, 'exit');
       expect(code1).to.equal(0);
     });
 
     it('returns true when setting non-existent user data folder', async function () {
       const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
       const instance = cp.spawn(process.execPath, [appPath]);
-      const [code] = await emittedOnce(instance, 'exit');
+      const [code] = await once(instance, 'exit');
       expect(code).to.equal(0);
     });
 
     async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
-      const firstExited = emittedOnce(first, 'exit');
+      const firstExited = once(first, 'exit');
 
       // Wait for the first app to boot.
       const firstStdoutLines = first.stdout.pipe(split());
-      while ((await emittedOnce(firstStdoutLines, 'data')).toString() !== 'started') {
+      while ((await once(firstStdoutLines, 'data')).toString() !== 'started') {
         // wait.
       }
-      const additionalDataPromise = emittedOnce(firstStdoutLines, 'data');
+      const additionalDataPromise = once(firstStdoutLines, 'data');
 
       const secondInstanceArgs = [process.execPath, appPath, ...testArgs.args, '--some-switch', 'some-arg'];
       const second = cp.spawn(secondInstanceArgs[0], secondInstanceArgs.slice(1));
-      const secondExited = emittedOnce(second, 'exit');
+      const secondExited = once(second, 'exit');
 
       const [code2] = await secondExited;
       expect(code2).to.equal(1);
@@ -431,7 +427,7 @@ describe('app module', () => {
     it('is emitted when visiting a server with a self-signed cert', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(secureUrl);
-      await emittedOnce(app, 'certificate-error');
+      await once(app, 'certificate-error');
     });
 
     describe('when denied', () => {
@@ -448,7 +444,7 @@ describe('app module', () => {
       it('causes did-fail-load', async () => {
         const w = new BrowserWindow({ show: false });
         w.loadURL(secureUrl);
-        await emittedOnce(w.webContents, 'did-fail-load');
+        await once(w.webContents, 'did-fail-load');
       });
     });
   });
@@ -510,7 +506,7 @@ describe('app module', () => {
     afterEach(() => closeWindow(w).then(() => { w = null as any; }));
 
     it('should emit browser-window-focus event when window is focused', async () => {
-      const emitted = emittedOnce(app, 'browser-window-focus');
+      const emitted = once(app, 'browser-window-focus');
       w = new BrowserWindow({ show: false });
       w.emit('focus');
       const [, window] = await emitted;
@@ -518,7 +514,7 @@ describe('app module', () => {
     });
 
     it('should emit browser-window-blur event when window is blurred', async () => {
-      const emitted = emittedOnce(app, 'browser-window-blur');
+      const emitted = once(app, 'browser-window-blur');
       w = new BrowserWindow({ show: false });
       w.emit('blur');
       const [, window] = await emitted;
@@ -526,14 +522,14 @@ describe('app module', () => {
     });
 
     it('should emit browser-window-created event when window is created', async () => {
-      const emitted = emittedOnce(app, 'browser-window-created');
+      const emitted = once(app, 'browser-window-created');
       w = new BrowserWindow({ show: false });
       const [, window] = await emitted;
       expect(window.id).to.equal(w.id);
     });
 
     it('should emit web-contents-created event when a webContents is created', async () => {
-      const emitted = emittedOnce(app, 'web-contents-created');
+      const emitted = once(app, 'web-contents-created');
       w = new BrowserWindow({ show: false });
       const [, webContents] = await emitted;
       expect(webContents.id).to.equal(w.webContents.id);
@@ -550,7 +546,7 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const emitted = emittedOnce(app, 'renderer-process-crashed');
+      const emitted = once(app, 'renderer-process-crashed');
       w.webContents.executeJavaScript('process.crash()');
 
       const [, webContents] = await emitted;
@@ -568,7 +564,7 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const emitted = emittedOnce(app, 'render-process-gone');
+      const emitted = once(app, 'render-process-gone');
       w.webContents.executeJavaScript('process.crash()');
 
       const [, webContents, details] = await emitted;
@@ -894,7 +890,7 @@ describe('app module', () => {
     ifit(process.platform === 'win32')('detects disabled by TaskManager', async function () {
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: true, args: ['arg1'] });
       const appProcess = cp.spawn('reg', [...regAddArgs, '030000000000000000000000']);
-      await emittedOnce(appProcess, 'exit');
+      await once(appProcess, 'exit');
       expect(app.getLoginItemSettings()).to.deep.equal({
         openAtLogin: false,
         openAsHidden: false,
@@ -931,12 +927,12 @@ describe('app module', () => {
 
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
       let appProcess = cp.spawn('reg', [...regAddArgs, '020000000000000000000000']);
-      await emittedOnce(appProcess, 'exit');
+      await once(appProcess, 'exit');
       expect(app.getLoginItemSettings()).to.deep.equal(expectation);
 
       app.setLoginItemSettings({ openAtLogin: true, name: 'additionalEntry', enabled: false, args: ['arg1'] });
       appProcess = cp.spawn('reg', [...regAddArgs, '000000000000000000000000']);
-      await emittedOnce(appProcess, 'exit');
+      await once(appProcess, 'exit');
       expect(app.getLoginItemSettings()).to.deep.equal(expectation);
     });
   });
@@ -1294,7 +1290,7 @@ describe('app module', () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with non 123 code.
       const first = cp.spawn(process.execPath, [appPath, 'electron-test:?', 'abc']);
-      const [code] = await emittedOnce(first, 'exit');
+      const [code] = await once(first, 'exit');
       expect(code).to.not.equal(123);
     });
 
@@ -1302,7 +1298,7 @@ describe('app module', () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, 'e:\\abc', 'abc']);
-      const [code] = await emittedOnce(first, 'exit');
+      const [code] = await once(first, 'exit');
       expect(code).to.equal(123);
     });
 
@@ -1310,7 +1306,7 @@ describe('app module', () => {
       const appPath = path.join(fixturesPath, 'api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, '--', 'http://electronjs.org', 'electron-test://testdata']);
-      const [code] = await emittedOnce(first, 'exit');
+      const [code] = await once(first, 'exit');
       expect(code).to.equal(123);
     });
   });
@@ -1436,7 +1432,7 @@ describe('app module', () => {
       appProcess.stderr.on('data', (data) => {
         errorData += data;
       });
-      const [exitCode] = await emittedOnce(appProcess, 'exit');
+      const [exitCode] = await once(appProcess, 'exit');
       if (exitCode === 0) {
         try {
           const [, json] = /HERE COMES THE JSON: (.+) AND THERE IT WAS/.exec(gpuInfoData)!;
@@ -1863,6 +1859,19 @@ describe('app module', () => {
       })).to.eventually.be.rejectedWith(/ERR_NAME_NOT_RESOLVED/);
     });
   });
+
+  describe('about panel', () => {
+    it('app.setAboutPanelOptions() does not crash', () => {
+      app.setAboutPanelOptions({
+        applicationName: 'electron!!',
+        version: '1.2.3'
+      });
+    });
+
+    it('app.showAboutPanel() does not crash & runs asynchronously', () => {
+      app.showAboutPanel();
+    });
+  });
 });
 
 describe('default behavior', () => {
@@ -1937,7 +1946,7 @@ describe('default behavior', () => {
     let server: http.Server;
     let serverUrl: string;
 
-    before((done) => {
+    before(async () => {
       server = http.createServer((request, response) => {
         if (request.headers.authorization) {
           return response.end('ok');
@@ -1945,16 +1954,15 @@ describe('default behavior', () => {
         response
           .writeHead(401, { 'WWW-Authenticate': 'Basic realm="Foo"' })
           .end();
-      }).listen(0, '127.0.0.1', () => {
-        serverUrl = 'http://127.0.0.1:' + (server.address() as net.AddressInfo).port;
-        done();
       });
+
+      serverUrl = (await listen(server)).url;
     });
 
     it('should emit a login event on app when a WebContents hits a 401', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(serverUrl);
-      const [, webContents] = await emittedOnce(app, 'login');
+      const [, webContents] = await once(app, 'login');
       expect(webContents).to.equal(w.webContents);
     });
   });
@@ -1981,7 +1989,7 @@ async function runTestApp (name: string, ...args: any[]) {
   let output = '';
   appProcess.stdout.on('data', (data) => { output += data; });
 
-  await emittedOnce(appProcess.stdout, 'end');
+  await once(appProcess.stdout, 'end');
 
   return JSON.parse(output);
 }

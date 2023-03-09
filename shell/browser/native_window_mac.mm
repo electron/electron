@@ -619,7 +619,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
     return;
   }
 
-  if (fullscreen == IsFullscreen())
+  if (fullscreen == IsFullscreen() || !IsFullScreenable())
     return;
 
   // Take note of the current window size
@@ -1215,7 +1215,7 @@ content::DesktopMediaID NativeWindowMac::GetDesktopMediaID() const {
   auto desktop_media_id = content::DesktopMediaID(
       content::DesktopMediaID::TYPE_WINDOW, GetAcceleratedWidget());
   // c.f.
-  // https://source.chromium.org/chromium/chromium/src/+/master:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=372?q=kWindowCaptureMacV2&ss=chromium
+  // https://source.chromium.org/chromium/chromium/src/+/main:chrome/browser/media/webrtc/native_desktop_media_list.cc;l=775-780;drc=79502ab47f61bff351426f57f576daef02b1a8dc
   // Refs https://github.com/electron/electron/pull/30507
   // TODO(deepak1556): Match upstream for `kWindowCaptureMacV2`
 #if 0
@@ -1474,7 +1474,7 @@ bool NativeWindowMac::GetWindowButtonVisibility() const {
          ![window_ standardWindowButton:NSWindowCloseButton].hidden;
 }
 
-void NativeWindowMac::SetTrafficLightPosition(
+void NativeWindowMac::SetWindowButtonPosition(
     absl::optional<gfx::Point> position) {
   traffic_light_position_ = std::move(position);
   if (buttons_proxy_) {
@@ -1483,7 +1483,7 @@ void NativeWindowMac::SetTrafficLightPosition(
   }
 }
 
-absl::optional<gfx::Point> NativeWindowMac::GetTrafficLightPosition() const {
+absl::optional<gfx::Point> NativeWindowMac::GetWindowButtonPosition() const {
   return traffic_light_position_;
 }
 

@@ -31,10 +31,10 @@
 
 #include "electron/pop_node_defines.h"
 
-// Alternative to NODE_MODULE_CONTEXT_AWARE_X.
-// Allows to explicitly register builtin modules instead of using
+// Alternative to NODE_BINDING_CONTEXT_AWARE_X.
+// Allows to explicitly register builtin bindings instead of using
 // __attribute__((constructor)).
-#define NODE_LINKED_MODULE_CONTEXT_AWARE(modname, regfunc) \
-  NODE_MODULE_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
+#define NODE_LINKED_BINDING_CONTEXT_AWARE(modname, regfunc) \
+  NODE_BINDING_CONTEXT_AWARE_CPP(modname, regfunc, nullptr, NM_F_LINKED)
 
 #endif  // ELECTRON_SHELL_COMMON_NODE_INCLUDES_H_

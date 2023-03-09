@@ -1054,6 +1054,8 @@ commands:
     parameters:
       artifact-key:
         type: string
+      build-type:
+        type: string      
       build-nonproprietary-ffmpeg:
         type: boolean
         default: true
@@ -1061,6 +1063,7 @@ commands:
       - *step-gn-gen-default
       - ninja_build_electron:
           clean-prebuilt-snapshot: false
+          build-type: << parameters.build-type >>
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build:
           additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
@@ -1222,9 +1225,12 @@ commands:
       clean-prebuilt-snapshot:
         type: boolean
         default: true
+      build-type:
+        type: string
+
     steps:
       - run:
-          name: Electron build
+          name: Electron << parameters.build-type >> build
           no_output_timeout: 60m
           command: |
             cd src
@@ -1292,6 +1298,8 @@ commands:
         default: true
       artifact-key:
         type: string
+      build-type:
+        type: string        
       after-build-and-save:
         type: steps
         default: []
@@ -1418,6 +1426,7 @@ commands:
           steps:
             - build_and_save_artifacts:
                 artifact-key: << parameters.artifact-key >>
+                build-type: << parameters.build-type >>
                 build-nonproprietary-ffmpeg: << parameters.build-nonproprietary-ffmpeg >>
             - steps: << parameters.after-build-and-save >>
 
@@ -1563,6 +1572,8 @@ commands:
       checkout:
         type: boolean
         default: true
+      build-type:
+        type: string
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1594,7 +1605,8 @@ commands:
       - *step-gn-gen-default
 
       # Electron app
-      - ninja_build_electron
+      - ninja_build_electron:
+          build-type: << parameters.build-type >>
       - *step-show-goma-stats
       - *step-maybe-generate-breakpad-symbols
       - *step-maybe-electron-dist-strip
@@ -1657,6 +1669,7 @@ jobs:
           save-git-cache: true
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
+          build-type: 'nil'
 
   mac-checkout:
     executor:
@@ -1675,6 +1688,7 @@ jobs:
           persist-checkout: true
           restore-src-cache: false
           artifact-key: 'nil'
+          build-type: 'nil'
 
   mac-make-src-cache:
     executor:
@@ -1693,6 +1707,7 @@ jobs:
           save-git-cache: true
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
+          build-type: 'nil'
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -1710,6 +1725,7 @@ jobs:
           checkout: false
           checkout-and-assume-cache: true
           artifact-key: 'linux-x64'
+          build-type: 'Linux'
 
   linux-x64-testing-asan:
     executor:
@@ -1728,6 +1744,7 @@ jobs:
           checkout: true
           build-nonproprietary-ffmpeg: false
           artifact-key: 'linux-x64-asan'
+          build-type: 'Linux'
 
   linux-x64-testing-no-run-as-node:
     executor:
@@ -1744,6 +1761,7 @@ jobs:
           persist: false
           checkout: true
           artifact-key: 'linux-x64-no-run-as-node'
+          build-type: 'Linux'
 
   linux-x64-testing-gn-check:
     executor:
@@ -1775,6 +1793,7 @@ jobs:
             - electron-publish:
                 attach: false
                 checkout: true
+                build-type: 'Linux'
 
 
   linux-arm-testing:
@@ -1795,6 +1814,7 @@ jobs:
           checkout: false
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm'
+          build-type: 'Linux ARM'
 
   linux-arm-publish:
     executor:
@@ -1819,6 +1839,7 @@ jobs:
             - electron-publish:
                 attach: false
                 checkout: true
+                build-type: 'Linux ARM'
 
   linux-arm64-testing:
     executor:
@@ -1838,6 +1859,7 @@ jobs:
           checkout: false
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm64'
+          build-type: 'Linux ARM64'
 
   linux-arm64-testing-gn-check:
     executor:
@@ -1872,6 +1894,7 @@ jobs:
             - electron-publish:
                 attach: false
                 checkout: true
+                build-type: 'Linux ARM64'
 
   osx-testing-x64:
     executor:
@@ -1890,6 +1913,7 @@ jobs:
           checkout-and-assume-cache: true
           attach: true
           artifact-key: 'darwin-x64'
+          build-type: 'Darwin'
           after-build-and-save:
             - run:
                 name: Configuring MAS build
@@ -1900,6 +1924,7 @@ jobs:
                   rm -rf src/out/Default/Electron*.app
             - build_and_save_artifacts:
                 artifact-key: 'mas-x64'
+                build-type: 'MAS'
           after-persist:
             - persist_to_workspace:
                 root: .
@@ -1936,6 +1961,7 @@ jobs:
             - electron-publish:
                 attach: true
                 checkout: false
+                build-type: 'Darwin'
 
   osx-publish-arm64:
     executor:
@@ -1958,6 +1984,7 @@ jobs:
             - electron-publish:
                 attach: true
                 checkout: false
+                build-type: 'Darwin ARM64'
 
   osx-testing-arm64:
     executor:
@@ -1978,6 +2005,7 @@ jobs:
           checkout-and-assume-cache: true
           attach: true
           artifact-key: 'darwin-arm64'
+          build-type: 'Darwin ARM64'
           after-build-and-save:
             - run:
                 name: Configuring MAS build
@@ -1988,6 +2016,7 @@ jobs:
                   rm -rf src/out/Default/Electron*.app
             - build_and_save_artifacts:
                 artifact-key: 'mas-arm64'
+                build-type: 'MAS ARM64'
           after-persist:
             - persist_to_workspace:
                 root: .
@@ -2014,6 +2043,7 @@ jobs:
             - electron-publish:
                 attach: true
                 checkout: false
+                build-type: 'MAS'
 
   mas-publish-arm64:
     executor:
@@ -2036,6 +2066,7 @@ jobs:
             - electron-publish:
                 attach: true
                 checkout: false
+                build-type: 'MAS ARM64'
 
   # Layer 3: Tests.
   linux-x64-testing-tests:
