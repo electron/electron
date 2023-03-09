@@ -87,7 +87,7 @@ index f553d52bcc00acc9f1e2d87ee618efb7b24b389d..672aa22e5d1eeecfca3c780822024037
  }
  
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 3a81bbe5542f39c82f6ccf6643f491cb73ecb2aa..17d5e0db640014e701c1db6f6462a0603d78e11e 100644
+index 3a81bbe5542f39c82f6ccf6643f491cb73ecb2aa..6b156ac4c514855f73fedc85fb9b0080e8e61463 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -22,7 +22,9 @@
@@ -100,7 +100,23 @@ index 3a81bbe5542f39c82f6ccf6643f491cb73ecb2aa..17d5e0db640014e701c1db6f6462a060
  
  namespace {
  
-@@ -643,6 +645,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -225,6 +227,7 @@ void PostAnnouncementNotification(NSString* announcement,
+         return;
+       }
+ 
++#if !IS_MAS_BUILD()
+       BrowserAccessibilityManager* root_manager = GetManagerForRootFrame();
+       if (root_manager) {
+         BrowserAccessibilityManagerMac* root_manager_mac =
+@@ -247,6 +250,7 @@ void PostAnnouncementNotification(NSString* announcement,
+           return;
+         }
+       }
++#endif
+ 
+       if (base::mac::IsOS10_13()) {
+         // Use the announcement API to get around OS <= 10.13 VoiceOver bug
+@@ -643,6 +647,7 @@ void PostAnnouncementNotification(NSString* announcement,
    if ([NSApp isActive])
      return window == [NSApp accessibilityFocusedWindow];
  
@@ -108,7 +124,7 @@ index 3a81bbe5542f39c82f6ccf6643f491cb73ecb2aa..17d5e0db640014e701c1db6f6462a060
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -670,6 +673,7 @@ void PostAnnouncementNotification(NSString* announcement,
+@@ -670,6 +675,7 @@ void PostAnnouncementNotification(NSString* announcement,
    // from within the app shim content.
    if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
      return true;
