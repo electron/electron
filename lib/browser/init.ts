@@ -190,13 +190,14 @@ if (packagePath) {
   if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
     const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
     const main = require('url').pathToFileURL(path.join(packagePath, mainStartupScript));
-    loadESM((esmLoader: any) => {
-      return esmLoader.import(main.toString(), undefined, Object.create(null)).then(() => {
+    loadESM(async (esmLoader: any) => {
+      try {
+        await esmLoader.import(main.toString(), undefined, Object.create(null));
         appCodeLoaded!();
-      }).catch((err: Error) => {
+      } catch (err) {
         appCodeLoaded!();
-        process.emit('uncaughtException', err);
-      });
+        process.emit('uncaughtException', err as Error);
+      }
     });
   } else {
     // Call appCodeLoaded before just for safety, it doesn't matter here as _load is syncronous

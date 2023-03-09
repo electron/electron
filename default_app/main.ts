@@ -89,7 +89,7 @@ async function loadApplicationPackage (packagePath: string) {
     if (fs.existsSync(packageJsonPath)) {
       let packageJson;
       try {
-        packageJson = (await import(packageJsonPath, {
+        packageJson = (await import(url.pathToFileURL(packageJsonPath).toString(), {
           assert: {
             type: 'json'
           }
