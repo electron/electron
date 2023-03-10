@@ -46,17 +46,6 @@ std::string EncodeToken(const base::UnguessableToken& token) {
   return buffer;
 }
 
-base::UnguessableToken DecodeToken(base::StringPiece input) {
-  std::string buffer;
-  if (!base::Base64Decode(input, &buffer) ||
-      buffer.length() != sizeof(uint64_t) * 2) {
-    return base::UnguessableToken();
-  }
-
-  const uint64_t* data = reinterpret_cast<const uint64_t*>(buffer.data());
-  return base::UnguessableToken::Deserialize(data[0], data[1]);
-}
-
 base::Value PortInfoToValue(const device::mojom::SerialPortInfo& port) {
   base::Value::Dict value;
   if (port.display_name && !port.display_name->empty())

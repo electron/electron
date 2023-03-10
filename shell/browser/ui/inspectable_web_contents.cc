@@ -97,7 +97,7 @@ const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 InspectableWebContents::List g_web_contents_instances_;
 
 base::Value RectToDictionary(const gfx::Rect& bounds) {
-  base::Value dict(base::Value::Type::DICTIONARY);
+  base::Value dict(base::Value::Type::DICT);
   dict.SetKey("x", base::Value(bounds.x()));
   dict.SetKey("y", base::Value(bounds.y()));
   dict.SetKey("width", base::Value(bounds.width()));
@@ -105,17 +105,17 @@ base::Value RectToDictionary(const gfx::Rect& bounds) {
   return dict;
 }
 
-gfx::Rect DictionaryToRect(const base::Value* dict) {
-  const base::Value* found = dict->FindKey("x");
+gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
+  const base::Value* found = dict.Find("x");
   int x = found ? found->GetInt() : 0;
 
-  found = dict->FindKey("y");
+  found = dict.Find("y");
   int y = found ? found->GetInt() : 0;
 
-  found = dict->FindKey("width");
+  found = dict.Find("width");
   int width = found ? found->GetInt() : 800;
 
-  found = dict->FindKey("height");
+  found = dict.Find("height");
   int height = found ? found->GetInt() : 600;
 
   return gfx::Rect(x, y, width, height);
@@ -353,7 +353,7 @@ InspectableWebContents::InspectableWebContents(
   const base::Value* bounds_dict =
       &pref_service_->GetValue(kDevToolsBoundsPref);
   if (bounds_dict->is_dict()) {
-    devtools_bounds_ = DictionaryToRect(bounds_dict);
+    devtools_bounds_ = DictionaryToRect(bounds_dict->GetDict());
     // Sometimes the devtools window is out of screen or has too small size.
     if (devtools_bounds_.height() < 100 || devtools_bounds_.width() < 100) {
       devtools_bounds_.set_height(600);
@@ -894,7 +894,7 @@ void InspectableWebContents::ClearPreferences() {
 }
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
-  base::Value result(base::Value::Type::DICTIONARY);
+  base::Value result(base::Value::Type::DICT);
   result.SetBoolKey("isSyncActive", false);
   std::move(callback).Run(&result);
 }
