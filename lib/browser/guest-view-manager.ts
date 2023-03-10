@@ -14,7 +14,6 @@ interface GuestInstance {
 }
 
 const webViewManager = process._linkedBinding('electron_browser_web_view_manager');
-const eventBinding = process._linkedBinding('electron_browser_event');
 const netBinding = process._linkedBinding('electron_browser_net');
 
 const supportedWebViewEvents = Object.keys(webViewEvents);
@@ -82,7 +81,13 @@ function makeLoadURLOptions (params: Record<string, any>) {
 // Create a new guest instance.
 const createGuest = function (embedder: Electron.WebContents, embedderFrameId: number, elementInstanceId: number, params: Record<string, any>) {
   const webPreferences = makeWebPreferences(embedder, params);
-  const event = eventBinding.createWithSender(embedder);
+  const event = {
+    sender: embedder,
+    preventDefault () {
+      this.defaultPrevented = true;
+    },
+    defaultPrevented: false
+  };
 
   const { instanceId } = params;
 

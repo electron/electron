@@ -1,7 +1,10 @@
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import * as http from 'http';
+import * as https from 'https';
+import * as net from 'net';
 import * as v8 from 'v8';
+import * as url from 'url';
 import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
@@ -17,8 +20,6 @@ const addOnly = <T>(fn: Function): T => {
 
 export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
 export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
-
-export const delay = (time: number = 0) => new Promise(resolve => setTimeout(resolve, time));
 
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];
@@ -180,6 +181,7 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
         const chai_1 = require('chai')
+        const promises_1 = require('timers/promises')
         chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
         await (${fn})(...${JSON.stringify(args ?? [])})
@@ -190,4 +192,12 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     })()`);
     if (!ok) { throw new AssertionError(message); }
   });
+}
+
+export async function listen (server: http.Server | https.Server) {
+  const hostname = '127.0.0.1';
+  await new Promise<void>(resolve => server.listen(0, hostname, () => resolve()));
+  const { port } = server.address() as net.AddressInfo;
+  const protocol = (server instanceof https.Server) ? 'https' : 'http';
+  return { port, url: url.format({ protocol, hostname, port }) };
 }

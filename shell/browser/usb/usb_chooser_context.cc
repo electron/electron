@@ -82,7 +82,7 @@ UsbChooserContext::UsbChooserContext(ElectronBrowserContext* context)
 // static
 base::Value UsbChooserContext::DeviceInfoToValue(
     const device::mojom::UsbDeviceInfo& device_info) {
-  base::Value device_value(base::Value::Type::DICTIONARY);
+  base::Value device_value(base::Value::Type::DICT);
   device_value.SetStringKey(kDeviceNameKey, device_info.product_name
                                                 ? *device_info.product_name
                                                 : base::StringPiece16());

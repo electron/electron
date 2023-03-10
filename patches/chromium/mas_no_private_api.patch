@@ -104,10 +104,10 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..752b575cf341546bdcc46e6dfff28fe4
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77d21347fb 100644
+index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..a4c2867b4bb6c2c2dcd6565873ccccd940712449 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -42,6 +42,7 @@
+@@ -37,6 +37,7 @@
  #include "device/bluetooth/bluetooth_socket_mac.h"
  #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
@@ -115,7 +115,7 @@ index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -55,6 +56,7 @@
+@@ -50,6 +51,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -123,7 +123,7 @@ index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77
  
  namespace {
  
-@@ -114,8 +116,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -93,8 +95,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -133,8 +133,8 @@ index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77
 +#endif
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
-       low_energy_discovery_manager_(
-@@ -356,8 +360,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+       device_paired_status_callback_(
+@@ -249,8 +253,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -146,29 +146,12 @@ index 0c4121f178392864053f5511bf880d8e20845fdd..f472ecfc2ba6d3ce51fa14f989bfad77
 +#endif
  }
  
- void BluetoothAdapterMac::RemovePairingDelegateInternal(
-diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 79021074867df91e3090bc6bbea6114364e6e78d..44635f13048890b20c74870d26c4e74bab363ddb 100644
---- a/media/audio/BUILD.gn
-+++ b/media/audio/BUILD.gn
-@@ -176,6 +176,12 @@ source_set("audio") {
-       "mac/scoped_audio_unit.cc",
-       "mac/scoped_audio_unit.h",
-     ]
-+    if (is_mas_build) {
-+      sources -= [
-+        "mac/coreaudio_dispatch_override.cc",
-+        "mac/coreaudio_dispatch_override.h",
-+      ]
-+    }
-     frameworks = [
-       "AudioToolbox.framework",
-       "AudioUnit.framework",
+ base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 2cd163bf82f16a44456d0f98505514489ba8f751..636096ec3d6425b858bbcb9f732be44cbab077e7 100644
+index f892054d85a0acb6cff3ac88214c9402caf4341a..e361a333d6a11e945dc9d2fd4a7651d5a78d2986 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
-@@ -975,7 +975,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
+@@ -969,7 +969,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
  
  void AudioManagerMac::InitializeOnAudioThread() {
    DCHECK(GetTaskRunner()->BelongsToCurrentThread());
@@ -222,10 +205,159 @@ index f35d9ef2a2df3db8ecbf1d7b909c7b1cf33f3cd9..a710b8b4f851666fd65bb37f69ec2fa7
  
  bool SandboxCompiler::CompilePolicyToProto(mac::SandboxPolicy& policy,
 diff --git a/sandbox/mac/seatbelt.cc b/sandbox/mac/seatbelt.cc
-index 15c835e118456394c0a00ac98c11241c14ca75bd..49332a94219fc3e64ab05baa04681325edddfeb0 100644
+index 15c835e118456394c0a00ac98c11241c14ca75bd..83759e5fbc252fa57ca2fa122873dfac3d61d46d 100644
 --- a/sandbox/mac/seatbelt.cc
 +++ b/sandbox/mac/seatbelt.cc
-@@ -175,7 +175,11 @@ void Seatbelt::FreeError(char* errorbuf) {
+@@ -9,7 +9,7 @@
+ 
+ extern "C" {
+ #include <sandbox.h>
+-
++#if !IS_MAS_BUILD()
+ int sandbox_init_with_parameters(const char* profile,
+                                  uint64_t flags,
+                                  const char* const parameters[],
+@@ -40,13 +40,13 @@ sandbox_profile_t* sandbox_compile_string(const char* data,
+                                           char** error);
+ int sandbox_apply(sandbox_profile_t*);
+ void sandbox_free_profile(sandbox_profile_t*);
+-
++#endif
+ }  // extern "C"
+ 
+ namespace sandbox {
+ 
+ namespace {
+-
++#if !IS_MAS_BUILD()
+ bool HandleSandboxResult(int rv, char* errorbuf, std::string* error) {
+   if (rv == 0) {
+     if (error)
+@@ -74,36 +74,48 @@ bool HandleSandboxErrno(int rv, const char* message, std::string* error) {
+   }
+   return false;
+ }
+-
++#endif
+ }  // namespace
+ 
+ // static
+ Seatbelt::Parameters Seatbelt::Parameters::Create() {
+   Parameters params;
++#if !IS_MAS_BUILD()
+   params.params_ = ::sandbox_create_params();
++#endif
+   return params;
+ }
+ 
+ Seatbelt::Parameters::Parameters() = default;
+ 
+ Seatbelt::Parameters::Parameters(Seatbelt::Parameters&& other) {
++#if !IS_MAS_BUILD()
+   params_ = std::exchange(other.params_, nullptr);
++#endif
+ }
+ 
+ Seatbelt::Parameters& Seatbelt::Parameters::operator=(
+     Seatbelt::Parameters&& other) {
++#if !IS_MAS_BUILD()
+   params_ = std::exchange(other.params_, nullptr);
++#endif
+   return *this;
+ }
+ 
+ bool Seatbelt::Parameters::Set(const char* key, const char* value) {
++#if !IS_MAS_BUILD()
+   return ::sandbox_set_param(params_, key, value) == 0;
++#else
++  return true;
++#endif
+ }
+ 
+ Seatbelt::Parameters::~Parameters() {
++#if !IS_MAS_BUILD()
+   if (params_) {
+     ::sandbox_free_params(params_);
+   }
++#endif
+ }
+ 
+ // Initialize the static member variables.
+@@ -114,6 +126,7 @@ const char* Seatbelt::kProfilePureComputation = kSBXProfilePureComputation;
+ 
+ // static
+ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
++#if !IS_MAS_BUILD()
+ // OS X deprecated these functions, but did not provide a suitable replacement,
+ // so ignore the deprecation warning.
+ #pragma clang diagnostic push
+@@ -122,6 +135,9 @@ bool Seatbelt::Init(const char* profile, uint64_t flags, std::string* error) {
+   int rv = ::sandbox_init(profile, flags, &errorbuf);
+   return HandleSandboxResult(rv, errorbuf, error);
+ #pragma clang diagnostic pop
++#else
++  return true;
++#endif
+ }
+ 
+ // static
+@@ -129,10 +145,14 @@ bool Seatbelt::InitWithParams(const char* profile,
+                               uint64_t flags,
+                               const char* const parameters[],
+                               std::string* error) {
++#if !IS_MAS_BUILD()
+   char* errorbuf = nullptr;
+   int rv =
+       ::sandbox_init_with_parameters(profile, flags, parameters, &errorbuf);
+   return HandleSandboxResult(rv, errorbuf, error);
++#else
++  return true;
++#endif
+ }
+ 
+ // static
+@@ -140,6 +160,7 @@ bool Seatbelt::Compile(const char* profile,
+                        const Seatbelt::Parameters& params,
+                        std::string& compiled_profile,
+                        std::string* error) {
++#if !IS_MAS_BUILD()
+   char* errorbuf = nullptr;
+   sandbox_profile_t* sandbox_profile =
+       ::sandbox_compile_string(profile, params.params(), &errorbuf);
+@@ -149,33 +170,44 @@ bool Seatbelt::Compile(const char* profile,
+   compiled_profile.assign(reinterpret_cast<const char*>(sandbox_profile->data),
+                           sandbox_profile->size);
+   ::sandbox_free_profile(sandbox_profile);
++#endif
+   return true;
+ }
+ 
+ // static
+ bool Seatbelt::ApplyCompiledProfile(const std::string& profile,
+                                     std::string* error) {
++#if !IS_MAS_BUILD()
+   sandbox_profile_t sbox_profile = {
+       .builtin = nullptr,
+       .data = reinterpret_cast<const uint8_t*>(profile.data()),
+       .size = profile.size()};
+   return HandleSandboxErrno(::sandbox_apply(&sbox_profile),
+                             "sandbox_apply: ", error);
++#else
++  return true;
++#endif
+ }
+ 
+ // static
+ void Seatbelt::FreeError(char* errorbuf) {
++#if !IS_MAS_BUILD()
+ // OS X deprecated these functions, but did not provide a suitable replacement,
+ // so ignore the deprecation warning.
+ #pragma clang diagnostic push
+ #pragma clang diagnostic ignored "-Wdeprecated-declarations"
+   return ::sandbox_free_error(errorbuf);
+ #pragma clang diagnostic pop
++#endif
+ }
  
  // static
  bool Seatbelt::IsSandboxed() {
@@ -297,10 +429,10 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..7d80d7fa8337523c3a70f317f883f0cc
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index fe043e6dc2203a9054ae367b70a3854b8560c9c7..6cc51d9df176512f6f296e0eb82bc31b5a9515fa 100644
+index 2b4c110a3f7e1eb4f125bb94204affd112c85073..4d480e5f2dc8f49b02e2404bdb5186de4415f4d6 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -88,6 +88,7 @@
+@@ -95,6 +95,7 @@
      }
    }
  
@@ -308,7 +440,7 @@ index fe043e6dc2203a9054ae367b70a3854b8560c9c7..6cc51d9df176512f6f296e0eb82bc31b
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -96,6 +97,7 @@
+@@ -103,6 +104,7 @@
    // AXTextMarkerRange
    if (IsAXTextMarkerRange(value))
      return AXTextMarkerRangeToBaseValue(value, indexer);

@@ -134,7 +134,7 @@ void Clipboard::Write(const gin_helper::Dictionary& data,
   }
 
   if (data.Get("html", &html))
-    writer.WriteHTML(html, std::string());
+    writer.WriteHTML(html, std::string(), ui::ClipboardContentType::kSanitized);
 
   if (data.Get("image", &image))
     writer.WriteImage(image.AsBitmap());
@@ -195,7 +195,7 @@ std::u16string Clipboard::ReadHTML(gin_helper::Arguments* args) {
 void Clipboard::WriteHTML(const std::u16string& html,
                           gin_helper::Arguments* args) {
   ui::ScopedClipboardWriter writer(GetClipboardBuffer(args));
-  writer.WriteHTML(html, std::string());
+  writer.WriteHTML(html, std::string(), ui::ClipboardContentType::kSanitized);
 }
 
 v8::Local<v8::Value> Clipboard::ReadBookmark(gin_helper::Arguments* args) {

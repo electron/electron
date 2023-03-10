@@ -352,19 +352,25 @@ class WebContents : public ExclusiveAccessContext,
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>
   bool EmitWithSender(base::StringPiece name,
-                      content::RenderFrameHost* sender,
+                      content::RenderFrameHost* frame,
                       electron::mojom::ElectronApiIPC::InvokeCallback callback,
                       Args&&... args) {
     DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    v8::Local<v8::Object> wrapper;
-    if (!GetWrapper(isolate).ToLocal(&wrapper))
+
+    gin::Handle<gin_helper::internal::Event> event =
+        MakeEventWithSender(isolate, frame, std::move(callback));
+    if (event.IsEmpty())
       return false;
-    v8::Local<v8::Object> event = gin_helper::internal::CreateNativeEvent(
-        isolate, wrapper, sender, std::move(callback));
-    return EmitCustomEvent(name, event, std::forward<Args>(args)...);
+    EmitWithoutEvent(name, event, std::forward<Args>(args)...);
+    return event->GetDefaultPrevented();
   }
+
+  gin::Handle<gin_helper::internal::Event> MakeEventWithSender(
+      v8::Isolate* isolate,
+      content::RenderFrameHost* frame,
+      electron::mojom::ElectronApiIPC::InvokeCallback callback);
 
   WebContents* embedder() { return embedder_; }
 
@@ -436,7 +442,13 @@ class WebContents : public ExclusiveAccessContext,
   // content::RenderWidgetHost::InputEventObserver:
   void OnInputEvent(const blink::WebInputEvent& event) override;
 
-  SkRegion* draggable_region() { return draggable_region_.get(); }
+  SkRegion* draggable_region() {
+    return force_non_draggable_ ? nullptr : draggable_region_.get();
+  }
+
+  void SetForceNonDraggable(bool force_non_draggable) {
+    force_non_draggable_ = force_non_draggable;
+  }
 
   // disable copy
   WebContents(const WebContents&) = delete;
@@ -572,8 +584,7 @@ class WebContents : public ExclusiveAccessContext,
                            const gfx::Size& pref_size) override;
 
   // content::WebContentsObserver:
-  void BeforeUnloadFired(bool proceed,
-                         const base::TimeTicks& proceed_time) override;
+  void BeforeUnloadFired(bool proceed) override;
   void OnBackgroundColorChanged() override;
   void RenderFrameCreated(content::RenderFrameHost* render_frame_host) override;
   void RenderFrameDeleted(content::RenderFrameHost* render_frame_host) override;
@@ -819,6 +830,8 @@ class WebContents : public ExclusiveAccessContext,
   content::RenderFrameHost* fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;
+
+  bool force_non_draggable_ = false;
 
   base::WeakPtrFactory<WebContents> weak_factory_{this};
 };

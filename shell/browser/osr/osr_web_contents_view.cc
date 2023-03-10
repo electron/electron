@@ -220,4 +220,7 @@ OffScreenRenderWidgetHostView* OffScreenWebContentsView::GetView() const {
 
 void OffScreenWebContentsView::FullscreenStateChanged(bool is_fullscreen) {}
 
+void OffScreenWebContentsView::UpdateWindowControlsOverlay(
+    const gfx::Rect& bounding_rect) {}
+
 }  // namespace electron

@@ -8,10 +8,10 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 207142322bba89e94f4e3052a22bef6ffebcdc39..c83d8b0db630d3fc26fb273170945c872bede091 100644
+index c19cd5e5d8a818c52406c78b95d96bae1b1f41bd..88df0c4b6f995c993c330963ff0c730e00c5b8ec 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
-@@ -1200,6 +1200,13 @@ Module.prototype._compile = function(content, filename) {
+@@ -1228,6 +1228,13 @@ Module.prototype._compile = function(content, filename) {
    if (getOptionValue('--inspect-brk') && process._eval == null) {
      if (!resolvedArgv) {
        // We enter the repl if we're not given a filename argument.

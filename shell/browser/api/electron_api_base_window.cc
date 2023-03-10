@@ -22,6 +22,7 @@
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -876,17 +877,12 @@ bool BaseWindow::GetWindowButtonVisibility() const {
   return window_->GetWindowButtonVisibility();
 }
 
-void BaseWindow::SetTrafficLightPosition(const gfx::Point& position) {
-  // For backward compatibility we treat (0, 0) as resetting to default.
-  if (position.IsOrigin())
-    window_->SetTrafficLightPosition(absl::nullopt);
-  else
-    window_->SetTrafficLightPosition(position);
+void BaseWindow::SetWindowButtonPosition(absl::optional<gfx::Point> position) {
+  window_->SetWindowButtonPosition(std::move(position));
 }
 
-gfx::Point BaseWindow::GetTrafficLightPosition() const {
-  // For backward compatibility we treat default value as (0, 0).
-  return window_->GetTrafficLightPosition().value_or(gfx::Point());
+absl::optional<gfx::Point> BaseWindow::GetWindowButtonPosition() const {
+  return window_->GetWindowButtonPosition();
 }
 #endif
 
@@ -1271,12 +1267,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
-#if BUILDFLAG(IS_MAC)
-      .SetMethod("setTrafficLightPosition",
-                 &BaseWindow::SetTrafficLightPosition)
-      .SetMethod("getTrafficLightPosition",
-                 &BaseWindow::GetTrafficLightPosition)
-#endif
 
 #if BUILDFLAG(IS_MAC)
       .SetMethod("isHiddenInMissionControl",
@@ -1299,6 +1289,10 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetWindowButtonVisibility)
       .SetMethod("_getWindowButtonVisibility",
                  &BaseWindow::GetWindowButtonVisibility)
+      .SetMethod("setWindowButtonPosition",
+                 &BaseWindow::SetWindowButtonPosition)
+      .SetMethod("getWindowButtonPosition",
+                 &BaseWindow::GetWindowButtonPosition)
       .SetProperty("excludedFromShownWindowsMenu",
                    &BaseWindow::IsExcludedFromShownWindowsMenu,
                    &BaseWindow::SetExcludedFromShownWindowsMenu)

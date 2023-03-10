@@ -31,6 +31,7 @@
 #include "shell/common/electron_command_line.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
@@ -50,7 +51,6 @@
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
   V(electron_browser_dialog)             \
-  V(electron_browser_event)              \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
   V(electron_browser_in_app_purchase)    \
@@ -415,7 +415,7 @@ void NodeBindings::SetNodeCliFlags() {
   }
 }
 
-void NodeBindings::Initialize() {
+void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
 
@@ -462,6 +462,8 @@ void NodeBindings::Initialize() {
       env->HasVar("ELECTRON_DEFAULT_ERROR_MODE"))
     SetErrorMode(GetErrorMode() & ~SEM_NOGPFAULTERRORBOX);
 #endif
+
+  gin_helper::internal::Event::GetConstructor(context);
 
   g_is_initialized = true;
 }

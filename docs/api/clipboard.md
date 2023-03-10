@@ -226,7 +226,7 @@ clipboard.writeBuffer('public/utf8-plain-text', buffer)
 
 const ret = clipboard.readBuffer('public/utf8-plain-text')
 
-console.log(buffer.equals(out))
+console.log(buffer.equals(ret))
 // true
 ```
 
