@@ -33,6 +33,7 @@
   "parallel/test-inspector-multisession-ws",
   "parallel/test-inspector-port-zero-cluster",
   "parallel/test-inspector-tracing-domain",
+  "parallel/test-intl",
   "parallel/test-module-loading-globalpaths",
   "parallel/test-module-version",
   "parallel/test-openssl-ca-options",

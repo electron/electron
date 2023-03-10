@@ -95,10 +95,10 @@ index e7bf48ba670dbe8fa2a8688cf89e74a7d15cc6a3..f385de06d8b33aafa0eac1858d9fd233
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 0cf281aff32bd37b3539056ea202aa74ef432000..9b070697f5243ae25f50aa9f681cec57128da5cf 100644
+index ea4db769a697f6cda4a395eabdb5a634a8a84845..7ec95e49dab09f7c7eb6e1af58c01a14705b767b 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -97,7 +97,9 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -96,7 +96,9 @@ void OrderChildWindow(NSWindow* child_window,
  }  // namespace
  
  @interface NSWindow (Private)
@@ -117,7 +117,7 @@ index 0cf281aff32bd37b3539056ea202aa74ef432000..9b070697f5243ae25f50aa9f681cec57
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -170,6 +174,8 @@ - (BOOL)usesCustomDrawing {
+@@ -155,6 +159,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -126,7 +126,7 @@ index 0cf281aff32bd37b3539056ea202aa74ef432000..9b070697f5243ae25f50aa9f681cec57
  @implementation NativeWidgetMacNSWindow {
   @private
    base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -328,6 +334,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -327,6 +333,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 0cf281aff32bd37b3539056ea202aa74ef432000..9b070697f5243ae25f50aa9f681cec57
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -339,6 +347,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -338,6 +346,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

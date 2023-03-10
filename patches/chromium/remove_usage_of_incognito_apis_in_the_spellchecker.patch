@@ -23,10 +23,10 @@ index f14db439624e395bd6cd9d10d5aff480e0384293..ec860cd4033ac09f96be031147d70d2c
 +#endif
  }
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 9b73e3e04be2074a2bdfbd77afc58e37b5797d97..35c60a617a3d092b4ffbcc8652b7a80cc0d1f958 100644
+index d625e2e8229c9013b197e248543cd896d48525aa..1b87fca21a9dbfbb85cabdbfa1ca7038e7c52806 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
-@@ -186,6 +186,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
+@@ -182,6 +182,7 @@ Profile* ProfileSelections::ApplyProfileSelection(Profile* profile) const {
  
  ProfileSelection ProfileSelections::GetProfileSelection(
      const Profile* profile) const {
@@ -34,7 +34,7 @@ index 9b73e3e04be2074a2bdfbd77afc58e37b5797d97..35c60a617a3d092b4ffbcc8652b7a80c
  #if BUILDFLAG(IS_CHROMEOS_ASH)
    // This check has to be performed before the check on
    // `profile->IsRegularProfile()` because profiles that are internal ASH
-@@ -241,6 +242,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
+@@ -227,6 +228,7 @@ ProfileSelection ProfileSelections::GetProfileSelection(
    }
  
    NOTREACHED();
