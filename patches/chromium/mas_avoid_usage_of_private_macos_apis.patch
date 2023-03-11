@@ -14,7 +14,7 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2ee3295d68 100644
+index 91a65a1e700cf..323b9b48214aa 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
 @@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
@@ -39,7 +39,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index d6f794edb5767e4c2986c93251f41af778f4c767..40739896b38b326d69643b5fa92c06abfc3303b0 100644
+index d2b217adce962..45c81cebf3e77 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@
@@ -55,7 +55,7 @@ index d6f794edb5767e4c2986c93251f41af778f4c767..40739896b38b326d69643b5fa92c06ab
  #endif
  }  // extern "C"
  
-@@ -315,8 +309,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+@@ -323,8 +317,7 @@ NSFont* CFToNSCast(CTFontRef cf_val) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -65,7 +65,7 @@ index d6f794edb5767e4c2986c93251f41af778f4c767..40739896b38b326d69643b5fa92c06ab
    return ns_val;
  }
  
-@@ -389,9 +382,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -397,9 +390,6 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
      return (CTFontRef)(cf_val);
    }
  
@@ -76,7 +76,7 @@ index d6f794edb5767e4c2986c93251f41af778f4c767..40739896b38b326d69643b5fa92c06ab
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index a6e71128fb047fcaf476f4846baeb48e1330c3e9..638e244b66e57d18d32e6a66cce2282a42569806 100644
+index b9f62726f3808..eada168aff54a 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -20,14 +20,19 @@
@@ -99,7 +99,7 @@ index a6e71128fb047fcaf476f4846baeb48e1330c3e9..638e244b66e57d18d32e6a66cce2282a
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -96,13 +101,27 @@ class PosixSpawnFileActions {
+@@ -98,13 +103,27 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -127,22 +127,17 @@ index a6e71128fb047fcaf476f4846baeb48e1330c3e9..638e244b66e57d18d32e6a66cce2282a
  }
  
  struct GetAppOutputOptions {
-@@ -222,11 +241,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -224,7 +243,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
+-#if BUILDFLAG(IS_MAC)
 +#if 0
    if (options.disclaim_responsibility) {
      if (__builtin_available(macOS 10.14, *)) {
        DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
-     }
-   }
-+#endif
- 
-   std::vector<char*> argv_cstr;
-   argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 27ddd89cdbbbb55d7784e6f3937bcf0c7034d2ba..2367e275a86a64b9e3a3cb23b3f19b828407a512 100644
+index 2d5d08ca6b246..c9c63c2a9d925 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -170,7 +165,7 @@ index 27ddd89cdbbbb55d7784e6f3937bcf0c7034d2ba..2367e275a86a64b9e3a3cb23b3f19b82
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
+index f52f1d1da4d43..2406f5d4342da 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
@@ -198,7 +193,7 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
+index 92b84121da46b..8de2556bb59c7 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
