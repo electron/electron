@@ -17,7 +17,7 @@ only one or two specific checks fail. Then it's better to simply comment out the
 failing checks and allow the rest of the target to have them enabled.
 
 diff --git a/ui/base/clipboard/clipboard_win.cc b/ui/base/clipboard/clipboard_win.cc
-index db4dbd9191b957e6530b8b4284ce783cabaff028..ab25345e4e3b85020aee58531696f7f7325026ce 100644
+index 76346ed43ed6afb9ed454103ad1deebbbef9f45d..00a147a1f3a8f19092c1bc0562025850bc720657 100644
 --- a/ui/base/clipboard/clipboard_win.cc
 +++ b/ui/base/clipboard/clipboard_win.cc
 @@ -912,10 +912,10 @@ SkBitmap ClipboardWin::ReadBitmapInternal(ClipboardBuffer buffer) const {

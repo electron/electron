@@ -14,7 +14,7 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 91a65a1e700cf..323b9b48214aa 100644
+index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2ee3295d68 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
 @@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
@@ -39,7 +39,7 @@ index 91a65a1e700cf..323b9b48214aa 100644
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index d2b217adce962..45c81cebf3e77 100644
+index d2b217adce962850647ddfd7898414c86b90baa4..45c81cebf3e776f2ca9de34252971ad5e959d915 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@
@@ -55,7 +55,7 @@ index d2b217adce962..45c81cebf3e77 100644
  #endif
  }  // extern "C"
  
-@@ -323,8 +317,7 @@ NSFont* CFToNSCast(CTFontRef cf_val) {
+@@ -323,8 +317,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -65,7 +65,7 @@ index d2b217adce962..45c81cebf3e77 100644
    return ns_val;
  }
  
-@@ -397,9 +390,6 @@ CFCast<CTFontRef>(const CFTypeRef& cf_val) {
+@@ -397,9 +390,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  
@@ -76,7 +76,7 @@ index d2b217adce962..45c81cebf3e77 100644
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index b9f62726f3808..eada168aff54a 100644
+index b9f62726f3808636bdb513ad10d89277b7837b82..eada168aff54aebf84e80a2df5363fe77311347e 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -20,14 +20,19 @@
@@ -137,7 +137,7 @@ index b9f62726f3808..eada168aff54a 100644
      if (__builtin_available(macOS 10.14, *)) {
        DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 2d5d08ca6b246..c9c63c2a9d925 100644
+index 2d5d08ca6b2467421e267a3e13b5259a34cdd0a9..c9c63c2a9d925754f9f4396efdaf5ce9d2b4eeb4 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -165,7 +165,7 @@ index 2d5d08ca6b246..c9c63c2a9d925 100644
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f52f1d1da4d43..2406f5d4342da 100644
+index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
@@ -193,7 +193,7 @@ index f52f1d1da4d43..2406f5d4342da 100644
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b..8de2556bb59c7 100644
+index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
