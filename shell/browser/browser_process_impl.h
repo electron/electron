@@ -42,8 +42,6 @@ class BrowserProcessImpl : public BrowserProcess {
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
   BuildState* GetBuildState() override;
-  breadcrumbs::BreadcrumbPersistentStorageManager*
-  GetBreadcrumbPersistentStorageManager() override;
   void PostEarlyInitialization();
   void PreCreateThreads();
   void PostDestroyThreads() {}
