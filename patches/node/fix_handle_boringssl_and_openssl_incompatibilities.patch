@@ -248,10 +248,10 @@ index 47a42246eddfc795b735f5efd08edf2832bbf6c1..7e6afaa1d3a4612fd567924b40438a31
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960ad09e2dd9 100644
+index 8ead5fcbb55afbdf657603e85fddf28ac4874e04..e12ccf8162ee799beb3d4f0832054b5c4d397631 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -493,24 +493,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -507,24 +507,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -277,7 +277,7 @@ index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960a
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -684,7 +675,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -698,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -286,7 +286,7 @@ index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960a
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -695,7 +686,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -709,7 +700,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -295,7 +295,7 @@ index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960a
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -703,10 +694,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -717,10 +708,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -308,18 +308,6 @@ index 28eb1bd6b7dc839fa6aefebe5813343c8e9444bb..1fe573cd7b6894743a0986e87802960a
  }
  }  // namespace
  
-diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index fd014e703454dd1988e9b5a013b937881c1f514a..0adbe57d582eff906476330083258716e5bcae99 100644
---- a/src/crypto/crypto_util.h
-+++ b/src/crypto/crypto_util.h
-@@ -15,6 +15,7 @@
- #include <openssl/err.h>
- #include <openssl/evp.h>
- #include <openssl/ec.h>
-+#include <openssl/hmac.h>
- #include <openssl/kdf.h>
- #include <openssl/rsa.h>
- #include <openssl/dsa.h>
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
 index ed28871c385532b13e102200ba549bb7d7e901e6..c69d3f1867cd1b86194b109351643d9520c661e7 100644
 --- a/src/node_metadata.cc
@@ -347,7 +335,7 @@ index 2a924141d6edbaade371dd29d553eb1107ff5f75..be37169bb1d5e70e11601ccf00db0552
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index def333cfddef800fefb4244d7fad6e489a5dafed..99f5274aec7512956a5e13a5ca9c0b593a57cc7a 100644
+index 6eabf78f1b67c8f31a9faac16386e00f2f9427f3..bc3c58b0ce8666f978de39ef57832b077bb181a3 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -5,7 +5,7 @@
@@ -360,7 +348,7 @@ index def333cfddef800fefb4244d7fad6e489a5dafed..99f5274aec7512956a5e13a5ca9c0b59
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 2e4da9decf3b4b05b89a586cda194a475e0cd41d..8fabd68975721ed27fd99ff50dbbfcb3158336e7 100644
+index 665ea4ceb779f7c7747e53aba4beba0494fa7ebe..22a346eb23274374d5a5aa4a1b2219e6ebdee48a 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@
