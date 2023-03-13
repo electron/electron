@@ -4,7 +4,7 @@ This document serves to outline the limitations / differences between ESM in Ele
 
 ## Sandboxed preload scripts can't use ESM imports
 
-Sandboxed preload scripts are run as plain javascript without an ESM context.  It is reccomended that preload scripts are bundled via something like `webpack` or `vite` for performance reasons regardless, so your preload script should just be a single file that doesn't need to use ESM imports.  Loading the `electron` API is still done via `require('electron')`.
+Sandboxed preload scripts are run as plain javascript without an ESM context.  It is recommended that preload scripts are bundled via something like `webpack` or `vite` for performance reasons regardless, so your preload script should just be a single file that doesn't need to use ESM imports.  Loading the `electron` API is still done via `require('electron')`.
 
 ## Non-context-isolated renderers can't use Node.js ESM imports
 
@@ -16,6 +16,6 @@ If you enable context isolation `import()` from the isolated preload context wil
 
 Certain APIs in Electron (`app.setPath` for instance) are documented as needing to be called **before** the `app.on('ready')` event is emitted.  When using ESM in the main process it is only guaranteed that the `ready` event hasn't been emitted while executing the side-effects of the primary import.  i.e. if `index.mjs` calls `import('./set-up-paths.mjs')` at the top level the app will likely already be "ready" by the time that dynamic import resolves.  To avoid this you should `await import('./set-up-paths.mjs')` at the top level of `index.mjs`.  It's not just import calls you should await, if you are reading files asynchronously or performing other asynchronous actions you must await those at the top-level as well to ensure the app does not resume initialization and become ready too early.
 
-## Node.js preload scripts will not run syncronously on pages with no content
+## Node.js preload scripts will not run synchronously on pages with no content
 
-If the response body for the page is **completely** empty.  I.e. `Content-Length: 0` the preload script will not block the page load.  This is an extreme edge case and if this impacts you you should just change your response body to have _something_ in it, we reccomend an empty `html` tag (`<html></html>`).
+If the response body for the page is **completely** empty.  I.e. `Content-Length: 0` the preload script will not block the page load.  This is an extreme edge case and if this impacts you you should just change your response body to have _something_ in it, we recommend an empty `html` tag (`<html></html>`).
