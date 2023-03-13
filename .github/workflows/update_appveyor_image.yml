@@ -47,6 +47,12 @@ jobs:
         diff -w -B appveyor.yml appveyor2.yml > appveyor.diff || true
         patch -f appveyor.yml < appveyor.diff
         rm appveyor2.yml appveyor.diff
+    - name: (Optionally) Generate Commit Diff for WOA
+      if: ${{ env.APPVEYOR_IMAGE_VERSION }}
+      run: |
+        diff -w -B appveyor-woa.yml appveyor-woa2.yml > appveyor-woa.diff || true
+        patch -f appveyor-woa.yml < appveyor-woa.diff
+        rm appveyor-woa2.yml appveyor-woa.diff
     - name: (Optionally) Commit and Pull Request
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
       uses: peter-evans/create-pull-request@2b011faafdcbc9ceb11414d64d0573f37c774b04 # v4.2.3
