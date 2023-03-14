@@ -86,7 +86,7 @@ class ElectronBrowserContext : public content::BrowserContext {
         : location(partition),
           in_memory(in_memory),
           partition_type(KeyType::Partition) {}
-    PartitionKey(const base::FilePath file_path)
+    explicit PartitionKey(const base::FilePath& file_path)
         : location(file_path.AsUTF8Unsafe()),
           in_memory(false),
           partition_type(KeyType::FilePath) {}
