@@ -65,8 +65,8 @@ requests according to the specified protocol scheme in the `options` object.
 
 ### `net.fetch(input[, init])`
 
-* `input` string | [Request](https://nodejs.org/api/globals.html#request)
-* `init` [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/fetch#options) (optional)
+* `input` string | [GlobalRequest](https://nodejs.org/api/globals.html#request)
+* `init` [RequestInit](https://developer.mozilla.org/en-US/docs/Web/API/fetch#options) & { bypassCustomProtocolHandlers?: boolean } (optional)
 
 Returns `Promise<GlobalResponse>` - see [Response](https://developer.mozilla.org/en-US/docs/Web/API/Response).
 

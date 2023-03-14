@@ -61,7 +61,8 @@ class SimpleURLLoaderWrapper
  private:
   SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
                          std::unique_ptr<network::ResourceRequest> request,
-                         int options);
+                         int options,
+                         bool bypass_custom_protocol_handlers);
 
   // SimpleURLLoaderStreamConsumer:
   void OnDataReceived(base::StringPiece string_piece,
@@ -123,6 +124,7 @@ class SimpleURLLoaderWrapper
   ElectronBrowserContext* browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;
+  bool bypass_custom_protocol_handlers_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;

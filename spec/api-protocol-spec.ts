@@ -1346,8 +1346,23 @@ describe('protocol module', () => {
       `);
       const req = await receivedRequest;
       contents.destroy();
-      contents = { destroy () {} } as any; // fool the after() hook
+      // Undo .destroy() for the next test
+      contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
       await expect(req.body!.getReader().read()).to.eventually.be.rejectedWith('net::ERR_FAILED');
+    });
+
+    it('can forward to the original handler', async () => {
+      protocol.handle('http', async (req) => {
+        return net.fetch(req, { bypassCustomProtocolHandlers: true });
+      });
+      defer(() => { protocol.unhandle('http'); });
+      const server = http.createServer((req, res) => {
+        res.end('hello');
+        server.close();
+      });
+      const { url } = await listen(server);
+      await contents.loadURL(url);
+      expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello');
     });
   });
 });

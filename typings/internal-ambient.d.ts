@@ -141,6 +141,7 @@ declare namespace NodeJS {
     hasUserActivation?: boolean;
     mode?: string;
     destination?: string;
+    bypassCustomProtocolHandlers?: boolean;
   };
   type ResponseHead = {
     statusCode: number;
