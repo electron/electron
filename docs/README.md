@@ -90,7 +90,6 @@ These individual tutorials expand on topics discussed in the guide above.
 
 ## API References
 
-* [Synopsis](api/synopsis.md)
 * [Process Object](api/process.md)
 * [Supported Command Line Switches](api/command-line-switches.md)
 * [Environment Variables](api/environment-variables.md)
