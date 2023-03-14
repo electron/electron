@@ -5202,6 +5202,22 @@ describe('BrowserWindow module', () => {
         w.closeFilePreview();
       }).to.not.throw();
     });
+
+    it('should not call BrowserWindow show event', async () => {
+      const w = new BrowserWindow({ show: false });
+      const shown = emittedOnce(w, 'show');
+      w.show();
+      await shown;
+
+      let showCalled = false;
+      w.on('show', () => {
+        showCalled = true;
+      });
+
+      w.previewFile(__filename);
+      await delay(500);
+      expect(showCalled).to.equal(false, 'should not have called show twice');
+    });
   });
 
   // TODO (jkleinsc) renable these tests on mas arm64
