@@ -17,6 +17,11 @@ void Locker::SetIsBrowserProcess(bool is_browser_process) {
   g_is_browser_process = is_browser_process;
 }
 
+void Locker::SetIsRendererProcess(bool is_renderer_process) {
+  g_is_renderer_process = is_renderer_process;
+}
+
 bool Locker::g_is_browser_process = false;
+bool Locker::g_is_renderer_process = false;
 
 }  // namespace gin_helper

@@ -88,7 +88,9 @@ async function loadApplicationPackage (packagePath: string) {
     let appPath;
     if (fs.existsSync(packageJsonPath)) {
       let packageJson;
+      const emitWarning = process.emitWarning;
       try {
+        process.emitWarning = () => {};
         packageJson = (await import(url.pathToFileURL(packageJsonPath).toString(), {
           assert: {
             type: 'json'
@@ -97,6 +99,8 @@ async function loadApplicationPackage (packagePath: string) {
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${(e as Error).message}`);
         return;
+      } finally {
+        process.emitWarning = emitWarning;
       }
 
       if (packageJson.version) {

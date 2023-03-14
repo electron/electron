@@ -38,6 +38,8 @@
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/world_ids.h"
+#include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 #include "third_party/electron_node/src/module_wrap.h"
@@ -188,14 +190,25 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
     v8::Local<v8::Value> v8_referrer_resource_url,
     v8::Local<v8::String> v8_specifier,
     v8::Local<v8::FixedArray> v8_import_assertions) {
-  // If we're running with contextIsolation enabled in the renderer process,
-  // fall back to Blink's logic.
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (gin_helper::Locker::IsBrowserProcess())
       return v8::MaybeLocal<v8::Promise>();
     return blink::V8Initializer::HostImportModuleDynamically(
         context, v8_host_defined_options, v8_referrer_resource_url,
         v8_specifier, v8_import_assertions);
+  }
+
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  if (gin_helper::Locker::IsRendererProcess()) {
+    blink::WebLocalFrame* frame =
+        blink::WebLocalFrame::FrameForContext(context);
+    if (!frame || frame->GetScriptContextWorldId(context) !=
+                      electron::WorldIDs::ISOLATED_WORLD_ID) {
+      return blink::V8Initializer::HostImportModuleDynamically(
+          context, v8_host_defined_options, v8_referrer_resource_url,
+          v8_specifier, v8_import_assertions);
+    }
   }
 
   return node::loader::ImportModuleDynamically(
@@ -206,13 +219,23 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
 void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
                                     v8::Local<v8::Module> module,
                                     v8::Local<v8::Object> meta) {
-  // If we're running with contextIsolation enabled in the renderer process,
-  // fall back to Blink's logic.
   if (node::Environment::GetCurrent(context) == nullptr) {
     if (gin_helper::Locker::IsBrowserProcess())
       return;
     return blink::V8Initializer::HostGetImportMetaProperties(context, module,
                                                              meta);
+  }
+
+  // If we're running with contextIsolation enabled in the renderer process,
+  // fall back to Blink's logic.
+  if (gin_helper::Locker::IsRendererProcess()) {
+    blink::WebLocalFrame* frame =
+        blink::WebLocalFrame::FrameForContext(context);
+    if (!frame || frame->GetScriptContextWorldId(context) !=
+                      electron::WorldIDs::ISOLATED_WORLD_ID) {
+      return blink::V8Initializer::HostGetImportMetaProperties(context, module,
+                                                               meta);
+    }
   }
 
   return node::loader::ModuleWrap::HostInitializeImportMetaObjectCallback(

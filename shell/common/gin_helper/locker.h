@@ -25,7 +25,10 @@ class Locker {
   // by checking whether current has used V8 Lock, but it might be a bad idea.
   static inline bool IsBrowserProcess() { return g_is_browser_process; }
 
+  static inline bool IsRendererProcess() { return g_is_renderer_process; }
+
   static void SetIsBrowserProcess(bool is_browser_process);
+  static void SetIsRendererProcess(bool is_renderer_process);
 
  private:
   void* operator new(size_t size);
@@ -34,6 +37,7 @@ class Locker {
   std::unique_ptr<v8::Locker> locker_;
 
   static bool g_is_browser_process;
+  static bool g_is_renderer_process;
 };
 
 }  // namespace gin_helper

@@ -88,6 +88,11 @@ bool IsBrowserProcess(base::CommandLine* cmd) {
   return process_type.empty();
 }
 
+bool IsRendererProcess(base::CommandLine* cmd) {
+  std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
+  return process_type == ::switches::kRendererProcess;
+}
+
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
 bool SubprocessNeedsResourceBundle(const std::string& process_type) {
@@ -257,6 +262,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   auto env = base::Environment::Create();
 
   gin_helper::Locker::SetIsBrowserProcess(IsBrowserProcess(command_line));
+  gin_helper::Locker::SetIsRendererProcess(IsRendererProcess(command_line));
 
   // Enable convenient stack printing. This is enabled by default in
   // non-official builds.
