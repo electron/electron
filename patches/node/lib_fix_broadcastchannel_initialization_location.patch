@@ -28,10 +28,10 @@ index d0c01ca2a512be549b0fea8a829c05eabbec799a..210a1bb7e929021725b04786bc11d9b3
  exposeNamespace(globalThis, 'console',
                  createGlobalConsole());
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 7dd89d5f134b09da2678dd54fa9139466fea179c..f235545b6433c0f1dd335e0bb97cd3dc77616c0f 100644
+index 83ac636db19a66f43fc7d3c1fc1e8290eeadd334..cb5072df3c23b499292887c56501820aee5cbd0e 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
-@@ -237,10 +237,6 @@ const {
+@@ -248,10 +248,6 @@ const {
    queueMicrotask
  } = require('internal/process/task_queues');
  
