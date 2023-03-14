@@ -96,7 +96,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   env->options()->force_context_aware = true;
 
   // We do not want to crash the renderer process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn";
+  env->options()->unhandled_rejections = "warn-with-error-code";
 
   environments_.insert(env);
 
