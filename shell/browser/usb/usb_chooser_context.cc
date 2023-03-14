@@ -82,40 +82,35 @@ UsbChooserContext::UsbChooserContext(ElectronBrowserContext* context)
 // static
 base::Value UsbChooserContext::DeviceInfoToValue(
     const device::mojom::UsbDeviceInfo& device_info) {
-  base::Value device_value(base::Value::Type::DICT);
-  device_value.SetStringKey(kDeviceNameKey, device_info.product_name
-                                                ? *device_info.product_name
-                                                : base::StringPiece16());
-  device_value.SetIntKey(kDeviceVendorIdKey, device_info.vendor_id);
-  device_value.SetIntKey(kDeviceProductIdKey, device_info.product_id);
+  base::Value::Dict device_value;
+  device_value.Set(kDeviceNameKey, device_info.product_name
+                                       ? *device_info.product_name
+                                       : base::StringPiece16());
+  device_value.Set(kDeviceVendorIdKey, device_info.vendor_id);
+  device_value.Set(kDeviceProductIdKey, device_info.product_id);
 
   if (device_info.manufacturer_name) {
-    device_value.SetStringKey("manufacturerName",
-                              *device_info.manufacturer_name);
+    device_value.Set("manufacturerName", *device_info.manufacturer_name);
   }
 
   // CanStorePersistentEntry checks if |device_info.serial_number| is not empty.
   if (CanStorePersistentEntry(device_info)) {
-    device_value.SetStringKey(kDeviceSerialNumberKey,
-                              *device_info.serial_number);
+    device_value.Set(kDeviceSerialNumberKey, *device_info.serial_number);
   }
 
-  device_value.SetStringKey(kDeviceIdKey, device_info.guid);
+  device_value.Set(kDeviceIdKey, device_info.guid);
 
-  device_value.SetIntKey("usbVersionMajor", device_info.usb_version_major);
-  device_value.SetIntKey("usbVersionMinor", device_info.usb_version_minor);
-  device_value.SetIntKey("usbVersionSubminor",
-                         device_info.usb_version_subminor);
-  device_value.SetIntKey("deviceClass", device_info.class_code);
-  device_value.SetIntKey("deviceSubclass", device_info.subclass_code);
-  device_value.SetIntKey("deviceProtocol", device_info.protocol_code);
-  device_value.SetIntKey("deviceVersionMajor",
-                         device_info.device_version_major);
-  device_value.SetIntKey("deviceVersionMinor",
-                         device_info.device_version_minor);
-  device_value.SetIntKey("deviceVersionSubminor",
-                         device_info.device_version_subminor);
-  return device_value;
+  device_value.Set("usbVersionMajor", device_info.usb_version_major);
+  device_value.Set("usbVersionMinor", device_info.usb_version_minor);
+  device_value.Set("usbVersionSubminor", device_info.usb_version_subminor);
+  device_value.Set("deviceClass", device_info.class_code);
+  device_value.Set("deviceSubclass", device_info.subclass_code);
+  device_value.Set("deviceProtocol", device_info.protocol_code);
+  device_value.Set("deviceVersionMajor", device_info.device_version_major);
+  device_value.Set("deviceVersionMinor", device_info.device_version_minor);
+  device_value.Set("deviceVersionSubminor",
+                   device_info.device_version_subminor);
+  return base::Value(std::move(device_value));
 }
 
 void UsbChooserContext::InitDeviceList(
