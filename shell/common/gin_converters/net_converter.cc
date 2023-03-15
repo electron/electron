@@ -166,7 +166,7 @@ v8::Local<v8::Value> Converter<net::HttpResponseHeaders*>::ToV8(
       values->Append(value);
     }
   }
-  return ConvertToV8(isolate, base::Value(std::move(response_headers)));
+  return ConvertToV8(isolate, response_headers);
 }
 
 bool Converter<net::HttpResponseHeaders*>::FromV8(
