@@ -806,7 +806,9 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   }
 
   // Check if user has intercepted this scheme.
-  if (!(request.load_flags & (1 << 30))) {
+  bool bypass_custom_protocol_handlers =
+      options & kBypassCustomProtocolHandlers;
+  if (!bypass_custom_protocol_handlers) {
     auto it = intercepted_handlers_.find(request.url.scheme());
     if (it != intercepted_handlers_.end()) {
       mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;

@@ -30,6 +30,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -343,12 +344,10 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
     ElectronBrowserContext* browser_context,
     std::unique_ptr<network::ResourceRequest> request,
-    int options,
-    bool bypass_custom_protocol_handlers)
+    int options)
     : browser_context_(browser_context),
       request_options_(options),
-      request_(std::move(request)),
-      bypass_custom_protocol_handlers_(bypass_custom_protocol_handlers) {
+      request_(std::move(request)) {
   if (!request_->trusted_params)
     request_->trusted_params = network::ResourceRequest::TrustedParams();
   mojo::PendingRemote<network::mojom::URLLoaderNetworkServiceObserver>
@@ -489,7 +488,9 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   // Explicitly handle intercepted protocols here, even though
   // ProxyingURLLoaderFactory would handle them later on, so that we can
   // correctly intercept file:// scheme URLs.
-  if (!bypass_custom_protocol_handlers_ &&
+  bool bypass_custom_protocol_handlers =
+      request_options_ & kBypassCustomProtocolHandlers;
+  if (!bypass_custom_protocol_handlers &&
       protocol_registry->IsProtocolIntercepted(url.scheme())) {
     auto& protocol_handler =
         protocol_registry->intercept_handlers().at(url.scheme());
@@ -499,7 +500,7 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
-  } else if (!bypass_custom_protocol_handlers_ &&
+  } else if (!bypass_custom_protocol_handlers &&
              protocol_registry->IsProtocolRegistered(url.scheme())) {
     auto& protocol_handler = protocol_registry->handlers().at(url.scheme());
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
@@ -662,9 +663,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   bool bypass_custom_protocol_handlers = false;
   opts.Get("bypassCustomProtocolHandlers", &bypass_custom_protocol_handlers);
-  if (bypass_custom_protocol_handlers) {
-    request->load_flags |= (1 << 30);  // TODO: make this a constant
-  }
+  if (bypass_custom_protocol_handlers)
+    options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
   v8::Local<v8::Value> chunk_pipe_getter;
@@ -702,9 +702,8 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   }
 
   auto ret = gin::CreateHandle(
-      args->isolate(),
-      new SimpleURLLoaderWrapper(session->browser_context(), std::move(request),
-                                 options, bypass_custom_protocol_handlers));
+      args->isolate(), new SimpleURLLoaderWrapper(session->browser_context(),
+                                                  std::move(request), options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
