@@ -97,12 +97,12 @@ const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 InspectableWebContents::List g_web_contents_instances_;
 
 base::Value RectToDictionary(const gfx::Rect& bounds) {
-  base::Value dict(base::Value::Type::DICT);
-  dict.SetKey("x", base::Value(bounds.x()));
-  dict.SetKey("y", base::Value(bounds.y()));
-  dict.SetKey("width", base::Value(bounds.width()));
-  dict.SetKey("height", base::Value(bounds.height()));
-  return dict;
+  base::Value::Dict dict;
+  dict.Set("x", bounds.x());
+  dict.Set("y", bounds.y());
+  dict.Set("width", bounds.width());
+  dict.Set("height", bounds.height());
+  return base::Value(std::move(dict));
 }
 
 gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
@@ -895,7 +895,7 @@ void InspectableWebContents::ClearPreferences() {
 
 void InspectableWebContents::GetSyncInformation(DispatchCallback callback) {
   base::Value result(base::Value::Type::DICT);
-  result.SetBoolKey("isSyncActive", false);
+  result.GetDict().Set("isSyncActive", false);
   std::move(callback).Run(&result);
 }
 
