@@ -81,7 +81,8 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
           data: res.body ? Readable.fromWeb(res.body as ReadableStream<ArrayBufferView>) : null,
           headers: Object.fromEntries(res.headers),
           statusCode: res.status,
-          statusText: res.statusText
+          statusText: res.statusText,
+          mimeType: (res as any).__original_resp?._responseHead?.mimeType
         });
       }
     } catch (e) {

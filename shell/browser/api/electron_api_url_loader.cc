@@ -652,7 +652,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
-  int options = 0;
+  int options = network::mojom::kURLLoadOptionSniffMimeType;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
     // specified and useSessionCookies is false. credentials_mode will be
@@ -747,6 +747,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   dict.Set("headers", response_head.headers.get());
   dict.Set("rawHeaders", response_head.raw_response_headers);
+  dict.Set("mimeType", response_head.mime_type);
   Emit("response-started", final_url, dict);
 }
 

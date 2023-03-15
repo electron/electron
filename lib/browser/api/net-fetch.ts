@@ -106,6 +106,7 @@ export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypa
       status: resp.statusCode,
       statusText: resp.statusMessage
     });
+    (rResp as any).__original_resp = resp;
     p.resolve(rResp);
   });
 

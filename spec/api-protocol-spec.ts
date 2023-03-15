@@ -1360,5 +1360,29 @@ describe('protocol module', () => {
       await contents.loadURL(url);
       expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello');
     });
+
+    it('supports sniffing mime type', async () => {
+      protocol.handle('http', async (req) => {
+        return net.fetch(req, { bypassCustomProtocolHandlers: true });
+      });
+      defer(() => { protocol.unhandle('http'); });
+
+      const server = http.createServer((req, res) => {
+        if (/html/.test(req.url ?? '')) { res.end('<!doctype html><body>hi'); } else { res.end('hi'); }
+      });
+      const { url } = await listen(server);
+      defer(() => server.close());
+
+      {
+        await contents.loadURL(url);
+        const doc = await contents.executeJavaScript('document.documentElement.outerHTML');
+        expect(doc).to.match(/white-space: pre-wrap/);
+      }
+      {
+        await contents.loadURL(url + '?html');
+        const doc = await contents.executeJavaScript('document.documentElement.outerHTML');
+        expect(doc).to.equal('<html><head></head><body>hi</body></html>');
+      }
+    });
   });
 });
