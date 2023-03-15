@@ -31,6 +31,14 @@ describe('session module', () => {
     });
   });
 
+  describe('session.fromPath(path)', () => {
+    it('returns storage path of a session which was created with an absolute path', () => {
+      const tmppath = require('electron').app.getPath('temp');
+      const ses = session.fromPath(tmppath);
+      expect(ses.storagePath).to.equal(tmppath);
+    });
+  });
+
   describe('ses.cookies', () => {
     const name = '0';
     const value = '0';

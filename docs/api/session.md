@@ -42,6 +42,21 @@ To create a `Session` with `options`, you have to ensure the `Session` with the
 `partition` has never been used before. There is no way to change the `options`
 of an existing `Session` object.
 
+### `session.fromPath(path[, options])`
+
+* `path` string
+* `options` Object (optional)
+  * `cache` boolean - Whether to enable cache.
+
+Returns `Session` - A session instance from the absolute path as specified by the `path`
+string. When there is an existing `Session` with the same absolute path, it
+will be returned; otherwise a new `Session` instance will be created with `options`. The
+call will throw an error if the path is not an absolute path or an empty string.
+
+To create a `Session` with `options`, you have to ensure the `Session` with the
+`path` has never been used before. There is no way to change the `options`
+of an existing `Session` object.
+
 ## Properties
 
 The `session` module has the following properties:
