@@ -4,6 +4,7 @@ import { BrowserWindow } from 'electron';
 import * as fs from 'fs-extra';
 import * as os from 'os';
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 
 const runFixture = async (appPath: string, args: string[] = []) => {
   const result = cp.spawn(process.execPath, [appPath, ...args], {
@@ -137,6 +138,8 @@ describe('esm', () => {
         expect(packageJson).to.deep.equal(require('./fixtures/esm/package/package.json'));
       });
 
+      const hostsUrl = pathToFileURL(process.platform === 'win32' ? 'C:\\Windows\\System32\\drivers\\etc\\hosts' : '/etc/hosts');
+
       describe('without context isolation', () => {
         it('should use blinks dynamic loader in the main world', async () => {
           const [webContents] = await loadWindowWithPreload('', {
@@ -147,7 +150,7 @@ describe('esm', () => {
 
           let error: Error | null = null;
           try {
-            await webContents.executeJavaScript('import("file:///etc/hosts")');
+            await webContents.executeJavaScript(`import(${JSON.stringify(hostsUrl)})`);
           } catch (err) {
             error = err as Error;
           }
@@ -160,7 +163,7 @@ describe('esm', () => {
 
       describe('with context isolation', () => {
         it('should use nodes esm dynamic loader in the isolated context', async () => {
-          const [, preloadError] = await loadWindowWithPreload('await import("file:///etc/hosts");', {
+          const [, preloadError] = await loadWindowWithPreload(`await import(${JSON.stringify(hostsUrl)})`, {
             nodeIntegration: true,
             sandbox: false,
             contextIsolation: true
@@ -180,7 +183,7 @@ describe('esm', () => {
 
           let error: Error | null = null;
           try {
-            await webContents.executeJavaScript('import("file:///etc/hosts")');
+            await webContents.executeJavaScript(`import(${JSON.stringify(hostsUrl)})`);
           } catch (err) {
             error = err as Error;
           }
