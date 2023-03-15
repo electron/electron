@@ -9,6 +9,7 @@
 
 #include "base/command_line.h"
 #include "base/strings/utf_string_conversions.h"
+#include "content/public/common/content_switches.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_converters/file_path_converter.h"
@@ -16,6 +17,11 @@
 #include "shell/common/node_bindings.h"
 #include "shell/common/node_includes.h"
 #include "shell/services/node/parent_port.h"
+
+#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
+#include "base/allocator/partition_alloc_support.h"
+#include "base/allocator/partition_allocator/partition_address_space.h"
+#endif
 
 namespace electron {
 
@@ -44,6 +50,34 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   ParentPort::GetInstance()->Initialize(std::move(params->port));
 
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
+
+#if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
+  // Gin will initialize the partition alloc configurable pool
+  // according to the V8 Sandbox preallocated addressspace in
+  // gin::V8Initializer::Initialize. Given there can only be a single
+  // configurable pool per process, we will now reroute the main partition
+  // allocation into this new pool below. The pool size is currently limited to
+  // 16GiB which will now be shared by array buffer allocations as well as other
+  // heap allocations from the process. We can increase the pool size if need
+  // arises or create a secondary configurable pool.
+  CHECK_NE(v8::V8::GetSandboxAddressSpace(), nullptr);
+  CHECK(partition_alloc::IsConfigurablePoolAvailable());
+  auto* cmd = base::CommandLine::ForCurrentProcess();
+  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
+  if (params->use_v8_configured_pool_for_main_partition) {
+    base::allocator::PartitionAllocSupport::Get()
+        ->ReconfigureAfterFeatureListInit(
+            process_type, true /* configure_dangling_pointer_detector */,
+            true /* use_configured_pool */);
+    base::allocator::PartitionAllocSupport::Get()
+        ->ReconfigureAfterTaskRunnerInit(process_type);
+  } else {
+    base::allocator::PartitionAllocSupport::Get()
+        ->ReconfigureAfterFeatureListInit(process_type);
+    base::allocator::PartitionAllocSupport::Get()
+        ->ReconfigureAfterTaskRunnerInit(process_type);
+  }
+#endif  // BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 
   v8::HandleScope scope(js_env_->isolate());
 
