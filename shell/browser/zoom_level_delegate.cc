@@ -100,7 +100,7 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     const base::Value::Dict& host_zoom_dictionary) {
   std::vector<std::string> keys_to_remove;
   base::Value::Dict host_zoom_dictionary_copy = host_zoom_dictionary.Clone();
-  for (auto const [host, value] : host_zoom_dictionary_copy) {
+  for (auto [host, value] : host_zoom_dictionary_copy) {
     const absl::optional<double> zoom_level = value.GetIfDouble();
 
     // Filter out A) the empty host, B) zoom levels equal to the default; and
