@@ -27,8 +27,6 @@ namespace electron {
 
 namespace {
 
-const int kMaxScanRetries = 5;
-
 void OnDeviceChosen(const content::BluetoothChooser::EventHandler& handler,
                     const std::string& device_id) {
   if (device_id.empty()) {
@@ -66,29 +64,15 @@ void BluetoothChooser::SetAdapterPresence(AdapterPresence presence) {
 }
 
 void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
+  bool idle_state = false;
   switch (state) {
     case DiscoveryState::FAILED_TO_START:
       refreshing_ = false;
       event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
-      break;
+      return;
     case DiscoveryState::IDLE:
       refreshing_ = false;
-      if (device_map_.empty()) {
-        auto event = ++num_retries_ > kMaxScanRetries
-                         ? content::BluetoothChooserEvent::CANCELLED
-                         : content::BluetoothChooserEvent::RESCAN;
-        event_handler_.Run(event, "");
-      } else {
-        bool prevent_default = api_web_contents_->Emit(
-            "select-bluetooth-device", GetDeviceList(),
-            base::BindOnce(&OnDeviceChosen, event_handler_));
-        if (!prevent_default) {
-          auto it = device_map_.begin();
-          auto device_id = it->first;
-          event_handler_.Run(content::BluetoothChooserEvent::SELECTED,
-                             device_id);
-        }
-      }
+      idle_state = true;
       break;
     case DiscoveryState::DISCOVERING:
       // The first time this state fires is due to a rescan triggering so set a
@@ -100,6 +84,18 @@ void BluetoothChooser::ShowDiscoveryState(DiscoveryState state) {
         refreshing_ = false;
       }
       break;
+  }
+  bool prevent_default =
+      api_web_contents_->Emit("select-bluetooth-device", GetDeviceList(),
+                              base::BindOnce(&OnDeviceChosen, event_handler_));
+  if (!prevent_default && idle_state) {
+    if (device_map_.empty()) {
+      event_handler_.Run(content::BluetoothChooserEvent::CANCELLED, "");
+    } else {
+      auto it = device_map_.begin();
+      auto device_id = it->first;
+      event_handler_.Run(content::BluetoothChooserEvent::SELECTED, device_id);
+    }
   }
 }
 
