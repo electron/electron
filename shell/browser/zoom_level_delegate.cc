@@ -100,7 +100,7 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
     const base::Value::Dict& host_zoom_dictionary) {
   std::vector<std::string> keys_to_remove;
   base::Value::Dict host_zoom_dictionary_copy = host_zoom_dictionary.Clone();
-  for (auto [host, value] : host_zoom_dictionary_copy) {
+  for (auto const [host, value] : host_zoom_dictionary_copy) {
     const absl::optional<double> zoom_level = value.GetIfDouble();
 
     // Filter out A) the empty host, B) zoom levels equal to the default; and
@@ -123,10 +123,11 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
   // have an empty host.
   {
     ScopedDictPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
-    base::Value* sanitized_host_zoom_dictionary = update->Find(partition_key_);
+    base::Value::Dict* sanitized_host_zoom_dictionary =
+        update->FindDict(partition_key_);
     if (sanitized_host_zoom_dictionary) {
-      for (const std::string& s : keys_to_remove)
-        sanitized_host_zoom_dictionary->RemoveKey(s);
+      for (const std::string& key : keys_to_remove)
+        sanitized_host_zoom_dictionary->Remove(key);
     }
   }
 }
