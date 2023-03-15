@@ -63,6 +63,41 @@ protocol.handle('some-protocol', () => {
 
 ## Planned Breaking API Changes (24.0)
 
+### API Changed: `nativeImage.createThumbnailFromPath(path, size)`
+
+The `maxSize` parameter has been changed to `size` to reflect that the size passed in will be the size the thumbnail created. Previously, Windows would not scale the image up if it were smaller than `maxSize`, and
+macOS would always set the size to `maxSize`. Behavior is now the same across platforms.
+
+Updated Behavior:
+
+```js
+// a 128x128 image.
+const imagePath = path.join('path', 'to', 'capybara.png')
+
+// Scaling up a smaller image.
+const upSize = { width: 256, height: 256 }
+nativeImage.createThumbnailFromPath(imagePath, upSize).then(result => {
+  console.log(result.getSize()) // { width: 256, height: 256 }
+})
+
+// Scaling down a larger image.
+const downSize = { width: 64, height: 64 }
+nativeImage.createThumbnailFromPath(imagePath, downSize).then(result => {
+  console.log(result.getSize()) // { width: 64, height: 64 }
+})
+```
+
+Previous Behavior (on Windows):
+
+```js
+// a 128x128 image
+const imagePath = path.join('path', 'to', 'capybara.png')
+const size = { width: 256, height: 256 }
+nativeImage.createThumbnailFromPath(imagePath, size).then(result => {
+  console.log(result.getSize()) // { width: 128, height: 128 }
+})
+```
+
 ### Deprecated: `BrowserWindow.setTrafficLightPosition(position)`
 
 `BrowserWindow.setTrafficLightPosition(position)` has been deprecated, the

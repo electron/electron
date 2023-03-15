@@ -1049,13 +1049,14 @@ void OffScreenRenderWidgetHostView::NotifyHostAndDelegateOnWasShown(
   NOTREACHED();
 }
 
-void OffScreenRenderWidgetHostView::RequestPresentationTimeFromHostOrDelegate(
-    blink::mojom::RecordContentToVisibleTimeRequestPtr) {
+void OffScreenRenderWidgetHostView::
+    RequestSuccessfulPresentationTimeFromHostOrDelegate(
+        blink::mojom::RecordContentToVisibleTimeRequestPtr) {
   NOTREACHED();
 }
 
 void OffScreenRenderWidgetHostView::
-    CancelPresentationTimeRequestForHostAndDelegate() {
+    CancelSuccessfulPresentationTimeRequestForHostAndDelegate() {
   NOTREACHED();
 }
 

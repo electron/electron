@@ -23,7 +23,8 @@ class NetworkHintsHandlerImpl
           receiver);
 
   // network_hints::mojom::NetworkHintsHandler:
-  void Preconnect(const GURL& url, bool allow_credentials) override;
+  void Preconnect(const url::SchemeHostPort& url,
+                  bool allow_credentials) override;
 
  private:
   explicit NetworkHintsHandlerImpl(content::RenderFrameHost*);

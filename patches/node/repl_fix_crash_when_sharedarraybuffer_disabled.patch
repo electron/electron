@@ -10,7 +10,7 @@ isn't the case before attempting to use them in the repl or a crash occurs.
 Upstreamed at https://github.com/nodejs/node/pull/39718.
 
 diff --git a/benchmark/worker/atomics-wait.js b/benchmark/worker/atomics-wait.js
-index a771b1813731edf4f0dd60f3505799e389f1d876..b9461677e2d7d1df192e752496e62cca837717b5 100644
+index 7270f9f01c98ece3dc38bf56d270d7e08d39f66e..44db021ad37af4ae9c4526a405cea8bc3c1909a5 100644
 --- a/benchmark/worker/atomics-wait.js
 +++ b/benchmark/worker/atomics-wait.js
 @@ -7,6 +7,10 @@ const bench = common.createBenchmark(main, {

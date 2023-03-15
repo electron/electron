@@ -1517,8 +1517,7 @@ void WebContents::OnAudioStateChanged(bool audible) {
   EmitWithoutEvent("audio-state-changed", event);
 }
 
-void WebContents::BeforeUnloadFired(bool proceed,
-                                    const base::TimeTicks& proceed_time) {
+void WebContents::BeforeUnloadFired(bool proceed) {
   // Do nothing, we override this method just to avoid compilation error since
   // there are two virtual functions named BeforeUnloadFired.
 }
@@ -2931,7 +2930,7 @@ void WebContents::Print(gin::Arguments* args) {
 
   // We've already done necessary parameter sanitization at the
   // JS level, so we can simply pass this through.
-  base::Value media_size(base::Value::Type::DICTIONARY);
+  base::Value media_size(base::Value::Type::DICT);
   if (options.Get("mediaSize", &media_size))
     settings.Set(printing::kSettingMediaSize, std::move(media_size));
 
@@ -3872,8 +3871,8 @@ void WebContents::DevToolsIndexPath(
   if (devtools_indexing_jobs_.count(request_id) != 0)
     return;
   std::vector<std::string> excluded_folders;
-  std::unique_ptr<base::Value> parsed_excluded_folders =
-      base::JSONReader::ReadDeprecated(excluded_folders_message);
+  absl::optional<base::Value> parsed_excluded_folders =
+      base::JSONReader::Read(excluded_folders_message);
   if (parsed_excluded_folders && parsed_excluded_folders->is_list()) {
     for (const base::Value& folder_path : parsed_excluded_folders->GetList()) {
       if (folder_path.is_string())

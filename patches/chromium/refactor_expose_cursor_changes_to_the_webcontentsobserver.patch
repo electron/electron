@@ -8,12 +8,12 @@ Chrome moved the SetCursor IPC message to mojo, which we use to tell OSR about `
 Refs: https://chromium-review.googlesource.com/c/chromium/src/+/2172779
 
 diff --git a/content/browser/renderer_host/render_widget_host_delegate.h b/content/browser/renderer_host/render_widget_host_delegate.h
-index b842aea32366182edd993f7de9ebad8612f29dd6..fbadeec8d06bf69e872d261447efd52ab770e6e5 100644
+index fe010b1f001130fbdeaf4ef9ce7798e4baf958b5..28f1305f439be7f669e482ac0e4804c04a6ddba1 100644
 --- a/content/browser/renderer_host/render_widget_host_delegate.h
 +++ b/content/browser/renderer_host/render_widget_host_delegate.h
-@@ -21,6 +21,7 @@
- #include "third_party/blink/public/common/page/drag_operation.h"
+@@ -22,6 +22,7 @@
  #include "third_party/blink/public/mojom/frame/lifecycle.mojom.h"
+ #include "third_party/blink/public/mojom/input/input_handler.mojom-shared.h"
  #include "third_party/blink/public/mojom/manifest/display_mode.mojom.h"
 +#include "ui/base/cursor/cursor.h"
  #include "ui/gfx/native_widget_types.h"
@@ -30,10 +30,10 @@ index b842aea32366182edd993f7de9ebad8612f29dd6..fbadeec8d06bf69e872d261447efd52a
    // RenderWidgetHost on the primary main frame, and false otherwise.
    virtual bool IsWidgetForPrimaryMainFrame(RenderWidgetHostImpl*);
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index f49cf68e4b5be592000b193a3b1fae18e0bd41dc..06f9fd63819afb96cad0569abeb07410ca200024 100644
+index 9c3241c40e9b969c8f3d77f9b68f183b6f75ebbb..04caca821dc7b701b98e378f8084a797cdf578d7 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
-@@ -2050,6 +2050,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
+@@ -2046,6 +2046,8 @@ void RenderWidgetHostImpl::FilterDropData(DropData* drop_data) {
  void RenderWidgetHostImpl::SetCursor(const ui::Cursor& cursor) {
    if (view_)
      view_->UpdateCursor(cursor);
@@ -43,10 +43,10 @@ index f49cf68e4b5be592000b193a3b1fae18e0bd41dc..06f9fd63819afb96cad0569abeb07410
  
  void RenderWidgetHostImpl::ShowContextMenuAtPoint(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 03082815e5c4de60da566176af10bc972cff0072..465dcd8c19fff3f435ed1286a9932a484b7d7d4e 100644
+index 84f08460ff6b99a40e0591730d4bfadfdf896edf..cd4f7e96d87908a3b3c3a83e4bd246b3e80603aa 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4711,6 +4711,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
+@@ -4719,6 +4719,11 @@ TextInputManager* WebContentsImpl::GetTextInputManager() {
    return text_input_manager_.get();
  }
  
@@ -59,10 +59,10 @@ index 03082815e5c4de60da566176af10bc972cff0072..465dcd8c19fff3f435ed1286a9932a48
      RenderWidgetHostImpl* render_widget_host) {
    return render_widget_host == GetPrimaryMainFrame()->GetRenderWidgetHost();
 diff --git a/content/browser/web_contents/web_contents_impl.h b/content/browser/web_contents/web_contents_impl.h
-index ae95a44450f4942cd463cfbcc3b90123796cdf3e..ef8ac6dca3a43cfa5a58f10b3860987bb01eec2b 100644
+index 836344556773b54846c57e7b63a225077b9d2a99..204ec1bd91e514e9b9332fe1de4bb9a2c9f69413 100644
 --- a/content/browser/web_contents/web_contents_impl.h
 +++ b/content/browser/web_contents/web_contents_impl.h
-@@ -957,6 +957,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
+@@ -968,6 +968,7 @@ class CONTENT_EXPORT WebContentsImpl : public WebContents,
    void SendScreenRects() override;
    void SendActiveState(bool active) override;
    TextInputManager* GetTextInputManager() override;
@@ -71,7 +71,7 @@ index ae95a44450f4942cd463cfbcc3b90123796cdf3e..ef8ac6dca3a43cfa5a58f10b3860987b
        RenderWidgetHostImpl* render_widget_host) override;
    bool IsShowingContextMenuOnPage() const override;
 diff --git a/content/public/browser/web_contents_observer.h b/content/public/browser/web_contents_observer.h
-index d89d18e8d2509629c0d43c199c9a4ae3a302c062..82d6e6f97830282a89d5bbfa55a9b2d950e00fbc 100644
+index f4c8ee3fe8b161752b4c3b74f43b69f2b348d3c2..bab2cd2e09819e7629f5b9f6e8f92667a8ad7990 100644
 --- a/content/public/browser/web_contents_observer.h
 +++ b/content/public/browser/web_contents_observer.h
 @@ -30,6 +30,7 @@

@@ -8,7 +8,7 @@ Aligns common.gypi with the current build flag state of //v8.
 Specifically enables `V8_ENABLE_SANDBOX`, `V8_SANDBOXED_POINTERS`, `V8_COMPRESS_POINTERS` and `V8_COMPRESS_POINTERS_IN_SHARED_CAGE`.
 
 diff --git a/common.gypi b/common.gypi
-index 2c2f3218a8ae387802af3d154ede601aedcb52dd..b661dc4a1b3149e780eef46033e70e68038417b0 100644
+index 497a73ed8a7515292eb65435b9b8a44dcaa57899..528ae2c370bc41fd245daea33ff8114cee68fce9 100644
 --- a/common.gypi
 +++ b/common.gypi
 @@ -65,6 +65,7 @@

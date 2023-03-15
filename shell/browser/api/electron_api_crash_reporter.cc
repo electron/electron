@@ -221,14 +221,15 @@ v8::Local<v8::Value> GetUploadedReports(v8::Isolate* isolate) {
     electron::ScopedAllowBlockingForElectron allow_blocking;
     list->LoadSync();
   }
-  std::vector<UploadList::UploadInfo> uploads;
+
   constexpr size_t kMaxUploadReportsToList = std::numeric_limits<size_t>::max();
-  list->GetUploads(kMaxUploadReportsToList, &uploads);
+  const std::vector<const UploadList::UploadInfo*> uploads =
+      list->GetUploads(kMaxUploadReportsToList);
   std::vector<v8::Local<v8::Object>> result;
-  for (const auto& upload : uploads) {
+  for (auto* const upload : uploads) {
     result.push_back(gin::DataObjectBuilder(isolate)
-                         .Set("date", upload.upload_time)
-                         .Set("id", upload.upload_id)
+                         .Set("date", upload->upload_time)
+                         .Set("id", upload->upload_id)
                          .Build());
   }
   v8::Local<v8::Value> v8_result = gin::ConvertToV8(isolate, result);

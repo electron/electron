@@ -7,7 +7,7 @@ We use this to allow node's 'fs' module to read from ASAR files as if they were
 a real filesystem.
 
 diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
-index 81b441a554e34556fc41066fc8761c713acb0ced..7dd89d5f134b09da2678dd54fa9139466fea179c 100644
+index 1156bcb3150fb53fbb085265e20adca0bec6b24b..8e714227c4fec6f3aa1d09382d70467d69ca8460 100644
 --- a/lib/internal/bootstrap/node.js
 +++ b/lib/internal/bootstrap/node.js
 @@ -101,6 +101,10 @@ process.domain = null;

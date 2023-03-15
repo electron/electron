@@ -6,7 +6,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-111.0.5560.0-node18
+image: e-112.0.5607.0-vs2022
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -82,7 +82,8 @@ build_script:
   - ps: Copy-Item -path .\.depshash -destination ..\.depshash
   - ps: cd ..\..
   - gclient sync --with_branch_heads --with_tags --nohooks
-  - ps: regsvr32 /s "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\DIA SDK\bin\amd64\msdia140.dll"
+  - ps: regsvr32 /s "C:\Program Files\Microsoft Visual Studio\2022\Community\DIA SDK\bin\amd64\msdia140.dll"
+  - ps: set vs2022_install="C:\Program Files\Microsoft Visual Studio\2022\Community"
 
 # The following lines are needed when baking from a completely new image (eg MicrosoftWindowsServer:WindowsServer:2019-Datacenter:latest via image: base-windows-server2019)
   # # Restart VM

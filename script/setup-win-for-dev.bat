@@ -1,7 +1,7 @@
 REM Parameters vs_buildtools.exe download link and wsdk version
 @ECHO OFF
 
-SET wsdk=10SDK.20348
+SET wsdk=11SDK.22621
 
 REM Check for disk space
 Rem        543210987654321
@@ -50,10 +50,10 @@ set chocolateyUseWindowsCompression='true'
 SET "PATH=%PATH%;%ALLUSERSPROFILE%\chocolatey\bin"
 
 REM Install Visual Studio Toolchain
-choco install visualstudio2019buildtools --package-parameters "--quiet --wait --norestart --nocache  --installPath ""%ProgramFiles(x86)%/Microsoft Visual Studio/2019/Community"" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.VC.ATLMFC --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 --add Microsoft.VisualStudio.Component.Windows%wsdk% --includeRecommended"
+choco install visualstudio2022buildtools --package-parameters "--quiet --wait --norestart --nocache  --installPath ""%ProgramFiles%/Microsoft Visual Studio/2022/Community"" --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.140 --add Microsoft.VisualStudio.Component.VC.ATLMFC --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --add Microsoft.VisualStudio.Component.VC.MFC.ARM64 --add Microsoft.VisualStudio.Workload.NativeDesktop --add Microsoft.VisualStudio.Component.Windows%wsdk% --includeRecommended"
 
 REM Install Windows SDK
-choco install windows-sdk-10-version-2104-all
+choco install windows-sdk-11-version-22h2-all
 
 REM Install nodejs python git and yarn needed dependencies
 choco install -y --force nodejs --version=18.12.1
@@ -68,3 +68,6 @@ SET PATH=%PATH%;C:\depot_tools\
 
 REM Add symstore to PATH permanently
 setx path "%%path%%;C:\Program Files (x86)\Windows Kits\10\Debuggers\x64"
+
+REM Add vs2022_install to environment variables
+SET vs2022_install="C:\Program Files\Microsoft Visual Studio\2022\Community"

@@ -15,10 +15,10 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e020904586 100644
+index efbea8c15b096344b0cc65cc337a9cdbd727cb55..ca31bba7fc6daf68e6862554a70032dfdc8285b5 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
-@@ -56,7 +56,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
+@@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
  void MediaStreamDevicesController::RequestPermissions(
      const content::MediaStreamRequest& request,
      MediaStreamDeviceEnumerator* enumerator,
@@ -28,7 +28,7 @@ index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e0
    content::RenderFrameHost* rfh = content::RenderFrameHost::FromID(
        request.render_process_id, request.render_frame_id);
    // The RFH may have been destroyed by the time the request is processed.
-@@ -92,6 +93,7 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -93,6 +94,7 @@ void MediaStreamDevicesController::RequestPermissions(
  
    std::vector<blink::PermissionType> permission_types;
  
@@ -36,7 +36,7 @@ index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e0
    content::PermissionController* permission_controller =
        web_contents->GetBrowserContext()->GetPermissionController();
  
-@@ -152,19 +154,25 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -153,19 +155,25 @@ void MediaStreamDevicesController::RequestPermissions(
        permission_types.push_back(blink::PermissionType::CAMERA_PAN_TILT_ZOOM);
      }
    }
@@ -69,7 +69,7 @@ index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e0
  }
  
  MediaStreamDevicesController::~MediaStreamDevicesController() {
-@@ -434,6 +442,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -435,6 +443,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
  
@@ -77,7 +77,7 @@ index 9cec3223124ce856ab8bbe95d2fdf5c1f08bed06..f2c6f3dea44084d6de1a79776707c9e0
    // TODO(raymes): This function wouldn't be needed if
    // PermissionManager::RequestPermissions returned a denial reason.
    content::PermissionResult result =
-@@ -444,6 +453,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -445,6 +454,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }

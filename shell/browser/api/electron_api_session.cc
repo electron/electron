@@ -46,6 +46,7 @@
 #include "net/http/http_util.h"
 #include "services/network/network_service.h"
 #include "services/network/public/cpp/features.h"
+#include "services/network/public/mojom/clear_data_filter.mojom.h"
 #include "shell/browser/api/electron_api_app.h"
 #include "shell/browser/api/electron_api_cookies.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
@@ -181,7 +182,8 @@ struct Converter<ClearStorageDataOptions> {
     if (!ConvertFromV8(isolate, val, &options))
       return false;
     if (GURL storage_origin; options.Get("origin", &storage_origin))
-      out->storage_key = blink::StorageKey(url::Origin::Create(storage_origin));
+      out->storage_key = blink::StorageKey::CreateFirstParty(
+          url::Origin::Create(storage_origin));
     std::vector<std::string> types;
     if (options.Get("storages", &types))
       out->storage_types = GetStorageMask(types);
@@ -874,9 +876,10 @@ v8::Local<v8::Value> Session::GetExtension(const std::string& extension_id) {
 
 v8::Local<v8::Value> Session::GetAllExtensions() {
   auto* registry = extensions::ExtensionRegistry::Get(browser_context());
-  auto installed_extensions = registry->GenerateInstalledExtensionsSet();
+  const extensions::ExtensionSet extensions =
+      registry->GenerateInstalledExtensionsSet();
   std::vector<const extensions::Extension*> extensions_vector;
-  for (const auto& extension : *installed_extensions) {
+  for (const auto& extension : extensions) {
     if (extension->location() !=
         extensions::mojom::ManifestLocation::kComponent)
       extensions_vector.emplace_back(extension.get());
@@ -944,8 +947,8 @@ static void StartPreconnectOnUI(ElectronBrowserContext* browser_context,
   url::Origin origin = url::Origin::Create(url);
   std::vector<predictors::PreconnectRequest> requests = {
       {url::Origin::Create(url), num_sockets_to_preconnect,
-       net::NetworkAnonymizationKey(net::SchemefulSite(origin),
-                                    net::SchemefulSite(origin))}};
+       net::NetworkAnonymizationKey::CreateSameSite(
+           net::SchemefulSite(origin))}};
   browser_context->GetPreconnectManager()->Start(url, requests);
 }
 

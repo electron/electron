@@ -22,8 +22,6 @@ namespace electron {
 namespace {
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-constexpr char kInvalidUpdatePrintSettingsCall[] =
-    "Invalid UpdatePrintSettings Call";
 constexpr char kInvalidSetupScriptedPrintPreviewCall[] =
     "Invalid SetupScriptedPrintPreview Call";
 constexpr char kInvalidShowScriptedPrintPreviewCall[] =
@@ -113,20 +111,6 @@ void PrintViewManagerElectron::ScriptedPrint(
 }
 
 #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
-void PrintViewManagerElectron::UpdatePrintSettings(
-    int32_t cookie,
-    base::Value::Dict job_settings,
-    UpdatePrintSettingsCallback callback) {
-  auto entry = std::find(pdf_jobs_.begin(), pdf_jobs_.end(), cookie);
-  if (entry == pdf_jobs_.end()) {
-    PrintViewManagerBase::UpdatePrintSettings(cookie, std::move(job_settings),
-                                              std::move(callback));
-    return;
-  }
-
-  mojo::ReportBadMessage(kInvalidUpdatePrintSettingsCall);
-}
-
 void PrintViewManagerElectron::SetupScriptedPrintPreview(
     SetupScriptedPrintPreviewCallback callback) {
   mojo::ReportBadMessage(kInvalidSetupScriptedPrintPreviewCall);
