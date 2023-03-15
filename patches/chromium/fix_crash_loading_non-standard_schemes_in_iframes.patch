@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 4447f931c483971d80b4dca8874da4b29bfec795..56350916b3c781a96ecb54ca23931108829e140f 100644
+index c9d08d6ae25d1bb1c6a9512961d1671a150f267f..2d725df67c159ae1f8ff6ed7c384c457a552e0d3 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -7127,10 +7127,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -7134,10 +7134,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,10 +37,10 @@ index 4447f931c483971d80b4dca8874da4b29bfec795..56350916b3c781a96ecb54ca23931108
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 16fc4e1e48ef42e6c34c03791d7565a6ba706d92..0422d057cd34b1add5669c5a32e080e785a65b07 100644
+index 0c9248c558d0061d918139547d5d56347a4af7c7..18dcd085afdfa5bcbed07c5ef2b07f145e19479a 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2866,6 +2866,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2882,6 +2882,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // last committed document.
    CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
  
@@ -58,7 +58,7 @@ index 16fc4e1e48ef42e6c34c03791d7565a6ba706d92..0422d057cd34b1add5669c5a32e080e7
   protected:
    friend class RenderFrameHostFactory;
  
-@@ -3189,17 +3200,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3205,17 +3216,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

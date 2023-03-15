@@ -587,7 +587,7 @@ index 8c6b0aee3964791ad7d73ee8bc367456280a3eec..e42e8bceb792f9fa9c0b2d32853746c7
    // Tells the browser printing failed.
    PrintingFailed(int32 cookie, PrintFailureReason reason);
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 72402ac5dc6763e066127b48eefb3e14d2e1b010..3a2e89b640879806075ed2cd72cf814c424d9c8e 100644
+index 37ee29375fae6bd1fe2811a157bdb0e6d836c5f0..d561a2c507e77f234b4013764c0bf3ac38d32dce 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -45,6 +45,7 @@
@@ -692,7 +692,7 @@ index 72402ac5dc6763e066127b48eefb3e14d2e1b010..3a2e89b640879806075ed2cd72cf814c
      // Check if |this| is still valid.
      if (!self)
        return;
-@@ -2421,36 +2436,51 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2420,36 +2435,51 @@ void PrintRenderFrameHelper::IPCProcessed() {
    }
  }
  
@@ -756,7 +756,7 @@ index 72402ac5dc6763e066127b48eefb3e14d2e1b010..3a2e89b640879806075ed2cd72cf814c
      return false;
    }
  
-@@ -2571,7 +2601,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
+@@ -2570,7 +2600,7 @@ mojom::PrintPagesParamsPtr PrintRenderFrameHelper::GetPrintSettingsFromUser(
        std::move(params),
        base::BindOnce(
            [](base::OnceClosure quit_closure, mojom::PrintPagesParamsPtr* output,
@@ -807,10 +807,10 @@ index c7be37dc31f4725c945e7fde016b542d6e2b5902..03eff9ffcec9c655542d9c6508d9eb2f
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 404097b9673f3e3c2b0dfe3bc0454d2a75721849..90be295a7622eb3d9c8df73e448c34903cad60c5 100644
+index 29e6932405dc48ecd29beb620bedef40ddb4c481..aec1fddcdb0e5e4e4b6fa0927cb6ebba05430382 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2824,8 +2824,9 @@ source_set("browser") {
+@@ -2826,8 +2826,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
