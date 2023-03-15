@@ -23,16 +23,9 @@ console.log(contents)
 
 Several events can be used to monitor navigations as they occur within a `webContents`.
 
-### In-page Navigation
+### Document Navigations
 
-In-page navigations don't cause the page to reload, but instead navigate to a location within the current page. These events are not cancellable. For an in-page navigations, the following events will fire in this order:
-
-* [`did-start-navigation`](web-contents.md#event-did-start-navigation)
-* [`did-navigate-in-page`](web-contents.md#event-did-navigate-in-page)
-
-### Non-in-page Navigations
-
-When a `webContents` navigates to another page, the following events will be fired.
+When a `webContents` navigates to another page (as opposed to an [in-page navigation](web-contents.md#in-page-navigation)), the following events will be fired.
 
 * [`did-start-navigation`](web-contents.md#event-did-start-navigation)
 * [`will-frame-navigate`](web-contents.md#event-will-frame-navigate)
@@ -43,6 +36,13 @@ When a `webContents` navigates to another page, the following events will be fir
 * [`did-navigate`](web-contents.md#event-did-navigate) (only fired when main frame navigates)
 
 Subsequent events will not fire if `event.preventDefault()` is called on any of the cancellable events.
+
+### In-page Navigation
+
+In-page navigations don't cause the page to reload, but instead navigate to a location within the current page. These events are not cancellable. For an in-page navigations, the following events will fire in this order:
+
+* [`did-start-navigation`](web-contents.md#event-did-start-navigation)
+* [`did-navigate-in-page`](web-contents.md#event-did-navigate-in-page)
 
 ### Frame Navigation
 
