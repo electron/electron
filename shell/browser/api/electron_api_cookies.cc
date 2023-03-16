@@ -180,7 +180,7 @@ std::string InclusionStatusToString(net::CookieInclusionStatus status) {
     return "Failed to parse cookie";
   if (status.HasExclusionReason(
           net::CookieInclusionStatus::EXCLUDE_INVALID_DOMAIN))
-    return "Failed to get cookie domain";
+    return "Failed to set cookie with an invalid domain attribute";
   if (status.HasExclusionReason(
           net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX))
     return "Failed because the cookie violated prefix rules.";
@@ -318,19 +318,24 @@ v8::Local<v8::Promise> Cookies::Set(v8::Isolate* isolate,
     return handle;
   }
 
+  net::CookieInclusionStatus status;
   auto canonical_cookie = net::CanonicalCookie::CreateSanitizedCookie(
       url, name ? *name : "", value ? *value : "", domain ? *domain : "",
       path ? *path : "", ParseTimeProperty(details.FindDouble("creationDate")),
       ParseTimeProperty(details.FindDouble("expirationDate")),
       ParseTimeProperty(details.FindDouble("lastAccessDate")), secure,
       http_only, same_site, net::COOKIE_PRIORITY_DEFAULT, same_party,
-      absl::nullopt);
+      absl::nullopt, &status);
+
   if (!canonical_cookie || !canonical_cookie->IsCanonical()) {
-    promise.RejectWithErrorMessage(
-        InclusionStatusToString(net::CookieInclusionStatus(
-            net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
+    promise.RejectWithErrorMessage(InclusionStatusToString(
+        !status.IsInclude()
+            ? status
+            : net::CookieInclusionStatus(
+                  net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)));
     return handle;
   }
+
   net::CookieOptions options;
   if (http_only) {
     options.set_include_httponly();
