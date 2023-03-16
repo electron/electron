@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Bruce Dawson <brucedawson@chromium.org>
+Date: Wed, 15 Mar 2023 20:44:27 +0000
+Subject: Fix copying of runtime DLLs to win_clang_x64
+
+Change crrev.com/c/4336228 copied the x64 runtime DLLs to win_clang_x64
+during arm64 builds, but for some of those DLLs (including
+msvcp140d.dll) it copied the ARM64 version instead of the x64 version.
+This prevents debug builds from building, but wasn't noticed until a
+clean build was done.
+
+This change fixes the runtime_dir so that the correct files are copied,
+and this change was tested with a full build of a debug component
+arm64 Windows build.
+
+Bug: 1424422
+Change-Id: I43106597059dc243af383dbdb0c3b23703034765
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4336046
+Reviewed-by: Dirk Pranke <dpranke@google.com>
+Auto-Submit: Bruce Dawson <brucedawson@chromium.org>
+Commit-Queue: Dirk Pranke <dpranke@google.com>
+Cr-Commit-Position: refs/heads/main@{#1117727}
+
+diff --git a/build/vs_toolchain.py b/build/vs_toolchain.py
+index eceea83f021573e6ba677904da3bb269a2279740..a9cd6f03d9214ad5077b10d4d76b878255266bdc 100755
+--- a/build/vs_toolchain.py
++++ b/build/vs_toolchain.py
+@@ -401,6 +401,7 @@ def CopyDlls(target_dir, configuration, target_cpu):
+   if target_cpu == 'arm64':
+     target_dir = os.path.join(target_dir, 'win_clang_x64')
+     target_cpu = 'x64'
++    runtime_dir = x64_runtime
+     os.makedirs(target_dir, exist_ok=True)
+     _CopyRuntime(target_dir, runtime_dir, target_cpu, debug=False)
+     if configuration == 'Debug':

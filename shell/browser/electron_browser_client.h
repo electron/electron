@@ -107,7 +107,9 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   content::WebAuthenticationDelegate* GetWebAuthenticationDelegate() override;
 
+#if BUILDFLAG(IS_MAC)
   device::GeolocationManager* GetGeolocationManager() override;
+#endif
 
   content::PlatformNotificationService* GetPlatformNotificationService();
 

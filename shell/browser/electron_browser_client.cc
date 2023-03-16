@@ -249,7 +249,7 @@ enum class RenderProcessHostPrivilege {
 bool AllowFileAccess(const std::string& extension_id,
                      content::BrowserContext* context) {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             ::switches::kDisableExtensionsFileAccessCheck) ||
+             extensions::switches::kDisableExtensionsFileAccessCheck) ||
          extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
              extension_id);
 }
@@ -1715,13 +1715,11 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
 }
 
-device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
 #if BUILDFLAG(IS_MAC)
-  return browser_main_parts_->GetGeolocationManager();
-#else
-  return nullptr;
-#endif
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+  return g_browser_process->geolocation_manager();
 }
+#endif
 
 content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
   if (!hid_delegate_)

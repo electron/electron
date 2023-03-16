@@ -31,6 +31,7 @@
 #include "net/proxy_resolution/proxy_config.h"
 #include "net/proxy_resolution/proxy_config_service.h"
 #include "net/proxy_resolution/proxy_config_with_annotation.h"
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "services/network/public/cpp/network_switches.h"
 #include "shell/common/electron_paths.h"
 #include "shell/common/thread_restrictions.h"
@@ -317,4 +318,13 @@ printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
 
 StartupData* BrowserProcessImpl::startup_data() {
   return nullptr;
+}
+
+device::GeolocationManager* BrowserProcessImpl::geolocation_manager() {
+  return geolocation_manager_.get();
+}
+
+void BrowserProcessImpl::SetGeolocationManager(
+    std::unique_ptr<device::GeolocationManager> geolocation_manager) {
+  geolocation_manager_ = std::move(geolocation_manager);
 }

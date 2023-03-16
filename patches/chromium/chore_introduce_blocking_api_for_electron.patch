@@ -7,10 +7,10 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index a79fd26d368810091b0537af90b972a61b464d1a..768c69572eb40dee103311ec6d6a0e535472d57c 100644
+index 8b6b194a86ce78a3935c74c20a8305345b58bb8e..3f0391f2a1e3467735ab33f63a30eeddedfdb0e4 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
-@@ -129,6 +129,7 @@ class FirefoxProfileLock;
+@@ -133,6 +133,7 @@ class FirefoxProfileLock;
  class KeyStorageLinux;
  class NativeBackendKWallet;
  class NativeDesktopMediaList;
@@ -18,7 +18,7 @@ index a79fd26d368810091b0537af90b972a61b464d1a..768c69572eb40dee103311ec6d6a0e53
  class Profile;
  class ProfileImpl;
  class StartupTabProviderImpl;
-@@ -265,6 +266,9 @@ class BackendImpl;
+@@ -269,6 +270,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache
@@ -28,7 +28,7 @@ index a79fd26d368810091b0537af90b972a61b464d1a..768c69572eb40dee103311ec6d6a0e53
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -551,6 +555,7 @@ class BASE_EXPORT [[nodiscard]] ScopedAllowBlocking {
+@@ -573,6 +577,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
@@ -36,7 +36,7 @@ index a79fd26d368810091b0537af90b972a61b464d1a..768c69572eb40dee103311ec6d6a0e53
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -588,6 +593,7 @@ class BASE_EXPORT [[nodiscard]] ScopedAllowBlocking {
+@@ -610,6 +615,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class crosapi::LacrosThreadTypeDelegate;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;
