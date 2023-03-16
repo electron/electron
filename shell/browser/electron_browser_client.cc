@@ -58,6 +58,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/api/messaging/messaging_api_message_filter.h"
+#include "extensions/common/switches.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "ppapi/buildflags/buildflags.h"
@@ -249,7 +250,7 @@ enum class RenderProcessHostPrivilege {
 bool AllowFileAccess(const std::string& extension_id,
                      content::BrowserContext* context) {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             ::switches::kDisableExtensionsFileAccessCheck) ||
+             extensions::switches::kDisableExtensionsFileAccessCheck) ||
          extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
              extension_id);
 }
