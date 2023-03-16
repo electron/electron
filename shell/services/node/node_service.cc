@@ -52,6 +52,9 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   js_env_ = std::make_unique<JavascriptEnvironment>(node_bindings_->uv_loop());
 
 #if BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
+  auto* cmd = base::CommandLine::ForCurrentProcess();
+  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
+#if defined(V8_ENABLE_SANDBOX)
   // Gin will initialize the partition alloc configurable pool
   // according to the V8 Sandbox preallocated addressspace in
   // gin::V8Initializer::Initialize. Given there can only be a single
@@ -62,8 +65,6 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // arises or create a secondary configurable pool.
   CHECK_NE(v8::V8::GetSandboxAddressSpace(), nullptr);
   CHECK(partition_alloc::IsConfigurablePoolAvailable());
-  auto* cmd = base::CommandLine::ForCurrentProcess();
-  std::string process_type = cmd->GetSwitchValueASCII(switches::kProcessType);
   if (params->use_v8_configured_pool_for_main_partition) {
     base::allocator::PartitionAllocSupport::Get()
         ->ReconfigureAfterFeatureListInit(
@@ -77,6 +78,12 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
     base::allocator::PartitionAllocSupport::Get()
         ->ReconfigureAfterTaskRunnerInit(process_type);
   }
+#else
+  base::allocator::PartitionAllocSupport::Get()
+      ->ReconfigureAfterFeatureListInit(process_type);
+  base::allocator::PartitionAllocSupport::Get()->ReconfigureAfterTaskRunnerInit(
+      process_type);
+#endif  // defined(V8_ENABLE_SANDBOX)
 #endif  // BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
 
   v8::HandleScope scope(js_env_->isolate());
