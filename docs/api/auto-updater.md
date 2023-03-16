@@ -140,5 +140,5 @@ application starts.
 [installer]: https://github.com/electron/grunt-electron-installer
 [installer-lib]: https://github.com/electron/windows-installer
 [electron-forge-lib]: https://github.com/electron/forge
-[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter

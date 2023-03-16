@@ -1510,8 +1510,8 @@ dock on macOS.
 
 A `boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 
-[tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
-[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[tasks]:https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
+[app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
 [electron-forge]: https://www.electronforge.io/
 [electron-packager]: https://github.com/electron/electron-packager
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
@@ -1521,7 +1521,7 @@ A `boolean` property that returns  `true` if the app is packaged, `false` otherw
 [unity-requirement]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [mas-builds]: ../tutorial/mac-app-store-submission-guide.md
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
-[JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[JumpListBeginListMSDN]: https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
 
 ### `app.name`
