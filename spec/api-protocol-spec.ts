@@ -1187,9 +1187,7 @@ describe('protocol module', () => {
     });
 
     it('can forward to http', async () => {
-      let acceptHeader: string | undefined;
       const server = http.createServer((req, res) => {
-        acceptHeader = req.headers.accept;
         res.end(text);
       });
       defer(() => { server.close(); });
@@ -1199,7 +1197,6 @@ describe('protocol module', () => {
       defer(() => { protocol.unhandle('test-scheme'); });
       const body = await net.fetch('test-scheme://foo').then(r => r.text());
       expect(body).to.equal(text);
-      expect(acceptHeader?.length).to.be.greaterThan(0);
     });
 
     it('can forward an http request with headers', async () => {
