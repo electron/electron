@@ -5242,7 +5242,7 @@ describe('BrowserWindow module', () => {
 
     it('should not call BrowserWindow show event', async () => {
       const w = new BrowserWindow({ show: false });
-      const shown = once(w, 'show');
+      const shown = emittedOnce(w, 'show');
       w.show();
       await shown;
 
@@ -5252,7 +5252,7 @@ describe('BrowserWindow module', () => {
       });
 
       w.previewFile(__filename);
-      await setTimeout(500);
+      await delay(500);
       expect(showCalled).to.equal(false, 'should not have called show twice');
     });
   });
