@@ -829,6 +829,16 @@ describe('net module', () => {
       expect(cookies[0].name).to.equal('cookie2');
     });
 
+    it('throws when an invalid domain is passed', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await expect(sess.cookies.set({
+        url: 'https://electronjs.org',
+        domain: 'wssss.iamabaddomain.fun',
+        name: 'cookie1'
+      })).to.eventually.be.rejectedWith(/Failed to set cookie with an invalid domain attribute/);
+    });
+
     it('should be able correctly filter out cookies that are session', async () => {
       const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
 
