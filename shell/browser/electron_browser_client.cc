@@ -1716,13 +1716,11 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
 }
 
-device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
 #if BUILDFLAG(IS_MAC)
-  return browser_main_parts_->GetGeolocationManager();
-#else
-  return nullptr;
-#endif
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+  return g_browser_process->geolocation_manager();
 }
+#endif
 
 content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
   if (!hid_delegate_)
