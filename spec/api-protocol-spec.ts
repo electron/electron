@@ -1154,6 +1154,78 @@ describe('protocol module', () => {
       expect(body).to.equal(text);
     });
 
+    it('accepts urls with no hostname in non-standard schemes', async () => {
+      protocol.handle('test-scheme', (req) => new Response(req.url));
+      defer(() => { protocol.unhandle('test-scheme'); });
+      {
+        const body = await net.fetch('test-scheme://foo').then(r => r.text());
+        expect(body).to.equal('test-scheme://foo');
+      }
+      {
+        const body = await net.fetch('test-scheme:///foo').then(r => r.text());
+        expect(body).to.equal('test-scheme:///foo');
+      }
+      {
+        const body = await net.fetch('test-scheme://').then(r => r.text());
+        expect(body).to.equal('test-scheme://');
+      }
+    });
+
+    it('accepts urls with a port-like component in non-standard schemes', async () => {
+      protocol.handle('test-scheme', (req) => new Response(req.url));
+      defer(() => { protocol.unhandle('test-scheme'); });
+      {
+        const body = await net.fetch('test-scheme://foo:30').then(r => r.text());
+        expect(body).to.equal('test-scheme://foo:30');
+      }
+    });
+
+    it('normalizes urls in standard schemes', async () => {
+      // NB. 'app' is registered as a standard scheme in test setup.
+      protocol.handle('app', (req) => new Response(req.url));
+      defer(() => { protocol.unhandle('app'); });
+      {
+        const body = await net.fetch('app://foo').then(r => r.text());
+        expect(body).to.equal('app://foo/');
+      }
+      {
+        const body = await net.fetch('app:///foo').then(r => r.text());
+        expect(body).to.equal('app://foo/');
+      }
+      // NB. 'app' is registered with the default scheme type of 'host'.
+      {
+        const body = await net.fetch('app://foo:1234').then(r => r.text());
+        expect(body).to.equal('app://foo/');
+      }
+      await expect(net.fetch('app://')).to.be.rejectedWith('Invalid URL');
+    });
+
+    it('allows ports in hostAndPort', async () => {
+      // NB. 'app' is registered as a standard scheme in test setup.
+      protocol.handle('standard-host-and-port', (req) => new Response(req.url));
+      defer(() => { protocol.unhandle('standard-host-and-port'); });
+      {
+        const body = await net.fetch('standard-host-and-port://foo:1234').then(r => r.text());
+        expect(body).to.equal('standard-host-and-port://foo:1234/');
+      }
+    });
+
+    it('fails on URLs with a username', async () => {
+      // NB. 'app' is registered as a standard scheme in test setup.
+      protocol.handle('http', (req) => new Response(req.url));
+      defer(() => { protocol.unhandle('http'); });
+      await expect(contents.loadURL('http://x@foo:1234')).to.be.rejectedWith(/ERR_UNEXPECTED/);
+    });
+
+    it('normalizes http urls', async () => {
+      protocol.handle('http', (req) => new Response(req.url));
+      defer(() => { protocol.unhandle('http'); });
+      {
+        const body = await net.fetch('http://foo').then(r => r.text());
+        expect(body).to.equal('http://foo/');
+      }
+    });
+
     it('can send errors', async () => {
       protocol.handle('test-scheme', () => Response.error());
       defer(() => { protocol.unhandle('test-scheme'); });

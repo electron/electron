@@ -63,15 +63,15 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
 Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, handler: (req: Request) => Response | Promise<Response>) {
   const register = isBuiltInScheme(scheme) ? this.interceptProtocol : this.registerProtocol;
   const success = register.call(this, scheme, async (preq: ProtocolRequest, cb: any) => {
-    const body = convertToRequestBody(preq.uploadData);
-    const req = new Request(preq.url, {
-      headers: preq.headers,
-      method: preq.method,
-      referrer: preq.referrer,
-      body,
-      duplex: body instanceof ReadableStream ? 'half' : undefined
-    } as any);
     try {
+      const body = convertToRequestBody(preq.uploadData);
+      const req = new Request(preq.url, {
+        headers: preq.headers,
+        method: preq.method,
+        referrer: preq.referrer,
+        body,
+        duplex: body instanceof ReadableStream ? 'half' : undefined
+      } as any);
       const res = await handler(req);
       if (!res || typeof res !== 'object') {
         return cb({ error: ERR_UNEXPECTED });
@@ -86,6 +86,7 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         });
       }
     } catch (e) {
+      console.error(e);
       cb({ error: ERR_UNEXPECTED });
     }
   });
