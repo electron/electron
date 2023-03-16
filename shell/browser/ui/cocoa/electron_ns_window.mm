@@ -185,12 +185,10 @@ int ScopedDisableResize::disable_resize_ = 0;
 }
 
 - (void)beginPreviewPanelControl:(QLPreviewPanel*)panel {
-  panel.delegate = [self delegate];
   panel.dataSource = static_cast<id<QLPreviewPanelDataSource>>([self delegate]);
 }
 
 - (void)endPreviewPanelControl:(QLPreviewPanel*)panel {
-  panel.delegate = nil;
   panel.dataSource = nil;
 }
 
