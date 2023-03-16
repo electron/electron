@@ -101,10 +101,10 @@ index 49e8f25dbf010e3185302cdae89b2cb07417a4fe..9a96826273fd728d4b44ef6b926845fd
                ? partition_alloc::PartitionOptions::AddDummyRefCount::kEnabled
                : partition_alloc::PartitionOptions::AddDummyRefCount::
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index db198814fc07a8f278eaf013ca37d928ff0e0bc7..d224f53fccf3b11b9bd66efea7d28720f8c2d04c 100644
+index af6023c95d284a5fc3ba6c66c8b5b58de47b8e79..377920be6bc2bf51d4ac16466bfa1cd2bbff5001 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
-@@ -703,8 +703,12 @@ int NO_STACK_PROTECTOR RunZygote(ContentMainDelegate* delegate) {
+@@ -705,8 +705,12 @@ int NO_STACK_PROTECTOR RunZygote(ContentMainDelegate* delegate) {
    delegate->PostEarlyInitialization(
        ContentMainDelegate::InvokedInChildProcess());
  
@@ -119,7 +119,7 @@ index db198814fc07a8f278eaf013ca37d928ff0e0bc7..d224f53fccf3b11b9bd66efea7d28720
  
    for (size_t i = 0; i < std::size(kMainFunctions); ++i) {
      if (process_type == kMainFunctions[i].name)
-@@ -1112,8 +1116,12 @@ int NO_STACK_PROTECTOR ContentMainRunnerImpl::Run() {
+@@ -1125,8 +1129,12 @@ int NO_STACK_PROTECTOR ContentMainRunnerImpl::Run() {
        delegate_->PostEarlyInitialization(
            ContentMainDelegate::InvokedInChildProcess());
  
