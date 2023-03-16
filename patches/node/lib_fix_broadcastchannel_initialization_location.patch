@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 27 Feb 2023 12:56:15 +0100
+Subject: lib: fix BroadcastChannel initialization location
+
+Refs https://github.com/nodejs/node/pull/40532.
+
+Fixes a bug in the above, wherein BroadcastChannel should have been
+initialized in bootstrap/browser instead of bootstrap/node. That
+inadvertently made it such that there was incorrect handling of the
+DOM vs Node.js implementations of BroadcastChannel.
+
+This will be upstreamed.
+
+diff --git a/lib/internal/bootstrap/browser.js b/lib/internal/bootstrap/browser.js
+index d0c01ca2a512be549b0fea8a829c05eabbec799a..210a1bb7e929021725b04786bc11d9b3ce09ad04 100644
+--- a/lib/internal/bootstrap/browser.js
++++ b/lib/internal/bootstrap/browser.js
+@@ -12,6 +12,10 @@ const {
+ } = require('internal/util');
+ const config = internalBinding('config');
+ 
++// Non-standard extensions:
++const { BroadcastChannel } = require('internal/worker/io');
++exposeInterface(globalThis, 'BroadcastChannel', BroadcastChannel);
++
+ // https://console.spec.whatwg.org/#console-namespace
+ exposeNamespace(globalThis, 'console',
+                 createGlobalConsole());
+diff --git a/lib/internal/bootstrap/node.js b/lib/internal/bootstrap/node.js
+index 83ac636db19a66f43fc7d3c1fc1e8290eeadd334..cb5072df3c23b499292887c56501820aee5cbd0e 100644
+--- a/lib/internal/bootstrap/node.js
++++ b/lib/internal/bootstrap/node.js
+@@ -248,10 +248,6 @@ const {
+   queueMicrotask
+ } = require('internal/process/task_queues');
+ 
+-// Non-standard extensions:
+-const { BroadcastChannel } = require('internal/worker/io');
+-exposeInterface(globalThis, 'BroadcastChannel', BroadcastChannel);
+-
+ defineOperation(globalThis, 'queueMicrotask', queueMicrotask);
+ 
+ const timers = require('timers');

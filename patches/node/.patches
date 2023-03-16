@@ -53,3 +53,4 @@ chore_add_missing_algorithm_include.patch
 enable_crashpad_linux_node_processes.patch
 allow_embedder_to_control_codegenerationfromstringscallback.patch
 cherry-pick-09ae62b.patch
+lib_fix_broadcastchannel_initialization_location.patch
