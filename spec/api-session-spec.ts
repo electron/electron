@@ -129,7 +129,7 @@ describe('session module', () => {
 
       await expect(
         cookies.set({ url: '', name, value })
-      ).to.eventually.be.rejectedWith('Failed to get cookie domain');
+      ).to.eventually.be.rejectedWith('Failed to set cookie with an invalid domain attribute');
     });
 
     it('yields an error when setting a cookie with an invalid URL', async () => {
@@ -139,7 +139,7 @@ describe('session module', () => {
 
       await expect(
         cookies.set({ url: 'asdf', name, value })
-      ).to.eventually.be.rejectedWith('Failed to get cookie domain');
+      ).to.eventually.be.rejectedWith('Failed to set cookie with an invalid domain attribute');
     });
 
     it('should overwrite previous cookies', async () => {
