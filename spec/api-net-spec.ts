@@ -2322,5 +2322,17 @@ describe('net module', () => {
       await response.text();
       expect(postedBodyData).to.equal(bodyData);
     });
+
+    it('triggers webRequest handlers when bypassCustomProtocolHandlers', async () => {
+      let webRequestDetails: Electron.OnBeforeRequestListenerDetails | null = null;
+      const serverUrl = await respondOnce.toSingleURL((req, res) => res.end('hi'));
+      session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
+        webRequestDetails = details;
+        cb({});
+      });
+      const body = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true }).then(r => r.text());
+      expect(body).to.equal('hi');
+      expect(webRequestDetails).to.have.property('url', serverUrl);
+    });
   });
 });
