@@ -5,6 +5,9 @@
 "@electron-ci/echo@file:./fixtures/native-addon/echo":
   version "0.0.1"
 
+"@electron-ci/external-array-buffer@file:./fixtures/api/utility-process/native-addon/external-array-buffer":
+  version "0.0.1"
+
 "@electron-ci/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
   version "0.0.1"
 
@@ -73,10 +76,9 @@
   dependencies:
     "@types/node" "*"
 
-abstract-socket@^2.0.0:
-  version "2.1.1"
-  resolved "https://registry.yarnpkg.com/abstract-socket/-/abstract-socket-2.1.1.tgz#243a7e6e6ff65bb9eab16a22fa90699b91e528f7"
-  integrity sha512-YZJizsvS1aBua5Gd01woe4zuyYBGgSMeqDOB6/ChwdTI904KP6QGtJswXl4hcqWxbz86hQBe++HWV0hF1aGUtA==
+"abstract-socket@github:saghul/node-abstractsocket#35b1b1491fabc04899bde5be3428abf5cf9cd528":
+  version "2.1.0"
+  resolved "https://codeload.github.com/saghul/node-abstractsocket/tar.gz/35b1b1491fabc04899bde5be3428abf5cf9cd528"
   dependencies:
     bindings "^1.2.1"
     nan "^2.12.1"
@@ -994,6 +996,11 @@ nise@^4.0.1:
     "@sinonjs/text-encoding" "^0.7.1"
     just-extend "^4.0.2"
     path-to-regexp "^1.7.0"
+
+node-addon-api@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-6.0.0.tgz#cfb3574e6df708ff71a30db6c4762d9e06e11c27"
+  integrity sha512-GyHvgPvUXBvAkXa0YvYnhilSB1A+FRYMpIVggKzPZqdaZfevZOuzfWzyvgzOwRLHBeo/MMswmJFsrNF4Nw1pmA==
 
 node-ensure@^0.0.0:
   version "0.0.0"
