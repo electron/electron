@@ -1384,5 +1384,47 @@ describe('protocol module', () => {
         expect(doc).to.equal('<html><head></head><body>hi</body></html>');
       }
     });
+
+    it('is fast', async () => {
+      // 128 MB of spaces.
+      const chunk = new Uint8Array(128 * 1024 * 1024);
+      chunk.fill(' '.charCodeAt(0));
+
+      const server = http.createServer((req, res) => {
+        // The sniffed mime type for the space-filled chunk will be
+        // text/plain, which chews up all its performance in the renderer
+        // trying to wrap lines. Setting content-type to text/html measures
+        // something closer to just the raw cost of getting the bytes over
+        // the wire.
+        res.setHeader('content-type', 'text/html');
+        res.end(chunk);
+      });
+      defer(() => server.close());
+      const { url } = await listen(server);
+
+      const rawTime = await (async () => {
+        await contents.loadURL(url); // warm
+        const begin = Date.now();
+        await contents.loadURL(url);
+        const end = Date.now();
+        return end - begin;
+      })();
+
+      // Fetching through an intercepted handler should not be too much slower
+      // than it would be if the protocol hadn't been intercepted.
+
+      protocol.handle('http', async (req) => {
+        return net.fetch(req, { bypassCustomProtocolHandlers: true });
+      });
+      defer(() => { protocol.unhandle('http'); });
+
+      const interceptedTime = await (async () => {
+        const begin = Date.now();
+        await contents.loadURL(url);
+        const end = Date.now();
+        return end - begin;
+      })();
+      expect(interceptedTime).to.be.lessThan(rawTime * 1.5);
+    });
   });
 });
