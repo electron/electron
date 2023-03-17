@@ -437,6 +437,17 @@ void ProxyingURLLoaderFactory::InProgressRequest::ContinueToBeforeSendHeaders(
     return;
   }
 
+  // At this point we know that onBeforeRequest (if overridden) will have
+  // updated redirect_url_. Note: The callback used by OnBeforeRequest (in
+  // electron_api_web_request.cc) is passed in RestartInternal. If we have a
+  // redirect url and both the original and redirect urls are file schema, then
+  // perform a 'transparent' redirect.
+  if (request_.url.SchemeIs(url::kFileScheme) && !redirect_url_.is_empty() &&
+      redirect_url_.SchemeIs(url::kFileScheme)) {
+    request_.url = redirect_url_;
+    // Clear the redirect_url_ to prevent a normal redirect being triggered
+    redirect_url_ = GURL();
+  }
   if (!current_request_uses_header_client_ && !redirect_url_.is_empty()) {
     if (for_cors_preflight_) {
       // CORS preflight doesn't support redirect.
