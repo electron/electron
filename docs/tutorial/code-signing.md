@@ -95,7 +95,7 @@ Before signing Windows builds, you must do the following:
 You can get a code signing certificate from a lot of resellers. Prices vary, so
 it may be worth your time to shop around. Popular resellers include:
 
-- [digicert](https://www.digicert.com/code-signing/microsoft-authenticode.htm)
+- [digicert](https://www.digicert.com/dc/code-signing/microsoft-authenticode.htm)
 - [Sectigo](https://sectigo.com/ssl-certificates-tls/code-signing)
 - Amongst others, please shop around to find one that suits your needs! 😄
 
