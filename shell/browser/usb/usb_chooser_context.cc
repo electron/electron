@@ -180,7 +180,10 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     const url::Origin& origin,
     const base::Value& object,
     bool revoked_by_website = false) {
-  if (object.FindStringKey(kDeviceSerialNumberKey)) {
+  const base::Value::Dict* object_dict = object.GetIfDict();
+  DCHECK(object_dict != nullptr);
+
+  if (object_dict->FindString(kDeviceSerialNumberKey) != nullptr) {
     auto* permission_manager = static_cast<ElectronPermissionManager*>(
         browser_context_->GetPermissionControllerDelegate());
     permission_manager->RevokeDevicePermission(
@@ -188,7 +191,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
             WebContentsPermissionHelper::PermissionType::USB),
         origin, object, browser_context_);
   } else {
-    const std::string* guid = object.FindStringKey(kDeviceIdKey);
+    const std::string* guid = object_dict->FindString(kDeviceIdKey);
     auto it = ephemeral_devices_.find(origin);
     if (it != ephemeral_devices_.end()) {
       it->second.erase(*guid);
