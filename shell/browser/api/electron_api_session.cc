@@ -12,7 +12,9 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
+#include "base/files/file_util.h"
 #include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
@@ -1205,6 +1207,30 @@ gin::Handle<Session> Session::FromPartition(v8::Isolate* isolate,
   return CreateFrom(isolate, browser_context);
 }
 
+// static
+absl::optional<gin::Handle<Session>> Session::FromPath(
+    v8::Isolate* isolate,
+    const base::FilePath& path,
+    base::Value::Dict options) {
+  ElectronBrowserContext* browser_context;
+
+  if (path.empty()) {
+    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    promise.RejectWithErrorMessage("An empty path was specified");
+    return absl::nullopt;
+  }
+  if (!path.IsAbsolute()) {
+    gin_helper::Promise<v8::Local<v8::Value>> promise(isolate);
+    promise.RejectWithErrorMessage("An absolute path was not provided");
+    return absl::nullopt;
+  }
+
+  browser_context =
+      ElectronBrowserContext::FromPath(std::move(path), std::move(options));
+
+  return CreateFrom(isolate, browser_context);
+}
+
 gin::ObjectTemplateBuilder Session::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
   return gin_helper::EventEmitterMixin<Session>::GetObjectTemplateBuilder(
@@ -1303,6 +1329,23 @@ v8::Local<v8::Value> FromPartition(const std::string& partition,
       .ToV8();
 }
 
+v8::Local<v8::Value> FromPath(const base::FilePath& path,
+                              gin::Arguments* args) {
+  if (!electron::Browser::Get()->is_ready()) {
+    args->ThrowTypeError("Session can only be received when app is ready");
+    return v8::Null(args->isolate());
+  }
+  base::Value::Dict options;
+  args->GetNext(&options);
+  absl::optional<gin::Handle<Session>> session_handle =
+      Session::FromPath(args->isolate(), path, std::move(options));
+
+  if (session_handle)
+    return session_handle.value().ToV8();
+  else
+    return v8::Null(args->isolate());
+}
+
 void Initialize(v8::Local<v8::Object> exports,
                 v8::Local<v8::Value> unused,
                 v8::Local<v8::Context> context,
@@ -1310,6 +1353,7 @@ void Initialize(v8::Local<v8::Object> exports,
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
   dict.SetMethod("fromPartition", &FromPartition);
+  dict.SetMethod("fromPath", &FromPath);
 }
 
 }  // namespace
