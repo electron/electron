@@ -158,7 +158,7 @@ We will need to create a new TypeScript file in the path that follows:
 
 `"lib/browser/api/{electron_browser_{api_name}}.ts"`
 
-An example of the contents of this file can be found [here](https://github.com/electron/electron/blob/main/lib/browser/api/native-image.ts).
+An example of the contents of this file can be found [here](https://github.com/electron/electron/blob/main/lib/browser/api/native-theme.ts).
 
 ### Expose your module to TypeScript
 
