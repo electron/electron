@@ -282,7 +282,7 @@ void HandleAccessibilityRequestCallback(
     descriptor.Set(kNative, is_native_enabled);
     descriptor.Set(kWeb, is_web_enabled);
     descriptor.Set(kLabelImages, are_accessibility_image_labels_enabled);
-    rvh_list.Append(base::Value(std::move(descriptor)));
+    rvh_list.Append(std::move(descriptor));
   }
 
   data.Set(kPagesField, std::move(rvh_list));
@@ -295,7 +295,7 @@ void HandleAccessibilityRequestCallback(
   data.Set(kBrowsersField, std::move(window_list));
 
   std::string json_string;
-  base::JSONWriter::Write(base::Value(std::move(data)), &json_string);
+  base::JSONWriter::Write(data, &json_string);
 
   std::move(callback).Run(
       base::MakeRefCounted<base::RefCountedString>(std::move(json_string)));

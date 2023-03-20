@@ -623,7 +623,7 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     extension_info.Set("exposeExperimentalAPIs",
                        extension->permissions_data()->HasAPIPermission(
                            extensions::mojom::APIPermissionID::kExperimental));
-    results.Append(base::Value(std::move(extension_info)));
+    results.Append(std::move(extension_info));
   }
 
   CallClientFunction("DevToolsAPI", "addExtensions",
