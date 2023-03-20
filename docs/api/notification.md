@@ -160,7 +160,7 @@ A `boolean` property representing whether the notification has a reply action.
 
 A `string` property representing the urgency level of the notification. Can be 'normal', 'critical', or 'low'.
 
-Default is 'low' - see [NotifyUrgency](https://developer.gnome.org/notification-spec/#urgency-levels) for more information.
+Default is 'low' - see [NotifyUrgency](https://developer-old.gnome.org/notification-spec/#urgency-levels) for more information.
 
 #### `notification.timeoutType` _Linux_ _Windows_
 
