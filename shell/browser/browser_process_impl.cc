@@ -14,7 +14,7 @@
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/os_crypt/os_crypt.h"
+#include "components/os_crypt/sync/os_crypt.h"
 #include "components/prefs/in_memory_pref_store.h"
 #include "components/prefs/json_pref_store.h"
 #include "components/prefs/overlay_user_pref_store.h"

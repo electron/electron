@@ -23,10 +23,10 @@ index 6c92a2856e447bdda11c7ed2c64b79b93a0eca26..03dedde2d83e6b09fb7e90be7dfdce24
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 9d36910bf306eb900a4f3668ed62609454a1849b..77d81002500acc34228d393eb2a79f3067a68a1b 100644
+index 266b52ee18cf3f9cf25cb394780f098c292b9449..23c814d1cecd62121c78702cb0986de3de46df68 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4377,6 +4377,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4382,6 +4382,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index 9d36910bf306eb900a4f3668ed62609454a1849b..77d81002500acc34228d393eb2a79f30
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index ff1a05ac05d2df7db3ba3579ddf0d2d329d9782c..72806c4947b7187b54c79a1cd05200183e56d4d1 100644
+index f3b4f9be415f2ced0adb7aca57b26ea339d0ff3d..5d810d33db7c1d0a3e22da8f5588d0f748534fac 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -605,6 +605,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -606,6 +606,8 @@ class CONTENT_EXPORT RenderFrameImpl
    void DidObserveLayoutShift(double score, bool after_input_or_scroll) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
@@ -53,10 +53,10 @@ index ff1a05ac05d2df7db3ba3579ddf0d2d329d9782c..72806c4947b7187b54c79a1cd0520018
                                  int world_id) override;
    void DidChangeScrollOffset() override;
 diff --git a/third_party/blink/public/web/web_local_frame_client.h b/third_party/blink/public/web/web_local_frame_client.h
-index 246d2ff90ea004102aa2680a60741fb1eedc3d8c..e9358bb7b3808215e27faa58b87045cbd6ab0598 100644
+index 082e8ec96fb8f2fea660ea12fd349a248b7422a2..77a7aee67a69fb7728525af3baa45410d866b266 100644
 --- a/third_party/blink/public/web/web_local_frame_client.h
 +++ b/third_party/blink/public/web/web_local_frame_client.h
-@@ -599,6 +599,9 @@ class BLINK_EXPORT WebLocalFrameClient {
+@@ -603,6 +603,9 @@ class BLINK_EXPORT WebLocalFrameClient {
    virtual void DidCreateScriptContext(v8::Local<v8::Context>,
                                        int32_t world_id) {}
  
@@ -92,7 +92,7 @@ index 2e876bbd8687fd99bdfcc4b7f22d23f4a4c9a0ef..1a3e7c682350670baf6e31bd7ef158e5
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index 3e43e9d70eaf2fbfbe7a7fe4e7326cd2b97df565..e94415f3b87e9eb1d6a9142d35928682ddc0064a 100644
+index 2508c036483f018572981b5f18080e71e0028363..02ef80ea9cf52c3c99e1008c38ed4151a041e2f5 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -283,6 +283,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
@@ -123,7 +123,7 @@ index fc562006952b92d4aabf67f2db172797ca193035..ca2b370309ca8fcc0afbca77514430e9
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 06f0a9215bd63ae4b2f5df278b656f7b810bf822..7994db250fd41e65d45c1714b03ba554526b1a2d 100644
+index 4f34252f45353f2be2222e5878d888ec47e17123..4a670dcf917a1e4448063ef4c241006b66f18891 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
 @@ -402,6 +402,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {

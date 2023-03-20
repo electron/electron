@@ -6,7 +6,7 @@ Subject: proxy_config_monitor.patch
 Allow monitoring proxy config changes for a pref service.
 
 diff --git a/chrome/browser/net/proxy_config_monitor.cc b/chrome/browser/net/proxy_config_monitor.cc
-index 34584b44002762c875b68eb8547f651b8d7d7a0e..e3f33934c536920981b01ec2e1bc6a5905f40fc4 100644
+index 6dc5622f50847e35d66eff8b34b4888aa6c4ca90..dcbf445709d0511b84ea647892d12266f6be446a 100644
 --- a/chrome/browser/net/proxy_config_monitor.cc
 +++ b/chrome/browser/net/proxy_config_monitor.cc
 @@ -11,7 +11,9 @@
@@ -19,7 +19,7 @@ index 34584b44002762c875b68eb8547f651b8d7d7a0e..e3f33934c536920981b01ec2e1bc6a59
  #include "components/proxy_config/pref_proxy_config_tracker_impl.h"
  #include "content/public/browser/browser_thread.h"
  #include "mojo/public/cpp/bindings/pending_remote.h"
-@@ -21,12 +23,13 @@
+@@ -22,12 +24,13 @@
  #include "chrome/browser/ash/profiles/profile_helper.h"
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -34,7 +34,7 @@ index 34584b44002762c875b68eb8547f651b8d7d7a0e..e3f33934c536920981b01ec2e1bc6a59
  ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
    DCHECK(profile);
-@@ -57,6 +60,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
+@@ -58,6 +61,7 @@ ProxyConfigMonitor::ProxyConfigMonitor(Profile* profile) {
  
    proxy_config_service_->AddObserver(this);
  }
@@ -42,7 +42,7 @@ index 34584b44002762c875b68eb8547f651b8d7d7a0e..e3f33934c536920981b01ec2e1bc6a59
  
  ProxyConfigMonitor::ProxyConfigMonitor(PrefService* local_state) {
    DCHECK(BrowserThread::CurrentlyOn(BrowserThread::UI) ||
-@@ -134,9 +138,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
+@@ -139,9 +143,11 @@ void ProxyConfigMonitor::OnLazyProxyConfigPoll() {
  void ProxyConfigMonitor::OnPACScriptError(int32_t line_number,
                                            const std::string& details) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -54,7 +54,7 @@ index 34584b44002762c875b68eb8547f651b8d7d7a0e..e3f33934c536920981b01ec2e1bc6a59
  }
  
  void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
-@@ -150,9 +156,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
+@@ -155,9 +161,10 @@ void ProxyConfigMonitor::OnRequestMaybeFailedDueToProxySettings(
      // controlled.
      return;
    }

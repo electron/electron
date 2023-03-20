@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 05565026676962f651992c0e09c7575073c412c9..b0c177dfc0c4b64027af1fe08096af2eccc93e31 100644
+index 186946dce785b65f08133f8ab89f564952129cfb..9b4ff1c59dffeb637db5f76831f3d9b0f2e3048f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1027,6 +1027,7 @@ component("base") {
+@@ -1026,6 +1026,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -29,11 +29,11 @@ index 68d467f75faa3fddd385632b536373bd9167d881..7699ea2310308b1b42e12bf26a6a0ed2
  ]
  
  if (is_win) {
-diff --git a/components/os_crypt/BUILD.gn b/components/os_crypt/BUILD.gn
-index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36ee6a5b75 100644
---- a/components/os_crypt/BUILD.gn
-+++ b/components/os_crypt/BUILD.gn
-@@ -65,6 +65,8 @@ component("os_crypt") {
+diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
+index 3314c2a5cdcef04d7f1a8bf0e07cafa073f2815e..ef75cef4e449bb5c689f95ab664c19a1c2362b16 100644
+--- a/components/os_crypt/sync/BUILD.gn
++++ b/components/os_crypt/sync/BUILD.gn
+@@ -70,6 +70,8 @@ component("os_crypt") {
        "keychain_password_mac.mm",
        "os_crypt_mac.mm",
      ]
@@ -76,7 +76,7 @@ index 17b6cfd529e971cfe6683531d14daa121f531bb1..5ba0aacf84177274935bfdd22e26a299
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index aec1fddcdb0e5e4e4b6fa0927cb6ebba05430382..7893009b83c34a87809784beb23db75052f921e5 100644
+index 4cabad83bd9de68424abb7961d45cf096e5afcb1..d151178d33b7dcf0ed1807f47db87a3983506ba0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index aec1fddcdb0e5e4e4b6fa0927cb6ebba05430382..7893009b83c34a87809784beb23db750
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 9b4c78c06f49ade480d956025e68cb7efac336db..0bf304daf0ea68ba7b086a92dd0e95ab8f377bbd 100644
+index 64fe01344b7c0b5c9e19d45f291804380f698d90..4c8a7b799d1531c8d6fb8db260463f90d3551453 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -170,6 +170,7 @@ source_set("common") {
+@@ -168,6 +168,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -112,10 +112,10 @@ index 3ec54c242fb920a53fcaa6d8040f2ec88c2727df..27dee1596183d2ead5290a60c08e47e6
  
    public_deps = [
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 2faf5de6feb42ae444f7a334b10327899f345fdb..a9dc5c19f90bfeede23f596d41e31613f28ffb7b 100644
+index 5e9f447e4d946cd48d7b18d81c256baa169f93ea..fcfda1b4fde66c39b53a52d57c5e57b7f239bda1 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -237,6 +237,7 @@ component("bluetooth") {
+@@ -240,6 +240,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
@@ -201,10 +201,10 @@ index f61e0ad85e7e7faf97274bad4b59fc91c41e3168..c308bcb30f57e7b0c9ae58420bedd343
    public_deps = [
      ":core_generated",
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 161a304180a4a580efa7e8a8bb634a84594b857a..fd7e4f714655f8679e4e6dc2d87cff2c7090afdb 100644
+index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfaff19e471 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -30,6 +30,8 @@ component("accelerated_widget_mac") {
+@@ -32,6 +32,8 @@ component("accelerated_widget_mac") {
      "QuartzCore.framework",
    ]
  
@@ -226,10 +226,10 @@ index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682c
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 6c0b1ce058f59ed769e291291fd099f36c94347c..6628f661024a5c56aa207eab447311f279e50008 100644
+index 90074c3e90d9b4bbfaf2c86f8c1a5a3c36babdc8..991bc348a5fb5c2e9a744b14ed5894fe3155f4c0 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -347,6 +347,7 @@ component("base") {
+@@ -345,6 +345,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
