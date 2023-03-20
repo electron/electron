@@ -23,6 +23,7 @@
 #include "content/public/browser/browser_task_traits.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/desktop_media_id.h"
+#include "shell/browser/browser.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/native_browser_view_mac.h"
 #include "shell/browser/ui/cocoa/electron_native_widget_mac.h"
@@ -1281,18 +1282,15 @@ void NativeWindowMac::SetOverlayIcon(const gfx::Image& overlay,
 void NativeWindowMac::SetVisibleOnAllWorkspaces(bool visible,
                                                 bool visibleOnFullScreen,
                                                 bool skipTransformProcessType) {
-  // In order for NSWindows to be visible on fullscreen we need to functionally
-  // mimic app.dock.hide() since Apple changed the underlying functionality of
+  // In order for NSWindows to be visible on fullscreen we need to invoke
+  // app.dock.hide() since Apple changed the underlying functionality of
   // NSWindows starting with 10.14 to disallow NSWindows from floating on top of
   // fullscreen apps.
   if (!skipTransformProcessType) {
-    ProcessSerialNumber psn = {0, kCurrentProcess};
     if (visibleOnFullScreen) {
-      [window_ setCanHide:NO];
-      TransformProcessType(&psn, kProcessTransformToUIElementApplication);
+      Browser::Get()->DockHide();
     } else {
-      [window_ setCanHide:YES];
-      TransformProcessType(&psn, kProcessTransformToForegroundApplication);
+      Browser::Get()->DockShow(JavascriptEnvironment::GetIsolate());
     }
   }
 
