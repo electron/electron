@@ -3,7 +3,7 @@ From: Samuel Attard <marshallofsound@electronjs.org>
 Date: Thu, 9 Mar 2023 01:28:56 -0800
 Subject: feat: expose DocumentLoader::SetDefersLoading on WebDocumentLoader
 
-This allows embedders to call SetDefersLoading without reaching into blink internals.  Electron uses this to defer page loading until the preload scripts have finished executing.
+This allows embedders to call SetDefersLoading without reaching into Blink internals. Electron uses this to defer page loading until the preload scripts have finished executing.
 This might be upstreamable?
 
 diff --git a/third_party/blink/public/web/web_document_loader.h b/third_party/blink/public/web/web_document_loader.h

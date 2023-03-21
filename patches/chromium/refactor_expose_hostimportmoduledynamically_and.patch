@@ -4,7 +4,7 @@ Date: Wed, 8 Mar 2023 13:04:21 -0800
 Subject: refactor: expose HostImportModuleDynamically and
  HostGetImportMetaProperties to embedders
 
-This is so that Electron can blend blinks and nodes implementations of these isolate handlers.
+This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 index 35f6b7fb09528d4a2018cc423f5d459b8b62035c..2d48c7ea919972b3ed4153ca806a411435a46bc7 100644

@@ -140,7 +140,7 @@ if (preloadPaths.length) {
         ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
       });
     }
-  }).then(() => appCodeLoaded!());
+  }).finally(() => appCodeLoaded!());
 } else {
   appCodeLoaded!();
 }

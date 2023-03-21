@@ -133,7 +133,7 @@ class NodeBindings {
   NodeBindings& operator=(const NodeBindings&) = delete;
 
   // Blocks until app code is signaled to be loaded via |SetAppCodeLoaded|.
-  // Only has affect if called in the browser process
+  // Only has an affect if called in the browser process
   void JoinAppCode();
 
  protected:
@@ -151,8 +151,6 @@ class NodeBindings {
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
 
-  void SetAppCodeLoaded();
-
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
 
@@ -163,6 +161,10 @@ class NodeBindings {
   uv_loop_t* uv_loop_;
 
  private:
+  // Default callback to indicate when the node environment has finished
+  // initializing and the primary import chain is fully resolved and executed
+  void SetAppCodeLoaded();
+
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
 

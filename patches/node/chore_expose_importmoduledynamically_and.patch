@@ -4,11 +4,11 @@ Date: Wed, 8 Mar 2023 13:02:17 -0800
 Subject: chore: expose ImportModuleDynamically and
  HostInitializeImportMetaObjectCallback to embedders
 
-This also subtely changes the behavior of shouldNotRegisterESMLoader to ensure that node sets up the handlers
-internally but simply avoids setting it's own handlers on the Isolate.  This is so that Electron can set it to
-it's own blended handler between node / blink.
+This also subtly changes the behavior of shouldNotRegisterESMLoader to ensure that node sets up the handlers
+internally but simply avoids setting its own handlers on the Isolate.  This is so that Electron can set it to
+its own blended handler between Node and Blink.
 
-Not upstremable.
+Not upstreamable.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
 index c4fe744be1c26c2306e843031192d88f977cd46c..f8218046cbdfbaeb0aaecd50676b6fcb37c8e4d7 100644
