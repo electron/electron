@@ -8,7 +8,7 @@ WebPreferences of in-process child windows, rather than relying on
 process-level command line switches, as before.
 
 diff --git a/third_party/blink/common/web_preferences/web_preferences.cc b/third_party/blink/common/web_preferences/web_preferences.cc
-index 98cfc7c9129b3a31b9b3c8694776e6d914500ee7..57772378acc0d8a3c4d13f051714f91281fffa81 100644
+index 825fe182a24ae373b8e9b73fb18d8def2f36399d..33513a690d3b0d43da5e22ea3423eb7192e0046c 100644
 --- a/third_party/blink/common/web_preferences/web_preferences.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences.cc
 @@ -144,6 +144,19 @@ WebPreferences::WebPreferences()
@@ -32,7 +32,7 @@ index 98cfc7c9129b3a31b9b3c8694776e6d914500ee7..57772378acc0d8a3c4d13f051714f912
        accelerated_video_decode_enabled(false),
        animation_policy(
 diff --git a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
-index 797286d9dfafcf70e3430d5a9e59ef4458566fbc..a735740932bf448454d5b066c712bfeb56313292 100644
+index 5c9427d0d43a6ba68049fc513e7dd329e54ac079..46ca6167d89efeed74495b4cb23f6f6449080045 100644
 --- a/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 +++ b/third_party/blink/common/web_preferences/web_preferences_mojom_traits.cc
 @@ -152,6 +152,19 @@ bool StructTraits<blink::mojom::WebPreferencesDataView,
@@ -56,7 +56,7 @@ index 797286d9dfafcf70e3430d5a9e59ef4458566fbc..a735740932bf448454d5b066c712bfeb
    out->accelerated_video_decode_enabled =
        data.accelerated_video_decode_enabled();
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences.h b/third_party/blink/public/common/web_preferences/web_preferences.h
-index 4d80bf0895028d50a9913543072d848a3537049e..5d940fb52e9ddeb557519c0e2d5098db83d2b449 100644
+index 642644dbf46a43d9ceebf29f253d8e6d943f3c75..fc1525c21dc3401e88e7398867745a00c59320d6 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences.h
 @@ -10,6 +10,7 @@
@@ -88,7 +88,7 @@ index 4d80bf0895028d50a9913543072d848a3537049e..5d940fb52e9ddeb557519c0e2d5098db
    // This flags corresponds to a Page's Settings' setCookieEnabled state. It
    // only controls whether or not the "document.cookie" field is properly
 diff --git a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
-index 3f36eb927cb4860cd4939251fec1cf922978bc71..7b3dee1baa6abfca1f34695adff187b4f2a24dfb 100644
+index dc2eac781dd659106a156d779bd4976a44b0d77b..97491962403863f6360d42026bdc14efbebe66b4 100644
 --- a/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 +++ b/third_party/blink/public/common/web_preferences/web_preferences_mojom_traits.h
 @@ -6,6 +6,7 @@
@@ -153,7 +153,7 @@ index 3f36eb927cb4860cd4939251fec1cf922978bc71..7b3dee1baa6abfca1f34695adff187b4
      return r.cookie_enabled;
    }
 diff --git a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
-index e82d36c0d1c06695503fd58ce8d67027f872f536..110b010669433fcf2a6e103839fc0405db7161df 100644
+index 2ed34c3dcea95b90a8be1639c03029bd287926aa..dd0c537b72d52f8567b1af6eb72e6dc5686dad6e 100644
 --- a/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 +++ b/third_party/blink/public/mojom/webpreferences/web_preferences.mojom
 @@ -9,6 +9,7 @@ import "third_party/blink/public/mojom/css/preferred_contrast.mojom";

@@ -49,7 +49,7 @@ quality, it is recommended to include at least the following sizes in the:
 
 Check the *Size requirements* section in [this article][icons].
 
-[icons]:https://msdn.microsoft.com/en-us/library/windows/desktop/dn742485(v=vs.85).aspx
+[icons]: https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons
 
 ## High Resolution Image
 

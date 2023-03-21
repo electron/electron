@@ -413,6 +413,15 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         tmpify ~/.rubies
         tmpify ~/Library/Caches/Homebrew
         tmpify /usr/local/Homebrew
+
+        # the contents of build/linux/strip_binary.gni aren't used, but
+        # https://chromium-review.googlesource.com/c/chromium/src/+/4278307
+        # needs the file to exist.
+        mv ~/project/src/build/linux/strip_binary.gni "${TMPDIR}"/
+        tmpify ~/project/src/build/linux/
+        mkdir -p ~/project/src/build/linux
+        mv "${TMPDIR}/strip_binary.gni" ~/project/src/build/linux/
+
         sudo rm -rf $TMPDIR/del-target
 
         # sudo rm -rf "/System/Library/Desktop Pictures"
@@ -436,14 +445,6 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
         sudo rm -rf /Applications/Safari.app
         sudo rm -rf ~/project/src/third_party/catapult/tracing/test_data
         sudo rm -rf ~/project/src/third_party/angle/third_party/VK-GL-CTS
-
-        # the contents of build/linux/strip_binary.gni aren't used, but
-        # https://chromium-review.googlesource.com/c/chromium/src/+/4278307
-        # needs the file to exist.
-        mv ~/project/src/build/linux/strip_binary.gni "${TMPDIR}"/
-        sudo rm -rf ~/project/src/build/linux
-        mkdir -p ~/project/src/build/linux
-        mv "${TMPDIR}/strip_binary.gni" ~/project/src/build/linux/
 
         # lipo off some huge binaries arm64 versions to save space
         strip_arm_deep $(xcode-select -p)/../SharedFrameworks

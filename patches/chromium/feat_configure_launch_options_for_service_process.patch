@@ -183,7 +183,7 @@ index 4d4c17b8fe687e01f7403335c88453998259d647..22c1e5fd0c6f16a101b2578675704f18
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index fe0b5134ea3d7887aa237200e89e79c2ff68314c..c544d1ef0eb381da7f96013643c862f60984a9c9 100644
+index 17653e54563ac243ca18a85b3f38a7d6c24adf38..40eed26c8311352f71532919a28525936733bfb8 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -106,11 +106,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {

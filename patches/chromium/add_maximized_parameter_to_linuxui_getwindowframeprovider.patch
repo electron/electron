@@ -171,10 +171,10 @@ index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf
  
  }  // namespace gtk
 diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
-index ee3e7b96eba0ade61e229aea05f5417e7822a5f5..b393cc2fbc039afa062a8b3ab880c7ff9db8b681 100644
+index 5f5abeeb78372785d57315056fa61fc65a3848a9..f52f436d674ad54c9973488eec59e26d02866847 100644
 --- a/ui/linux/fallback_linux_ui.cc
 +++ b/ui/linux/fallback_linux_ui.cc
-@@ -134,7 +134,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
+@@ -136,7 +136,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
  }
  
  ui::WindowFrameProvider* FallbackLinuxUi::GetWindowFrameProvider(

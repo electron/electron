@@ -6,7 +6,7 @@ Subject: Export symbols needed for Windows build
 These symbols are required to build v8 with BUILD_V8_SHARED on Windows.
 
 diff --git a/src/objects/objects.h b/src/objects/objects.h
-index d224bc3c6d0d93f7af7e418888247149f4b35ecf..e5df06019eb60eca11bb5b03d7142363f8c8dce5 100644
+index eb0b3d61ddc74f513707643c9316b9f80c0d6ada..90d46b3be7c5141e476fad2744275cd5f751a2d2 100644
 --- a/src/objects/objects.h
 +++ b/src/objects/objects.h
 @@ -974,7 +974,7 @@ enum AccessorComponent { ACCESSOR_GETTER, ACCESSOR_SETTER };

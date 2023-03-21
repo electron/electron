@@ -18,7 +18,7 @@ struct Converter<device::mojom::HidDeviceInfoPtr> {
       v8::Isolate* isolate,
       const device::mojom::HidDeviceInfoPtr& device) {
     base::Value value = electron::HidChooserContext::DeviceInfoToValue(*device);
-    value.SetStringKey(
+    value.GetDict().Set(
         "deviceId",
         electron::HidChooserController::PhysicalDeviceIdFromDeviceInfo(
             *device));

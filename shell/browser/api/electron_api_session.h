@@ -82,6 +82,12 @@ class Session : public gin::Wrappable<Session>,
                                             const std::string& partition,
                                             base::Value::Dict options = {});
 
+  // Gets the Session based on |path|.
+  static absl::optional<gin::Handle<Session>> FromPath(
+      v8::Isolate* isolate,
+      const base::FilePath& path,
+      base::Value::Dict options = {});
+
   ElectronBrowserContext* browser_context() const { return browser_context_; }
 
   // gin::Wrappable

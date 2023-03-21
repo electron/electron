@@ -77,10 +77,10 @@ index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..010fa8f78a21a8146879849e2e887332
        // We might trigger a getter -> dont fail.
        let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 40b25f6890b5db721923ba2e9cc351e514ca22bc..288f3253b4c686d1b061dfcdf18dc95794943d87 100644
+index ae133b02e20fa183d610da97ae0a50522318b4fc..433b51a6fec589f8c1fd2791fd685b3b4964cada 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1488,6 +1488,8 @@ function fileURLToPath(path) {
+@@ -1489,6 +1489,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURLInstance(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
