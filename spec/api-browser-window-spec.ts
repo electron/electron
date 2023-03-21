@@ -10,10 +10,19 @@ import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersLi
 
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { emittedN, emittedUntil } from './lib/events';
+import { captureScreenBitmap } from './lib/screen-capture';
+import { areColorsSimilar } from './lib/color';
+
+const Colors = {
+  GREEN: '#00b140',
+  PURPLE: '#6a0dad',
+  RED: '#ff0000',
+  BLUE: '#0000ff',
+  WHITE: '#ffffff'
+};
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -6035,7 +6044,7 @@ describe('BrowserWindow module', () => {
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: HexColors.GREEN,
+        backgroundColor: Colors.GREEN,
         hasShadow: false
       });
 
@@ -6053,18 +6062,18 @@ describe('BrowserWindow module', () => {
       await foregroundWindow.loadFile(colorFile);
 
       await setTimeout(1000);
-      const screenCapture = await captureScreen();
-      const leftHalfColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const leftHalfColor = screenCapture.colorAt({
         x: display.size.width / 4,
         y: display.size.height / 2
       });
-      const rightHalfColor = getPixelColor(screenCapture, {
+      const rightHalfColor = screenCapture.colorAt({
         x: display.size.width - (display.size.width / 4),
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+      expect(areColorsSimilar(leftHalfColor, Colors.GREEN)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, Colors.RED)).to.be.true();
     });
 
     ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
@@ -6073,7 +6082,7 @@ describe('BrowserWindow module', () => {
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: HexColors.PURPLE,
+        backgroundColor: Colors.PURPLE,
         hasShadow: false
       });
 
@@ -6094,13 +6103,13 @@ describe('BrowserWindow module', () => {
       await once(ipcMain, 'set-transparent');
 
       await setTimeout();
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+      expect(areColorsSimilar(centerColor, Colors.PURPLE)).to.be.true();
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -6140,19 +6149,19 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({
         ...display.bounds,
         show: true,
-        backgroundColor: HexColors.BLUE
+        backgroundColor: Colors.BLUE
       });
 
       w.loadURL('about:blank');
       await once(w, 'ready-to-show');
 
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+      expect(areColorsSimilar(centerColor, Colors.BLUE)).to.be.true();
     });
   });
 });

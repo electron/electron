@@ -3,8 +3,9 @@ import * as path from 'path';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { areColorsSimilar, captureScreen, getPixelColor } from './lib/screen-helpers';
 import { once } from 'events';
+import { captureScreenBitmap } from './lib/screen-capture';
+import { areColorsSimilar } from './lib/color';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -77,8 +78,8 @@ describe('BrowserView module', () => {
       w.setBrowserView(view);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
@@ -103,8 +104,8 @@ describe('BrowserView module', () => {
       w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
