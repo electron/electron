@@ -307,7 +307,9 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
     : content::WebUIController(web_ui) {
   // Set up the chrome://accessibility source.
   content::WebUIDataSource* html_source =
-      content::WebUIDataSource::Create(chrome::kChromeUIAccessibilityHost);
+      content::WebUIDataSource::CreateAndAdd(
+          web_ui->GetWebContents()->GetBrowserContext(),
+          chrome::kChromeUIAccessibilityHost);
 
   // Add required resources.
   html_source->UseStringsJs();
@@ -318,10 +320,6 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
       base::BindRepeating(&ShouldHandleAccessibilityRequestCallback),
       base::BindRepeating(&HandleAccessibilityRequestCallback,
                           web_ui->GetWebContents()->GetBrowserContext()));
-
-  content::BrowserContext* browser_context =
-      web_ui->GetWebContents()->GetBrowserContext();
-  content::WebUIDataSource::Add(browser_context, html_source);
 
   web_ui->AddMessageHandler(
       std::make_unique<ElectronAccessibilityUIMessageHandler>());
