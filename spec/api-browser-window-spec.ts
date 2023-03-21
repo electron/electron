@@ -8,12 +8,12 @@ import * as os from 'os';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
-import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { emittedN, emittedUntil } from './lib/events';
 
 const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');
@@ -564,7 +564,7 @@ describe('BrowserWindow module', () => {
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
           w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
-          await emittedUntil(w.webContents, 'did-frame-finish-load', (e: any, isMainFrame: boolean) => !isMainFrame);
+          await emittedUntil(w.webContents, 'did-frame-finish-load', (_e: any, isMainFrame: boolean) => !isMainFrame);
           let initiator: WebFrameMain | undefined;
           w.webContents.on('will-navigate', (e) => {
             initiator = e.initiator;
@@ -5380,7 +5380,7 @@ describe('BrowserWindow module', () => {
         w.setFullScreen(false);
         w.setFullScreen(true);
 
-        const enterFullScreen = emittedNTimes(w, 'enter-full-screen', 2);
+        const enterFullScreen = emittedN(w, 'enter-full-screen', 2);
         await enterFullScreen;
 
         expect(w.isFullScreen()).to.be.true('not fullscreen');
@@ -5424,8 +5424,8 @@ describe('BrowserWindow module', () => {
 
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
-        const enterFS = emittedNTimes(w, 'enter-full-screen', 2);
-        const leaveFS = emittedNTimes(w, 'leave-full-screen', 2);
+        const enterFS = emittedN(w, 'enter-full-screen', 2);
+        const leaveFS = emittedN(w, 'leave-full-screen', 2);
 
         w.setFullScreen(true);
         w.setFullScreen(false);

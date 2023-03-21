@@ -7,9 +7,9 @@ import * as url from 'url';
 import { BrowserWindow, WebPreferences } from 'electron/main';
 
 import { closeWindow } from './lib/window-helpers';
-import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
 import { setTimeout } from 'timers/promises';
+import { emittedUntil } from './lib/events';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;

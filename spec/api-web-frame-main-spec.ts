@@ -4,10 +4,10 @@ import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedNTimes } from './lib/events-helpers';
 import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { emittedN } from './lib/events';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -351,7 +351,7 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
 
       // frame-with-frame-container.html, frame-with-frame.html, frame.html
-      const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
+      const didFrameFinishLoad = emittedN(w.webContents, 'did-frame-finish-load', 3);
       w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
 
       for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
@@ -375,7 +375,7 @@ describe('webFrameMain module', () => {
 
     it('emits when nested frames are created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      const promise = emittedN(w.webContents, 'frame-created', 2);
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);
