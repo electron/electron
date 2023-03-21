@@ -133,7 +133,7 @@ class NodeBindings {
   NodeBindings& operator=(const NodeBindings&) = delete;
 
   // Blocks until app code is signaled to be loaded via |SetAppCodeLoaded|.
-  // Only has an affect if called in the browser process
+  // Only has an effect if called in the browser process
   void JoinAppCode();
 
  protected:
