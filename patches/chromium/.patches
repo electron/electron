@@ -135,3 +135,4 @@ cherry-pick-06851790480e.patch
 cherry-pick-aeec1ba5893d.patch
 m108-lts_prevent_potential_integer_overflow_in.patch
 m108-lts_do_not_register_browser_watcher_activity_report_with.patch
+cherry-pick-26bfa5807606.patch
