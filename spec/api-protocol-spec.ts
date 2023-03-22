@@ -1365,6 +1365,33 @@ describe('protocol module', () => {
       expect(fetchBodyResult).to.equal('hello world');
     });
 
+    it('can receive streaming fetch upload when a webRequest handler is present', async () => {
+      session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
+        console.log('webRequest', details.url, details.method);
+        cb({});
+      });
+      defer(() => {
+        session.defaultSession.webRequest.onBeforeRequest(null);
+      });
+
+      protocol.handle('no-cors', (req) => {
+        console.log('handle', req.url, req.method);
+        return new Response(req.body);
+      });
+      defer(() => { protocol.unhandle('no-cors'); });
+      await contents.loadURL('no-cors://foo');
+      const fetchBodyResult = await contents.executeJavaScript(`
+        const stream = new ReadableStream({
+          async start(controller) {
+            controller.enqueue('hello world');
+            controller.close();
+          },
+        }).pipeThrough(new TextEncoderStream());
+        fetch(location.href, {method: 'POST', body: stream, duplex: 'half'}).then(x => x.text())
+      `);
+      expect(fetchBodyResult).to.equal('hello world');
+    });
+
     it('can receive an error from streaming fetch upload', async () => {
       protocol.handle('no-cors', (req) => new Response(req.body));
       defer(() => { protocol.unhandle('no-cors'); });

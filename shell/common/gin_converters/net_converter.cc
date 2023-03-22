@@ -21,7 +21,9 @@
 #include "net/http/http_response_headers.h"
 #include "net/http/http_version.h"
 #include "net/url_request/redirect_info.h"
+#include "services/network/public/cpp/data_element.h"
 #include "services/network/public/cpp/resource_request.h"
+#include "services/network/public/cpp/resource_request_body.h"
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "shell/browser/api/electron_api_data_pipe_holder.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -254,11 +256,10 @@ class ChunkedDataPipeReadableStream
  public:
   static gin::Handle<ChunkedDataPipeReadableStream> Create(
       v8::Isolate* isolate,
-      mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
-          chunked_data_pipe_getter) {
-    return gin::CreateHandle(isolate,
-                             new ChunkedDataPipeReadableStream(
-                                 isolate, std::move(chunked_data_pipe_getter)));
+      network::ResourceRequestBody* request,
+      network::DataElementChunkedDataPipe* data_element) {
+    return gin::CreateHandle(isolate, new ChunkedDataPipeReadableStream(
+                                          isolate, request, data_element));
   }
 
   // gin::Wrappable
@@ -274,24 +275,35 @@ class ChunkedDataPipeReadableStream
  private:
   ChunkedDataPipeReadableStream(
       v8::Isolate* isolate,
-      mojo::PendingRemote<network::mojom::ChunkedDataPipeGetter>
-          chunked_data_pipe_getter)
+      network::ResourceRequestBody* request,
+      network::DataElementChunkedDataPipe* data_element)
       : isolate_(isolate),
-        chunked_data_pipe_getter_(std::move(chunked_data_pipe_getter)),
+        resource_request_body_(request),
+        data_element_(data_element),
         handle_watcher_(FROM_HERE,
                         mojo::SimpleWatcher::ArmingPolicy::MANUAL,
-                        base::SequencedTaskRunner::GetCurrentDefault()) {
+                        base::SequencedTaskRunner::GetCurrentDefault()) {}
+
+  ~ChunkedDataPipeReadableStream() override = default;
+
+  int Init() {
+    chunked_data_pipe_getter_.Bind(
+        data_element_->ReleaseChunkedDataPipeGetter());
+    for (auto& element : *resource_request_body_->elements_mutable()) {
+      if (element.type() ==
+              network::mojom::DataElement::Tag::kChunkedDataPipe &&
+          data_element_ == &element.As<network::DataElementChunkedDataPipe>()) {
+        element = network::DataElement(
+            network::DataElementBytes(std::vector<uint8_t>()));
+        break;
+      }
+    }
     chunked_data_pipe_getter_.set_disconnect_handler(
         base::BindOnce(&ChunkedDataPipeReadableStream::OnDataPipeGetterClosed,
                        base::Unretained(this)));
     chunked_data_pipe_getter_->GetSize(
         base::BindOnce(&ChunkedDataPipeReadableStream::OnSizeReceived,
                        base::Unretained(this)));
-  }
-
-  ~ChunkedDataPipeReadableStream() override = default;
-
-  int Init() {
     mojo::ScopedDataPipeProducerHandle data_pipe_producer;
     mojo::ScopedDataPipeConsumerHandle data_pipe_consumer;
     MojoResult result =
@@ -466,6 +478,7 @@ class ChunkedDataPipeReadableStream
   v8::Isolate* isolate_;
   int status_ = net::OK;
   scoped_refptr<network::ResourceRequestBody> resource_request_body_;
+  network::DataElementChunkedDataPipe* data_element_;
   mojo::Remote<network::mojom::ChunkedDataPipeGetter> chunked_data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
   mojo::SimpleWatcher handle_watcher_;
@@ -531,7 +544,8 @@ v8::Local<v8::Value> Converter<network::ResourceRequestBody>::ToV8(
         upload_data.Set(
             "body",
             ChunkedDataPipeReadableStream::Create(
-                isolate, mutable_element.ReleaseChunkedDataPipeGetter()));
+                isolate, const_cast<network::ResourceRequestBody*>(&val),
+                &mutable_element));
         break;
       }
       default:
