@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alex Moshchuk <alexmos@chromium.org>
 Date: Fri, 3 Mar 2023 22:17:24 +0000
-Subject: [M110] Use optional SafeRef to save RenderFrameHost in
- NavigationRequest
+Subject: Use optional SafeRef to save RenderFrameHost in NavigationRequest
 
 This prevents use-after-free if NavigationRequests somehow still
 points to an already-deleted RFH, which is currently possible (see bug).
