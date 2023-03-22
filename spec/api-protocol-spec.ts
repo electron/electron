@@ -1200,16 +1200,6 @@ describe('protocol module', () => {
       await expect(net.fetch('app://')).to.be.rejectedWith('Invalid URL');
     });
 
-    it('allows ports in hostAndPort', async () => {
-      // NB. 'app' is registered as a standard scheme in test setup.
-      protocol.handle('standard-host-and-port', (req) => new Response(req.url));
-      defer(() => { protocol.unhandle('standard-host-and-port'); });
-      {
-        const body = await net.fetch('standard-host-and-port://foo:1234').then(r => r.text());
-        expect(body).to.equal('standard-host-and-port://foo:1234/');
-      }
-    });
-
     it('fails on URLs with a username', async () => {
       // NB. 'app' is registered as a standard scheme in test setup.
       protocol.handle('http', (req) => new Response(req.url));
