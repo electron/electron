@@ -1,7 +1,7 @@
-From bfd926be817889b1709426d54dbf82eed93e0669 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Eugene Zemtsov <eugene@chromium.org>
 Date: Thu, 23 Feb 2023 23:29:10 +0000
-Subject: [PATCH] [M110] webcodecs: Fix VP9 p2 encoding of NV12 frames
+Subject: webcodecs: Fix VP9 p2 encoding of NV12 frames
 
 (cherry picked from commit 503831d1bdfdbe20c096f04cefc2231efd9ca4c0)
 
@@ -14,13 +14,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1105528}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4288113
 Cr-Commit-Position: refs/branch-heads/5481@{#1271}
 Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
----
 
 diff --git a/media/video/BUILD.gn b/media/video/BUILD.gn
-index ce155164..da517ef 100644
+index ce155164c821ddf60f73f7b0af0dce6e3d399af4..da517ef08a4cd1094f8e1660dfb5e4b7d847c979 100644
 --- a/media/video/BUILD.gn
 +++ b/media/video/BUILD.gn
-@@ -169,6 +169,7 @@
+@@ -169,6 +169,7 @@ source_set("unit_tests") {
      "//media:test_support",
      "//testing/gmock",
      "//testing/gtest",
@@ -29,7 +28,7 @@ index ce155164..da517ef 100644
      "//ui/gfx",
    ]
 diff --git a/media/video/software_video_encoder_test.cc b/media/video/software_video_encoder_test.cc
-index fa3e7435..19d16a44 100644
+index 2059f4e076ff9fa1720683ac5dfb90312df2183e..318c743bddcf9bec3a994f125ea329d45f8c4376 100644
 --- a/media/video/software_video_encoder_test.cc
 +++ b/media/video/software_video_encoder_test.cc
 @@ -40,6 +40,8 @@
@@ -41,7 +40,7 @@ index fa3e7435..19d16a44 100644
  #endif
  
  #if BUILDFLAG(ENABLE_LIBAOM)
-@@ -70,6 +72,9 @@
+@@ -74,6 +76,9 @@ class SoftwareVideoEncoderTest
      pixel_format_ = args.pixel_format;
      codec_ = args.codec;
      encoder_ = CreateEncoder(codec_);
@@ -51,7 +50,7 @@ index fa3e7435..19d16a44 100644
    }
  
    void TearDown() override {
-@@ -189,6 +194,12 @@
+@@ -200,6 +205,12 @@ class SoftwareVideoEncoderTest
        case media::VideoCodec::kVP8:
        case media::VideoCodec::kVP9:
  #if BUILDFLAG(ENABLE_LIBVPX)
@@ -64,7 +63,7 @@ index fa3e7435..19d16a44 100644
          return std::make_unique<media::VpxVideoEncoder>();
  #else
          return nullptr;
-@@ -292,6 +303,11 @@
+@@ -303,6 +314,11 @@ class SoftwareVideoEncoderTest
      return diff_cnt;
    }
  
@@ -76,7 +75,7 @@ index fa3e7435..19d16a44 100644
   protected:
    VideoCodec codec_;
    VideoCodecProfile profile_;
-@@ -496,7 +512,7 @@
+@@ -488,7 +504,7 @@ TEST_P(SoftwareVideoEncoderTest, EncodeAndDecode) {
      EXPECT_EQ(decoded_frame->timestamp(), original_frame->timestamp());
      EXPECT_EQ(decoded_frame->visible_rect().size(),
                original_frame->visible_rect().size());
@@ -85,7 +84,7 @@ index fa3e7435..19d16a44 100644
      if (decoded_frame->format() == original_frame->format()) {
        EXPECT_LE(CountDifferentPixels(*decoded_frame, *original_frame),
                  original_frame->visible_rect().width());
-@@ -898,6 +914,9 @@
+@@ -890,6 +906,9 @@ SwVideoTestParams kVpxParams[] = {
      {VideoCodec::kVP9, VP9PROFILE_PROFILE0, PIXEL_FORMAT_I420},
      {VideoCodec::kVP9, VP9PROFILE_PROFILE0, PIXEL_FORMAT_NV12},
      {VideoCodec::kVP9, VP9PROFILE_PROFILE0, PIXEL_FORMAT_XRGB},
@@ -96,10 +95,10 @@ index fa3e7435..19d16a44 100644
      {VideoCodec::kVP8, VP8PROFILE_ANY, PIXEL_FORMAT_XRGB}};
  
 diff --git a/media/video/vpx_video_encoder.cc b/media/video/vpx_video_encoder.cc
-index 6df0eb7..6adb8e3 100644
+index 7787b765899bc57395fea1a06d5c9c5a925b8910..c4ad642e453c9582b9ada11ad99c6b1c969b27b5 100644
 --- a/media/video/vpx_video_encoder.cc
 +++ b/media/video/vpx_video_encoder.cc
-@@ -430,12 +430,20 @@
+@@ -427,12 +427,20 @@ void VpxVideoEncoder::Encode(scoped_refptr<VideoFrame> frame,
      }
    }
  
@@ -125,7 +124,7 @@ index 6df0eb7..6adb8e3 100644
  
      if (!resized_frame) {
        std::move(done_cb).Run(
-@@ -457,6 +465,7 @@
+@@ -454,6 +462,7 @@ void VpxVideoEncoder::Encode(scoped_refptr<VideoFrame> frame,
  
    switch (profile_) {
      case VP9PROFILE_PROFILE2:
