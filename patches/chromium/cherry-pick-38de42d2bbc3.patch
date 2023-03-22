@@ -1,7 +1,7 @@
-From 38de42d2bbc3ece9ba1bd57334633d351afa3f93 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Will Harris <wfh@chromium.org>
-Date: Thu, 02 Mar 2023 10:23:28 +0000
-Subject: [PATCH] [M108-LTS] Fix potential out of bounds write in base::SampleVectorBase
+Date: Thu, 2 Mar 2023 10:23:28 +0000
+Subject: Fix potential out of bounds write in base::SampleVectorBase
 
 BUG=1417185
 
@@ -17,13 +17,12 @@ Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
 Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/5359@{#1397}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/base/metrics/sample_vector.cc b/base/metrics/sample_vector.cc
-index cec7687..a699557 100644
+index 18f7f8a4adff18d733c57d497dccdaacb9cc814f..90daf7ce4e0e7567a7c2cafa2a6b5a70bd99417a 100644
 --- a/base/metrics/sample_vector.cc
 +++ b/base/metrics/sample_vector.cc
-@@ -274,6 +274,12 @@
+@@ -274,6 +274,12 @@ void SampleVectorBase::MoveSingleSampleToCounts() {
    if (sample.count == 0)
      return;
  
