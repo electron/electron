@@ -1,7 +1,7 @@
-From 26bfa5807606f6c7fc3ec575123e53894215c49c Mon Sep 17 00:00:00 2001
-From: Steinar H. Gunderson <sesse@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Steinar H. Gunderson" <sesse@chromium.org>
 Date: Tue, 14 Mar 2023 15:53:57 +0000
-Subject: [PATCH] [M108-LTS] In Typed CSSOM, reject adding to something that is not a list.
+Subject: In Typed CSSOM, reject adding to something that is not a list.
 
 M108 merge issues:
   third_party/blink/renderer/core/css/cssom/style_property_map.cc:
@@ -21,13 +21,12 @@ Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
 Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5359@{#1405}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
----
 
 diff --git a/third_party/blink/renderer/core/css/cssom/style_property_map.cc b/third_party/blink/renderer/core/css/cssom/style_property_map.cc
-index 2c1bcba6..0cde402 100644
+index 8b5dc392070ce16a03822a7862a3da78edd29ece..79f1445a3662db1fd62d22411d6cf7a489320f12 100644
 --- a/third_party/blink/renderer/core/css/cssom/style_property_map.cc
 +++ b/third_party/blink/renderer/core/css/cssom/style_property_map.cc
-@@ -365,6 +365,17 @@
+@@ -365,6 +365,17 @@ void StylePropertyMap::append(
  
    CSSValueList* current_value = nullptr;
    if (const CSSValue* css_value = GetProperty(property_id)) {
@@ -46,10 +45,10 @@ index 2c1bcba6..0cde402 100644
    } else {
      current_value = CssValueListForPropertyID(property_id);
 diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html
-index ee9a9e4..f808756 100644
+index ee9a9e4ddbcf78a7517d8d038d66844880719e63..f80875622366939f48a7471513fb6319f75be718 100644
 --- a/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html
 +++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html
-@@ -56,4 +56,10 @@
+@@ -56,4 +56,10 @@ test(t => {
    assert_style_value_array_equals(result, [CSS.s(5), CSS.s(10), CSS.s(1), CSS.s(2)]);
  }, 'StylePropertyMap.append is case-insensitive');
  
