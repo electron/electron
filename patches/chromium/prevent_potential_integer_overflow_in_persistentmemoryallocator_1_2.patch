@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Will Harris <wfh@chromium.org>
+Date: Thu, 2 Mar 2023 16:49:42 +0000
+Subject: Prevent potential integer overflow in PersistentMemoryAllocator (1/2)
+
+BUG=1415328
+
+(cherry picked from commit 19de280a0c28065acf2a7e001af5c981698a461c)
+
+Change-Id: I66dcae6a1aacc1310ddd715033b3704c932b9800
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4250177
+Commit-Queue: Will Harris <wfh@chromium.org>
+Commit-Queue: Alexei Svitkine <asvitkine@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1105177}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4279513
+Commit-Queue: Zakhar Voit <voit@google.com>
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1400}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/base/metrics/persistent_memory_allocator.cc b/base/metrics/persistent_memory_allocator.cc
+index bc4618bf30832d010570e8a490d3d893f064237b..b7edfc04c307662450f3a39c20142c3593fbacde 100644
+--- a/base/metrics/persistent_memory_allocator.cc
++++ b/base/metrics/persistent_memory_allocator.cc
+@@ -531,7 +531,10 @@ size_t PersistentMemoryAllocator::GetAllocSize(Reference ref) const {
+   uint32_t size = block->size;
+   // Header was verified by GetBlock() but a malicious actor could change
+   // the value between there and here. Check it again.
+-  if (size <= sizeof(BlockHeader) || ref + size > mem_size_) {
++  uint32_t total_size;
++  if (size <= sizeof(BlockHeader) ||
++      !base::CheckAdd(ref, size).AssignIfValid(&total_size) ||
++      total_size > mem_size_) {
+     SetCorrupt();
+     return 0;
+   }
