@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index b2b19773136ca1b66080c905e9d6c9cc51d9a7f0..59bcfec0fe5c91ca852b9449e5f05b48337c4095 100644
+index 5bae7bfd9e427c162024cf1590e37d79c0745442..fea8e560e8f6ec3fd187a4d753295f9d63d7a6c0 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -7173,10 +7173,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -7200,10 +7200,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,7 +37,7 @@ index b2b19773136ca1b66080c905e9d6c9cc51d9a7f0..59bcfec0fe5c91ca852b9449e5f05b48
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index ab194495edf27ea3193ce31276f458d495fb1fd9..07bcf27b7c085b29b0497474e75e74215e29eea8 100644
+index f4acf19001d2139d0b237116be94235255af1b41..8c130b6d3e3dc6390d9d22ea4da77cdd3743b210 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
 @@ -2883,6 +2883,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
@@ -55,10 +55,10 @@ index ab194495edf27ea3193ce31276f458d495fb1fd9..07bcf27b7c085b29b0497474e75e7421
 +                                        bool is_pdf,
 +                                        bool is_sandboxed);
 +
-  protected:
-   friend class RenderFrameHostFactory;
- 
-@@ -3207,17 +3218,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // Sets a ResourceCache in the renderer. `remote` must have the same process
+   // isolation policy.
+   // TODO(https://crbug.com/1414262): Add checks to ensure the preconditions.
+@@ -3215,17 +3226,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
