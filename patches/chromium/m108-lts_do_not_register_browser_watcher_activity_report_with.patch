@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Will Harris <wfh@chromium.org>
 Date: Thu, 2 Mar 2023 17:01:49 +0000
-Subject: [M108-LTS] Do not register browser_watcher activity report with
- crashpad
+Subject: Do not register browser_watcher activity report with crashpad
 
 BUG=1415328
 
