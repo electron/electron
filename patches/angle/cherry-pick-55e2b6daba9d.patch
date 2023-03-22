@@ -1,7 +1,7 @@
-From 55e2b6daba9d6b10cb2ff97afcf08cece0a43754 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
 Date: Thu, 16 Feb 2023 23:16:46 -0500
-Subject: [PATCH] [M108-LTS] Vulkan: Don't close render pass if rebind to same fbo
+Subject: Vulkan: Don't close render pass if rebind to same fbo
 
 M108 merge issues:
   src/libANGLE/renderer/vulkan/ContextVk.cpp:
@@ -42,13 +42,12 @@ Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 (cherry picked from commit 05e62f39412e8c6bfc98582f5e7a49041991c97b)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4303738
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
-index f088774..31e1882 100644
+index f08877444f66ac2d61953c9c56d4c71d253d53c6..31e1882c8923b81bf5fd74fbe40d8233c7551ec9 100644
 --- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
-@@ -5022,6 +5022,15 @@
+@@ -5022,6 +5022,15 @@ angle::Result ContextVk::syncState(const gl::Context *context,
                  // as some optimizations in non-draw commands require the render pass to remain
                  // open, such as invalidate or blit. Note that we always start a new command buffer
                  // because we currently can only support one open RenderPass at a time.
@@ -65,10 +64,10 @@ index f088774..31e1882 100644
                  if (getFeatures().preferSubmitAtFBOBoundary.enabled)
                  {
 diff --git a/src/tests/gl_tests/ClearTest.cpp b/src/tests/gl_tests/ClearTest.cpp
-index 1a6b425..41e3ea7 100644
+index 1a6b425da6be1e1c2526a8f5e5d84ea8049ee7ab..41e3ea7efe26d1aa0e0dd0e8e9d5bcd7b6472017 100644
 --- a/src/tests/gl_tests/ClearTest.cpp
 +++ b/src/tests/gl_tests/ClearTest.cpp
-@@ -2864,6 +2864,26 @@
+@@ -2864,6 +2864,26 @@ TEST_P(ClearTest, DISABLED_ClearReachesWindow)
      angle::Sleep(2000);
  }
  
@@ -96,7 +95,7 @@ index 1a6b425..41e3ea7 100644
  TEST_P(ClearTestES3, ClearAndReadPixels3DTexture)
  {
 diff --git a/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp b/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
-index 7268d08..6a91ecc 100644
+index 7268d08da90e27022f7139aa98b5972e1dfe62f1..6a91ecc2b4329696f573db3451dac35a0a795c8c 100644
 --- a/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
 +++ b/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
 @@ -5,7 +5,7 @@
@@ -108,7 +107,7 @@ index 7268d08..6a91ecc 100644
  
  #include "test_utils/ANGLETest.h"
  #include "test_utils/angle_test_instantiate.h"
-@@ -6991,6 +6991,26 @@
+@@ -6991,6 +6991,26 @@ TEST_P(VulkanPerformanceCounterTest, EndXfbAfterRenderPassClosed)
      EXPECT_EQ(getPerfCounters().renderPasses, expectedRenderPassCount);
  }
  
