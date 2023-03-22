@@ -6,6 +6,7 @@ import { ifdescribe, ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import * as childProcess from 'child_process';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 const Module = require('module');
 
@@ -13,8 +14,6 @@ const features = process._linkedBinding('electron_common_features');
 const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 describe('modules support', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
-
   describe('third-party module', () => {
     ifdescribe(nativeModulesEnabled)('echo', () => {
       afterEach(closeAllWindows);
@@ -29,7 +28,7 @@ describe('modules support', () => {
       });
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
-        const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'));
+        const child = childProcess.fork(fixturePath('module', 'echo.js'));
         const [msg] = await once(child, 'message');
         expect(msg).to.equal('ok');
       });
@@ -38,7 +37,7 @@ describe('modules support', () => {
         const testExecPath = path.join(path.dirname(process.execPath), 'test.exe');
         fs.copyFileSync(process.execPath, testExecPath);
         try {
-          const fixture = path.join(fixtures, 'module', 'echo-renamed.js');
+          const fixture = fixturePath('module', 'echo-renamed.js');
           expect(fs.existsSync(fixture)).to.be.true();
           const child = childProcess.spawnSync(testExecPath, [fixture]);
           expect(child.status).to.equal(0);
@@ -61,7 +60,7 @@ describe('modules support', () => {
       });
 
       ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
-        const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
+        const child = childProcess.fork(fixturePath('module', 'uv-dlopen.js'));
         const [exitCode] = await once(child, 'exit');
         expect(exitCode).to.equal(0);
       });

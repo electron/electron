@@ -15,6 +15,7 @@ import { setTimeout } from 'timers/promises';
 import { emittedN, emittedUntil } from './lib/events';
 import { captureScreenBitmap } from './lib/screen-capture';
 import { areColorsSimilar } from './lib/color';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 const Colors = {
   GREEN: '#00b140',
@@ -25,8 +26,6 @@ const Colors = {
 };
 
 const features = process._linkedBinding('electron_common_features');
-const fixtures = path.resolve(__dirname, 'fixtures');
-const mainFixtures = path.resolve(__dirname, 'fixtures');
 
 // Is the display's scale factor possibly causing rounding of pixel coordinate
 // values?
@@ -71,7 +70,7 @@ describe('BrowserWindow module', () => {
     });
 
     ifit(process.platform === 'linux')('does not crash when setting large window icons', async () => {
-      const appPath = path.join(fixtures, 'apps', 'xwindow-icon');
+      const appPath = fixturePath('apps', 'xwindow-icon');
       const appProcess = childProcess.spawn(process.execPath, [appPath]);
       await once(appProcess, 'exit');
     });
@@ -136,18 +135,18 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit unload handler', async () => {
-      await w.loadFile(path.join(fixtures, 'api', 'unload.html'));
+      await w.loadFile(fixturePath('api', 'unload.html'));
       const closed = once(w, 'closed');
       w.close();
       await closed;
-      const test = path.join(fixtures, 'api', 'unload');
+      const test = fixturePath('api', 'unload');
       const content = fs.readFileSync(test);
       fs.unlinkSync(test);
       expect(String(content)).to.equal('unload');
     });
 
     it('should emit beforeunload handler', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false.html'));
       w.close();
       await once(w.webContents, 'before-unload-fired');
     });
@@ -230,16 +229,16 @@ describe('BrowserWindow module', () => {
     });
 
     it('should emit unload event', async () => {
-      w.loadFile(path.join(fixtures, 'api', 'close.html'));
+      w.loadFile(fixturePath('api', 'close.html'));
       await once(w, 'closed');
-      const test = path.join(fixtures, 'api', 'close');
+      const test = fixturePath('api', 'close');
       const content = fs.readFileSync(test).toString();
       fs.unlinkSync(test);
       expect(content).to.equal('close');
     });
 
     it('should emit beforeunload event', async function () {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false.html'));
       w.webContents.executeJavaScript('window.close()', true);
       await once(w.webContents, 'before-unload-fired');
     });
@@ -286,7 +285,7 @@ describe('BrowserWindow module', () => {
   describe('BrowserWindow.loadURL(url)', () => {
     let w: BrowserWindow;
     const scheme = 'other';
-    const srcPath = path.join(fixtures, 'api', 'loaded-from-dataurl.js');
+    const srcPath = fixturePath('api', 'loaded-from-dataurl.js');
     before(() => {
       protocol.registerFileProtocol(scheme, (request, callback) => {
         callback(srcPath);
@@ -308,7 +307,7 @@ describe('BrowserWindow module', () => {
     let url: string;
     let postData = null as any;
     before(async () => {
-      const filePath = path.join(fixtures, 'pages', 'a.html');
+      const filePath = fixturePath('pages', 'a.html');
       const fileStats = fs.statSync(filePath);
       postData = [
         {
@@ -397,7 +396,7 @@ describe('BrowserWindow module', () => {
     });
     it('should set `mainFrame = false` on did-fail-load events in iframes', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
-      w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'));
+      w.loadFile(fixturePath('api', 'did-fail-load-iframe.html'));
       const [,,,, isMainFrame] = await didFailLoad;
       expect(isMainFrame).to.equal(false);
     });
@@ -484,7 +483,12 @@ describe('BrowserWindow module', () => {
     });
 
     it('should support base url for data urls', async () => {
-      await w.loadURL('data:text/html,<script src="loaded-from-dataurl.js"></script>', { baseURLForDataURL: `other://${path.join(fixtures, 'api')}${path.sep}` });
+      await w.loadURL(
+        'data:text/html,<script src="loaded-from-dataurl.js"></script>',
+        {
+          baseURLForDataURL: fixtureFileURL('api', { protocol: 'other:' }) + '/'
+        }
+      );
       expect(await w.webContents.executeJavaScript('window.ping')).to.equal('pong');
     });
   });
@@ -520,7 +524,7 @@ describe('BrowserWindow module', () => {
 
         it('allows the window to be closed from the event listener', async () => {
           const event = once(w.webContents, 'will-navigate');
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          w.loadFile(fixturePath('pages', 'will-navigate.html'));
           await event;
           w.close();
         });
@@ -542,11 +546,11 @@ describe('BrowserWindow module', () => {
               }
             }
           });
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          w.loadFile(fixturePath('pages', 'will-navigate.html'));
         });
 
         it('is triggered when navigating from file: to http:', async () => {
-          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          await w.loadFile(fixturePath('api', 'blank.html'));
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
           const navigatedTo = await new Promise(resolve => {
             w.webContents.once('will-navigate', (e, url) => {
@@ -2115,7 +2119,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
 
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
@@ -2139,7 +2143,7 @@ describe('BrowserWindow module', () => {
 
     it('resolves after the window is hidden', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      w.loadFile(fixturePath('pages', 'a.html'));
       await once(w, 'ready-to-show');
       w.show();
 
@@ -2156,7 +2160,7 @@ describe('BrowserWindow module', () => {
     it('resolves after the window is hidden and capturer count is non-zero', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.setBackgroundThrottling(false);
-      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      w.loadFile(fixturePath('pages', 'a.html'));
       await once(w, 'ready-to-show');
 
       const image = await w.capturePage();
@@ -2165,7 +2169,7 @@ describe('BrowserWindow module', () => {
 
     it('preserves transparency', async () => {
       const w = new BrowserWindow({ show: false, transparent: true });
-      w.loadFile(path.join(fixtures, 'pages', 'theme-color.html'));
+      w.loadFile(fixturePath('pages', 'theme-color.html'));
       await once(w, 'ready-to-show');
       w.show();
 
@@ -2190,7 +2194,7 @@ describe('BrowserWindow module', () => {
     it('sets the progress', () => {
       expect(() => {
         if (process.platform === 'darwin') {
-          app.dock.setIcon(path.join(fixtures, 'assets', 'logo.png'));
+          app.dock.setIcon(fixturePath('assets', 'logo.png'));
         }
         w.setProgressBar(0.5);
 
@@ -2543,7 +2547,7 @@ describe('BrowserWindow module', () => {
 
     it('supports setting the app details', () => {
       const w = new BrowserWindow({ show: false });
-      const iconPath = path.join(fixtures, 'assets', 'icon.ico');
+      const iconPath = fixturePath('assets', 'icon.ico');
 
       expect(() => {
         w.setAppDetails({ appId: 'my.app.id' });
@@ -2587,7 +2591,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('can properly open and load a new window from a link', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'open-new-window-from-link');
+      const appPath = fixturePath('apps', 'open-new-window-from-link');
 
       appProcess = childProcess.spawn(process.execPath, [appPath]);
 
@@ -2800,7 +2804,7 @@ describe('BrowserWindow module', () => {
         },
         titleBarOverlay: true
       });
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayHTML = fixturePath('pages', 'overlay.html');
       if (process.platform === 'darwin') {
         await w.loadFile(overlayHTML);
       } else {
@@ -2908,7 +2912,7 @@ describe('BrowserWindow module', () => {
           height: size
         }
       });
-      const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+      const overlayHTML = fixturePath('pages', 'overlay.html');
       if (process.platform === 'darwin') {
         await w.loadFile(overlayHTML);
       } else {
@@ -2980,7 +2984,7 @@ describe('BrowserWindow module', () => {
 
     it('correctly updates the height of the overlay', async () => {
       const testOverlay = async (w: BrowserWindow, size: Number, firstRun: boolean) => {
-        const overlayHTML = path.join(__dirname, 'fixtures', 'pages', 'overlay.html');
+        const overlayHTML = fixturePath('pages', 'overlay.html');
         const overlayReady = once(ipcMain, 'geometrychange');
         await w.loadFile(overlayHTML);
         if (firstRun) {
@@ -3118,11 +3122,11 @@ describe('BrowserWindow module', () => {
           const w = new BrowserWindow({
             webPreferences: {
               ...webPrefs,
-              preload: path.resolve(fixtures, 'module', 'empty.js')
+              preload: fixturePath('module', 'empty.js')
             },
             show: false
           });
-          w.loadFile(path.join(fixtures, 'api', 'no-leak.html'));
+          w.loadFile(fixturePath('api', 'no-leak.html'));
           const [, result] = await once(ipcMain, 'leak-result');
           expect(result).to.have.property('require', 'undefined');
           expect(result).to.have.property('exports', 'undefined');
@@ -3156,11 +3160,11 @@ describe('BrowserWindow module', () => {
           webPreferences: {
             contextIsolation: false,
             nodeIntegration: false,
-            preload: path.resolve(fixtures, 'module', 'empty.js')
+            preload: fixturePath('module', 'empty.js')
           },
           show: false
         });
-        w.loadFile(path.join(fixtures, 'api', 'globals.html'));
+        w.loadFile(fixturePath('api', 'globals.html'));
         const [, notIsolated] = await once(ipcMain, 'leak-result');
         expect(notIsolated).to.have.property('globals');
 
@@ -3169,11 +3173,11 @@ describe('BrowserWindow module', () => {
           webPreferences: {
             contextIsolation: true,
             nodeIntegration: false,
-            preload: path.resolve(fixtures, 'module', 'empty.js')
+            preload: fixturePath('module', 'empty.js')
           },
           show: false
         });
-        w.loadFile(path.join(fixtures, 'api', 'globals.html'));
+        w.loadFile(fixturePath('api', 'globals.html'));
         const [, isolated] = await once(ipcMain, 'leak-result');
         expect(isolated).to.have.property('globals');
         const notIsolatedGlobals = new Set(notIsolated.globals);
@@ -3184,7 +3188,7 @@ describe('BrowserWindow module', () => {
       });
 
       it('loads the script before other scripts in window', async () => {
-        const preload = path.join(fixtures, 'module', 'set-global.js');
+        const preload = fixturePath('module', 'set-global.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3193,12 +3197,12 @@ describe('BrowserWindow module', () => {
             preload
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'preload.html'));
+        w.loadFile(fixturePath('api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test).to.eql('preload');
       });
       it('has synchronous access to all eventual window APIs', async () => {
-        const preload = path.join(fixtures, 'module', 'access-blink-apis.js');
+        const preload = fixturePath('module', 'access-blink-apis.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3207,7 +3211,7 @@ describe('BrowserWindow module', () => {
             preload
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'preload.html'));
+        w.loadFile(fixturePath('api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test).to.be.an('object');
         expect(test.atPreload).to.be.an('array');
@@ -3218,9 +3222,9 @@ describe('BrowserWindow module', () => {
 
     describe('session preload scripts', function () {
       const preloads = [
-        path.join(fixtures, 'module', 'set-global-preload-1.js'),
-        path.join(fixtures, 'module', 'set-global-preload-2.js'),
-        path.relative(process.cwd(), path.join(fixtures, 'module', 'set-global-preload-3.js'))
+        fixturePath('module', 'set-global-preload-1.js'),
+        fixturePath('module', 'set-global-preload-2.js'),
+        path.relative(process.cwd(), fixturePath('module', 'set-global-preload-3.js'))
       ];
       const defaultSession = session.defaultSession;
 
@@ -3243,7 +3247,7 @@ describe('BrowserWindow module', () => {
               show: false,
               webPreferences: {
                 sandbox,
-                preload: path.join(fixtures, 'module', 'get-global-preload.js'),
+                preload: fixturePath('module', 'get-global-preload.js'),
                 contextIsolation: false
               }
             });
@@ -3262,7 +3266,7 @@ describe('BrowserWindow module', () => {
 
     describe('"additionalArguments" option', () => {
       it('adds extra args to process.argv in the renderer process', async () => {
-        const preload = path.join(fixtures, 'module', 'check-arguments.js');
+        const preload = fixturePath('module', 'check-arguments.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3271,13 +3275,13 @@ describe('BrowserWindow module', () => {
             additionalArguments: ['--my-magic-arg']
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.loadFile(fixturePath('api', 'blank.html'));
         const [, argv] = await once(ipcMain, 'answer');
         expect(argv).to.include('--my-magic-arg');
       });
 
       it('adds extra value args to process.argv in the renderer process', async () => {
-        const preload = path.join(fixtures, 'module', 'check-arguments.js');
+        const preload = fixturePath('module', 'check-arguments.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3286,7 +3290,7 @@ describe('BrowserWindow module', () => {
             additionalArguments: ['--my-magic-arg=foo']
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.loadFile(fixturePath('api', 'blank.html'));
         const [, argv] = await once(ipcMain, 'answer');
         expect(argv).to.include('--my-magic-arg=foo');
       });
@@ -3294,7 +3298,7 @@ describe('BrowserWindow module', () => {
 
     describe('"node-integration" option', () => {
       it('disables node integration by default', async () => {
-        const preload = path.join(fixtures, 'module', 'send-later.js');
+        const preload = fixturePath('module', 'send-later.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3302,7 +3306,7 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+        w.loadFile(fixturePath('api', 'blank.html'));
         const [, typeofProcess, typeofBuffer] = await once(ipcMain, 'answer');
         expect(typeofProcess).to.equal('undefined');
         expect(typeofBuffer).to.equal('undefined');
@@ -3310,7 +3314,7 @@ describe('BrowserWindow module', () => {
     });
 
     describe('"sandbox" option', () => {
-      const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
+      const preload = fixturePath('module', 'preload-sandbox.js');
 
       let server: http.Server;
       let serverUrl: string;
@@ -3341,13 +3345,13 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'preload.html'));
+        w.loadFile(fixturePath('api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test).to.equal('preload');
       });
 
       it('exposes ipcRenderer to preload script (path has special chars)', async () => {
-        const preloadSpecialChars = path.join(fixtures, 'module', 'preload-sandboxæø åü.js');
+        const preloadSpecialChars = fixturePath('module', 'preload-sandboxæø åü.js');
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
@@ -3356,7 +3360,7 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'preload.html'));
+        w.loadFile(fixturePath('api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test).to.equal('preload');
       });
@@ -3382,14 +3386,10 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?exit-event');
-        const pageUrl = 'file://' + htmlPath;
+        const pageUrl = fixtureFileURL('api', 'sandbox.html', { search: 'exit-event' });
         w.loadURL(pageUrl);
         const [, url] = await once(ipcMain, 'answer');
-        const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replace(/\\/g, '/')
-          : pageUrl;
-        expect(url).to.equal(expectedUrl);
+        expect(url).to.equal(pageUrl);
       });
 
       it('exposes full EventEmitter object to preload script', async () => {
@@ -3397,7 +3397,7 @@ describe('BrowserWindow module', () => {
           show: false,
           webPreferences: {
             sandbox: true,
-            preload: path.join(fixtures, 'module', 'preload-eventemitter.js')
+            preload: fixturePath('module', 'preload-eventemitter.js')
           }
         });
         w.loadURL('about:blank');
@@ -3431,15 +3431,11 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        const htmlPath = path.join(__dirname, 'fixtures', 'api', 'sandbox.html?window-open');
-        const pageUrl = 'file://' + htmlPath;
+        const pageUrl = fixtureFileURL('api', 'sandbox', { search: 'window-open' });
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
         const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window');
-        const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replace(/\\/g, '/')
-          : pageUrl;
-        expect(url).to.equal(expectedUrl);
+        expect(url).to.equal(pageUrl);
         expect(frameName).to.equal('popup!');
         expect(options.width).to.equal(500);
         expect(options.height).to.equal(600);
@@ -3467,7 +3463,7 @@ describe('BrowserWindow module', () => {
         }));
 
         w.loadFile(
-          path.join(__dirname, 'fixtures', 'api', 'sandbox.html'),
+          fixturePath('api', 'sandbox.html'),
           { search: 'window-open-external' }
         );
 
@@ -3520,9 +3516,9 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
+        const preloadPath = fixturePath('api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath } } }));
-        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
+        w.loadFile(fixturePath('api', 'new-window.html'));
         const [, { argv }] = await once(ipcMain, 'answer');
         expect(argv).to.include('--enable-sandbox');
       });
@@ -3535,9 +3531,9 @@ describe('BrowserWindow module', () => {
           }
         });
 
-        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
+        const preloadPath = fixturePath('api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
-        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
+        w.loadFile(fixturePath('api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
           once(app, 'web-contents-created'),
           once(ipcMain, 'answer')
@@ -3577,7 +3573,7 @@ describe('BrowserWindow module', () => {
           'parent-answer',
           'child-answer'
         ].map(name => once(ipcMain, name)));
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'verify-ipc-sender' });
+        w.loadFile(fixturePath('api', 'sandbox.html'), { search: 'verify-ipc-sender' });
         await done;
       });
 
@@ -3613,7 +3609,7 @@ describe('BrowserWindow module', () => {
             'did-frame-finish-load',
             'dom-ready'
           ].map(name => once(w.webContents, name)));
-          w.loadFile(path.join(__dirname, 'fixtures', 'api', 'sandbox.html'), { search: 'webcontents-events' });
+          w.loadFile(fixturePath('api', 'sandbox.html'), { search: 'webcontents-events' });
           await done;
         });
       });
@@ -3631,7 +3627,7 @@ describe('BrowserWindow module', () => {
           throw error;
         });
         process.env.sandboxmain = 'foo';
-        w.loadFile(path.join(fixtures, 'api', 'preload.html'));
+        w.loadFile(fixturePath('api', 'preload.html'));
         const [, test] = await once(ipcMain, 'answer');
         expect(test.hasCrash).to.be.true('has crash');
         expect(test.hasHang).to.be.true('has hang');
@@ -3674,7 +3670,7 @@ describe('BrowserWindow module', () => {
         });
         const didAttachWebview = once(w.webContents, 'did-attach-webview');
         const webviewDomReady = once(ipcMain, 'webview-dom-ready');
-        w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+        w.loadFile(fixturePath('pages', 'webview-did-attach-event.html'));
 
         const [, webContents] = await didAttachWebview;
         const [, id] = await webviewDomReady;
@@ -3699,25 +3695,25 @@ describe('BrowserWindow module', () => {
 
       it('opens window of about:blank with cross-scripting enabled', async () => {
         const answer = once(ipcMain, 'answer');
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-blank.html'));
+        w.loadFile(fixturePath('api', 'native-window-open-blank.html'));
         const [, content] = await answer;
         expect(content).to.equal('Hello');
       });
       it('opens window of same domain with cross-scripting enabled', async () => {
         const answer = once(ipcMain, 'answer');
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-file.html'));
+        w.loadFile(fixturePath('api', 'native-window-open-file.html'));
         const [, content] = await answer;
         expect(content).to.equal('Hello');
       });
       it('blocks accessing cross-origin frames', async () => {
         const answer = once(ipcMain, 'answer');
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-cross-origin.html'));
+        w.loadFile(fixturePath('api', 'native-window-open-cross-origin.html'));
         const [, content] = await answer;
         expect(content).to.equal('Blocked a frame with origin "file://" from accessing a cross-origin frame.');
       });
       it('opens window from <iframe> tags', async () => {
         const answer = once(ipcMain, 'answer');
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-iframe.html'));
+        w.loadFile(fixturePath('api', 'native-window-open-iframe.html'));
         const [, content] = await answer;
         expect(content).to.equal('Hello');
       });
@@ -3725,15 +3721,15 @@ describe('BrowserWindow module', () => {
         const w = new BrowserWindow({
           show: false,
           webPreferences: {
-            preload: path.join(fixtures, 'api', 'native-window-open-isolated-preload.js')
+            preload: fixturePath('api', 'native-window-open-isolated-preload.js')
           }
         });
-        w.loadFile(path.join(fixtures, 'api', 'native-window-open-isolated.html'));
+        w.loadFile(fixturePath('api', 'native-window-open-isolated.html'));
         const [, content] = await once(ipcMain, 'answer');
         expect(content).to.equal('Hello');
       });
       ifit(!process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS)('loads native addons correctly after reload', async () => {
-        w.loadFile(path.join(__dirname, 'fixtures', 'api', 'native-window-open-native-addon.html'));
+        w.loadFile(fixturePath('api', 'native-window-open-native-addon.html'));
         {
           const [, content] = await once(ipcMain, 'answer');
           expect(content).to.equal('function');
@@ -3745,7 +3741,7 @@ describe('BrowserWindow module', () => {
         }
       });
       it('<webview> works in a scriptable popup', async () => {
-        const preload = path.join(fixtures, 'api', 'new-window-webview-preload.js');
+        const preload = fixturePath('api', 'new-window-webview-preload.js');
 
         const w = new BrowserWindow({
           show: false,
@@ -3770,11 +3766,11 @@ describe('BrowserWindow module', () => {
         }));
 
         const webviewLoaded = once(ipcMain, 'webview-loaded');
-        w.loadFile(path.join(fixtures, 'api', 'new-window-webview.html'));
+        w.loadFile(fixturePath('api', 'new-window-webview.html'));
         await webviewLoaded;
       });
       it('should open windows with the options configured via setWindowOpenHandler handlers', async () => {
-        const preloadPath = path.join(mainFixtures, 'api', 'new-window-preload.js');
+        const preloadPath = fixturePath('api', 'new-window-preload.js');
         w.webContents.setWindowOpenHandler(() => ({
           action: 'allow',
           overrideBrowserWindowOptions: {
@@ -3784,7 +3780,7 @@ describe('BrowserWindow module', () => {
             }
           }
         }));
-        w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
+        w.loadFile(fixturePath('api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
           once(app, 'web-contents-created'),
           once(ipcMain, 'answer')
@@ -3795,8 +3791,8 @@ describe('BrowserWindow module', () => {
 
       describe('window.location', () => {
         const protocols = [
-          ['foo', path.join(fixtures, 'api', 'window-open-location-change.html')],
-          ['bar', path.join(fixtures, 'api', 'window-open-location-final.html')]
+          ['foo', fixturePath('api', 'window-open-location-change.html')],
+          ['bar', fixturePath('api', 'window-open-location-final.html')]
         ];
         beforeEach(() => {
           for (const [scheme, path] of protocols) {
@@ -3827,14 +3823,14 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(mainFixtures, 'api', 'window-open-preload.js'),
+                preload: fixturePath('api', 'window-open-preload.js'),
                 contextIsolation: false,
                 nodeIntegrationInSubFrames: true
               }
             }
           }));
 
-          w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'));
+          w.loadFile(fixturePath('api', 'window-open-location-open.html'));
           const [, { nodeIntegration, typeofProcess }] = await once(ipcMain, 'answer');
           expect(nodeIntegration).to.be.false();
           expect(typeofProcess).to.eql('undefined');
@@ -3853,11 +3849,11 @@ describe('BrowserWindow module', () => {
             action: 'allow',
             overrideBrowserWindowOptions: {
               webPreferences: {
-                preload: path.join(mainFixtures, 'api', 'window-open-preload.js')
+                preload: fixturePath('api', 'window-open-preload.js')
               }
             }
           }));
-          w.loadFile(path.join(fixtures, 'api', 'window-open-location-open.html'));
+          w.loadFile(fixturePath('api', 'window-open-location-open.html'));
           const [, { windowOpenerIsNull }] = await once(ipcMain, 'answer');
           expect(windowOpenerIsNull).to.be.false('window.opener is null');
         });
@@ -3906,28 +3902,28 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('returning undefined would not prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
     });
 
     it('returning false would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false.html'));
       w.close();
       const [, proceed] = await once(w.webContents, 'before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('returning empty string would prevent close', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-empty-string.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-empty-string.html'));
       w.close();
       const [, proceed] = await once(w.webContents, 'before-unload-fired');
       expect(proceed).to.equal(false);
     });
 
     it('emits for each close attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false-prevent3.html'));
 
       const destroyListener = () => { expect.fail('Close was not prevented'); };
       w.webContents.once('destroyed', destroyListener);
@@ -3949,7 +3945,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits for each reload attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false-prevent3.html'));
 
       const navigationListener = () => { expect.fail('Reload was not prevented'); };
       w.webContents.once('did-start-navigation', navigationListener);
@@ -3973,7 +3969,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('emits for each navigation attempt', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false-prevent3.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false-prevent3.html'));
 
       const navigationListener = () => { expect.fail('Reload was not prevented'); };
       w.webContents.once('did-start-navigation', navigationListener);
@@ -4015,7 +4011,7 @@ describe('BrowserWindow module', () => {
         readyToShow = true;
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
 
       const [, visibilityState, hidden] = await once(ipcMain, 'pong');
 
@@ -4035,7 +4031,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
 
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
@@ -4063,7 +4059,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
       if (process.platform === 'darwin') {
         // See https://github.com/electron/electron/issues/8664
         await once(w, 'show');
@@ -4083,7 +4079,7 @@ describe('BrowserWindow module', () => {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
       if (process.platform === 'darwin') {
         // See https://github.com/electron/electron/issues/8664
         await once(w, 'show');
@@ -4104,7 +4100,7 @@ describe('BrowserWindow module', () => {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
 
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
@@ -4133,7 +4129,7 @@ describe('BrowserWindow module', () => {
           nodeIntegration: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'visibilitychange.html'));
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
@@ -4229,7 +4225,7 @@ describe('BrowserWindow module', () => {
     it('does not crash when callback returns nothing', (done) => {
       const w = new BrowserWindow({ show: false });
       let called = false;
-      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
+      w.loadFile(fixturePath('api', 'frame-subscriber.html'));
       w.webContents.on('dom-ready', () => {
         w.webContents.beginFrameSubscription(function () {
           // This callback might be called twice.
@@ -4249,7 +4245,7 @@ describe('BrowserWindow module', () => {
     it('subscribes to frame updates', (done) => {
       const w = new BrowserWindow({ show: false });
       let called = false;
-      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
+      w.loadFile(fixturePath('api', 'frame-subscriber.html'));
       w.webContents.on('dom-ready', () => {
         w.webContents.beginFrameSubscription(function (data) {
           // This callback might be called twice.
@@ -4308,7 +4304,7 @@ describe('BrowserWindow module', () => {
           }
         });
       });
-      w.loadFile(path.join(fixtures, 'api', 'frame-subscriber.html'));
+      w.loadFile(fixturePath('api', 'frame-subscriber.html'));
     });
 
     it('throws error when subscriber is not well defined', () => {
@@ -4322,7 +4318,7 @@ describe('BrowserWindow module', () => {
   });
 
   describe('savePage method', () => {
-    const savePageDir = path.join(fixtures, 'save_page');
+    const savePageDir = fixturePath('save_page');
     const savePageHtmlPath = path.join(savePageDir, 'save_page.html');
     const savePageJsPath = path.join(savePageDir, 'save_page_files', 'test.js');
     const savePageCssPath = path.join(savePageDir, 'save_page_files', 'test.css');
@@ -4341,7 +4337,7 @@ describe('BrowserWindow module', () => {
 
     it('should throw when passing relative paths', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.loadFile(fixturePath('pages', 'save_page', 'index.html'));
 
       await expect(
         w.webContents.savePage('save_page.html', 'HTMLComplete')
@@ -4358,7 +4354,7 @@ describe('BrowserWindow module', () => {
 
     it('should save page to disk with HTMLOnly', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.loadFile(fixturePath('pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageHtmlPath, 'HTMLOnly');
 
       expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
@@ -4375,7 +4371,7 @@ describe('BrowserWindow module', () => {
       const tmpDir = await fs.promises.mkdtemp(path.resolve(os.tmpdir(), 'electron-mhtml-save-'));
       const savePageMHTMLPath = path.join(tmpDir, 'save_page.html');
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.loadFile(fixturePath('pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageMHTMLPath, 'MHTML');
 
       expect(fs.existsSync(savePageMHTMLPath)).to.be.true('html path');
@@ -4389,7 +4385,7 @@ describe('BrowserWindow module', () => {
 
     it('should save page to disk with HTMLComplete', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'save_page', 'index.html'));
+      await w.loadFile(fixturePath('pages', 'save_page', 'index.html'));
       await w.webContents.savePage(savePageHtmlPath, 'HTMLComplete');
 
       expect(fs.existsSync(savePageHtmlPath)).to.be.true('html path');
@@ -4616,7 +4612,7 @@ describe('BrowserWindow module', () => {
       it('closes a grandchild window when a middle child window is destroyed', (done) => {
         const w = new BrowserWindow();
 
-        w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
+        w.loadFile(fixturePath('pages', 'base-page.html'));
         w.webContents.executeJavaScript('window.open("")');
 
         w.webContents.on('did-create-window', async (window) => {
@@ -5352,7 +5348,7 @@ describe('BrowserWindow module', () => {
 
       it('should be able to load a URL while transitioning to fullscreen', async () => {
         const w = new BrowserWindow({ fullscreen: true });
-        w.loadFile(path.join(fixtures, 'pages', 'c.html'));
+        w.loadFile(fixturePath('pages', 'c.html'));
 
         const load = once(w.webContents, 'did-finish-load');
         const enterFS = once(w, 'enter-full-screen');
@@ -5404,7 +5400,7 @@ describe('BrowserWindow module', () => {
 
       it('handles several HTML fullscreen transitions', async () => {
         const w = new BrowserWindow();
-        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        await w.loadFile(fixturePath('pages', 'a.html'));
 
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
@@ -5448,7 +5444,7 @@ describe('BrowserWindow module', () => {
 
       it('handles several chromium-initiated transitions in close proximity', async () => {
         const w = new BrowserWindow();
-        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        await w.loadFile(fixturePath('pages', 'a.html'));
 
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
@@ -5480,7 +5476,7 @@ describe('BrowserWindow module', () => {
 
       it('handles HTML fullscreen transitions when fullscreenable is false', async () => {
         const w = new BrowserWindow({ fullscreenable: false });
-        await w.loadFile(path.join(fixtures, 'pages', 'a.html'));
+        await w.loadFile(fixturePath('pages', 'a.html'));
 
         expect(w.isFullScreen()).to.be.false('is fullscreen');
 
@@ -5746,11 +5742,11 @@ describe('BrowserWindow module', () => {
         show: false,
         webPreferences: {
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          preload: fixturePath('api', 'isolated-preload.js')
         }
       });
       const p = once(ipcMain, 'isolated-world');
-      iw.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+      iw.loadFile(fixturePath('api', 'isolated.html'));
       const [, data] = await p;
       expect(data).to.deep.equal(expectedContextData);
     });
@@ -5759,10 +5755,10 @@ describe('BrowserWindow module', () => {
         show: false,
         webPreferences: {
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          preload: fixturePath('api', 'isolated-preload.js')
         }
       });
-      await iw.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+      await iw.loadFile(fixturePath('api', 'isolated.html'));
       const isolatedWorld = once(ipcMain, 'isolated-world');
       iw.webContents.reload();
       const [, data] = await isolatedWorld;
@@ -5773,11 +5769,11 @@ describe('BrowserWindow module', () => {
         show: false,
         webPreferences: {
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          preload: fixturePath('api', 'isolated-preload.js')
         }
       });
       const browserWindowCreated = once(app, 'browser-window-created');
-      iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+      iw.loadFile(fixturePath('pages', 'window-open.html'));
       const [, window] = await browserWindowCreated;
       expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true('contextIsolation');
     });
@@ -5787,11 +5783,11 @@ describe('BrowserWindow module', () => {
         webPreferences: {
           sandbox: true,
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          preload: fixturePath('api', 'isolated-preload.js')
         }
       });
       const p = once(ipcMain, 'isolated-world');
-      ws.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+      ws.loadFile(fixturePath('api', 'isolated.html'));
       const [, data] = await p;
       expect(data).to.deep.equal(expectedContextData);
     });
@@ -5801,10 +5797,10 @@ describe('BrowserWindow module', () => {
         webPreferences: {
           sandbox: true,
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          preload: fixturePath('api', 'isolated-preload.js')
         }
       });
-      await ws.loadFile(path.join(fixtures, 'api', 'isolated.html'));
+      await ws.loadFile(fixturePath('api', 'isolated.html'));
       const isolatedWorld = once(ipcMain, 'isolated-world');
       ws.webContents.reload();
       const [, data] = await isolatedWorld;
@@ -5815,7 +5811,7 @@ describe('BrowserWindow module', () => {
         show: false,
         webPreferences: {
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-fetch-preload.js')
+          preload: fixturePath('api', 'isolated-fetch-preload.js')
         }
       });
       const p = once(ipcMain, 'isolated-fetch-error');
@@ -5828,7 +5824,7 @@ describe('BrowserWindow module', () => {
         show: false,
         webPreferences: {
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-preload.js')
+          preload: fixturePath('api', 'isolated-preload.js')
         }
       });
       const p = once(ipcMain, 'isolated-world');
@@ -5847,7 +5843,7 @@ describe('BrowserWindow module', () => {
         show: false,
         webPreferences: {
           contextIsolation: true,
-          preload: path.join(fixtures, 'api', 'isolated-process.js')
+          preload: fixturePath('api', 'isolated-process.js')
         }
       });
       const p = once(ipcMain, 'context-isolation');
@@ -5877,7 +5873,7 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    w.loadFile(path.join(fixtures, 'pages', 'send-after-node.html'));
+    w.loadFile(fixturePath('pages', 'send-after-node.html'));
   });
 
   describe('window.webContents.focus()', () => {
@@ -5911,7 +5907,7 @@ describe('BrowserWindow module', () => {
 
     it('creates offscreen window with correct size', async () => {
       const paint = once(w.webContents, 'paint');
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
       const [,, data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
       expect(data.isEmpty()).to.be.false('data is empty');
@@ -5923,12 +5919,12 @@ describe('BrowserWindow module', () => {
 
     it('does not crash after navigation', () => {
       w.webContents.loadURL('about:blank');
-      w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+      w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
     });
 
     describe('window.webContents.isOffscreen()', () => {
       it('is true for offscreen type', () => {
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         expect(w.webContents.isOffscreen()).to.be.true('isOffscreen');
       });
 
@@ -5942,7 +5938,7 @@ describe('BrowserWindow module', () => {
     describe('window.webContents.isPainting()', () => {
       it('returns whether is currently painting', async () => {
         const paint = once(w.webContents, 'paint');
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await paint;
         expect(w.webContents.isPainting()).to.be.true('isPainting');
       });
@@ -5951,7 +5947,7 @@ describe('BrowserWindow module', () => {
     describe('window.webContents.stopPainting()', () => {
       it('stops painting', async () => {
         const domReady = once(w.webContents, 'dom-ready');
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await domReady;
 
         w.webContents.stopPainting();
@@ -5962,7 +5958,7 @@ describe('BrowserWindow module', () => {
     describe('window.webContents.startPainting()', () => {
       it('starts painting', async () => {
         const domReady = once(w.webContents, 'dom-ready');
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await domReady;
 
         w.webContents.stopPainting();
@@ -5975,20 +5971,20 @@ describe('BrowserWindow module', () => {
 
     describe('frameRate APIs', () => {
       it('has default frame rate (function)', async () => {
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await once(w.webContents, 'paint');
         expect(w.webContents.getFrameRate()).to.equal(60);
       });
 
       it('has default frame rate (property)', async () => {
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await once(w.webContents, 'paint');
         expect(w.webContents.frameRate).to.equal(60);
       });
 
       it('sets custom frame rate (function)', async () => {
         const domReady = once(w.webContents, 'dom-ready');
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await domReady;
 
         w.webContents.setFrameRate(30);
@@ -5999,7 +5995,7 @@ describe('BrowserWindow module', () => {
 
       it('sets custom frame rate (property)', async () => {
         const domReady = once(w.webContents, 'dom-ready');
-        w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
+        w.loadFile(fixturePath('api', 'offscreen-rendering.html'));
         await domReady;
 
         w.webContents.frameRate = 30;
@@ -6058,7 +6054,7 @@ describe('BrowserWindow module', () => {
         hasShadow: false
       });
 
-      const colorFile = path.join(__dirname, 'fixtures', 'pages', 'half-background-color.html');
+      const colorFile = fixturePath('pages', 'half-background-color.html');
       await foregroundWindow.loadFile(colorFile);
 
       await setTimeout(1000);
@@ -6099,7 +6095,7 @@ describe('BrowserWindow module', () => {
         }
       });
 
-      foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
+      foregroundWindow.loadFile(fixturePath('pages', 'css-transparent.html'));
       await once(ipcMain, 'set-transparent');
 
       await setTimeout();

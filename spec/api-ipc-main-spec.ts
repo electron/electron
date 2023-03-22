@@ -1,14 +1,12 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import * as cp from 'child_process';
 import { closeAllWindows } from './lib/window-helpers';
 import { defer } from './lib/spec-helpers';
 import { ipcMain, BrowserWindow } from 'electron/main';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 describe('ipc main module', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
-
   afterEach(closeAllWindows);
 
   describe('ipc.sendSync', () => {
@@ -26,7 +24,7 @@ describe('ipc main module', () => {
         event.returnValue = null;
         done();
       });
-      w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
+      w.loadFile(fixturePath('api', 'send-sync-message.html'));
     });
 
     it('does not crash when reply is sent by multiple listeners', (done) => {
@@ -44,13 +42,13 @@ describe('ipc main module', () => {
         event.returnValue = null;
         done();
       });
-      w.loadFile(path.join(fixtures, 'api', 'send-sync-message.html'));
+      w.loadFile(fixturePath('api', 'send-sync-message.html'));
     });
   });
 
   describe('ipcMain.on', () => {
     it('is not used for internals', async () => {
-      const appPath = path.join(fixtures, 'api', 'ipc-main-listeners');
+      const appPath = fixturePath('api', 'ipc-main-listeners');
       const electronPath = process.execPath;
       const appProcess = cp.spawn(electronPath, [appPath]);
 

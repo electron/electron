@@ -2,9 +2,9 @@ import { expect } from 'chai';
 import { nativeTheme, systemPreferences, BrowserWindow, ipcMain } from 'electron/main';
 import { once } from 'events';
 import * as os from 'os';
-import * as path from 'path';
 import * as semver from 'semver';
 import { setTimeout } from 'timers/promises';
+import { fixturePath } from './lib/fixtures';
 
 import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
@@ -78,7 +78,7 @@ describe('nativeTheme module', () => {
 
     it('should override the result of prefers-color-scheme CSS media query', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
-      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(fixturePath('blank.html'));
       await w.webContents.executeJavaScript(`
         window.matchMedia('(prefers-color-scheme: dark)')
           .addEventListener('change', () => require('electron').ipcRenderer.send('theme-change'))

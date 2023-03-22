@@ -1,4 +1,3 @@
-import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
@@ -9,6 +8,7 @@ import * as auth from 'basic-auth';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { emittedUntil } from './lib/events';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -54,8 +54,7 @@ async function loadWebViewAndWaitForMessage (w: WebContents, attributes: Record<
 };
 
 describe('<webview> tag', function () {
-  const fixtures = path.join(__dirname, 'fixtures');
-  const blankPageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')).toString();
+  const blankPageUrl = url.pathToFileURL(fixturePath('pages', 'blank.html')).toString();
 
   function hideChildWindows (e: any, wc: WebContents) {
     wc.setWindowOpenHandler(() => ({
@@ -86,7 +85,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
+      w.loadFile(fixturePath('pages', 'webview-no-script.html'));
       await once(ipcMain, 'pong');
     });
 
@@ -98,7 +97,7 @@ describe('<webview> tag', function () {
           sandbox: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      w.loadFile(fixturePath('pages', 'webview-isolated.html'));
       await once(ipcMain, 'pong');
     });
 
@@ -110,7 +109,7 @@ describe('<webview> tag', function () {
           contextIsolation: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      w.loadFile(fixturePath('pages', 'webview-isolated.html'));
       await once(ipcMain, 'pong');
     });
 
@@ -123,7 +122,7 @@ describe('<webview> tag', function () {
           sandbox: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-isolated.html'));
+      w.loadFile(fixturePath('pages', 'webview-isolated.html'));
       await once(ipcMain, 'pong');
     });
 
@@ -134,7 +133,7 @@ describe('<webview> tag', function () {
           webviewTag: true
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-trusted-types.html'));
+      w.loadFile(fixturePath('pages', 'webview-trusted-types.html'));
       await once(ipcMain, 'pong');
     });
 
@@ -142,13 +141,13 @@ describe('<webview> tag', function () {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          preload: path.join(fixtures, 'module', 'preload-webview.js'),
+          preload: fixturePath('module', 'preload-webview.js'),
           nodeIntegration: true
         }
       });
 
       const webview = once(ipcMain, 'webview');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-no-script.html'));
+      w.loadFile(fixturePath('pages', 'webview-no-script.html'));
       const [, type] = await webview;
 
       expect(type).to.equal('undefined', 'WebView still exists');
@@ -167,7 +166,7 @@ describe('<webview> tag', function () {
       const w = new BrowserWindow({ show: false });
       const readyToShowSignal = once(w, 'ready-to-show');
       const pongSignal1 = once(ipcMain, 'pong');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'webview-visibilitychange.html'));
       await pongSignal1;
       const pongSignal2 = once(ipcMain, 'pong');
       await readyToShowSignal;
@@ -180,7 +179,7 @@ describe('<webview> tag', function () {
 
     it('inherits the parent window visibility state and receives visibilitychange events', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-visibilitychange.html'));
+      w.loadFile(fixturePath('pages', 'webview-visibilitychange.html'));
       const [, visibilityState, hidden] = await once(ipcMain, 'pong');
       expect(visibilityState).to.equal('hidden');
       expect(hidden).to.be.true();
@@ -210,7 +209,7 @@ describe('<webview> tag', function () {
       });
       const didAttachWebview = once(w.webContents, 'did-attach-webview');
       const webviewDomReady = once(ipcMain, 'webview-dom-ready');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+      w.loadFile(fixturePath('pages', 'webview-did-attach-event.html'));
 
       const [, webContents] = await didAttachWebview;
       const [, id] = await webviewDomReady;
@@ -248,11 +247,7 @@ describe('<webview> tag', function () {
         }
       });
       await w.loadURL('about:blank');
-      const src = url.format({
-        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
-        protocol: 'file',
-        slashes: true
-      });
+      const src = fixtureFileURL('pages', 'theme-color.html');
       const message = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
         const webview = new WebView()
         webview.setAttribute('src', '${src}')
@@ -279,14 +274,14 @@ describe('<webview> tag', function () {
       });
       w.webContents.session.removeExtension('foo');
 
-      const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
+      const extensionPath = fixturePath('devtools-extensions', 'foo');
       await w.webContents.session.loadExtension(extensionPath);
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
+      w.loadFile(fixturePath('pages', 'webview-devtools.html'));
       loadWebView(w.webContents, {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${path.join(__dirname, 'fixtures', 'blank.html')}`
+        src: fixtureFileURL('blank.html')
       }, { openDevTools: true });
       let childWebContentsId = 0;
       app.once('web-contents-created', (e, webContents) => {
@@ -343,7 +338,7 @@ describe('<webview> tag', function () {
         }
       });
       const zoomEventPromise = once(ipcMain, 'webview-parent-zoom-level');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-factor.html'));
+      w.loadFile(fixturePath('pages', 'webview-zoom-factor.html'));
 
       const [, zoomFactor, zoomLevel] = await zoomEventPromise;
       expect(zoomFactor).to.equal(1.2);
@@ -376,7 +371,7 @@ describe('<webview> tag', function () {
         });
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'webview-custom-zoom-level.html'));
+      w.loadFile(fixturePath('pages', 'webview-custom-zoom-level.html'));
 
       await promise;
     });
@@ -402,7 +397,7 @@ describe('<webview> tag', function () {
         });
       });
 
-      w.loadFile(path.join(fixtures, 'pages', 'webview-in-page-navigate.html'));
+      w.loadFile(fixturePath('pages', 'webview-in-page-navigate.html'));
 
       await promise;
     });
@@ -417,7 +412,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixtures, 'pages', 'webview-origin-zoom-level.html'));
+      w.loadFile(fixturePath('pages', 'webview-origin-zoom-level.html'));
 
       const [, zoomLevel] = await once(ipcMain, 'webview-origin-zoom-level');
       expect(zoomLevel).to.equal(2.0);
@@ -436,7 +431,7 @@ describe('<webview> tag', function () {
       });
       const attachPromise = once(w.webContents, 'did-attach-webview');
       const readyPromise = once(ipcMain, 'dom-ready');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
+      w.loadFile(fixturePath('pages', 'webview-zoom-inherited.html'));
       const [, webview] = await attachPromise;
       await readyPromise;
       expect(webview.getZoomFactor()).to.equal(1.2);
@@ -454,7 +449,7 @@ describe('<webview> tag', function () {
         }
       });
       const attachPromise = once(w.webContents, 'did-attach-webview');
-      await w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
+      await w.loadFile(fixturePath('pages', 'webview-zoom-inherited.html'));
       await attachPromise;
       await w.webContents.executeJavaScript('view.remove()');
       w.webContents.setZoomLevel(0.5);
@@ -476,7 +471,7 @@ describe('<webview> tag', function () {
       const loadPromise = once(w.webContents, 'did-finish-load');
       const readyPromise = once(ipcMain, 'webview-ready');
 
-      w.loadFile(path.join(__dirname, 'fixtures', 'webview', 'fullscreen', 'main.html'));
+      w.loadFile(fixturePath('webview', 'fullscreen', 'main.html'));
 
       const [, webview] = await attachPromise;
       await Promise.all([readyPromise, loadPromise]);
@@ -573,7 +568,7 @@ describe('<webview> tag', function () {
       });
 
       const didAttachWebview = once(w.webContents, 'did-attach-webview');
-      w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
+      w.loadFile(fixturePath('pages', 'webview-did-attach-event.html'));
 
       const [, webContents] = await didAttachWebview;
 
@@ -624,7 +619,7 @@ describe('<webview> tag', function () {
         allowpopups: 'on',
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${path.join(fixtures, 'api', 'native-window-open-blank.html')}`
+        src: fixtureFileURL('api', 'native-window-open-blank.html')
       });
 
       const [, content] = await once(ipcMain, 'answer');
@@ -637,7 +632,7 @@ describe('<webview> tag', function () {
         allowpopups: 'on',
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${path.join(fixtures, 'api', 'native-window-open-file.html')}`
+        src: fixtureFileURL('api', 'native-window-open-file.html')
       });
 
       const [, content] = await once(ipcMain, 'answer');
@@ -649,7 +644,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${path.join(fixtures, 'api', 'native-window-open-no-allowpopups.html')}`
+        src: fixtureFileURL('api', 'native-window-open-no-allowpopups.html')
       });
 
       const [, { windowOpenReturnedNull }] = await once(ipcMain, 'answer');
@@ -662,7 +657,7 @@ describe('<webview> tag', function () {
         allowpopups: 'on',
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${path.join(fixtures, 'api', 'native-window-open-cross-origin.html')}`
+        src: fixtureFileURL('api', 'native-window-open-cross-origin.html')
       });
 
       const [, content] = await once(ipcMain, 'answer');
@@ -677,7 +672,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${fixtures}/pages/window-open.html`
+        src: fixtureFileURL('pages', 'window-open.html')
       });
 
       await once(app, 'browser-window-created');
@@ -690,7 +685,7 @@ describe('<webview> tag', function () {
       loadWebView(w.webContents, {
         allowpopups: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${fixtures}/pages/window-open.html`
+        src: fixtureFileURL('pages', 'window-open.html')
       });
 
       await webContentsCreated;
@@ -699,7 +694,7 @@ describe('<webview> tag', function () {
     it('does not crash when creating window with noopener', async () => {
       loadWebView(w.webContents, {
         allowpopups: 'on',
-        src: `file://${path.join(fixtures, 'api', 'native-window-open-noopener.html')}`
+        src: fixtureFileURL('api', 'native-window-open-noopener.html')
       });
       await once(app, 'browser-window-created');
     });
@@ -716,8 +711,8 @@ describe('<webview> tag', function () {
     it('can enable context isolation', async () => {
       loadWebView(w.webContents, {
         allowpopups: 'yes',
-        preload: `file://${fixtures}/api/isolated-preload.js`,
-        src: `file://${fixtures}/api/isolated.html`,
+        preload: fixtureFileURL('api', 'isolated-preload.js'),
+        src: fixtureFileURL('api', 'isolated.html'),
         webpreferences: 'contextIsolation=yes'
       });
 
@@ -788,7 +783,7 @@ describe('<webview> tag', function () {
     xit('emits when using navigator.getUserMedia api', async () => {
       const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
-        src: `file://${fixtures}/pages/permissions/media.html`,
+        src: fixtureFileURL('pages', 'permissions', 'media.html'),
         partition,
         nodeintegration: 'on'
       });
@@ -801,7 +796,7 @@ describe('<webview> tag', function () {
     it('emits when using navigator.geolocation api', async () => {
       const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
-        src: `file://${fixtures}/pages/permissions/geolocation.html`,
+        src: fixtureFileURL('pages', 'permissions', 'geolocation.html'),
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
@@ -815,7 +810,7 @@ describe('<webview> tag', function () {
     it('emits when using navigator.requestMIDIAccess without sysex api', async () => {
       const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
-        src: `file://${fixtures}/pages/permissions/midi.html`,
+        src: fixtureFileURL('pages', 'permissions', 'midi.html'),
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
@@ -829,7 +824,7 @@ describe('<webview> tag', function () {
     it('emits when using navigator.requestMIDIAccess with sysex api', async () => {
       const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
-        src: `file://${fixtures}/pages/permissions/midi-sysex.html`,
+        src: fixtureFileURL('pages', 'permissions', 'midi-sysex.html'),
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
@@ -852,7 +847,7 @@ describe('<webview> tag', function () {
     it('emits when using Notification.requestPermission', async () => {
       const errorFromRenderer = once(ipcMain, 'message');
       loadWebView(w.webContents, {
-        src: `file://${fixtures}/pages/permissions/notification.html`,
+        src: fixtureFileURL('pages', 'permissions', 'notification.html'),
         partition,
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
@@ -922,7 +917,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      await window.loadURL(fixtureFileURL('pages', 'blank.html'));
       w = window.webContents;
     });
     afterEach(async () => {
@@ -935,19 +930,19 @@ describe('<webview> tag', function () {
     describe('src attribute', () => {
       it('specifies the page to load', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          src: `file://${fixtures}/pages/a.html`
+          src: fixtureFileURL('pages', 'a.html')
         });
         expect(message).to.equal('a');
       });
 
       it('navigates to new page when changed', async () => {
         await loadWebView(w, {
-          src: `file://${fixtures}/pages/a.html`
+          src: fixtureFileURL('pages', 'a.html')
         });
 
         const { message } = await w.executeJavaScript(`new Promise(resolve => {
           webview.addEventListener('console-message', e => resolve({message: e.message}))
-          webview.src = ${JSON.stringify(`file://${fixtures}/pages/b.html`)}
+          webview.src = ${JSON.stringify(fixtureFileURL('pages', 'b.html'))}
         })`);
 
         expect(message).to.equal('b');
@@ -974,7 +969,7 @@ describe('<webview> tag', function () {
 
         const delay = await w.executeJavaScript(`new Promise(resolve => {
           const before = Date.now();
-          webview.src = 'file://${fixtures}/pages/blank.html';
+          webview.src = '${fixtureFileURL('pages', 'blank.html')}';
           const now = Date.now();
           resolve(now - before);
         })`);
@@ -990,7 +985,7 @@ describe('<webview> tag', function () {
     describe('nodeintegration attribute', () => {
       it('inserts no node symbols when not set', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          src: `file://${fixtures}/pages/c.html`
+          src: fixtureFileURL('pages', 'c.html')
         });
 
         const types = JSON.parse(message);
@@ -1006,7 +1001,7 @@ describe('<webview> tag', function () {
         const message = await loadWebViewAndWaitForMessage(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/d.html`
+          src: fixtureFileURL('pages', 'd.html')
         });
 
         const types = JSON.parse(message);
@@ -1021,7 +1016,7 @@ describe('<webview> tag', function () {
         const message = await loadWebViewAndWaitForMessage(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/post.html`
+          src: fixtureFileURL('pages', 'post.html')
         });
 
         const types = JSON.parse(message);
@@ -1033,13 +1028,10 @@ describe('<webview> tag', function () {
       });
 
       it('disables node integration on child windows when it is disabled on the webview', async () => {
-        const src = url.format({
-          pathname: `${fixtures}/pages/webview-opener-no-node-integration.html`,
-          protocol: 'file',
-          query: {
-            p: `${fixtures}/pages/window-opener-node.html`
-          },
-          slashes: true
+        const src = fixtureFileURL('pages', 'webview-opener-no-node-integration.html', {
+          searchParams: {
+            p: fixturePath('pages', 'window-opener-node.html')
+          }
         });
         const message = await loadWebViewAndWaitForMessage(w, {
           allowpopups: 'on',
@@ -1053,7 +1045,7 @@ describe('<webview> tag', function () {
         await loadWebView(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/native-module.html`
+          src: fixtureFileURL('pages', 'native-module.html')
         });
 
         const message = await w.executeJavaScript(`new Promise(resolve => {
@@ -1069,8 +1061,8 @@ describe('<webview> tag', function () {
       useRemoteContext({ webPreferences: { webviewTag: true } });
       it('loads the script before other scripts in window', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          preload: `${fixtures}/module/preload.js`,
-          src: `file://${fixtures}/pages/e.html`
+          preload: fixturePath('module', 'preload.js'),
+          src: fixtureFileURL('pages', 'e.html')
         });
 
         expect(message).to.be.a('string');
@@ -1079,8 +1071,8 @@ describe('<webview> tag', function () {
 
       it('preload script can still use "process" and "Buffer" when nodeintegration is off', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          preload: `${fixtures}/module/preload-node-off.js`,
-          src: `file://${fixtures}/api/blank.html`
+          preload: fixturePath('module', 'preload-node-off.js'),
+          src: fixtureFileURL('api', 'blank.html')
         });
 
         const types = JSON.parse(message);
@@ -1092,8 +1084,8 @@ describe('<webview> tag', function () {
 
       it('runs in the correct scope when sandboxed', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          preload: `${fixtures}/module/preload-context.js`,
-          src: `file://${fixtures}/api/blank.html`,
+          preload: fixturePath('module', 'preload-context.js'),
+          src: fixtureFileURL('api', 'blank.html'),
           webpreferences: 'sandbox=yes'
         });
 
@@ -1108,9 +1100,9 @@ describe('<webview> tag', function () {
 
       it('preload script can require modules that still use "process" and "Buffer" when nodeintegration is off', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          preload: `${fixtures}/module/preload-node-off-wrapper.js`,
+          preload: fixturePath('module', 'preload-node-off-wrapper.js'),
           webpreferences: 'sandbox=no',
-          src: `file://${fixtures}/api/blank.html`
+          src: fixtureFileURL('api', 'blank.html')
         });
 
         const types = JSON.parse(message);
@@ -1122,8 +1114,8 @@ describe('<webview> tag', function () {
 
       it('receives ipc message in preload script', async () => {
         await loadWebView(w, {
-          preload: `${fixtures}/module/preload-ipc.js`,
-          src: `file://${fixtures}/pages/e.html`
+          preload: fixturePath('module', 'preload-ipc.js'),
+          src: fixtureFileURL('pages', 'e.html')
         });
 
         const message = 'boom!';
@@ -1136,12 +1128,12 @@ describe('<webview> tag', function () {
         expect(args).to.deep.equal([message]);
       });
 
-      itremote('<webview>.sendToFrame()', async (fixtures: string) => {
+      itremote('<webview>.sendToFrame()', async (fixtureBase: string) => {
         const w = new WebView();
         w.setAttribute('nodeintegration', 'on');
         w.setAttribute('webpreferences', 'contextIsolation=no');
-        w.setAttribute('preload', `file://${fixtures}/module/preload-ipc.js`);
-        w.setAttribute('src', `file://${fixtures}/pages/ipc-message.html`);
+        w.setAttribute('preload', `${fixtureBase}/module/preload-ipc.js`);
+        w.setAttribute('src', `${fixtureBase}/pages/ipc-message.html`);
         document.body.appendChild(w);
         const { frameId } = await new Promise<any>(resolve => w.addEventListener('ipc-message', resolve, { once: true }));
 
@@ -1152,13 +1144,13 @@ describe('<webview> tag', function () {
 
         expect(channel).to.equal('pong');
         expect(args).to.deep.equal([message]);
-      }, [fixtures]);
+      }, [fixtureFileURL()]);
 
       it('works without script tag in page', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          preload: `${fixtures}/module/preload.js`,
+          preload: fixturePath('module', 'preload.js'),
           webpreferences: 'sandbox=no',
-          src: `file://${fixtures}/pages/base-page.html`
+          src: fixtureFileURL('pages', 'base-page.html')
         });
 
         const types = JSON.parse(message);
@@ -1174,7 +1166,7 @@ describe('<webview> tag', function () {
         const message = await loadWebViewAndWaitForMessage(w, {
           preload: '../module/preload.js',
           webpreferences: 'sandbox=no',
-          src: `file://${fixtures}/pages/e.html`
+          src: fixtureFileURL('pages', 'e.html')
         });
 
         const types = JSON.parse(message);
@@ -1225,7 +1217,7 @@ describe('<webview> tag', function () {
       it('sets the user agent', async () => {
         const referrer = 'Mozilla/5.0 (Windows NT 6.1; WOW64; Trident/7.0; AS; rv:11.0) like Gecko';
         const message = await loadWebViewAndWaitForMessage(w, {
-          src: `file://${fixtures}/pages/useragent.html`,
+          src: fixtureFileURL('pages', 'useragent.html'),
           useragent: referrer
         });
         expect(message).to.equal(referrer);
@@ -1250,7 +1242,7 @@ describe('<webview> tag', function () {
           disablewebsecurity: '',
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/d.html`
+          src: fixtureFileURL('pages', 'd.html')
         });
 
         const types = JSON.parse(message);
@@ -1264,9 +1256,9 @@ describe('<webview> tag', function () {
       it('does not break preload script', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
           disablewebsecurity: '',
-          preload: `${fixtures}/module/preload.js`,
+          preload: fixturePath('module', 'preload.js'),
           webpreferences: 'sandbox=no',
-          src: `file://${fixtures}/pages/e.html`
+          src: fixtureFileURL('pages', 'e.html')
         });
 
         const types = JSON.parse(message);
@@ -1283,7 +1275,7 @@ describe('<webview> tag', function () {
       it('inserts no node symbols when not set', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
           partition: 'test1',
-          src: `file://${fixtures}/pages/c.html`
+          src: fixtureFileURL('pages', 'c.html')
         });
 
         const types = JSON.parse(message);
@@ -1300,7 +1292,7 @@ describe('<webview> tag', function () {
           nodeintegration: 'on',
           partition: 'test2',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/d.html`
+          src: fixtureFileURL('pages', 'd.html')
         });
 
         const types = JSON.parse(message);
@@ -1316,7 +1308,7 @@ describe('<webview> tag', function () {
 
         const message = await loadWebViewAndWaitForMessage(w, {
           partition: 'test3',
-          src: `file://${fixtures}/pages/partition/one.html`
+          src: fixtureFileURL('pages', 'partition', 'one.html')
         });
 
         const parsedMessage = JSON.parse(message);
@@ -1331,7 +1323,7 @@ describe('<webview> tag', function () {
         const testValue = 'two';
 
         const message = await loadWebViewAndWaitForMessage(w, {
-          src: `file://${fixtures}/pages/partition/one.html`
+          src: fixtureFileURL('pages', 'partition', 'one.html')
         });
 
         const parsedMessage = JSON.parse(message);
@@ -1347,7 +1339,7 @@ describe('<webview> tag', function () {
           it('can not open new window when not set', async () => {
             const message = await loadWebViewAndWaitForMessage(w, {
               webpreferences,
-              src: `file://${fixtures}/pages/window-open-hide.html`
+              src: fixtureFileURL('pages', 'window-open-hide.html')
             });
             expect(message).to.equal('null');
           });
@@ -1356,7 +1348,7 @@ describe('<webview> tag', function () {
             const message = await loadWebViewAndWaitForMessage(w, {
               webpreferences,
               allowpopups: 'on',
-              src: `file://${fixtures}/pages/window-open-hide.html`
+              src: fixtureFileURL('pages', 'window-open-hide.html')
             });
             expect(message).to.equal('window');
           });
@@ -1370,7 +1362,7 @@ describe('<webview> tag', function () {
     describe('webpreferences attribute', () => {
       it('can enable nodeintegration', async () => {
         const message = await loadWebViewAndWaitForMessage(w, {
-          src: `file://${fixtures}/pages/d.html`,
+          src: fixtureFileURL('pages', 'd.html'),
           webpreferences: 'nodeIntegration,contextIsolation=no'
         });
 
@@ -1404,7 +1396,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      await window.loadURL(fixtureFileURL('pages', 'blank.html'));
       w = window.webContents;
     });
     afterEach(async () => {
@@ -1417,7 +1409,7 @@ describe('<webview> tag', function () {
     describe('ipc-message event', () => {
       it('emits when guest sends an ipc message to browser', async () => {
         const { frameId, channel, args } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/ipc-message.html`,
+          src: fixtureFileURL('pages', 'ipc-message.html'),
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no'
         }, 'ipc-message');
@@ -1431,7 +1423,7 @@ describe('<webview> tag', function () {
     describe('page-title-updated event', () => {
       it('emits when title is set', async () => {
         const { title, explicitSet } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/a.html`
+          src: fixtureFileURL('pages', 'a.html')
         }, 'page-title-updated');
 
         expect(title).to.equal('test');
@@ -1442,7 +1434,7 @@ describe('<webview> tag', function () {
     describe('page-favicon-updated event', () => {
       it('emits when favicon urls are received', async () => {
         const { favicons } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/a.html`
+          src: fixtureFileURL('pages', 'a.html')
         }, 'page-favicon-updated');
 
         expect(favicons).to.be.an('array').of.length(2);
@@ -1482,7 +1474,7 @@ describe('<webview> tag', function () {
     describe('will-navigate event', () => {
       it('emits when a url that leads to outside of the page is loaded', async () => {
         const { url } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/webview-will-navigate.html`
+          src: fixtureFileURL('pages', 'webview-will-navigate.html')
         }, 'will-navigate');
 
         expect(url).to.equal('http://host/');
@@ -1532,7 +1524,7 @@ describe('<webview> tag', function () {
 
     describe('did-navigate event', () => {
       it('emits when a url that leads to outside of the page is clicked', async () => {
-        const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-will-navigate.html')).toString();
+        const pageUrl = url.pathToFileURL(fixturePath('pages', 'webview-will-navigate.html')).toString();
         const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate');
         expect(event.url).to.equal(pageUrl);
       });
@@ -1540,20 +1532,20 @@ describe('<webview> tag', function () {
 
     describe('did-navigate-in-page event', () => {
       it('emits when an anchor link is clicked', async () => {
-        const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-did-navigate-in-page.html')).toString();
+        const pageUrl = url.pathToFileURL(fixturePath('pages', 'webview-did-navigate-in-page.html')).toString();
         const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate-in-page');
         expect(event.url).to.equal(`${pageUrl}#test_content`);
       });
 
       it('emits when window.history.replaceState is called', async () => {
         const { url } = await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/webview-did-navigate-in-page-with-history.html`
+          src: fixtureFileURL('pages', 'webview-did-navigate-in-page-with-history.html')
         }, 'did-navigate-in-page');
         expect(url).to.equal('http://host/');
       });
 
       it('emits when window.location.hash is changed', async () => {
-        const pageUrl = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-did-navigate-in-page-with-hash.html')).toString();
+        const pageUrl = url.pathToFileURL(fixturePath('pages', 'webview-did-navigate-in-page-with-hash.html')).toString();
         const event = await loadWebViewAndWaitForEvent(w, { src: pageUrl }, 'did-navigate-in-page');
         expect(event.url).to.equal(`${pageUrl}#test`);
       });
@@ -1561,14 +1553,14 @@ describe('<webview> tag', function () {
 
     describe('close event', () => {
       it('should fire when interior page calls window.close', async () => {
-        await loadWebViewAndWaitForEvent(w, { src: `file://${fixtures}/pages/close.html` }, 'close');
+        await loadWebViewAndWaitForEvent(w, { src: fixtureFileURL('pages', 'close.html') }, 'close');
       });
     });
 
     describe('devtools-opened event', () => {
       it('should fire when webview.openDevTools() is called', async () => {
         await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/base-page.html`
+          src: fixtureFileURL('pages', 'base-page.html')
         }, 'dom-ready');
 
         await w.executeJavaScript(`new Promise((resolve) => {
@@ -1580,9 +1572,9 @@ describe('<webview> tag', function () {
     });
 
     describe('devtools-closed event', () => {
-      itremote('should fire when webview.closeDevTools() is called', async (fixtures: string) => {
+      itremote('should fire when webview.closeDevTools() is called', async (fixture: string) => {
         const webview = new WebView();
-        webview.src = `file://${fixtures}/pages/base-page.html`;
+        webview.src = fixture;
         document.body.appendChild(webview);
         await new Promise(resolve => webview.addEventListener('dom-ready', resolve, { once: true }));
 
@@ -1591,13 +1583,13 @@ describe('<webview> tag', function () {
 
         webview.closeDevTools();
         await new Promise(resolve => webview.addEventListener('devtools-closed', resolve, { once: true }));
-      }, [fixtures]);
+      }, [fixtureFileURL('pages', 'base-page.html')]);
     });
 
     describe('devtools-focused event', () => {
-      itremote('should fire when webview.openDevTools() is called', async (fixtures: string) => {
+      itremote('should fire when webview.openDevTools() is called', async (fixture: string) => {
         const webview = new WebView();
-        webview.src = `file://${fixtures}/pages/base-page.html`;
+        webview.src = fixture;
         document.body.appendChild(webview);
 
         const waitForDevToolsFocused = new Promise(resolve => webview.addEventListener('devtools-focused', resolve, { once: true }));
@@ -1606,7 +1598,7 @@ describe('<webview> tag', function () {
 
         await waitForDevToolsFocused;
         webview.closeDevTools();
-      }, [fixtures]);
+      }, [fixtureFileURL('pages', 'base-page.html')]);
     });
 
     describe('dom-ready event', () => {
@@ -1614,7 +1606,11 @@ describe('<webview> tag', function () {
         const server = http.createServer(() => {});
         const { port } = await listen(server);
         await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/dom-ready.html?port=${port}`
+          src: fixtureFileURL('pages', 'dom-ready.html', {
+            searchParams: {
+              port: port.toString()
+            }
+          })
         }, 'dom-ready');
       });
 
@@ -1647,10 +1643,10 @@ describe('<webview> tag', function () {
     });
 
     describe('found-in-page event', () => {
-      itremote('emits when a request is made', async (fixtures: string) => {
+      itremote('emits when a request is made', async (fixture: string) => {
         const webview = new WebView();
         const didFinishLoad = new Promise(resolve => webview.addEventListener('did-finish-load', resolve, { once: true }));
-        webview.src = `file://${fixtures}/pages/content.html`;
+        webview.src = fixture;
         document.body.appendChild(webview);
         // TODO(deepak1556): With https://codereview.chromium.org/2836973002
         // focus of the webContents is required when triggering the api.
@@ -1678,7 +1674,7 @@ describe('<webview> tag', function () {
 
         expect(activeMatchOrdinal).to.deep.equal([1, 2, 3]);
         webview.stopFindInPage('clearSelection');
-      }, [fixtures]);
+      }, [fixtureFileURL('pages', 'content.html')]);
     });
 
     describe('will-attach-webview event', () => {
@@ -1692,12 +1688,12 @@ describe('<webview> tag', function () {
 
       it('supports changing the web preferences', async () => {
         w.once('will-attach-webview', (event, webPreferences, params) => {
-          params.src = `file://${path.join(fixtures, 'pages', 'c.html')}`;
+          params.src = fixtureFileURL('pages', 'c.html');
           webPreferences.nodeIntegration = false;
         });
         const message = await loadWebViewAndWaitForMessage(w, {
           nodeintegration: 'yes',
-          src: `file://${fixtures}/pages/a.html`
+          src: fixtureFileURL('pages', 'a.html')
         });
 
         const types = JSON.parse(message);
@@ -1715,7 +1711,7 @@ describe('<webview> tag', function () {
         });
 
         await loadWebViewAndWaitForMessage(w, {
-          src: `file://${fixtures}/pages/a.html`
+          src: fixtureFileURL('pages', 'a.html')
         });
       });
 
@@ -1723,20 +1719,20 @@ describe('<webview> tag', function () {
         w.once('will-attach-webview', event => event.preventDefault());
 
         await loadWebViewAndWaitForEvent(w, {
-          src: `file://${fixtures}/pages/c.html`
+          src: fixtureFileURL('pages', 'c.html')
         }, 'destroyed');
       });
 
       it('supports removing the preload script', async () => {
         w.once('will-attach-webview', (event, webPreferences, params) => {
-          params.src = url.pathToFileURL(path.join(fixtures, 'pages', 'webview-stripped-preload.html')).toString();
+          params.src = url.pathToFileURL(fixturePath('pages', 'webview-stripped-preload.html')).toString();
           delete webPreferences.preload;
         });
 
         const message = await loadWebViewAndWaitForMessage(w, {
           nodeintegration: 'yes',
-          preload: path.join(fixtures, 'module', 'preload-set-global.js'),
-          src: `file://${fixtures}/pages/a.html`
+          preload: fixturePath('module', 'preload-set-global.js'),
+          src: fixtureFileURL('pages', 'a.html')
         });
 
         expect(message).to.equal('undefined');
@@ -1784,7 +1780,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      await window.loadURL(fixtureFileURL('pages', 'blank.html'));
       w = window.webContents;
     });
     afterEach(async () => {
@@ -1799,7 +1795,7 @@ describe('<webview> tag', function () {
         await loadWebView(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/beforeunload-false.html`
+          src: fixtureFileURL('pages', 'beforeunload-false.html')
         });
 
         // Event handler has to be added before reload.
@@ -1814,7 +1810,7 @@ describe('<webview> tag', function () {
 
     describe('<webview>.goForward()', () => {
       useRemoteContext({ webPreferences: { webviewTag: true } });
-      itremote('should work after a replaced history entry', async (fixtures: string) => {
+      itremote('should work after a replaced history entry', async (fixtureBase: string) => {
         function waitForEvent (target: EventTarget, event: string) {
           return new Promise<any>(resolve => target.addEventListener(event, resolve, { once: true }));
         }
@@ -1827,7 +1823,7 @@ describe('<webview> tag', function () {
 
         webview.setAttribute('nodeintegration', 'on');
         webview.setAttribute('webpreferences', 'contextIsolation=no');
-        webview.src = `file://${fixtures}/pages/history-replace.html`;
+        webview.src = `${fixtureBase}/pages/history-replace.html`;
         document.body.appendChild(webview);
 
         {
@@ -1838,7 +1834,7 @@ describe('<webview> tag', function () {
           expect(webview.canGoForward()).to.be.false();
         }
 
-        webview.src = `file://${fixtures}/pages/base-page.html`;
+        webview.src = `${fixtureBase}/pages/base-page.html`;
 
         await new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }));
 
@@ -1861,7 +1857,7 @@ describe('<webview> tag', function () {
 
         expect(webview.canGoBack()).to.be.true();
         expect(webview.canGoForward()).to.be.false();
-      }, [fixtures]);
+      }, [fixtureFileURL('pages')]);
     });
 
     describe('<webview>.clearHistory()', () => {
@@ -1897,14 +1893,14 @@ describe('<webview> tag', function () {
     });
 
     it('supports inserting CSS', async () => {
-      await loadWebView(w, { src: `file://${fixtures}/pages/base-page.html` });
+      await loadWebView(w, { src: fixtureFileURL('pages', 'base-page.html') });
       await w.executeJavaScript('webview.insertCSS(\'body { background-repeat: round; }\')');
       const result = await w.executeJavaScript('webview.executeJavaScript(\'window.getComputedStyle(document.body).getPropertyValue("background-repeat")\')');
       expect(result).to.equal('round');
     });
 
     it('supports removing inserted CSS', async () => {
-      await loadWebView(w, { src: `file://${fixtures}/pages/base-page.html` });
+      await loadWebView(w, { src: fixtureFileURL('pages', 'base-page.html') });
       const key = await w.executeJavaScript('webview.insertCSS(\'body { background-repeat: round; }\')');
       await w.executeJavaScript(`webview.removeInsertedCSS(${JSON.stringify(key)})`);
       const result = await w.executeJavaScript('webview.executeJavaScript(\'window.getComputedStyle(document.body).getPropertyValue("background-repeat")\')');
@@ -1916,7 +1912,7 @@ describe('<webview> tag', function () {
         await loadWebViewAndWaitForEvent(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/onkeyup.html`
+          src: fixtureFileURL('pages', 'onkeyup.html')
         }, 'dom-ready');
 
         const waitForIpcMessage = w.executeJavaScript('new Promise(resolve => webview.addEventListener("ipc-message", e => resolve({...e})), {once: true})');
@@ -1935,7 +1931,7 @@ describe('<webview> tag', function () {
         await loadWebViewAndWaitForEvent(w, {
           nodeintegration: 'on',
           webpreferences: 'contextIsolation=no',
-          src: `file://${fixtures}/pages/onmouseup.html`
+          src: fixtureFileURL('pages', 'onmouseup.html')
         }, 'dom-ready');
 
         const waitForIpcMessage = w.executeJavaScript('new Promise(resolve => webview.addEventListener("ipc-message", e => resolve({...e})), {once: true})');
@@ -2002,7 +1998,7 @@ describe('<webview> tag', function () {
         describe(description, () => {
           it('emits focus event', async () => {
             await loadWebViewAndWaitForEvent(w, {
-              src: `file://${fixtures}/pages/a.html`,
+              src: fixtureFileURL('pages', 'a.html'),
               webpreferences: `sandbox=${sandbox ? 'yes' : 'no'}`
             }, 'dom-ready');
 
@@ -2081,7 +2077,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      await window.loadURL(`file://${fixtures}/pages/blank.html`);
+      await window.loadURL(fixtureFileURL('pages', 'blank.html'));
       w = window.webContents;
     });
     afterEach(async () => {
@@ -2108,7 +2104,9 @@ describe('<webview> tag', function () {
       const e = await loadWebViewAndWaitForEvent(w, {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no',
-        src: `file://${fixtures}/pages/basic-auth.html?port=${port}`
+        src: fixtureFileURL('pages', 'basic-auth.html', {
+          searchParams: { port: port.toString() }
+        })
       }, 'ipc-message');
       expect(e.channel).to.equal(message);
     });

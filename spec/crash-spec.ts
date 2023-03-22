@@ -2,9 +2,10 @@ import { expect } from 'chai';
 import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
+import { fixturePath } from './lib/fixtures';
 import { ifit } from './lib/spec-helpers';
 
-const fixturePath = path.resolve(__dirname, 'fixtures', 'crash-cases');
+const fixtureBasePath = fixturePath('crash-cases');
 
 let children: cp.ChildProcessWithoutNullStreams[] = [];
 
@@ -58,11 +59,11 @@ describe('crash cases', () => {
     expect(children).to.have.lengthOf(0, 'all child processes should have exited cleanly');
     children.length = 0;
   });
-  const cases = fs.readdirSync(fixturePath);
+  const cases = fs.readdirSync(fixtureBasePath);
 
   for (const crashCase of cases) {
     ifit(shouldRunCase(crashCase))(`the "${crashCase}" case should not crash`, () => {
-      const fixture = path.resolve(fixturePath, crashCase);
+      const fixture = path.resolve(fixtureBasePath, crashCase);
       const argsFile = path.resolve(fixture, 'electron.args');
       const args = [fixture];
       if (fs.existsSync(argsFile)) {

@@ -8,8 +8,9 @@ import { session, net } from 'electron/main';
 import { Socket } from 'net';
 import { ifit, listen } from './lib/spec-helpers';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
-const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
+const appPath = fixturePath('api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');
 const dumpFileDynamic = path.join(os.tmpdir(), 'net_log_dynamic.json');
 

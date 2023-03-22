@@ -1,14 +1,13 @@
 import { expect } from 'chai';
 import * as http from 'http';
-import * as path from 'path';
 import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { emittedUntil } from './lib/events';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 describe('debugger module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
   let w: BrowserWindow;
 
   beforeEach(() => {
@@ -109,9 +108,7 @@ describe('debugger module', () => {
     });
 
     it('fires message event', async () => {
-      const url = process.platform !== 'win32'
-        ? `file://${path.join(fixtures, 'pages', 'a.html')}`
-        : `file:///${path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')}`;
+      const url = fixtureFileURL('pages', 'a.html');
       w.webContents.loadURL(url);
       w.webContents.debugger.attach();
       const message = emittedUntil(w.webContents.debugger, 'message',
@@ -194,7 +191,7 @@ describe('debugger module', () => {
     });
 
     it('creates unique session id for each target', (done) => {
-      w.webContents.loadFile(path.join(__dirname, 'fixtures', 'sub-frames', 'debug-frames.html'));
+      w.webContents.loadFile(fixturePath('sub-frames', 'debug-frames.html'));
       w.webContents.debugger.attach();
       let session: String;
 

@@ -1,15 +1,13 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
 import { once } from 'events';
 import { captureScreenBitmap } from './lib/screen-capture';
 import { areColorsSimilar } from './lib/color';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 describe('BrowserView module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
-
   let w: BrowserWindow;
   let view: BrowserView;
 
@@ -239,7 +237,7 @@ describe('BrowserView module', () => {
 
       w.close();
 
-      view.webContents.loadURL(`file://${fixtures}/pages/blank.html`);
+      view.webContents.loadURL(fixtureFileURL('pages', 'blank.html'));
       await once(view.webContents, 'did-finish-load');
 
       // Clean up - the afterEach hook assumes the webContents on w is still alive.
@@ -350,7 +348,7 @@ describe('BrowserView module', () => {
     it('emits the destroyed event when webContents.close() is called', async () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await view.webContents.loadFile(fixturePath('pages', 'a.html'));
 
       view.webContents.close();
       await once(view.webContents, 'destroyed');
@@ -359,7 +357,7 @@ describe('BrowserView module', () => {
     it('emits the destroyed event when window.close() is called', async () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await view.webContents.loadFile(fixturePath('pages', 'a.html'));
 
       view.webContents.executeJavaScript('window.close()');
       await once(view.webContents, 'destroyed');
@@ -376,7 +374,7 @@ describe('BrowserView module', () => {
         done();
         return { action: 'deny' };
       });
-      view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+      view.webContents.loadFile(fixturePath('pages', 'window-open.html'));
     });
   });
 
@@ -415,7 +413,7 @@ describe('BrowserView module', () => {
         x: 0,
         y: 0
       });
-      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await view.webContents.loadFile(fixturePath('pages', 'a.html'));
 
       const image = await view.webContents.capturePage();
       expect(image.isEmpty()).to.equal(false);

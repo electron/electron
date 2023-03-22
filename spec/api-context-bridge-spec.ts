@@ -10,8 +10,9 @@ import * as cp from 'child_process';
 import { closeWindow } from './lib/window-helpers';
 import { listen } from './lib/spec-helpers';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'context-bridge');
+const fixturesPath = fixturePath('api', 'context-bridge');
 
 describe('contextBridge', () => {
   let w: BrowserWindow;
@@ -42,10 +43,10 @@ describe('contextBridge', () => {
       show: false,
       webPreferences: {
         contextIsolation: false,
-        preload: path.resolve(fixturesPath, 'can-bind-preload.js')
+        preload: path.join(fixturesPath, 'can-bind-preload.js')
       }
     });
-    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    w.loadFile(path.join(fixturesPath, 'empty.html'));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(false);
   });
@@ -55,10 +56,10 @@ describe('contextBridge', () => {
       show: false,
       webPreferences: {
         contextIsolation: true,
-        preload: path.resolve(fixturesPath, 'can-bind-preload.js')
+        preload: path.join(fixturesPath, 'can-bind-preload.js')
       }
     });
-    w.loadFile(path.resolve(fixturesPath, 'empty.html'));
+    w.loadFile(path.join(fixturesPath, 'empty.html'));
     const [, bound] = await once(ipcMain, 'context-bridge-bound');
     expect(bound).to.equal(true);
   });

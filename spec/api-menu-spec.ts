@@ -1,5 +1,4 @@
 import * as cp from 'child_process';
-import * as path from 'path';
 import { assert, expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
@@ -7,8 +6,7 @@ import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
-
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+import { fixturePath } from './lib/fixtures';
 
 describe('Menu module', function () {
   describe('Menu.buildFromTemplate', () => {
@@ -938,7 +936,7 @@ describe('Menu module', function () {
     });
 
     ifit(process.platform !== 'darwin')('does not override menu visibility on startup', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'test-menu-visibility');
+      const appPath = fixturePath('api', 'test-menu-visibility');
       const appProcess = cp.spawn(process.execPath, [appPath]);
 
       let output = '';
@@ -954,7 +952,7 @@ describe('Menu module', function () {
     });
 
     ifit(process.platform !== 'darwin')('does not override null menu on startup', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'test-menu-null');
+      const appPath = fixturePath('api', 'test-menu-null');
       const appProcess = cp.spawn(process.execPath, [appPath]);
 
       let output = '';

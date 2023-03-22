@@ -1,23 +1,20 @@
 import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as util from 'util';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import { webContents } from 'electron/main';
 import { EventEmitter } from 'stream';
 import { once } from 'events';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 const features = process._linkedBinding('electron_common_features');
-const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('node feature', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
-
   describe('child_process', () => {
     describe('child_process.fork', () => {
       it('Works in browser process', async () => {
-        const child = childProcess.fork(path.join(fixtures, 'module', 'ping.js'));
+        const child = childProcess.fork(fixturePath('module', 'ping.js'));
         const message = once(child, 'message');
         child.send('message');
         const [msg] = await message;
@@ -30,59 +27,59 @@ describe('node feature', () => {
     useRemoteContext();
 
     describe('child_process.fork', () => {
-      itremote('works in current process', async (fixtures: string) => {
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'ping.js'));
+      itremote('works in current process', async (fixture: string) => {
+        const child = require('child_process').fork(fixture);
         const message = new Promise<any>(resolve => child.once('message', resolve));
         child.send('message');
         const msg = await message;
         expect(msg).to.equal('message');
-      }, [fixtures]);
+      }, [fixturePath('module', 'ping.js')]);
 
-      itremote('preserves args', async (fixtures: string) => {
+      itremote('preserves args', async (fixture: string) => {
         const args = ['--expose_gc', '-test', '1'];
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'process_args.js'), args);
+        const child = require('child_process').fork(fixture, args);
         const message = new Promise<any>(resolve => child.once('message', resolve));
         child.send('message');
         const msg = await message;
         expect(args).to.deep.equal(msg.slice(2));
-      }, [fixtures]);
+      }, [fixturePath('module', 'process_args.js')]);
 
-      itremote('works in forked process', async (fixtures: string) => {
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'fork_ping.js'));
+      itremote('works in forked process', async (fixture: string) => {
+        const child = require('child_process').fork(fixture);
         const message = new Promise<any>(resolve => child.once('message', resolve));
         child.send('message');
         const msg = await message;
         expect(msg).to.equal('message');
-      }, [fixtures]);
+      }, [fixturePath('module', 'fork_ping.js')]);
 
-      itremote('works in forked process when options.env is specified', async (fixtures: string) => {
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'fork_ping.js'), [], {
+      itremote('works in forked process when options.env is specified', async (fixture: string) => {
+        const child = require('child_process').fork(fixture, [], {
           path: process.env.PATH
         });
         const message = new Promise<any>(resolve => child.once('message', resolve));
         child.send('message');
         const msg = await message;
         expect(msg).to.equal('message');
-      }, [fixtures]);
+      }, [fixturePath('module', 'fork_ping.js')]);
 
-      itremote('has String::localeCompare working in script', async (fixtures: string) => {
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'locale-compare.js'));
+      itremote('has String::localeCompare working in script', async (fixture: string) => {
+        const child = require('child_process').fork(fixture);
         const message = new Promise<any>(resolve => child.once('message', resolve));
         child.send('message');
         const msg = await message;
         expect(msg).to.deep.equal([0, -1, 1]);
-      }, [fixtures]);
+      }, [fixturePath('module', 'locale-compare.js')]);
 
-      itremote('has setImmediate working in script', async (fixtures: string) => {
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'set-immediate.js'));
+      itremote('has setImmediate working in script', async (fixture: string) => {
+        const child = require('child_process').fork(fixture);
         const message = new Promise<any>(resolve => child.once('message', resolve));
         child.send('message');
         const msg = await message;
         expect(msg).to.equal('ok');
-      }, [fixtures]);
+      }, [fixturePath('module', 'set-immediate.js')]);
 
-      itremote('pipes stdio', async (fixtures: string) => {
-        const child = require('child_process').fork(require('path').join(fixtures, 'module', 'process-stdout.js'), { silent: true });
+      itremote('pipes stdio', async (fixture: string) => {
+        const child = require('child_process').fork(fixture, { silent: true });
         let data = '';
         child.stdout.on('data', (chunk: any) => {
           data += String(chunk);
@@ -90,7 +87,7 @@ describe('node feature', () => {
         const code = await new Promise<any>(resolve => child.once('close', resolve));
         expect(code).to.equal(0);
         expect(data).to.equal('pipes stdio');
-      }, [fixtures]);
+      }, [fixturePath('module', 'process-stdout.js')]);
 
       itremote('works when sending a message to a process forked with the --eval argument', async () => {
         const source = "process.on('message', (message) => { process.send(message) })";
@@ -113,8 +110,8 @@ describe('node feature', () => {
     });
 
     describe('child_process.spawn', () => {
-      itremote('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', async (fixtures: string) => {
-        const child = require('child_process').spawn(process.execPath, [require('path').join(fixtures, 'module', 'run-as-node.js')], {
+      itremote('supports spawning Electron as a node process via the ELECTRON_RUN_AS_NODE env var', async (fixture: string) => {
+        const child = require('child_process').spawn(process.execPath, [fixture], {
           env: {
             ELECTRON_RUN_AS_NODE: true
           }
@@ -134,7 +131,7 @@ describe('node feature', () => {
         } finally {
           child.kill();
         }
-      }, [fixtures]);
+      }, [fixturePath('module', 'run-as-node.js')]);
     });
 
     describe('child_process.exec', () => {
@@ -153,9 +150,9 @@ describe('node feature', () => {
   });
 
   it('does not hang when using the fs module in the renderer process', async () => {
-    const appPath = path.join(mainFixturesPath, 'apps', 'libuv-hang', 'main.js');
+    const appPath = fixturePath('apps', 'libuv-hang', 'main.js');
     const appProcess = childProcess.spawn(process.execPath, [appPath], {
-      cwd: path.join(mainFixturesPath, 'apps', 'libuv-hang'),
+      cwd: fixturePath('apps', 'libuv-hang'),
       stdio: 'inherit'
     });
     const [code] = await once(appProcess, 'close');
@@ -228,7 +225,7 @@ describe('node feature', () => {
       });
 
       it('does not log the warning more than once when the rejection is unhandled', async () => {
-        const appPath = path.join(mainFixturesPath, 'api', 'unhandled-rejection.js');
+        const appPath = fixturePath('api', 'unhandled-rejection.js');
         const appProcess = childProcess.spawn(process.execPath, [appPath]);
 
         let output = '';
@@ -248,7 +245,7 @@ describe('node feature', () => {
       });
 
       it('does not log the warning more than once when the rejection is handled', async () => {
-        const appPath = path.join(mainFixturesPath, 'api', 'unhandled-rejection-handled.js');
+        const appPath = fixturePath('api', 'unhandled-rejection-handled.js');
         const appProcess = childProcess.spawn(process.execPath, [appPath]);
 
         let output = '';
@@ -296,12 +293,12 @@ describe('node feature', () => {
     });
 
     describe('URL handling in the renderer process', () => {
-      itremote('can successfully handle WHATWG URLs constructed by Blink', (fixtures: string) => {
-        const url = new URL('file://' + require('path').resolve(fixtures, 'pages', 'base-page.html'));
+      itremote('can successfully handle WHATWG URLs constructed by Blink', (fixture: string) => {
+        const url = new URL(fixture);
         expect(() => {
           require('fs').createReadStream(url);
         }).to.not.throw();
-      }, [fixtures]);
+      }, [fixtureFileURL('pages', 'base-page.html')]);
     });
 
     describe('setTimeout called under blink env in renderer process', () => {
@@ -362,16 +359,16 @@ describe('node feature', () => {
   });
 
   ifdescribe(features.isRunAsNodeEnabled() && process.platform === 'darwin')('net.connect', () => {
-    itremote('emit error when connect to a socket path without listeners', async (fixtures: string) => {
+    itremote('emit error when connect to a socket path without listeners', async (fixture: string) => {
       const socketPath = require('path').join(require('os').tmpdir(), 'electron-test.sock');
-      const script = require('path').join(fixtures, 'module', 'create_socket.js');
+      const script = fixture;
       const child = require('child_process').fork(script, [socketPath]);
       const code = await new Promise(resolve => child.once('exit', resolve));
       expect(code).to.equal(0);
       const client = require('net').connect(socketPath);
       const error = await new Promise<any>(resolve => client.once('error', resolve));
       expect(error.code).to.equal('ECONNREFUSED');
-    }, [fixtures]);
+    }, [fixturePath('module', 'create_socket.js')]);
   });
 
   describe('Buffer', () => {
@@ -615,7 +612,7 @@ describe('node feature', () => {
         child.kill();
       });
 
-      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const appPath = fixturePath('module', 'noop.js');
       const env = { ...process.env, NODE_OPTIONS: '--use-openssl-ca' };
       child = childProcess.spawn(process.execPath, ['--enable-logging', appPath], { env });
 
@@ -638,10 +635,10 @@ describe('node feature', () => {
     });
 
     it('does allow --require in non-packaged apps', async () => {
-      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const appPath = fixturePath('module', 'noop.js');
       const env = {
         ...process.env,
-        NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+        NODE_OPTIONS: `--require=${fixturePath('module', 'fail.js')}`
       };
       // App should exit with code 1.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
@@ -650,11 +647,11 @@ describe('node feature', () => {
     });
 
     it('does not allow --require in packaged apps', async () => {
-      const appPath = path.join(fixtures, 'module', 'noop.js');
+      const appPath = fixturePath('module', 'noop.js');
       const env = {
         ...process.env,
         ELECTRON_FORCE_IS_PACKAGED: 'true',
-        NODE_OPTIONS: `--require=${path.join(fixtures, 'module', 'fail.js')}`
+        NODE_OPTIONS: `--require=${fixturePath('module', 'fail.js')}`
       };
       // App should exit with code 0.
       const child = childProcess.spawn(process.execPath, [appPath], { env });
@@ -707,7 +704,7 @@ describe('node feature', () => {
 
   describe('fs.readFile', () => {
     it('can accept a FileHandle as the Path argument', async () => {
-      const filePathForHandle = path.resolve(mainFixturesPath, 'dogs-running.txt');
+      const filePathForHandle = fixturePath('dogs-running.txt');
       const fileHandle = await fs.promises.open(filePathForHandle, 'r');
 
       const file = await fs.promises.readFile(fileHandle, { encoding: 'utf8' });
@@ -733,7 +730,7 @@ describe('node feature', () => {
     });
 
     it('Supports starting the v8 inspector with --inspect/--inspect-brk', (done) => {
-      child = childProcess.spawn(process.execPath, ['--inspect-brk', path.join(fixtures, 'module', 'run-as-node.js')], {
+      child = childProcess.spawn(process.execPath, ['--inspect-brk', fixturePath('module', 'run-as-node.js')], {
         env: { ELECTRON_RUN_AS_NODE: 'true' }
       });
 
@@ -756,7 +753,7 @@ describe('node feature', () => {
     });
 
     it('Supports starting the v8 inspector with --inspect and a provided port', async () => {
-      child = childProcess.spawn(process.execPath, ['--inspect=17364', path.join(fixtures, 'module', 'run-as-node.js')], {
+      child = childProcess.spawn(process.execPath, ['--inspect=17364', fixturePath('module', 'run-as-node.js')], {
         env: { ELECTRON_RUN_AS_NODE: 'true' }
       });
       exitPromise = once(child, 'exit');
@@ -780,7 +777,7 @@ describe('node feature', () => {
     });
 
     it('Does not start the v8 inspector when --inspect is after a -- argument', async () => {
-      child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'noop.js'), '--', '--inspect']);
+      child = childProcess.spawn(process.execPath, [fixturePath('module', 'noop.js'), '--', '--inspect']);
       exitPromise = once(child, 'exit');
 
       let output = '';
@@ -795,7 +792,7 @@ describe('node feature', () => {
 
     // IPC Electron child process not supported on Windows.
     ifit(process.platform !== 'win32')('does not crash when quitting with the inspector connected', function (done) {
-      child = childProcess.spawn(process.execPath, [path.join(fixtures, 'module', 'delay-exit'), '--inspect=0'], {
+      child = childProcess.spawn(process.execPath, [fixturePath('module', 'delay-exit'), '--inspect=0'], {
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;
       exitPromise = once(child, 'exit');
@@ -841,7 +838,7 @@ describe('node feature', () => {
     });
 
     it('Supports js binding', async () => {
-      child = childProcess.spawn(process.execPath, ['--inspect', path.join(fixtures, 'module', 'inspector-binding.js')], {
+      child = childProcess.spawn(process.execPath, ['--inspect', fixturePath('module', 'inspector-binding.js')], {
         env: { ELECTRON_RUN_AS_NODE: 'true' },
         stdio: ['ipc']
       }) as childProcess.ChildProcessWithoutNullStreams;
@@ -855,12 +852,12 @@ describe('node feature', () => {
   });
 
   it('Can find a module using a package.json main field', () => {
-    const result = childProcess.spawnSync(process.execPath, [path.resolve(fixtures, 'api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
+    const result = childProcess.spawnSync(process.execPath, [fixturePath('api', 'electron-main-module', 'app.asar')], { stdio: 'inherit' });
     expect(result.status).to.equal(0);
   });
 
   ifit(features.isRunAsNodeEnabled())('handles Promise timeouts correctly', async () => {
-    const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
+    const scriptPath = fixturePath('module', 'node-promise-timer.js');
     const child = childProcess.spawn(process.execPath, [scriptPath], {
       env: { ELECTRON_RUN_AS_NODE: 'true' }
     });

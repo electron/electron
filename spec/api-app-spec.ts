@@ -10,9 +10,8 @@ import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
 import { once } from 'events';
-import split = require('split')
-
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+import { fixturePath } from './lib/fixtures';
+import split = require('split');
 
 describe('electron module', () => {
   it('does not expose internal modules to require', () => {
@@ -31,7 +30,7 @@ describe('electron module', () => {
 describe('app module', () => {
   let server: https.Server;
   let secureUrl: string;
-  const certPath = path.join(fixturesPath, 'certificates');
+  const certPath = fixturePath('certificates');
 
   before(async () => {
     const options = {
@@ -161,7 +160,7 @@ describe('app module', () => {
     });
 
     it('emits a process exit event with the code', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'quit-app');
+      const appPath = fixturePath('api', 'quit-app');
       const electronPath = process.execPath;
       let output = '';
 
@@ -178,7 +177,7 @@ describe('app module', () => {
     });
 
     it('closes all windows', async function () {
-      const appPath = path.join(fixturesPath, 'api', 'exit-closes-all-windows-app');
+      const appPath = fixturePath('api', 'exit-closes-all-windows-app');
       const electronPath = process.execPath;
 
       appProcess = cp.spawn(electronPath, [appPath]);
@@ -190,7 +189,7 @@ describe('app module', () => {
 
     ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
-      const appPath = path.join(fixturesPath, 'api', 'singleton');
+      const appPath = fixturePath('api', 'singleton');
       appProcess = cp.spawn(electronPath, [appPath]);
 
       // Singleton will send us greeting data to let us know it's running.
@@ -222,7 +221,7 @@ describe('app module', () => {
 
     it('prevents the second launch of app', async function () {
       this.timeout(120000);
-      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      const appPath = fixturePath('api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath]);
       await once(first.stdout, 'data');
       // Start second app when received output.
@@ -234,14 +233,14 @@ describe('app module', () => {
     });
 
     it('returns true when setting non-existent user data folder', async function () {
-      const appPath = path.join(fixturesPath, 'api', 'singleton-userdata');
+      const appPath = fixturePath('api', 'singleton-userdata');
       const instance = cp.spawn(process.execPath, [appPath]);
       const [code] = await once(instance, 'exit');
       expect(code).to.equal(0);
     });
 
     async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
-      const appPath = path.join(fixturesPath, 'api', 'singleton-data');
+      const appPath = fixturePath('api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = once(first, 'exit');
 
@@ -392,7 +391,7 @@ describe('app module', () => {
         });
       });
 
-      const appPath = path.join(fixturesPath, 'api', 'relaunch');
+      const appPath = fixturePath('api', 'relaunch');
       const child = cp.spawn(process.execPath, [appPath, '--first']);
       child.stdout.on('data', (c) => console.log(c.toString()));
       child.stderr.on('data', (c) => console.log(c.toString()));
@@ -947,22 +946,22 @@ describe('app module', () => {
   describe('getAppPath', () => {
     it('works for directories with package.json', async () => {
       const { appPath } = await runTestApp('app-path');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'));
+      expect(appPath).to.equal(fixturePath('api', 'app-path'));
     });
 
     it('works for directories with index.js', async () => {
       const { appPath } = await runTestApp('app-path/lib');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'));
+      expect(appPath).to.equal(fixturePath('api', 'app-path', 'lib'));
     });
 
     it('works for files without extension', async () => {
       const { appPath } = await runTestApp('app-path/lib/index');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'));
+      expect(appPath).to.equal(fixturePath('api', 'app-path', 'lib'));
     });
 
     it('works for files', async () => {
       const { appPath } = await runTestApp('app-path/lib/index.js');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'));
+      expect(appPath).to.equal(fixturePath('api', 'app-path', 'lib'));
     });
   });
 
@@ -1028,7 +1027,7 @@ describe('app module', () => {
     });
 
     describe('sessionData', () => {
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'set-path');
+      const appPath = fixturePath('apps', 'set-path');
       const appName = fs.readJsonSync(path.join(appPath, 'package.json')).name;
       const userDataPath = path.join(app.getPath('appData'), appName);
       const tempBrowserDataPath = path.join(app.getPath('temp'), appName);
@@ -1264,7 +1263,7 @@ describe('app module', () => {
 
   ifdescribe(process.platform === 'win32')('app launch through uri', () => {
     it('does not launch for argument following a URL', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'quit-app');
+      const appPath = fixturePath('api', 'quit-app');
       // App should exit with non 123 code.
       const first = cp.spawn(process.execPath, [appPath, 'electron-test:?', 'abc']);
       const [code] = await once(first, 'exit');
@@ -1272,7 +1271,7 @@ describe('app module', () => {
     });
 
     it('launches successfully for argument following a file path', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'quit-app');
+      const appPath = fixturePath('api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, 'e:\\abc', 'abc']);
       const [code] = await once(first, 'exit');
@@ -1280,7 +1279,7 @@ describe('app module', () => {
     });
 
     it('launches successfully for multiple URIs following --', async () => {
-      const appPath = path.join(fixturesPath, 'api', 'quit-app');
+      const appPath = fixturePath('api', 'quit-app');
       // App should exit with code 123.
       const first = cp.spawn(process.execPath, [appPath, '--', 'http://electronjs.org', 'electron-test://testdata']);
       const [code] = await once(first, 'exit');
@@ -1290,7 +1289,7 @@ describe('app module', () => {
 
   // FIXME Get these specs running on Linux CI
   ifdescribe(process.platform !== 'linux')('getFileIcon() API', () => {
-    const iconPath = path.join(__dirname, 'fixtures/assets/icon.ico');
+    const iconPath = fixturePath('assets', 'icon.ico');
     const sizes = {
       small: 16,
       normal: 32,
@@ -1397,7 +1396,7 @@ describe('app module', () => {
 
   // FIXME https://github.com/electron/electron/issues/24224
   ifdescribe(process.platform !== 'linux')('getGPUInfo() API', () => {
-    const appPath = path.join(fixturesPath, 'api', 'gpu-info.js');
+    const appPath = fixturePath('api', 'gpu-info.js');
 
     const getGPUInfo = async (type: string) => {
       const appProcess = cp.spawn(process.execPath, [appPath, type]);
@@ -1513,7 +1512,7 @@ describe('app module', () => {
 
     describe('when app.enableSandbox() is called', () => {
       it('adds --enable-sandbox to all renderer processes', done => {
-        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        const appPath = fixturePath('api', 'mixed-sandbox-app');
         appProcess = cp.spawn(process.execPath, [appPath, '--app-enable-sandbox'], { stdio: 'inherit' });
 
         server.once('error', error => { done(error); });
@@ -1538,7 +1537,7 @@ describe('app module', () => {
 
     describe('when the app is launched with --enable-sandbox', () => {
       it('adds --enable-sandbox to all renderer processes', done => {
-        const appPath = path.join(fixturesPath, 'api', 'mixed-sandbox-app');
+        const appPath = fixturePath('api', 'mixed-sandbox-app');
         appProcess = cp.spawn(process.execPath, [appPath, '--enable-sandbox'], { stdio: 'inherit' });
 
         server.once('error', error => { done(error); });
@@ -1955,7 +1954,7 @@ describe('default behavior', () => {
 });
 
 async function runTestApp (name: string, ...args: any[]) {
-  const appPath = path.join(fixturesPath, 'api', name);
+  const appPath = fixturePath('api', name);
   const electronPath = process.execPath;
   const appProcess = cp.spawn(electronPath, [appPath, ...args]);
 

@@ -5,8 +5,9 @@ import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
-const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
+const baseFixturePath = fixturePath('api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 
 describe('utilityProcess module', () => {
@@ -22,7 +23,7 @@ describe('utilityProcess module', () => {
     it('throws when options.stdio is not valid', async () => {
       expect(() => {
         /* eslint-disable no-new */
-        utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
+        utilityProcess.fork(path.join(baseFixturePath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: 'ipc'
@@ -32,7 +33,7 @@ describe('utilityProcess module', () => {
 
       expect(() => {
         /* eslint-disable no-new */
-        utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
+        utilityProcess.fork(path.join(baseFixturePath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['ignore', 'ignore']
@@ -42,7 +43,7 @@ describe('utilityProcess module', () => {
 
       expect(() => {
         /* eslint-disable no-new */
-        utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
+        utilityProcess.fork(path.join(baseFixturePath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['pipe', 'inherit', 'inherit']
@@ -54,41 +55,41 @@ describe('utilityProcess module', () => {
 
   describe('lifecycle events', () => {
     it('emits \'spawn\' when child process successfully launches', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'empty.js'));
       await once(child, 'spawn');
     });
 
     it('emits \'exit\' when child process exits gracefully', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'empty.js'));
       const [code] = await once(child, 'exit');
       expect(code).to.equal(0);
     });
 
     it('emits \'exit\' when child process crashes', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'crash.js'));
       // Do not check for exit code in this case,
       // SIGSEGV code can be 139 or 11 across our different CI pipeline.
       await once(child, 'exit');
     });
 
     it('emits \'exit\' corresponding to the child process', async () => {
-      const child1 = utilityProcess.fork(path.join(fixturesPath, 'endless.js'));
+      const child1 = utilityProcess.fork(path.join(baseFixturePath, 'endless.js'));
       await once(child1, 'spawn');
-      const child2 = utilityProcess.fork(path.join(fixturesPath, 'crash.js'));
+      const child2 = utilityProcess.fork(path.join(baseFixturePath, 'crash.js'));
       await once(child2, 'exit');
       expect(child1.kill()).to.be.true();
       await once(child1, 'exit');
     });
 
     it('emits \'exit\' when there is uncaught exception', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'exception.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'exception.js'));
       const [code] = await once(child, 'exit');
       expect(code).to.equal(1);
     });
 
     it('emits \'exit\' when process.exit is called', async () => {
       const exitCode = 2;
-      const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
       const [code] = await once(child, 'exit');
       expect(code).to.equal(exitCode);
     });
@@ -96,7 +97,7 @@ describe('utilityProcess module', () => {
 
   describe('kill() API', () => {
     it('terminates the child process gracefully', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'endless.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'endless.js'), [], {
         serviceName: 'endless'
       });
       await once(child, 'spawn');
@@ -107,20 +108,20 @@ describe('utilityProcess module', () => {
 
   describe('pid property', () => {
     it('is valid when child process launches successfully', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'empty.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'empty.js'));
       await once(child, 'spawn');
       expect(child.pid).to.not.be.null();
     });
 
     it('is undefined when child process fails to launch', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'does-not-exist.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'does-not-exist.js'));
       expect(child.pid).to.be.undefined();
     });
   });
 
   describe('stdout property', () => {
     it('is null when child process launches with default stdio', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'));
       await once(child, 'spawn');
       expect(child.stdout).to.be.null();
       expect(child.stderr).to.be.null();
@@ -128,7 +129,7 @@ describe('utilityProcess module', () => {
     });
 
     it('is null when child process launches with ignore stdio configuration', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'), [], {
         stdio: 'ignore'
       });
       await once(child, 'spawn');
@@ -138,7 +139,7 @@ describe('utilityProcess module', () => {
     });
 
     it('is valid when child process launches with pipe stdio configuration', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'), [], {
         stdio: 'pipe'
       });
       await once(child, 'spawn');
@@ -154,7 +155,7 @@ describe('utilityProcess module', () => {
 
   describe('stderr property', () => {
     it('is null when child process launches with default stdio', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'));
       await once(child, 'spawn');
       expect(child.stdout).to.be.null();
       expect(child.stderr).to.be.null();
@@ -162,7 +163,7 @@ describe('utilityProcess module', () => {
     });
 
     it('is null when child process launches with ignore stdio configuration', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'), [], {
         stdio: 'ignore'
       });
       await once(child, 'spawn');
@@ -171,7 +172,7 @@ describe('utilityProcess module', () => {
     });
 
     ifit(!isWindowsOnArm)('is valid when child process launches with pipe stdio configuration', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'), [], {
         stdio: ['ignore', 'pipe', 'pipe']
       });
       await once(child, 'spawn');
@@ -188,7 +189,7 @@ describe('utilityProcess module', () => {
   describe('postMessage() API', () => {
     it('establishes a default ipc channel with the child process', async () => {
       const result = 'I will be echoed.';
-      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'post-message.js'));
       await once(child, 'spawn');
       child.postMessage(result);
       const [data] = await once(child, 'message');
@@ -199,7 +200,7 @@ describe('utilityProcess module', () => {
     });
 
     it('supports queuing messages on the receiving end', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'post-message-queue.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'post-message-queue.js'));
       const p = once(child, 'spawn');
       child.postMessage('This message');
       child.postMessage(' is');
@@ -215,7 +216,7 @@ describe('utilityProcess module', () => {
 
   describe('behavior', () => {
     it('supports starting the v8 inspector with --inspect-brk', (done) => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'), [], {
         stdio: 'pipe',
         execArgv: ['--inspect-brk']
       });
@@ -240,7 +241,7 @@ describe('utilityProcess module', () => {
     });
 
     it('supports starting the v8 inspector with --inspect and a provided port', (done) => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'log.js'), [], {
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'log.js'), [], {
         stdio: 'pipe',
         execArgv: ['--inspect=17364']
       });
@@ -267,7 +268,7 @@ describe('utilityProcess module', () => {
 
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
       const result = 'Output from utility process';
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stdout'), `--payload=${result}`]);
+      const appProcess = childProcess.spawn(process.execPath, [path.join(baseFixturePath, 'inherit-stdout'), `--payload=${result}`]);
       let output = '';
       appProcess.stdout.on('data', (data: Buffer) => { output += data; });
       await once(appProcess, 'exit');
@@ -276,7 +277,7 @@ describe('utilityProcess module', () => {
 
     ifit(process.platform !== 'win32')('supports redirecting stderr to parent process', async () => {
       const result = 'Error from utility process';
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stderr'), `--payload=${result}`]);
+      const appProcess = childProcess.spawn(process.execPath, [path.join(baseFixturePath, 'inherit-stderr'), `--payload=${result}`]);
       let output = '';
       appProcess.stderr.on('data', (data: Buffer) => { output += data; });
       await once(appProcess, 'exit');
@@ -288,15 +289,15 @@ describe('utilityProcess module', () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
-          preload: path.join(fixturesPath, 'preload.js')
+          preload: path.join(baseFixturePath, 'preload.js')
         }
       });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(fixturePath('blank.html'));
       // Create Message port pair for Renderer <-> Utility Process.
       const { port1: rendererPort, port2: childPort1 } = new MessageChannelMain();
       w.webContents.postMessage('port', result, [rendererPort]);
       // Send renderer and main channel port to utility process.
-      const child = utilityProcess.fork(path.join(fixturesPath, 'receive-message.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'receive-message.js'));
       await once(child, 'spawn');
       child.postMessage('', [childPort1]);
       const [data] = await once(child, 'message');
@@ -309,7 +310,7 @@ describe('utilityProcess module', () => {
     });
 
     ifit(process.platform === 'linux')('allows executing a setuid binary with child_process', async () => {
-      const child = utilityProcess.fork(path.join(fixturesPath, 'suid.js'));
+      const child = utilityProcess.fork(path.join(baseFixturePath, 'suid.js'));
       await once(child, 'spawn');
       const [data] = await once(child, 'message');
       expect(data).to.not.be.empty();
@@ -319,7 +320,7 @@ describe('utilityProcess module', () => {
     });
 
     it('inherits parent env as default', async () => {
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'env-app')], {
+      const appProcess = childProcess.spawn(process.execPath, [path.join(baseFixturePath, 'env-app')], {
         env: {
           FROM: 'parent',
           ...process.env
@@ -333,7 +334,7 @@ describe('utilityProcess module', () => {
     });
 
     it('does not inherit parent env when custom env is provided', async () => {
-      const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'env-app'), '--create-custom-env'], {
+      const appProcess = childProcess.spawn(process.execPath, [path.join(baseFixturePath, 'env-app'), '--create-custom-env'], {
         env: {
           FROM: 'parent',
           ...process.env
@@ -348,7 +349,7 @@ describe('utilityProcess module', () => {
 
     it('changes working directory with cwd', async () => {
       const child = utilityProcess.fork('./log.js', [], {
-        cwd: fixturesPath,
+        cwd: baseFixturePath,
         stdio: ['ignore', 'pipe', 'ignore']
       });
       await once(child, 'spawn');

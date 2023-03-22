@@ -1,7 +1,6 @@
 import { expect } from 'chai';
 import * as http from 'http';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as url from 'url';
 
 import { BrowserWindow, WebPreferences } from 'electron/main';
@@ -10,6 +9,7 @@ import { closeWindow } from './lib/window-helpers';
 import { listen } from './lib/spec-helpers';
 import { setTimeout } from 'timers/promises';
 import { emittedUntil } from './lib/events';
+import { fixturePath } from './lib/fixtures';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;
@@ -29,7 +29,7 @@ describe('security warnings', () => {
     // Create HTTP Server
     server = http.createServer((request, response) => {
       const uri = url.parse(request.url!).pathname!;
-      let filename = path.join(__dirname, 'fixtures', 'pages', uri);
+      let filename = fixturePath('pages', uri);
 
       fs.stat(filename, (error, stats) => {
         if (error) {

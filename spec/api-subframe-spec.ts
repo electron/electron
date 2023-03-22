@@ -1,11 +1,11 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import * as http from 'http';
 import { closeWindow } from './lib/window-helpers';
 import { app, BrowserWindow, ipcMain } from 'electron/main';
 import { ifdescribe, listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { emittedN } from './lib/events';
+import { fixturePath } from './lib/fixtures';
 
 describe('renderer nodeIntegrationInSubFrames', () => {
   const generateTests = (description: string, webPreferences: any) => {
@@ -30,7 +30,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should load preload scripts in top level iframes', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 2);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-container${fixtureSuffix}.html`));
         const [event1, event2] = await detailsPromise;
         expect(event1[0].frameId).to.not.equal(event2[0].frameId);
         expect(event1[0].frameId).to.equal(event1[2]);
@@ -41,7 +41,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should load preload scripts in nested iframes', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 3);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-with-frame-container${fixtureSuffix}.html`));
         const [event1, event2, event3] = await detailsPromise;
         expect(event1[0].frameId).to.not.equal(event2[0].frameId);
         expect(event1[0].frameId).to.not.equal(event3[0].frameId);
@@ -56,7 +56,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should correctly reply to the main frame with using event.reply', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 2);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-container${fixtureSuffix}.html`));
         const [event1] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].reply('preload-ping');
@@ -66,7 +66,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should correctly reply to the main frame with using event.senderFrame.send', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 2);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-container${fixtureSuffix}.html`));
         const [event1] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event1[0].senderFrame.send('preload-ping');
@@ -76,7 +76,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should correctly reply to the sub-frames with using event.reply', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 2);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-container${fixtureSuffix}.html`));
         const [, event2] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].reply('preload-ping');
@@ -86,7 +86,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should correctly reply to the sub-frames with using event.senderFrame.send', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 2);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-container${fixtureSuffix}.html`));
         const [, event2] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event2[0].senderFrame.send('preload-ping');
@@ -96,7 +96,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should correctly reply to the nested sub-frames with using event.reply', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 3);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-with-frame-container${fixtureSuffix}.html`));
         const [, , event3] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].reply('preload-ping');
@@ -106,7 +106,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should correctly reply to the nested sub-frames with using event.senderFrame.send', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 3);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-with-frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-with-frame-container${fixtureSuffix}.html`));
         const [, , event3] = await detailsPromise;
         const pongPromise = once(ipcMain, 'preload-pong');
         event3[0].senderFrame.send('preload-ping');
@@ -116,7 +116,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
       it('should not expose globals in main world', async () => {
         const detailsPromise = emittedN(ipcMain, 'preload-ran', 2);
-        w.loadFile(path.resolve(__dirname, `fixtures/sub-frames/frame-container${fixtureSuffix}.html`));
+        w.loadFile(fixturePath('sub-frames', `frame-container${fixtureSuffix}.html`));
         const details = await detailsPromise;
         const senders = details.map(event => event[0].sender);
         const isolatedGlobals = await Promise.all(senders.map(sender => sender.executeJavaScript('window.isolatedGlobal')));
@@ -159,7 +159,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
   generateConfigs(
     {
-      preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
+      preload: fixturePath('sub-frames', 'preload.js'),
       nodeIntegrationInSubFrames: true
     },
     {
@@ -188,7 +188,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
         width: 400,
         height: 400,
         webPreferences: {
-          preload: path.resolve(__dirname, 'fixtures/sub-frames/webview-iframe-preload.js'),
+          preload: fixturePath('sub-frames', 'webview-iframe-preload.js'),
           nodeIntegrationInSubFrames: true,
           webviewTag: true,
           contextIsolation: false

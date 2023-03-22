@@ -1,10 +1,10 @@
 import * as cp from 'child_process';
-import * as path from 'path';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { ifdescribe } from './lib/spec-helpers';
 import * as fs from 'fs-extra';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
 * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
@@ -17,7 +17,7 @@ import { once } from 'events';
 
 describe('safeStorage module', () => {
   it('safeStorage before and after app is ready', async () => {
-    const appPath = path.join(__dirname, 'fixtures', 'crash-cases', 'safe-storage');
+    const appPath = fixturePath('crash-cases', 'safe-storage');
     const appProcess = cp.spawn(process.execPath, [appPath]);
 
     let output = '';
@@ -35,7 +35,7 @@ describe('safeStorage module', () => {
 
 ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   after(async () => {
-    const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
+    const pathToEncryptedString = fixturePath('api', 'safe-storage', 'encrypted.txt');
     if (await fs.pathExists(pathToEncryptedString)) {
       await fs.remove(pathToEncryptedString);
     }
@@ -89,9 +89,7 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   });
   describe('safeStorage persists encryption key across app relaunch', () => {
     it('can decrypt after closing and reopening app', async () => {
-      const fixturesPath = path.resolve(__dirname, 'fixtures');
-
-      const encryptAppPath = path.join(fixturesPath, 'api', 'safe-storage', 'encrypt-app');
+      const encryptAppPath = fixturePath('api', 'safe-storage', 'encrypt-app');
       const encryptAppProcess = cp.spawn(process.execPath, [encryptAppPath]);
       let stdout: string = '';
       encryptAppProcess.stderr.on('data', data => { stdout += data; });
@@ -100,7 +98,7 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
       try {
         await once(encryptAppProcess, 'exit');
 
-        const appPath = path.join(fixturesPath, 'api', 'safe-storage', 'decrypt-app');
+        const appPath = fixturePath('api', 'safe-storage', 'decrypt-app');
         const relaunchedAppProcess = cp.spawn(process.execPath, [appPath]);
 
         let output = '';

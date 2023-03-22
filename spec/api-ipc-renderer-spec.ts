@@ -1,12 +1,10 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 describe('ipcRenderer module', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
-
   let w: BrowserWindow;
   before(async () => {
     w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
@@ -136,7 +134,7 @@ describe('ipcRenderer module', () => {
 
         before(async () => {
           contents = (webContents as typeof ElectronInternal.WebContents).create({
-            preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
+            preload: fixturePath('module', 'preload-ipc-ping-pong.js'),
             ...webPreferences
           });
 

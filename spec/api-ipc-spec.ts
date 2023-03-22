@@ -3,11 +3,10 @@ import { expect } from 'chai';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { defer, listen } from './lib/spec-helpers';
-import * as path from 'path';
 import * as http from 'http';
+import { fixturePath } from './lib/fixtures';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
-const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('ipc module', () => {
   describe('invoke', () => {
@@ -671,7 +670,7 @@ describe('ipc module', () => {
       defer(() => {
         server.close();
       });
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegrationInSubFrames: true, preload: path.resolve(fixturesPath, 'preload-expose-ipc.js') } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegrationInSubFrames: true, preload: fixturePath('preload-expose-ipc.js') } });
       // Preloads don't run in about:blank windows, and file:// urls can't be loaded in iframes, so use a blank http page.
       await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
       w.webContents.mainFrame.frames[0].executeJavaScript('ipc.send(\'test\', 42)');
@@ -771,7 +770,7 @@ describe('ipc module', () => {
       defer(() => {
         server.close();
       });
-      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegrationInSubFrames: true, preload: path.resolve(fixturesPath, 'preload-expose-ipc.js') } });
+      const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegrationInSubFrames: true, preload: fixturePath('preload-expose-ipc.js') } });
       // Preloads don't run in about:blank windows, and file:// urls can't be loaded in iframes, so use a blank http page.
       await w.loadURL(`data:text/html,<iframe src="http://localhost:${port}"></iframe>`);
       w.webContents.mainFrame.frames[0].executeJavaScript('ipc.send(\'test\', 42)');

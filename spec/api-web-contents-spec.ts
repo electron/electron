@@ -8,10 +8,9 @@ import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 const pdfjs = require('pdfjs-dist');
-const fixturesPath = path.resolve(__dirname, 'fixtures');
-const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 const features = process._linkedBinding('electron_common_features');
 
 describe('webContents module', () => {
@@ -22,7 +21,7 @@ describe('webContents module', () => {
         show: false,
         webPreferences: { webviewTag: true }
       });
-      w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
+      w.loadFile(fixturePath('pages', 'webview-zoom-factor.html'));
 
       await once(w.webContents, 'did-attach-webview');
 
@@ -94,7 +93,7 @@ describe('webContents module', () => {
       w.webContents.once('will-prevent-unload', () => {
         expect.fail('should not have fired');
       });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -110,7 +109,7 @@ describe('webContents module', () => {
         expect.fail('should not have fired');
       });
 
-      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-undefined.html'));
+      await view.webContents.loadFile(fixturePath('api', 'beforeunload-undefined.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -118,7 +117,7 @@ describe('webContents module', () => {
 
     it('emits if beforeunload returns false in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false.html'));
       w.close();
       await once(w.webContents, 'will-prevent-unload');
     });
@@ -129,7 +128,7 @@ describe('webContents module', () => {
       w.setBrowserView(view);
       view.setBounds(w.getBounds());
 
-      await view.webContents.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await view.webContents.loadFile(fixturePath('api', 'beforeunload-false.html'));
       w.close();
       await once(view.webContents, 'will-prevent-unload');
     });
@@ -137,7 +136,7 @@ describe('webContents module', () => {
     it('supports calling preventDefault on will-prevent-unload events in a BrowserWindow', async () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.once('will-prevent-unload', event => event.preventDefault());
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'beforeunload-false.html'));
+      await w.loadFile(fixturePath('api', 'beforeunload-false.html'));
       const wait = once(w, 'closed');
       w.close();
       await wait;
@@ -171,7 +170,7 @@ describe('webContents module', () => {
           contextIsolation: false
         }
       });
-      w.loadFile(path.join(fixturesPath, 'pages', 'send-after-node.html'));
+      w.loadFile(fixturePath('pages', 'send-after-node.html'));
       setTimeout(50).then(() => {
         w.webContents.send('test');
       });
@@ -358,11 +357,11 @@ describe('webContents module', () => {
     });
 
     it('resolves when done loading a file URL', async () => {
-      await expect(w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'))).to.eventually.be.fulfilled();
+      await expect(w.loadFile(fixturePath('pages', 'base-page.html'))).to.eventually.be.fulfilled();
     });
 
     it('resolves when navigating within the page', async () => {
-      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.loadFile(fixturePath('pages', 'base-page.html'));
       await setTimeout();
       await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
     });
@@ -404,7 +403,7 @@ describe('webContents module', () => {
       };
 
       try {
-        await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+        await w.loadURL(fixtureFileURL('pages', 'blank.html'));
         await setEmulation();
         await w.loadURL('data:text/html,<h1>HELLO</h1>');
         await setEmulation();
@@ -432,7 +431,7 @@ describe('webContents module', () => {
       const p = expect(w.loadURL(`http://127.0.0.1:${port}`)).to.eventually.be.rejectedWith(Error, /ERR_ABORTED/);
       // load a different file before the first load completes, causing the
       // first load to be aborted.
-      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.loadFile(fixturePath('pages', 'base-page.html'));
       await p;
       s.close();
     });
@@ -491,7 +490,7 @@ describe('webContents module', () => {
     // FIXME
     ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
-      await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
+      await w.loadFile(fixturePath('blank.html'));
       expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.id);
 
       const devToolsOpened = once(w.webContents, 'devtools-opened');
@@ -606,7 +605,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('can prevent document keyboard events', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
+      await w.loadFile(fixturePath('pages', 'key-events.html'));
       const keyDown = new Promise(resolve => {
         ipcMain.once('keydown', (event, key) => resolve(key));
       });
@@ -620,7 +619,7 @@ describe('webContents module', () => {
 
     it('has the correct properties', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.loadFile(fixturePath('pages', 'base-page.html'));
       const testBeforeInput = async (opts: any) => {
         const modifiers = [];
         if (opts.shift) modifiers.push('shift');
@@ -698,7 +697,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('is emitted with the correct zoom-in info', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.loadFile(fixturePath('pages', 'base-page.html'));
 
       const testZoomChanged = async () => {
         w.webContents.sendInputEvent({
@@ -721,7 +720,7 @@ describe('webContents module', () => {
 
     it('is emitted with the correct zoom-out info', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.loadFile(fixturePath('pages', 'base-page.html'));
 
       const testZoomChanged = async () => {
         w.webContents.sendInputEvent({
@@ -747,7 +746,7 @@ describe('webContents module', () => {
     let w: BrowserWindow;
     beforeEach(async () => {
       w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'key-events.html'));
+      await w.loadFile(fixturePath('pages', 'key-events.html'));
     });
     afterEach(closeAllWindows);
 
@@ -849,7 +848,7 @@ describe('webContents module', () => {
     it('throws errors for a missing file or a missing/empty icon', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
-        w.webContents.startDrag({ icon: path.join(fixturesPath, 'assets', 'logo.png') } as any);
+        w.webContents.startDrag({ icon: fixturePath('assets', 'logo.png') } as any);
       }).to.throw('Must specify either \'file\' or \'files\' option');
 
       expect(() => {
@@ -857,7 +856,7 @@ describe('webContents module', () => {
       }).to.throw('\'icon\' parameter is required');
 
       expect(() => {
-        w.webContents.startDrag({ file: __filename, icon: path.join(mainFixturesPath, 'blank.png') });
+        w.webContents.startDrag({ file: __filename, icon: fixturePath('blank.png') });
       }).to.throw(/Failed to load image from path (.+)/);
     });
   });
@@ -1209,11 +1208,11 @@ describe('webContents module', () => {
       const w2 = new BrowserWindow({ show: false });
 
       const temporaryZoomSet = once(ipcMain, 'temporary-zoom-set');
-      w.loadFile(path.join(fixturesPath, 'pages', 'webframe-zoom.html'));
+      w.loadFile(fixturePath('pages', 'webframe-zoom.html'));
       await temporaryZoomSet;
 
       const finalZoomLevel = w.webContents.getZoomLevel();
-      await w2.loadFile(path.join(fixturesPath, 'pages', 'c.html'));
+      await w2.loadFile(fixturePath('pages', 'c.html'));
       const zoomLevel1 = w.webContents.zoomLevel;
       const zoomLevel2 = w2.webContents.zoomLevel;
 
@@ -1560,7 +1559,7 @@ describe('webContents module', () => {
           if (count === 0) {
             count += 1;
             expect(color).to.equal('#FFEEDD');
-            w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+            w.loadFile(fixturePath('pages', 'base-page.html'));
           } else if (count === 1) {
             expect(color).to.be.null();
             done();
@@ -1569,7 +1568,7 @@ describe('webContents module', () => {
           done(e);
         }
       });
-      w.loadFile(path.join(fixturesPath, 'pages', 'theme-color.html'));
+      w.loadFile(fixturePath('pages', 'theme-color.html'));
     });
   });
 
@@ -1583,7 +1582,7 @@ describe('webContents module', () => {
           done();
         }
       });
-      w.loadFile(path.join(fixturesPath, 'pages', 'a.html'));
+      w.loadFile(fixturePath('pages', 'a.html'));
     });
   });
 
@@ -1698,7 +1697,7 @@ describe('webContents module', () => {
     const generateSpecs = (description: string, sandbox: boolean) => {
       describe(description, () => {
         it('is triggered when unhandled exception is thrown', async () => {
-          const preload = path.join(fixturesPath, 'module', 'preload-error-exception.js');
+          const preload = fixturePath('module', 'preload-error-exception.js');
 
           const w = new BrowserWindow({
             show: false,
@@ -1717,7 +1716,7 @@ describe('webContents module', () => {
         });
 
         it('is triggered on syntax errors', async () => {
-          const preload = path.join(fixturesPath, 'module', 'preload-error-syntax.js');
+          const preload = fixturePath('module', 'preload-error-syntax.js');
 
           const w = new BrowserWindow({
             show: false,
@@ -1736,7 +1735,7 @@ describe('webContents module', () => {
         });
 
         it('is triggered when preload script loading fails', async () => {
-          const preload = path.join(fixturesPath, 'module', 'preload-invalid.js');
+          const preload = fixturePath('module', 'preload-invalid.js');
 
           const w = new BrowserWindow({
             show: false,
@@ -1983,7 +1982,7 @@ describe('webContents module', () => {
         a6: { width: 4.13, height: 5.83 }
       };
 
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(fixturePath('api', 'print-to-pdf-small.html'));
 
       for (const format of Object.keys(paperFormats)) {
         const data = await w.webContents.printToPDF({ pageSize: format });
@@ -2003,7 +2002,7 @@ describe('webContents module', () => {
     });
 
     it('with custom header and footer', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(fixturePath('api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({
         displayHeaderFooter: true,
@@ -2024,7 +2023,7 @@ describe('webContents module', () => {
     });
 
     it('in landscape mode', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+      await w.loadFile(fixturePath('api', 'print-to-pdf-small.html'));
 
       const data = await w.webContents.printToPDF({ landscape: true });
       const doc = await pdfjs.getDocument(data).promise;
@@ -2038,7 +2037,7 @@ describe('webContents module', () => {
     });
 
     it('with custom page ranges', async () => {
-      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-large.html'));
+      await w.loadFile(fixturePath('api', 'print-to-pdf-large.html'));
 
       const data = await w.webContents.printToPDF({
         pageRanges: '1-3',
@@ -2059,9 +2058,9 @@ describe('webContents module', () => {
 
       // TODO(codebytere): figure out why this workaround is needed and remove.
       // It is not germane to the actual test.
-      await w.loadFile(path.join(fixturesPath, 'blank.html'));
+      await w.loadFile(fixturePath('blank.html'));
 
-      await w.loadFile(path.join(fixturesPath, 'api', 'picture-in-picture.html'));
+      await w.loadFile(fixturePath('api', 'picture-in-picture.html'));
 
       await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')', true);
 
@@ -2078,7 +2077,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = once(ipcMain, 'ready');
-      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
+      w.loadFile(fixturePath('api', 'shared-worker', 'shared-worker.html'));
       await ready;
 
       const sharedWorkers = w.webContents.getAllSharedWorkers();
@@ -2092,7 +2091,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
 
       const ready = once(ipcMain, 'ready');
-      w.loadFile(path.join(fixturesPath, 'api', 'shared-worker', 'shared-worker.html'));
+      w.loadFile(fixturePath('api', 'shared-worker', 'shared-worker.html'));
       await ready;
 
       const sharedWorkers = w.webContents.getAllSharedWorkers();
@@ -2240,7 +2239,7 @@ describe('webContents module', () => {
     afterEach(closeAllWindows);
     it('emits when right-clicked in page', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
+      await w.loadFile(fixturePath('pages', 'base-page.html'));
 
       const promise = once(w.webContents, 'context-menu');
 

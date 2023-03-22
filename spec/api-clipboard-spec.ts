@@ -1,16 +1,14 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import { Buffer } from 'buffer';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { clipboard, nativeImage } from 'electron/common';
+import { fixturePath } from './lib/fixtures';
 
 // FIXME(zcbenz): Clipboard tests are failing on WOA.
 ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
-
   describe('clipboard.readImage()', () => {
     it('returns NativeImage instance', () => {
-      const p = path.join(fixtures, 'assets', 'logo.png');
+      const p = fixturePath('assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
       clipboard.writeImage(i);
       const readImage = clipboard.readImage();
@@ -81,7 +79,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
     it('returns data correctly', () => {
       const text = 'test';
       const rtf = '{\\rtf1\\utf8 text}';
-      const p = path.join(fixtures, 'assets', 'logo.png');
+      const p = fixturePath('assets', 'logo.png');
       const i = nativeImage.createFromPath(p);
       const markup = process.platform === 'darwin' ? "<meta charset='utf-8'><b>Hi</b>" : '<b>Hi</b>';
       const bookmark = { title: 'a title', url: 'test' };

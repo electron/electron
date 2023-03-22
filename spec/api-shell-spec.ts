@@ -8,6 +8,7 @@ import * as os from 'os';
 import * as path from 'path';
 import { expect } from 'chai';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 describe('shell module', () => {
   describe('shell.openExternal()', () => {
@@ -101,9 +102,8 @@ describe('shell module', () => {
       }).to.throw('Failed to read shortcut link');
     });
 
-    const fixtures = path.resolve(__dirname, 'fixtures');
     it('reads all properties of a shortcut', () => {
-      const shortcut = shell.readShortcutLink(path.join(fixtures, 'assets', 'shortcut.lnk'));
+      const shortcut = shell.readShortcutLink(fixturePath('assets', 'shortcut.lnk'));
       expect(shortcut).to.deep.equal(shortcutOptions);
     });
   });

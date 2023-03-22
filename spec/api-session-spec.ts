@@ -11,12 +11,12 @@ import { closeAllWindows } from './lib/window-helpers';
 import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { fixturePath, FIXTURES_PATH } from './lib/fixtures';
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
 
 describe('session module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
   const url = 'http://127.0.0.1';
 
   describe('session.defaultSession', () => {
@@ -226,7 +226,7 @@ describe('session module', () => {
 
     it('should survive an app restart for persistent partition', async function () {
       this.timeout(60000);
-      const appPath = path.join(fixtures, 'api', 'cookie-app');
+      const appPath = fixturePath('api', 'cookie-app');
 
       const runAppWithPhase = (phase: string) => {
         return new Promise((resolve) => {
@@ -254,7 +254,7 @@ describe('session module', () => {
     afterEach(closeAllWindows);
     it('clears localstorage data', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
-      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      await w.loadFile(fixturePath('api', 'localstorage.html'));
       const options = {
         origin: 'file://',
         storages: ['localstorage'],
@@ -630,7 +630,7 @@ describe('session module', () => {
     let serverUrl: string;
 
     beforeEach(async () => {
-      const certPath = path.join(fixtures, 'certificates');
+      const certPath = fixturePath('certificates');
       const options = {
         key: fs.readFileSync(path.join(certPath, 'server.key')),
         cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -786,7 +786,7 @@ describe('session module', () => {
 
   describe('DownloadItem', () => {
     const mockPDF = Buffer.alloc(1024 * 1024 * 5);
-    const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+    const downloadFilePath = fixturePath('mock.pdf');
     const protocolName = 'custom-dl';
     const contentDisposition = 'inline; filename="mock.pdf"';
     let port: number;
@@ -899,7 +899,7 @@ describe('session module', () => {
           });
         });
       });
-      await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({ fixtures, url, port })})`);
+      await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({ fixtures: FIXTURES_PATH, url, port })})`);
       const [state, item] = await done;
       assertDownload(state, item);
     });
@@ -950,7 +950,7 @@ describe('session module', () => {
     });
 
     it('can set options for the save dialog', (done) => {
-      const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
+      const filePath = fixturePath('mock.pdf');
       const options = {
         window: null,
         title: 'title',
@@ -1009,7 +1009,7 @@ describe('session module', () => {
   describe('ses.createInterruptedDownload(options)', () => {
     afterEach(closeAllWindows);
     it('can create an interrupted download item', async () => {
-      const downloadFilePath = path.join(__dirname, '..', 'fixtures', 'mock.pdf');
+      const downloadFilePath = fixturePath('mock.pdf');
       const options = {
         path: downloadFilePath,
         urlChain: ['http://127.0.0.1/'],
@@ -1031,9 +1031,9 @@ describe('session module', () => {
     });
 
     it('can be resumed', async () => {
-      const downloadFilePath = path.join(fixtures, 'logo.png');
+      const downloadFilePath = fixturePath('logo.png');
       const rangeServer = http.createServer((req, res) => {
-        const options = { root: fixtures };
+        const options = { root: FIXTURES_PATH };
         send(req, req.url!, options)
           .on('error', (error: any) => { throw error; }).pipe(res);
       });
@@ -1245,7 +1245,7 @@ describe('session module', () => {
         `, true);
       };
 
-      await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+      await w.loadFile(fixturePath('api', 'blank.html'));
       w.webContents.executeJavaScript(`
         var iframe = document.createElement('iframe');
         iframe.src = '${loadUrl}';
@@ -1357,8 +1357,7 @@ describe('session module', () => {
   describe('ses.setSSLConfig()', () => {
     it('can disable cipher suites', async () => {
       const ses = session.fromPartition('' + Math.random());
-      const fixturesPath = path.resolve(__dirname, 'fixtures');
-      const certPath = path.join(fixturesPath, 'certificates');
+      const certPath = fixturePath('certificates');
       const server = https.createServer({
         key: fs.readFileSync(path.join(certPath, 'server.key')),
         cert: fs.readFileSync(path.join(certPath, 'server.pem')),

@@ -3,6 +3,7 @@ import { expect } from 'chai';
 import * as notes from '../script/release/notes/notes.js';
 import * as path from 'path';
 import * as sinon from 'sinon';
+import { fixturePath } from './lib/fixtures.js';
 
 /* Fake a Dugite GitProcess that only returns the specific
    commits that we want to test */
@@ -111,7 +112,7 @@ describe('release notes', () => {
 
   before(() => {
     // location of release-notes' octokit reply cache
-    const fixtureDir = path.resolve(__dirname, 'fixtures', 'release-notes');
+    const fixtureDir = fixturePath('release-notes');
     process.env.NOTES_CACHE_PATH = path.resolve(fixtureDir, 'cache');
   });
 

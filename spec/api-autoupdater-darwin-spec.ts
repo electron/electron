@@ -10,10 +10,9 @@ import { AddressInfo } from 'net';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import * as uuid from 'uuid';
 import { systemPreferences } from 'electron';
+import { fixturePath } from './lib/fixtures';
 
 const features = process._linkedBinding('electron_common_features');
-
-const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 // We can only test the auto updater on darwin non-component builds
 ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch === 'arm64') && !process.mas && !features.isComponentBuild())('autoUpdater behavior', function () {
@@ -46,7 +45,7 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
     cp.spawnSync('cp', ['-R', appBundlePath, path.dirname(newPath)]);
     const appDir = path.resolve(newPath, 'Contents/Resources/app');
     await fs.mkdirp(appDir);
-    await fs.copy(path.resolve(fixturesPath, 'auto-update', fixture), appDir);
+    await fs.copy(fixturePath('auto-update', fixture), appDir);
     const plistPath = path.resolve(newPath, 'Contents', 'Info.plist');
     await fs.writeFile(
       plistPath,
