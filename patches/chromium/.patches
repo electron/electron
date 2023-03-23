@@ -153,5 +153,4 @@ m108-lts_simplify_webmediaplayermscompositor_destruction.patch
 m108-lts_further_simplify_webmediaplayermscompositor_lifetime.patch
 cherry-pick-bfd926be8178.patch
 cherry-pick-d202ad3c6aeb.patch
-m108-lts_prevent_potential_integer_overflow_in.patch
 m108-lts_do_not_register_browser_watcher_activity_report_with.patch
