@@ -1011,26 +1011,13 @@ step-ts-compile: &step-ts-compile
 # List of all steps.
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
-    - *step-checkout-electron
-    - *step-depot-tools-get
-    - *step-depot-tools-add-to-path
     - install-python2-mac
-    - *step-setup-env-for-build
     - *step-setup-goma-for-build
-    - *step-generate-deps-hash
-    - *step-touch-sync-done
-    - maybe-restore-portaled-src-cache
-    - run:
-        name: Ensure src checkout worked
-        command: |
-          if [ ! -d "src/third_party/blink" ]; then
-            echo src cache was not restored for an unknown reason
-            exit 1
-          fi
-    - run:
-        name: Wipe Electron
-        command: rm -rf src/electron
-    - *step-checkout-electron
+    - checkout-from-cache
+    - *step-setup-env-for-build
+    - *step-wait-for-goma
+    - *step-gn-gen-default
+    - *step-gn-check
 
 steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
   steps:
