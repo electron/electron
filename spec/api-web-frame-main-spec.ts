@@ -4,12 +4,13 @@ import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { defer, listen, waitUntil } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import { ifit } from './lib/spec-conditional';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { emittedN } from './lib/events';
 import { fixturePath } from './lib/fixtures';
+import { pollUntil } from './lib/async-loop';
 
 describe('webFrameMain module', () => {
   const subframesPath = fixturePath('sub-frames');
@@ -195,7 +196,7 @@ describe('webFrameMain module', () => {
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
       await expect(
-        waitUntil(() => webFrame.visibilityState === 'hidden')
+        pollUntil(() => webFrame.visibilityState === 'hidden')
       ).to.eventually.be.fulfilled();
     });
   });

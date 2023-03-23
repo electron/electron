@@ -3,7 +3,7 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
+import { defer, startRemoteControlApp, listen } from './lib/spec-helpers';
 import { ifdescribe, ifit } from './lib/spec-conditional';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
@@ -12,6 +12,7 @@ import * as fs from 'fs';
 import * as uuid from 'uuid';
 import { setTimeout } from 'timers/promises';
 import { fixturePath } from './lib/fixtures';
+import { pollUntil } from './lib/async-loop';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -423,7 +424,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       });
       await waitForCrash();
       // 3. get the crash from getLastCrashReport.
-      const firstReport = await repeatedly(
+      const firstReport = await pollUntil(
         () => remotely(() => require('electron').crashReporter.getLastCrashReport())
       );
       expect(firstReport).to.not.be.null();

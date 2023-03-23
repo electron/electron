@@ -89,65 +89,6 @@ export async function startRemoteControlApp (extraArgs: string[] = [], options?:
   return new RemoteControlApp(appProcess, port);
 }
 
-export function waitUntil (
-  callback: () => boolean,
-  opts: { rate?: number, timeout?: number } = {}
-) {
-  const { rate = 10, timeout = 10000 } = opts;
-  return new Promise<void>((resolve, reject) => {
-    let intervalId: NodeJS.Timeout | undefined; // eslint-disable-line prefer-const
-    let timeoutId: NodeJS.Timeout | undefined;
-
-    const cleanup = () => {
-      if (intervalId) clearInterval(intervalId);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-
-    const check = () => {
-      let result;
-
-      try {
-        result = callback();
-      } catch (e) {
-        cleanup();
-        reject(e);
-        return;
-      }
-
-      if (result === true) {
-        cleanup();
-        resolve();
-        return true;
-      }
-    };
-
-    if (check()) {
-      return;
-    }
-
-    intervalId = setInterval(check, rate);
-
-    timeoutId = setTimeout(() => {
-      timeoutId = undefined;
-      cleanup();
-      reject(new Error(`waitUntil timed out after ${timeout}ms`));
-    }, timeout);
-  });
-}
-
-export async function repeatedly<T> (
-  fn: () => Promise<T>,
-  opts?: { until?: (x: T) => boolean, timeLimit?: number }
-) {
-  const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
-  const begin = +new Date();
-  while (true) {
-    const ret = await fn();
-    if (until(ret)) { return ret; }
-    if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
-  }
-}
-
 async function makeRemoteContext (opts?: any) {
   const { webPreferences, setup, url = 'about:blank', ...rest } = opts ?? {};
   const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false, ...webPreferences }, ...rest });

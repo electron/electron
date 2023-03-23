@@ -8,10 +8,11 @@ import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { listen, waitUntil } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { fixturePath } from './lib/fixtures';
 import { ifdescribe, ifit } from './lib/spec-conditional';
+import { pollUntil } from './lib/async-loop';
 import split = require('split');
 
 describe('electron module', () => {
@@ -1575,13 +1576,13 @@ describe('app module', () => {
       it('returns true when the app is hidden', async () => {
         app.hide();
         await expect(
-          waitUntil(() => app.isHidden())
+          pollUntil(() => app.isHidden())
         ).to.eventually.be.fulfilled();
       });
       it('returns false when the app is shown', async () => {
         app.show();
         await expect(
-          waitUntil(() => !app.isHidden())
+          pollUntil(() => !app.isHidden())
         ).to.eventually.be.fulfilled();
       });
     });

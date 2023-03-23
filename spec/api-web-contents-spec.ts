@@ -5,11 +5,12 @@ import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { defer, waitUntil, listen } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import { ifdescribe, ifit } from './lib/spec-conditional';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { pollUntil } from './lib/async-loop';
 
 const pdfjs = require('pdfjs-dist');
 const features = process._linkedBinding('electron_common_features');
@@ -56,7 +57,7 @@ describe('webContents module', () => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create();
       const { mainFrame } = contents;
       contents.destroy();
-      await waitUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
+      await pollUntil(() => typeof webContents.fromFrame(mainFrame) === 'undefined');
     });
     it('throws when passing invalid argument', async () => {
       let errored = false;
