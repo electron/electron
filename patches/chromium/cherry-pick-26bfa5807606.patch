@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "Steinar H. Gunderson" <sesse@chromium.org>
+Date: Tue, 14 Mar 2023 15:53:57 +0000
+Subject: In Typed CSSOM, reject adding to something that is not a list.
+
+M108 merge issues:
+  third_party/blink/renderer/core/css/cssom/style_property_map.cc:
+    The check before the added IsValueList check isn't present in 108
+
+(cherry picked from commit 7301cf1e40fdd97594ea491676b867cf4e577edc)
+
+Fixed: 1417176
+Change-Id: Idef1a81af46d334c181979778c28f19ce6369718
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4293477
+Commit-Queue: Steinar H Gunderson <sesse@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1110281}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4306796
+Commit-Queue: Zakhar Voit <voit@google.com>
+Reviewed-by: Steinar H Gunderson <sesse@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5359@{#1405}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/third_party/blink/renderer/core/css/cssom/style_property_map.cc b/third_party/blink/renderer/core/css/cssom/style_property_map.cc
+index 2c1bcba6022519c3a865ae8e3c2ffcd5bc385cf3..0cde402b49510514599201d2b3104e56ddd7b572 100644
+--- a/third_party/blink/renderer/core/css/cssom/style_property_map.cc
++++ b/third_party/blink/renderer/core/css/cssom/style_property_map.cc
+@@ -365,6 +365,17 @@ void StylePropertyMap::append(
+ 
+   CSSValueList* current_value = nullptr;
+   if (const CSSValue* css_value = GetProperty(property_id)) {
++    if (!css_value->IsValueList()) {
++      // The standard doesn't seem to cover this explicitly
++      // (https://github.com/w3c/css-houdini-drafts/issues/823),
++      // but the only really reasonable solution seems to be
++      // to throw a TypeError.
++      //
++      // This covers e.g. system-wide CSS keywords, like inherit.
++      exception_state.ThrowTypeError(
++          "Cannot append to something that is not a list");
++      return;
++    }
+     current_value = To<CSSValueList>(css_value)->Copy();
+   } else {
+     current_value = CssValueListForPropertyID(property_id);
+diff --git a/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html b/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html
+index ee9a9e4ddbcf78a7517d8d038d66844880719e63..f80875622366939f48a7471513fb6319f75be718 100644
+--- a/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html
++++ b/third_party/blink/web_tests/external/wpt/css/css-typed-om/the-stylepropertymap/inline/append.tentative.html
+@@ -56,4 +56,10 @@ test(t => {
+   assert_style_value_array_equals(result, [CSS.s(5), CSS.s(10), CSS.s(1), CSS.s(2)]);
+ }, 'StylePropertyMap.append is case-insensitive');
+ 
++// https://crbug.com/1417176
++test(t => {
++  let styleMap = createInlineStyleMap(t, 'transition-duration: inherit');
++  assert_throws_js(TypeError, () => styleMap.append('transition-duration', '1s'));
++}, 'StylePropertyMap.append rejects appending to CSS-wide keywords');
++
+ </script>
