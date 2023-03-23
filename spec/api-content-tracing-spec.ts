@@ -3,7 +3,7 @@ import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'ele
 import * as fs from 'fs';
 import * as path from 'path';
 import { setTimeout } from 'timers/promises';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 
 // FIXME: The tests are skipped on arm/arm64 and ia32.
 ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing', () => {

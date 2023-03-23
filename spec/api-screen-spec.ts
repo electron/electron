@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { screen } from 'electron/main';
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {

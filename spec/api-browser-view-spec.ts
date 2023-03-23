@@ -1,11 +1,12 @@
 import { expect } from 'chai';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
+import { defer, startRemoteControlApp } from './lib/spec-helpers';
 import { once } from 'events';
 import { captureScreenBitmap } from './lib/screen-capture';
 import { areColorsSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { ifit } from './lib/spec-conditional';
 
 describe('BrowserView module', () => {
   let w: BrowserWindow;

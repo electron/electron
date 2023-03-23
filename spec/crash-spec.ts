@@ -3,7 +3,7 @@ import * as cp from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import { fixturePath } from './lib/fixtures';
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 
 const fixtureBasePath = fixturePath('crash-cases');
 

@@ -3,7 +3,7 @@ import * as cp from 'child_process';
 import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron/main';
 
 import { closeWindow } from './lib/window-helpers';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { fixturePath } from './lib/fixtures';

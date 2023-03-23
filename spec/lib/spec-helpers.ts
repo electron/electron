@@ -5,21 +5,20 @@ import * as https from 'https';
 import * as net from 'net';
 import * as v8 from 'v8';
 import * as url from 'url';
-import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
 
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
+// const addOnly = <T>(fn: Function): T => {
+//   const wrapped = (...args: any[]) => {
+//     return fn(...args);
+//   };
+//   (wrapped as any).only = wrapped;
+//   (wrapped as any).skip = wrapped;
+//   return wrapped as any;
+// };
 
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+// export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
+// export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
 
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];

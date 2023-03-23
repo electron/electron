@@ -2,9 +2,10 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron';
-import { defer, ifdescribe } from './lib/spec-helpers';
+import { defer } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 
 describe('process module', () => {
   describe('renderer process', () => {

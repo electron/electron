@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { dialog, BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 import { setTimeout } from 'timers/promises';
 
 describe('dialog module', () => {

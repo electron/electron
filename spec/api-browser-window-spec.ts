@@ -8,7 +8,7 @@ import * as os from 'os';
 import { AddressInfo } from 'net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
-import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
@@ -16,6 +16,7 @@ import { emittedN, emittedUntil } from './lib/events';
 import { captureScreenBitmap } from './lib/screen-capture';
 import { areColorsSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 
 const Colors = {
   GREEN: '#00b140',

@@ -1,6 +1,7 @@
 import { app } from 'electron';
 import { expect } from 'chai';
-import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
+import { startRemoteControlApp } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 
 import * as fs from 'fs/promises';
 import * as path from 'path';

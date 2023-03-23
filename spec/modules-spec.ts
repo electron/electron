@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as path from 'path';
 import * as fs from 'fs';
 import { BrowserWindow } from 'electron/main';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import { closeAllWindows } from './lib/window-helpers';
 import * as childProcess from 'child_process';
 import { once } from 'events';

@@ -1,6 +1,6 @@
 import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
 import { expect } from 'chai';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 import { closeAllWindows } from './lib/window-helpers';
 import { roleList, execute } from '../lib/browser/api/menu-item-roles';
 

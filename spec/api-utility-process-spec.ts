@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import * as childProcess from 'child_process';
 import * as path from 'path';
 import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main';
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
 import { fixturePath } from './lib/fixtures';

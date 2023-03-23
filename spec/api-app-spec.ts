@@ -8,9 +8,10 @@ import * as path from 'path';
 import { promisify } from 'util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { listen, waitUntil } from './lib/spec-helpers';
 import { once } from 'events';
 import { fixturePath } from './lib/fixtures';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import split = require('split');
 
 describe('electron module', () => {

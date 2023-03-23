@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Buffer } from 'buffer';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import { clipboard, nativeImage } from 'electron/common';
 import { fixturePath } from './lib/fixtures';
 

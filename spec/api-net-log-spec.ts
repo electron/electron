@@ -6,9 +6,10 @@ import * as path from 'path';
 import * as ChildProcess from 'child_process';
 import { session, net } from 'electron/main';
 import { Socket } from 'net';
-import { ifit, listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { fixturePath } from './lib/fixtures';
+import { ifit } from './lib/spec-conditional';
 
 const appPath = fixturePath('api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');

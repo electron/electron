@@ -6,7 +6,7 @@ import * as semver from 'semver';
 import { setTimeout } from 'timers/promises';
 import { fixturePath } from './lib/fixtures';
 
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('nativeTheme module', () => {

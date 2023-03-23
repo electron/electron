@@ -1,7 +1,8 @@
 import { BrowserWindow, app } from 'electron/main';
 import { shell } from 'electron/common';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import * as http from 'http';
 import * as fs from 'fs-extra';
 import * as os from 'os';

@@ -1,7 +1,8 @@
 import * as url from 'url';
 import { BrowserWindow, session, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifit, ifdescribe, defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import { defer, itremote, useRemoteContext, listen } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import { expect } from 'chai';
 import * as http from 'http';
 import * as auth from 'basic-auth';

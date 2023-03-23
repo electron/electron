@@ -1,7 +1,7 @@
 import * as cp from 'child_process';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 import * as fs from 'fs-extra';
 import { once } from 'events';
 import { fixturePath } from './lib/fixtures';

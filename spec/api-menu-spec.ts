@@ -2,7 +2,7 @@ import * as cp from 'child_process';
 import { assert, expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
