@@ -4,7 +4,7 @@ import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { listen } from './lib/spec-helpers';
 import { once } from 'events';
-import { emittedUntil } from './lib/events';
+import { findEmit } from './lib/events';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 describe('debugger module', () => {
@@ -111,7 +111,7 @@ describe('debugger module', () => {
       const url = fixtureFileURL('pages', 'a.html');
       w.webContents.loadURL(url);
       w.webContents.debugger.attach();
-      const message = emittedUntil(w.webContents.debugger, 'message',
+      const message = findEmit(w.webContents.debugger, 'message',
         (event: Electron.Event, method: string) => method === 'Console.messageAdded');
       w.webContents.debugger.sendCommand('Console.enable');
       const [,, params] = await message;
@@ -145,9 +145,9 @@ describe('debugger module', () => {
       // an error when calling `Network.getResponseBody`.
       w.webContents.debugger.attach();
       w.webContents.debugger.sendCommand('Network.enable');
-      const [,, { requestId }] = await emittedUntil(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
+      const [,, { requestId }] = await findEmit(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
         method === 'Network.responseReceived' && params.response.url.startsWith('http://127.0.0.1'));
-      await emittedUntil(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
+      await findEmit(w.webContents.debugger, 'message', (_event: any, method: string, params: any) =>
         method === 'Network.loadingFinished' && params.requestId === requestId);
       const { body } = await w.webContents.debugger.sendCommand('Network.getResponseBody', { requestId });
       expect(body).to.equal('\u0024');

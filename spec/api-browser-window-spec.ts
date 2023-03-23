@@ -12,7 +12,7 @@ import { defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
-import { emittedN, emittedUntil } from './lib/events';
+import { emittedN, findEmit } from './lib/events';
 import { captureScreenBitmap } from './lib/screen-capture';
 import { areColorsSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
@@ -578,7 +578,7 @@ describe('BrowserWindow module', () => {
 
         it('is triggered when a cross-origin iframe navigates _top', async () => {
           w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
-          await emittedUntil(w.webContents, 'did-frame-finish-load', (_e: any, isMainFrame: boolean) => !isMainFrame);
+          await findEmit(w.webContents, 'did-frame-finish-load', (_e: any, isMainFrame: boolean) => !isMainFrame);
           let initiator: WebFrameMain | undefined;
           w.webContents.on('will-navigate', (e) => {
             initiator = e.initiator;
@@ -3960,9 +3960,9 @@ describe('BrowserWindow module', () => {
       // Chromium does not emit 'before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
       // is fired.
-      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
+      await findEmit(w.webContents, 'console-message', isBeforeUnload);
       w.reload();
-      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
+      await findEmit(w.webContents, 'console-message', isBeforeUnload);
 
       w.webContents.removeListener('did-start-navigation', navigationListener);
       w.reload();
@@ -3984,9 +3984,9 @@ describe('BrowserWindow module', () => {
       // Chromium does not emit 'before-unload-fired' on WebContents for
       // navigations, so we have to use other ways to know if beforeunload
       // is fired.
-      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
+      await findEmit(w.webContents, 'console-message', isBeforeUnload);
       w.loadURL('about:blank');
-      await emittedUntil(w.webContents, 'console-message', isBeforeUnload);
+      await findEmit(w.webContents, 'console-message', isBeforeUnload);
 
       w.webContents.removeListener('did-start-navigation', navigationListener);
       await w.loadURL('about:blank');

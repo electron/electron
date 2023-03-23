@@ -8,7 +8,7 @@ import * as http from 'http';
 import * as auth from 'basic-auth';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
-import { emittedUntil } from './lib/events';
+import { findEmit } from './lib/events';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 
 declare let WebView: any;
@@ -680,7 +680,7 @@ describe('<webview> tag', function () {
     });
 
     it('emits a web-contents-created event', async () => {
-      const webContentsCreated = emittedUntil(app, 'web-contents-created',
+      const webContentsCreated = findEmit(app, 'web-contents-created',
         (event: Electron.Event, contents: Electron.WebContents) => contents.getType() === 'window');
 
       loadWebView(w.webContents, {

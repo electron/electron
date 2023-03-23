@@ -1,18 +1,4 @@
 /**
- * An `IteratorResult` but represented in tuple form as `[value, done]`.
- *
- * Example:
- * ```ts
- * const faveNumResult: IteratorResult<number, never> = {
- *   // (`done` is implicitly false since it is missing)
- *   value: 4
- * };
- * const asTuple: IteratorResultTuple<number, never> = [4, false];
- * ```
- */
-// export type IteratorResultTuple<T, TReturn> = [T, false] | [TReturn, true];
-
-/**
  * Yields values from the provided iterator until a certain condition is met or
  * until the provided iterator finishes, whichever occurs first. The stopping
  * condition is determined by a predicate function that is run after each call

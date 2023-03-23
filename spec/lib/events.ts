@@ -63,7 +63,7 @@ export async function emittedN (
  *
  * This function only listens to the event during the execution of this fuction.
  */
-export async function emittedUntil (
+export async function findEmit (
   emitter: NodeJS.EventEmitter,
   eventName: string,
   predicate: (...args: any) => boolean
