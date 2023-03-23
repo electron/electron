@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Wed, 15 Feb 2023 16:35:18 +0100
+Subject: check if maps become deprecated during optimization
+
+(cherry picked from commit f82d802a20aa62e42269f977302f26c5c3ed031b)
+
+Bug: chromium:1417585
+No-Try: true
+No-Presubmit: true
+No-Tree-Checks: true
+Change-Id: Ie8eb76d2afb3ee4be66cf5d1c4bff8f745dc145b
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4255648
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#85848}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4294983
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.8@{#50}
+Cr-Branched-From: f1bc03fd6b4c201abd9f0fd9d51fb989150f97b9-refs/heads/10.8.168@{#1}
+Cr-Branched-From: 237de893e1c0a0628a57d0f5797483d3add7f005-refs/heads/main@{#83672}
+
+diff --git a/src/codegen/bailout-reason.h b/src/codegen/bailout-reason.h
+index cdd9e123185d142dfeac1e422f345a6a5955658f..33a12a67e4464a907124bb2f45a224f43ed7ec3a 100644
+--- a/src/codegen/bailout-reason.h
++++ b/src/codegen/bailout-reason.h
+@@ -94,19 +94,20 @@ namespace internal {
+   V(kUnexpectedThreadInWasmSet, "thread_in_wasm flag was already set")         \
+   V(kUnexpectedThreadInWasmUnset, "thread_in_wasm flag was not set")
+ 
+-#define BAILOUT_MESSAGES_LIST(V)                                            \
+-  V(kNoReason, "no reason")                                                 \
+-                                                                            \
+-  V(kBailedOutDueToDependencyChange, "Bailed out due to dependency change") \
+-  V(kCodeGenerationFailed, "Code generation failed")                        \
+-  V(kFunctionBeingDebugged, "Function is being debugged")                   \
+-  V(kGraphBuildingFailed, "Optimized graph construction failed")            \
+-  V(kFunctionTooBig, "Function is too big to be optimized")                 \
+-  V(kTooManyArguments, "Function contains a call with too many arguments")  \
+-  V(kLiveEdit, "LiveEdit")                                                  \
+-  V(kNativeFunctionLiteral, "Native function literal")                      \
+-  V(kOptimizationDisabled, "Optimization disabled")                         \
+-  V(kHigherTierAvailable, "A higher tier is already available")             \
++#define BAILOUT_MESSAGES_LIST(V)                                             \
++  V(kNoReason, "no reason")                                                  \
++                                                                             \
++  V(kBailedOutDueToDependencyChange, "Bailed out due to dependency change")  \
++  V(kConcurrentMapDeprecation, "Maps became deprecated during optimization") \
++  V(kCodeGenerationFailed, "Code generation failed")                         \
++  V(kFunctionBeingDebugged, "Function is being debugged")                    \
++  V(kGraphBuildingFailed, "Optimized graph construction failed")             \
++  V(kFunctionTooBig, "Function is too big to be optimized")                  \
++  V(kTooManyArguments, "Function contains a call with too many arguments")   \
++  V(kLiveEdit, "LiveEdit")                                                   \
++  V(kNativeFunctionLiteral, "Native function literal")                       \
++  V(kOptimizationDisabled, "Optimization disabled")                          \
++  V(kHigherTierAvailable, "A higher tier is already available")              \
+   V(kNeverOptimize, "Optimization is always disabled")
+ 
+ #define ERROR_MESSAGES_CONSTANTS(C, T) C,
+diff --git a/src/compiler/pipeline.cc b/src/compiler/pipeline.cc
+index a142d46a4760d65b09419211afa0972e1f5e6205..7e066adf0a0d04ca332e6b04a253937e51b1d367 100644
+--- a/src/compiler/pipeline.cc
++++ b/src/compiler/pipeline.cc
+@@ -728,7 +728,10 @@ class PipelineImpl final {
+   // Step D. Run the code finalization pass.
+   MaybeHandle<Code> FinalizeCode(bool retire_broker = true);
+ 
+-  // Step E. Install any code dependencies.
++  // Step E. Ensure all embedded maps are non-deprecated.
++  bool CheckNoDeprecatedMaps(Handle<Code> code);
++
++  // Step F. Install any code dependencies.
+   bool CommitDependencies(Handle<Code> code);
+ 
+   void VerifyGeneratedCodeIsIdempotent();
+@@ -1272,6 +1275,9 @@ PipelineCompilationJob::Status PipelineCompilationJob::FinalizeJobImpl(
+     }
+     return FAILED;
+   }
++  if (!pipeline_.CheckNoDeprecatedMaps(code)) {
++    return RetryOptimization(BailoutReason::kConcurrentMapDeprecation);
++  }
+   if (!pipeline_.CommitDependencies(code)) {
+     return RetryOptimization(BailoutReason::kBailedOutDueToDependencyChange);
+   }
+@@ -3961,6 +3967,20 @@ MaybeHandle<Code> PipelineImpl::GenerateCode(CallDescriptor* call_descriptor) {
+   return FinalizeCode();
+ }
+ 
++// We must not embed deprecated maps, as we rely in the compiler on all explicit
++// maps not being deprecated.
++bool PipelineImpl::CheckNoDeprecatedMaps(Handle<Code> code) {
++  int mode_mask = RelocInfo::EmbeddedObjectModeMask();
++  for (RelocIterator it(*code, mode_mask); !it.done(); it.next()) {
++    DCHECK(RelocInfo::IsEmbeddedObjectMode(it.rinfo()->rmode()));
++    HeapObject obj = it.rinfo()->target_object(data_->isolate());
++    if (obj.IsMap() && Map::cast(obj).is_deprecated()) {
++      return false;
++    }
++  }
++  return true;
++}
++
+ bool PipelineImpl::CommitDependencies(Handle<Code> code) {
+   return data_->dependencies() == nullptr ||
+          data_->dependencies()->Commit(code);
