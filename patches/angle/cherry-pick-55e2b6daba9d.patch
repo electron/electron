@@ -1,0 +1,136 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 16 Feb 2023 23:16:46 -0500
+Subject: Vulkan: Don't close render pass if rebind to same fbo
+
+M108 merge issues:
+  src/libANGLE/renderer/vulkan/ContextVk.cpp:
+    - hasActiveRenderPass named hasStartedRenderPass in 108
+    - getLastRenderPassQueueSerial named getLastRenderPassSerial in 108
+
+In the Vulkan backend, the render pass can occasionally (and
+transiently) be in a state of "open but inactive".  This is when the
+render pass is closed, but has the potential for future modifications
+(for example to add a resolve attachment).  Under many circumstances, it
+is expected that an open render pass cannot be in such a state.
+
+This assumption can be broken in this scenario:
+
+- Open render pass, draw, etc
+- Change framebuffer binding
+- Change framebuffer binding back to original
+- Masked Clear
+
+When ContextVk is synced before clear, it sees that the framebuffer
+binding is changed (though it hasn't really), and it closes the render
+passes and sets the render pass dirty bit.  If a draw were to follow, a
+new render pass would have started (unnecessarily).  However, in the
+case of a masked clear, UtilsVk notices that the render pass is started,
+assumes it must be active, and continues recording to it.  While the
+operation itself succeeds, the assumption that the render pass is active
+is false (and fails assertion).
+
+This change makes sure that framebuffer binding change is no-oped if the
+framebuffer is the same one that has opened the current render pass.  If
+any application does unnecessary binding changes and back, it will be
+optimized by this change as well.
+
+Bug: chromium:1411210
+Change-Id: I37a3a9f2eaa1a81a1b3393840b9458ec71a87377
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4261215
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit 05e62f39412e8c6bfc98582f5e7a49041991c97b)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4303738
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index f08877444f66ac2d61953c9c56d4c71d253d53c6..31e1882c8923b81bf5fd74fbe40d8233c7551ec9 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -5022,6 +5022,15 @@ angle::Result ContextVk::syncState(const gl::Context *context,
+                 // as some optimizations in non-draw commands require the render pass to remain
+                 // open, such as invalidate or blit. Note that we always start a new command buffer
+                 // because we currently can only support one open RenderPass at a time.
++                //
++                // The render pass is not closed if binding is changed to the same framebuffer as
++                // before.
++                if (hasStartedRenderPass() &&
++                    hasStartedRenderPassWithSerial(drawFramebufferVk->getLastRenderPassSerial()))
++                {
++                    break;
++                }
++
+                 onRenderPassFinished(RenderPassClosureReason::FramebufferBindingChange);
+                 if (getFeatures().preferSubmitAtFBOBoundary.enabled)
+                 {
+diff --git a/src/tests/gl_tests/ClearTest.cpp b/src/tests/gl_tests/ClearTest.cpp
+index 1a6b425da6be1e1c2526a8f5e5d84ea8049ee7ab..41e3ea7efe26d1aa0e0dd0e8e9d5bcd7b6472017 100644
+--- a/src/tests/gl_tests/ClearTest.cpp
++++ b/src/tests/gl_tests/ClearTest.cpp
+@@ -2864,6 +2864,26 @@ TEST_P(ClearTest, DISABLED_ClearReachesWindow)
+     angle::Sleep(2000);
+ }
+ 
++// Tests that masked clear after a no-op framebuffer binding change with an open render pass works.
++TEST_P(ClearTest, DrawThenChangeFBOBindingAndBackThenMaskedClear)
++{
++    ANGLE_GL_PROGRAM(blueProgram, essl1_shaders::vs::Simple(), essl1_shaders::fs::Blue());
++
++    // Draw blue.
++    drawQuad(blueProgram, essl1_shaders::PositionAttrib(), 0.5f);
++
++    // Change framebuffer and back
++    glBindFramebuffer(GL_FRAMEBUFFER, mFBOs[0]);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++    // Masked clear
++    glColorMask(1, 0, 0, 1);
++    glClearColor(1.0f, 0.5f, 0.5f, 1.0f);
++    glClear(GL_COLOR_BUFFER_BIT);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::magenta);
++}
++
+ // Test that clearing slices of a 3D texture and reading them back works.
+ TEST_P(ClearTestES3, ClearAndReadPixels3DTexture)
+ {
+diff --git a/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp b/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
+index 7268d08da90e27022f7139aa98b5972e1dfe62f1..6a91ecc2b4329696f573db3451dac35a0a795c8c 100644
+--- a/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
++++ b/src/tests/gl_tests/VulkanPerformanceCounterTest.cpp
+@@ -5,7 +5,7 @@
+ //
+ // VulkanPerformanceCounterTest:
+ //   Validates specific GL call patterns with ANGLE performance counters.
+-//   For example we can verify a certain call set doesn't break the RenderPass.
++//   For example we can verify a certain call set doesn't break the render pass.
+ 
+ #include "test_utils/ANGLETest.h"
+ #include "test_utils/angle_test_instantiate.h"
+@@ -6991,6 +6991,26 @@ TEST_P(VulkanPerformanceCounterTest, EndXfbAfterRenderPassClosed)
+     EXPECT_EQ(getPerfCounters().renderPasses, expectedRenderPassCount);
+ }
+ 
++// Verify that changing framebuffer and back doesn't break the render pass.
++TEST_P(VulkanPerformanceCounterTest, FBOChangeAndBackDoesNotBreakRenderPass)
++{
++    uint64_t expectedRenderPassCount = getPerfCounters().renderPasses + 1;
++
++    ANGLE_GL_PROGRAM(drawRed, essl3_shaders::vs::Simple(), essl3_shaders::fs::Red());
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0);
++
++    GLFramebuffer fbo;
++    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
++    glBindFramebuffer(GL_FRAMEBUFFER, 0);
++
++    drawQuad(drawRed, essl1_shaders::PositionAttrib(), 0);
++
++    // Verify render pass count.
++    EXPECT_EQ(getPerfCounters().renderPasses, expectedRenderPassCount);
++
++    EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::red);
++}
++
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(VulkanPerformanceCounterTest);
+ ANGLE_INSTANTIATE_TEST(VulkanPerformanceCounterTest, ES3_VULKAN(), ES3_VULKAN_SWIFTSHADER());
+ 
