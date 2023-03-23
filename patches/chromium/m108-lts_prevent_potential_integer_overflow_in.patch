@@ -1,0 +1,64 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Will Harris <wfh@chromium.org>
+Date: Thu, 2 Mar 2023 17:21:30 +0000
+Subject: Prevent potential integer overflow in PersistentMemoryAllocator
+
+https://crrev.com/c/4250177 added an extra check for potential
+integer overflow in GetAllocSize but forgot to add the same
+check in GetBlock.
+
+This meant that it was possible to get a pointer to a block
+but calling GetAllocSize on the same block would return zero.
+
+This change makes the two functions consistent with each other
+so calling GetBlock on invalid data will return nullptr.
+
+BUG=1417317,1415328
+
+(cherry picked from commit 81be8e8f2e13a9f1fe6d3150205a3c13af1db6e9)
+
+Change-Id: I8eb3d91bae4528fc97517d202baf337536a4c81f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4264177
+Commit-Queue: Alexei Svitkine <asvitkine@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1107105}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4280124
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Commit-Queue: Zakhar Voit <voit@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1402}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/base/metrics/persistent_memory_allocator.cc b/base/metrics/persistent_memory_allocator.cc
+index bc4618bf30832d010570e8a490d3d893f064237b..d8146e96cf425adbf79a4ec484fcf72d151a888d 100644
+--- a/base/metrics/persistent_memory_allocator.cc
++++ b/base/metrics/persistent_memory_allocator.cc
+@@ -881,8 +881,13 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
+   if (ref % kAllocAlignment != 0)
+     return nullptr;
+   size += sizeof(BlockHeader);
+-  if (ref + size > mem_size_)
++  uint32_t total_size;
++  if (!base::CheckAdd(ref, size).AssignIfValid(&total_size)) {
+     return nullptr;
++  }
++  if (total_size > mem_size_) {
++    return nullptr;
++  }
+ 
+   // Validation of referenced block-header.
+   if (!free_ok) {
+@@ -892,8 +897,13 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
+       return nullptr;
+     if (block->size < size)
+       return nullptr;
+-    if (ref + block->size > mem_size_)
++    uint32_t block_size;
++    if (!base::CheckAdd(ref, block->size).AssignIfValid(&block_size)) {
+       return nullptr;
++    }
++    if (block_size > mem_size_) {
++      return nullptr;
++    }
+     if (type_id != 0 &&
+         block->type_id.load(std::memory_order_relaxed) != type_id) {
+       return nullptr;
