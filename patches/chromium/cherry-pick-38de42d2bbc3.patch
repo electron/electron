@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Will Harris <wfh@chromium.org>
+Date: Thu, 2 Mar 2023 10:23:28 +0000
+Subject: Fix potential out of bounds write in base::SampleVectorBase
+
+BUG=1417185
+
+(cherry picked from commit 552939b035e724e022fedb90fd80cd008e441fcf)
+
+Change-Id: I70719d0f9afb81dda373f88ab3a1c177397659ec
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4265437
+Commit-Queue: Will Harris <wfh@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1106984}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4289351
+Commit-Queue: Zakhar Voit <voit@google.com>
+Reviewed-by: Victor-Gabriel Savu <vsavu@google.com>
+Owners-Override: Victor-Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1397}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/base/metrics/sample_vector.cc b/base/metrics/sample_vector.cc
+index cec7687eeeb3daea85f5bec24765bb5aed5f1c6a..a6995578515a292631dca6044e5ee23c14803e5a 100644
+--- a/base/metrics/sample_vector.cc
++++ b/base/metrics/sample_vector.cc
+@@ -274,6 +274,12 @@ void SampleVectorBase::MoveSingleSampleToCounts() {
+   if (sample.count == 0)
+     return;
+ 
++  // Stop here if the sample bucket would be out of range for the AtomicCount
++  // array.
++  if (sample.bucket >= counts_size()) {
++    return;
++  }
++
+   // Move the value into storage. Sum and redundant-count already account
+   // for this entry so no need to call IncreaseSumAndCount().
+   subtle::NoBarrier_AtomicIncrement(&counts()[sample.bucket], sample.count);
