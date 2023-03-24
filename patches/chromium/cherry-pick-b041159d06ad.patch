@@ -1,7 +1,7 @@
-From b041159d06adbf7487639bd33a261cc0270d7a34 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Matt Reynolds <mattreynolds@google.com>
-Date: Wed, 08 Mar 2023 23:55:10 +0000
-Subject: [PATCH] [M-110] hid: Handle empty input reports
+Date: Wed, 8 Mar 2023 23:55:10 +0000
+Subject: hid: Handle empty input reports
 
 It's possible for a HID device to define its report descriptor such that
 one or more reports have no data fields within the report. When receiving these reports, the report buffer should contain only the
@@ -23,13 +23,12 @@ Commit-Queue: Reilly Grant <reillyg@chromium.org>
 Auto-Submit: Matt Reynolds <mattreynolds@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5481@{#1341}
 Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
----
 
 diff --git a/services/device/hid/hid_connection_impl.cc b/services/device/hid/hid_connection_impl.cc
-index c413123e..adfaa66 100644
+index 131eee19f578a4fc22ab01fec37c4d82af829d4d..508114a7626c59fd02601c1e7eed2409ea0817f8 100644
 --- a/services/device/hid/hid_connection_impl.cc
 +++ b/services/device/hid/hid_connection_impl.cc
-@@ -54,11 +54,12 @@
+@@ -54,11 +54,12 @@ void HidConnectionImpl::OnInputReport(
      scoped_refptr<base::RefCountedBytes> buffer,
      size_t size) {
    DCHECK(client_);
@@ -48,7 +47,7 @@ index c413123e..adfaa66 100644
  
  void HidConnectionImpl::Read(ReadCallback callback) {
 diff --git a/services/device/hid/hid_connection_impl_unittest.cc b/services/device/hid/hid_connection_impl_unittest.cc
-index 25f715fa..3d2e74a 100644
+index 3acdee978dbfc0b0efd16fd36416bf016c02d256..6359714a7cf62774111cf4ea2c0cdbf251680e62 100644
 --- a/services/device/hid/hid_connection_impl_unittest.cc
 +++ b/services/device/hid/hid_connection_impl_unittest.cc
 @@ -8,17 +8,28 @@
@@ -80,7 +79,7 @@ index 25f715fa..3d2e74a 100644
  #if BUILDFLAG(IS_MAC)
  const uint64_t kTestDeviceId = 123;
  #elif BUILDFLAG(IS_WIN)
-@@ -30,46 +41,37 @@
+@@ -30,46 +41,37 @@ const char* kTestDeviceId = "123";
  // The report ID to use for reports sent to or received from the test device.
  const uint8_t kTestReportId = 0x42;
  
@@ -141,7 +140,7 @@ index 25f715fa..3d2e74a 100644
  class TestHidConnectionClient : public mojom::HidConnectionClient {
   public:
    TestHidConnectionClient() = default;
-@@ -81,76 +83,18 @@
+@@ -81,76 +83,18 @@ class TestHidConnectionClient : public mojom::HidConnectionClient {
      receiver_.Bind(std::move(receiver));
    }
  
@@ -151,20 +150,16 @@ index 25f715fa..3d2e74a 100644
 -    report_id_ = report_id;
 -    buffer_ = buffer;
 -    run_loop_.Quit();
-+    future_.AddValue(report_id, buffer);
-   }
- 
+-  }
+-
 -  void WaitForInputReport() { run_loop_.Run(); }
 -
 -  uint8_t report_id() { return report_id_; }
 -  const std::vector<uint8_t>& buffer() { return buffer_; }
-+  std::pair<uint8_t, std::vector<uint8_t>> GetNextInputReport() {
-+    return future_.Take();
-+  }
- 
-  private:
+-
+- private:
 -  base::RunLoop run_loop_;
-   mojo::Receiver<mojom::HidConnectionClient> receiver_{this};
+-  mojo::Receiver<mojom::HidConnectionClient> receiver_{this};
 -  uint8_t report_id_ = 0;
 -  std::vector<uint8_t> buffer_;
 -};
@@ -202,28 +197,32 @@ index 25f715fa..3d2e74a 100644
 -  mojom::HidConnection::ReadCallback GetReadCallback() {
 -    return base::BindOnce(&TestIoCallback::SetReadResult,
 -                          base::Unretained(this));
--  }
--
++    future_.AddValue(report_id, buffer);
+   }
+ 
 -  mojom::HidConnection::WriteCallback GetWriteCallback() {
 -    return base::BindOnce(&TestIoCallback::SetWriteResult,
 -                          base::Unretained(this));
--  }
--
++  std::pair<uint8_t, std::vector<uint8_t>> GetNextInputReport() {
++    return future_.Take();
+   }
+ 
 -  uint8_t report_id() { return report_id_; }
 -  bool has_buffer() { return has_buffer_; }
 -  const std::vector<uint8_t>& buffer() { return buffer_; }
 -
-- private:
+  private:
 -  base::RunLoop run_loop_;
 -  bool result_ = false;
 -  uint8_t report_id_ = 0;
 -  bool has_buffer_ = false;
 -  std::vector<uint8_t> buffer_;
++  mojo::Receiver<mojom::HidConnectionClient> receiver_{this};
 +  base::test::RepeatingTestFuture<uint8_t, std::vector<uint8_t>> future_;
  };
  
  }  // namespace
-@@ -158,8 +102,8 @@
+@@ -158,8 +102,8 @@ class TestIoCallback {
  class HidConnectionImplTest : public DeviceServiceTestBase {
   public:
    HidConnectionImplTest() = default;
@@ -234,7 +233,7 @@ index 25f715fa..3d2e74a 100644
  
   protected:
    void SetUp() override {
-@@ -167,18 +111,28 @@
+@@ -167,18 +111,28 @@ class HidConnectionImplTest : public DeviceServiceTestBase {
      base::RunLoop().RunUntilIdle();
    }
  
@@ -269,7 +268,7 @@ index 25f715fa..3d2e74a 100644
    }
  
    scoped_refptr<HidDeviceInfo> CreateTestDevice() {
-@@ -190,7 +144,7 @@
+@@ -190,7 +144,7 @@ class HidConnectionImplTest : public DeviceServiceTestBase {
          /*vendor_id=*/0x1234, /*product_id=*/0xabcd, "product name",
          "serial number", mojom::HidBusType::kHIDBusTypeUSB,
          std::move(collection), kMaxReportSizeBytes, kMaxReportSizeBytes,
@@ -278,7 +277,7 @@ index 25f715fa..3d2e74a 100644
    }
  
    std::vector<uint8_t> CreateTestReportBuffer(uint8_t report_id, size_t size) {
-@@ -201,37 +155,42 @@
+@@ -201,37 +155,42 @@ class HidConnectionImplTest : public DeviceServiceTestBase {
      return buffer;
    }
  
@@ -337,7 +336,7 @@ index 25f715fa..3d2e74a 100644
    ASSERT_EQ(read_buffer.size(), kTestBufferSize - 1);
    for (size_t i = 1; i < kTestBufferSize; ++i) {
      EXPECT_EQ(read_buffer[i - 1], buffer_vec[i])
-@@ -240,26 +199,29 @@
+@@ -240,26 +199,29 @@ TEST_F(HidConnectionImplTest, ReadWrite) {
  }
  
  TEST_F(HidConnectionImplTest, ReadWriteWithConnectionClient) {
@@ -376,7 +375,7 @@ index 25f715fa..3d2e74a 100644
    ASSERT_EQ(in_buffer.size(), kTestBufferSize - 1);
    for (size_t i = 1; i < kTestBufferSize; ++i) {
      EXPECT_EQ(in_buffer[i - 1], buffer_vec[i])
-@@ -268,7 +230,7 @@
+@@ -268,7 +230,7 @@ TEST_F(HidConnectionImplTest, ReadWriteWithConnectionClient) {
  }
  
  TEST_F(HidConnectionImplTest, DestroyWithPendingInputReport) {
@@ -385,7 +384,7 @@ index 25f715fa..3d2e74a 100644
    const size_t kTestBufferSize = kMaxReportSizeBytes;
    std::vector<uint8_t> buffer_vec =
        CreateTestReportBuffer(kTestReportId, kTestBufferSize);
-@@ -276,21 +238,20 @@
+@@ -276,21 +238,20 @@ TEST_F(HidConnectionImplTest, DestroyWithPendingInputReport) {
    // Simulate an input report (device to host).
    auto buffer = base::MakeRefCounted<base::RefCountedBytes>(buffer_vec);
    ASSERT_EQ(buffer->size(), kTestBufferSize);
@@ -412,7 +411,7 @@ index 25f715fa..3d2e74a 100644
  }
  
  TEST_F(HidConnectionImplTest, WatcherClosedWhenHidConnectionClosed) {
-@@ -301,7 +262,7 @@
+@@ -301,7 +262,7 @@ TEST_F(HidConnectionImplTest, WatcherClosedWhenHidConnectionClosed) {
  
    mojo::Remote<mojom::HidConnection> hid_connection;
    HidConnectionImpl::Create(
@@ -421,7 +420,7 @@ index 25f715fa..3d2e74a 100644
        hid_connection.BindNewPipeAndPassReceiver(),
        /*connection_client=*/mojo::NullRemote(), std::move(watcher));
  
-@@ -326,7 +287,7 @@
+@@ -326,7 +287,7 @@ TEST_F(HidConnectionImplTest, HidConnectionClosedWhenWatcherClosed) {
  
    mojo::Remote<mojom::HidConnection> hid_connection;
    HidConnectionImpl::Create(
@@ -430,7 +429,7 @@ index 25f715fa..3d2e74a 100644
        hid_connection.BindNewPipeAndPassReceiver(),
        /*connection_client=*/mojo::NullRemote(), std::move(watcher));
  
-@@ -344,4 +305,74 @@
+@@ -344,4 +305,74 @@ TEST_F(HidConnectionImplTest, HidConnectionClosedWhenWatcherClosed) {
    EXPECT_FALSE(hid_connection.is_connected());
  }
  
