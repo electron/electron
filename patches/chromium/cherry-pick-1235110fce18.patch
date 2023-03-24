@@ -1,7 +1,7 @@
-From 1235110fce18b415b6605686c98bf750fbccee9d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
 Date: Tue, 14 Mar 2023 21:15:46 +0000
-Subject: [PATCH] Disable glShaderBinary in the passthrough cmd decoder.
+Subject: Disable glShaderBinary in the passthrough cmd decoder.
 
 This matches the behaviour of the validating command decoder. The client
 does not use this function and it's not exposed to WebGL.
@@ -17,13 +17,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1115379}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4335184
 Cr-Commit-Position: refs/branch-heads/5481@{#1357}
 Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
----
 
 diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
-index 360acb9..a9df4d81 100644
+index 9b09ddfe074ebe2786c7bc341b84a5eb5b7b73c9..373dab1c379152c45878faa60a5648bf0bc662e7 100644
 --- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
 +++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
-@@ -2684,6 +2684,10 @@
+@@ -2666,6 +2666,10 @@ error::Error GLES2DecoderPassthroughImpl::DoShaderBinary(GLsizei n,
                                                           GLenum binaryformat,
                                                           const void* binary,
                                                           GLsizei length) {
@@ -34,7 +33,7 @@ index 360acb9..a9df4d81 100644
    std::vector<GLuint> service_shaders(n, 0);
    for (GLsizei i = 0; i < n; i++) {
      service_shaders[i] = GetShaderServiceID(shaders[i], resources_);
-@@ -2691,6 +2695,7 @@
+@@ -2673,6 +2677,7 @@ error::Error GLES2DecoderPassthroughImpl::DoShaderBinary(GLsizei n,
    api()->glShaderBinaryFn(n, service_shaders.data(), binaryformat, binary,
                            length);
    return error::kNoError;
