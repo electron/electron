@@ -426,6 +426,30 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
   return handle;
 }
 
+v8::Local<v8::Promise> Session::ResolveHost(gin::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<std::vector<std::string>> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  std::string host;
+  args->GetNext(&host);
+
+  browser_context_->GetResolveHostHelper()->ResolveHost(
+      host,
+      base::BindOnce(
+          [](gin_helper::Promise<std::vector<std::string>> promise,
+             int64_t net_error, std::vector<std::string> addrs) {
+            if (net_error < 0) {
+              promise.RejectWithErrorMessage(net::ErrorToString(net_error));
+            } else {
+              promise.Resolve(addrs);
+            }
+          },
+          std::move(promise)));
+
+  return handle;
+}
+
 v8::Local<v8::Promise> Session::GetCacheSize() {
   gin_helper::Promise<int64_t> promise(isolate_);
   auto handle = promise.GetHandle();
@@ -1242,6 +1266,7 @@ gin::Handle<Session> Session::New() {
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, "Session", templ)
+      .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)

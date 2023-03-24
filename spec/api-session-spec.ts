@@ -486,6 +486,29 @@ describe('session module', () => {
     });
   });
 
+  describe('ses.resolveHost(host)', () => {
+    let customSession: Electron.Session;
+
+    beforeEach(async () => {
+      customSession = session.fromPartition('resolvehost');
+    });
+
+    afterEach(() => {
+      customSession = null as any;
+    });
+
+    it('resolves electronjs.org', async () => {
+      const addrs = await customSession.resolveHost('electronjs.org');
+      expect(addrs).to.be.a('array');
+      expect(addrs).to.have.lengthOf.above(0);
+    });
+
+    it('fails to resolve no.dns.electronjs.org', async () => {
+      await expect(customSession.resolveHost('no.dns.electronjs.org'))
+        .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+    });
+  });
+
   describe('ses.getBlobData()', () => {
     const scheme = 'cors-blob';
     const protocol = session.defaultSession.protocol;

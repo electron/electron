@@ -15,6 +15,7 @@
 #include "gin/wrappable.h"
 #include "services/network/public/mojom/ssl_config.mojom.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/browser/net/resolve_host_helper.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
 #include "shell/common/gin_helper/constructible.h"
@@ -96,6 +97,7 @@ class Session : public gin::Wrappable<Session>,
   const char* GetTypeName() override;
 
   // Methods.
+  v8::Local<v8::Promise> ResolveHost(gin::Arguments* args);
   v8::Local<v8::Promise> ResolveProxy(gin::Arguments* args);
   v8::Local<v8::Promise> GetCacheSize();
   v8::Local<v8::Promise> ClearCache();
