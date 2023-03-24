@@ -1,7 +1,7 @@
-From ce029c91a662f3ec991288bb689558fe4988ded7 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
 Date: Fri, 10 Mar 2023 13:48:03 -0500
-Subject: [PATCH] M110: D3D11: Add logic to disassociate EGL image storages.
+Subject: M110: D3D11: Add logic to disassociate EGL image storages.
 
 The TextureStorage classes for External and EGLImages were missing the
 logic to disassociate from images. This lead to the images continuing
@@ -15,13 +15,12 @@ Commit-Queue: Geoff Lang <geofflang@chromium.org>
 (cherry picked from commit a8720455fda43167465c3d2f9a13fca60c21f56e)
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4348335
 Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
----
 
 diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
-index 1916de5..62e8d1c 100644
+index f1277462a929ed867a325f12db5fbf011b3f678e..c2fe439ca826e86b023dbe982ff44dd3bfb56470 100644
 --- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
 +++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
-@@ -1653,7 +1653,8 @@
+@@ -1652,7 +1652,8 @@ TextureStorage11_External::TextureStorage11_External(
      egl::Stream *stream,
      const egl::Stream::GLTextureDescription &glDesc,
      const std::string &label)
@@ -31,7 +30,7 @@ index 1916de5..62e8d1c 100644
  {
      ASSERT(stream->getProducerType() == egl::Stream::ProducerType::D3D11Texture);
      auto *producer = static_cast<StreamProducerD3DTexture *>(stream->getImplementation());
-@@ -1679,6 +1680,15 @@
+@@ -1678,6 +1679,15 @@ angle::Result TextureStorage11_External::onDestroy(const gl::Context *context)
          mRenderer->getStateManager()->invalidateBoundViews();
      }
  
@@ -47,7 +46,7 @@ index 1916de5..62e8d1c 100644
      return angle::Result::Continue;
  }
  
-@@ -1886,7 +1896,8 @@
+@@ -1885,7 +1895,8 @@ TextureStorage11_EGLImage::TextureStorage11_EGLImage(Renderer11 *renderer,
        mImage(eglImage),
        mCurrentRenderTarget(0),
        mSwizzleTexture(),
@@ -57,7 +56,7 @@ index 1916de5..62e8d1c 100644
  {
      mCurrentRenderTarget = reinterpret_cast<uintptr_t>(renderTarget11);
  
-@@ -1898,6 +1909,20 @@
+@@ -1897,6 +1908,20 @@ TextureStorage11_EGLImage::TextureStorage11_EGLImage(Renderer11 *renderer,
  
  TextureStorage11_EGLImage::~TextureStorage11_EGLImage() {}
  
@@ -78,7 +77,7 @@ index 1916de5..62e8d1c 100644
  angle::Result TextureStorage11_EGLImage::getSubresourceIndex(const gl::Context *context,
                                                               const gl::ImageIndex &index,
                                                               UINT *outSubresourceIndex) const
-@@ -2121,6 +2146,42 @@
+@@ -2120,6 +2145,42 @@ void TextureStorage11_EGLImage::onLabelUpdate()
      }
  }
  
@@ -122,10 +121,10 @@ index 1916de5..62e8d1c 100644
                                               GLenum internalformat,
                                               BindFlags bindFlags,
 diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
-index 72bc1b8..7c5245a 100644
+index 72bc1b802c5d4f2befe7a440aae8e115d5b94c8a..7c5245acd8fcb7880f19905c0f69c7b7886e9e72 100644
 --- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
 +++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
-@@ -492,6 +492,8 @@
+@@ -492,6 +492,8 @@ class TextureStorage11_EGLImage final : public TextureStorage11ImmutableBase
                                const std::string &label);
      ~TextureStorage11_EGLImage() override;
  
@@ -134,7 +133,7 @@ index 72bc1b8..7c5245a 100644
      angle::Result getSubresourceIndex(const gl::Context *context,
                                        const gl::ImageIndex &index,
                                        UINT *outSubresourceIndex) const override;
-@@ -518,6 +520,13 @@
+@@ -518,6 +520,13 @@ class TextureStorage11_EGLImage final : public TextureStorage11ImmutableBase
                                                  bool useLevelZeroTexture) override;
      void onLabelUpdate() override;
  
@@ -148,7 +147,7 @@ index 72bc1b8..7c5245a 100644
    protected:
      angle::Result getSwizzleTexture(const gl::Context *context,
                                      const TextureHelper11 **outTexture) override;
-@@ -545,6 +554,8 @@
+@@ -545,6 +554,8 @@ class TextureStorage11_EGLImage final : public TextureStorage11ImmutableBase
      // Swizzle-related variables
      TextureHelper11 mSwizzleTexture;
      std::vector<d3d11::RenderTargetView> mSwizzleRenderTargets;
