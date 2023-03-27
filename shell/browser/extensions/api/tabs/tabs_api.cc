@@ -86,8 +86,9 @@ ExecuteCodeFunction::InitResult ExecuteCodeInTabFunction::Init() {
   if (!details_value.is_dict())
     return set_init_result(VALIDATION_FAILURE);
   std::unique_ptr<InjectDetails> details(new InjectDetails());
-  if (!InjectDetails::Populate(details_value, details.get()))
+  if (!InjectDetails::Populate(details_value.GetDict(), *details)) {
     return set_init_result(VALIDATION_FAILURE);
+  }
 
   if (tab_id == -1) {
     // There's no useful concept of a "default tab" in Electron.
