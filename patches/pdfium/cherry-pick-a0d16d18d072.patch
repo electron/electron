@@ -1,0 +1,164 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Tue, 14 Mar 2023 21:18:45 +0000
+Subject: M110: Observe CPWL_* object destruction across CPDFSDK_Widget methods
+
+This is a simple fix to stop the symptoms while we investigate
+how to avoid mutations at these points in the first place.
+
+-- fix some nearby braces and annoying blank lines while at it.
+
+Bug: chromium:1419831
+Change-Id: I20c38806b91c7c0c9016bb1b567a04ce319243d8
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/104397
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+(cherry picked from commit 63e3719f1ec20ee6db804b2b2d4b00680db18d9c)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/104833
+Auto-Submit: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/fpdfsdk/formfiller/cffl_checkbox.cpp b/fpdfsdk/formfiller/cffl_checkbox.cpp
+index 2cea0e0ad0d13149a6e7e499c5ea3366d84c9aaa..7c875486016b0b4205b31b9db077850663bc33af 100644
+--- a/fpdfsdk/formfiller/cffl_checkbox.cpp
++++ b/fpdfsdk/formfiller/cffl_checkbox.cpp
+@@ -65,9 +65,13 @@ bool CFFL_CheckBox::OnChar(CPDFSDK_Widget* pWidget,
+       CFFL_FormField::OnChar(pWidget, nChar, nFlags);
+ 
+       CPWL_CheckBox* pWnd = CreateOrUpdatePWLCheckBox(pPageView);
+-      if (pWnd && !pWnd->IsReadOnly())
+-        pWnd->SetCheck(!pWidget->IsChecked());
+-
++      if (pWnd && !pWnd->IsReadOnly()) {
++        ObservedPtr<CPWL_CheckBox> pObservedBox(pWnd);
++        const bool is_checked = pWidget->IsChecked();
++        if (pObservedBox) {
++          pObservedBox->SetCheck(!is_checked);
++        }
++      }
+       return CommitData(pPageView, nFlags);
+     }
+     default:
+@@ -80,14 +84,17 @@ bool CFFL_CheckBox::OnLButtonUp(CPDFSDK_PageView* pPageView,
+                                 Mask<FWL_EVENTFLAG> nFlags,
+                                 const CFX_PointF& point) {
+   CFFL_Button::OnLButtonUp(pPageView, pWidget, nFlags, point);
+-
+-  if (!IsValid())
++  if (!IsValid()) {
+     return true;
+-
++  }
+   CPWL_CheckBox* pWnd = CreateOrUpdatePWLCheckBox(pPageView);
+-  if (pWnd)
+-    pWnd->SetCheck(!pWidget->IsChecked());
+-
++  if (pWnd) {
++    ObservedPtr<CPWL_CheckBox> pObservedBox(pWnd);
++    const bool is_checked = pWidget->IsChecked();
++    if (pObservedBox) {
++      pObservedBox->SetCheck(!is_checked);
++    }
++  }
+   return CommitData(pPageView, nFlags);
+ }
+ 
+diff --git a/fpdfsdk/formfiller/cffl_listbox.cpp b/fpdfsdk/formfiller/cffl_listbox.cpp
+index 96b4aea8e74a629d201cd780d631d4e82d5b284c..4bb100014c804adcfc7f1f2023cd1870f81c85e8 100644
+--- a/fpdfsdk/formfiller/cffl_listbox.cpp
++++ b/fpdfsdk/formfiller/cffl_listbox.cpp
+@@ -105,11 +105,15 @@ bool CFFL_ListBox::IsDataChanged(const CPDFSDK_PageView* pPageView) {
+ 
+ void CFFL_ListBox::SaveData(const CPDFSDK_PageView* pPageView) {
+   CPWL_ListBox* pListBox = GetPWLListBox(pPageView);
+-  if (!pListBox)
++  if (!pListBox) {
+     return;
+-
++  }
+   int32_t nNewTopIndex = pListBox->GetTopVisibleIndex();
++  ObservedPtr<CPWL_ListBox> observed_box(pListBox);
+   m_pWidget->ClearSelection();
++  if (!observed_box) {
++    return;
++  }
+   if (m_pWidget->GetFieldFlags() & pdfium::form_flags::kChoiceMultiSelect) {
+     for (int32_t i = 0, sz = pListBox->GetCount(); i < sz; i++) {
+       if (pListBox->IsItemSelected(i))
+@@ -121,17 +125,17 @@ void CFFL_ListBox::SaveData(const CPDFSDK_PageView* pPageView) {
+   ObservedPtr<CPDFSDK_Widget> observed_widget(m_pWidget.Get());
+   ObservedPtr<CFFL_ListBox> observed_this(this);
+   m_pWidget->SetTopVisibleIndex(nNewTopIndex);
+-  if (!observed_widget)
++  if (!observed_widget) {
+     return;
+-
++  }
+   m_pWidget->ResetFieldAppearance();
+-  if (!observed_widget)
++  if (!observed_widget) {
+     return;
+-
++  }
+   m_pWidget->UpdateField();
+-  if (!observed_widget || !observed_this)
++  if (!observed_widget || !observed_this) {
+     return;
+-
++  }
+   SetChangeMark();
+ }
+ 
+diff --git a/fpdfsdk/formfiller/cffl_textfield.cpp b/fpdfsdk/formfiller/cffl_textfield.cpp
+index 5ae3e94cd185e56d759cb99dbc90997caa606283..2ceedde4a765e765e75e478ebee43204fe440fe4 100644
+--- a/fpdfsdk/formfiller/cffl_textfield.cpp
++++ b/fpdfsdk/formfiller/cffl_textfield.cpp
+@@ -142,26 +142,29 @@ bool CFFL_TextField::IsDataChanged(const CPDFSDK_PageView* pPageView) {
+ }
+ 
+ void CFFL_TextField::SaveData(const CPDFSDK_PageView* pPageView) {
+-  CPWL_Edit* pWnd = GetPWLEdit(pPageView);
+-  if (!pWnd)
++  ObservedPtr<CPWL_Edit> observed_edit(GetPWLEdit(pPageView));
++  if (!observed_edit) {
+     return;
+-
++  }
+   WideString sOldValue = m_pWidget->GetValue();
+-  WideString sNewValue = pWnd->GetText();
++  if (!observed_edit) {
++    return;
++  }
++  WideString sNewValue = observed_edit->GetText();
+   ObservedPtr<CPDFSDK_Widget> observed_widget(m_pWidget.Get());
+   ObservedPtr<CFFL_TextField> observed_this(this);
+   m_pWidget->SetValue(sNewValue);
+-  if (!observed_widget)
++  if (!observed_widget) {
+     return;
+-
++  }
+   m_pWidget->ResetFieldAppearance();
+-  if (!observed_widget)
++  if (!observed_widget) {
+     return;
+-
++  }
+   m_pWidget->UpdateField();
+-  if (!observed_widget || !observed_this)
++  if (!observed_widget || !observed_this) {
+     return;
+-
++  }
+   SetChangeMark();
+ }
+ 
+@@ -172,9 +175,7 @@ void CFFL_TextField::GetActionData(const CPDFSDK_PageView* pPageView,
+     case CPDF_AAction::kKeyStroke:
+       if (CPWL_Edit* pWnd = GetPWLEdit(pPageView)) {
+         fa.bFieldFull = pWnd->IsTextFull();
+-
+         fa.sValue = pWnd->GetText();
+-
+         if (fa.bFieldFull) {
+           fa.sChange.clear();
+           fa.sChangeEx.clear();
