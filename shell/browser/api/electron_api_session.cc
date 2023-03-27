@@ -426,13 +426,10 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
   return handle;
 }
 
-v8::Local<v8::Promise> Session::ResolveHost(gin::Arguments* args) {
+v8::Local<v8::Promise> Session::ResolveHost(std::string host) {
   v8::Isolate* isolate = args->isolate();
   gin_helper::Promise<std::vector<std::string>> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-
-  std::string host;
-  args->GetNext(&host);
 
   browser_context_->GetResolveHostHelper()->ResolveHost(
       host,
