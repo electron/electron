@@ -36,6 +36,8 @@
 
 namespace electron {
 
+const uint32_t kBypassCustomProtocolHandlers = 1 << 30;
+
 // This class is responsible for following tasks when NetworkService is enabled:
 // 1. handling intercepted protocols;
 // 2. implementing webRequest module;

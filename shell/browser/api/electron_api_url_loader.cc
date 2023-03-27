@@ -30,6 +30,7 @@
 #include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -488,7 +489,10 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
   // Explicitly handle intercepted protocols here, even though
   // ProxyingURLLoaderFactory would handle them later on, so that we can
   // correctly intercept file:// scheme URLs.
-  if (protocol_registry->IsProtocolIntercepted(url.scheme())) {
+  bool bypass_custom_protocol_handlers =
+      request_options_ & kBypassCustomProtocolHandlers;
+  if (!bypass_custom_protocol_handlers &&
+      protocol_registry->IsProtocolIntercepted(url.scheme())) {
     auto& protocol_handler =
         protocol_registry->intercept_handlers().at(url.scheme());
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
@@ -497,7 +501,8 @@ SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
     url_loader_factory = network::SharedURLLoaderFactory::Create(
         std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
             std::move(pending_remote)));
-  } else if (protocol_registry->IsProtocolRegistered(url.scheme())) {
+  } else if (!bypass_custom_protocol_handlers &&
+             protocol_registry->IsProtocolRegistered(url.scheme())) {
     auto& protocol_handler = protocol_registry->handlers().at(url.scheme());
     mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
         ElectronURLLoaderFactory::Create(protocol_handler.first,
@@ -528,6 +533,10 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   auto request = std::make_unique<network::ResourceRequest>();
   opts.Get("method", &request->method);
   opts.Get("url", &request->url);
+  if (!request->url.is_valid()) {
+    args->ThrowTypeError("Invalid URL");
+    return gin::Handle<SimpleURLLoaderWrapper>();
+  }
   request->site_for_cookies = net::SiteForCookies::FromUrl(request->url);
   opts.Get("referrer", &request->referrer);
   request->referrer_policy =
@@ -648,7 +657,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
 
   bool use_session_cookies = false;
   opts.Get("useSessionCookies", &use_session_cookies);
-  int options = 0;
+  int options = network::mojom::kURLLoadOptionSniffMimeType;
   if (!credentials_specified && !use_session_cookies) {
     // This is the default case, as well as the case when credentials is not
     // specified and useSessionCookies is false. credentials_mode will be
@@ -656,6 +665,11 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     request->credentials_mode = network::mojom::CredentialsMode::kInclude;
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
+
+  bool bypass_custom_protocol_handlers = false;
+  opts.Get("bypassCustomProtocolHandlers", &bypass_custom_protocol_handlers);
+  if (bypass_custom_protocol_handlers)
+    options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
   v8::Local<v8::Value> chunk_pipe_getter;
@@ -738,6 +752,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());
   dict.Set("headers", response_head.headers.get());
   dict.Set("rawHeaders", response_head.raw_response_headers);
+  dict.Set("mimeType", response_head.mime_type);
   Emit("response-started", final_url, dict);
 }
 

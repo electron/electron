@@ -243,6 +243,8 @@ it is not allowed to add or remove a custom header.
 * `encoding` string (optional)
 * `callback` Function (optional)
 
+Returns `this`.
+
 Sends the last chunk of the request data. Subsequent write or end operations
 will not be allowed. The `finish` event is emitted just after the end operation.
 

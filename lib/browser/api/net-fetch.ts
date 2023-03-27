@@ -13,7 +13,7 @@ function createDeferredPromise<T, E extends Error = Error> (): { promise: Promis
   return { promise, resolve: res!, reject: rej! };
 }
 
-export function fetchWithSession (input: RequestInfo, init: RequestInit | undefined, session: SessionT): Promise<Response> {
+export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypassCustomProtocolHandlers?: boolean}) | undefined, session: SessionT): Promise<Response> {
   const p = createDeferredPromise<Response>();
   let req: Request;
   try {
@@ -84,6 +84,8 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
     redirect: req.redirect
   }));
 
+  (r as any)._urlLoaderOptions.bypassCustomProtocolHandlers = !!init?.bypassCustomProtocolHandlers;
+
   // cors is the default mode, but we can't set mode=cors without an origin.
   if (req.mode && (req.mode !== 'cors' || origin)) {
     r.setHeader('Sec-Fetch-Mode', req.mode);
@@ -104,6 +106,7 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
       status: resp.statusCode,
       statusText: resp.statusMessage
     });
+    (rResp as any).__original_resp = resp;
     p.resolve(rResp);
   });
 
