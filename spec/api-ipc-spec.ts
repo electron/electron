@@ -357,6 +357,31 @@ describe('ipc module', () => {
         expect(port2).not.to.be.null();
       });
 
+      it('throws an error when an invalid parameter is sent to postMessage', () => {
+        const { port1 } = new MessageChannelMain();
+
+        expect(() => {
+          const buffer = new ArrayBuffer(10) as any;
+          port1.postMessage(null, [buffer]);
+        }).to.throw(/Port at index 0 is not a valid port/);
+
+        expect(() => {
+          port1.postMessage(null, ['1' as any]);
+        }).to.throw(/Port at index 0 is not a valid port/);
+
+        expect(() => {
+          port1.postMessage(null, [new Date() as any]);
+        }).to.throw(/Port at index 0 is not a valid port/);
+      });
+
+      it('throws when postMessage transferables contains the source port', () => {
+        const { port1 } = new MessageChannelMain();
+
+        expect(() => {
+          port1.postMessage(null, [port1]);
+        }).to.throw(/Port at index 0 contains the source port./);
+      });
+
       it('can send messages within the process', async () => {
         const { port1, port2 } = new MessageChannelMain();
         port2.postMessage('hello');
@@ -425,7 +450,7 @@ describe('ipc module', () => {
         const { port1 } = new MessageChannelMain();
         expect(() => {
           port1.postMessage(null, [null] as any);
-        }).to.throw(/conversion failure/);
+        }).to.throw(/Port at index 0 is not a valid port/);
       });
 
       it('throws when passing duplicate ports', () => {
