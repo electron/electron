@@ -10,5 +10,6 @@ revert_runtime_dhceck_terminating_exception_in_microtasks.patch
 chore_disable_is_execution_terminating_dcheck.patch
 force_cppheapcreateparams_to_be_noncopyable.patch
 cherry-pick-e17eee4894be.patch
+cherry-pick-aeceeb2187a6.patch
 cherry-pick-546e00df97ac.patch
 cherry-pick-f6ddbf42b1ea.patch

@@ -1,0 +1,130 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Robert Sesek <rsesek@chromium.org>
+Date: Mon, 27 Feb 2023 21:25:11 +0000
+Subject: Update Crashpad to 3e8727238bae3c069bd71cfb3b2bbaa98b55f05b
+
+3e8727238bae win: Only process up to EXCEPTION_MAXIMUM_PARAMETERS in an
+             EXCEPTION_RECORD
+
+(cherry picked from commit d05bea76b7ce72d66507ebbe00caf5e45afd587a)
+
+Fixed: 1412658
+Change-Id: I7461602d1a18d44ea1a11ac19f1487fbdb92acf6
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4285061
+Commit-Queue: Robert Sesek <rsesek@chromium.org>
+Commit-Queue: Alex Gough <ajgo@chromium.org>
+Reviewed-by: Alex Gough <ajgo@chromium.org>
+Auto-Submit: Robert Sesek <rsesek@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1108722}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4295200
+Cr-Commit-Position: refs/branch-heads/5481@{#1298}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/third_party/crashpad/README.chromium b/third_party/crashpad/README.chromium
+index 29ad402c3558b7c75b68339e0f07ad004170fe76..2be0ee4d29e445b5531fc3fddcc3efa28ef968f1 100644
+--- a/third_party/crashpad/README.chromium
++++ b/third_party/crashpad/README.chromium
+@@ -2,7 +2,7 @@ Name: Crashpad
+ Short Name: crashpad
+ URL: https://crashpad.chromium.org/
+ Version: unknown
+-Revision: 9f472e5a18d7611adaeb5df727b51102f35e109e
++Revision: 9f472e5a18d7611adaeb5df727b51102f35e109e with 3e8727238bae3c069bd71cfb3b2bbaa98b55f05b cherry-picked
+ License: Apache 2.0
+ License File: crashpad/LICENSE
+ Security Critical: yes
+diff --git a/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win.cc b/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win.cc
+index 2a70c5c0cea234ee1d81262738d7c4e48736b78e..b8931444ac8b11044a6fa7ce2a5ccf34aa4409c8 100644
+--- a/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win.cc
++++ b/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win.cc
+@@ -14,6 +14,8 @@
+ 
+ #include "snapshot/win/exception_snapshot_win.h"
+ 
++#include <algorithm>
++
+ #include "base/logging.h"
+ #include "snapshot/capture_memory.h"
+ #include "snapshot/memory_snapshot.h"
+@@ -261,8 +263,12 @@ bool ExceptionSnapshotWin::InitializeFromExceptionPointers(
+     exception_code_ = first_record.ExceptionCode;
+     exception_flags_ = first_record.ExceptionFlags;
+     exception_address_ = first_record.ExceptionAddress;
+-    for (DWORD i = 0; i < first_record.NumberParameters; ++i)
++
++    const DWORD number_parameters = std::min<DWORD>(
++        first_record.NumberParameters, EXCEPTION_MAXIMUM_PARAMETERS);
++    for (DWORD i = 0; i < number_parameters; ++i) {
+       codes_.push_back(first_record.ExceptionInformation[i]);
++    }
+     if (first_record.ExceptionRecord) {
+       // https://crashpad.chromium.org/bug/43
+       LOG(WARNING) << "dropping chained ExceptionRecord";
+diff --git a/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win_test.cc b/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win_test.cc
+index dcdc3cf4d6f4c1298905e5fba6580e73fca014e0..aa78e5579319341c08a6866fb7ae1272d403d23c 100644
+--- a/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win_test.cc
++++ b/third_party/crashpad/crashpad/snapshot/win/exception_snapshot_win_test.cc
+@@ -14,11 +14,14 @@
+ 
+ #include "snapshot/win/exception_snapshot_win.h"
+ 
++#include <windows.h>
++
+ #include <string>
+ 
+ #include "base/files/file_path.h"
+ #include "base/strings/utf_string_conversions.h"
+ #include "gtest/gtest.h"
++#include "snapshot/win/exception_snapshot_win.h"
+ #include "snapshot/win/process_snapshot_win.h"
+ #include "test/errors.h"
+ #include "test/test_paths.h"
+@@ -315,6 +318,48 @@ TEST(SimulateCrash, ChildDumpWithoutCrashingWOW64) {
+ }
+ #endif  // ARCH_CPU_64_BITS
+ 
++TEST(ExceptionSnapshot, TooManyExceptionParameters) {
++  ProcessReaderWin process_reader;
++  ASSERT_TRUE(process_reader.Initialize(GetCurrentProcess(),
++                                        ProcessSuspensionState::kRunning));
++
++  // Construct a fake exception record and CPU context.
++  auto exception_record = std::make_unique<EXCEPTION_RECORD>();
++  exception_record->ExceptionCode = STATUS_FATAL_APP_EXIT;
++  exception_record->ExceptionFlags = EXCEPTION_NONCONTINUABLE;
++  exception_record->ExceptionAddress = reinterpret_cast<PVOID>(0xFA15E);
++  // One more than is permitted in the struct.
++  exception_record->NumberParameters = EXCEPTION_MAXIMUM_PARAMETERS + 1;
++  for (int i = 0; i < EXCEPTION_MAXIMUM_PARAMETERS; ++i) {
++    exception_record->ExceptionInformation[i] = 1000 + i;
++  }
++
++  auto cpu_context = std::make_unique<internal::CPUContextUnion>();
++
++  auto exception_pointers = std::make_unique<EXCEPTION_POINTERS>();
++  exception_pointers->ExceptionRecord =
++      reinterpret_cast<PEXCEPTION_RECORD>(exception_record.get());
++  exception_pointers->ContextRecord =
++      reinterpret_cast<PCONTEXT>(cpu_context.get());
++
++  internal::ExceptionSnapshotWin snapshot;
++  ASSERT_TRUE(snapshot.Initialize(
++      &process_reader,
++      GetCurrentThreadId(),
++      reinterpret_cast<WinVMAddress>(exception_pointers.get()),
++      nullptr));
++
++  EXPECT_EQ(STATUS_FATAL_APP_EXIT, snapshot.Exception());
++  EXPECT_EQ(static_cast<uint32_t>(EXCEPTION_NONCONTINUABLE),
++            snapshot.ExceptionInfo());
++  EXPECT_EQ(0xFA15Eu, snapshot.ExceptionAddress());
++  EXPECT_EQ(static_cast<size_t>(EXCEPTION_MAXIMUM_PARAMETERS),
++            snapshot.Codes().size());
++  for (size_t i = 0; i < EXCEPTION_MAXIMUM_PARAMETERS; ++i) {
++    EXPECT_EQ(1000 + i, snapshot.Codes()[i]);
++  }
++}
++
+ }  // namespace
+ }  // namespace test
+ }  // namespace crashpad

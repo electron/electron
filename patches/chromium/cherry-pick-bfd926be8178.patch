@@ -1,0 +1,134 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Thu, 23 Feb 2023 23:29:10 +0000
+Subject: webcodecs: Fix VP9 p2 encoding of NV12 frames
+
+(cherry picked from commit 503831d1bdfdbe20c096f04cefc2231efd9ca4c0)
+
+Bug: 1412991
+Change-Id: I2e596f65170c1fc98c122bfb0ecff4b241feee15
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4250421
+Commit-Queue: Eugene Zemtsov <eugene@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1105528}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4288113
+Cr-Commit-Position: refs/branch-heads/5481@{#1271}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/media/video/BUILD.gn b/media/video/BUILD.gn
+index ce155164c821ddf60f73f7b0af0dce6e3d399af4..da517ef08a4cd1094f8e1660dfb5e4b7d847c979 100644
+--- a/media/video/BUILD.gn
++++ b/media/video/BUILD.gn
+@@ -169,6 +169,7 @@ source_set("unit_tests") {
+     "//media:test_support",
+     "//testing/gmock",
+     "//testing/gtest",
++    "//third_party/libvpx:libvpx",
+     "//third_party/libyuv:libyuv",
+     "//ui/gfx",
+   ]
+diff --git a/media/video/software_video_encoder_test.cc b/media/video/software_video_encoder_test.cc
+index 2059f4e076ff9fa1720683ac5dfb90312df2183e..318c743bddcf9bec3a994f125ea329d45f8c4376 100644
+--- a/media/video/software_video_encoder_test.cc
++++ b/media/video/software_video_encoder_test.cc
+@@ -40,6 +40,8 @@
+ #if BUILDFLAG(ENABLE_LIBVPX)
+ #include "media/filters/vpx_video_decoder.h"
+ #include "media/video/vpx_video_encoder.h"
++#include "third_party/libvpx/source/libvpx/vpx/vp8cx.h"
++#include "third_party/libvpx/source/libvpx/vpx/vpx_codec.h"
+ #endif
+ 
+ #if BUILDFLAG(ENABLE_LIBAOM)
+@@ -74,6 +76,9 @@ class SoftwareVideoEncoderTest
+     pixel_format_ = args.pixel_format;
+     codec_ = args.codec;
+     encoder_ = CreateEncoder(codec_);
++    if (!encoder_) {
++      GTEST_SKIP() << "Encoder is not supported on the platform";
++    }
+   }
+ 
+   void TearDown() override {
+@@ -200,6 +205,12 @@ class SoftwareVideoEncoderTest
+       case media::VideoCodec::kVP8:
+       case media::VideoCodec::kVP9:
+ #if BUILDFLAG(ENABLE_LIBVPX)
++        if (profile_ == VP9PROFILE_PROFILE2) {
++          vpx_codec_caps_t codec_caps = vpx_codec_get_caps(vpx_codec_vp9_cx());
++          if ((codec_caps & VPX_CODEC_CAP_HIGHBITDEPTH) == 0) {
++            return nullptr;
++          }
++        }
+         return std::make_unique<media::VpxVideoEncoder>();
+ #else
+         return nullptr;
+@@ -303,6 +314,11 @@ class SoftwareVideoEncoderTest
+     return diff_cnt;
+   }
+ 
++  VideoPixelFormat GetExpectedOutputPixelFormat(VideoCodecProfile profile) {
++    return profile == VP9PROFILE_PROFILE2 ? PIXEL_FORMAT_YUV420P10
++                                          : PIXEL_FORMAT_I420;
++  }
++
+  protected:
+   VideoCodec codec_;
+   VideoCodecProfile profile_;
+@@ -488,7 +504,7 @@ TEST_P(SoftwareVideoEncoderTest, EncodeAndDecode) {
+     EXPECT_EQ(decoded_frame->timestamp(), original_frame->timestamp());
+     EXPECT_EQ(decoded_frame->visible_rect().size(),
+               original_frame->visible_rect().size());
+-    EXPECT_EQ(decoded_frame->format(), PIXEL_FORMAT_I420);
++    EXPECT_EQ(decoded_frame->format(), GetExpectedOutputPixelFormat(profile_));
+     if (decoded_frame->format() == original_frame->format()) {
+       EXPECT_LE(CountDifferentPixels(*decoded_frame, *original_frame),
+                 original_frame->visible_rect().width());
+@@ -890,6 +906,9 @@ SwVideoTestParams kVpxParams[] = {
+     {VideoCodec::kVP9, VP9PROFILE_PROFILE0, PIXEL_FORMAT_I420},
+     {VideoCodec::kVP9, VP9PROFILE_PROFILE0, PIXEL_FORMAT_NV12},
+     {VideoCodec::kVP9, VP9PROFILE_PROFILE0, PIXEL_FORMAT_XRGB},
++    {VideoCodec::kVP9, VP9PROFILE_PROFILE2, PIXEL_FORMAT_I420},
++    {VideoCodec::kVP9, VP9PROFILE_PROFILE2, PIXEL_FORMAT_NV12},
++    {VideoCodec::kVP9, VP9PROFILE_PROFILE2, PIXEL_FORMAT_XRGB},
+     {VideoCodec::kVP8, VP8PROFILE_ANY, PIXEL_FORMAT_I420},
+     {VideoCodec::kVP8, VP8PROFILE_ANY, PIXEL_FORMAT_XRGB}};
+ 
+diff --git a/media/video/vpx_video_encoder.cc b/media/video/vpx_video_encoder.cc
+index 7787b765899bc57395fea1a06d5c9c5a925b8910..c4ad642e453c9582b9ada11ad99c6b1c969b27b5 100644
+--- a/media/video/vpx_video_encoder.cc
++++ b/media/video/vpx_video_encoder.cc
+@@ -427,12 +427,20 @@ void VpxVideoEncoder::Encode(scoped_refptr<VideoFrame> frame,
+     }
+   }
+ 
+-  const bool is_yuv = IsYuvPlanar(frame->format());
+-  if (frame->visible_rect().size() != options_.frame_size || !is_yuv) {
++  // Unfortunately libyuv lacks direct NV12 to I010 conversion, and we
++  // have to do an extra conversion to I420.
++  // TODO(https://crbug.com/libyuv/954) Use NV12ToI010() when implemented
++  const bool vp9_p2_needs_nv12_to_i420 =
++      frame->format() == PIXEL_FORMAT_NV12 && profile_ == VP9PROFILE_PROFILE2;
++  const bool needs_conversion_to_i420 =
++      !IsYuvPlanar(frame->format()) || vp9_p2_needs_nv12_to_i420;
++  if (frame->visible_rect().size() != options_.frame_size ||
++      needs_conversion_to_i420) {
++    auto new_pixel_format =
++        needs_conversion_to_i420 ? PIXEL_FORMAT_I420 : frame->format();
+     auto resized_frame = frame_pool_.CreateFrame(
+-        is_yuv ? frame->format() : PIXEL_FORMAT_I420, options_.frame_size,
+-        gfx::Rect(options_.frame_size), options_.frame_size,
+-        frame->timestamp());
++        new_pixel_format, options_.frame_size, gfx::Rect(options_.frame_size),
++        options_.frame_size, frame->timestamp());
+ 
+     if (!resized_frame) {
+       std::move(done_cb).Run(
+@@ -454,6 +462,7 @@ void VpxVideoEncoder::Encode(scoped_refptr<VideoFrame> frame,
+ 
+   switch (profile_) {
+     case VP9PROFILE_PROFILE2:
++      DCHECK_EQ(frame->format(), PIXEL_FORMAT_I420);
+       // Profile 2 uses 10bit color,
+       libyuv::I420ToI010(
+           frame->visible_data(VideoFrame::kYPlane),
