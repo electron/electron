@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@chromium.org>
+Date: Tue, 14 Mar 2023 13:07:19 +0000
+Subject: Shutdown RtpContributingSourceCache in Dispose().
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The cache is an off-heap object, but it is owned by an on-heap object
+(RTCPeerConnection). Dispoing the owning object poisons memory owned by
+it, but the cache may have in-flight tasks (cache doing ClearCache in a
+delayed microtask). This CL adds a Shutdown() method to ensure the
+cache isn't doing anything in the next microtask after disposal.
+
+No reliable way to repro this has been found but the change should be
+safe so hoping we can land without tests.
+
+(cherry picked from commit 4d450ecd6ec7776c7505dcf7d2f04157ff3ba0eb)
+
+Bug: 1413628
+Change-Id: I479aace9859f4c10cd75d4aa5a34808b4726299d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4247023
+Commit-Queue: Henrik Boström <hbos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1105653}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4291513
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Henrik Boström <hbos@chromium.org>
+Commit-Queue: Zakhar Voit <voit@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1404}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+index e951bf3faa35a8634ae2c8b90446843d77e509a9..8aeb3497e7b036904a25e807bc2a6ca654cd3752 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_peer_connection.cc
+@@ -643,12 +643,18 @@ RTCPeerConnection::~RTCPeerConnection() {
+ }
+ 
+ void RTCPeerConnection::Dispose() {
+-  // Promptly clears the handler
+-  // so that content/ doesn't access it in a lazy sweeping phase.
+-  // Other references to the handler use a weak pointer, preventing access.
++  // Promptly clears the handler so that content doesn't access it in a lazy
++  // sweeping phase. Other references to the handler use a weak pointer,
++  // preventing access.
+   if (peer_handler_) {
+     peer_handler_.reset();
+   }
++  // Memory owned by RTCPeerConnection must not be touched after Dispose().
++  // Shut down the cache to cancel any in-flight tasks that may otherwise have
++  // used the cache.
++  if (rtp_contributing_source_cache_.has_value()) {
++    rtp_contributing_source_cache_.value().Shutdown();
++  }
+ }
+ 
+ ScriptPromise RTCPeerConnection::createOffer(ScriptState* script_state,
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.cc b/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.cc
+index 1f91cf9c128a1bb19fb0a63ea9d869a5c4e6d07d..5ad457fae9bc62a252ca94297fc4231a886b62b9 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.cc
+@@ -102,6 +102,10 @@ RtpContributingSourceCache::RtpContributingSourceCache(
+   DCHECK(worker_thread_runner_);
+ }
+ 
++void RtpContributingSourceCache::Shutdown() {
++  weak_factory_.InvalidateWeakPtrs();
++}
++
+ HeapVector<Member<RTCRtpSynchronizationSource>>
+ RtpContributingSourceCache::getSynchronizationSources(
+     ScriptState* script_state,
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.h b/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.h
+index 0d0ef9d1c59328e04217d9fca3f4e59b01ecca96..3a42751ab02f5680758c2b3ebce8a599f751c1ca 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtp_contributing_source_cache.h
+@@ -43,6 +43,10 @@ class RtpContributingSourceCache {
+       RTCPeerConnection* pc,
+       scoped_refptr<base::SingleThreadTaskRunner> worker_thread_runner);
+ 
++  // When the owner of this object is Disposed(), this method must be called to
++  // cancel any in-flight tasks.
++  void Shutdown();
++
+   HeapVector<Member<RTCRtpSynchronizationSource>> getSynchronizationSources(
+       ScriptState* script_state,
+       ExceptionState& exception_state,
