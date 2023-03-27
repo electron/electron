@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Peter=20Bostr=C3=B6m?= <pbos@chromium.org>
+Date: Tue, 14 Mar 2023 16:49:10 +0000
+Subject: Convert known it != end() DCHECK failures to CHECK
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+These have hit on DCHECK builds in the wild and precede erasing or
+dereferencing an iterator that is UB.
+
+This CL excludes DCHECK failures that precede non-DCHECK handling of the
+it != end() failures. Those should probably be rewritten as CHECKs
+but are less urgent and semi-orthogonal.
+
+Known crashes (one per file) are:
+
+crash/dc49e3cadab36d4c
+crash/0ee3427d25937024
+crash/b89303e84d123019
+crash/cc35183b861a4992
+
+(cherry picked from commit 1aec0b297900a7b59bd24314dff239f3c5697f45)
+
+Bug: 1418734
+Change-Id: I81ed7b45be33769e250c65c8bb7334a34be4380e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4288168
+Commit-Queue: Peter Boström <pbos@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1109350}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4296138
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Reviewed-by: Achuith Bhandarkar <achuith@chromium.org>
+Owners-Override: Achuith Bhandarkar <achuith@chromium.org>
+Reviewed-by: Peter Boström <pbos@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5359@{#1406}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/base/scoped_multi_source_observation.h b/base/scoped_multi_source_observation.h
+index 07ea3edd71246f02fe0044b33129f13699ce43b2..cd368c23956078acd6d5694f7f16c106f6461b31 100644
+--- a/base/scoped_multi_source_observation.h
++++ b/base/scoped_multi_source_observation.h
+@@ -68,7 +68,7 @@ class ScopedMultiSourceObservation {
+   // Remove the object passed to the constructor as an observer from |source|.
+   void RemoveObservation(Source* source) {
+     auto it = base::ranges::find(sources_, source);
+-    DCHECK(it != sources_.end());
++    CHECK(it != sources_.end());
+     sources_.erase(it);
+     (source->*RemoveObsFn)(observer_);
+   }
+diff --git a/cc/tiles/gpu_image_decode_cache.cc b/cc/tiles/gpu_image_decode_cache.cc
+index 8a49e44647d8c6d35e7fa04dafbd32c06c153927..4ad050db8a3e590742501507d7777ba923ad3832 100644
+--- a/cc/tiles/gpu_image_decode_cache.cc
++++ b/cc/tiles/gpu_image_decode_cache.cc
+@@ -1379,8 +1379,8 @@ Iterator GpuImageDecodeCache::RemoveFromPersistentCache(Iterator it) {
+   }
+ 
+   auto entries_it = paint_image_entries_.find(it->second->paint_image_id);
+-  DCHECK(entries_it != paint_image_entries_.end());
+-  DCHECK_GT(entries_it->second.count, 0u);
++  CHECK(entries_it != paint_image_entries_.end());
++  CHECK_GT(entries_it->second.count, 0u);
+ 
+   // If this is the last entry for this image, remove its tracking.
+   --entries_it->second.count;
+diff --git a/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc b/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc
+index 4f4fbb6c8775e1019a6c2938812f5535737433a3..9e9181677fb676100ff2a20890e902f298b16644 100644
+--- a/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc
++++ b/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc
+@@ -117,7 +117,7 @@ void AnnotationAgentImpl::ScrollIntoView() const {
+ 
+   EphemeralRangeInFlatTree range = attached_range_->ToEphemeralRange();
+ 
+-  DCHECK(range.Nodes().begin() != range.Nodes().end());
++  CHECK(range.Nodes().begin() != range.Nodes().end());
+ 
+   Node& first_node = *range.Nodes().begin();
+ 
+diff --git a/ui/base/interaction/element_tracker_mac.mm b/ui/base/interaction/element_tracker_mac.mm
+index d3b8d98e499a074678d7e06efcc2146d92ae3eb4..b467aa234043ebc8537bb4576ce0eed713593597 100644
+--- a/ui/base/interaction/element_tracker_mac.mm
++++ b/ui/base/interaction/element_tracker_mac.mm
+@@ -50,7 +50,7 @@ void AddElement(ElementIdentifier identifier,
+ 
+   void ActivateElement(ElementIdentifier identifier) {
+     const auto it = elements_.find(identifier);
+-    DCHECK(it != elements_.end());
++    CHECK(it != elements_.end());
+     ui::ElementTracker::GetFrameworkDelegate()->NotifyElementActivated(
+         it->second.get());
+   }

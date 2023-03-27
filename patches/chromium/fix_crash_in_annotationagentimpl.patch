@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: David Bokan <bokan@chromium.org>
+Date: Fri, 3 Mar 2023 21:54:38 +0000
+Subject: Fix crash in AnnotationAgentImpl
+
+This crash was occurring because the EphemeralRangeInFlatTree didn't
+produce a Node. This is surprising since the RangeInFlatTree that it
+comes from is checked for !IsCollapsed().
+
+It turns out it's possible for RangeInFlatTree to be !IsCollapsed but
+converting to EphemeralRangeInFlatTree causes IsCollapsed.
+
+This CL ensures we early-out in the case that's tripping the CHECK. It
+keeps the early-out exactly matching the CHECK since it must be merged
+so we want to be extra sure. A followup will change this condition to
+!EphemeralRangeInFlatTree::IsCollapsed which should be equivalent.
+
+(cherry picked from commit 92782b6d34b7a5e26d184e217f8f44e97539686e)
+
+Bug: 1419712
+Change-Id: Id1d66a7a67711d463780b37c00600183d6c14f32
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4304486
+Reviewed-by: Khushal Sagar <khushalsagar@chromium.org>
+Commit-Queue: David Bokan <bokan@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1112568}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4305328
+Commit-Queue: Krishna Govind <govind@chromium.org>
+Reviewed-by: David Bokan <bokan@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5481@{#1321}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc b/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc
+index 9e9181677fb676100ff2a20890e902f298b16644..a5553945fb5923b93dbdf37c6b7b539049018dbb 100644
+--- a/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc
++++ b/third_party/blink/renderer/core/annotation/annotation_agent_impl.cc
+@@ -117,7 +117,11 @@ void AnnotationAgentImpl::ScrollIntoView() const {
+ 
+   EphemeralRangeInFlatTree range = attached_range_->ToEphemeralRange();
+ 
+-  CHECK(range.Nodes().begin() != range.Nodes().end());
++  // TODO(bokan): This should be checked in IsAttached.
++  bool range_has_nodes = range.Nodes().begin() != range.Nodes().end();
++  if (!range_has_nodes) {
++    return;
++  }
+ 
+   Node& first_node = *range.Nodes().begin();
+ 
+diff --git a/third_party/blink/renderer/core/annotation/annotation_agent_impl_test.cc b/third_party/blink/renderer/core/annotation/annotation_agent_impl_test.cc
+index 08b6bc177e684c83f51227dc41dc0b894be8a2a7..fbb6f5f1f34b4b26459450ebe35e917e02e47f10 100644
+--- a/third_party/blink/renderer/core/annotation/annotation_agent_impl_test.cc
++++ b/third_party/blink/renderer/core/annotation/annotation_agent_impl_test.cc
+@@ -643,4 +643,54 @@ TEST_F(AnnotationAgentImplTest, AgentScrollIntoViewZoomed) {
+   EXPECT_TRUE(ExpectInViewport(*element_foo));
+ }
+ 
++// Degenerate case but make sure it doesn't crash. This constructs a
++// RangeInFlatTree that isn't collapsed but turns into a collapsed
++// EphmemeralRangeInFlatTree.
++TEST_F(AnnotationAgentImplTest, ScrollIntoViewCollapsedRange) {
++  SimRequest request("https://example.com/test.html", "text/html");
++  LoadURL("https://example.com/test.html");
++  request.Complete(R"HTML(
++    <!DOCTYPE html>
++    <style>
++      p {
++        position: absolute;
++        top: 2000px;
++      }
++    </style>
++    <p id='text'>a</p>
++
++  )HTML");
++
++  Compositor().BeginFrame();
++
++  Element* element_text = GetDocument().getElementById("text");
++
++  const auto& range_start =
++      Position(element_text->firstChild(), PositionAnchorType::kBeforeAnchor);
++  const auto& range_end = Position(element_text, 0);
++
++  RangeInFlatTree* range = MakeGarbageCollected<RangeInFlatTree>(
++      ToPositionInFlatTree(range_start), ToPositionInFlatTree(range_end));
++
++  // TODO(bokan): Is this an editing bug?
++  ASSERT_FALSE(range->IsCollapsed());
++  ASSERT_TRUE(range->ToEphemeralRange().IsCollapsed());
++
++  auto* agent = CreateAgentForRange(range);
++  ASSERT_TRUE(agent);
++
++  ASSERT_EQ(GetDocument().View()->GetRootFrameViewport()->GetScrollOffset(),
++            ScrollOffset());
++
++  MockAnnotationAgentHost host;
++  host.BindToAgent(*agent);
++  agent->Attach();
++
++  // Ensure calling ScrollIntoView doesn't crash.
++  host.agent_->ScrollIntoView();
++  host.FlushForTesting();
++  EXPECT_EQ(GetDocument().View()->GetRootFrameViewport()->GetScrollOffset().y(),
++            0);
++}
++
+ }  // namespace blink
