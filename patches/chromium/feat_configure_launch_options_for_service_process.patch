@@ -323,7 +323,7 @@ index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 68db1862fd51f9b6c8c8c9fbd4055490fccd5f9a..5fb93015c780124ced9781ff5ae3e9cb821bb6e7 100644
+index 5a8f79cce1e6635e4656383cea8ab8763d09aa59..665904af73916b269adfb2b793c5792bbb26e862 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
