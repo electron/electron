@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Joyee Cheung <joyee@igalia.com>
+Date: Tue, 14 Feb 2023 00:58:04 +0100
+Subject: Merged: [ic] store slow stubs for objects with access checks in
+ DefineNamedIC
+
+The CheckIfCanDefine() used to check the attributes of the object
+as well as reporting to access check failure callbacks can update
+the lookup iterator, resulting in wrong store handlers being
+installed. Restart the lookup iterator in this case to make
+sure that slow handlers are installed.
+
+Bug: chromium:1415249
+(cherry picked from commit da2df213bc70437ef76f47e0ab6995fa45f8014a)
+
+Change-Id: I92d60af7ea798d80b1115e63b7fce8e2e8026ed9
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4290868
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.0@{#33}
+Cr-Branched-From: 06097c6f0c5af54fd5d6965d37027efb72decd4f-refs/heads/11.0.226@{#1}
+Cr-Branched-From: 6bf3344f5d9940de1ab253f1817dcb99c641c9d3-refs/heads/main@{#84857}
+
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index ae1dde1a8c587dfc80a0a62e96b7bbfe6ba5eea5..fff21e90bad3451e2d942ec327cb02f394fecc46 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -1818,6 +1818,11 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
+     if (!can_define.FromJust()) {
+       return isolate()->factory()->undefined_value();
+     }
++    // Restart the lookup iterator updated by CheckIfCanDefine() for
++    // UpdateCaches() to handle access checks.
++    if (use_ic && object->IsAccessCheckNeeded()) {
++      it.Restart();
++    }
+   }
+ 
+   if (use_ic) {
+diff --git a/test/mjsunit/regress/regress-crbug-1415249.js b/test/mjsunit/regress/regress-crbug-1415249.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..5715e0107a4b6e9dded9ca92c7b766c4cce0af72
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1415249.js
+@@ -0,0 +1,30 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --always-turbofan
++{
++  const realm = Realm.createAllowCrossRealmAccess();
++  const global = Realm.global(realm);
++  function Base() { return global; }
++  let i = 0;
++  class Klass extends Base {
++    field = i++;
++  }
++  let a = new Klass();
++  assertEquals(a.field, 0);
++  a = new Klass();
++  assertEquals(a.field, 1);
++}
++
++{
++  const realm = Realm.create();
++  const global = Realm.global(realm);
++  function Base() { return global; }
++  let i = 0;
++  class Klass extends Base {
++    field = i++;
++  }
++  assertThrows(() => new Klass(), Error, /no access/);
++  assertThrows(() => new Klass(), Error, /no access/);
++}
