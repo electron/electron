@@ -36,11 +36,6 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
 
-#if BUILDFLAG(IS_MAC)
-  // Needed for WebUSB implementation
-  enable_features += std::string(",") + device::kNewUsbBackend.name;
-#endif
-
 #if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   disable_features += std::string(",") + media::kPictureInPicture.name;
 #endif

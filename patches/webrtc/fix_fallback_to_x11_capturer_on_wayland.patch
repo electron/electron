@@ -1,0 +1,58 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <keeleymhammond@gmail.com>
+Date: Sun, 5 Mar 2023 21:04:37 -0800
+Subject: fix: fallback to X11 capturer on Wayland
+
+CL: https://webrtc-review.googlesource.com/c/src/+/279163
+
+Desktop Capturer behaves inconsistently on Wayland. PipeWire does not
+always successfully start; if it does not, we return a nullptr rather
+than falling back on the X11 capturer, crashing the application.
+
+If the X11 capturer is enabled, we should at minimum try to fallback
+to X11 for desktop capturer. This patch re-enables that fallback,
+which was previously default behavior.
+
+This patch can be removed when 1) this fix is upstreamed, or 2) the
+stability of PipeWire initialization is improved upstream.
+
+Patch_Filename: fix_fallback_to_x11_desktop_capturer_wayland.patch
+
+diff --git a/modules/desktop_capture/screen_capturer_linux.cc b/modules/desktop_capture/screen_capturer_linux.cc
+index 44993837e8bbd84a11ec9d187349a95f83258910..cd9f8b0be6a19d057fe9150382fb72bc4032b343 100644
+--- a/modules/desktop_capture/screen_capturer_linux.cc
++++ b/modules/desktop_capture/screen_capturer_linux.cc
+@@ -34,11 +34,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawScreenCapturer(
+ #endif  // defined(WEBRTC_USE_PIPEWIRE)
+ 
+ #if defined(WEBRTC_USE_X11)
+-  if (!DesktopCapturer::IsRunningUnderWayland())
+-    return ScreenCapturerX11::CreateRawScreenCapturer(options);
+-#endif  // defined(WEBRTC_USE_X11)
+-
++  return ScreenCapturerX11::CreateRawScreenCapturer(options);
++#else
+   return nullptr;
++#endif  // defined(WEBRTC_USE_X11)
+ }
+ 
+ }  // namespace webrtc
+diff --git a/modules/desktop_capture/window_capturer_linux.cc b/modules/desktop_capture/window_capturer_linux.cc
+index 4205bf9bc0eede48cdc39353c77ceb6e7529fd51..785dc01a1911fd027401b1461223668333e05558 100644
+--- a/modules/desktop_capture/window_capturer_linux.cc
++++ b/modules/desktop_capture/window_capturer_linux.cc
+@@ -34,11 +34,10 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateRawWindowCapturer(
+ #endif  // defined(WEBRTC_USE_PIPEWIRE)
+ 
+ #if defined(WEBRTC_USE_X11)
+-  if (!DesktopCapturer::IsRunningUnderWayland())
+-    return WindowCapturerX11::CreateRawWindowCapturer(options);
+-#endif  // defined(WEBRTC_USE_X11)
+-
++  return WindowCapturerX11::CreateRawWindowCapturer(options);
++#else
+   return nullptr;
++#endif  // defined(WEBRTC_USE_X11)
+ }
+ 
+ }  // namespace webrtc

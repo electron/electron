@@ -7,7 +7,7 @@ This refactors several allocators to allocate within the V8 memory cage,
 allowing them to be compatible with the V8_SANDBOXED_POINTERS feature.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
-index e0bacccd4514fcc9122f6b6e7a613141b2510157..e3c42d892eed8dd605301348c08ad24f4362a7aa 100644
+index e3b4cd710d045a98e1d127adcbc557f5f724d443..a994221445471b92d12ed9cb3bef9ffb70670ab6 100644
 --- a/src/api/environment.cc
 +++ b/src/api/environment.cc
 @@ -86,6 +86,14 @@ MaybeLocal<Value> PrepareStackTraceCallback(Local<Context> context,
@@ -26,10 +26,10 @@ index e0bacccd4514fcc9122f6b6e7a613141b2510157..e3c42d892eed8dd605301348c08ad24f
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a3077ed03 100644
+index e12ccf8162ee799beb3d4f0832054b5c4d397631..aa65c99f2ac29c9ce9d15b968f0ce7b8d5750563 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -324,10 +324,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
+@@ -338,10 +338,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {
    return *this;
  }
  
@@ -66,7 +66,7 @@ index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a
    std::unique_ptr<BackingStore> ptr = ArrayBuffer::NewBackingStore(
        allocated_data_,
        size(),
-@@ -339,10 +364,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
+@@ -353,10 +378,11 @@ std::unique_ptr<BackingStore> ByteSource::ReleaseToBackingStore() {
    data_ = nullptr;
    size_ = 0;
    return ptr;
@@ -79,7 +79,7 @@ index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a
    return ArrayBuffer::New(env->isolate(), std::move(store));
  }
  
-@@ -671,6 +697,16 @@ namespace {
+@@ -685,6 +711,16 @@ namespace {
  // in which case this has the same semantics as
  // using OPENSSL_malloc. However, if the secure heap is
  // initialized, SecureBuffer will automatically use it.
@@ -96,7 +96,7 @@ index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a
  void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
-@@ -692,6 +728,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -706,6 +742,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
    args.GetReturnValue().Set(Uint8Array::New(buffer, 0, len));
  }
@@ -105,7 +105,7 @@ index 1fe573cd7b6894743a0986e87802960ad09e2dd9..ff1346f65f3c280da9962df87eb0710a
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
  #ifndef OPENSSL_IS_BORINGSSL
 diff --git a/src/crypto/crypto_util.h b/src/crypto/crypto_util.h
-index 0adbe57d582eff906476330083258716e5bcae99..e2fb3e67900cc1dd0e77b81dd9fad225ea0ac272 100644
+index bf19334cf61fa497c9325c1d2e996a16545f1b7f..333039b3b7cdf29e911a9c09932b2588d4cccf1a 100644
 --- a/src/crypto/crypto_util.h
 +++ b/src/crypto/crypto_util.h
 @@ -280,7 +280,7 @@ class ByteSource {
@@ -118,7 +118,7 @@ index 0adbe57d582eff906476330083258716e5bcae99..e2fb3e67900cc1dd0e77b81dd9fad225
    v8::Local<v8::ArrayBuffer> ToArrayBuffer(Environment* env);
  
 diff --git a/src/node_i18n.cc b/src/node_i18n.cc
-index d5d8943f1c66159ad8f345d8909275137b097ec2..21a99269711035b02efabe87309a62c27e3d8cb0 100644
+index bb810632ee6617759d9cbd24c84a5d1a3a6081aa..3faf9840eddf2db993baef0866bc8854b49c0700 100644
 --- a/src/node_i18n.cc
 +++ b/src/node_i18n.cc
 @@ -104,7 +104,7 @@ namespace {

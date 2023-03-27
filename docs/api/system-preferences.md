@@ -235,7 +235,7 @@ if (browserOptions.transparent) {
 }
 ```
 
-[dwm-composition]:https://msdn.microsoft.com/en-us/library/windows/desktop/aa969540.aspx
+[dwm-composition]: https://learn.microsoft.com/en-us/windows/win32/dwm/composition-ovw
 
 ### `systemPreferences.getAccentColor()` _Windows_ _macOS_
 
@@ -336,8 +336,8 @@ See the [Windows docs][windows-colors] and the [macOS docs][macos-colors] for mo
 
 The following colors are only available on macOS 10.14: `find-highlight`, `selected-content-background`, `separator`, `unemphasized-selected-content-background`, `unemphasized-selected-text-background`, and `unemphasized-selected-text`.
 
-[windows-colors]:https://msdn.microsoft.com/en-us/library/windows/desktop/ms724371(v=vs.85).aspx
-[macos-colors]:https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#dynamic-system-colors
+[windows-colors]: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor
+[macos-colors]: https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#dynamic-system-colors
 
 ### `systemPreferences.getSystemColor(color)` _macOS_
 

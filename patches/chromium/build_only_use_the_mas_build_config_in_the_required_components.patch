@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 29344e62d32b50cceef20c5c869c77f992880667..90dbf4ad6f38f6380aa65679d8114fd8cb230444 100644
+index 80f6eaf01c022b979ff8c3049e7b1d66aaa605c3..c472e10fdc5c9cce7934e584f2848e74aecd8801 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1485,6 +1485,7 @@ component("base") {
+@@ -1035,6 +1035,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -18,7 +18,7 @@ index 29344e62d32b50cceef20c5c869c77f992880667..90dbf4ad6f38f6380aa65679d8114fd8
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 5a4570c4699cde1376c21fb50954b6562acd999f..7172c144eacccf8efce6cc85545599ecf14c5d4a 100644
+index cae98422abedad1eb1dc0b3e0baf0ca341b31ec7..6bdef81c3a027942e2987c0005d67d10c5c1089c 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -29,11 +29,11 @@ index 5a4570c4699cde1376c21fb50954b6562acd999f..7172c144eacccf8efce6cc85545599ec
  ]
  
  if (is_win) {
-diff --git a/components/os_crypt/BUILD.gn b/components/os_crypt/BUILD.gn
-index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36ee6a5b75 100644
---- a/components/os_crypt/BUILD.gn
-+++ b/components/os_crypt/BUILD.gn
-@@ -65,6 +65,8 @@ component("os_crypt") {
+diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
+index 3314c2a5cdcef04d7f1a8bf0e07cafa073f2815e..ef75cef4e449bb5c689f95ab664c19a1c2362b16 100644
+--- a/components/os_crypt/sync/BUILD.gn
++++ b/components/os_crypt/sync/BUILD.gn
+@@ -70,6 +70,8 @@ component("os_crypt") {
        "keychain_password_mac.mm",
        "os_crypt_mac.mm",
      ]
@@ -43,7 +43,7 @@ index 8448ff2d912ed8664ba1117397a2407c08e9a578..5f6bb1a87615c474e06209fc8034ff36
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 1adfddd0fa65aac18e4bc98a38e52dfd62701ff4..6ac3d77d7259970394537e164097cd8dbefec6b0 100644
+index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -55,23 +55,31 @@ index 1adfddd0fa65aac18e4bc98a38e52dfd62701ff4..6ac3d77d7259970394537e164097cd8d
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index c320ce10cfcd8b62dc516871bae900f6da9600f5..c9347d61c76098c9df5e0142872b5078017e6270 100644
+index a808f967a95fca4847588f1d88a210bfd7f53767..7c3c71cac9162b8f565494fdad16fb06aa9563d5 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -306,6 +306,8 @@ viz_component("service") {
+@@ -314,6 +314,7 @@ viz_component("service") {
  
-     deps += [ "//ui/accelerated_widget_mac" ]
-     frameworks = [ "IOSurface.framework" ]
-+
+       frameworks += [ "CoreGraphics.framework" ]
+     }
 +    configs = ["//electron/build/config:mas_build"]
    }
  
    if (is_android || use_ozone) {
+@@ -567,6 +568,8 @@ viz_source_set("unit_tests") {
+       "display_embedder/software_output_device_mac_unittest.mm",
+     ]
+     frameworks = [ "IOSurface.framework" ]
++
++    configs += ["//electron/build/config:mas_build"]
+   }
+ 
+   if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9ba992e9ce8e107949db8dfc928a478b50fea35a..564467c1dda1210085488aed47d64052c457bd8a 100644
+index fccddda5803b6838bcfde366b4812308fce5522e..6fa821c72d385579bbc6f1b86443323138e32f77 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -57,6 +57,7 @@ source_set("browser") {
+@@ -56,6 +56,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -80,10 +88,10 @@ index 9ba992e9ce8e107949db8dfc928a478b50fea35a..564467c1dda1210085488aed47d64052
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index d01ad9dbeabeef8a5679823d8b1678d0a46c3865..2c4d34bc40aec5de7603ada2777e532be4416fce 100644
+index 1bfc069882b2fd56bb4e872c792809615e4f70c9..e5df5a35d270229787d0d9637b23813e2e1da115 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -170,6 +170,7 @@ source_set("common") {
+@@ -168,6 +168,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -92,10 +100,10 @@ index d01ad9dbeabeef8a5679823d8b1678d0a46c3865..2c4d34bc40aec5de7603ada2777e532b
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index a1f691c0d3452b440210190c467f96c727b3ec58..2c4808ec4b7018165947c311816d113067e8542c 100644
+index 3ec54c242fb920a53fcaa6d8040f2ec88c2727df..27dee1596183d2ead5290a60c08e47e69e905d21 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -220,6 +220,7 @@ target(link_target_type, "renderer") {
+@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -104,19 +112,19 @@ index a1f691c0d3452b440210190c467f96c727b3ec58..2c4808ec4b7018165947c311816d1130
  
    public_deps = [
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 0b526044dcc7cbc21cc25cfdd7be8e4cdd8f06eb..c5c61601a684ea08e2279b4fc6b77d81ff2f03e1 100644
+index 5e9f447e4d946cd48d7b18d81c256baa169f93ea..fcfda1b4fde66c39b53a52d57c5e57b7f239bda1 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -249,6 +249,7 @@ component("bluetooth") {
+@@ -240,6 +240,7 @@ component("bluetooth") {
        "IOKit.framework",
        "Foundation.framework",
      ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
-   if (is_win) {
+   if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index e5bc3c86e07873f5ad5a54fba950e3105049ab2b..6774273357a7b6a465a9918f81b4cee90c0859a4 100644
+index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff65e17bd9 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -119,6 +119,7 @@ component("service") {
@@ -125,22 +133,22 @@ index e5bc3c86e07873f5ad5a54fba950e3105049ab2b..6774273357a7b6a465a9918f81b4cee9
      defines += [ "GL_SILENCE_DEPRECATION" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
-   if (is_android) {
+   if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 44635f13048890b20c74870d26c4e74bab363ddb..33ad7650832b7572949fb6f362bef02879f4c31b 100644
+index f1b4cd5055d00df425926e83a3b2e7f32af4c2e6..a80aaa7fde1fd9c70e7038aef4e322f1ec6a307a 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -188,6 +188,7 @@ source_set("audio") {
-       "CoreAudio.framework",
-       "CoreFoundation.framework",
+@@ -194,6 +194,7 @@ source_set("audio") {
+       "mac/coreaudio_dispatch_override.h",
      ]
+     frameworks += [ "AudioUnit.framework" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
-   if (is_win) {
+   if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aaeea1a49a 100644
+index a8193d411da14f4ff0087fba81e63809832d1806..94c410b59ab7b40654fb214a6a9d828170fe2095 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -173,6 +173,8 @@ source_set("dns") {
@@ -153,7 +161,7 @@ index 1467334057a0f2ae4f2d2bb1bae9ec0b1ca1d77b..c358a3d9e16865eb8247b67c4369e3aa
  
  # The standard API of net/dns.
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3edb116d9b2 100644
+index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a98050bb3cc6 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
 @@ -37,6 +37,7 @@ component("seatbelt") {
@@ -181,10 +189,10 @@ index b078486d595ec38e5db1462486ab31a2951430e0..5cafd91460d5f98a20caa884834cc3ed
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index fabf49654cebc659348e3505487b2be583647fed..58efb9cfe6e4ed44a8e3753ef4af8e4db84617cd 100644
+index f61e0ad85e7e7faf97274bad4b59fc91c41e3168..c308bcb30f57e7b0c9ae58420bedd343f4b54184 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -280,6 +280,7 @@ component("core") {
+@@ -304,6 +304,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -193,20 +201,20 @@ index fabf49654cebc659348e3505487b2be583647fed..58efb9cfe6e4ed44a8e3753ef4af8e4d
    public_deps = [
      ":core_generated",
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 1ca2843130e81f9ea6be7a71b6b2a8d68bd413ae..712e4428bc9417f114a695a5980c488801007b77 100644
+index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfaff19e471 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -53,6 +53,8 @@ component("accelerated_widget_mac") {
-     "OpenGL.framework",
+@@ -32,6 +32,8 @@ component("accelerated_widget_mac") {
      "QuartzCore.framework",
    ]
-+
-+  configs += ["//electron/build/config:mas_build"]
- }
  
- test("accelerated_widget_mac_unittests") {
++  configs += ["//electron/build/config:mas_build"]
++
+   if (is_ios) {
+     sources += [ "ca_layer_frame_sink_provider.h" ]
+   }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9b487e4b6 100644
+index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682ca6f07179 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -249,6 +249,7 @@ component("platform") {
@@ -218,19 +226,19 @@ index 3bec9f0f7d46f09842d785092295370c04d7b613..85aea7cc7fe5466aed6bf28f73409ce9
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 8ed2cd062b2e9531742835c61f015975c7d59d40..989005583f46879f6ed32aa121d9dc2d7af0d589 100644
+index 90074c3e90d9b4bbfaf2c86f8c1a5a3c36babdc8..991bc348a5fb5c2e9a744b14ed5894fe3155f4c0 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -348,6 +348,7 @@ component("base") {
+@@ -345,6 +345,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
-   if (is_chromeos_lacros) {
+   if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index aadf9f2a52fd6bf4f027a070656c893b5025c714..445fa39d3676b80901ffb734bfb5ca1045dc4c41 100644
+index 7bd65e6d61d0845cf3a557a43b377ee7894fd7d1..91a470467ddd5e2118a08b5b63f96e5e94c554bc 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -56,6 +56,10 @@ component("display") {
@@ -245,10 +253,10 @@ index aadf9f2a52fd6bf4f027a070656c893b5025c714..445fa39d3676b80901ffb734bfb5ca10
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675cb22bf4e7 100644
+index af0e7466f1a265c9d55ba81f3b2c9c68dafa7767..d991513ee82f4406f578a4751bf30fac1910c741 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -188,6 +188,7 @@ component("gfx") {
+@@ -193,6 +193,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]
@@ -257,10 +265,10 @@ index d2692c7422e4694a783876addc1b283d451e937f..a07aaa7e88f38fa91c1254f7af03675c
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 36bc22a122193bf5ccd7e86df08cce7e5451a035..6d64206ee17042b6eef9ba15977eba0458903c75 100644
+index 14b9424f12ae3d3978f834e2bb765d9f18892ce5..7ad880f66fa720b3b708d0f4fe8ee4f81d98d10c 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -664,6 +664,7 @@ component("views") {
+@@ -673,6 +673,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

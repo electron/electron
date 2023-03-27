@@ -231,7 +231,7 @@ rest of our docs and happy developing! If you have questions, please stop by our
 [new-pat]: https://github.com/settings/tokens/new
 [publish command]: https://www.electronforge.io/cli#publish
 [publisher]: https://www.electronforge.io/config/publishers
-[`publishergithubconfig`]: https://js.electronforge.io/publisher/github/interfaces/publishergithubconfig
+[`publishergithubconfig`]: https://js.electronforge.io/interfaces/_electron_forge_publisher_github.PublisherGitHubConfig.html
 [`update-electron-app`]: https://github.com/electron/update-electron-app
 [update-server]: ./updates.md
 

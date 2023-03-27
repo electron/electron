@@ -45,10 +45,10 @@ void ElectronExtensionsDispatcherDelegate::InitializeBindingsSystem(
     extensions::Dispatcher* dispatcher,
     extensions::NativeExtensionBindingsSystem* bindings_system) {
   extensions::APIBindingsSystem* bindings = bindings_system->api_system();
-  bindings->GetHooksForAPI("extension")
-      ->SetDelegate(std::make_unique<extensions::ExtensionHooksDelegate>(
-          bindings_system->messaging_service()));
-  bindings->GetHooksForAPI("tabs")->SetDelegate(
-      std::make_unique<extensions::TabsHooksDelegate>(
-          bindings_system->messaging_service()));
+  bindings->RegisterHooksDelegate(
+      "extension", std::make_unique<extensions::ExtensionHooksDelegate>(
+                       bindings_system->messaging_service()));
+  bindings->RegisterHooksDelegate(
+      "tabs", std::make_unique<extensions::TabsHooksDelegate>(
+                  bindings_system->messaging_service()));
 }

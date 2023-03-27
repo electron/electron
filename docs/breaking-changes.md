@@ -12,7 +12,91 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (25.0)
+
+### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
+
+The `protocol.register*Protocol` and `protocol.intercept*Protocol` methods have
+been replaced with [`protocol.handle`](api/protocol.md#protocolhandlescheme-handler).
+
+The new method can either register a new protocol or intercept an existing
+protocol, and responses can be of any type.
+
+```js
+// Deprecated in Electron 25
+protocol.registerBufferProtocol('some-protocol', () => {
+  callback({ mimeType: 'text/html', data: Buffer.from('<h5>Response</h5>') })
+})
+
+// Replace with
+protocol.handle('some-protocol', () => {
+  return new Response(
+    Buffer.from('<h5>Response</h5>'), // Could also be a string or ReadableStream.
+    { headers: { 'content-type': 'text/html' } }
+  )
+})
+```
+
+```js
+// Deprecated in Electron 25
+protocol.registerHttpProtocol('some-protocol', () => {
+  callback({ url: 'https://electronjs.org' })
+})
+
+// Replace with
+protocol.handle('some-protocol', () => {
+  return net.fetch('https://electronjs.org')
+})
+```
+
+```js
+// Deprecated in Electron 25
+protocol.registerFileProtocol('some-protocol', () => {
+  callback({ filePath: '/path/to/my/file' })
+})
+
+// Replace with
+protocol.handle('some-protocol', () => {
+  return net.fetch('file:///path/to/my/file')
+})
+```
+
 ## Planned Breaking API Changes (24.0)
+
+### API Changed: `nativeImage.createThumbnailFromPath(path, size)`
+
+The `maxSize` parameter has been changed to `size` to reflect that the size passed in will be the size the thumbnail created. Previously, Windows would not scale the image up if it were smaller than `maxSize`, and
+macOS would always set the size to `maxSize`. Behavior is now the same across platforms.
+
+Updated Behavior:
+
+```js
+// a 128x128 image.
+const imagePath = path.join('path', 'to', 'capybara.png')
+
+// Scaling up a smaller image.
+const upSize = { width: 256, height: 256 }
+nativeImage.createThumbnailFromPath(imagePath, upSize).then(result => {
+  console.log(result.getSize()) // { width: 256, height: 256 }
+})
+
+// Scaling down a larger image.
+const downSize = { width: 64, height: 64 }
+nativeImage.createThumbnailFromPath(imagePath, downSize).then(result => {
+  console.log(result.getSize()) // { width: 64, height: 64 }
+})
+```
+
+Previous Behavior (on Windows):
+
+```js
+// a 128x128 image
+const imagePath = path.join('path', 'to', 'capybara.png')
+const size = { width: 256, height: 256 }
+nativeImage.createThumbnailFromPath(imagePath, size).then(result => {
+  console.log(result.getSize()) // { width: 128, height: 128 }
+})
+```
 
 ### Deprecated: `BrowserWindow.setTrafficLightPosition(position)`
 

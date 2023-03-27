@@ -39,7 +39,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593e14fb701 100644
+index d2b217adce962850647ddfd7898414c86b90baa4..45c81cebf3e776f2ca9de34252971ad5e959d915 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@
@@ -55,7 +55,7 @@ index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593
  #endif
  }  // extern "C"
  
-@@ -315,8 +309,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
+@@ -323,8 +317,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
        const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
    DCHECK(!cf_val ||
           CTFontGetTypeID() == CFGetTypeID(cf_val) ||
@@ -65,7 +65,7 @@ index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593
    return ns_val;
  }
  
-@@ -387,9 +380,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
+@@ -397,9 +390,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
      return (CTFontRef)(cf_val);
    }
  
@@ -76,10 +76,10 @@ index 74d1351a7a3c46e5158f903a165fe3068b9732be..fb6529038b41ffddb1a05b139c86f593
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c479b8f03 100644
+index b9f62726f3808636bdb513ad10d89277b7837b82..eada168aff54aebf84e80a2df5363fe77311347e 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -19,14 +19,19 @@
+@@ -20,14 +20,19 @@
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/base_tracing.h"
@@ -99,7 +99,7 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -95,13 +100,27 @@ class PosixSpawnFileActions {
+@@ -98,13 +103,27 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -127,22 +127,17 @@ index f860be6fbb6caf166f4808772a490ebba9cd7f08..d1b588346e106b032045b1a33ccc469c
  }
  
  struct GetAppOutputOptions {
-@@ -221,11 +240,13 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -224,7 +243,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
+-#if BUILDFLAG(IS_MAC)
 +#if 0
    if (options.disclaim_responsibility) {
      if (__builtin_available(macOS 10.14, *)) {
        DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
-     }
-   }
-+#endif
- 
-   std::vector<char*> argv_cstr;
-   argv_cstr.reserve(argv.size() + 1);
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 72b78e9a7b80a37247c4c8e5468e17a5464e9d12..71fb7cfe4a0a8cd329940af5b0b371731ee2567a 100644
+index cfe208403514b55abc6d5b5695882ac50e08db8a..654e5f560c7dccd7bd4ec36a821a7478e3289a61 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@

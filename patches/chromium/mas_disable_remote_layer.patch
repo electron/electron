@@ -16,11 +16,11 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 29b75456a779ff9c36bb0cc2cdc4a1b2a1aa5966..4157e90fdbc265ab34405e4e9c1efbff06c26d70 100644
+index 7d0b810073898dd4a3607828e3419b65ee1cb09d..20c6bd1a002e2b54eed0a8732b2807f598b5f20f 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -18,7 +18,9 @@
- #include "ui/gl/gpu_switching_observer.h"
+@@ -17,7 +17,9 @@
+ #include "ui/gl/gl_surface.h"
  #include "ui/gl/presenter.h"
  
 +#if !IS_MAS_BUILD()
@@ -29,50 +29,69 @@ index 29b75456a779ff9c36bb0cc2cdc4a1b2a1aa5966..4157e90fdbc265ab34405e4e9c1efbff
  @class CALayer;
  
  namespace ui {
-@@ -89,7 +91,9 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter,
+@@ -73,8 +75,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
+ 
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
-   bool use_remote_layer_api_;
 +#if !IS_MAS_BUILD()
+   const bool use_remote_layer_api_;
    base::scoped_nsobject<CAContext> ca_context_;
 +#endif
    std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index e2b4368c08ba9e30cb46218988c6212a46c98217..02db1e7041f18bae8c90539fee0e768b353fa523 100644
+index 1f9d7ec4bd7ab0668a081ecc74bf9a3ab80c4697..4e3014ff05c001d37f583cb7c1af6b3dda9b1503 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -74,12 +74,14 @@
- 
-   // Create the CAContext to send this to the GPU process, and the layer for
-   // the context.
+@@ -55,7 +55,9 @@
+ ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL(
+     base::WeakPtr<ImageTransportSurfaceDelegate> delegate)
+     : delegate_(delegate),
 +#if !IS_MAS_BUILD()
-   if (use_remote_layer_api_) {
-     CGSConnectionID connection_id = CGSMainConnectionID();
-     ca_context_.reset([[CAContext contextWithCGSConnection:connection_id
-                                                    options:@{}] retain]);
+       use_remote_layer_api_(ui::RemoteLayerAPISupported()),
++#endif
+       scale_factor_(1),
+       vsync_callback_(delegate->GetGpuVSyncCallback()),
+       weak_ptr_factory_(this) {
+@@ -68,6 +70,7 @@
+            ->workarounds()
+            .disable_av_sample_buffer_display_layer;
+ 
++#if !IS_MAS_BUILD()
+   ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
+       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
+ 
+@@ -88,6 +91,10 @@
+ #endif
      [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
    }
++#else
++  ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
++      /*allow_remote_layers=*/false, allow_av_sample_buffer_display_layer);
 +#endif
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -174,7 +176,9 @@
+@@ -169,9 +176,13 @@
+     TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
-     if (use_remote_layer_api_) {
 +#if !IS_MAS_BUILD()
+     if (use_remote_layer_api_) {
        params.ca_context_id = [ca_context_ contextId];
-+#endif
      } else {
++#else
++    if (true) {
++#endif
        IOSurfaceRef io_surface =
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
+       if (io_surface) {
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 2c4821b34f71d30ce814bd1f3cf9a7a76bbaac66..c7dc371c780a405f502a84c77e92251ae08f66e0 100644
+index 8cd4cd65a02b3ca332f1d4164ff7c16cda10cdb8..bcd99c491085d3bfca4434c65ad53d2f6da51831 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -99,6 +99,7 @@ - (void)setContentsChanged;
+@@ -119,6 +119,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
@@ -80,7 +99,7 @@ index 2c4821b34f71d30ce814bd1f3cf9a7a76bbaac66..c7dc371c780a405f502a84c77e92251a
    // Early-out if the remote layer has not changed.
    if ([remote_layer_ contextId] == ca_context_id)
      return;
-@@ -123,6 +124,9 @@ - (void)setContentsChanged;
+@@ -149,6 +150,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
      io_surface_layer_.reset();
    }
@@ -91,20 +110,20 @@ index 2c4821b34f71d30ce814bd1f3cf9a7a76bbaac66..c7dc371c780a405f502a84c77e92251a
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index 9b691e2f16c68235dd180a28b6eb2eefc91f8e4c..9d4a7fb36e671980024b895eaafab2d970ac2818 100644
+index 5763f05d30ee718b5b6ec75465bc5f58fc263a91..e470d8a719119427026b5656159f8c7188727ad4 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
-@@ -13,6 +13,7 @@
+@@ -17,6 +17,7 @@
  
- #include "base/component_export.h"
+ #if BUILDFLAG(IS_MAC)
  
 +#if !IS_MAS_BUILD()
  // The CGSConnectionID is used to create the CAContext in the process that is
  // going to share the CALayers that it is rendering to another process to
  // display.
-@@ -50,6 +51,8 @@ typedef uint32_t CAContextID;
+@@ -68,6 +69,8 @@ extern NSString* const kCAContextIgnoresHitTest;
  
- #endif // __OBJC__
+ #endif  // __OBJC__
  
 +#endif // MAS_BUILD
 +
@@ -112,7 +131,7 @@ index 9b691e2f16c68235dd180a28b6eb2eefc91f8e4c..9d4a7fb36e671980024b895eaafab2d9
  
  // This function will check if all of the interfaces listed above are supported
 diff --git a/ui/base/cocoa/remote_layer_api.mm b/ui/base/cocoa/remote_layer_api.mm
-index e23eb7719a9798afe984c6af6a422167b93d89b5..d448bc09ee54fc77f1ed4d088d1369b96f83a1db 100644
+index fc25ba79d2b0e1acdb7ba54b89e7d6e16f94771b..962df2d65d61ec0836cf465d847eb666033846f2 100644
 --- a/ui/base/cocoa/remote_layer_api.mm
 +++ b/ui/base/cocoa/remote_layer_api.mm
 @@ -10,6 +10,7 @@
@@ -134,7 +153,7 @@ index e23eb7719a9798afe984c6af6a422167b93d89b5..d448bc09ee54fc77f1ed4d088d1369b9
    if (!base::FeatureList::IsEnabled(kRemoteCoreAnimationAPI))
      return false;
  
-@@ -50,6 +53,9 @@ bool RemoteLayerAPISupported() {
+@@ -55,6 +58,9 @@ bool RemoteLayerAPISupported() {
  
    // If everything is there, we should be able to use the API.
    return true;

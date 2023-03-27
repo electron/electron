@@ -123,10 +123,11 @@ void ZoomLevelDelegate::ExtractPerHostZoomLevels(
   // have an empty host.
   {
     ScopedDictPrefUpdate update(pref_service_, kPartitionPerHostZoomLevels);
-    base::Value* sanitized_host_zoom_dictionary = update->Find(partition_key_);
+    base::Value::Dict* sanitized_host_zoom_dictionary =
+        update->FindDict(partition_key_);
     if (sanitized_host_zoom_dictionary) {
-      for (const std::string& s : keys_to_remove)
-        sanitized_host_zoom_dictionary->RemoveKey(s);
+      for (const std::string& key : keys_to_remove)
+        sanitized_host_zoom_dictionary->Remove(key);
     }
   }
 }

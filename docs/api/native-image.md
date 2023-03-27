@@ -49,7 +49,7 @@ quality, it is recommended to include at least the following sizes in the:
 
 Check the *Size requirements* section in [this article][icons].
 
-[icons]:https://msdn.microsoft.com/en-us/library/windows/desktop/dn742485(v=vs.85).aspx
+[icons]: https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons
 
 ## High Resolution Image
 
@@ -119,12 +119,14 @@ Returns `NativeImage`
 
 Creates an empty `NativeImage` instance.
 
-### `nativeImage.createThumbnailFromPath(path, maxSize)` _macOS_ _Windows_
+### `nativeImage.createThumbnailFromPath(path, size)` _macOS_ _Windows_
 
 * `path` string - path to a file that we intend to construct a thumbnail out of.
-* `maxSize` [Size](structures/size.md) - the maximum width and height (positive numbers) the thumbnail returned can be. The Windows implementation will ignore `maxSize.height` and scale the height according to `maxSize.width`.
+* `size` [Size](structures/size.md) - the desired width and height (positive numbers) of the thumbnail.
 
 Returns `Promise<NativeImage>` - fulfilled with the file's thumbnail preview image, which is a [NativeImage](native-image.md).
+
+Note: The Windows implementation will ignore `size.height` and scale the height according to `size.width`.
 
 ### `nativeImage.createFromPath(path)`
 

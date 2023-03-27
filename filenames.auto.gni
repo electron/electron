@@ -50,7 +50,6 @@ auto_filenames = {
     "docs/api/share-menu.md",
     "docs/api/shell.md",
     "docs/api/structures",
-    "docs/api/synopsis.md",
     "docs/api/system-preferences.md",
     "docs/api/touch-bar-button.md",
     "docs/api/touch-bar-color-picker.md",

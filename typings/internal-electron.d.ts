@@ -175,6 +175,16 @@ declare namespace Electron {
     setBackgroundThrottling(allowed: boolean): void;
   }
 
+  interface Protocol {
+    registerProtocol(scheme: string, handler: any): boolean;
+    interceptProtocol(scheme: string, handler: any): boolean;
+  }
+
+  namespace Main {
+    class BaseWindow extends Electron.BaseWindow {}
+    class View extends Electron.View {}
+    class WebContentsView extends Electron.WebContentsView {}
+  }
 }
 
 declare namespace ElectronInternal {

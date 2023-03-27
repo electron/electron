@@ -249,7 +249,7 @@ enum class RenderProcessHostPrivilege {
 bool AllowFileAccess(const std::string& extension_id,
                      content::BrowserContext* context) {
   return base::CommandLine::ForCurrentProcess()->HasSwitch(
-             ::switches::kDisableExtensionsFileAccessCheck) ||
+             extensions::switches::kDisableExtensionsFileAccessCheck) ||
          extensions::ExtensionPrefs::Get(context)->AllowFileAccess(
              extension_id);
 }
@@ -1514,13 +1514,6 @@ std::string ElectronBrowserClient::GetApplicationLocale() {
   return *g_application_locale;
 }
 
-base::FilePath ElectronBrowserClient::GetFontLookupTableCacheDir() {
-  base::FilePath user_data_dir;
-  base::PathService::Get(chrome::DIR_USER_DATA, &user_data_dir);
-  DCHECK(!user_data_dir.empty());
-  return user_data_dir.Append(FILE_PATH_LITERAL("FontLookupTableCache"));
-}
-
 bool ElectronBrowserClient::ShouldEnableStrictSiteIsolation() {
   // Enable site isolation. It is off by default in Chromium <= 69.
   return true;
@@ -1722,13 +1715,11 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
       base::BindRepeating(&BindBadgeServiceForServiceWorker));
 }
 
-device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
 #if BUILDFLAG(IS_MAC)
-  return browser_main_parts_->GetGeolocationManager();
-#else
-  return nullptr;
-#endif
+device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
+  return g_browser_process->geolocation_manager();
 }
+#endif
 
 content::HidDelegate* ElectronBrowserClient::GetHidDelegate() {
   if (!hid_delegate_)

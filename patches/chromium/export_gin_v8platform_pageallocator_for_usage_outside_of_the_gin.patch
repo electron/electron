@@ -9,10 +9,10 @@ correctly tagged with MAP_JIT we need to use gins page allocator instead
 of the default V8 allocator.  This probably can't be usptreamed.
 
 diff --git a/gin/public/v8_platform.h b/gin/public/v8_platform.h
-index c4f2df96133012faebec25ac3a738c34cd6b4cf8..54bc2625686b9344c2c793c74589ed85de8227ba 100644
+index 9c3575725576cddf90e5681a52342f6b8d345bd1..f89ff175d2adf88c16167e8f306c9d3451afe94f 100644
 --- a/gin/public/v8_platform.h
 +++ b/gin/public/v8_platform.h
-@@ -30,6 +30,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {
+@@ -31,6 +31,7 @@ class GIN_EXPORT V8Platform : public v8::Platform {
    // enabling Arm's Branch Target Instructions for executable pages. This is
    // verified in the tests for gin::PageAllocator.
    PageAllocator* GetPageAllocator() override;
@@ -21,10 +21,10 @@ index c4f2df96133012faebec25ac3a738c34cd6b4cf8..54bc2625686b9344c2c793c74589ed85
    v8::ZoneBackingAllocator* GetZoneBackingAllocator() override;
  #endif
 diff --git a/gin/v8_platform.cc b/gin/v8_platform.cc
-index bbb16efbf5208989fa88c7f6d83d36aa5e54a0d1..ef562c9a9abed85198282728287637d178a0af0f 100644
+index 2cf6d986102904e3aa44b3333938b3bfcbc87470..f40799e5ae37f96ec5f3c8ae2ee73776783b0e5f 100644
 --- a/gin/v8_platform.cc
 +++ b/gin/v8_platform.cc
-@@ -370,6 +370,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
+@@ -330,6 +330,10 @@ PageAllocator* V8Platform::GetPageAllocator() {
    return g_page_allocator.Pointer();
  }
  

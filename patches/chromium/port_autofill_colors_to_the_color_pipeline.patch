@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index c8727dcac4d1440f7aef0b32e5ac7569b02f177e..4b6cd9afd7d224198c704e4a45f2f13c07e1fc81 100644
+index 52320d02883b51f40a0f21b19245303e32b62336..8b946da457a468c14cc57ff46e019558ef230304 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -289,6 +289,10 @@
+@@ -349,6 +349,10 @@
    E_CPONLY(kColorScrollbarThumbInactive) \
    E_CPONLY(kColorScrollbarThumbPressed) \
    E_CPONLY(kColorScrollbarTrack) \
@@ -22,7 +22,7 @@ index c8727dcac4d1440f7aef0b32e5ac7569b02f177e..4b6cd9afd7d224198c704e4a45f2f13c
    E_CPONLY(kColorSeparator) \
    E_CPONLY(kColorShadowBase) \
    E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -344,6 +348,7 @@
+@@ -420,6 +424,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,10 +31,10 @@ index c8727dcac4d1440f7aef0b32e5ac7569b02f177e..4b6cd9afd7d224198c704e4a45f2f13c
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 45bea447f6d25e23d60e0b5dde9aeb0ac7a005f3..7b9f527ba0efe6c09e00b15c7a9895a446f771cd 100644
+index 59a9de51f69245553b3868c3f54078bd0b92d5f7..3189ea61033f1fef6006ef59768b84f13e910a90 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -202,6 +202,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -203,6 +203,17 @@ void AddUiColorMixer(ColorProvider* provider,
                                              : SkColorSetA(SK_ColorBLACK, 0x80)};
    mixer[kColorScrollbarTrack] = {dark_mode ? SkColorSetRGB(0x42, 0x42, 0x42)
                                             : SkColorSetRGB(0xF1, 0xF1, 0xF1)};
@@ -52,7 +52,7 @@ index 45bea447f6d25e23d60e0b5dde9aeb0ac7a005f3..7b9f527ba0efe6c09e00b15c7a9895a4
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -283,6 +294,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -298,6 +309,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
@@ -61,7 +61,7 @@ index 45bea447f6d25e23d60e0b5dde9aeb0ac7a005f3..7b9f527ba0efe6c09e00b15c7a9895a4
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index cb7bebda6d9d5a6005019542cd8904628e071b62..0f018db179d8858943c5fa5ab298fe218d3977cd 100644
+index 8f39697063d14429cf25cd8a56185d878c2ac3c7..83623e0742b27b5c1f5485e3319a4b52c6370b58 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -153,6 +153,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,

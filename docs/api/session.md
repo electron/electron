@@ -42,6 +42,22 @@ To create a `Session` with `options`, you have to ensure the `Session` with the
 `partition` has never been used before. There is no way to change the `options`
 of an existing `Session` object.
 
+### `session.fromPath(path[, options])`
+
+* `path` string
+* `options` Object (optional)
+  * `cache` boolean - Whether to enable cache.
+
+Returns `Session` - A session instance from the absolute path as specified by the `path`
+string. When there is an existing `Session` with the same absolute path, it
+will be returned; otherwise a new `Session` instance will be created with `options`. The
+call will throw an error if the path is not an absolute path. Additionally, an error will
+be thrown if an empty string is provided.
+
+To create a `Session` with `options`, you have to ensure the `Session` with the
+`path` has never been used before. There is no way to change the `options`
+of an existing `Session` object.
+
 ## Properties
 
 The `session` module has the following properties:
@@ -767,6 +783,24 @@ Limitations:
 * The value of the `integrity` option is ignored.
 * The `.type` and `.url` values of the returned `Response` object are
   incorrect.
+
+By default, requests made with `net.fetch` can be made to [custom
+protocols](protocol.md) as well as `file:`, and will trigger
+[webRequest](web-request.md) handlers if present. When the non-standard
+`bypassCustomProtocolHandlers` option is set in RequestInit, custom protocol
+handlers will not be called for this request. This allows forwarding an
+intercepted request to the built-in handler. [webRequest](web-request.md)
+handlers will still be triggered when bypassing custom protocols.
+
+```js
+protocol.handle('https', (req) => {
+  if (req.url === 'https://my-app.com') {
+    return new Response('<body>my app</body>')
+  } else {
+    return net.fetch(req, { bypassCustomProtocolHandlers: true })
+  }
+})
+```
 
 #### `ses.disableNetworkEmulation()`
 

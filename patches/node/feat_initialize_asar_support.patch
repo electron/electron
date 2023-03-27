@@ -6,10 +6,10 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 73ccca1c6c9d4da7600e216fd53eec82426d892d..1c529f062cd3ec79643ae8c946e2ed0faac336fb 100644
+index 44a9183d77614c55246a513ec8d47c3f5ec6e41b..158daaf93446d99d21dd001a3ab614b1036c0b02 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -125,12 +125,17 @@ function setupUserModules() {
+@@ -118,12 +118,17 @@ function setupUserModules() {
    loadPreloadModules();
    // Need to be done after --require setup.
    initializeFrozenIntrinsics();

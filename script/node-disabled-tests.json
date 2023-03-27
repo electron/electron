@@ -134,6 +134,7 @@
   "parallel/test-webcrypto-export-import-cfrg",
   "parallel/test-webcrypto-keygen",
   "parallel/test-webcrypto-sign-verify-eddsa",
+  "parallel/test-webcrypto-wrap-unwrap",
   "parallel/test-zlib-unused-weak",
   "report/test-report-fatalerror-oomerror-set",
   "report/test-report-fatalerror-oomerror-directory",

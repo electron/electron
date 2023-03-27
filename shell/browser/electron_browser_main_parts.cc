@@ -23,8 +23,8 @@
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
-#include "components/os_crypt/key_storage_config_linux.h"
-#include "components/os_crypt/os_crypt.h"
+#include "components/os_crypt/sync/key_storage_config_linux.h"
+#include "components/os_crypt/sync/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
 #include "content/public/browser/browser_child_process_host_iterator.h"
@@ -98,8 +98,7 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
-#include "components/os_crypt/keychain_password_mac.h"
-#include "services/device/public/cpp/geolocation/geolocation_manager.h"
+#include "components/os_crypt/sync/keychain_password_mac.h"
 #include "shell/browser/ui/cocoa/views_delegate_mac.h"
 #else
 #include "shell/browser/ui/views/electron_views_delegate.h"
@@ -279,7 +278,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
   // We do not want to crash the main process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn";
+  env->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
@@ -673,12 +672,6 @@ ElectronBrowserMainParts::GetGeolocationControl() {
   }
   return geolocation_control_.get();
 }
-
-#if BUILDFLAG(IS_MAC)
-device::GeolocationManager* ElectronBrowserMainParts::GetGeolocationManager() {
-  return geolocation_manager_.get();
-}
-#endif
 
 IconManager* ElectronBrowserMainParts::GetIconManager() {
   DCHECK_CURRENTLY_ON(content::BrowserThread::UI);

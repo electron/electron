@@ -70,23 +70,23 @@ bool HidChooserContext::CanStorePersistentEntry(
 // static
 base::Value HidChooserContext::DeviceInfoToValue(
     const device::mojom::HidDeviceInfo& device) {
-  base::Value value(base::Value::Type::DICTIONARY);
-  value.SetStringKey(
+  base::Value::Dict value;
+  value.Set(
       kHidDeviceNameKey,
       base::UTF16ToUTF8(HidChooserContext::DisplayNameFromDeviceInfo(device)));
-  value.SetIntKey(kDeviceVendorIdKey, device.vendor_id);
-  value.SetIntKey(kDeviceProductIdKey, device.product_id);
+  value.Set(kDeviceVendorIdKey, device.vendor_id);
+  value.Set(kDeviceProductIdKey, device.product_id);
   if (HidChooserContext::CanStorePersistentEntry(device)) {
     // Use the USB serial number as a persistent identifier. If it is
     // unavailable, only ephemeral permissions may be granted.
-    value.SetStringKey(kDeviceSerialNumberKey, device.serial_number);
+    value.Set(kDeviceSerialNumberKey, device.serial_number);
   } else {
     // The GUID is a temporary ID created on connection that remains valid until
     // the device is disconnected. Ephemeral permissions are keyed by this ID
     // and must be granted again each time the device is connected.
-    value.SetStringKey(kHidGuidKey, device.guid);
+    value.Set(kHidGuidKey, device.guid);
   }
-  return value;
+  return base::Value(std::move(value));
 }
 
 void HidChooserContext::GrantDevicePermission(

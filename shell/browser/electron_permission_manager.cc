@@ -386,4 +386,17 @@ ElectronPermissionManager::GetPermissionStatusForWorker(
   return GetPermissionStatus(permission, worker_origin, worker_origin);
 }
 
+blink::mojom::PermissionStatus
+ElectronPermissionManager::GetPermissionStatusForEmbeddedRequester(
+    blink::PermissionType permission,
+    content::RenderFrameHost* render_frame_host,
+    const url::Origin& overridden_origin) {
+  if (render_frame_host->IsNestedWithinFencedFrame()) {
+    return blink::mojom::PermissionStatus::DENIED;
+  }
+  return GetPermissionStatus(
+      permission, overridden_origin.GetURL(),
+      render_frame_host->GetLastCommittedOrigin().GetURL());
+}
+
 }  // namespace electron

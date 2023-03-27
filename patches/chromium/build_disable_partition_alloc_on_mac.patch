@@ -9,15 +9,15 @@ and can be removed when the crash in fork is resolved.
 Related issue: https://github.com/electron/electron/issues/32718
 
 diff --git a/build_overrides/partition_alloc.gni b/build_overrides/partition_alloc.gni
-index e1fa5fe9f6da68451d364fadbc021239a8c3e19a..4850698ef66776333fad27812a5414a9aa55fe08 100644
+index c2f7bd2958ed447f23d9b45bf09c8ed47c88c5e7..681a8d2b829eba05e77d2904e8a27d8d983a4a75 100644
 --- a/build_overrides/partition_alloc.gni
 +++ b/build_overrides/partition_alloc.gni
-@@ -42,7 +42,7 @@ _disable_partition_alloc_everywhere = is_component_build || (is_win && is_debug)
- 
- # - NaCl: No plans to support it.
- # - iOS: not done yet.
--_is_partition_alloc_everywhere_platform = !is_nacl && !is_ios
-+_is_partition_alloc_everywhere_platform = !is_nacl && !is_ios && !is_mac
+@@ -45,7 +45,7 @@ _disable_partition_alloc_everywhere = is_component_build || (is_win && is_debug)
+ if (is_ios) {
+   _is_partition_alloc_everywhere_platform = ios_partition_alloc_enabled
+ } else {
+-  _is_partition_alloc_everywhere_platform = !is_nacl
++  _is_partition_alloc_everywhere_platform = !is_nacl && !is_mac
+ }
  
  # Under Windows debug build, the allocator shim is not compatible with CRT.
- #     NaCl in particular does seem to link some binaries statically

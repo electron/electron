@@ -7,10 +7,10 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index f5436c117c2663a6c69e139d8a21338137c79ef0..ef0290a799dfd916b3aa971a71b41326100dbb52 100644
+index 861c5f9da0506d8180d4e2a2af9c0c59a3f18bac..20d07b453ec28eb43736776f6cb6a6e20ded2885 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
-@@ -129,6 +129,7 @@ class FirefoxProfileLock;
+@@ -133,6 +133,7 @@ class FirefoxProfileLock;
  class KeyStorageLinux;
  class NativeBackendKWallet;
  class NativeDesktopMediaList;
@@ -18,7 +18,7 @@ index f5436c117c2663a6c69e139d8a21338137c79ef0..ef0290a799dfd916b3aa971a71b41326
  class Profile;
  class ProfileImpl;
  class StartupTabProviderImpl;
-@@ -265,6 +266,9 @@ class BackendImpl;
+@@ -269,6 +270,9 @@ class BackendImpl;
  class InFlightIO;
  bool CleanupDirectorySync(const base::FilePath&);
  }  // namespace disk_cache
@@ -28,7 +28,7 @@ index f5436c117c2663a6c69e139d8a21338137c79ef0..ef0290a799dfd916b3aa971a71b41326
  namespace enterprise_connectors {
  class LinuxKeyRotationCommand;
  }  // namespace enterprise_connectors
-@@ -553,6 +557,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -574,6 +578,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class ::DesktopNotificationBalloon;
    friend class ::FirefoxProfileLock;
    friend class ::GaiaConfig;
@@ -36,7 +36,7 @@ index f5436c117c2663a6c69e139d8a21338137c79ef0..ef0290a799dfd916b3aa971a71b41326
    friend class ::ProfileImpl;
    friend class ::ScopedAllowBlockingForProfile;
    friend class ::StartupTabProviderImpl;
-@@ -593,6 +598,7 @@ class BASE_EXPORT ScopedAllowBlocking {
+@@ -611,6 +616,7 @@ class BASE_EXPORT [[maybe_unused, nodiscard]] ScopedAllowBlocking {
    friend class crosapi::LacrosThreadTypeDelegate;
    friend class crypto::ScopedAllowBlockingForNSS;  // http://crbug.com/59847
    friend class drive::FakeDriveService;

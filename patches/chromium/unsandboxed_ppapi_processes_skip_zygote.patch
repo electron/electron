@@ -6,7 +6,7 @@ Subject: unsandboxed_ppapi_processes_skip_zygote.patch
 Unsandboxed ppapi processes should skip zygote.
 
 diff --git a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
-index 971044297de82aa6f79714481eaf713485d8a636..d46528d14a13308866e1f91b6d36f0f8aedf016d 100644
+index b141cfe3cc2e6e6563af03249bf5ec849e26d819..a1cc958e16162eee9686c73c207effe4880d50c7 100644
 --- a/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
 +++ b/content/browser/ppapi_plugin_sandboxed_process_launcher_delegate.cc
 @@ -10,6 +10,7 @@
@@ -16,8 +16,8 @@ index 971044297de82aa6f79714481eaf713485d8a636..d46528d14a13308866e1f91b6d36f0f8
 +#include "sandbox/policy/switches.h"
  
  #if BUILDFLAG(IS_WIN)
- #include "sandbox/policy/features.h"
-@@ -68,6 +69,9 @@ bool PpapiPluginSandboxedProcessLauncherDelegate::PreSpawnTarget(
+ #include "sandbox/policy/win/sandbox_win.h"
+@@ -58,6 +59,9 @@ bool PpapiPluginSandboxedProcessLauncherDelegate::AllowWindowsFontsDir() {
  ZygoteCommunication* PpapiPluginSandboxedProcessLauncherDelegate::GetZygote() {
    const base::CommandLine& browser_command_line =
        *base::CommandLine::ForCurrentProcess();

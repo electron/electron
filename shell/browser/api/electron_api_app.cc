@@ -607,13 +607,13 @@ int ImportIntoCertStore(CertificateManagerModel* model, base::Value options) {
   net::ScopedCERTCertificateList imported_certs;
   int rv = -1;
 
-  std::string* cert_path_ptr = options.FindStringKey("certificate");
-  if (cert_path_ptr)
-    cert_path = *cert_path_ptr;
+  if (const base::Value::Dict* dict = options.GetIfDict(); dict != nullptr) {
+    if (const std::string* str = dict->FindString("certificate"); str)
+      cert_path = *str;
 
-  std::string* pwd = options.FindStringKey("password");
-  if (pwd)
-    password = base::UTF8ToUTF16(*pwd);
+    if (const std::string* str = dict->FindString("password"); str)
+      password = base::UTF8ToUTF16(*str);
+  }
 
   if (!cert_path.empty()) {
     if (base::ReadFileToString(base::FilePath(cert_path), &file_data)) {

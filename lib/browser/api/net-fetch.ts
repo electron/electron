@@ -1,5 +1,6 @@
 import { net, IncomingMessage, Session as SessionT } from 'electron/main';
 import { Readable, Writable, isReadable } from 'stream';
+import { allowAnyProtocol } from '@electron/internal/browser/api/net-client-request';
 
 function createDeferredPromise<T, E extends Error = Error> (): { promise: Promise<T>; resolve: (x: T) => void; reject: (e: E) => void; } {
   let res: (x: T) => void;
@@ -12,7 +13,7 @@ function createDeferredPromise<T, E extends Error = Error> (): { promise: Promis
   return { promise, resolve: res!, reject: rej! };
 }
 
-export function fetchWithSession (input: RequestInfo, init: RequestInit | undefined, session: SessionT): Promise<Response> {
+export function fetchWithSession (input: RequestInfo, init: (RequestInit & {bypassCustomProtocolHandlers?: boolean}) | undefined, session: SessionT): Promise<Response> {
   const p = createDeferredPromise<Response>();
   let req: Request;
   try {
@@ -72,7 +73,7 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
   // We can't set credentials to same-origin unless there's an origin set.
   const credentials = req.credentials === 'same-origin' && !origin ? 'include' : req.credentials;
 
-  const r = net.request({
+  const r = net.request(allowAnyProtocol({
     session,
     method: req.method,
     url: req.url,
@@ -81,7 +82,9 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
     cache: req.cache,
     referrerPolicy: req.referrerPolicy,
     redirect: req.redirect
-  });
+  }));
+
+  (r as any)._urlLoaderOptions.bypassCustomProtocolHandlers = !!init?.bypassCustomProtocolHandlers;
 
   // cors is the default mode, but we can't set mode=cors without an origin.
   if (req.mode && (req.mode !== 'cors' || origin)) {
@@ -103,6 +106,7 @@ export function fetchWithSession (input: RequestInfo, init: RequestInit | undefi
       status: resp.statusCode,
       statusText: resp.statusMessage
     });
+    (rResp as any).__original_resp = resp;
     p.resolve(rResp);
   });
 

@@ -31,7 +31,12 @@ class Handle;
 namespace network {
 class SimpleURLLoader;
 struct ResourceRequest;
+class SharedURLLoaderFactory;
 }  // namespace network
+
+namespace electron {
+class ElectronBrowserContext;
+}
 
 namespace electron::api {
 
@@ -54,8 +59,8 @@ class SimpleURLLoaderWrapper
   const char* GetTypeName() override;
 
  private:
-  SimpleURLLoaderWrapper(std::unique_ptr<network::ResourceRequest> request,
-                         network::mojom::URLLoaderFactory* url_loader_factory,
+  SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
+                         std::unique_ptr<network::ResourceRequest> request,
                          int options);
 
   // SimpleURLLoaderStreamConsumer:
@@ -89,6 +94,7 @@ class SimpleURLLoaderWrapper
       const std::string& header_value,
       int32_t load_flags,
       const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+      bool partitioned_state_allowed_only,
       OnClearSiteDataCallback callback) override;
   void OnLoadingStateUpdate(network::mojom::LoadInfoPtr info,
                             OnLoadingStateUpdateCallback callback) override;
@@ -99,10 +105,14 @@ class SimpleURLLoaderWrapper
       mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
           observer) override;
 
+  scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactoryForURL(
+      const GURL& url);
+
   // SimpleURLLoader callbacks
   void OnResponseStarted(const GURL& final_url,
                          const network::mojom::URLResponseHead& response_head);
-  void OnRedirect(const net::RedirectInfo& redirect_info,
+  void OnRedirect(const GURL& url_before_redirect,
+                  const net::RedirectInfo& redirect_info,
                   const network::mojom::URLResponseHead& response_head,
                   std::vector<std::string>* removed_headers);
   void OnUploadProgress(uint64_t position, uint64_t total);
@@ -112,6 +122,10 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
+  ElectronBrowserContext* browser_context_;
+  int request_options_;
+  std::unique_ptr<network::ResourceRequest> request_;
+  scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
   v8::Global<v8::Value> pinned_wrapper_;
   v8::Global<v8::Value> pinned_chunk_pipe_getter_;

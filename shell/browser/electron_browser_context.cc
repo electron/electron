@@ -106,9 +106,10 @@ ElectronBrowserContext::browser_context_map() {
   return *browser_context_map;
 }
 
-ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
-                                               bool in_memory,
-                                               base::Value::Dict options)
+ElectronBrowserContext::ElectronBrowserContext(
+    const PartitionOrPath partition_location,
+    bool in_memory,
+    base::Value::Dict options)
     : in_memory_pref_store_(new ValueMapPrefStore),
       storage_policy_(base::MakeRefCounted<SpecialStoragePolicy>()),
       protocol_registry_(base::WrapUnique(new ProtocolRegistry)),
@@ -124,11 +125,21 @@ ElectronBrowserContext::ElectronBrowserContext(const std::string& partition,
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  base::PathService::Get(DIR_SESSION_DATA, &path_);
-  if (!in_memory && !partition.empty())
-    path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
-                .Append(base::FilePath::FromUTF8Unsafe(
-                    MakePartitionName(partition)));
+  if (auto* path_value = std::get_if<std::reference_wrapper<const std::string>>(
+          &partition_location)) {
+    base::PathService::Get(DIR_SESSION_DATA, &path_);
+    const std::string& partition_loc = path_value->get();
+    if (!in_memory && !partition_loc.empty()) {
+      path_ = path_.Append(FILE_PATH_LITERAL("Partitions"))
+                  .Append(base::FilePath::FromUTF8Unsafe(
+                      MakePartitionName(partition_loc)));
+    }
+  } else if (auto* filepath_partition =
+                 std::get_if<std::reference_wrapper<const base::FilePath>>(
+                     &partition_location)) {
+    const base::FilePath& partition_path = filepath_partition->get();
+    path_ = std::move(partition_path);
+  }
 
   BrowserContextDependencyManager::GetInstance()->MarkBrowserContextLive(this);
 
@@ -674,8 +685,25 @@ ElectronBrowserContext* ElectronBrowserContext::From(
     return browser_context;
   }
 
+  auto* new_context = new ElectronBrowserContext(std::cref(partition),
+                                                 in_memory, std::move(options));
+  browser_context_map()[key] =
+      std::unique_ptr<ElectronBrowserContext>(new_context);
+  return new_context;
+}
+
+ElectronBrowserContext* ElectronBrowserContext::FromPath(
+    const base::FilePath& path,
+    base::Value::Dict options) {
+  PartitionKey key(path);
+
+  ElectronBrowserContext* browser_context = browser_context_map()[key].get();
+  if (browser_context) {
+    return browser_context;
+  }
+
   auto* new_context =
-      new ElectronBrowserContext(partition, in_memory, std::move(options));
+      new ElectronBrowserContext(std::cref(path), false, std::move(options));
   browser_context_map()[key] =
       std::unique_ptr<ElectronBrowserContext>(new_context);
   return new_context;

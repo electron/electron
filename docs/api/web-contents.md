@@ -635,6 +635,15 @@ Emitted when media starts playing.
 
 Emitted when media is paused or done playing.
 
+#### Event: 'audio-state-changed'
+
+Returns:
+
+* `event` Event<>
+  * `audible` boolean - True if one or more frames or child `webContents` are emitting audio.
+
+Emitted when media becomes audible or inaudible.
+
 #### Event: 'did-change-theme-color'
 
 Returns:
@@ -768,20 +777,24 @@ Returns:
 * `callback` Function
   * `deviceId` string
 
-Emitted when bluetooth device needs to be selected on call to
-`navigator.bluetooth.requestDevice`. To use `navigator.bluetooth` api
-`webBluetooth` should be enabled. If `event.preventDefault` is not called,
-first available device will be selected. `callback` should be called with
-`deviceId` to be selected, passing empty string to `callback` will
-cancel the request.
+Emitted when a bluetooth device needs to be selected when a call to
+`navigator.bluetooth.requestDevice` is made. `callback` should be called with
+the `deviceId` of the device to be selected.  Passing an empty string to
+`callback` will cancel the request.
 
-If no event listener is added for this event, all bluetooth requests will be cancelled.
+If an event listener is not added for this event, or if `event.preventDefault`
+is not called when handling this event, the first available device will be
+automatically selected.
 
-```javascript
+Due to the nature of bluetooth, scanning for devices when
+`navigator.bluetooth.requestDevice` is called may take time and will cause
+`select-bluetooth-device` to fire multiple times until `callback` is called
+with either a device id or an empty string to cancel the request.
+
+```javascript title='main.js'
 const { app, BrowserWindow } = require('electron')
 
 let win = null
-app.commandLine.appendSwitch('enable-experimental-web-platform-features')
 
 app.whenReady().then(() => {
   win = new BrowserWindow({ width: 800, height: 600 })
@@ -791,6 +804,9 @@ app.whenReady().then(() => {
       return device.deviceName === 'test'
     })
     if (!result) {
+      // The device wasn't found so we need to either wait longer (eg until the
+      // device is turned on) or cancel the request by calling the callback 
+      // with an empty string.
       callback('')
     } else {
       callback(result.deviceId)
@@ -1622,7 +1638,7 @@ ipcMain.on('open-devtools', (event, targetContentsId, devtoolsContentsId) => {
 
 An example of showing devtools in a `BrowserWindow`:
 
-```js
+```js title='main.js'
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1705,40 +1721,14 @@ Algorithm][SCA], just like [`postMessage`][], so prototype chains will not be
 included. Sending Functions, Promises, Symbols, WeakMaps, or WeakSets will
 throw an exception.
 
-> **NOTE**: Sending non-standard JavaScript types such as DOM objects or
-> special Electron objects will throw an exception.
+:::warning
 
-The renderer process can handle the message by listening to `channel` with the
-[`ipcRenderer`](ipc-renderer.md) module.
+Sending non-standard JavaScript types such as DOM objects or
+special Electron objects will throw an exception.
 
-An example of sending messages from the main process to the renderer process:
+:::
 
-```javascript
-// In the main process.
-const { app, BrowserWindow } = require('electron')
-let win = null
-
-app.whenReady().then(() => {
-  win = new BrowserWindow({ width: 800, height: 600 })
-  win.loadURL(`file://${__dirname}/index.html`)
-  win.webContents.on('did-finish-load', () => {
-    win.webContents.send('ping', 'whoooooooh!')
-  })
-})
-```
-
-```html
-<!-- index.html -->
-<html>
-<body>
-  <script>
-    require('electron').ipcRenderer.on('ping', (event, message) => {
-      console.log(message) // Prints 'whoooooooh!'
-    })
-  </script>
-</body>
-</html>
-```
+For additional reading, refer to [Electron's IPC guide](../tutorial/ipc.md).
 
 #### `contents.sendToFrame(frameId, channel, ...args)`
 

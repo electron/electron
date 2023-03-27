@@ -42,8 +42,6 @@ class BrowserProcessImpl : public BrowserProcess {
   static void ApplyProxyModeFromCommandLine(ValueMapPrefStore* pref_store);
 
   BuildState* GetBuildState() override;
-  breadcrumbs::BreadcrumbPersistentStorageManager*
-  GetBreadcrumbPersistentStorageManager() override;
   void PostEarlyInitialization();
   void PreCreateThreads();
   void PostDestroyThreads() {}
@@ -107,12 +105,16 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
+  device::GeolocationManager* geolocation_manager() override;
+  void SetGeolocationManager(
+      std::unique_ptr<device::GeolocationManager> geolocation_manager) override;
 
  private:
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
   std::unique_ptr<PrefService> local_state_;
+  std::unique_ptr<device::GeolocationManager> geolocation_manager_;
   std::string locale_;
   std::string system_locale_;
 };

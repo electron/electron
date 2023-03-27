@@ -8,15 +8,11 @@ An example of implementing a protocol that has the same effect as the
 `file://` protocol:
 
 ```javascript
-const { app, protocol } = require('electron')
-const path = require('path')
-const url = require('url')
+const { app, protocol, net } = require('electron')
 
 app.whenReady().then(() => {
-  protocol.registerFileProtocol('atom', (request, callback) => {
-    const filePath = url.fileURLToPath('file://' + request.url.slice('atom://'.length))
-    callback(filePath)
-  })
+  protocol.handle('atom', (request) =>
+    net.fetch('file://' + request.url.slice('atom://'.length)))
 })
 ```
 
@@ -38,14 +34,15 @@ to register it to that session explicitly.
 ```javascript
 const { session, app, protocol } = require('electron')
 const path = require('path')
+const url = require('url')
 
 app.whenReady().then(() => {
   const partition = 'persist:example'
   const ses = session.fromPartition(partition)
 
-  ses.protocol.registerFileProtocol('atom', (request, callback) => {
-    const url = request.url.substr(7)
-    callback({ path: path.normalize(`${__dirname}/${url}`) })
+  ses.protocol.handle('atom', (request) => {
+    const path = request.url.slice('atom://'.length)
+    return net.fetch(url.pathToFileURL(path.join(__dirname, path)))
   })
 
   mainWindow = new BrowserWindow({ webPreferences: { partition } })
@@ -109,7 +106,74 @@ The `<video>` and `<audio>` HTML elements expect protocols to buffer their
 responses by default. The `stream` flag configures those elements to correctly
 expect streaming responses.
 
-### `protocol.registerFileProtocol(scheme, handler)`
+### `protocol.handle(scheme, handler)`
+
+* `scheme` string - scheme to handle, for example `https` or `my-app`. This is
+  the bit before the `:` in a URL.
+* `handler` Function<[GlobalResponse](https://nodejs.org/api/globals.html#response) | Promise<GlobalResponse>>
+  * `request` [GlobalRequest](https://nodejs.org/api/globals.html#request)
+
+Register a protocol handler for `scheme`. Requests made to URLs with this
+scheme will delegate to this handler to determine what response should be sent.
+
+Either a `Response` or a `Promise<Response>` can be returned.
+
+Example:
+
+```js
+import { app, protocol } from 'electron'
+import { join } from 'path'
+import { pathToFileURL } from 'url'
+
+protocol.registerSchemesAsPrivileged([
+  {
+    scheme: 'app',
+    privileges: {
+      standard: true,
+      secure: true,
+      supportsFetchAPI: true
+    }
+  }
+])
+
+app.whenReady().then(() => {
+  protocol.handle('app', (req) => {
+    const { host, pathname } = new URL(req.url)
+    if (host === 'bundle') {
+      if (pathname === '/') {
+        return new Response('<h1>hello, world</h1>', {
+          headers: { 'content-type': 'text/html' }
+        })
+      }
+      // NB, this does not check for paths that escape the bundle, e.g.
+      // app://bundle/../../secret_file.txt
+      return net.fetch(pathToFileURL(join(__dirname, pathname)))
+    } else if (host === 'api') {
+      return net.fetch('https://api.my-server.com/' + pathname, {
+        method: req.method,
+        headers: req.headers,
+        body: req.body
+      })
+    }
+  })
+})
+```
+
+See the MDN docs for [`Request`](https://developer.mozilla.org/en-US/docs/Web/API/Request) and [`Response`](https://developer.mozilla.org/en-US/docs/Web/API/Response) for more details.
+
+### `protocol.unhandle(scheme)`
+
+* `scheme` string - scheme for which to remove the handler.
+
+Removes a protocol handler registered with `protocol.handle`.
+
+### `protocol.isProtocolHandled(scheme)`
+
+* `scheme` string
+
+Returns `boolean` - Whether `scheme` is already handled.
+
+### `protocol.registerFileProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -130,7 +194,7 @@ path or an object that has a `path` property, e.g. `callback(filePath)` or
 By default the `scheme` is treated like `http:`, which is parsed differently
 from protocols that follow the "generic URI syntax" like `file:`.
 
-### `protocol.registerBufferProtocol(scheme, handler)`
+### `protocol.registerBufferProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -154,7 +218,7 @@ protocol.registerBufferProtocol('atom', (request, callback) => {
 })
 ```
 
-### `protocol.registerStringProtocol(scheme, handler)`
+### `protocol.registerStringProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -170,7 +234,7 @@ The usage is the same with `registerFileProtocol`, except that the `callback`
 should be called with either a `string` or an object that has the `data`
 property.
 
-### `protocol.registerHttpProtocol(scheme, handler)`
+### `protocol.registerHttpProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -185,7 +249,7 @@ Registers a protocol of `scheme` that will send an HTTP request as a response.
 The usage is the same with `registerFileProtocol`, except that the `callback`
 should be called with an object that has the `url` property.
 
-### `protocol.registerStreamProtocol(scheme, handler)`
+### `protocol.registerStreamProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -234,7 +298,7 @@ protocol.registerStreamProtocol('atom', (request, callback) => {
 })
 ```
 
-### `protocol.unregisterProtocol(scheme)`
+### `protocol.unregisterProtocol(scheme)` _Deprecated_
 
 * `scheme` string
 
@@ -242,13 +306,13 @@ Returns `boolean` - Whether the protocol was successfully unregistered
 
 Unregisters the custom protocol of `scheme`.
 
-### `protocol.isProtocolRegistered(scheme)`
+### `protocol.isProtocolRegistered(scheme)` _Deprecated_
 
 * `scheme` string
 
 Returns `boolean` - Whether `scheme` is already registered.
 
-### `protocol.interceptFileProtocol(scheme, handler)`
+### `protocol.interceptFileProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -261,7 +325,7 @@ Returns `boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a file as a response.
 
-### `protocol.interceptStringProtocol(scheme, handler)`
+### `protocol.interceptStringProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -274,7 +338,7 @@ Returns `boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `string` as a response.
 
-### `protocol.interceptBufferProtocol(scheme, handler)`
+### `protocol.interceptBufferProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -287,7 +351,7 @@ Returns `boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a `Buffer` as a response.
 
-### `protocol.interceptHttpProtocol(scheme, handler)`
+### `protocol.interceptHttpProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -300,7 +364,7 @@ Returns `boolean` - Whether the protocol was successfully intercepted
 Intercepts `scheme` protocol and uses `handler` as the protocol's new handler
 which sends a new HTTP request as a response.
 
-### `protocol.interceptStreamProtocol(scheme, handler)`
+### `protocol.interceptStreamProtocol(scheme, handler)` _Deprecated_
 
 * `scheme` string
 * `handler` Function
@@ -313,7 +377,7 @@ Returns `boolean` - Whether the protocol was successfully intercepted
 Same as `protocol.registerStreamProtocol`, except that it replaces an existing
 protocol handler.
 
-### `protocol.uninterceptProtocol(scheme)`
+### `protocol.uninterceptProtocol(scheme)` _Deprecated_
 
 * `scheme` string
 
@@ -321,7 +385,7 @@ Returns `boolean` - Whether the protocol was successfully unintercepted
 
 Remove the interceptor installed for `scheme` and restore its original handler.
 
-### `protocol.isProtocolIntercepted(scheme)`
+### `protocol.isProtocolIntercepted(scheme)` _Deprecated_
 
 * `scheme` string
 

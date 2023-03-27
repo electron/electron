@@ -183,9 +183,9 @@ bool TabsExecuteScriptFunction::ShouldRemoveCSS() const {
 }
 
 ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
-  std::unique_ptr<tabs::Reload::Params> params(
-      tabs::Reload::Params::Create(args()));
-  EXTENSION_FUNCTION_VALIDATE(params.get());
+  absl::optional<tabs::Reload::Params> params =
+      tabs::Reload::Params::Create(args());
+  EXTENSION_FUNCTION_VALIDATE(params);
 
   bool bypass_cache = false;
   if (params->reload_properties && params->reload_properties->bypass_cache) {
@@ -206,8 +206,8 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
 }
 
 ExtensionFunction::ResponseAction TabsGetFunction::Run() {
-  std::unique_ptr<tabs::Get::Params> params(tabs::Get::Params::Create(args()));
-  EXTENSION_FUNCTION_VALIDATE(params.get());
+  absl::optional<tabs::Get::Params> params = tabs::Get::Params::Create(args());
+  EXTENSION_FUNCTION_VALIDATE(params);
   int tab_id = params->tab_id;
 
   auto* contents = electron::api::WebContents::FromID(tab_id);
@@ -228,8 +228,8 @@ ExtensionFunction::ResponseAction TabsGetFunction::Run() {
 }
 
 ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
-  std::unique_ptr<tabs::SetZoom::Params> params(
-      tabs::SetZoom::Params::Create(args()));
+  absl::optional<tabs::SetZoom::Params> params =
+      tabs::SetZoom::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
@@ -256,8 +256,8 @@ ExtensionFunction::ResponseAction TabsSetZoomFunction::Run() {
 }
 
 ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
-  std::unique_ptr<tabs::GetZoom::Params> params(
-      tabs::GetZoom::Params::Create(args()));
+  absl::optional<tabs::GetZoomSettings::Params> params =
+      tabs::GetZoomSettings::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
@@ -272,8 +272,8 @@ ExtensionFunction::ResponseAction TabsGetZoomFunction::Run() {
 }
 
 ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
-  std::unique_ptr<tabs::GetZoomSettings::Params> params(
-      tabs::GetZoomSettings::Params::Create(args()));
+  absl::optional<tabs::GetZoomSettings::Params> params =
+      tabs::GetZoomSettings::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
@@ -296,8 +296,8 @@ ExtensionFunction::ResponseAction TabsGetZoomSettingsFunction::Run() {
 ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   using tabs::ZoomSettings;
 
-  std::unique_ptr<tabs::SetZoomSettings::Params> params(
-      tabs::SetZoomSettings::Params::Create(args()));
+  absl::optional<tabs::SetZoomSettings::Params> params =
+      tabs::SetZoomSettings::Params::Create(args());
   EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
@@ -423,9 +423,9 @@ bool PrepareURLForNavigation(const std::string& url_string,
 TabsUpdateFunction::TabsUpdateFunction() : web_contents_(nullptr) {}
 
 ExtensionFunction::ResponseAction TabsUpdateFunction::Run() {
-  std::unique_ptr<tabs::Update::Params> params(
-      tabs::Update::Params::Create(args()));
-  EXTENSION_FUNCTION_VALIDATE(params.get());
+  absl::optional<tabs::Update::Params> params =
+      tabs::Update::Params::Create(args());
+  EXTENSION_FUNCTION_VALIDATE(params);
 
   int tab_id = params->tab_id ? *params->tab_id : -1;
   auto* contents = electron::api::WebContents::FromID(tab_id);

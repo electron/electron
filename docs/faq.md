@@ -60,7 +60,7 @@ garbage collected.
 If you encounter this problem, the following articles may prove helpful:
 
 * [Memory Management][memory-management]
-* [Variable Scope][variable-scope]
+* [Closures][closures]
 
 If you want a quick fix, you can make the variables global by changing your
 code from this:
@@ -153,7 +153,7 @@ The effect is visible only on (some?) LCD screens. Even if you don't see a diffe
 Notice that just setting the background in the CSS does not have the desired effect.
 
 [memory-management]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Memory_Management
-[variable-scope]: https://msdn.microsoft.com/library/bzt2dkta(v=vs.94).aspx
+[closures]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Closures
 [storage]: https://developer.mozilla.org/en-US/docs/Web/API/Storage
 [local-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage
 [session-storage]: https://developer.mozilla.org/en-US/docs/Web/API/Window/sessionStorage

@@ -11,10 +11,10 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 8f003ac2da1e49bc2bbf3a7cce1a648980e325c1..f216efc553847fe1ce41e41c8a7144d2f6911dee 100644
+index cf53c168b31fecca8fd07f167d1e3523bc3be568..b13ffdfb9ffdaea0908b0b4b8260666f2c24988b 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
-@@ -187,11 +187,16 @@ if (!is_android && !is_mac) {
+@@ -186,11 +186,16 @@ if (!is_android && !is_mac) {
          "common/crash_keys.h",
        ]
  
@@ -33,10 +33,10 @@ index 8f003ac2da1e49bc2bbf3a7cce1a648980e325c1..f216efc553847fe1ce41e41c8a7144d2
          "//base",
          "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 6fd94d13f11645f389b0c5cbd185e40c86f11d44..5333a8a16ed62747830083c427a07a9546f0a42d 100644
+index 717724a0736dfa27e61697cbfb2df9040647898b..21982376d6d9537b62ad8ba6b751b46db1fea62c 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4557,7 +4557,7 @@ static_library("browser") {
+@@ -4550,7 +4550,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,18 +46,18 @@ index 6fd94d13f11645f389b0c5cbd185e40c86f11d44..5333a8a16ed62747830083c427a07a95
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 18ca933e7a07e73c1dcd7dc60be42c6180653b59..d01b8278141a4f19f3888f895efc24a415fe45b3 100644
+index 2a859f1f0646e4a95af08b7d6d871857cdb9bddc..feefed02d976eadcad82c74b4349e5529b725a91 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6229,7 +6229,6 @@ test("unit_tests") {
+@@ -6383,7 +6383,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
 -      "//chrome:packed_resources_integrity",
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
-       "//chrome/app:crash_reporter_client_win_unit_tests",
-@@ -6255,6 +6254,10 @@ test("unit_tests") {
+       "//chrome/app:win_unit_tests",
+@@ -6409,6 +6408,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,23 +68,22 @@ index 18ca933e7a07e73c1dcd7dc60be42c6180653b59..d01b8278141a4f19f3888f895efc24a4
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7167,7 +7170,7 @@ test("unit_tests") {
+@@ -7334,7 +7337,6 @@ test("unit_tests") {
      }
  
      deps += [
 -      "//chrome:packed_resources_integrity_hash",
-+    # "//chrome:packed_resources_integrity_hash",
+       "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
-       "//chrome/browser/enterprise/connectors/analysis:features",
-@@ -7300,6 +7303,10 @@ test("unit_tests") {
-     }
-   }
+@@ -7410,6 +7412,10 @@ test("unit_tests") {
+       "//ui/webui/resources/js/browser_command:mojo_bindings",
+     ]
  
-+  if (!is_electron_build) {
-+    deps += [ "//chrome:packed_resources_integrity_hash" ]
-+  }
++    if (!is_electron_build) {
++      deps += [ "//chrome:packed_resources_integrity_hash" ]
++    }
 +
-   if (is_chromeos_ash) {
-     sources -= [
-       "../browser/policy/cloud/user_policy_signin_service_unittest.cc",
+     data += [ "//ash/components/arc/test/data/icons/" ]
+ 
+     if (include_js_tests) {

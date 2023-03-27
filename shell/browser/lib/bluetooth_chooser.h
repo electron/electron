@@ -44,7 +44,6 @@ class BluetoothChooser : public content::BluetoothChooser {
   std::map<std::string, std::u16string> device_map_;
   api::WebContents* api_web_contents_;
   EventHandler event_handler_;
-  int num_retries_ = 0;
   bool refreshing_ = false;
   bool rescan_ = false;
 };

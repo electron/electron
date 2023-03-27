@@ -1,8 +1,6 @@
 {
   "src/electron/patches/chromium": "src",
 
-  "src/electron/patches/angle": "src/third_party/angle",
-
   "src/electron/patches/boringssl": "src/third_party/boringssl/src",
 
   "src/electron/patches/devtools_frontend": "src/third_party/devtools-frontend/src",
@@ -21,5 +19,7 @@
 
   "src/electron/patches/Mantle": "src/third_party/squirrel.mac/vendor/Mantle",
 
-  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC"
+  "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
+
+  "src/electron/patches/webrtc": "src/third_party/webrtc"
 }
