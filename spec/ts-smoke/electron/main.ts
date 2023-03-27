@@ -332,9 +332,6 @@ ipcMain.on('online-status-changed', (event: any, status: any) => {
   console.log(status)
 })
 
-// Synopsis
-// https://github.com/electron/electron/blob/master/docs/api/synopsis.md
-
 app.whenReady().then(() => {
   window = new BrowserWindow({
     width: 800,
