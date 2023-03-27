@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Tue, 14 Mar 2023 21:15:46 +0000
+Subject: Disable glShaderBinary in the passthrough cmd decoder.
+
+This matches the behaviour of the validating command decoder. The client
+does not use this function and it's not exposed to WebGL.
+
+(cherry picked from commit 4a81311a62d853a43e002f45c6867f73c0accdab)
+
+Bug: 1422594
+Change-Id: I87c670e4e80b0078fddb9f089b7ac7777a6debfa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4324998
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1115379}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4335184
+Cr-Commit-Position: refs/branch-heads/5481@{#1357}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
+index 9b09ddfe074ebe2786c7bc341b84a5eb5b7b73c9..373dab1c379152c45878faa60a5648bf0bc662e7 100644
+--- a/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
++++ b/gpu/command_buffer/service/gles2_cmd_decoder_passthrough_doers.cc
+@@ -2666,6 +2666,10 @@ error::Error GLES2DecoderPassthroughImpl::DoShaderBinary(GLsizei n,
+                                                          GLenum binaryformat,
+                                                          const void* binary,
+                                                          GLsizei length) {
++#if 1  // No binary shader support.
++  InsertError(GL_INVALID_ENUM, "Invalid enum.");
++  return error::kNoError;
++#else
+   std::vector<GLuint> service_shaders(n, 0);
+   for (GLsizei i = 0; i < n; i++) {
+     service_shaders[i] = GetShaderServiceID(shaders[i], resources_);
+@@ -2673,6 +2677,7 @@ error::Error GLES2DecoderPassthroughImpl::DoShaderBinary(GLsizei n,
+   api()->glShaderBinaryFn(n, service_shaders.data(), binaryformat, binary,
+                           length);
+   return error::kNoError;
++#endif
+ }
+ 
+ error::Error GLES2DecoderPassthroughImpl::DoShaderSource(GLuint shader,

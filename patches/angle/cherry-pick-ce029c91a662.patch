@@ -1,0 +1,158 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 10 Mar 2023 13:48:03 -0500
+Subject: M110: D3D11: Add logic to disassociate EGL image storages.
+
+The TextureStorage classes for External and EGLImages were missing the
+logic to disassociate from images. This lead to the images continuing
+to hold references to deleted storages.
+
+Bug: chromium:1415330
+Change-Id: I8303f6751d87a9b0a52993c7d4e9509b086b93f3
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4328347
+Reviewed-by: Peng Huang <penghuang@chromium.org>
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+(cherry picked from commit a8720455fda43167465c3d2f9a13fca60c21f56e)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4348335
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+index f1277462a929ed867a325f12db5fbf011b3f678e..c2fe439ca826e86b023dbe982ff44dd3bfb56470 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.cpp
+@@ -1652,7 +1652,8 @@ TextureStorage11_External::TextureStorage11_External(
+     egl::Stream *stream,
+     const egl::Stream::GLTextureDescription &glDesc,
+     const std::string &label)
+-    : TextureStorage11(renderer, D3D11_BIND_SHADER_RESOURCE, 0, glDesc.internalFormat, label)
++    : TextureStorage11(renderer, D3D11_BIND_SHADER_RESOURCE, 0, glDesc.internalFormat, label),
++      mAssociatedImage(nullptr)
+ {
+     ASSERT(stream->getProducerType() == egl::Stream::ProducerType::D3D11Texture);
+     auto *producer = static_cast<StreamProducerD3DTexture *>(stream->getImplementation());
+@@ -1678,6 +1679,15 @@ angle::Result TextureStorage11_External::onDestroy(const gl::Context *context)
+         mRenderer->getStateManager()->invalidateBoundViews();
+     }
+ 
++    if (mAssociatedImage != nullptr)
++    {
++        mAssociatedImage->verifyAssociatedStorageValid(this);
++
++        // We must let the Images recover their data before we delete it from the
++        // TextureStorage.
++        ANGLE_TRY(mAssociatedImage->recoverFromAssociatedStorage(context));
++    }
++
+     return angle::Result::Continue;
+ }
+ 
+@@ -1885,7 +1895,8 @@ TextureStorage11_EGLImage::TextureStorage11_EGLImage(Renderer11 *renderer,
+       mImage(eglImage),
+       mCurrentRenderTarget(0),
+       mSwizzleTexture(),
+-      mSwizzleRenderTargets(gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS)
++      mSwizzleRenderTargets(gl::IMPLEMENTATION_MAX_TEXTURE_LEVELS),
++      mAssociatedImage(nullptr)
+ {
+     mCurrentRenderTarget = reinterpret_cast<uintptr_t>(renderTarget11);
+ 
+@@ -1897,6 +1908,20 @@ TextureStorage11_EGLImage::TextureStorage11_EGLImage(Renderer11 *renderer,
+ 
+ TextureStorage11_EGLImage::~TextureStorage11_EGLImage() {}
+ 
++angle::Result TextureStorage11_EGLImage::onDestroy(const gl::Context *context)
++{
++    if (mAssociatedImage != nullptr)
++    {
++        mAssociatedImage->verifyAssociatedStorageValid(this);
++
++        // We must let the Images recover their data before we delete it from the
++        // TextureStorage.
++        ANGLE_TRY(mAssociatedImage->recoverFromAssociatedStorage(context));
++    }
++
++    return angle::Result::Continue;
++}
++
+ angle::Result TextureStorage11_EGLImage::getSubresourceIndex(const gl::Context *context,
+                                                              const gl::ImageIndex &index,
+                                                              UINT *outSubresourceIndex) const
+@@ -2120,6 +2145,42 @@ void TextureStorage11_EGLImage::onLabelUpdate()
+     }
+ }
+ 
++void TextureStorage11_EGLImage::associateImage(Image11 *image, const gl::ImageIndex &index)
++{
++    ASSERT(index.getLevelIndex() == 0);
++    mAssociatedImage = image;
++}
++
++void TextureStorage11_EGLImage::verifyAssociatedImageValid(const gl::ImageIndex &index,
++                                                           Image11 *expectedImage)
++{
++    ASSERT(index.getLevelIndex() == 0 && mAssociatedImage == expectedImage);
++}
++
++void TextureStorage11_EGLImage::disassociateImage(const gl::ImageIndex &index,
++                                                  Image11 *expectedImage)
++{
++    ASSERT(index.getLevelIndex() == 0);
++    ASSERT(mAssociatedImage == expectedImage);
++    mAssociatedImage = nullptr;
++}
++
++angle::Result TextureStorage11_EGLImage::releaseAssociatedImage(const gl::Context *context,
++                                                                const gl::ImageIndex &index,
++                                                                Image11 *incomingImage)
++{
++    ASSERT(index.getLevelIndex() == 0);
++
++    if (mAssociatedImage != nullptr && mAssociatedImage != incomingImage)
++    {
++        mAssociatedImage->verifyAssociatedStorageValid(this);
++
++        ANGLE_TRY(mAssociatedImage->recoverFromAssociatedStorage(context));
++    }
++
++    return angle::Result::Continue;
++}
++
+ TextureStorage11_Cube::TextureStorage11_Cube(Renderer11 *renderer,
+                                              GLenum internalformat,
+                                              BindFlags bindFlags,
+diff --git a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
+index 72bc1b802c5d4f2befe7a440aae8e115d5b94c8a..7c5245acd8fcb7880f19905c0f69c7b7886e9e72 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/TextureStorage11.h
+@@ -492,6 +492,8 @@ class TextureStorage11_EGLImage final : public TextureStorage11ImmutableBase
+                               const std::string &label);
+     ~TextureStorage11_EGLImage() override;
+ 
++    angle::Result onDestroy(const gl::Context *context) override;
++
+     angle::Result getSubresourceIndex(const gl::Context *context,
+                                       const gl::ImageIndex &index,
+                                       UINT *outSubresourceIndex) const override;
+@@ -518,6 +520,13 @@ class TextureStorage11_EGLImage final : public TextureStorage11ImmutableBase
+                                                 bool useLevelZeroTexture) override;
+     void onLabelUpdate() override;
+ 
++    void associateImage(Image11 *image, const gl::ImageIndex &index) override;
++    void disassociateImage(const gl::ImageIndex &index, Image11 *expectedImage) override;
++    void verifyAssociatedImageValid(const gl::ImageIndex &index, Image11 *expectedImage) override;
++    angle::Result releaseAssociatedImage(const gl::Context *context,
++                                         const gl::ImageIndex &index,
++                                         Image11 *incomingImage) override;
++
+   protected:
+     angle::Result getSwizzleTexture(const gl::Context *context,
+                                     const TextureHelper11 **outTexture) override;
+@@ -545,6 +554,8 @@ class TextureStorage11_EGLImage final : public TextureStorage11ImmutableBase
+     // Swizzle-related variables
+     TextureHelper11 mSwizzleTexture;
+     std::vector<d3d11::RenderTargetView> mSwizzleRenderTargets;
++
++    Image11 *mAssociatedImage;
+ };
+ 
+ class TextureStorage11_Cube : public TextureStorage11
