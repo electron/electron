@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Marja=20H=C3=B6ltt=C3=A4?= <marja@chromium.org>
+Date: Tue, 21 Feb 2023 13:38:34 +0100
+Subject: Merged [valueserializer] Fix map transition chain following w/
+ dictionary maps
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Map::Update might return a dictionary map, and the calling code didn't
+take it into account.
+
+Bug: chromium:1412487
+(cherry picked from commit b0db6637936a88807b5512a4de68145d0a9d6f02)
+
+Change-Id: Ib5e55aa60719e4ac2f14d993a3fc3e908cd43d2e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4290145
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Reviewed-by: Lutz Vahl <vahl@chromium.org>
+Commit-Queue: Lutz Vahl <vahl@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.0@{#35}
+Cr-Branched-From: 06097c6f0c5af54fd5d6965d37027efb72decd4f-refs/heads/11.0.226@{#1}
+Cr-Branched-From: 6bf3344f5d9940de1ab253f1817dcb99c641c9d3-refs/heads/main@{#84857}
+
+diff --git a/src/objects/value-serializer.cc b/src/objects/value-serializer.cc
+index 61a7cae8e8a900694ba22637d04368dac56ebd5f..640f8621719fa5dee4909e215ae788b09f1b0ba5 100644
+--- a/src/objects/value-serializer.cc
++++ b/src/objects/value-serializer.cc
+@@ -2408,37 +2408,38 @@ Maybe<uint32_t> ValueDeserializer::ReadJSObjectProperties(
+         // Deserializaton of |value| might have deprecated current |target|,
+         // ensure we are working with the up-to-date version.
+         target = Map::Update(isolate_, target);
+-
+-        InternalIndex descriptor(properties.size());
+-        PropertyDetails details =
+-            target->instance_descriptors(isolate_).GetDetails(descriptor);
+-        Representation expected_representation = details.representation();
+-        if (value->FitsRepresentation(expected_representation)) {
+-          if (expected_representation.IsHeapObject() &&
+-              !target->instance_descriptors(isolate_)
+-                   .GetFieldType(descriptor)
+-                   .NowContains(value)) {
+-            Handle<FieldType> value_type =
+-                value->OptimalType(isolate_, expected_representation);
+-            MapUpdater::GeneralizeField(isolate_, target, descriptor,
+-                                        details.constness(),
+-                                        expected_representation, value_type);
+-          }
+-          DCHECK(target->instance_descriptors(isolate_)
++        if (!target->is_dictionary_map()) {
++          InternalIndex descriptor(properties.size());
++          PropertyDetails details =
++              target->instance_descriptors(isolate_).GetDetails(descriptor);
++          Representation expected_representation = details.representation();
++          if (value->FitsRepresentation(expected_representation)) {
++            if (expected_representation.IsHeapObject() &&
++                !target->instance_descriptors(isolate_)
+                      .GetFieldType(descriptor)
+-                     .NowContains(value));
+-          properties.push_back(value);
+-          map = target;
+-          continue;
+-        } else {
+-          transitioning = false;
++                     .NowContains(value)) {
++              Handle<FieldType> value_type =
++                  value->OptimalType(isolate_, expected_representation);
++              MapUpdater::GeneralizeField(isolate_, target, descriptor,
++                                          details.constness(),
++                                          expected_representation, value_type);
++            }
++            DCHECK(target->instance_descriptors(isolate_)
++                       .GetFieldType(descriptor)
++                       .NowContains(value));
++            properties.push_back(value);
++            map = target;
++            continue;
++          }
+         }
++        transitioning = false;
+       }
+ 
+       // Fell out of transitioning fast path. Commit the properties gathered so
+       // far, and then start setting properties slowly instead.
+       DCHECK(!transitioning);
+       CHECK_LT(properties.size(), std::numeric_limits<uint32_t>::max());
++      CHECK(!map->is_dictionary_map());
+       CommitProperties(object, map, properties);
+       num_properties = static_cast<uint32_t>(properties.size());
+ 
