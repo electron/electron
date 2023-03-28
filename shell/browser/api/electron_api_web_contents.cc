@@ -623,6 +623,23 @@ void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
       ->SetContentBackgroundColor(color);
 }
 
+content::RenderFrameHost* GetRenderFrameHost(
+    content::NavigationHandle* navigation_handle) {
+  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNode* frame_tree_node =
+      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+  content::RenderFrameHostManager* render_manager =
+      frame_tree_node->render_manager();
+  content::RenderFrameHost* frame_host = nullptr;
+  if (render_manager) {
+    frame_host = render_manager->speculative_frame_host();
+    if (!frame_host)
+      frame_host = render_manager->current_frame_host();
+  }
+
+  return frame_host;
+}
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -1768,18 +1785,8 @@ bool WebContents::EmitNavigationEvent(
     const std::string& event_name,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
-  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
-  content::FrameTreeNode* frame_tree_node =
-      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
-  content::RenderFrameHostManager* render_manager =
-      frame_tree_node->render_manager();
-  content::RenderFrameHost* frame_host = nullptr;
-  if (render_manager) {
-    frame_host = render_manager->speculative_frame_host();
-    if (!frame_host)
-      frame_host = render_manager->current_frame_host();
-  }
   int frame_process_id = -1, frame_routing_id = -1;
+  content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
   if (frame_host) {
     frame_process_id = frame_host->GetProcess()->GetID();
     frame_routing_id = frame_host->GetRoutingID();
