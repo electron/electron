@@ -404,32 +404,26 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
 }
 
 // static
-v8::Local<v8::Value> Converter<net::AddressList>::ToV8(
+v8::Local<v8::Value> Converter<net::IPEndPoint>::ToV8(
     v8::Isolate* isolate,
-    const net::AddressList& val) {
-  const auto& endpoints = val.endpoints();
-  v8::Local<v8::Array> arr = v8::Array::New(isolate, endpoints.size());
-  for (size_t i = 0; i < endpoints.size(); ++i) {
-    const auto& endpoint = endpoints[i];
-    gin::Dictionary endpoint_data(isolate, v8::Object::New(isolate));
-    endpoint_data.Set("address", endpoint.ToStringWithoutPort());
-    switch (endpoint.GetFamily()) {
-      case net::ADDRESS_FAMILY_IPV4: {
-        endpoint_data.Set("family", "ipv4");
-        break;
-      }
-      case net::ADDRESS_FAMILY_IPV6: {
-        endpoint_data.Set("family", "ipv6");
-        break;
-      }
-      default:
-        NOTREACHED() << "Found unsupported endpoint family";
+    const net::IPEndPoint& val) {
+  gin::Dictionary dict(isolate, v8::Object::New(isolate));
+  dict.Set("address", val.ToStringWithoutPort());
+  switch (val.GetFamily()) {
+    case net::ADDRESS_FAMILY_IPV4: {
+      dict.Set("family", "ipv4");
+      break;
     }
-    arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
-             ConvertToV8(isolate, endpoint_data))
-        .Check();
+    case net::ADDRESS_FAMILY_IPV6: {
+      dict.Set("family", "ipv6");
+      break;
+    }
+    case net::ADDRESS_FAMILY_UNSPECIFIED: {
+      dict.Set("family", "unspec");
+      break;
+    }
   }
-  return arr;
+  return ConvertToV8(isolate, dict);
 }
 
 }  // namespace gin

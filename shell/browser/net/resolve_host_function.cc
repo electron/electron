@@ -1,4 +1,4 @@
-// Copyright (c) 2018 GitHub, Inc.
+// Copyright (c) 2023 Signal Messenger, LLC
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 

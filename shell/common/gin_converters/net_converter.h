@@ -110,9 +110,9 @@ struct Converter<net::RedirectInfo> {
 };
 
 template <>
-struct Converter<net::AddressList> {
+struct Converter<net::IPEndPoint> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const net::AddressList& val);
+                                   const net::IPEndPoint& val);
 };
 
 template <typename K, typename V>
