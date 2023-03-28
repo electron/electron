@@ -84,7 +84,7 @@ the `sandbox: false` preference in the [`BrowserWindow`][browser-window] constru
 app.whenReady().then(() => {
   const win = new BrowserWindow({
     webPreferences: {
-      sandbox: true
+      sandbox: false
     }
   })
   win.loadURL('https://google.com')
