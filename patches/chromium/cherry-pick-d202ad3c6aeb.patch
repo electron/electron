@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Will Harris <wfh@chromium.org>
 Date: Thu, 2 Mar 2023 17:21:30 +0000
-Subject: Prevent potential integer overflow in PersistentMemoryAllocator
+Subject: Prevent potential integer overflow in PersistentMemoryAllocator (2/2)
 
 https://crrev.com/c/4250177 added an extra check for potential
 integer overflow in GetAllocSize but forgot to add the same
@@ -29,25 +29,25 @@ Cr-Commit-Position: refs/branch-heads/5359@{#1402}
 Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
 
 diff --git a/base/metrics/persistent_memory_allocator.cc b/base/metrics/persistent_memory_allocator.cc
-index 5cf7e6d68db602dd7c3e68409e7cdfe370f28fea..0b02a4ed872abd707d1e4252c438798f783c915c 100644
+index c08dc8193a39cf7896117c818f663c6dd72cb3af..418eedd2bd71e224032f03532d366796daf0050b 100644
 --- a/base/metrics/persistent_memory_allocator.cc
 +++ b/base/metrics/persistent_memory_allocator.cc
-@@ -881,8 +881,13 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
+@@ -884,8 +884,13 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
    if (ref % kAllocAlignment != 0)
      return nullptr;
    size += sizeof(BlockHeader);
 -  if (ref + size > mem_size_)
 +  uint32_t total_size;
 +  if (!base::CheckAdd(ref, size).AssignIfValid(&total_size)) {
-     return nullptr;
++    return nullptr;
 +  }
 +  if (total_size > mem_size_) {
-+    return nullptr;
+     return nullptr;
 +  }
  
    // Validation of referenced block-header.
    if (!free_ok) {
-@@ -892,8 +897,13 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
+@@ -895,8 +900,13 @@ PersistentMemoryAllocator::GetBlock(Reference ref,
        return nullptr;
      if (block->size < size)
        return nullptr;
