@@ -87,7 +87,7 @@ the exact dependency versions to install.
   "author": "Jane Doe",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^23.1.3"
+    "electron": "23.1.3"
   }
 }
 ```
@@ -147,7 +147,7 @@ script in the current directory and run it in dev mode.
   "author": "Jane Doe",
   "license": "MIT",
   "devDependencies": {
-    "electron": "^23.1.3"
+    "electron": "23.1.3"
   }
 }
 ```
