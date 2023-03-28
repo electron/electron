@@ -1877,6 +1877,9 @@ void WebContents::MessageHost(const std::string& channel,
 
 void WebContents::UpdateDraggableRegions(
     std::vector<mojom::DraggableRegionPtr> regions) {
+  if (owner_window() && owner_window()->has_frame())
+    return;
+
   draggable_region_ = DraggableRegionsToSkRegion(regions);
 }
 
