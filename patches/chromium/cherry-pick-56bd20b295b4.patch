@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Robert Sesek <rsesek@chromium.org>
 Date: Mon, 27 Feb 2023 21:25:11 +0000
-Subject: [M110] Update Crashpad to 3e8727238bae3c069bd71cfb3b2bbaa98b55f05b
+Subject: Update Crashpad to 3e8727238bae3c069bd71cfb3b2bbaa98b55f05b
 
 3e8727238bae win: Only process up to EXCEPTION_MAXIMUM_PARAMETERS in an
              EXCEPTION_RECORD
