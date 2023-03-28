@@ -109,6 +109,12 @@ struct Converter<net::RedirectInfo> {
                                    const net::RedirectInfo& val);
 };
 
+template <>
+struct Converter<net::AddressList> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const net::AddressList& val);
+};
+
 template <typename K, typename V>
 struct Converter<std::vector<std::pair<K, V>>> {
   static bool FromV8(v8::Isolate* isolate,

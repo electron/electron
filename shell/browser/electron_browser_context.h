@@ -56,7 +56,6 @@ using DevicePermissionMap =
 class ElectronDownloadManagerDelegate;
 class ElectronPermissionManager;
 class CookieChangeNotifier;
-class ResolveHostHelper;
 class ResolveProxyHelper;
 class WebViewManager;
 class ProtocolRegistry;
@@ -137,7 +136,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::string GetUserAgent() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
-  ResolveHostHelper* GetResolveHostHelper();
   ResolveProxyHelper* GetResolveProxyHelper();
   predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
@@ -248,7 +246,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<WebViewManager> guest_manager_;
   std::unique_ptr<ElectronPermissionManager> permission_manager_;
   std::unique_ptr<MediaDeviceIDSalt> media_device_id_salt_;
-  scoped_refptr<ResolveHostHelper> resolve_host_helper_;
   scoped_refptr<ResolveProxyHelper> resolve_proxy_helper_;
   scoped_refptr<storage::SpecialStoragePolicy> storage_policy_;
   std::unique_ptr<predictors::PreconnectManager> preconnect_manager_;

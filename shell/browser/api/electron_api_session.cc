@@ -65,6 +65,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
+#include "shell/browser/net/resolve_host_function.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -427,22 +428,24 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
 }
 
 v8::Local<v8::Promise> Session::ResolveHost(std::string host) {
-  v8::Isolate* isolate = args->isolate();
-  gin_helper::Promise<std::vector<std::string>> promise(isolate);
+  gin_helper::Promise<net::AddressList> promise(isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  browser_context_->GetResolveHostHelper()->ResolveHost(
-      host,
+  auto fn = base::MakeRefCounted<ResolveHostFunction>(
+      browser_context_, host,
       base::BindOnce(
-          [](gin_helper::Promise<std::vector<std::string>> promise,
-             int64_t net_error, std::vector<std::string> addrs) {
+          [](gin_helper::Promise<net::AddressList> promise, int64_t net_error,
+             const absl::optional<net::AddressList>& addrs) {
             if (net_error < 0) {
               promise.RejectWithErrorMessage(net::ErrorToString(net_error));
             } else {
-              promise.Resolve(addrs);
+              DCHECK(addrs.has_value() && !addrs->empty());
+              promise.Resolve(addrs.value());
             }
           },
           std::move(promise)));
+
+  fn->Run();
 
   return handle;
 }

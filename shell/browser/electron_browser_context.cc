@@ -42,7 +42,6 @@
 #include "shell/browser/electron_browser_main_parts.h"
 #include "shell/browser/electron_download_manager_delegate.h"
 #include "shell/browser/electron_permission_manager.h"
-#include "shell/browser/net/resolve_host_helper.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/special_storage_policy.h"
@@ -410,13 +409,6 @@ ElectronBrowserContext::GetReduceAcceptLanguageControllerDelegate() {
   // Needs implementation
   // Refs https://chromium-review.googlesource.com/c/chromium/src/+/3687391
   return nullptr;
-}
-
-ResolveHostHelper* ElectronBrowserContext::GetResolveHostHelper() {
-  if (!resolve_host_helper_) {
-    resolve_host_helper_ = base::MakeRefCounted<ResolveHostHelper>(this);
-  }
-  return resolve_host_helper_.get();
 }
 
 ResolveProxyHelper* ElectronBrowserContext::GetResolveProxyHelper() {

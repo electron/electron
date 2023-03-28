@@ -403,4 +403,33 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
   return ConvertToV8(isolate, dict);
 }
 
+// static
+v8::Local<v8::Value> Converter<net::AddressList>::ToV8(
+    v8::Isolate* isolate,
+    const net::AddressList& val) {
+  const auto& endpoints = val.endpoints();
+  v8::Local<v8::Array> arr = v8::Array::New(isolate, endpoints.size());
+  for (size_t i = 0; i < endpoints.size(); ++i) {
+    const auto& endpoint = endpoints[i];
+    gin::Dictionary endpoint_data(isolate, v8::Object::New(isolate));
+    endpoint_data.Set("address", endpoint.ToStringWithoutPort());
+    switch (endpoint.GetFamily()) {
+      case net::ADDRESS_FAMILY_IPV4: {
+        endpoint_data.Set("family", "ipv4");
+        break;
+      }
+      case net::ADDRESS_FAMILY_IPV6: {
+        endpoint_data.Set("family", "ipv6");
+        break;
+      }
+      default:
+        NOTREACHED() << "Found unsupported endpoint family";
+    }
+    arr->Set(isolate->GetCurrentContext(), static_cast<uint32_t>(i),
+             ConvertToV8(isolate, endpoint_data))
+        .Check();
+  }
+  return arr;
+}
+
 }  // namespace gin
