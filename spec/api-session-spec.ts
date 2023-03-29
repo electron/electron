@@ -505,12 +505,26 @@ describe('session module', () => {
       expect(addrs[0].address).to.equal('10.0.0.1');
     });
 
+    it('fails to resolve AAAA record for ipv4.localhost2', async () => {
+      await expect(customSession.resolveHost('ipv4.localhost2', {
+        queryType: 'AAAA'
+      }))
+        .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
+    });
+
     it('resolves ipv6.localhost2', async () => {
       const addrs = await customSession.resolveHost('ipv6.localhost2');
       expect(addrs).to.be.a('array');
       expect(addrs).to.have.lengthOf(1);
       expect(addrs[0].family).to.equal('ipv6');
-      expect(addrs[0].address).to.equal('2001:db8:85a3::8a2e:370:7334');
+      expect(addrs[0].address).to.equal('::1');
+    });
+
+    it('fails to resolve A record for ipv6.localhost2', async () => {
+      await expect(customSession.resolveHost('notfound.localhost2', {
+        queryType: 'A'
+      }))
+        .to.eventually.be.rejectedWith(/net::ERR_NAME_NOT_RESOLVED/);
     });
 
     it('fails to resolve notfound.localhost2', async () => {

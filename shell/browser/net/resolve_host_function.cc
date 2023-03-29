@@ -26,9 +26,11 @@ namespace electron {
 ResolveHostFunction::ResolveHostFunction(
     ElectronBrowserContext* browser_context,
     std::string host,
+    network::mojom::ResolveHostParametersPtr params,
     ResolveHostCallback callback)
     : browser_context_(browser_context),
       host_(host),
+      params_(std::move(params)),
       callback_(std::move(callback)) {}
 
 ResolveHostFunction::~ResolveHostFunction() {
@@ -53,7 +55,7 @@ void ResolveHostFunction::Run() {
       ->GetNetworkContext()
       ->ResolveHost(network::mojom::HostResolverHost::NewHostPortPair(
                         std::move(host_port_pair)),
-                    net::NetworkAnonymizationKey(), nullptr,
+                    net::NetworkAnonymizationKey(), std::move(params_),
                     std::move(resolve_host_client));
 }
 

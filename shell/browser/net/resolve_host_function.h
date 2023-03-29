@@ -14,6 +14,7 @@
 #include "net/base/address_list.h"
 #include "net/dns/public/host_resolver_results.h"
 #include "services/network/public/cpp/resolve_host_client_base.h"
+#include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/network_context.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -31,6 +32,7 @@ class ResolveHostFunction
 
   explicit ResolveHostFunction(ElectronBrowserContext* browser_context,
                                std::string host,
+                               network::mojom::ResolveHostParametersPtr params,
                                ResolveHostCallback callback);
 
   void Run();
@@ -58,6 +60,7 @@ class ResolveHostFunction
   // Weak Ref
   ElectronBrowserContext* browser_context_;
   std::string host_;
+  network::mojom::ResolveHostParametersPtr params_;
   ResolveHostCallback callback_;
 };
 

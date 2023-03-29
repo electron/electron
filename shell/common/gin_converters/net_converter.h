@@ -11,6 +11,7 @@
 
 #include "gin/converter.h"
 #include "services/network/public/mojom/fetch_api.mojom.h"
+#include "services/network/public/mojom/host_resolver.mojom.h"
 #include "services/network/public/mojom/url_request.mojom.h"
 #include "shell/browser/net/cert_verifier_client.h"
 
@@ -113,6 +114,41 @@ template <>
 struct Converter<net::IPEndPoint> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const net::IPEndPoint& val);
+};
+
+template <>
+struct Converter<net::DnsQueryType> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::DnsQueryType* out);
+};
+
+template <>
+struct Converter<net::HostResolverSource> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     net::HostResolverSource* out);
+};
+
+template <>
+struct Converter<network::mojom::ResolveHostParameters::CacheUsage> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::ResolveHostParameters::CacheUsage* out);
+};
+
+template <>
+struct Converter<network::mojom::SecureDnsPolicy> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::SecureDnsPolicy* out);
+};
+
+template <>
+struct Converter<network::mojom::ResolveHostParametersPtr> {
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     network::mojom::ResolveHostParametersPtr* out);
 };
 
 template <typename K, typename V>
