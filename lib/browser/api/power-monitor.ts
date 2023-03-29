@@ -5,7 +5,8 @@ const {
   createPowerMonitor,
   getSystemIdleState,
   getSystemIdleTime,
-  isOnBatteryPower
+  isOnBatteryPower,
+  isSystemAutomaticallyResumed
 } = process._linkedBinding('electron_browser_power_monitor');
 
 class PowerMonitor extends EventEmitter {
@@ -53,6 +54,10 @@ class PowerMonitor extends EventEmitter {
 
   get onBatteryPower () {
     return this.isOnBatteryPower();
+  }
+
+  isSystemAutomaticallyResumed () {
+    return isSystemAutomaticallyResumed();
   }
 }
 

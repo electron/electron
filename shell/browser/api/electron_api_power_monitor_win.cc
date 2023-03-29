@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_power_monitor.h"
 
+#include <winbase.h>
 #include <windows.h>
 #include <wtsapi32.h>
 
@@ -101,6 +102,10 @@ LRESULT CALLBACK PowerMonitor::WndProc(HWND hwnd,
     }
   }
   return ::DefWindowProc(hwnd, message, wparam, lparam);
+}
+
+bool PowerMonitor::IsSystemAutomaticallyResumed() {
+  return IsSystemResumeAutomatic();
 }
 
 }  // namespace api

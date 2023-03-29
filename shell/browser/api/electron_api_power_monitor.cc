@@ -150,6 +150,11 @@ void Initialize(v8::Local<v8::Object> exports,
                  base::BindRepeating(&GetSystemIdleState));
   dict.SetMethod("getSystemIdleTime", base::BindRepeating(&GetSystemIdleTime));
   dict.SetMethod("isOnBatteryPower", base::BindRepeating(&IsOnBatteryPower));
+#if BUILDFLAG(IS_WIN)
+  dict.SetMethod(
+      "isSystemAutomaticallyResumed",
+      base::BindRepeating(&PowerMonitor::IsSystemAutomaticallyResumed));
+#endif
 }
 
 }  // namespace

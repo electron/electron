@@ -73,6 +73,12 @@ Returns `boolean` - Whether the system is on battery power.
 To monitor for changes in this property, use the `on-battery` and `on-ac`
 events.
 
+### `powerMonitor.isSystemAutomaticallyResumed()` _Windows_
+
+Returns `boolean` - Whether the system was resumed automatically or due to user input.  This maps directly to the `IsSystemResumeAutomatic` win32 API.
+
+https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-issystemresumeautomatic
+
 ## Properties
 
 ### `powerMonitor.onBatteryPower`

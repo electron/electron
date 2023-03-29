@@ -69,6 +69,8 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
                            WPARAM wparam,
                            LPARAM lparam);
 
+  static bool IsSystemAutomaticallyResumed();
+
   // The window class of |window_|.
   ATOM atom_;
 
