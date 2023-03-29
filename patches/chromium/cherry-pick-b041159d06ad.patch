@@ -1,0 +1,506 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Matt Reynolds <mattreynolds@google.com>
+Date: Wed, 8 Mar 2023 23:55:10 +0000
+Subject: hid: Handle empty input reports
+
+It's possible for a HID device to define its report descriptor such that
+one or more reports have no data fields within the report. When receiving these reports, the report buffer should contain only the
+report ID byte and no other data.
+
+Ensure that we do not read past the end of the buffer when handling
+zero-length input reports.
+
+(cherry picked from commit c9d77da78bc66c135520ac77873d67b89cdcaee6)
+
+Bug: 1419718
+Change-Id: I51d32c20f6b16f0d2b0172e0a165469b6b79748c
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4296562
+Reviewed-by: Reilly Grant <reillyg@chromium.org>
+Commit-Queue: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1112009}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4320692
+Commit-Queue: Reilly Grant <reillyg@chromium.org>
+Auto-Submit: Matt Reynolds <mattreynolds@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5481@{#1341}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/services/device/hid/hid_connection_impl.cc b/services/device/hid/hid_connection_impl.cc
+index c413123e12191c413ae327732c9e95caa696e0ff..adfaa66b7601dce4a267e0113c3e14cdc9445f3e 100644
+--- a/services/device/hid/hid_connection_impl.cc
++++ b/services/device/hid/hid_connection_impl.cc
+@@ -54,11 +54,12 @@ void HidConnectionImpl::OnInputReport(
+     scoped_refptr<base::RefCountedBytes> buffer,
+     size_t size) {
+   DCHECK(client_);
+-  uint8_t report_id = buffer->data()[0];
+-  uint8_t* begin = &buffer->data()[1];
+-  uint8_t* end = buffer->data().data() + size;
+-  std::vector<uint8_t> data(begin, end);
+-  client_->OnInputReport(report_id, data);
++  DCHECK_GE(size, 1u);
++  std::vector<uint8_t> data;
++  if (size > 1) {
++    data = std::vector<uint8_t>(buffer->front() + 1, buffer->front() + size);
++  }
++  client_->OnInputReport(/*report_id=*/buffer->data()[0], data);
+ }
+ 
+ void HidConnectionImpl::Read(ReadCallback callback) {
+diff --git a/services/device/hid/hid_connection_impl_unittest.cc b/services/device/hid/hid_connection_impl_unittest.cc
+index 25f715fa5bd0584228b5d6dd7c27103ce5a61885..3d2e74aeaa6676af88719d56fd9c889a296eccd3 100644
+--- a/services/device/hid/hid_connection_impl_unittest.cc
++++ b/services/device/hid/hid_connection_impl_unittest.cc
+@@ -8,17 +8,28 @@
+ #include "base/callback_helpers.h"
+ #include "base/memory/raw_ptr.h"
+ #include "base/memory/ref_counted_memory.h"
++#include "base/test/repeating_test_future.h"
++#include "base/test/test_future.h"
+ #include "build/build_config.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "mojo/public/cpp/bindings/receiver.h"
+ #include "mojo/public/cpp/bindings/self_owned_receiver.h"
+ #include "services/device/device_service_test_base.h"
++#include "testing/gmock/include/gmock/gmock.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+ namespace device {
+ 
+ namespace {
+ 
++using ::testing::ElementsAre;
++
++using ReadFuture = base::test::
++    TestFuture<bool, uint8_t, const absl::optional<std::vector<uint8_t>>&>;
++using WriteFuture = base::test::TestFuture<bool>;
++using GetFeatureFuture =
++    base::test::TestFuture<bool, const absl::optional<std::vector<uint8_t>>&>;
++
+ #if BUILDFLAG(IS_MAC)
+ const uint64_t kTestDeviceId = 123;
+ #elif BUILDFLAG(IS_WIN)
+@@ -30,46 +41,37 @@ const char* kTestDeviceId = "123";
+ // The report ID to use for reports sent to or received from the test device.
+ const uint8_t kTestReportId = 0x42;
+ 
+-// The max size of input and output reports for the test device. Feature reports
+-// are not used in this test.
++// The max size of reports for the test device.
+ const uint64_t kMaxReportSizeBytes = 10;
+ 
+-// A fake HidConnection implementation that allows the test to simulate an
+-// input report.
+-class FakeHidConnection : public HidConnection {
++// A mock HidConnection implementation that allows the test to simulate reports.
++class MockHidConnection : public HidConnection {
+  public:
+-  explicit FakeHidConnection(scoped_refptr<HidDeviceInfo> device)
++  explicit MockHidConnection(scoped_refptr<HidDeviceInfo> device)
+       : HidConnection(device,
+                       /*allow_protected_reports=*/false,
+                       /*allow_fido_reports=*/false) {}
+-  FakeHidConnection(const FakeHidConnection&) = delete;
+-  FakeHidConnection& operator=(const FakeHidConnection&) = delete;
++  MockHidConnection(const MockHidConnection&) = delete;
++  MockHidConnection& operator=(const MockHidConnection&) = delete;
+ 
+   // HidConnection implementation.
+   void PlatformClose() override {}
+-  void PlatformWrite(scoped_refptr<base::RefCountedBytes> buffer,
+-                     WriteCallback callback) override {
+-    std::move(callback).Run(true);
+-  }
+-  void PlatformGetFeatureReport(uint8_t report_id,
+-                                ReadCallback callback) override {
+-    NOTIMPLEMENTED();
+-  }
+-  void PlatformSendFeatureReport(scoped_refptr<base::RefCountedBytes> buffer,
+-                                 WriteCallback callback) override {
+-    NOTIMPLEMENTED();
+-  }
++  MOCK_METHOD2(PlatformWrite,
++               void(scoped_refptr<base::RefCountedBytes>, WriteCallback));
++  MOCK_METHOD2(PlatformGetFeatureReport, void(uint8_t, ReadCallback));
++  MOCK_METHOD2(PlatformSendFeatureReport,
++               void(scoped_refptr<base::RefCountedBytes>, WriteCallback));
+ 
+   void SimulateInputReport(scoped_refptr<base::RefCountedBytes> buffer) {
+     ProcessInputReport(buffer, buffer->size());
+   }
+ 
+  private:
+-  ~FakeHidConnection() override = default;
++  ~MockHidConnection() override = default;
+ };
+ 
+-// A test implementation of HidConnectionClient that signals once an input
+-// report has been received. The contents of the input report are saved.
++// An implementation of HidConnectionClient that enables the test to wait until
++// an input report is received.
+ class TestHidConnectionClient : public mojom::HidConnectionClient {
+  public:
+   TestHidConnectionClient() = default;
+@@ -81,76 +83,18 @@ class TestHidConnectionClient : public mojom::HidConnectionClient {
+     receiver_.Bind(std::move(receiver));
+   }
+ 
+-  // mojom::HidConnectionClient implementation.
+   void OnInputReport(uint8_t report_id,
+                      const std::vector<uint8_t>& buffer) override {
+-    report_id_ = report_id;
+-    buffer_ = buffer;
+-    run_loop_.Quit();
+-  }
+-
+-  void WaitForInputReport() { run_loop_.Run(); }
+-
+-  uint8_t report_id() { return report_id_; }
+-  const std::vector<uint8_t>& buffer() { return buffer_; }
+-
+- private:
+-  base::RunLoop run_loop_;
+-  mojo::Receiver<mojom::HidConnectionClient> receiver_{this};
+-  uint8_t report_id_ = 0;
+-  std::vector<uint8_t> buffer_;
+-};
+-
+-// A utility for capturing the state returned by mojom::HidConnection I/O
+-// callbacks.
+-class TestIoCallback {
+- public:
+-  TestIoCallback() = default;
+-  TestIoCallback(const TestIoCallback&) = delete;
+-  TestIoCallback& operator=(const TestIoCallback&) = delete;
+-  ~TestIoCallback() = default;
+-
+-  void SetReadResult(bool result,
+-                     uint8_t report_id,
+-                     const absl::optional<std::vector<uint8_t>>& buffer) {
+-    result_ = result;
+-    report_id_ = report_id;
+-    has_buffer_ = buffer.has_value();
+-    if (has_buffer_)
+-      buffer_ = *buffer;
+-    run_loop_.Quit();
+-  }
+-
+-  void SetWriteResult(bool result) {
+-    result_ = result;
+-    run_loop_.Quit();
+-  }
+-
+-  bool WaitForResult() {
+-    run_loop_.Run();
+-    return result_;
+-  }
+-
+-  mojom::HidConnection::ReadCallback GetReadCallback() {
+-    return base::BindOnce(&TestIoCallback::SetReadResult,
+-                          base::Unretained(this));
++    future_.AddValue(report_id, buffer);
+   }
+ 
+-  mojom::HidConnection::WriteCallback GetWriteCallback() {
+-    return base::BindOnce(&TestIoCallback::SetWriteResult,
+-                          base::Unretained(this));
++  std::pair<uint8_t, std::vector<uint8_t>> GetNextInputReport() {
++    return future_.Take();
+   }
+ 
+-  uint8_t report_id() { return report_id_; }
+-  bool has_buffer() { return has_buffer_; }
+-  const std::vector<uint8_t>& buffer() { return buffer_; }
+-
+  private:
+-  base::RunLoop run_loop_;
+-  bool result_ = false;
+-  uint8_t report_id_ = 0;
+-  bool has_buffer_ = false;
+-  std::vector<uint8_t> buffer_;
++  mojo::Receiver<mojom::HidConnectionClient> receiver_{this};
++  base::test::RepeatingTestFuture<uint8_t, std::vector<uint8_t>> future_;
+ };
+ 
+ }  // namespace
+@@ -158,8 +102,8 @@ class TestIoCallback {
+ class HidConnectionImplTest : public DeviceServiceTestBase {
+  public:
+   HidConnectionImplTest() = default;
+-  HidConnectionImplTest(HidConnectionImplTest&) = delete;
+-  HidConnectionImplTest& operator=(HidConnectionImplTest&) = delete;
++  HidConnectionImplTest(const HidConnectionImplTest&) = delete;
++  HidConnectionImplTest& operator=(const HidConnectionImplTest&) = delete;
+ 
+  protected:
+   void SetUp() override {
+@@ -167,18 +111,28 @@ class HidConnectionImplTest : public DeviceServiceTestBase {
+     base::RunLoop().RunUntilIdle();
+   }
+ 
+-  void CreateHidConnection(bool with_connection_client) {
++  void TearDown() override {
++    // HidConnectionImpl is self-owned and will self-destruct when its mojo pipe
++    // is disconnected. Allow disconnect handlers to run so HidConnectionImpl
++    // can self-destruct before the end of the test.
++    base::RunLoop().RunUntilIdle();
++  }
++
++  mojo::Remote<mojom::HidConnection> CreateHidConnection(
++      bool with_connection_client) {
+     mojo::PendingRemote<mojom::HidConnectionClient> hid_connection_client;
+     if (with_connection_client) {
+       connection_client_ = std::make_unique<TestHidConnectionClient>();
+       connection_client_->Bind(
+           hid_connection_client.InitWithNewPipeAndPassReceiver());
+     }
+-    fake_connection_ = new FakeHidConnection(CreateTestDevice());
+-    hid_connection_impl_ = new HidConnectionImpl(
+-        fake_connection_, hid_connection_.InitWithNewPipeAndPassReceiver(),
+-        std::move(hid_connection_client),
+-        /*watcher=*/mojo::NullRemote());
++    mock_connection_ = new MockHidConnection(CreateTestDevice());
++    mojo::Remote<mojom::HidConnection> hid_connection;
++    HidConnectionImpl::Create(mock_connection_,
++                              hid_connection.BindNewPipeAndPassReceiver(),
++                              std::move(hid_connection_client),
++                              /*watcher=*/mojo::NullRemote());
++    return hid_connection;
+   }
+ 
+   scoped_refptr<HidDeviceInfo> CreateTestDevice() {
+@@ -190,7 +144,7 @@ class HidConnectionImplTest : public DeviceServiceTestBase {
+         /*vendor_id=*/0x1234, /*product_id=*/0xabcd, "product name",
+         "serial number", mojom::HidBusType::kHIDBusTypeUSB,
+         std::move(collection), kMaxReportSizeBytes, kMaxReportSizeBytes,
+-        /*max_feature_report_size=*/0);
++        kMaxReportSizeBytes);
+   }
+ 
+   std::vector<uint8_t> CreateTestReportBuffer(uint8_t report_id, size_t size) {
+@@ -201,37 +155,42 @@ class HidConnectionImplTest : public DeviceServiceTestBase {
+     return buffer;
+   }
+ 
+-  mojo::PendingRemote<mojom::HidConnection> hid_connection_;
+-  raw_ptr<HidConnectionImpl>
+-      hid_connection_impl_;  // Owned by |hid_connection_|.
+-  scoped_refptr<FakeHidConnection> fake_connection_;
++  MockHidConnection& mock_connection() { return *mock_connection_.get(); }
++  TestHidConnectionClient& connection_client() { return *connection_client_; }
++
++ private:
++  scoped_refptr<MockHidConnection> mock_connection_;
+   std::unique_ptr<TestHidConnectionClient> connection_client_;
+ };
+ 
+ TEST_F(HidConnectionImplTest, ReadWrite) {
+-  CreateHidConnection(/*with_connection_client=*/false);
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
+   const size_t kTestBufferSize = kMaxReportSizeBytes;
+   std::vector<uint8_t> buffer_vec =
+       CreateTestReportBuffer(kTestReportId, kTestBufferSize);
+ 
+   // Simulate an output report (host to device).
+-  TestIoCallback write_callback;
+-  hid_connection_impl_->Write(kTestReportId, buffer_vec,
+-                              write_callback.GetWriteCallback());
+-  ASSERT_TRUE(write_callback.WaitForResult());
++  EXPECT_CALL(mock_connection(), PlatformWrite)
++      .WillOnce([](scoped_refptr<base::RefCountedBytes> buffer,
++                   HidConnectionImpl::WriteCallback callback) {
++        std::move(callback).Run(/*success=*/true);
++      });
++  WriteFuture write_future;
++  hid_connection->Write(kTestReportId, buffer_vec, write_future.GetCallback());
++  EXPECT_TRUE(write_future.Get());
+ 
+   // Simulate an input report (device to host).
+   auto buffer = base::MakeRefCounted<base::RefCountedBytes>(buffer_vec);
+   ASSERT_EQ(buffer->size(), kTestBufferSize);
+-  fake_connection_->SimulateInputReport(buffer);
++  mock_connection().SimulateInputReport(buffer);
+ 
+   // Simulate reading the input report.
+-  TestIoCallback read_callback;
+-  hid_connection_impl_->Read(read_callback.GetReadCallback());
+-  ASSERT_TRUE(read_callback.WaitForResult());
+-  EXPECT_EQ(read_callback.report_id(), kTestReportId);
+-  ASSERT_TRUE(read_callback.has_buffer());
+-  const auto& read_buffer = read_callback.buffer();
++  ReadFuture read_future;
++  hid_connection->Read(read_future.GetCallback());
++  EXPECT_TRUE(read_future.Get<0>());
++  EXPECT_EQ(read_future.Get<1>(), kTestReportId);
++  ASSERT_TRUE(read_future.Get<2>().has_value());
++  const auto& read_buffer = read_future.Get<2>().value();
+   ASSERT_EQ(read_buffer.size(), kTestBufferSize - 1);
+   for (size_t i = 1; i < kTestBufferSize; ++i) {
+     EXPECT_EQ(read_buffer[i - 1], buffer_vec[i])
+@@ -240,26 +199,29 @@ TEST_F(HidConnectionImplTest, ReadWrite) {
+ }
+ 
+ TEST_F(HidConnectionImplTest, ReadWriteWithConnectionClient) {
+-  CreateHidConnection(/*with_connection_client=*/true);
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/true);
+   const size_t kTestBufferSize = kMaxReportSizeBytes;
+   std::vector<uint8_t> buffer_vec =
+       CreateTestReportBuffer(kTestReportId, kTestBufferSize);
+ 
+   // Simulate an output report (host to device).
+-  TestIoCallback write_callback;
+-  hid_connection_impl_->Write(kTestReportId, buffer_vec,
+-                              write_callback.GetWriteCallback());
+-  ASSERT_TRUE(write_callback.WaitForResult());
++  EXPECT_CALL(mock_connection(), PlatformWrite)
++      .WillOnce([](scoped_refptr<base::RefCountedBytes> buffer,
++                   HidConnectionImpl::WriteCallback callback) {
++        std::move(callback).Run(/*success=*/true);
++      });
++  WriteFuture write_future;
++  hid_connection->Write(kTestReportId, buffer_vec, write_future.GetCallback());
++  EXPECT_TRUE(write_future.Get());
+ 
+   // Simulate an input report (device to host).
+   auto buffer = base::MakeRefCounted<base::RefCountedBytes>(buffer_vec);
+   ASSERT_EQ(buffer->size(), kTestBufferSize);
+-  fake_connection_->SimulateInputReport(buffer);
+-  connection_client_->WaitForInputReport();
++  mock_connection().SimulateInputReport(buffer);
++  auto [report_id, in_buffer] = connection_client().GetNextInputReport();
+ 
+   // The connection client should have been notified.
+-  EXPECT_EQ(connection_client_->report_id(), kTestReportId);
+-  const std::vector<uint8_t>& in_buffer = connection_client_->buffer();
++  EXPECT_EQ(report_id, kTestReportId);
+   ASSERT_EQ(in_buffer.size(), kTestBufferSize - 1);
+   for (size_t i = 1; i < kTestBufferSize; ++i) {
+     EXPECT_EQ(in_buffer[i - 1], buffer_vec[i])
+@@ -268,7 +230,7 @@ TEST_F(HidConnectionImplTest, ReadWriteWithConnectionClient) {
+ }
+ 
+ TEST_F(HidConnectionImplTest, DestroyWithPendingInputReport) {
+-  CreateHidConnection(/*with_connection_client=*/false);
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
+   const size_t kTestBufferSize = kMaxReportSizeBytes;
+   std::vector<uint8_t> buffer_vec =
+       CreateTestReportBuffer(kTestReportId, kTestBufferSize);
+@@ -276,21 +238,20 @@ TEST_F(HidConnectionImplTest, DestroyWithPendingInputReport) {
+   // Simulate an input report (device to host).
+   auto buffer = base::MakeRefCounted<base::RefCountedBytes>(buffer_vec);
+   ASSERT_EQ(buffer->size(), kTestBufferSize);
+-  fake_connection_->SimulateInputReport(buffer);
++  mock_connection().SimulateInputReport(buffer);
+ 
+   // Destroy the connection without reading the report.
+-  hid_connection_.reset();
++  hid_connection.reset();
+ }
+ 
+ TEST_F(HidConnectionImplTest, DestroyWithPendingRead) {
+-  CreateHidConnection(/*with_connection_client=*/false);
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
+ 
+   // Simulate reading an input report.
+-  TestIoCallback read_callback;
+-  hid_connection_impl_->Read(read_callback.GetReadCallback());
++  hid_connection->Read(base::DoNothing());
+ 
+   // Destroy the connection without receiving an input report.
+-  hid_connection_.reset();
++  hid_connection.reset();
+ }
+ 
+ TEST_F(HidConnectionImplTest, WatcherClosedWhenHidConnectionClosed) {
+@@ -301,7 +262,7 @@ TEST_F(HidConnectionImplTest, WatcherClosedWhenHidConnectionClosed) {
+ 
+   mojo::Remote<mojom::HidConnection> hid_connection;
+   HidConnectionImpl::Create(
+-      base::MakeRefCounted<FakeHidConnection>(CreateTestDevice()),
++      base::MakeRefCounted<MockHidConnection>(CreateTestDevice()),
+       hid_connection.BindNewPipeAndPassReceiver(),
+       /*connection_client=*/mojo::NullRemote(), std::move(watcher));
+ 
+@@ -326,7 +287,7 @@ TEST_F(HidConnectionImplTest, HidConnectionClosedWhenWatcherClosed) {
+ 
+   mojo::Remote<mojom::HidConnection> hid_connection;
+   HidConnectionImpl::Create(
+-      base::MakeRefCounted<FakeHidConnection>(CreateTestDevice()),
++      base::MakeRefCounted<MockHidConnection>(CreateTestDevice()),
+       hid_connection.BindNewPipeAndPassReceiver(),
+       /*connection_client=*/mojo::NullRemote(), std::move(watcher));
+ 
+@@ -344,4 +305,74 @@ TEST_F(HidConnectionImplTest, HidConnectionClosedWhenWatcherClosed) {
+   EXPECT_FALSE(hid_connection.is_connected());
+ }
+ 
++TEST_F(HidConnectionImplTest, ReadZeroLengthInputReport) {
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
++  mock_connection().SimulateInputReport(
++      base::MakeRefCounted<base::RefCountedBytes>(
++          CreateTestReportBuffer(kTestReportId, /*size=*/1u)));
++  ReadFuture read_future;
++  hid_connection->Read(read_future.GetCallback());
++  EXPECT_TRUE(read_future.Get<0>());
++  EXPECT_EQ(read_future.Get<1>(), kTestReportId);
++  ASSERT_TRUE(read_future.Get<2>().has_value());
++  EXPECT_EQ(read_future.Get<2>().value().size(), 0u);
++}
++
++TEST_F(HidConnectionImplTest, ReadZeroLengthInputReportWithClient) {
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/true);
++  mock_connection().SimulateInputReport(
++      base::MakeRefCounted<base::RefCountedBytes>(
++          CreateTestReportBuffer(kTestReportId, /*size=*/1u)));
++  auto [report_id, in_buffer] = connection_client().GetNextInputReport();
++  EXPECT_EQ(report_id, kTestReportId);
++  EXPECT_EQ(in_buffer.size(), 0u);
++}
++
++TEST_F(HidConnectionImplTest, WriteZeroLengthOutputReport) {
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
++  EXPECT_CALL(mock_connection(), PlatformWrite)
++      .WillOnce([](scoped_refptr<base::RefCountedBytes> buffer,
++                   HidConnectionImpl::WriteCallback callback) {
++        std::move(callback).Run(/*success=*/true);
++      });
++  WriteFuture write_future;
++  hid_connection->Write(kTestReportId, /*buffer=*/{},
++                        write_future.GetCallback());
++  EXPECT_TRUE(write_future.Get());
++}
++
++TEST_F(HidConnectionImplTest, ReadZeroLengthFeatureReport) {
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
++  EXPECT_CALL(mock_connection(), PlatformGetFeatureReport)
++      .WillOnce([](uint8_t report_id, HidConnection::ReadCallback callback) {
++        std::move(callback).Run(/*success=*/true,
++                                base::MakeRefCounted<base::RefCountedBytes>(
++                                    std::vector<uint8_t>{report_id}),
++                                /*size=*/1u);
++      });
++  GetFeatureFuture get_feature_future;
++  hid_connection->GetFeatureReport(kTestReportId,
++                                   get_feature_future.GetCallback());
++  EXPECT_TRUE(get_feature_future.Get<0>());
++  ASSERT_TRUE(get_feature_future.Get<1>().has_value());
++  EXPECT_EQ(get_feature_future.Get<1>().value().size(), 1u);
++}
++
++TEST_F(HidConnectionImplTest, WriteZeroLengthFeatureReport) {
++  auto hid_connection = CreateHidConnection(/*with_connection_client=*/false);
++  scoped_refptr<base::RefCountedBytes> feature_buffer;
++  EXPECT_CALL(mock_connection(), PlatformSendFeatureReport)
++      .WillOnce([&feature_buffer](scoped_refptr<base::RefCountedBytes> buffer,
++                                  HidConnectionImpl::WriteCallback callback) {
++        feature_buffer = buffer;
++        std::move(callback).Run(/*success=*/true);
++      });
++  WriteFuture write_future;
++  hid_connection->SendFeatureReport(kTestReportId, /*buffer=*/{},
++                                    write_future.GetCallback());
++  EXPECT_TRUE(write_future.Get());
++  ASSERT_TRUE(feature_buffer);
++  EXPECT_THAT(feature_buffer->data(), ElementsAre(kTestReportId));
++}
++
+ }  // namespace device
