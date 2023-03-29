@@ -8,6 +8,7 @@ import { webContents } from 'electron/main';
 import { EventEmitter } from 'stream';
 import { once } from 'events';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -816,8 +817,8 @@ describe('node feature', () => {
           child.stdout.on('data', (m) => console.log(m.toString()));
           const w = (webContents as typeof ElectronInternal.WebContents).create();
           w.loadURL('about:blank')
-            .then(() => w.executeJavaScript(`new Promise(resolve => {
-              const connection = new WebSocket(${JSON.stringify(match[1])})
+            .then(() => w.executeJavaScript(jsont`new Promise(resolve => {
+              const connection = new WebSocket(${match[1]})
               connection.onopen = () => {
                 connection.onclose = () => resolve()
                 connection.close()

@@ -3,6 +3,7 @@ import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
 import { fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 describe('ipcRenderer module', () => {
   let w: BrowserWindow;
@@ -21,9 +22,9 @@ describe('ipcRenderer module', () => {
         id: 1,
         name: 'ly'
       };
-      w.webContents.executeJavaScript(`{
+      w.webContents.executeJavaScript(jsont`{
         const { ipcRenderer } = require('electron')
-        ipcRenderer.send('message', ${JSON.stringify(obj)})
+        ipcRenderer.send('message', ${obj})
       }`);
       const [, received] = await once(ipcMain, 'message');
       expect(received).to.deep.equal(obj);
@@ -31,9 +32,9 @@ describe('ipcRenderer module', () => {
 
     it('can send instances of Date as Dates', async () => {
       const isoDate = new Date().toISOString();
-      w.webContents.executeJavaScript(`{
+      w.webContents.executeJavaScript(jsont`{
         const { ipcRenderer } = require('electron')
-        ipcRenderer.send('message', new Date(${JSON.stringify(isoDate)}))
+        ipcRenderer.send('message', new Date(${isoDate}))
       }`);
       const [, received] = await once(ipcMain, 'message');
       expect(received.toISOString()).to.equal(isoDate);
@@ -41,9 +42,9 @@ describe('ipcRenderer module', () => {
 
     it('can send instances of Buffer', async () => {
       const data = 'hello';
-      w.webContents.executeJavaScript(`{
+      w.webContents.executeJavaScript(jsont`{
         const { ipcRenderer } = require('electron')
-        ipcRenderer.send('message', Buffer.from(${JSON.stringify(data)}))
+        ipcRenderer.send('message', Buffer.from(${data}))
       }`);
       const [, received] = await once(ipcMain, 'message');
       expect(received).to.be.an.instanceOf(Uint8Array);
@@ -147,18 +148,18 @@ describe('ipcRenderer module', () => {
         });
 
         it('sends message to WebContents', async () => {
-          const data = await w.webContents.executeJavaScript(`new Promise(resolve => {
+          const data = await w.webContents.executeJavaScript(jsont`new Promise(resolve => {
             const { ipcRenderer } = require('electron')
-            ipcRenderer.sendTo(${contents.id}, 'ping', ${JSON.stringify(payload)})
+            ipcRenderer.sendTo(${contents.id}, 'ping', ${payload})
             ipcRenderer.once('pong', (event, data) => resolve(data))
           })`);
           expect(data).to.equal(payload);
         });
 
         it('sends message on channel with non-ASCII characters to WebContents', async () => {
-          const data = await w.webContents.executeJavaScript(`new Promise(resolve => {
+          const data = await w.webContents.executeJavaScript(jsont`new Promise(resolve => {
             const { ipcRenderer } = require('electron')
-            ipcRenderer.sendTo(${contents.id}, 'ping-æøåü', ${JSON.stringify(payload)})
+            ipcRenderer.sendTo(${contents.id}, 'ping-æøåü', ${payload})
             ipcRenderer.once('pong-æøåü', (event, data) => resolve(data))
           })`);
           expect(data).to.equal(payload);

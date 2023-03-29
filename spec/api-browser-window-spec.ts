@@ -17,6 +17,7 @@ import { captureScreenBitmap } from './lib/screen-capture';
 import { areColorsSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 import { ifdescribe, ifit } from './lib/spec-conditional';
+import { jsont } from './lib/json';
 
 const Colors = {
   GREEN: '#00b140',
@@ -552,7 +553,7 @@ describe('BrowserWindow module', () => {
 
         it('is triggered when navigating from file: to http:', async () => {
           await w.loadFile(fixturePath('api', 'blank.html'));
-          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          w.webContents.executeJavaScript(jsont`location.href = ${url}`);
           const navigatedTo = await new Promise(resolve => {
             w.webContents.once('will-navigate', (e, url) => {
               e.preventDefault();
@@ -565,7 +566,7 @@ describe('BrowserWindow module', () => {
 
         it('is triggered when navigating from about:blank to http:', async () => {
           await w.loadURL('about:blank');
-          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          w.webContents.executeJavaScript(jsont`location.href = ${url}`);
           const navigatedTo = await new Promise(resolve => {
             w.webContents.once('will-navigate', (e, url) => {
               e.preventDefault();

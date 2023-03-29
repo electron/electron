@@ -53,7 +53,7 @@ describe('Menu module', function () {
 
     it('does not modify the specified template', () => {
       const template = [{ label: 'text', submenu: [{ label: 'sub' }] }];
-      const templateCopy = JSON.parse(JSON.stringify(template));
+      const templateCopy = JSON.parse(JSON.stringify(template)); // TODO(node17): replace with structuredClone
       Menu.buildFromTemplate(template);
       expect(template).to.deep.equal(templateCopy);
     });

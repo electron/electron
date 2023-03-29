@@ -9,6 +9,7 @@ import { ifdescribe, ifit } from './lib/spec-conditional';
 import * as importedFs from 'fs';
 import { once } from 'events';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -140,7 +141,7 @@ describe('asar package', function () {
 
   useRemoteContext({
     url: url.pathToFileURL(fixturePath('pages', 'blank.html')),
-    setup: `
+    setup: jsont`
       async function expectToThrowErrorWithCode (func, code) {
         let error;
         try {
@@ -155,7 +156,7 @@ describe('asar package', function () {
 
       fs = require('fs')
       path = require('path')
-      asarDir = ${JSON.stringify(asarDir)}
+      asarDir = ${asarDir}
 
       // This is used instead of util.promisify for some tests to dodge the
       // util.promisify.custom behavior.

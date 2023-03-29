@@ -1,21 +1,22 @@
 /**
- * This type represents approximately anything that can be stringified as JSON.
- * This helps catch errors when passing non-serializable objects to the
- * `js`-tagged template function.
+ * This type represents approximately anything that can be stringified as JSON
+ * via `JSON.stringify`. This helps catch errors when passing non-serializable
+ * objects to the `jsont`-tagged template function.
  */
 export type ToJson =
   | string
   | number
   | boolean
   | null
-  | undefined
+  | undefined // NOTE: `undefined` doesn't exist in JSON, but it *is* accepted by `JSON.stringify`.
   | readonly ToJson[]
   | { [key: string]: ToJson }
   | { toJSON(): string };
 
 /**
- * An ergonomic and safe tagged template function for JavaScript strings that
- * automatically escapes template arguments as JSON values.
+ * An ergonomic and safe tagged template function for interpolating JSON values
+ * into a string, particularly JavaScript code, but works for any general string
+ * that needs JSON values interpolated in it.
  *
  * You can supply any object that can be converted to JSON (via
  * `JSON.stringify`) as a template argument. See the `ToJson` type for more
@@ -30,12 +31,13 @@ export type ToJson =
  * writing your script as a fixture. This benefits reviewers and keeps our spec
  * code tidy.
  */
-export function js (
+export function jsont (
   segments: TemplateStringsArray,
   ...args: readonly ToJson[]
 ): string {
-  // Fast path: called with just a string, no interpolation
+  // Edge cases: no interpolations
   if (segments.length === 1) {
+    // TODO: somehow warn that this is *probably* an anti-pattern.
     return segments[0];
   }
 

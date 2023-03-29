@@ -12,6 +12,7 @@ import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { fixturePath, FIXTURES_PATH } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 /* The whole session API doesn't use standard callbacks */
 /* eslint-disable standard/no-callback-literal */
@@ -548,13 +549,15 @@ describe('session module', () => {
         type: 'blob',
         value: 'hello'
       });
-      const content = `<html>
-                       <script>
-                       let fd = new FormData();
-                       fd.append('file', new Blob(['${postData}'], {type:'application/json'}));
-                       fetch('${url}', {method:'POST', body: fd });
-                       </script>
-                       </html>`;
+      const content = jsont`
+        <html>
+          <script>
+          let fd = new FormData();
+          fd.append('file', new Blob(${[postData]}, {type:'application/json'}));
+          fetch(${url}, {method:'POST', body: fd });
+          </script>
+        </html>
+      `;
 
       protocol.registerStringProtocol(scheme, (request, callback) => {
         try {

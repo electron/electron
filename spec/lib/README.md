@@ -22,8 +22,8 @@ This directory contains helpful, reusable modules for making our tests more cons
 * `fixtures`: Fixtures
   * `fixturePath`: Standard way to build a path to something within the [`fixtures/`][fixtures-dir] directory.
   * `fixtureFileURL`: Standard way to build a `file://` URL to something within the [`fixtures/`][fixtures-dir] directory.
-* `js-template`: JS source code construction
-  * `js`: A tagged-template function for safely interpolating values into JS source strings and identifying code snippets.
+* `jsont`: JSON string interpolation & JS source code construction
+  * `jsont`: A tagged-template function for safely interpolating JSON-compatible values into strings, particularly JS code snippets.
 * `native-img`: Electron `NativeImage`
   * `Bitmap`: A class that provides ergonomic access to pixel colors from a `NativeImage`.
 * `screen-capture`: Display and screen capture

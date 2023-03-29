@@ -10,6 +10,7 @@ import { ifit } from './lib/spec-conditional';
 import { once } from 'events';
 import { emittedN, findEmit } from './lib/events';
 import { fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 const uuid = require('uuid');
 
@@ -82,7 +83,7 @@ describe('chrome extensions', () => {
   });
 
   function fetch (contents: WebContents, url: string) {
-    return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
+    return contents.executeJavaScript(jsont`fetch(${url})`);
   }
 
   it('bypasses CORS in requests made from extensions', async () => {
@@ -275,7 +276,7 @@ describe('chrome extensions', () => {
 
   describe('chrome.webRequest', () => {
     function fetch (contents: WebContents, url: string) {
-      return contents.executeJavaScript(`fetch(${JSON.stringify(url)})`);
+      return contents.executeJavaScript(jsont`fetch(${url})`);
     }
 
     let customSession: Session;
@@ -351,7 +352,7 @@ describe('chrome extensions', () => {
       await w.loadURL(url);
 
       const message = { method: 'executeScript', args: ['1 + 2'] };
-      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
@@ -365,7 +366,7 @@ describe('chrome extensions', () => {
 
       const portName = uuid.v4();
       const message = { method: 'connectTab', args: [portName] };
-      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = responseString.split(',');
@@ -378,7 +379,7 @@ describe('chrome extensions', () => {
       await w.loadURL(url);
 
       const message = { method: 'sendMessage', args: ['Hello World!'] };
-      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
@@ -397,7 +398,7 @@ describe('chrome extensions', () => {
       const w2Navigated = once(w2.webContents, 'did-navigate');
 
       const message = { method: 'update', args: [w2.webContents.id, { url }] };
-      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);

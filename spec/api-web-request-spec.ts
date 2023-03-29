@@ -11,6 +11,7 @@ import { listen, defer } from './lib/spec-helpers';
 import { once } from 'events';
 import { ReadableStream } from 'stream/web';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 describe('webRequest module', () => {
   const ses = session.defaultSession;
@@ -80,7 +81,7 @@ describe('webRequest module', () => {
   after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
-    return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
+    return contents.executeJavaScript(jsont`ajax(${url}, ${options})`);
   }
 
   describe('webRequest.onBeforeRequest', () => {

@@ -10,6 +10,7 @@ import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { findEmit } from './lib/events';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 declare let WebView: any;
 const features = process._linkedBinding('electron_common_features');
@@ -19,11 +20,11 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>, 
     openDevTools: false,
     ...opts
   };
-  await w.executeJavaScript(`
+  await w.executeJavaScript(jsont`
     new Promise((resolve, reject) => {
       const webview = new WebView()
       webview.id = 'webview'
-      for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
+      for (const [k, v] of Object.entries(${attributes})) {
         webview.setAttribute(k, v)
       }
       document.body.appendChild(webview)
@@ -39,13 +40,13 @@ async function loadWebView (w: WebContents, attributes: Record<string, string>, 
   `);
 }
 async function loadWebViewAndWaitForEvent (w: WebContents, attributes: Record<string, string>, eventName: string): Promise<any> {
-  return await w.executeJavaScript(`new Promise((resolve, reject) => {
+  return await w.executeJavaScript(jsont`new Promise((resolve, reject) => {
     const webview = new WebView()
     webview.id = 'webview'
-    for (const [k, v] of Object.entries(${JSON.stringify(attributes)})) {
+    for (const [k, v] of Object.entries(${attributes})) {
       webview.setAttribute(k, v)
     }
-    webview.addEventListener(${JSON.stringify(eventName)}, (e) => resolve({...e}), {once: true})
+    webview.addEventListener(${eventName}, (e) => resolve({...e}), {once: true})
     document.body.appendChild(webview)
   })`);
 };
@@ -941,9 +942,9 @@ describe('<webview> tag', function () {
           src: fixtureFileURL('pages', 'a.html')
         });
 
-        const { message } = await w.executeJavaScript(`new Promise(resolve => {
+        const { message } = await w.executeJavaScript(jsont`new Promise(resolve => {
           webview.addEventListener('console-message', e => resolve({message: e.message}))
-          webview.src = ${JSON.stringify(fixtureFileURL('pages', 'b.html'))}
+          webview.src = ${fixtureFileURL('pages', 'b.html')}
         })`);
 
         expect(message).to.equal('b');
@@ -1120,8 +1121,8 @@ describe('<webview> tag', function () {
         });
 
         const message = 'boom!';
-        const { channel, args } = await w.executeJavaScript(`new Promise(resolve => {
-          webview.send('ping', ${JSON.stringify(message)})
+        const { channel, args } = await w.executeJavaScript(jsont`new Promise(resolve => {
+          webview.send('ping', ${message})
           webview.addEventListener('ipc-message', ({channel, args}) => resolve({channel, args}))
         })`);
 
@@ -1228,13 +1229,13 @@ describe('<webview> tag', function () {
     describe('disablewebsecurity attribute', () => {
       it('does not disable web security when not set', async () => {
         await loadWebView(w, { src: 'about:blank' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
+        const result = await w.executeJavaScript(jsont`webview.executeJavaScript(\`fetch(${blankPageUrl}).then(() => 'ok', () => 'failed')\`)`);
         expect(result).to.equal('failed');
       });
 
       it('disables web security when set', async () => {
         await loadWebView(w, { src: 'about:blank', disablewebsecurity: '' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
+        const result = await w.executeJavaScript(jsont`webview.executeJavaScript(\`fetch(${blankPageUrl}).then(() => 'ok', () => 'failed')\`)`);
         expect(result).to.equal('ok');
       });
 
@@ -1377,7 +1378,7 @@ describe('<webview> tag', function () {
 
       it('can disable web security and enable nodeintegration', async () => {
         await loadWebView(w, { src: 'about:blank', webpreferences: 'webSecurity=no, nodeIntegration=yes, contextIsolation=no' });
-        const result = await w.executeJavaScript(`webview.executeJavaScript(\`fetch(${JSON.stringify(blankPageUrl)}).then(() => 'ok', () => 'failed')\`)`);
+        const result = await w.executeJavaScript(jsont`webview.executeJavaScript(\`fetch(${blankPageUrl}).then(() => 'ok', () => 'failed')\`)`);
         expect(result).to.equal('ok');
         const type = await w.executeJavaScript('webview.executeJavaScript("typeof require")');
         expect(type).to.equal('function');
@@ -1888,7 +1889,7 @@ describe('<webview> tag', function () {
         const jsScript = "'4'+2";
         const expectedResult = '42';
 
-        const result = await w.executeJavaScript(`webview.executeJavaScript(${JSON.stringify(jsScript)})`);
+        const result = await w.executeJavaScript(jsont`webview.executeJavaScript(${jsScript})`);
         expect(result).to.equal(expectedResult);
       });
     });
@@ -1903,7 +1904,7 @@ describe('<webview> tag', function () {
     it('supports removing inserted CSS', async () => {
       await loadWebView(w, { src: fixtureFileURL('pages', 'base-page.html') });
       const key = await w.executeJavaScript('webview.insertCSS(\'body { background-repeat: round; }\')');
-      await w.executeJavaScript(`webview.removeInsertedCSS(${JSON.stringify(key)})`);
+      await w.executeJavaScript(jsont`webview.removeInsertedCSS(${key})`);
       const result = await w.executeJavaScript('webview.executeJavaScript(\'window.getComputedStyle(document.body).getPropertyValue("background-repeat")\')');
       expect(result).to.equal('repeat');
     });
@@ -1978,7 +1979,7 @@ describe('<webview> tag', function () {
 
           const src = 'data:text/html,%3Ch1%3EHello%2C%20World!%3C%2Fh1%3E';
           await loadWebView(w, { src });
-          await expect(w.executeJavaScript(`webview.printToPDF(${JSON.stringify(param)})`)).to.eventually.be.rejected();
+          await expect(w.executeJavaScript(jsont`webview.printToPDF(${param})`)).to.eventually.be.rejected();
         }
       });
 

@@ -6,6 +6,7 @@ import { defer } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe } from './lib/spec-conditional';
+import { jsont } from './lib/json';
 
 describe('process module', () => {
   describe('renderer process', () => {
@@ -105,7 +106,7 @@ describe('process module', () => {
           }
         });
 
-        const success = await w.webContents.executeJavaScript(`process.takeHeapSnapshot(${JSON.stringify(filePath)})`);
+        const success = await w.webContents.executeJavaScript(jsont`process.takeHeapSnapshot(${filePath})`);
         expect(success).to.be.true();
         const stats = fs.statSync(filePath);
         expect(stats.size).not.to.be.equal(0);

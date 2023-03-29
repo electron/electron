@@ -15,6 +15,7 @@ import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 import { setTimeout } from 'timers/promises';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -977,9 +978,9 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(fixturePath('blank.html'));
 
-      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+      const { eventData } = await w.webContents.executeJavaScript(jsont`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
-        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=false')
+        const b = window.open(${windowUrl}, '', 'show=false')
         const e = await message
         b.close();
         return {
@@ -1023,8 +1024,8 @@ describe('chromium features', () => {
         protocol: 'file',
         slashes: true
       });
-      w.webContents.executeJavaScript(`
-        { b = window.open(${JSON.stringify(windowUrl)}, '', 'javascript=no,show=no'); null }
+      w.webContents.executeJavaScript(jsont`
+        { b = window.open(${windowUrl}, '', 'javascript=no,show=no'); null }
       `);
       const [, contents] = await once(app, 'web-contents-created');
       await once(contents, 'did-finish-load');
@@ -1040,7 +1041,7 @@ describe('chromium features', () => {
       const targetURL = fixtureFileURL('pages', 'base-page.html');
       const w = new BrowserWindow({ show: false });
       w.webContents.loadFile(fixturePath('blank.html'));
-      w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`);
+      w.webContents.executeJavaScript(jsont`{ b = window.open(${targetURL}); null }`);
       const [, window] = await once(app, 'browser-window-created');
       await once(window.webContents, 'did-finish-load');
       expect(await w.webContents.executeJavaScript('b.location.href')).to.equal(targetURL);
@@ -1053,7 +1054,7 @@ describe('chromium features', () => {
       const [, { webContents }] = await once(app, 'browser-window-created');
       await once(webContents, 'did-finish-load');
       // When it loads, redirect
-      w.webContents.executeJavaScript(`{ b.location = ${JSON.stringify(fixtureFileURL('pages', 'base-page.html'))}; null }`);
+      w.webContents.executeJavaScript(jsont`{ b.location = ${fixtureFileURL('pages', 'base-page.html')}; null }`);
       await once(webContents, 'did-finish-load');
     });
 
@@ -1064,7 +1065,7 @@ describe('chromium features', () => {
       const [, { webContents }] = await once(app, 'browser-window-created');
       await once(webContents, 'did-finish-load');
       // When it loads, redirect
-      w.webContents.executeJavaScript(`{ b.location.href = ${JSON.stringify(fixtureFileURL('pages', 'base-page.html'))}; null }`);
+      w.webContents.executeJavaScript(jsont`{ b.location.href = ${fixtureFileURL('pages', 'base-page.html')}; null }`);
       await once(webContents, 'did-finish-load');
     });
 
@@ -1104,9 +1105,9 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });
       w.loadFile(fixturePath('blank.html'));
       const url = fixtureFileURL('pages', 'window-open-size.html');
-      const { width, height, eventData } = await w.webContents.executeJavaScript(`(async () => {
+      const { width, height, eventData } = await w.webContents.executeJavaScript(jsont`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
-        const b = window.open(${JSON.stringify(url)}, '', 'show=false')
+        const b = window.open(${url}, '', 'show=false')
         const e = await message
         b.close();
         const width = outerWidth;
@@ -1125,9 +1126,9 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(fixturePath('blank.html'));
       const windowUrl = fixtureFileURL('pages', 'window-open-size.html');
-      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+      const { eventData } = await w.webContents.executeJavaScript(jsont`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
-        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no,width=350,height=450')
+        const b = window.open(${windowUrl}, '', 'show=no,width=350,height=450')
         const e = await message
         b.close();
         return { eventData: e.data }
@@ -1142,9 +1143,9 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(fixturePath('blank.html'));
 
-      const { eventData } = await w.webContents.executeJavaScript(`(async () => {
+      const { eventData } = await w.webContents.executeJavaScript(jsont`(async () => {
         const message = new Promise(resolve => window.addEventListener('message', resolve, {once: true}));
-        const b = window.open(${JSON.stringify(windowUrl)}, '', 'webviewTag=no,contextIsolation=no,nodeIntegration=yes,show=no')
+        const b = window.open(${windowUrl}, '', 'webviewTag=no,contextIsolation=no,nodeIntegration=yes,show=no')
         const e = await message
         b.close();
         return { eventData: e.data }
@@ -1199,8 +1200,8 @@ describe('chromium features', () => {
       w.loadFile(fixturePath('blank.html'));
 
       const windowUrl = fixtureFileURL('pages', 'window-opener.html');
-      const eventData = await w.webContents.executeJavaScript(`
-        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no');
+      const eventData = await w.webContents.executeJavaScript(jsont`
+        const b = window.open(${windowUrl}, '', 'show=no');
         new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data);
       `);
       expect(eventData).to.equal('object');
@@ -1213,8 +1214,8 @@ describe('chromium features', () => {
       w.loadFile(fixturePath('blank.html'));
 
       const windowUrl = fixtureFileURL('pages', 'window-opener-postMessage.html');
-      const { sourceIsChild, origin } = await w.webContents.executeJavaScript(`
-        const b = window.open(${JSON.stringify(windowUrl)}, '', 'show=no');
+      const { sourceIsChild, origin } = await w.webContents.executeJavaScript(jsont`
+        const b = window.open(${windowUrl}, '', 'show=no');
         new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => ({
           sourceIsChild: e.source === b,
           origin: e.origin
@@ -1230,11 +1231,11 @@ describe('chromium features', () => {
       w.loadURL('about:blank');
       const childWindowUrl = url.pathToFileURL(fixturePath('pages', 'webview-opener-postMessage.html'));
       childWindowUrl.searchParams.set('p', fixturePath('pages', 'window-opener-postMessage.html'));
-      const message = await w.webContents.executeJavaScript(`
+      const message = await w.webContents.executeJavaScript(jsont`
         const webview = new WebView();
         webview.allowpopups = true;
         webview.setAttribute('webpreferences', 'contextIsolation=no');
-        webview.src = ${JSON.stringify(childWindowUrl)}
+        webview.src = ${childWindowUrl}
         const consoleMessage = new Promise(resolve => webview.addEventListener('console-message', resolve, {once: true}));
         document.body.appendChild(webview);
         consoleMessage.then(e => e.message)
@@ -1263,8 +1264,8 @@ describe('chromium features', () => {
       it('delivers messages that match the origin', async () => {
         const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
         w.loadFile(fixturePath('blank.html'));
-        const data = await w.webContents.executeJavaScript(`
-          window.open(${JSON.stringify(serverURL)}, '', 'show=no,contextIsolation=no,nodeIntegration=yes');
+        const data = await w.webContents.executeJavaScript(jsont`
+          window.open(${serverURL}, '', 'show=no,contextIsolation=no,nodeIntegration=yes');
           new Promise(resolve => window.addEventListener('message', resolve, {once: true})).then(e => e.data)
         `);
         expect(data).to.equal('deliver');
@@ -1421,11 +1422,11 @@ describe('chromium features', () => {
               }
             }));
             await w.loadURL(parent);
-            const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise(resolve => {
+            const childOpenerLocation = await w.webContents.executeJavaScript(jsont`new Promise(resolve => {
               window.addEventListener('message', function f(e) {
                 resolve(e.data)
               })
-              window.open(${JSON.stringify(child)}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}")
+              window.open(${child}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}")
             })`);
             if (openerAccessible) {
               expect(childOpenerLocation).to.be.a('string');
@@ -1451,22 +1452,22 @@ describe('chromium features', () => {
           const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, webviewTag: true, contextIsolation: false } });
           await w.loadURL('about:blank');
 
-          const parentCode = `new Promise((resolve) => {
+          const parentCode = jsont`new Promise((resolve) => {
             // This is context (3), a child window of the WebView.
-            const child = window.open(${JSON.stringify(child)}, "", "show=no,contextIsolation=no,nodeIntegration=yes")
+            const child = window.open(${child}, "", "show=no,contextIsolation=no,nodeIntegration=yes")
             window.addEventListener("message", e => {
               resolve(e.data)
             })
           })`;
-          const childOpenerLocation = await w.webContents.executeJavaScript(`new Promise((resolve, reject) => {
+          const childOpenerLocation = await w.webContents.executeJavaScript(jsont`new Promise((resolve, reject) => {
             // This is context (2), a WebView which will call window.open()
             const webview = new WebView()
-            webview.setAttribute('nodeintegration', '${nodeIntegration ? 'on' : 'off'}')
+            webview.setAttribute('nodeintegration', ${nodeIntegration ? 'on' : 'off'})
             webview.setAttribute('webpreferences', 'contextIsolation=no')
             webview.setAttribute('allowpopups', 'on')
-            webview.src = ${JSON.stringify(parent + '?p=' + encodeURIComponent(child))}
+            webview.src = ${parent + '?p=' + encodeURIComponent(child)}
             webview.addEventListener('dom-ready', async () => {
-              webview.executeJavaScript(${JSON.stringify(parentCode)}).then(resolve, reject)
+              webview.executeJavaScript(${parentCode}).then(resolve, reject)
             })
             document.body.appendChild(webview)
           })`);
@@ -2950,9 +2951,13 @@ describe('navigator.hid', () => {
     if (haveDevices) {
       // We have devices to exclude, so check if exclusionFilters work
       checkForExcludedDevice = true;
-      await w.webContents.executeJavaScript(`
-        navigator.hid.requestDevice({filters: [], exclusionFilters: ${JSON.stringify(exclusionFilters)}}).then(device => device.toString()).catch(err => err.toString());
-
+      await w.webContents.executeJavaScript(jsont`
+        navigator.hid.requestDevice({
+          filters: [],
+          exclusionFilters: ${exclusionFilters}
+        })
+          .then(device => device.toString())
+          .catch(err => err.toString());
       `, true);
     }
   });

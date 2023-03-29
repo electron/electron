@@ -13,6 +13,7 @@ import { WebmGenerator } from './lib/video-helpers';
 import { listen, defer, ifit } from './lib/spec-helpers';
 import { setTimeout } from 'timers/promises';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 const registerStringProtocol = protocol.registerStringProtocol;
 const registerBufferProtocol = protocol.registerBufferProtocol;
@@ -83,7 +84,7 @@ describe('protocol module', () => {
     // registered or unregistered, otherwise the new protocol won't be
     // recognized by current page when NetworkService is used.
     await contents.loadFile(fixturePath('pages', 'fetch.html'));
-    return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
+    return contents.executeJavaScript(jsont`ajax(${url}, ${options})`);
   }
 
   afterEach(() => {
@@ -872,7 +873,7 @@ describe('protocol module', () => {
         requestReceived.resolve();
       });
       const { url } = await listen(server);
-      const content = `<script>fetch(${JSON.stringify(url)})</script>`;
+      const content = jsont`<script>fetch(${url})</script>`;
       registerStringProtocol(standardScheme, (request, callback) => callback({ data: content, mimeType: 'text/html' }));
       await w.loadURL(origin);
       await requestReceived;
@@ -913,7 +914,7 @@ describe('protocol module', () => {
     it('supports fetch api by default', async () => {
       const url = fixtureFileURL('assets', 'logo.png');
       await w.loadURL(fixtureFileURL('pages', 'blank.html'));
-      const ok = await w.webContents.executeJavaScript(`fetch(${JSON.stringify(url)}).then(r => r.ok)`);
+      const ok = await w.webContents.executeJavaScript(jsont`fetch(${url}).then(r => r.ok)`);
       expect(ok).to.be.true('response ok');
     });
 

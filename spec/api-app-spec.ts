@@ -13,6 +13,7 @@ import { once } from 'events';
 import { fixturePath } from './lib/fixtures';
 import { ifdescribe, ifit } from './lib/spec-conditional';
 import { pollUntil } from './lib/async-loop';
+import { jsont } from './lib/json';
 import split = require('split');
 
 describe('electron module', () => {
@@ -272,7 +273,7 @@ describe('app module', () => {
           `argument ${arg} is missing from received second args`);
       }
       expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
-        `received data ${JSON.stringify(secondInstanceDataReceived)} is not equal to expected data ${JSON.stringify(testArgs.expectedAdditionalData)}.`);
+        jsont`received data ${secondInstanceDataReceived} is not equal to expected data ${testArgs.expectedAdditionalData}.`);
     }
 
     it('passes arguments to the second-instance event no additional data', async () => {
