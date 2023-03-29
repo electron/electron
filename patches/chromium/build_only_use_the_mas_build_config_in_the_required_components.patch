@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 80f6eaf01c022b979ff8c3049e7b1d66aaa605c3..c472e10fdc5c9cce7934e584f2848e74aecd8801 100644
+index 0ada7ddbe90ad56c5a32d21062613754d8199e87..f430d17383b276b4d2f6e9f6a93bd3f5992b05cf 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -76,7 +76,7 @@ index a808f967a95fca4847588f1d88a210bfd7f53767..7c3c71cac9162b8f565494fdad16fb06
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index cd33a9ec05b1b41e3b3a9557e0586118b01acc89..026d8f546ab4503dfa97f8f7a990a15ce776e23f 100644
+index 57be2bdb26e56eb4914a169f7052a94a53535203..26bf82736b9fed3d3c5960cf106bde80fb68f5ba 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index cd33a9ec05b1b41e3b3a9557e0586118b01acc89..026d8f546ab4503dfa97f8f7a990a15c
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 1bfc069882b2fd56bb4e872c792809615e4f70c9..e5df5a35d270229787d0d9637b23813e2e1da115 100644
+index 15fff7d58b4ad4998d1230cfa00e1f428e58de2e..fd13d82c89bfb3984eed5eee3521dad1583ca970 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -168,6 +168,7 @@ source_set("common") {
+@@ -172,6 +172,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -136,7 +136,7 @@ index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 516cada6f759ed952d442e42957eda98712e2d26..8e103bd2b3823f21d1e9a7a355ecf4c1af965a26 100644
+index f1b4cd5055d00df425926e83a3b2e7f32af4c2e6..a80aaa7fde1fd9c70e7038aef4e322f1ec6a307a 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -194,6 +194,7 @@ source_set("audio") {
@@ -265,7 +265,7 @@ index af0e7466f1a265c9d55ba81f3b2c9c68dafa7767..d991513ee82f4406f578a4751bf30fac
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 8a1142f03aa69c28ec4ee9648417914e32039d58..efbd064dc79a5b27124cbbc2a2ef59caa7b2d3db 100644
+index 44ab549757216902e3db8c015dfde2c2d7799ca9..e4b9e8ac2643437c819305d96d7aa9dca809454e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -673,6 +673,7 @@ component("views") {
