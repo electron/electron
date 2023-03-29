@@ -25,6 +25,10 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
+#if BUILDFLAG(IS_WIN)
+  static bool IsSystemAutomaticallyResumed();
+#endif
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
@@ -68,8 +72,6 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
                            UINT message,
                            WPARAM wparam,
                            LPARAM lparam);
-
-  static bool IsSystemAutomaticallyResumed();
 
   // The window class of |window_|.
   ATOM atom_;
