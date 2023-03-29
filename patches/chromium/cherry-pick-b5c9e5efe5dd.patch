@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dale Curtis <dalecurtis@chromium.org>
+Date: Wed, 15 Mar 2023 22:55:57 +0000
+Subject: Merge M110: "Improve checks for VideoFrame layouts."
+
+Adds a `VideoFrameLayout::IsValidForSize(size)` method which clients can
+use to verify a VideoFrameLayout for their purpose. Updates a few call
+sites to use the new verifier and adds tests.
+
+(cherry picked from commit 17f73200c066158330542c19d521c517586533a2)
+
+Fixed: 1421268
+Change-Id: I51049ada6119eddb31cdd9b7edfe77ee65b1da7a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4307674
+Auto-Submit: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Hirokazu Honda <hiroh@chromium.org>
+Reviewed-by: Dominick Ng <dominickn@chromium.org>
+Commit-Queue: Dominick Ng <dominickn@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1116233}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4342492
+Cr-Commit-Position: refs/branch-heads/5481@{#1361}
+Cr-Branched-From: 130f3e4d850f4bc7387cfb8d08aa993d288a67a9-refs/heads/main@{#1084008}
+
+diff --git a/media/base/video_frame.cc b/media/base/video_frame.cc
+index 4aa077a567840545b59645ee5ae84194517226b4..4ec81d5c1fc9b26559914b56f48f3eea1fca6bad 100644
+--- a/media/base/video_frame.cc
++++ b/media/base/video_frame.cc
+@@ -427,20 +427,9 @@ scoped_refptr<VideoFrame> VideoFrame::WrapExternalDataWithLayout(
+   StorageType storage_type = STORAGE_UNOWNED_MEMORY;
+ 
+   if (!IsValidConfig(layout.format(), storage_type, layout.coded_size(),
+-                     visible_rect, natural_size)) {
+-    DLOG(ERROR) << __func__ << " Invalid config."
+-                << ConfigToString(layout.format(), storage_type,
+-                                  layout.coded_size(), visible_rect,
+-                                  natural_size);
+-    return nullptr;
+-  }
+-
+-  const auto& last_plane = layout.planes()[layout.planes().size() - 1];
+-  const size_t required_size = last_plane.offset + last_plane.size;
+-  if (data_size < required_size) {
+-    DLOG(ERROR) << __func__ << " Provided data size is too small. Provided "
+-                << data_size << " bytes, but " << required_size
+-                << " bytes are required."
++                     visible_rect, natural_size) ||
++      !layout.FitsInContiguousBufferOfSize(data_size)) {
++    DLOG(ERROR) << "Invalid config: "
+                 << ConfigToString(layout.format(), storage_type,
+                                   layout.coded_size(), visible_rect,
+                                   natural_size);
+diff --git a/media/base/video_frame_layout.cc b/media/base/video_frame_layout.cc
+index b3307c302bfd678caf3c90c639d32659dd2cad21..1426adb193d92c4aeb658321a6d40cdaa34461ad 100644
+--- a/media/base/video_frame_layout.cc
++++ b/media/base/video_frame_layout.cc
+@@ -9,6 +9,7 @@
+ #include <sstream>
+ 
+ #include "base/notreached.h"
++#include "base/numerics/checked_math.h"
+ 
+ namespace media {
+ 
+@@ -173,6 +174,34 @@ bool VideoFrameLayout::operator!=(const VideoFrameLayout& rhs) const {
+   return !(*this == rhs);
+ }
+ 
++bool VideoFrameLayout::FitsInContiguousBufferOfSize(size_t data_size) const {
++  if (is_multi_planar_) {
++    return false;
++  }
++
++  base::CheckedNumeric<size_t> required_size = 0;
++  for (const auto& plane : planes_) {
++    if (plane.offset > data_size || plane.size > data_size) {
++      return false;
++    }
++
++    // No individual plane should have a size + offset > data_size.
++    base::CheckedNumeric<size_t> plane_end = plane.size;
++    plane_end += plane.offset;
++    if (!plane_end.IsValid() || plane_end.ValueOrDie() > data_size) {
++      return false;
++    }
++
++    required_size += plane.size;
++  }
++
++  if (!required_size.IsValid() || required_size.ValueOrDie() > data_size) {
++    return false;
++  }
++
++  return true;
++}
++
+ std::ostream& operator<<(std::ostream& ostream,
+                          const VideoFrameLayout& layout) {
+   ostream << "VideoFrameLayout(format: " << layout.format()
+diff --git a/media/base/video_frame_layout.h b/media/base/video_frame_layout.h
+index d899c15d2d3f31bfac022d2900b62a53eccc1665..ae68bcfe5ab3669932344a6489fce76d8d9ccefa 100644
+--- a/media/base/video_frame_layout.h
++++ b/media/base/video_frame_layout.h
+@@ -112,6 +112,13 @@ class MEDIA_EXPORT VideoFrameLayout {
+   // Return the modifier of buffers.
+   uint64_t modifier() const { return modifier_; }
+ 
++  // Any constructible layout is valid in and of itself, it can only be invalid
++  // if the backing memory is too small to contain it.
++  //
++  // Returns true if this VideoFrameLayout can fit in a contiguous buffer of
++  // size `data_size` -- always false for multi-planar layouts.
++  bool FitsInContiguousBufferOfSize(size_t data_size) const;
++
+  private:
+   VideoFrameLayout(VideoPixelFormat format,
+                    const gfx::Size& coded_size,
+diff --git a/media/base/video_frame_layout_unittest.cc b/media/base/video_frame_layout_unittest.cc
+index 71ef5d11d75de5693aa255b5d2400301ad3488c4..c11136eaee78b2cd35154d1a9cc10ec19835ac88 100644
+--- a/media/base/video_frame_layout_unittest.cc
++++ b/media/base/video_frame_layout_unittest.cc
+@@ -308,4 +308,50 @@ TEST(VideoFrameLayout, EqualOperator) {
+   EXPECT_NE(*layout, *different_layout);
+ }
+ 
++TEST(VideoFrameLayout, FitsInContiguousBufferOfSize) {
++  auto coded_size = gfx::Size(320, 180);
++
++  std::vector<int32_t> strides = {384, 192, 192};
++  std::vector<size_t> offsets = {0, 200, 300};
++  std::vector<size_t> sizes = {200, 100, 100};
++  std::vector<ColorPlaneLayout> planes(strides.size());
++  for (size_t i = 0; i < strides.size(); i++) {
++    planes[i].stride = strides[i];
++    planes[i].offset = offsets[i];
++    planes[i].size = sizes[i];
++  }
++
++  auto layout =
++      VideoFrameLayout::CreateWithPlanes(PIXEL_FORMAT_I420, coded_size, planes);
++  ASSERT_TRUE(layout.has_value());
++
++  EXPECT_TRUE(
++      layout->FitsInContiguousBufferOfSize(sizes[0] + sizes[1] + sizes[2]));
++
++  // Validate single plane size exceeds data size.
++  EXPECT_FALSE(layout->FitsInContiguousBufferOfSize(1));
++
++  // Validate sum of planes exceeds data size.
++  EXPECT_FALSE(layout->FitsInContiguousBufferOfSize(sizes[0] + sizes[1]));
++
++  // Validate offset exceeds plane size.
++  planes[2].offset = 301;
++  layout =
++      VideoFrameLayout::CreateWithPlanes(PIXEL_FORMAT_I420, coded_size, planes);
++  ASSERT_TRUE(layout.has_value());
++  EXPECT_TRUE(
++      layout->FitsInContiguousBufferOfSize(sizes[0] + sizes[1] + sizes[2] + 1));
++  EXPECT_FALSE(layout->FitsInContiguousBufferOfSize(sizes[0]));
++
++  // Validate overflow.
++  planes[0].offset = 0;
++  planes[0].size = planes[1].size = planes[2].size =
++      std::numeric_limits<size_t>::max() / 2;
++  layout =
++      VideoFrameLayout::CreateWithPlanes(PIXEL_FORMAT_I420, coded_size, planes);
++  ASSERT_TRUE(layout.has_value());
++  EXPECT_FALSE(
++      layout->FitsInContiguousBufferOfSize(std::numeric_limits<size_t>::max()));
++}
++
+ }  // namespace media
+diff --git a/media/base/video_frame_unittest.cc b/media/base/video_frame_unittest.cc
+index 2fb254e8315b57cad3ac743d7ecf4f7c11371823..9e2cd0878362ff4b6315338cc1a39816ffadf49c 100644
+--- a/media/base/video_frame_unittest.cc
++++ b/media/base/video_frame_unittest.cc
+@@ -770,6 +770,46 @@ TEST(VideoFrame, AllocationSize_OddSize) {
+   }
+ }
+ 
++TEST(VideoFrame, WrapExternalDataWithInvalidLayout) {
++  auto coded_size = gfx::Size(320, 180);
++
++  std::vector<int32_t> strides = {384, 192, 192};
++  std::vector<size_t> offsets = {0, 200, 300};
++  std::vector<size_t> sizes = {200, 100, 100};
++  std::vector<ColorPlaneLayout> planes(strides.size());
++  for (size_t i = 0; i < strides.size(); i++) {
++    planes[i].stride = strides[i];
++    planes[i].offset = offsets[i];
++    planes[i].size = sizes[i];
++  }
++
++  auto layout =
++      VideoFrameLayout::CreateWithPlanes(PIXEL_FORMAT_I420, coded_size, planes);
++  ASSERT_TRUE(layout.has_value());
++
++  // Validate single plane size exceeds data size.
++  uint8_t data = 0;
++  auto frame = VideoFrame::WrapExternalDataWithLayout(
++      *layout, gfx::Rect(coded_size), coded_size, &data, sizeof(data),
++      base::TimeDelta());
++  ASSERT_FALSE(frame);
++
++  // Validate sum of planes exceeds data size.
++  frame = VideoFrame::WrapExternalDataWithLayout(
++      *layout, gfx::Rect(coded_size), coded_size, &data, sizes[0] + sizes[1],
++      base::TimeDelta());
++  ASSERT_FALSE(frame);
++
++  // Validate offset exceeds plane size.
++  planes[0].offset = 201;
++  layout =
++      VideoFrameLayout::CreateWithPlanes(PIXEL_FORMAT_I420, coded_size, planes);
++  frame = VideoFrame::WrapExternalDataWithLayout(*layout, gfx::Rect(coded_size),
++                                                 coded_size, &data, sizes[0],
++                                                 base::TimeDelta());
++  ASSERT_FALSE(frame);
++}
++
+ TEST(VideoFrameMetadata, MergeMetadata) {
+   VideoFrameMetadata reference_metadata = GetFullVideoFrameMetadata();
+   VideoFrameMetadata full_metadata = reference_metadata;
+diff --git a/media/mojo/mojom/video_frame_mojom_traits.cc b/media/mojo/mojom/video_frame_mojom_traits.cc
+index cdc4498f52873a6ba68271e4b373c5ace27f43c9..3a07ab5e7e877c9230df7f1a3bcd0df51a8940b6 100644
+--- a/media/mojo/mojom/video_frame_mojom_traits.cc
++++ b/media/mojo/mojom/video_frame_mojom_traits.cc
+@@ -231,14 +231,17 @@ bool StructTraits<media::mojom::VideoFrameDataView,
+ 
+     auto layout = media::VideoFrameLayout::CreateWithPlanes(format, coded_size,
+                                                             std::move(planes));
+-    if (!layout) {
++    if (!layout || !layout->FitsInContiguousBufferOfSize(mapping.size())) {
+       DLOG(ERROR) << "Invalid layout";
+       return false;
+     }
++
+     frame = media::VideoFrame::WrapExternalYuvDataWithLayout(
+         *layout, visible_rect, natural_size, addr[0], addr[1], addr[2],
+         timestamp);
+-    frame->BackWithOwnedSharedMemory(std::move(region), std::move(mapping));
++    if (frame) {
++      frame->BackWithOwnedSharedMemory(std::move(region), std::move(mapping));
++    }
+   } else if (data.is_gpu_memory_buffer_data()) {
+     media::mojom::GpuMemoryBufferVideoFrameDataDataView gpu_memory_buffer_data;
+     data.GetGpuMemoryBufferDataDataView(&gpu_memory_buffer_data);
+@@ -313,8 +316,9 @@ bool StructTraits<media::mojom::VideoFrameDataView,
+     return false;
+   }
+ 
+-  if (!frame)
++  if (!frame) {
+     return false;
++  }
+ 
+   media::VideoFrameMetadata metadata;
+   if (!input.ReadMetadata(&metadata))
