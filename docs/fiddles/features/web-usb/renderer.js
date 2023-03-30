@@ -1,5 +1,5 @@
 function getDeviceDetails(device) {
-  return grantedDevice.productName || `Unknown device ${grantedDevice.deviceId}`
+  return device.productName || `Unknown device ${device.deviceId}`
 }
 
 async function testIt() {
