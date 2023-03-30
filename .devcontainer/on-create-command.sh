@@ -35,8 +35,13 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
   write_config() {
     echo "
         {
-            \"root\": \"/workspaces/gclient\",
             \"goma\": \"$1\",
+            \"root\": \"/workspaces/gclient\",
+            \"remotes\": {
+                \"electron\": {
+                    \"origin\": \"https://github.com/electron/electron.git\"
+                }
+            }
             \"gen\": {
                 \"args\": [
                     \"import(\\\"//electron/build/args/testing.gn\\\")\",
@@ -48,11 +53,7 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
                 \"CHROMIUM_BUILDTOOLS_PATH\": \"/workspaces/gclient/src/buildtools\",
                 \"GIT_CACHE_PATH\": \"/workspaces/gclient/.git-cache\"
             },
-            \"remotes\": {
-                \"electron\": {
-                    \"origin\": \"https://github.com/electron/electron.git\"
-                }
-            }
+            \"$schema\": \"file:///home/builduser/.electron_build_tools/evm-config.schema.json\"
         }
     " >$buildtools/configs/evm.testing.json
   }
