@@ -195,7 +195,7 @@ Returns:
     Only defined when the window is being created by a form that set
     `target=_blank`.
   * `disposition` string - Can be `default`, `foreground-tab`,
-    `background-tab`, `new-window`, `save-to-disk` and `other`.
+    `background-tab`, `new-window` or `other`.
 
 Emitted _after_ successful creation of a window via `window.open` in the renderer.
 Not emitted if the creation of the window is canceled from
@@ -1176,7 +1176,7 @@ Ignore application menu shortcuts while this web contents is focused.
     * `frameName` string - Name of the window provided in `window.open()`
     * `features` string - Comma separated list of window features provided to `window.open()`.
     * `disposition` string - Can be `default`, `foreground-tab`, `background-tab`,
-      `new-window`, `save-to-disk` or `other`.
+      `new-window` or `other`.
     * `referrer` [Referrer](structures/referrer.md) - The referrer that will be
       passed to the new window. May or may not result in the `Referer` header being
       sent, depending on the referrer policy.
