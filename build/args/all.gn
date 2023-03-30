@@ -45,3 +45,7 @@ is_cfi = false
 
 # TODO: fix this once sysroots have been updated.
 use_qt = false
+
+# https://chromium-review.googlesource.com/c/chromium/src/+/4365718
+# TODO(codebytere): fix perfetto incompatibility with Node.js.
+use_perfetto_client_library = false
