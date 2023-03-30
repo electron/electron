@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0ada7ddbe90ad56c5a32d21062613754d8199e87..f430d17383b276b4d2f6e9f6a93bd3f5992b05cf 100644
+index 8d16af27f369310b2c01fcdd468a608e33a7d0cd..eae6c19819fe905decb63a7a6fd3b78096576d6f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1035,6 +1035,7 @@ component("base") {
@@ -189,7 +189,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 043a78766d8551b1efc31377afbcc89925731f95..d126c280a023cf361e97857b3bd02aed730a6899 100644
+index 30d2367f886c71509c350ab1b288a94fc400bdb2..eec41ce952674df415e6497cd9b9a79ab2b61396 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -304,6 +304,7 @@ component("core") {
@@ -226,10 +226,10 @@ index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682c
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 90074c3e90d9b4bbfaf2c86f8c1a5a3c36babdc8..991bc348a5fb5c2e9a744b14ed5894fe3155f4c0 100644
+index 9631446ea47a2d8c5d2483ed13cf17a023c49ab6..0e61c424c7529cd469582d200bb6f42e795942a0 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -345,6 +345,7 @@ component("base") {
+@@ -343,6 +343,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]

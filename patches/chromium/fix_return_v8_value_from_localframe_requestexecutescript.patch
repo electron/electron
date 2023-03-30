@@ -20,7 +20,7 @@ index 43fd5ef20228479f3090af0806df19baf65b963c..72062ab628af1eb3faac6337c4ce757c
        injector_->ExpectsResults(), injector_->ShouldWaitForPromise());
  }
 diff --git a/third_party/blink/public/web/web_local_frame.h b/third_party/blink/public/web/web_local_frame.h
-index 19c21697ec86b383acfae9e2a90ae8411cced13c..3ab66b5c502697985ec1ce457d383997745488e2 100644
+index 157a7a90f3e5e70b0fa80e0030e1a3f65239664c..e65e857e83568dc0b621bf8f98c2b5247836f829 100644
 --- a/third_party/blink/public/web/web_local_frame.h
 +++ b/third_party/blink/public/web/web_local_frame.h
 @@ -436,6 +436,7 @@ class BLINK_EXPORT WebLocalFrame : public WebFrame {
@@ -205,7 +205,7 @@ index 1e4d9e098463d61dcab787afcc46fea63b27e012..3f1ebf493ddd7d1c209acee2fb1255a0
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 29628093e990b782ee894196821aea65a854affc..759d33d9ce638560dc90dd7063b650c8f7b91383 100644
+index 23e5e04eda35891f7f97816dd0976cd234259cf7..fbd913726522f29950fede45de9fc79997f3b2a0 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1148,14 +1148,15 @@ void WebLocalFrameImpl::RequestExecuteScript(
@@ -227,7 +227,7 @@ index 29628093e990b782ee894196821aea65a854affc..759d33d9ce638560dc90dd7063b650c8
  
  v8::MaybeLocal<v8::Value> WebLocalFrameImpl::CallFunctionEvenIfScriptDisabled(
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index 1dca1d355d209813fd2b0f2a32bc1f604d4741ee..53922031c694eaad3b221be5b80aea8701d5131c 100644
+index aa8c03c35518b6c3163d7b28dc09a5cbb9d8a54d..8657a6f7191fac4263d47d34629223a165dda2e1 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -195,6 +195,7 @@ class CORE_EXPORT WebLocalFrameImpl final
