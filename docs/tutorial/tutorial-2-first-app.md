@@ -469,7 +469,7 @@ privileged APIs and how to communicate between processes.
 [repl]: ./repl.md
 [webpack]: https://webpack.js.org
 [window-all-closed]: ../api/app.md#event-window-all-closed
-[wsl]: https://docs.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2
+[wsl]: https://learn.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2
 
 <!-- Tutorial links -->
 

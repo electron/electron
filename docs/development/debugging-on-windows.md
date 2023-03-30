@@ -94,7 +94,7 @@ out [this video tutorial][procmon-instructions] provided by Microsoft.
 ## Using WinDbg
 <!-- TODO(@codebytere): add images and more information here? -->
 
-It's possible to debug crashes and issues in the Renderer process with [WinDbg](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/getting-started-with-windbg).
+It's possible to debug crashes and issues in the Renderer process with [WinDbg](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/getting-started-with-windbg).
 
 To attach to a debug a process with WinDbg:
 
