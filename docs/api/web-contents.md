@@ -1948,36 +1948,36 @@ Shows pop-up dictionary that searches the selected word on the page.
 
 #### `contents.isOffscreen()`
 
-Returns `boolean` - Indicates whether *offscreen rendering* is enabled.
+Returns `boolean` - Indicates whether _offscreen rendering_ is enabled.
 
 #### `contents.startPainting()`
 
-If *offscreen rendering* is enabled and not painting, start painting.
+If _offscreen rendering_ is enabled and not painting, start painting.
 
 #### `contents.stopPainting()`
 
-If *offscreen rendering* is enabled and painting, stop painting.
+If _offscreen rendering_ is enabled and painting, stop painting.
 
 #### `contents.isPainting()`
 
-Returns `boolean` - If *offscreen rendering* is enabled returns whether it is currently painting.
+Returns `boolean` - If _offscreen rendering_ is enabled returns whether it is currently painting.
 
 #### `contents.setFrameRate(fps)`
 
 * `fps` Integer
 
-If *offscreen rendering* is enabled sets the frame rate to the specified number.
+If _offscreen rendering_ is enabled sets the frame rate to the specified number.
 Only values between 1 and 240 are accepted.
 
 #### `contents.getFrameRate()`
 
-Returns `Integer` - If *offscreen rendering* is enabled returns the current frame rate.
+Returns `Integer` - If _offscreen rendering_ is enabled returns the current frame rate.
 
 #### `contents.invalidate()`
 
 Schedules a full repaint of the window this web contents is in.
 
-If *offscreen rendering* is enabled invalidates the frame and generates a new
+If _offscreen rendering_ is enabled invalidates the frame and generates a new
 one through the `'paint'` event.
 
 #### `contents.getWebRTCIPHandlingPolicy()`
@@ -2118,7 +2118,7 @@ The zoom factor is the zoom percent divided by 100, so 300% = 3.0.
 An `Integer` property that sets the frame rate of the web contents to the specified number.
 Only values between 1 and 240 are accepted.
 
-Only applicable if *offscreen rendering* is enabled.
+Only applicable if _offscreen rendering_ is enabled.
 
 #### `contents.id` _Readonly_
 

@@ -12,11 +12,11 @@ hide_title: true
 Windows and macOS provide access to a list of recent documents opened by
 the application via JumpList or dock menu, respectively.
 
-__JumpList:__
+**JumpList:**
 
 ![JumpList Recent Files][jumplist-image]
 
-__Application dock menu:__
+**Application dock menu:**
 
 ![macOS Dock Menu][dock-menu-image]
 
