@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 8d16af27f369310b2c01fcdd468a608e33a7d0cd..eae6c19819fe905decb63a7a6fd3b78096576d6f 100644
+index 326f9a1c30359bc55857173d6d9588c3e705970a..fa650bcb133bf343f78da90ac8113fe747cf2c0c 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1035,6 +1035,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -238,10 +238,10 @@ index 9631446ea47a2d8c5d2483ed13cf17a023c49ab6..0e61c424c7529cd469582d200bb6f42e
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 7bd65e6d61d0845cf3a557a43b377ee7894fd7d1..91a470467ddd5e2118a08b5b63f96e5e94c554bc 100644
+index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35132e0b32 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
-@@ -56,6 +56,10 @@ component("display") {
+@@ -67,6 +67,10 @@ component("display") {
        "mac/display_link_mac.h",
        "mac/screen_mac.mm",
      ]
@@ -253,7 +253,7 @@ index 7bd65e6d61d0845cf3a557a43b377ee7894fd7d1..91a470467ddd5e2118a08b5b63f96e5e
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index af0e7466f1a265c9d55ba81f3b2c9c68dafa7767..d991513ee82f4406f578a4751bf30fac1910c741 100644
+index 675e3fe856315be8ea0b246538608b2a091d5f79..7c8d7dd0b05e4bc02055a6a38982e20c15dbf34c 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -193,6 +193,7 @@ component("gfx") {
