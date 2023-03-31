@@ -1,0 +1,193 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Polevoy <fx@thefx.co>
+Date: Thu, 9 Mar 2023 12:06:55 +0100
+Subject: Store the thread stack start in TLS.
+
+Stores the thread's stack start address in the Thread Local Storage.
+This should allow for faster enter of isolates. Previously it was
+obtained each time whenever an isolate is entered what was costly
+in terms of performance and unnecessary in general. This change
+reverts the high performance back.
+
+Bug: v8:13772
+Change-Id: I0a5bb29579cfb407e7d129c4434192d2a6962296
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4338176
+Commit-Queue: Omer Katz <omerkatz@chromium.org>
+Reviewed-by: Michael Lippautz <mlippautz@chromium.org>
+Reviewed-by: Omer Katz <omerkatz@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#86578}
+(cherry picked from commit 2902d182818fa2790c2ff2b60979039fae4fc636)
+
+diff --git a/AUTHORS b/AUTHORS
+index 515bb0d6ccaf7e82b8feace2a49bbfcae29ecc8c..5f14dd472616aa17327fc3b44df4e13aa9dae078 100644
+--- a/AUTHORS
++++ b/AUTHORS
+@@ -258,6 +258,7 @@ Ujjwal Sharma <usharma1998@gmail.com>
+ Vadim Gorbachev <bmsdave@gmail.com>
+ Varun Varada <varuncvarada@gmail.com>
+ Victor Costan <costan@gmail.com>
++Victor Polevoy <fx@thefx.co>
+ Vlad Burlik <vladbph@gmail.com>
+ Vladimir Krivosheev <develar@gmail.com>
+ Vladimir Shutoff <vovan@shutoff.ru>
+diff --git a/BUILD.bazel b/BUILD.bazel
+index 08247f86115254220b954a0b7eddf22ff33002b1..99bd667de0007b87fd12ba3b6477e14e585dd2b9 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -663,6 +663,7 @@ filegroup(
+         "src/base/platform/mutex.cc",
+         "src/base/platform/mutex.h",
+         "src/base/platform/platform.h",
++        "src/base/platform/platform.cc",
+         "src/base/platform/semaphore.cc",
+         "src/base/platform/semaphore.h",
+         "src/base/platform/time.cc",
+diff --git a/BUILD.gn b/BUILD.gn
+index 1f8f89e1876ca7a02a8762c5e88d6fcf96037dc0..347471a52ce817618a3e9b7addc17e94b1e5619c 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -5648,6 +5648,7 @@ v8_component("v8_libbase") {
+     "src/base/platform/memory.h",
+     "src/base/platform/mutex.cc",
+     "src/base/platform/mutex.h",
++    "src/base/platform/platform.cc",
+     "src/base/platform/platform.h",
+     "src/base/platform/semaphore.cc",
+     "src/base/platform/semaphore.h",
+diff --git a/src/base/platform/platform-aix.cc b/src/base/platform/platform-aix.cc
+index 9c9adda3897b80ded70e8ddb3b6195eba5c98c47..e6421f37ac32a03e455c60e9ac58466e4447eca9 100644
+--- a/src/base/platform/platform-aix.cc
++++ b/src/base/platform/platform-aix.cc
+@@ -136,7 +136,7 @@ std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+ }
+ 
+ // static
+-Stack::StackSlot Stack::GetStackStart() {
++Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
+   // pthread_getthrds_np creates 3 values:
+   // __pi_stackaddr, __pi_stacksize, __pi_stackend
+ 
+diff --git a/src/base/platform/platform-darwin.cc b/src/base/platform/platform-darwin.cc
+index b6260dfaf93e430f584c25eb37366fc94cad81e5..7fde32b22bf291b78bdc7e897995c662625794c4 100644
+--- a/src/base/platform/platform-darwin.cc
++++ b/src/base/platform/platform-darwin.cc
+@@ -136,7 +136,7 @@ std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+ }
+ 
+ // static
+-Stack::StackSlot Stack::GetStackStart() {
++Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
+   return pthread_get_stackaddr_np(pthread_self());
+ }
+ 
+diff --git a/src/base/platform/platform-freebsd.cc b/src/base/platform/platform-freebsd.cc
+index 55d600283f6029ae28edf80eb68d405d079385a4..4314b1070928859e8a67b913ccfb334bb8737c2f 100644
+--- a/src/base/platform/platform-freebsd.cc
++++ b/src/base/platform/platform-freebsd.cc
+@@ -104,7 +104,7 @@ std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+ }
+ 
+ // static
+-Stack::StackSlot Stack::GetStackStart() {
++Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
+   pthread_attr_t attr;
+   int error;
+   pthread_attr_init(&attr);
+diff --git a/src/base/platform/platform-posix.cc b/src/base/platform/platform-posix.cc
+index 540cc8bdff0e6c9a0365ea0e8cc27571472fe46d..40e870a346f885b9009d19f8567f28ad535432e3 100644
+--- a/src/base/platform/platform-posix.cc
++++ b/src/base/platform/platform-posix.cc
+@@ -1241,7 +1241,7 @@ void Thread::SetThreadLocal(LocalStorageKey key, void* value) {
+     !defined(V8_OS_SOLARIS)
+ 
+ // static
+-Stack::StackSlot Stack::GetStackStart() {
++Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
+   pthread_attr_t attr;
+   int error = pthread_getattr_np(pthread_self(), &attr);
+   if (!error) {
+diff --git a/src/base/platform/platform-solaris.cc b/src/base/platform/platform-solaris.cc
+index 8f5dd0c9f12284d5197695a9636e442f35fb4c93..6ff02e3278f9a486c36c4c6d3350c8e15f63ce74 100644
+--- a/src/base/platform/platform-solaris.cc
++++ b/src/base/platform/platform-solaris.cc
+@@ -72,7 +72,7 @@ std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+ }
+ 
+ // static
+-Stack::StackSlot Stack::GetStackStart() {
++Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
+   pthread_attr_t attr;
+   int error;
+   pthread_attr_init(&attr);
+diff --git a/src/base/platform/platform-win32.cc b/src/base/platform/platform-win32.cc
+index 0eedaba0e512eea37fdbfdc109f82788851b5897..280fe18f7f2281884e7ced547762cda6feb98302 100644
+--- a/src/base/platform/platform-win32.cc
++++ b/src/base/platform/platform-win32.cc
+@@ -1739,7 +1739,7 @@ std::vector<OS::MemoryRange> OS::GetFreeMemoryRangesWithin(
+ }
+ 
+ // static
+-Stack::StackSlot Stack::GetStackStart() {
++Stack::StackSlot Stack::ObtainCurrentThreadStackStart() {
+ #if defined(V8_TARGET_ARCH_X64)
+   return reinterpret_cast<void*>(
+       reinterpret_cast<NT_TIB64*>(NtCurrentTeb())->StackBase);
+@@ -1753,7 +1753,7 @@ Stack::StackSlot Stack::GetStackStart() {
+   ::GetCurrentThreadStackLimits(&lowLimit, &highLimit);
+   return reinterpret_cast<void*>(highLimit);
+ #else
+-#error Unsupported GetStackStart.
++#error Unsupported ObtainCurrentThreadStackStart.
+ #endif
+ }
+ 
+diff --git a/src/base/platform/platform.cc b/src/base/platform/platform.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..3914b7dabab3fd32a85237cb1e7d97ad14f94d31
+--- /dev/null
++++ b/src/base/platform/platform.cc
+@@ -0,0 +1,29 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++#include "src/base/platform/platform.h"
++
++namespace v8 {
++
++namespace base {
++
++namespace {
++
++// A pointer to current thread's stack beginning.
++thread_local void* thread_stack_start = nullptr;
++
++}  // namespace
++
++// static
++Stack::StackSlot Stack::GetStackStart() {
++  DCHECK_IMPLIES(thread_stack_start,
++                 thread_stack_start == ObtainCurrentThreadStackStart());
++
++  if (!thread_stack_start) {
++    thread_stack_start = ObtainCurrentThreadStackStart();
++  }
++  return thread_stack_start;
++}
++
++}  // namespace base
++}  // namespace v8
+diff --git a/src/base/platform/platform.h b/src/base/platform/platform.h
+index b9b734dac8042b67bf68e8bace550c38130b5e7f..850f447185825cdce688e2687a2d0702904fb7e6 100644
+--- a/src/base/platform/platform.h
++++ b/src/base/platform/platform.h
+@@ -660,6 +660,10 @@ class V8_BASE_EXPORT Stack {
+ #endif  // V8_USE_ADDRESS_SANITIZER
+     return slot;
+   }
++
++ private:
++  // Returns the current thread stack start pointer.
++  static Stack::StackSlot ObtainCurrentThreadStackStart();
+ };
+ 
+ }  // namespace base
