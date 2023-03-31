@@ -4,6 +4,10 @@ Date: Wed, 29 Mar 2023 17:33:34 +0200
 Subject: Revert "[wasm] Simplify CompileJSToWasmWrapperJob"
 
 This reverts commit a8a11a87cb72c698cd35a5df3a23f0d08340b6d1.
+[wasm] Simplify CompileJSToWasmWrapperJob | https://chromium-review.googlesource.com/c/v8/v8/+/4347597
+ was reverted because it caused many failures to the node tests,
+ eg: https://app.circleci.com/pipelines/github/electron/electron/67031/workflows/eaedbe8d-2f77-47f0-a729-840ceed6c411/jobs/1475853.
+ There is a tracking issue here to remove this patch: https://github.com/electron/electron/issues/37772
 
 diff --git a/src/wasm/module-compiler.cc b/src/wasm/module-compiler.cc
 index 3e63eee4dd8c93f627bdd5bd6f8624efa529f178..912deac0fe9dc0cdc277b23b0a078ba431811a05 100644
