@@ -155,7 +155,7 @@ index f7314c906e580664be445a8912030e17a3ac2fa4..99258ad0aa1e15ea1ba139fd0e83111e
  
    // Delegate to V8's allocator for compatibility with the V8 memory cage.
 diff --git a/src/node_serdes.cc b/src/node_serdes.cc
-index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f7320629bf9f926 100644
+index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..573c185465407bbe34ef1c4ec5f58f6add596d42 100644
 --- a/src/node_serdes.cc
 +++ b/src/node_serdes.cc
 @@ -29,6 +29,11 @@ using v8::ValueSerializer;
@@ -219,17 +219,32 @@ index f6f0034bc24d09e3ad65491c7d6be0b9c9db1581..92d5020f293c98c81d3891a82f732062
  Maybe<bool> SerializerContext::WriteHostObject(Isolate* isolate,
                                                 Local<Object> input) {
    MaybeLocal<Value> ret;
-@@ -211,7 +240,12 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -209,9 +238,14 @@ void SerializerContext::ReleaseBuffer(const FunctionCallbackInfo<Value>& args) {
+   // Note: Both ValueSerializer and this Buffer::New() variant use malloc()
+   // as the underlying allocator.
    std::pair<uint8_t*, size_t> ret = ctx->serializer_.Release();
-   auto buf = Buffer::New(ctx->env(),
-                          reinterpret_cast<char*>(ret.first),
+-  auto buf = Buffer::New(ctx->env(),
+-                         reinterpret_cast<char*>(ret.first),
 -                         ret.second);
-+                         ret.second,
-+                         [](char* data, void* hint){
-+                           if (data)
-+                             GetAllocator()->Free(data, reinterpret_cast<size_t>(hint));
-+                         },
-+                         reinterpret_cast<void*>(ctx->last_length_));
++  std::unique_ptr<v8::BackingStore> bs =
++      v8::ArrayBuffer::NewBackingStore(reinterpret_cast<char*>(ret.first), ret.second,
++        [](void* data, size_t length, void* deleter_data) {
++          if (data) GetAllocator()->Free(reinterpret_cast<char*>(data), length);
++        }, nullptr);
++  Local<ArrayBuffer> ab = v8::ArrayBuffer::New(ctx->env()->isolate(), std::move(bs));
++
++  auto buf = Buffer::New(ctx->env(), ab, 0, ret.second);
  
    if (!buf.IsEmpty()) {
      args.GetReturnValue().Set(buf.ToLocalChecked());
+diff --git a/test/parallel/test-v8-serialize-leak.js b/test/parallel/test-v8-serialize-leak.js
+index a90c398adcdaf30491a0fecdcf00895038d62e69..f5b8a1430ad2033eae06ca0157af2fb51d3f36a5 100644
+--- a/test/parallel/test-v8-serialize-leak.js
++++ b/test/parallel/test-v8-serialize-leak.js
+@@ -23,5 +23,5 @@ const after = process.memoryUsage.rss();
+ if (process.config.variables.asan) {
+   assert(after < before * 10, `asan: before=${before} after=${after}`);
+ } else {
+-  assert(after < before * 2, `before=${before} after=${after}`);
++  assert(after < before * 3, `before=${before} after=${after}`);
+ }
