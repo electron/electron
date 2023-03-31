@@ -494,6 +494,14 @@ Forge's scaffolding:
    Making for the following targets: zip
    ✔ Making for target: zip - On platform: darwin - For arch: x64
    ```
+   
+   note that if you got error like `Could not find module with name '@electron-forge/maker-squirrel'...`,just try to run:
+   
+   ```
+   npm run package
+   ```
+   
+   Then you can find the `out` folder here.
 
    Electron Forge creates the `out` folder where your package will be located:
 
