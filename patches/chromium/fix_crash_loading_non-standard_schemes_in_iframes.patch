@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index b2b19773136ca1b66080c905e9d6c9cc51d9a7f0..59bcfec0fe5c91ca852b9449e5f05b48337c4095 100644
+index ee22a92259e1c07a3ce17a1ef04c2c3f13b89246..5abe3351a837a504c89412f7441bc9b4d61e035e 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -7173,10 +7173,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -7339,10 +7339,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,10 +37,10 @@ index b2b19773136ca1b66080c905e9d6c9cc51d9a7f0..59bcfec0fe5c91ca852b9449e5f05b48
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index ab194495edf27ea3193ce31276f458d495fb1fd9..07bcf27b7c085b29b0497474e75e74215e29eea8 100644
+index 442bacaa7c266361e2fba7f4ea41ea530cb904a9..25376e90c60da4bdfe04475f234b047bad24da83 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2883,6 +2883,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2896,6 +2896,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // last committed document.
    CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
  
@@ -55,10 +55,10 @@ index ab194495edf27ea3193ce31276f458d495fb1fd9..07bcf27b7c085b29b0497474e75e7421
 +                                        bool is_pdf,
 +                                        bool is_sandboxed);
 +
-  protected:
-   friend class RenderFrameHostFactory;
- 
-@@ -3207,17 +3218,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+   // Sets a ResourceCache in the renderer. `remote` must have the same process
+   // isolation policy.
+   // TODO(https://crbug.com/1414262): Add checks to ensure the preconditions.
+@@ -3234,17 +3245,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

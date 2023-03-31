@@ -12,6 +12,7 @@
 #include "gin/handle.h"
 #include "gin/wrappable.h"
 #include "shell/browser/net/electron_url_loader_factory.h"
+#include "shell/common/gin_helper/constructible.h"
 
 namespace electron {
 
@@ -37,15 +38,19 @@ enum class ProtocolError {
 };
 
 // Protocol implementation based on network services.
-class Protocol : public gin::Wrappable<Protocol> {
+class Protocol : public gin::Wrappable<Protocol>,
+                 public gin_helper::Constructible<Protocol> {
  public:
   static gin::Handle<Protocol> Create(v8::Isolate* isolate,
                                       ElectronBrowserContext* browser_context);
 
+  static gin::Handle<Protocol> New(gin_helper::ErrorThrower thrower);
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(
-      v8::Isolate* isolate) override;
+  static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
+      v8::Isolate* isolate,
+      v8::Local<v8::ObjectTemplate> tmpl);
   const char* GetTypeName() override;
 
  private:

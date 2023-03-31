@@ -17,6 +17,8 @@ PromiseBase::PromiseBase(v8::Isolate* isolate,
       context_(isolate, isolate->GetCurrentContext()),
       resolver_(isolate, handle) {}
 
+PromiseBase::PromiseBase() : isolate_(nullptr) {}
+
 PromiseBase::PromiseBase(PromiseBase&&) = default;
 
 PromiseBase::~PromiseBase() = default;

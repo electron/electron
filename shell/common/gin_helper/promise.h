@@ -30,6 +30,7 @@ class PromiseBase {
  public:
   explicit PromiseBase(v8::Isolate* isolate);
   PromiseBase(v8::Isolate* isolate, v8::Local<v8::Promise::Resolver> handle);
+  PromiseBase();
   ~PromiseBase();
 
   // disable copy

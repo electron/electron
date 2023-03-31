@@ -1438,6 +1438,18 @@ describe('net module', () => {
         expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
         expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
       });
+
+      it('triggers webRequest handlers when bypassCustomProtocolHandlers', async () => {
+        let webRequestDetails: Electron.OnBeforeRequestListenerDetails | null = null;
+        const serverUrl = await respondOnce.toSingleURL((req, res) => res.end('hi'));
+        session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
+          webRequestDetails = details;
+          cb({});
+        });
+        const body = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true }).then(r => r.text());
+        expect(body).to.equal('hi');
+        expect(webRequestDetails).to.have.property('url', serverUrl);
+      });
     });
 
     it('should throw when calling getHeader without a name', () => {

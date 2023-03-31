@@ -29,7 +29,7 @@ const char kXdgSettingsDefaultSchemeHandler[] = "default-url-scheme-handler";
 // The use of the ForTesting flavors is a hack workaround to avoid having to
 // patch these as friends into the associated guard classes.
 class [[maybe_unused, nodiscard]] LaunchXdgUtilityScopedAllowBaseSyncPrimitives
-    : public base::ScopedAllowBaseSyncPrimitivesForTesting{};
+    : public base::ScopedAllowBaseSyncPrimitivesForTesting {};
 
 bool LaunchXdgUtility(const std::vector<std::string>& argv, int* exit_code) {
   *exit_code = EXIT_FAILURE;
