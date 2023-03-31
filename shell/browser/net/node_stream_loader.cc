@@ -85,7 +85,10 @@ void NodeStreamLoader::NotifyComplete(int result) {
     return;
   }
 
-  client_->OnComplete(network::URLLoaderCompletionStatus(result));
+  network::URLLoaderCompletionStatus status(result);
+  status.completion_time = base::TimeTicks::Now();
+  status.decoded_body_length = bytes_written_;
+  client_->OnComplete(status);
   delete this;
 }
 
@@ -125,6 +128,8 @@ void NodeStreamLoader::ReadMore() {
 
   // Hold the buffer until the write is done.
   buffer_.Reset(isolate_, buffer);
+
+  bytes_written_ += node::Buffer::Length(buffer);
 
   // Write buffer to mojo pipe asynchronously.
   is_reading_ = false;

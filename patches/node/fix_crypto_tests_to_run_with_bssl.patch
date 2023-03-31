@@ -1009,7 +1009,7 @@ index 6c6b15781549a4b37781bf0b8014054dc5d8c746..142d41b169c836201660d78c19383f3f
  }
 +*/
 diff --git a/test/parallel/test-webcrypto-wrap-unwrap.js b/test/parallel/test-webcrypto-wrap-unwrap.js
-index 1094845c73e14313860ad476fb7baba2a11b5af4..51972b4b34b191ac59145889dbf2da5c0d407dbe 100644
+index 8d107a99bdd8c5ce0c32cfbbc337b2c880bde200..2a2b7e2253ed2d55b3fb973d06dec768ba9b1e1c 100644
 --- a/test/parallel/test-webcrypto-wrap-unwrap.js
 +++ b/test/parallel/test-webcrypto-wrap-unwrap.js
 @@ -18,14 +18,15 @@ const kWrappingData = {

@@ -13,10 +13,10 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index d045964264de280f670350f71c5d69cf7326e13a..d0ce23fa6d6b32e8475cdafbf551447c6db700c6 100644
+index 89bcbe4a8d5e0f3e1fce7d87f4ac58abc68ef9a0..89a1b8131174f96af7304c0a6d3205f0954eed45 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-@@ -288,12 +288,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -316,12 +316,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
                                                   WPARAM w_param,
                                                   LPARAM l_param,
                                                   BOOL& handled) {
@@ -31,7 +31,7 @@ index d045964264de280f670350f71c5d69cf7326e13a..d0ce23fa6d6b32e8475cdafbf551447c
        tme.hwndTrack = hwnd();
        tme.dwHoverTime = 0;
        TrackMouseEvent(&tme);
-@@ -324,7 +324,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -352,7 +352,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
      // out of the picture.
      if (!handled &&
           (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {
@@ -44,10 +44,10 @@ index d045964264de280f670350f71c5d69cf7326e13a..d0ce23fa6d6b32e8475cdafbf551447c
      }
    }
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.h b/content/browser/renderer_host/legacy_render_widget_host_win.h
-index 11ae0ec65f8b3eab782e9f660ba21bc6fccdc7e2..4bf7545646794f045e6cea6131e3b67453c459d3 100644
+index ede2965cbaa5b99f5c9e28033339c0db9aa46446..248248a444cd7f4d940e4088ca6e7971090d2c8e 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.h
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.h
-@@ -106,6 +106,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
+@@ -107,6 +107,7 @@ class CONTENT_EXPORT LegacyRenderWidgetHostHWND
      MESSAGE_HANDLER_EX(WM_NCHITTEST, OnNCHitTest)
      MESSAGE_RANGE_HANDLER(WM_NCMOUSEMOVE, WM_NCXBUTTONDBLCLK,
                            OnMouseRange)

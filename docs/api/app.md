@@ -127,8 +127,6 @@ Emitted when the user wants to open a URL with the application. Your application
 `Info.plist` file must define the URL scheme within the `CFBundleURLTypes` key, and
 set `NSPrincipalClass` to `AtomApplication`.
 
-You should call `event.preventDefault()` if you want to handle this event.
-
 As with the `open-file` event, be sure to register a listener for the `open-url`
 event early in your application startup to detect if the the application being
 is being opened to handle a URL. If you register the listener in response to a
@@ -806,7 +804,7 @@ editor. Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 **Note:** In a Windows Store environment (when packaged as an `appx`) this API
 will return `true` for all calls but the registry key it sets won't be accessible
 by other applications.  In order to register your Windows Store application
-as a default protocol handler you must [declare the protocol in your manifest](https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
+as a default protocol handler you must [declare the protocol in your manifest](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
 
 The API uses the Windows Registry and `LSSetDefaultHandlerForURLScheme` internally.
 
@@ -1512,18 +1510,18 @@ dock on macOS.
 
 A `boolean` property that returns  `true` if the app is packaged, `false` otherwise. For many apps, this property can be used to distinguish development and production environments.
 
-[tasks]:https://msdn.microsoft.com/en-us/library/windows/desktop/dd378460(v=vs.85).aspx#tasks
-[app-user-model-id]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378459(v=vs.85).aspx
+[tasks]:https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
+[app-user-model-id]: https://learn.microsoft.com/en-us/windows/win32/shell/appids
 [electron-forge]: https://www.electronforge.io/
 [electron-packager]: https://github.com/electron/electron-packager
 [CFBundleURLTypes]: https://developer.apple.com/library/ios/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html#//apple_ref/doc/uid/TP40009249-102207-TPXREF115
-[LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/library/mac/documentation/Carbon/Reference/LaunchServicesReference/#//apple_ref/c/func/LSCopyDefaultHandlerForURLScheme
+[LSCopyDefaultHandlerForURLScheme]: https://developer.apple.com/documentation/coreservices/1441725-lscopydefaulthandlerforurlscheme?language=objc
 [handoff]: https://developer.apple.com/library/ios/documentation/UserExperience/Conceptual/Handoff/HandoffFundamentals/HandoffFundamentals.html
 [activity-type]: https://developer.apple.com/library/ios/documentation/Foundation/Reference/NSUserActivity_Class/index.html#//apple_ref/occ/instp/NSUserActivity/activityType
 [unity-requirement]: https://help.ubuntu.com/community/UnityLaunchersAndDesktopFiles#Adding_shortcuts_to_a_launcher
 [mas-builds]: ../tutorial/mac-app-store-submission-guide.md
 [Squirrel-Windows]: https://github.com/Squirrel/Squirrel.Windows
-[JumpListBeginListMSDN]: https://msdn.microsoft.com/en-us/library/windows/desktop/dd378398(v=vs.85).aspx
+[JumpListBeginListMSDN]: https://learn.microsoft.com/en-us/windows/win32/api/shobjidl_core/nf-shobjidl_core-icustomdestinationlist-beginlist
 [about-panel-options]: https://developer.apple.com/reference/appkit/nsapplication/1428479-orderfrontstandardaboutpanelwith?language=objc
 
 ### `app.name`

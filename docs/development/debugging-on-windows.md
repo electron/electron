@@ -89,12 +89,12 @@ For an introduction to ProcMon's basic and advanced debugging features, go check
 out [this video tutorial][procmon-instructions] provided by Microsoft.
 
 [sys-internals]: https://technet.microsoft.com/en-us/sysinternals/processmonitor.aspx
-[procmon-instructions]: https://channel9.msdn.com/shows/defrag-tools/defrag-tools-4-process-monitor
+[procmon-instructions]: https://learn.microsoft.com/en-us/shows/defrag-tools/4-process-monitor
 
 ## Using WinDbg
 <!-- TODO(@codebytere): add images and more information here? -->
 
-It's possible to debug crashes and issues in the Renderer process with [WinDbg](https://docs.microsoft.com/en-us/windows-hardware/drivers/debugger/getting-started-with-windbg).
+It's possible to debug crashes and issues in the Renderer process with [WinDbg](https://learn.microsoft.com/en-us/windows-hardware/drivers/debugger/getting-started-with-windbg).
 
 To attach to a debug a process with WinDbg:
 

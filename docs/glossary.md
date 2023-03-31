@@ -234,7 +234,7 @@ embedded content.
 [context isolation]: tutorial/context-isolation.md
 [mac app store submission guide]: tutorial/mac-app-store-submission-guide.md
 [main]: #main-process
-[msi]: https://docs.microsoft.com/en-us/windows/win32/msi/windows-installer-portal
+[msi]: https://learn.microsoft.com/en-us/windows/win32/msi/windows-installer-portal
 [Native Node Modules]: tutorial/using-native-node-modules.md
 [offscreen rendering]: tutorial/offscreen-rendering.md
 [process sandboxing]: tutorial/sandbox.md

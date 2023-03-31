@@ -7,6 +7,12 @@ async function testIt() {
 
 document.getElementById('clickme').addEventListener('click',testIt)
 
+function cancelRequest() {
+  window.electronAPI.cancelBluetoothRequest()
+}
+
+document.getElementById('cancel').addEventListener('click', cancelRequest)
+
 window.electronAPI.bluetoothPairingRequest((event, details) => {
   const response = {}
 

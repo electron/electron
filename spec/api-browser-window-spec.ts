@@ -6,7 +6,7 @@ import * as qs from 'querystring';
 import * as http from 'http';
 import * as os from 'os';
 import { AddressInfo } from 'net';
-import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, session, WebContents, WebFrameMain } from 'electron/main';
+import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
@@ -568,6 +568,205 @@ describe('BrowserWindow module', () => {
         });
       });
 
+      describe('will-frame-navigate event', () => {
+        let server = null as unknown as http.Server;
+        let url = null as unknown as string;
+        before((done) => {
+          server = http.createServer((req, res) => {
+            if (req.url === '/navigate-top') {
+              res.end('<a target=_top href="/">navigate _top</a>');
+            } else if (req.url === '/navigate-iframe') {
+              res.end('<a href="/test">navigate iframe</a>');
+            } else if (req.url === '/navigate-iframe?navigated') {
+              res.end('Successfully navigated');
+            } else if (req.url === '/navigate-iframe-immediately') {
+              res.end(`
+                <script type="text/javascript" charset="utf-8">
+                  location.href += '?navigated'
+                </script>
+              `);
+            } else if (req.url === '/navigate-iframe-immediately?navigated') {
+              res.end('Successfully navigated');
+            } else {
+              res.end('');
+            }
+          });
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+            done();
+          });
+        });
+
+        after(() => {
+          server.close();
+        });
+
+        it('allows the window to be closed from the event listener', (done) => {
+          w.webContents.once('will-frame-navigate', () => {
+            w.close();
+            done();
+          });
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+        });
+
+        it('can be prevented', (done) => {
+          let willNavigate = false;
+          w.webContents.once('will-frame-navigate', (e) => {
+            willNavigate = true;
+            e.preventDefault();
+          });
+          w.webContents.on('did-stop-loading', () => {
+            if (willNavigate) {
+              // i.e. it shouldn't have had '?navigated' appended to it.
+              try {
+                expect(w.webContents.getURL().endsWith('will-navigate.html')).to.be.true();
+                done();
+              } catch (e) {
+                done(e);
+              }
+            }
+          });
+          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+        });
+
+        it('can be prevented when navigating subframe', (done) => {
+          let willNavigate = false;
+          w.webContents.on('did-frame-navigate', (_event, _url, _httpResponseCode, _httpStatusText, isMainFrame, frameProcessId, frameRoutingId) => {
+            if (isMainFrame) return;
+
+            w.webContents.once('will-frame-navigate', (e) => {
+              willNavigate = true;
+              e.preventDefault();
+            });
+
+            w.webContents.on('did-stop-loading', () => {
+              const frame = webFrameMain.fromId(frameProcessId, frameRoutingId);
+              expect(frame).to.not.be.undefined();
+              if (willNavigate) {
+                // i.e. it shouldn't have had '?navigated' appended to it.
+                try {
+                  expect(frame!.url.endsWith('/navigate-iframe-immediately')).to.be.true();
+                  done();
+                } catch (e) {
+                  done(e);
+                }
+              }
+            });
+          });
+          w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe-immediately"></iframe>`);
+        });
+
+        it('is triggered when navigating from file: to http:', async () => {
+          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-frame-navigate', (e) => {
+              e.preventDefault();
+              resolve(e.url);
+            });
+          });
+          expect(navigatedTo).to.equal(url);
+          expect(w.webContents.getURL()).to.match(/^file:/);
+        });
+
+        it('is triggered when navigating from about:blank to http:', async () => {
+          await w.loadURL('about:blank');
+          w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
+          const navigatedTo = await new Promise(resolve => {
+            w.webContents.once('will-frame-navigate', (e) => {
+              e.preventDefault();
+              resolve(e.url);
+            });
+          });
+          expect(navigatedTo).to.equal(url);
+          expect(w.webContents.getURL()).to.equal('about:blank');
+        });
+
+        it('is triggered when a cross-origin iframe navigates _top', async () => {
+          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-top"></iframe>`);
+          await setTimeout(1000);
+
+          let willFrameNavigateEmitted = false;
+          let isMainFrameValue;
+          w.webContents.on('will-frame-navigate', (event) => {
+            willFrameNavigateEmitted = true;
+            isMainFrameValue = event.isMainFrame;
+          });
+          const didNavigatePromise = once(w.webContents, 'did-navigate');
+
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: iframeTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+
+          await didNavigatePromise;
+
+          expect(willFrameNavigateEmitted).to.be.true();
+          expect(isMainFrameValue).to.be.true();
+        });
+
+        it('is triggered when a cross-origin iframe navigates itself', async () => {
+          await w.loadURL(`data:text/html,<iframe src="http://127.0.0.1:${(server.address() as AddressInfo).port}/navigate-iframe"></iframe>`);
+          await setTimeout(1000);
+
+          let willNavigateEmitted = false;
+          let isMainFrameValue;
+          w.webContents.on('will-frame-navigate', (event) => {
+            willNavigateEmitted = true;
+            isMainFrameValue = event.isMainFrame;
+          });
+          const didNavigatePromise = once(w.webContents, 'did-frame-navigate');
+
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const iframeTarget = targets.targetInfos.find((t: any) => t.type === 'iframe');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: iframeTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+
+          await didNavigatePromise;
+
+          expect(willNavigateEmitted).to.be.true();
+          expect(isMainFrameValue).to.be.false();
+        });
+
+        it('can cancel when a cross-origin iframe navigates itself', async () => {
+
+        });
+      });
+
       describe('will-redirect event', () => {
         let server: http.Server;
         let url: string;
@@ -650,6 +849,179 @@ describe('BrowserWindow module', () => {
             }
           });
           w.loadURL(`${url}/navigate-302`);
+        });
+      });
+
+      describe('ordering', () => {
+        let server = null as unknown as http.Server;
+        let url = null as unknown as string;
+        const navigationEvents = [
+          'did-start-navigation',
+          'did-navigate-in-page',
+          'will-frame-navigate',
+          'will-navigate',
+          'will-redirect',
+          'did-redirect-navigation',
+          'did-frame-navigate',
+          'did-navigate'
+        ];
+        before((done) => {
+          server = http.createServer((req, res) => {
+            if (req.url === '/navigate') {
+              res.end('<a href="/">navigate</a>');
+            } else if (req.url === '/redirect') {
+              res.end('<a href="/redirect2">redirect</a>');
+            } else if (req.url === '/redirect2') {
+              res.statusCode = 302;
+              res.setHeader('location', url);
+              res.end();
+            } else if (req.url === '/in-page') {
+              res.end('<a href="#in-page">redirect</a><div id="in-page"></div>');
+            } else {
+              res.end('');
+            }
+          });
+          server.listen(0, '127.0.0.1', () => {
+            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
+            done();
+          });
+        });
+        it('for initial navigation, event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'did-frame-navigate',
+            'did-navigate'
+          ];
+          const allEvents = Promise.all(navigationEvents.map(event =>
+            once(w.webContents, event).then(() => firedEvents.push(event))
+          ));
+          const timeout = setTimeout(1000);
+          w.loadURL(url);
+          await Promise.race([allEvents, timeout]);
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+
+        it('for second navigation, event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'will-frame-navigate',
+            'will-navigate',
+            'did-frame-navigate',
+            'did-navigate'
+          ];
+          w.loadURL(`${url}navigate`);
+          await once(w.webContents, 'did-navigate');
+          await setTimeout(1000);
+          navigationEvents.forEach(event =>
+            once(w.webContents, event).then(() => firedEvents.push(event))
+          );
+          const navigationFinished = once(w.webContents, 'did-navigate');
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: pageTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await navigationFinished;
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+
+        it('when navigating with redirection, event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'will-frame-navigate',
+            'will-navigate',
+            'will-redirect',
+            'did-redirect-navigation',
+            'did-frame-navigate',
+            'did-navigate'
+          ];
+          w.loadURL(`${url}redirect`);
+          await once(w.webContents, 'did-navigate');
+          await setTimeout(1000);
+          navigationEvents.forEach(event =>
+            once(w.webContents, event).then(() => firedEvents.push(event))
+          );
+          const navigationFinished = once(w.webContents, 'did-navigate');
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: pageTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await navigationFinished;
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
+        });
+
+        it('when navigating in-page, event order is consistent', async () => {
+          const firedEvents: string[] = [];
+          const expectedEventOrder = [
+            'did-start-navigation',
+            'did-navigate-in-page'
+          ];
+          w.loadURL(`${url}in-page`);
+          await once(w.webContents, 'did-navigate');
+          await setTimeout(1000);
+          navigationEvents.forEach(event =>
+            once(w.webContents, event).then(() => firedEvents.push(event))
+          );
+          const navigationFinished = once(w.webContents, 'did-navigate-in-page');
+          w.webContents.debugger.attach('1.1');
+          const targets = await w.webContents.debugger.sendCommand('Target.getTargets');
+          const pageTarget = targets.targetInfos.find((t: any) => t.type === 'page');
+          const { sessionId } = await w.webContents.debugger.sendCommand('Target.attachToTarget', {
+            targetId: pageTarget.targetId,
+            flatten: true
+          });
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mousePressed',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await w.webContents.debugger.sendCommand('Input.dispatchMouseEvent', {
+            type: 'mouseReleased',
+            x: 10,
+            y: 10,
+            clickCount: 1,
+            button: 'left'
+          }, sessionId);
+          await navigationFinished;
+          expect(firedEvents).to.deep.equal(expectedEventOrder);
         });
       });
     });
@@ -5274,6 +5646,22 @@ describe('BrowserWindow module', () => {
         w.previewFile(__filename);
         w.closeFilePreview();
       }).to.not.throw();
+    });
+
+    it('should not call BrowserWindow show event', async () => {
+      const w = new BrowserWindow({ show: false });
+      const shown = once(w, 'show');
+      w.show();
+      await shown;
+
+      let showCalled = false;
+      w.on('show', () => {
+        showCalled = true;
+      });
+
+      w.previewFile(__filename);
+      await setTimeout(500);
+      expect(showCalled).to.equal(false, 'should not have called show twice');
     });
   });
 

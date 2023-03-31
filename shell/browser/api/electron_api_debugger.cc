@@ -153,7 +153,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   request.Set("id", request_id);
   request.Set("method", method);
   if (!command_params.empty()) {
-    request.Set("params", base::Value(std::move(command_params)));
+    request.Set("params", std::move(command_params));
   }
 
   if (!session_id.empty()) {
@@ -161,7 +161,7 @@ v8::Local<v8::Promise> Debugger::SendCommand(gin::Arguments* args) {
   }
 
   std::string json_args;
-  base::JSONWriter::Write(base::Value(std::move(request)), &json_args);
+  base::JSONWriter::Write(request, &json_args);
   agent_host_->DispatchProtocolMessage(
       this, base::as_bytes(base::make_span(json_args)));
 

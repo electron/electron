@@ -31,6 +31,14 @@ describe('session module', () => {
     });
   });
 
+  describe('session.fromPath(path)', () => {
+    it('returns storage path of a session which was created with an absolute path', () => {
+      const tmppath = require('electron').app.getPath('temp');
+      const ses = session.fromPath(tmppath);
+      expect(ses.storagePath).to.equal(tmppath);
+    });
+  });
+
   describe('ses.cookies', () => {
     const name = '0';
     const value = '0';
@@ -128,7 +136,7 @@ describe('session module', () => {
 
       await expect(
         cookies.set({ url: '', name, value })
-      ).to.eventually.be.rejectedWith('Failed to get cookie domain');
+      ).to.eventually.be.rejectedWith('Failed to set cookie with an invalid domain attribute');
     });
 
     it('yields an error when setting a cookie with an invalid URL', async () => {
@@ -138,7 +146,7 @@ describe('session module', () => {
 
       await expect(
         cookies.set({ url: 'asdf', name, value })
-      ).to.eventually.be.rejectedWith('Failed to get cookie domain');
+      ).to.eventually.be.rejectedWith('Failed to set cookie with an invalid domain attribute');
     });
 
     it('should overwrite previous cookies', async () => {

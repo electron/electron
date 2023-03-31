@@ -95,7 +95,7 @@ Before signing Windows builds, you must do the following:
 You can get a code signing certificate from a lot of resellers. Prices vary, so
 it may be worth your time to shop around. Popular resellers include:
 
-- [digicert](https://www.digicert.com/code-signing/microsoft-authenticode.htm)
+- [digicert](https://www.digicert.com/dc/code-signing/microsoft-authenticode.htm)
 - [Sectigo](https://sectigo.com/ssl-certificates-tls/code-signing)
 - Amongst others, please shop around to find one that suits your needs! 😄
 
@@ -200,4 +200,4 @@ See the [Windows Store Guide][].
 [windows store guide]: ./windows-store-guide.md
 [maker-squirrel]: https://www.electronforge.io/config/makers/squirrel.windows
 [maker-msi]: https://www.electronforge.io/config/makers/wix-msi
-[signtool.exe]: https://docs.microsoft.com/en-us/dotnet/framework/tools/signtool-exe
+[signtool.exe]: https://learn.microsoft.com/en-us/dotnet/framework/tools/signtool-exe

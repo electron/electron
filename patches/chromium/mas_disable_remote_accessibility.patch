@@ -44,10 +44,10 @@ index 3600a7ce7b3e6540767f64c631f352aa62240459..3147961f3d1c2c1690b5adf16a9a58f7
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 104e2d7478e5390daa55c49333d786e80c4bb7a0..4342dee31743091c464690b99b9ed7dccbe67d2d 100644
+index d66dc7edd743aea6e72961ce28da6aab6f6c3c95..c33a86b8cd3e7162b61f7eaf47e7326e1cc7dd61 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -600,10 +600,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -572,10 +572,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -133,7 +133,7 @@ index 3a81bbe5542f39c82f6ccf6643f491cb73ecb2aa..6b156ac4c514855f73fedc85fb9b0080
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index 086cfdb99c0fa960c4adb6deffbc9e14c0db36c5..ce6acfc56cf1b37800a77da9db27e8504d70f502 100644
+index efca18c2a229b5d5afdcf5ac9c3057e0294bedd3..7a589e826f5c221259ac82ddfeba5985feb39d00 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -51,7 +51,9 @@ class ScopedPasswordInputEnabler;
@@ -146,7 +146,7 @@ index 086cfdb99c0fa960c4adb6deffbc9e14c0db36c5..ce6acfc56cf1b37800a77da9db27e850
  @class RenderWidgetHostViewCocoa;
  
  namespace content {
-@@ -663,10 +665,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -664,10 +666,12 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -160,7 +160,7 @@ index 086cfdb99c0fa960c4adb6deffbc9e14c0db36c5..ce6acfc56cf1b37800a77da9db27e850
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index af459aea78e6970f63242fcc536577ef44ba2a35..15eb4a905bbbd65f11a45b1dee756a3ffe7f2e1c 100644
+index d616c812f099505783ad7aed5e0ebfe7d15ea553..66c8dda8af5605fb270011bd58c7bed59fe71fcf 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
 @@ -254,8 +254,10 @@
@@ -197,7 +197,7 @@ index af459aea78e6970f63242fcc536577ef44ba2a35..15eb4a905bbbd65f11a45b1dee756a3f
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2110,12 +2116,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2117,12 +2123,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -213,10 +213,10 @@ index af459aea78e6970f63242fcc536577ef44ba2a35..15eb4a905bbbd65f11a45b1dee756a3f
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index e61c3176e638f9fcebd3176bd99f5b8696666e9d..f563f390a0bafc963aea88bdb29ad85cac60d14d 100644
+index fc991afade2a13c59747007ff5be661c20f95acc..9631446ea47a2d8c5d2483ed13cf17a023c49ab6 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -360,6 +360,13 @@ component("base") {
+@@ -358,6 +358,13 @@ component("base") {
      sources += [ "resource/resource_bundle_lacros.cc" ]
    }
  

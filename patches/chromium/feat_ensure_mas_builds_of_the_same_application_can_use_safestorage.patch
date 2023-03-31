@@ -11,10 +11,10 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
-diff --git a/components/os_crypt/keychain_password_mac.mm b/components/os_crypt/keychain_password_mac.mm
-index 214ae79b9a6de27b99ccfa9cf03327449fd79198..fc8e8485706a8725f88e8a37c8d26ca29ec492e8 100644
---- a/components/os_crypt/keychain_password_mac.mm
-+++ b/components/os_crypt/keychain_password_mac.mm
+diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
+index 1895fc822281ccc9e36500e755f028fb2f877060..8d02e232dcb53e3d753b64c8548a5b98d2bb571f 100644
+--- a/components/os_crypt/sync/keychain_password_mac.mm
++++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -22,6 +22,12 @@
  using KeychainNameContainerType = const base::NoDestructor<std::string>;
  #endif

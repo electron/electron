@@ -78,7 +78,7 @@
     "vscode-languageserver": "^8.0.2",
     "vscode-languageserver-textdocument": "^1.0.7",
     "vscode-uri": "^3.0.6",
-    "webpack": "^5.73.0",
+    "webpack": "^5.76.0",
     "webpack-cli": "^4.10.0",
     "wrapper-webpack-plugin": "^2.2.0"
   },

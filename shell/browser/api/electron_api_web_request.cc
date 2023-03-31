@@ -159,8 +159,7 @@ v8::Local<v8::Value> HttpResponseHeadersToV8(
       values->Append(base::Value(value));
     }
   }
-  return gin::ConvertToV8(v8::Isolate::GetCurrent(),
-                          base::Value(std::move(response_headers)));
+  return gin::ConvertToV8(v8::Isolate::GetCurrent(), response_headers);
 }
 
 // Overloaded by multiple types to fill the |details| object.

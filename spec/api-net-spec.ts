@@ -903,6 +903,16 @@ describe('net module', () => {
       expect(cookies[0].name).to.equal('cookie2');
     });
 
+    it('throws when an invalid domain is passed', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await expect(sess.cookies.set({
+        url: 'https://electronjs.org',
+        domain: 'wssss.iamabaddomain.fun',
+        name: 'cookie1'
+      })).to.eventually.be.rejectedWith(/Failed to set cookie with an invalid domain attribute/);
+    });
+
     it('should be able correctly filter out cookies that are session', async () => {
       const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
 
@@ -1427,6 +1437,18 @@ describe('net module', () => {
         await collectStreamBody(response);
         expect(requestIsRedirected).to.be.true('The server should receive a request to the forward URL');
         expect(requestIsIntercepted).to.be.true('The request should be intercepted by the webRequest module');
+      });
+
+      it('triggers webRequest handlers when bypassCustomProtocolHandlers', async () => {
+        let webRequestDetails: Electron.OnBeforeRequestListenerDetails | null = null;
+        const serverUrl = await respondOnce.toSingleURL((req, res) => res.end('hi'));
+        session.defaultSession.webRequest.onBeforeRequest((details, cb) => {
+          webRequestDetails = details;
+          cb({});
+        });
+        const body = await net.fetch(serverUrl, { bypassCustomProtocolHandlers: true }).then(r => r.text());
+        expect(body).to.equal('hi');
+        expect(webRequestDetails).to.have.property('url', serverUrl);
       });
     });
 

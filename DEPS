@@ -2,9 +2,9 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '113.0.5636.0',
+    '114.0.5684.0',
   'node_version':
-    'v18.14.2',
+    'v18.15.0',
   'nan_version':
     '16fa32231e2ccd89d2804b3f765319128b20c4ac',
   'squirrel.mac_version':
@@ -149,5 +149,4 @@ hooks = [
 
 recursedeps = [
   'src',
-  'src/third_party/squirrel.mac',
 ]

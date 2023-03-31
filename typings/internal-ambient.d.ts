@@ -141,6 +141,7 @@ declare namespace NodeJS {
     hasUserActivation?: boolean;
     mode?: string;
     destination?: string;
+    bypassCustomProtocolHandlers?: boolean;
   };
   type ResponseHead = {
     statusCode: number;
@@ -226,7 +227,7 @@ declare namespace NodeJS {
     _linkedBinding(name: 'electron_browser_power_save_blocker'): { powerSaveBlocker: Electron.PowerSaveBlocker };
     _linkedBinding(name: 'electron_browser_push_notifications'): { pushNotifications: Electron.PushNotifications };
     _linkedBinding(name: 'electron_browser_safe_storage'): { safeStorage: Electron.SafeStorage };
-    _linkedBinding(name: 'electron_browser_session'): {fromPartition: typeof Electron.Session.fromPartition, Session: typeof Electron.Session};
+    _linkedBinding(name: 'electron_browser_session'): {fromPartition: typeof Electron.Session.fromPartition, fromPath: typeof Electron.Session.fromPath, Session: typeof Electron.Session};
     _linkedBinding(name: 'electron_browser_screen'): { createScreen(): Electron.Screen };
     _linkedBinding(name: 'electron_browser_system_preferences'): { systemPreferences: Electron.SystemPreferences };
     _linkedBinding(name: 'electron_browser_tray'): { Tray: Electron.Tray };

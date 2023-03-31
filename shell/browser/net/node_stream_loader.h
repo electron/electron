@@ -81,6 +81,8 @@ class NodeStreamLoader : public network::mojom::URLLoader {
   // Whether we are in the middle of a stream.read().
   bool is_reading_ = false;
 
+  size_t bytes_written_ = 0;
+
   // When NotifyComplete is called while writing, we will save the result and
   // quit with it after the write is done.
   bool ended_ = false;

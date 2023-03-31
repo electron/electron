@@ -25,10 +25,10 @@ index 7ddeb126840f554955f6339a54756e21382d5a7d..c9558ee8b59f2824df9f4f103099a9d3
  
  # Extension for shared library files (including leading dot).
 diff --git a/tools/clang/scripts/build.py b/tools/clang/scripts/build.py
-index b686912d6fb5775731b07217c964dc9f0ade8309..d78a85422fcbf3afb909d5195fad2942058246f8 100755
+index 2dc93235a96d610b0bdfa9cad2c4be36df18b96f..392eb396c124a2e4179522d3f8d08ad0bbd6df6d 100755
 --- a/tools/clang/scripts/build.py
 +++ b/tools/clang/scripts/build.py
-@@ -578,6 +578,15 @@ def main():
+@@ -595,6 +595,15 @@ def main():
  
    global CLANG_REVISION, PACKAGE_VERSION, LLVM_BUILD_DIR
  
@@ -45,14 +45,14 @@ index b686912d6fb5775731b07217c964dc9f0ade8309..d78a85422fcbf3afb909d5195fad2942
      print('--pgo/--thinlto requires --bootstrap')
      return 1
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index 5b2289d07b9f23302a346aae180a8e18d39b9510..106849006b66b157da92df2bbf2f7016d56dc375 100755
+index eb513199556f9f13819fb4e20617182195f3e748..34ea16b0401205397d8bc78a3ef8f1d6fc573b67 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -35,11 +35,12 @@ import zlib
  # https://chromium.googlesource.com/chromium/src/+/main/docs/updating_clang.md
  # Reverting problematic clang rolls is safe, though.
  # This is the output of `git describe` and is usable as a commit-ish.
--CLANG_REVISION = 'llvmorg-17-init-3874-g93a2fecc'
+-CLANG_REVISION = 'llvmorg-17-init-4759-g547e3456'
 -CLANG_SUB_REVISION = 1
 +CLANG_REVISION = 'llvmorg-16-init-17653-g39da55e8'
 +CLANG_SUB_REVISION = 3

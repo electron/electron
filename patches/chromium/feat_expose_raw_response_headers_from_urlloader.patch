@@ -112,10 +112,10 @@ index 48d273dd5db3b9db89fc543b04d47d1da9ccfede..0b95993bc7e5b8bd675e295f8d4acd2a
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index c920828b2553946d794eca9398d46c609465a5ab..bb373f49f6c9bbdbec9495c877c2c6d820b46d80 100644
+index bd09094f349a1051d328c917c29cf4c3a2b9ccdb..42abf94829bb6fc9774c6225c93a77d7366cfba5 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
-@@ -641,6 +641,7 @@ URLLoader::URLLoader(
+@@ -642,6 +642,7 @@ URLLoader::URLLoader(
      has_user_activation_ = request.trusted_params->has_user_activation;
      allow_cookies_from_browser_ =
          request.trusted_params->allow_cookies_from_browser;
@@ -123,7 +123,7 @@ index c920828b2553946d794eca9398d46c609465a5ab..bb373f49f6c9bbdbec9495c877c2c6d8
    }
  
    throttling_token_ = network::ScopedThrottlingToken::MaybeCreate(
-@@ -707,7 +708,7 @@ URLLoader::URLLoader(
+@@ -708,7 +709,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
@@ -132,7 +132,7 @@ index c920828b2553946d794eca9398d46c609465a5ab..bb373f49f6c9bbdbec9495c877c2c6d8
      url_request_->SetResponseHeadersCallback(base::BindRepeating(
          &URLLoader::SetRawResponseHeaders, base::Unretained(this)));
    }
-@@ -1580,6 +1581,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
+@@ -1610,6 +1611,19 @@ void URLLoader::OnResponseStarted(net::URLRequest* url_request, int net_error) {
    }
  
    response_ = BuildResponseHead();
@@ -153,7 +153,7 @@ index c920828b2553946d794eca9398d46c609465a5ab..bb373f49f6c9bbdbec9495c877c2c6d8
  
    // Parse and remove the Trust Tokens response headers, if any are expected,
 diff --git a/services/network/url_loader.h b/services/network/url_loader.h
-index f3e3fa51262832cc05661ebb3b4e50dfcdb6e9e2..1f80dd7becefe1442426b90d5e70b5689c17d263 100644
+index 65e522e131b97fb4187aabadcb9406ae55e07ea1..8a25a1ce3363811059e4532e3fbbe3a78ea96016 100644
 --- a/services/network/url_loader.h
 +++ b/services/network/url_loader.h
 @@ -553,6 +553,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
