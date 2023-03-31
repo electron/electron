@@ -1,0 +1,99 @@
+From bd7db03908efafd00bf0c67206dac8c4dbeb00b8 Mon Sep 17 00:00:00 2001
+From: Florent Castelli <orphis@chromium.org>
+Date: Wed, 22 Feb 2023 11:22:03 +0000
+Subject: [PATCH] Add RetryGetVideoCaptureDeviceInfos feature to chrome://flags
+
+Bug: 1379392
+Change-Id: I5f756b50cc2361628bb1f725817e259ad8843c08
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4275402
+Reviewed-by: Tony Herre <toprice@chromium.org>
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Auto-Submit: Florent Castelli <orphis@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1108255}
+---
+
+diff --git a/chrome/browser/about_flags.cc b/chrome/browser/about_flags.cc
+index 2105654..4b5a434 100644
+--- a/chrome/browser/about_flags.cc
++++ b/chrome/browser/about_flags.cc
+@@ -4858,6 +4858,12 @@
+      FEATURE_VALUE_TYPE(features::kTouchTextEditingRedesign)},
+ #endif  // BUILDFLAG(IS_CHROMEOS)
+ #if BUILDFLAG(IS_MAC)
++    {"enable-retry-capture-device-enumeration-on-crash",
++     flag_descriptions::kRetryGetVideoCaptureDeviceInfosName,
++     flag_descriptions::kRetryGetVideoCaptureDeviceInfosDescription, kOsMac,
++     FEATURE_VALUE_TYPE(features::kRetryGetVideoCaptureDeviceInfos)},
++#endif  // BUILDFLAG(IS_MAC)
++#if BUILDFLAG(IS_MAC)
+     {"enable-immersive-fullscreen-toolbar",
+      flag_descriptions::kImmersiveFullscreenName,
+      flag_descriptions::kImmersiveFullscreenDescription, kOsMac,
+diff --git a/chrome/browser/flag-metadata.json b/chrome/browser/flag-metadata.json
+index a29742b..8a5ee94 100644
+--- a/chrome/browser/flag-metadata.json
++++ b/chrome/browser/flag-metadata.json
+@@ -3020,6 +3020,11 @@
+     "expiry_milestone": 100
+   },
+   {
++     "name": "enable-retry-capture-device-enumeration-on-crash",
++     "owners": [ "orphis", "toprice" ],
++     "expiry_milestone": 118
++  },
++  {
+     "name": "enable-rgb-keyboard",
+     "owners": [ "jimmyxgong", "zentaro", "michaelcheco", "cros-peripherals@google.com"],
+     "expiry_milestone": 118
+diff --git a/chrome/browser/flag_descriptions.cc b/chrome/browser/flag_descriptions.cc
+index 4a34083..fa4bb2a 100644
+--- a/chrome/browser/flag_descriptions.cc
++++ b/chrome/browser/flag_descriptions.cc
+@@ -4624,6 +4624,13 @@
+ const char kMacSyscallSandboxDescription[] =
+     "Controls whether the macOS sandbox filters syscalls.";
+ 
++const char kRetryGetVideoCaptureDeviceInfosName[] =
++    "Retry capture device enumeration on crash";
++const char kRetryGetVideoCaptureDeviceInfosDescription[] =
++    "Enables retries when enumerating the available video capture devices "
++    "after a crash. The capture service is restarted without loading external "
++    "DAL plugins which could have caused the crash.";
++
+ const char kScreenTimeName[] = "Screen Time";
+ const char kScreenTimeDescription[] =
+     "Integrate with the macOS Screen Time system. Only enabled on macOS 12.1 "
+diff --git a/chrome/browser/flag_descriptions.h b/chrome/browser/flag_descriptions.h
+index e86509d..af20105 100644
+--- a/chrome/browser/flag_descriptions.h
++++ b/chrome/browser/flag_descriptions.h
+@@ -2649,6 +2649,9 @@
+ extern const char kMacSyscallSandboxName[];
+ extern const char kMacSyscallSandboxDescription[];
+ 
++extern const char kRetryGetVideoCaptureDeviceInfosName[];
++extern const char kRetryGetVideoCaptureDeviceInfosDescription[];
++
+ extern const char kScreenTimeName[];
+ extern const char kScreenTimeDescription[];
+ 
+diff --git a/tools/metrics/histograms/enums.xml b/tools/metrics/histograms/enums.xml
+index cf5515d..caa78a1 100644
+--- a/tools/metrics/histograms/enums.xml
++++ b/tools/metrics/histograms/enums.xml
+@@ -61753,6 +61753,7 @@
+   <int value="-22311932"
+       label="QuickIntensiveWakeUpThrottlingAfterLoading:disabled"/>
+   <int value="-21771427" label="HistoryClustersPersistedClusters:disabled"/>
++  <int value="-21693450" label="RetryGetVideoCaptureDeviceInfos:disabled"/>
+   <int value="-20597579" label="UseMultiloginEndpoint:enabled"/>
+   <int value="-20438829" label="SyncUSSAutofillProfile:enabled"/>
+   <int value="-20329017" label="EduCoexistence:disabled"/>
+@@ -64079,6 +64080,7 @@
+   <int value="1302342960"
+       label="AutofillParseVcnCardOnFileStandaloneCvcFields:disabled"/>
+   <int value="1302421166" label="NativeNotifications:disabled"/>
++  <int value="1304523073" label="RetryGetVideoCaptureDeviceInfos:enabled"/>
+   <int value="1304636193" label="ArcEnableUnifiedAudioFocus:enabled"/>
+   <int value="1305792241" label="SafeBrowsingEnhancedProtection:disabled"/>
+   <int value="1307003774" label="AutofillEnableCompanyName:disabled"/>
