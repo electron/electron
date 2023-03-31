@@ -13,6 +13,7 @@ struct NodeServiceParams {
   array<string> args;
   array<string> exec_args;
   blink.mojom.MessagePortDescriptor port;
+  bool use_v8_configured_pool_for_main_partition = false;
 };
 
 [ServiceSandbox=sandbox.mojom.Sandbox.kNoSandbox]

@@ -376,6 +376,11 @@ gin::Handle<UtilityProcessWrapper> UtilityProcessWrapper::Create(
 #if BUILDFLAG(IS_MAC)
     opts.Get("allowLoadingUnsignedLibraries", &use_plugin_helper);
 #endif
+
+#if defined(V8_ENABLE_SANDBOX)
+    opts.Get("forceAllocationsToV8Sandbox",
+             &params->use_v8_configured_pool_for_main_partition);
+#endif
   }
   auto handle = gin::CreateHandle(
       args->isolate(),

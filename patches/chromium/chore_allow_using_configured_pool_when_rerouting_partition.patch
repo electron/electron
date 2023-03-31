@@ -1,0 +1,153 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 15 Mar 2023 10:52:41 +0900
+Subject: chore: allow using configured pool when rerouting partition
+
+Possible upstream patch.
+
+diff --git a/base/allocator/partition_alloc_support.cc b/base/allocator/partition_alloc_support.cc
+index 40281cc0788944441ace5857c4b2ebe801c7cefb..c64a74a4f25c8b74516143f9ef21422568c197da 100644
+--- a/base/allocator/partition_alloc_support.cc
++++ b/base/allocator/partition_alloc_support.cc
+@@ -897,7 +897,8 @@ void PartitionAllocSupport::ReconfigureAfterZygoteFork(
+ 
+ void PartitionAllocSupport::ReconfigureAfterFeatureListInit(
+     const std::string& process_type,
+-    bool configure_dangling_pointer_detector) {
++    bool configure_dangling_pointer_detector,
++    bool use_configured_pool) {
+   if (configure_dangling_pointer_detector) {
+     base::allocator::InstallDanglingRawPtrChecks();
+   }
+@@ -936,7 +937,7 @@ void PartitionAllocSupport::ReconfigureAfterFeatureListInit(
+ 
+   [[maybe_unused]] bool enable_brp = false;
+   [[maybe_unused]] bool enable_brp_zapping = false;
+-  [[maybe_unused]] bool split_main_partition = false;
++  [[maybe_unused]] bool split_main_partition = use_configured_pool;
+   [[maybe_unused]] bool use_dedicated_aligned_partition = false;
+   [[maybe_unused]] bool add_dummy_ref_count = false;
+   [[maybe_unused]] bool process_affected_by_brp_flag = false;
+@@ -1044,7 +1045,8 @@ void PartitionAllocSupport::ReconfigureAfterFeatureListInit(
+       allocator_shim::AddDummyRefCount(add_dummy_ref_count),
+       allocator_shim::AlternateBucketDistribution(
+           base::features::kPartitionAllocAlternateBucketDistributionParam
+-              .Get()));
++              .Get()),
++      allocator_shim::UseConfigurablePool(use_configured_pool));
+ #endif  // BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
+ 
+   // If BRP is not enabled, check if any of PCScan flags is enabled.
+diff --git a/base/allocator/partition_alloc_support.h b/base/allocator/partition_alloc_support.h
+index 82005b50f8510cf5145ec02474ca6989a4b27bb2..6efe3066a9ffd675ba9fd7784c86fe371bd4d0a0 100644
+--- a/base/allocator/partition_alloc_support.h
++++ b/base/allocator/partition_alloc_support.h
+@@ -71,7 +71,8 @@ class BASE_EXPORT PartitionAllocSupport {
+   void ReconfigureAfterZygoteFork(const std::string& process_type);
+   void ReconfigureAfterFeatureListInit(
+       const std::string& process_type,
+-      bool configure_dangling_pointer_detector = true);
++      bool configure_dangling_pointer_detector = true,
++      bool use_configured_pool = false);
+   void ReconfigureAfterTaskRunnerInit(const std::string& process_type);
+ 
+   // |has_main_frame| tells us if the renderer contains a main frame.
+diff --git a/base/allocator/partition_allocator/shim/allocator_shim.h b/base/allocator/partition_allocator/shim/allocator_shim.h
+index 558e9a2219a1abcae887d390727d79c144337f43..2e62f43a05a96d619d066150113ea2ef9075ac58 100644
+--- a/base/allocator/partition_allocator/shim/allocator_shim.h
++++ b/base/allocator/partition_allocator/shim/allocator_shim.h
+@@ -195,6 +195,8 @@ using UseDedicatedAlignedPartition =
+ using AddDummyRefCount = base::StrongAlias<class AddDummyRefCountTag, bool>;
+ using AlternateBucketDistribution =
+     base::features::AlternateBucketDistributionMode;
++using UseConfigurablePool =
++    base::StrongAlias<class UseConfigurablePoolTag, bool>;
+ 
+ // If |thread_cache_on_non_quarantinable_partition| is specified, the
+ // thread-cache will be enabled on the non-quarantinable partition. The
+@@ -205,7 +207,8 @@ BASE_EXPORT void ConfigurePartitions(
+     SplitMainPartition split_main_partition,
+     UseDedicatedAlignedPartition use_dedicated_aligned_partition,
+     AddDummyRefCount add_dummy_ref_count,
+-    AlternateBucketDistribution use_alternate_bucket_distribution);
++    AlternateBucketDistribution use_alternate_bucket_distribution,
++    UseConfigurablePool use_configured_pool);
+ 
+ #if BUILDFLAG(USE_STARSCAN)
+ BASE_EXPORT void EnablePCScan(partition_alloc::internal::PCScan::InitConfig);
+diff --git a/base/allocator/partition_allocator/shim/allocator_shim_default_dispatch_to_partition_alloc.cc b/base/allocator/partition_allocator/shim/allocator_shim_default_dispatch_to_partition_alloc.cc
+index 49e8f25dbf010e3185302cdae89b2cb07417a4fe..9a96826273fd728d4b44ef6b926845fdaeadd319 100644
+--- a/base/allocator/partition_allocator/shim/allocator_shim_default_dispatch_to_partition_alloc.cc
++++ b/base/allocator/partition_allocator/shim/allocator_shim_default_dispatch_to_partition_alloc.cc
+@@ -587,7 +587,8 @@ void ConfigurePartitions(
+     SplitMainPartition split_main_partition,
+     UseDedicatedAlignedPartition use_dedicated_aligned_partition,
+     AddDummyRefCount add_dummy_ref_count,
+-    AlternateBucketDistribution use_alternate_bucket_distribution) {
++    AlternateBucketDistribution use_alternate_bucket_distribution,
++    UseConfigurablePool use_configured_pool) {
+   // BRP cannot be enabled without splitting the main partition. Furthermore, in
+   // the "before allocation" mode, it can't be enabled without further splitting
+   // out the aligned partition.
+@@ -650,7 +651,9 @@ void ConfigurePartitions(
+               ? partition_alloc::PartitionOptions::BackupRefPtrZapping::kEnabled
+               : partition_alloc::PartitionOptions::BackupRefPtrZapping::
+                     kDisabled,
+-          partition_alloc::PartitionOptions::UseConfigurablePool::kNo,
++          use_configured_pool
++              ? partition_alloc::PartitionOptions::UseConfigurablePool::kIfAvailable
++              : partition_alloc::PartitionOptions::UseConfigurablePool::kNo,
+           add_dummy_ref_count
+               ? partition_alloc::PartitionOptions::AddDummyRefCount::kEnabled
+               : partition_alloc::PartitionOptions::AddDummyRefCount::
+diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
+index af6023c95d284a5fc3ba6c66c8b5b58de47b8e79..377920be6bc2bf51d4ac16466bfa1cd2bbff5001 100644
+--- a/content/app/content_main_runner_impl.cc
++++ b/content/app/content_main_runner_impl.cc
+@@ -705,8 +705,12 @@ int NO_STACK_PROTECTOR RunZygote(ContentMainDelegate* delegate) {
+   delegate->PostEarlyInitialization(
+       ContentMainDelegate::InvokedInChildProcess());
+ 
+-  base::allocator::PartitionAllocSupport::Get()
+-      ->ReconfigureAfterFeatureListInit(process_type);
++  std::string process_sub_type =
++      command_line->GetSwitchValueASCII(switches::kUtilitySubType);
++  if (process_sub_type != "node.mojom.NodeService") {
++    base::allocator::PartitionAllocSupport::Get()
++        ->ReconfigureAfterFeatureListInit(process_type);
++  }
+ 
+   for (size_t i = 0; i < std::size(kMainFunctions); ++i) {
+     if (process_type == kMainFunctions[i].name)
+@@ -1125,8 +1129,12 @@ int NO_STACK_PROTECTOR ContentMainRunnerImpl::Run() {
+       delegate_->PostEarlyInitialization(
+           ContentMainDelegate::InvokedInChildProcess());
+ 
+-      base::allocator::PartitionAllocSupport::Get()
+-          ->ReconfigureAfterFeatureListInit(process_type);
++      std::string process_sub_type =
++          command_line->GetSwitchValueASCII(switches::kUtilitySubType);
++      if (process_sub_type != "node.mojom.NodeService") {
++        base::allocator::PartitionAllocSupport::Get()
++            ->ReconfigureAfterFeatureListInit(process_type);
++      }
+     }
+ 
+ #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
+diff --git a/content/utility/utility_main.cc b/content/utility/utility_main.cc
+index d33884b0733cf764b475167eb007977ac69193a5..717c56bd6073ee4672cd03484e4bc6197031f0db 100644
+--- a/content/utility/utility_main.cc
++++ b/content/utility/utility_main.cc
+@@ -316,8 +316,10 @@ int UtilityMain(MainFunctionParams parameters) {
+   }
+ #endif
+ 
+-  base::allocator::PartitionAllocSupport::Get()->ReconfigureAfterTaskRunnerInit(
+-      switches::kUtilityProcess);
++  if (utility_sub_type != "node.mojom.NodeService") {
++    base::allocator::PartitionAllocSupport::Get()->ReconfigureAfterTaskRunnerInit(
++        switches::kUtilityProcess);
++  }
+ 
+   run_loop.Run();
+ 

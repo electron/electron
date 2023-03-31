@@ -360,5 +360,14 @@ describe('utilityProcess module', () => {
       await once(child, 'exit');
       expect(log).to.equal('hello\n');
     });
+
+    it('does not crash when forceAllocationsToV8Sandbox is enabled', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'addon.js'), ['--js-flags="--expose-gc"'], {
+        forceAllocationsToV8Sandbox: true
+      });
+      await once(child, 'spawn');
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(0);
+    });
   });
 });

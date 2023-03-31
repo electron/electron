@@ -36,6 +36,9 @@ Process: [Main](../glossary.md#main-process)<br />
     `com.apple.security.cs.allow-unsigned-executable-memory` entitlements. This will allow the utility process
     to load unsigned libraries. Unless you specifically need this capability, it is best to leave this disabled.
     Default is `false`.
+  * `forceAllocationsToV8Sandbox` boolean (optional) - When V8 sandbox (aka V8 memory cage) is enabled, this flag
+    will route all heap allocations in the process to be placed inside the V8 sandbox address space. Enable this flag if you are loading a native addon in the process that is not [V8 sandbox][] compatible.
+    Default is `false`.
 
 Returns [`UtilityProcess`](utility-process.md#class-utilityprocess)
 
@@ -135,4 +138,5 @@ Emitted when the child process sends a message using [`process.parentPort.postMe
 [Services API]: https://chromium.googlesource.com/chromium/src/+/main/docs/mojo_and_services.md
 [stdio]: https://nodejs.org/dist/latest/docs/api/child_process.html#optionsstdio
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[V8 sandbox]: https://www.electronjs.org/blog/v8-memory-cage
 [`MessagePortMain`]: message-port-main.md
