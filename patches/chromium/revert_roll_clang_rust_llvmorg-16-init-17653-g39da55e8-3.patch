@@ -45,7 +45,7 @@ index 2dc93235a96d610b0bdfa9cad2c4be36df18b96f..392eb396c124a2e4179522d3f8d08ad0
      print('--pgo/--thinlto requires --bootstrap')
      return 1
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index 192249784d60626d6dbd3ef5143fa4db28a868ad..36b276b84a950a51f68b80d277ddf40d9d70fe47 100755
+index eb513199556f9f13819fb4e20617182195f3e748..34ea16b0401205397d8bc78a3ef8f1d6fc573b67 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -35,11 +35,12 @@ import zlib
