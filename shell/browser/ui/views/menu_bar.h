@@ -50,6 +50,9 @@ class MenuBar : public views::AccessiblePaneView,
                                     ElectronMenuModel** menu_model,
                                     views::MenuButton** button);
 
+  void ViewHierarchyChanged(
+      const views::ViewHierarchyChangedDetails& details) override;
+
  private:
   // MenuDelegate::Observer:
   void OnBeforeExecuteCommand() override;
