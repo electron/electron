@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 326f9a1c30359bc55857173d6d9588c3e705970a..fa650bcb133bf343f78da90ac8113fe747cf2c0c 100644
+index 704761e17ad8f4d9b8bbd1f15fa501c35dd2317a..171fd9bfd44c88d62684cda03a390d1d252c5bbe 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1033,6 +1033,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index a808f967a95fca4847588f1d88a210bfd7f53767..7c3c71cac9162b8f565494fdad16fb06
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 57be2bdb26e56eb4914a169f7052a94a53535203..26bf82736b9fed3d3c5960cf106bde80fb68f5ba 100644
+index 79a4dff864f074c66f70b5e16c2645978ad36607..ec3720d244c5b9796adf8d68ebab73400ae66862 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index 57be2bdb26e56eb4914a169f7052a94a53535203..26bf82736b9fed3d3c5960cf106bde80
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 15fff7d58b4ad4998d1230cfa00e1f428e58de2e..fd13d82c89bfb3984eed5eee3521dad1583ca970 100644
+index a92d1339b0ec7980dc9b73dcbad834c3ffca8211..5a07df3e8a31f6d5bfc5d27bf804517fb27239b2 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -172,6 +172,7 @@ source_set("common") {
+@@ -170,6 +170,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -189,7 +189,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 30d2367f886c71509c350ab1b288a94fc400bdb2..eec41ce952674df415e6497cd9b9a79ab2b61396 100644
+index 94aece314a1ba9418f1e5a3e015088a3395500d4..239527d1aebefa2496a5d3fe2afa2ab1e8c63bed 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -304,6 +304,7 @@ component("core") {
@@ -253,7 +253,7 @@ index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 675e3fe856315be8ea0b246538608b2a091d5f79..7c8d7dd0b05e4bc02055a6a38982e20c15dbf34c 100644
+index 00f83601160eb795067bce9532baeaa078259e68..37e40a1bcf770a060fe7803bafb08274254a3fdf 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -193,6 +193,7 @@ component("gfx") {
@@ -265,10 +265,10 @@ index 675e3fe856315be8ea0b246538608b2a091d5f79..7c8d7dd0b05e4bc02055a6a38982e20c
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 44ab549757216902e3db8c015dfde2c2d7799ca9..e4b9e8ac2643437c819305d96d7aa9dca809454e 100644
+index 0b2f14bbeabbb2f5f79940e3f5c4bf02a4b11c1f..8f9e95e56027920ebedc64a1ab24ca137f3e9127 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -673,6 +673,7 @@ component("views") {
+@@ -674,6 +674,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

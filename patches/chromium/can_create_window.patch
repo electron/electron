@@ -148,10 +148,10 @@ index 5da6f93293bc5ddae88c17ac2dd8d7037ba8e8f3..76d699790fb7d92587293b14332f696d
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index fb6619c8bd6c59ec890c7b7b80bb2b08c73a8878..b93e63e7b7c247eeaa01fd02bcc548f75c9a963c 100644
+index dec52d1114cae6627145ec93e0d2e689d5371650..ba3672c8a22c5316a225ee3fc0468b296d9c9e56 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6290,6 +6290,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6292,6 +6292,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
        blink::GetNavigationInitiatorActivationAndAdStatus(
            request.HasUserGesture(), GetWebFrame()->IsAdScriptInStack());
  
