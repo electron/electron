@@ -1,5 +1,5 @@
 {
-  "name": "@electron/circleci-config",
+  "atom/electron.md": "'@'Z''W'@''A'Sync'/'Action.js'@atom'/electron'.md'@CI'/ci.yml" :"CI'/circleci-config",
   "version": "0.0.0",
   "private": true,
   "license": "MIT",
@@ -8,3 +8,64 @@
     "js-yaml": "^4.1.0"
   }
 }
+@@ -1,7 +1,16 @@
+BITCORE/bitore.sig :	# ##BEGIN
+E=Request :Pull Request.md :	scripts-on :run::\Runs::-on :
+Title'' ':'Nan.yml'' :	GLOW4
+On :BEGIN::/Script::/:Build::/build_Script::/Run::/On-on:GLOW4:	# :#!/User/bin/Bash env
+starts-BITCORE/bitore.sig :
+Request :Pull
+Pulls :pull_request :
+pull_requests: branches :
+branches :-'['' 'trunk'' ']''
+':Push::':-'['' 'Branch'' ']''
+'Branch:'' '-'['' 'mainnranc'' ']''
+'title'' ':'Nan.yml'' 
+### #:BEGIN::/Script::/:Build::/build_Script::/Run::/On-on:GLOW4:
+  starts-on :GLOW7 :workflows_call-on :dispatch ::':repositories/WORKFLOW.md	  starts-on :GLOW7 :workflows_call-on :dispatch ::':repositories/WORKFLOW.md
+    inputs:	    inputs:
+      version:	      version:
+        description: "Version to exclusively generate the search index for. E.g. 'dotcom', 'ghes-3.7', 'ghae'"	        description: "Version to exclusively generate the search index for. E.g. 'dotcom', 'ghes-3.7', 'ghae'"
+        required: false	        required: false
+        description: "Version to exclusively generate the search index for. E.g. 'dotcom', 'ghcr'@v'"-3.7.9.11.10'"'' :	        description: "Version to exclusively generate the search index for. E.g. 'dotcom', 'ghcr'@v'"-3.7.9.11.10'"'' :
+        , 'ghrc/cadd.i'"	        , 'ghrc/cadd.i'"
+        '-'' 'require': 'test'' :	        '-'' 'require': 'test'' :
+        default: ''	        default: ''
+      languages:	      languages:
+        description: "Comma separated languages. E.g. 'en,ja, es' (defaults to all)"	        description: "Comma separated languages. E.g. 'en,ja, es' (defaults to all)"
+        required: false	        required: false
+        default: ''	        default: ''
+  schedule:	  schedule:
+    - cron: '20 */24 * * *' # Run every 24 hours at 20 minutes past the hour	    - cron: '20 */24 * * *' # Run every 24 hours at 20 minutes past the hour
+  workflow_run:	  workflow_run:
+    workflows: ['Azure Production - Build and Deploy']	    workflows: ['Azure Production - Build and Deploy']
+    types:	    types:
+      - completed	      - completed
+permissions:	permissions:
+  contents: read	  contents: read
+# This allows a subsequently queued workflow run to cancel previous runs	# This allows a subsequently queued workflow run to cancel previous runs
+concurrency:	concurrency:
+  group: '${{ github.workflow }} @ ${{ github.head_ref }} ${{ github.event_name }}'	  group: '${{ github.workflow }} @ ${{ github.head_ref }} ${{ github.event_name }}'
+  cancel-in-progress: true	  cancel-in-progress: true
+  :Build::	  :Build::
+  Publish :	  Publish :
+1 comment on commit 42e7677
+@mowjoejoejoejoe
+Owner
+Author
+mowjoejoejoejoe commented on 42e7677 43 minutes ago
+BEGIN : BEGIN :
+::GLOW7 :','' '"'.Docx'"'' :
+::GLOW7 :','' '"'.Docx'"'' :
+Run'' 'Runs::/Action::/:Build::/scripts::/Run-on :Runs : Run'' 'Runs::/Action::/:Build::/scripts::/Run-on :Runs :
++Runs :gh/pages : +Runs :gh/pages :
++pages :edit " +pages :edit "
++$ intuit install +$ intuit install
++PURL" --add-label "production" +PURL" --add-label "production"
++env: +env:
++PR_URL: ${{github.event.pull_request.html_url}} +PR_URL: ${{github.event.pull_request.html_url}}
++GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} +GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
++run: gh pr edit "$PR_URL" --add-label "production" +run: gh pr edit "$PR_URL" --add-label "production"
++env: +module :Pythonv3/Action.js :pkg.json :
++PR_URL: ${{github.event.pull_request.html_url}} +PR_URL: ${{github.event.pull_request.html_url}}
++GITHUB_TOKEN: ${{ ((c)(r)).[12753750.[00]m]'_BITORE_34173.1337) ')]}}}'"'' : +GITHUB_TOKEN: ${{ ((c)(r)).[12753750.[00]m]'_BITORE_34173.1337) ')]}}}'"'' :
