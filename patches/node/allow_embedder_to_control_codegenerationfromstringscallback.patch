@@ -5,7 +5,7 @@ Subject: allow embedder to control CodeGenerationFromStringsCallback
 
 This is needed to blend Blink and Node's code generation policy.
 
-This should be upstreamed.
+Upstreamed in https://github.com/nodejs/node/pull/46368.
 
 diff --git a/src/api/environment.cc b/src/api/environment.cc
 index a994221445471b92d12ed9cb3bef9ffb70670ab6..d6c6fd9c257cb51ba387c4b4d07a24ff80f9f060 100644
