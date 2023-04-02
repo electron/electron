@@ -12,6 +12,81 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (24.0)
+
+### API Changed: `nativeImage.createThumbnailFromPath(path, size)`
+
+The `maxSize` parameter has been changed to `size` to reflect that the size passed in will be the size the thumbnail created. Previously, Windows would not scale the image up if it were smaller than `maxSize`, and
+macOS would always set the size to `maxSize`. Behavior is now the same across platforms.
+
+Updated Behavior:
+
+```js
+// a 128x128 image.
+const imagePath = path.join('path', 'to', 'capybara.png')
+
+// Scaling up a smaller image.
+const upSize = { width: 256, height: 256 }
+nativeImage.createThumbnailFromPath(imagePath, upSize).then(result => {
+  console.log(result.getSize()) // { width: 256, height: 256 }
+})
+
+// Scaling down a larger image.
+const downSize = { width: 64, height: 64 }
+nativeImage.createThumbnailFromPath(imagePath, downSize).then(result => {
+  console.log(result.getSize()) // { width: 64, height: 64 }
+})
+```
+
+Previous Behavior (on Windows):
+
+```js
+// a 128x128 image
+const imagePath = path.join('path', 'to', 'capybara.png')
+const size = { width: 256, height: 256 }
+nativeImage.createThumbnailFromPath(imagePath, size).then(result => {
+  console.log(result.getSize()) // { width: 128, height: 128 }
+})
+```
+
+### Deprecated: `BrowserWindow.setTrafficLightPosition(position)`
+
+`BrowserWindow.setTrafficLightPosition(position)` has been deprecated, the
+`BrowserWindow.setWindowButtonPosition(position)` API should be used instead
+which accepts `null` instead of `{ x: 0, y: 0 }` to reset the position to
+system default.
+
+```js
+// Removed in Electron 24
+win.setTrafficLightPosition({ x: 10, y: 10 })
+win.setTrafficLightPosition({ x: 0, y: 0 })
+
+// Replace with
+win.setWindowButtonPosition({ x: 10, y: 10 })
+win.setWindowButtonPosition(null)
+```
+
+### Deprecated: `BrowserWindow.getTrafficLightPosition()`
+
+`BrowserWindow.getTrafficLightPosition()` has been deprecated, the
+`BrowserWindow.getWindowButtonPosition()` API should be used instead
+which returns `null` instead of `{ x: 0, y: 0 }` when there is no custom
+position.
+
+```js
+// Removed in Electron 24
+const pos = win.getTrafficLightPosition()
+if (pos.x === 0 && pos.y === 0) {
+  // No custom position.
+}
+
+// Replace with
+const ret = win.getWindowButtonPosition()
+if (ret === null) {
+  // No custom position.
+}
+```
+
 ## Planned Breaking API Changes (23.0)
 
 ### Behavior Changed: Draggable Regions on macOS
