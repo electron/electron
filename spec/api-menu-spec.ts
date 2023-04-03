@@ -1,6 +1,6 @@
 import * as cp from 'child_process';
 import * as path from 'path';
-import { expect } from 'chai';
+import { assert, expect } from 'chai';
 import { BrowserWindow, Menu, MenuItem } from 'electron/main';
 import { sortMenuItems } from '../lib/browser/api/menu-utils';
 import { ifit } from './lib/spec-helpers';
@@ -886,6 +886,44 @@ describe('Menu module', function () {
       } else {
         throw new Error('Menu is garbage-collected while popuping');
       }
+    });
+
+    // https://github.com/electron/electron/issues/35724
+    // Maximizing window is enough to trigger the bug
+    it('does not trigger issue #35724', (done) => {
+      const showAndCloseMenu = async () => {
+        await setTimeout(1000);
+        menu.popup({ window: w, x: 50, y: 50 });
+        await setTimeout(500);
+        const closed = once(menu, 'menu-will-close');
+        menu.closePopup();
+        await closed;
+      };
+
+      const failOnEvent = () => { done(new Error('Menu closed prematurely')); };
+
+      assert(!w.isVisible());
+      w.on('show', async () => {
+        assert(!w.isMaximized());
+        // Show the menu once, then maximize window
+        await showAndCloseMenu();
+        const maximized = once(w, 'maximize');
+        w.maximize();
+        await maximized;
+
+        // Bug only seems to trigger programmatically after showing the menu once more
+        await showAndCloseMenu();
+
+        // Now ensure the menu stays open until we close it
+        await setTimeout(500);
+        menu.once('menu-will-close', failOnEvent);
+        menu.popup({ window: w, x: 50, y: 50 });
+        await setTimeout(1500);
+        menu.off('menu-will-close', failOnEvent);
+        menu.once('menu-will-close', () => done());
+        menu.closePopup();
+      });
+      w.show();
     });
   });
 
