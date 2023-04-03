@@ -890,7 +890,8 @@ describe('Menu module', function () {
 
     // https://github.com/electron/electron/issues/35724
     // Maximizing window is enough to trigger the bug
-    it('does not trigger issue #35724', (done) => {
+    // FIXME(dsanders11): Test always passes on CI, even pre-fix
+    ifit(process.platform === 'linux' && !process.env.CI)('does not trigger issue #35724', (done) => {
       const showAndCloseMenu = async () => {
         await setTimeout(1000);
         menu.popup({ window: w, x: 50, y: 50 });
@@ -907,6 +908,7 @@ describe('Menu module', function () {
         assert(!w.isMaximized());
         // Show the menu once, then maximize window
         await showAndCloseMenu();
+        // NOTE - 'maximize' event never fires on CI for Linux
         const maximized = once(w, 'maximize');
         w.maximize();
         await maximized;
