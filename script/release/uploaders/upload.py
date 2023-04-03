@@ -383,7 +383,10 @@ def upload_sha256_checksum(version, file_path, key_prefix=None):
 def get_release(version):
   script_path = os.path.join(
     ELECTRON_DIR, 'script', 'release', 'find-github-release.js')
-  release_info = execute(['node', script_path, version])
+  # Strip warnings from stdout to ensure the only output is the desired object
+  release_env = os.environ.copy()
+  release_env['NODE_NO_WARNINGS'] = '1'
+  release_info = execute(['node', script_path, version], release_env)
   release = json.loads(release_info)
   return release
 
