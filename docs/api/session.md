@@ -660,8 +660,8 @@ The `proxyBypassRules` is a comma separated list of rules described below:
    Match all hostnames that match the pattern HOSTNAME_PATTERN.
 
    Examples:
-     "foobar.com", "*foobar.com", "*.foobar.com", "*foobar.com:99",
-     "https://x.*.y.com:99"
+     "foobar.com", "\*foobar.com", "\*.foobar.com", "\*foobar.com:99",
+     "https://x.\*.y.com:99"
 
 * `"." HOSTNAME_SUFFIX_PATTERN [ ":" PORT ]`
 

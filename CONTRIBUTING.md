@@ -28,7 +28,7 @@ _If an issue has been closed and you still feel it's relevant, feel free to ping
 
 ### Languages
 
-We accept issues in *any* language.
+We accept issues in _any_ language.
 When an issue is posted in a language besides English, it is acceptable and encouraged to post an English-translated copy as a reply.
 Anyone may post the translated reply.
 In most cases, a quick pass through translation software is sufficient.

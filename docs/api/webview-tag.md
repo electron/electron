@@ -821,7 +821,7 @@ It is also not emitted during in-page navigation, such as clicking anchor links
 or updating the `window.location.hash`. Use `did-navigate-in-page` event for
 this purpose.
 
-Calling `event.preventDefault()` does __NOT__ have any effect.
+Calling `event.preventDefault()` does **NOT** have any effect.
 
 ### Event: 'will-frame-navigate'
 
@@ -843,7 +843,7 @@ It is also not emitted during in-page navigation, such as clicking anchor links
 or updating the `window.location.hash`. Use `did-navigate-in-page` event for
 this purpose.
 
-Calling `event.preventDefault()` does __NOT__ have any effect.
+Calling `event.preventDefault()` does **NOT** have any effect.
 
 ### Event: 'did-start-navigation'
 

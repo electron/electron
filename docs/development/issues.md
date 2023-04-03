@@ -57,7 +57,7 @@ unfriendly.
 
 Contributors are encouraged to solve issues collaboratively and help one
 another make progress. If you encounter an issue that you feel is invalid, or
-which contains incorrect information, explain *why* you feel that way with
+which contains incorrect information, explain _why_ you feel that way with
 additional supporting context, and be willing to be convinced that you may
 be wrong. By doing so, we can often reach the correct outcome faster.
 

@@ -63,7 +63,7 @@ Calling `event.preventDefault()` will prevent the default behavior, which is
 terminating the application.
 
 **Note:** If application quit was initiated by `autoUpdater.quitAndInstall()`,
-then `before-quit` is emitted *after* emitting `close` event on all windows and
+then `before-quit` is emitted _after_ emitting `close` event on all windows and
 closing them.
 
 **Note:** On Windows, this event will not be emitted if the app is closed due
