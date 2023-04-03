@@ -900,7 +900,7 @@ describe('Menu module', function () {
       expect(Menu.getApplicationMenu()).to.not.be.null('application menu');
     });
 
-    // FIXME(nornagon): this causes the focus handling tests to fail
+    // DISABLED-FIXME(nornagon): this causes the focus handling tests to fail
     it('unsets a menu with null', () => {
       Menu.setApplicationMenu(null);
       expect(Menu.getApplicationMenu()).to.be.null('application menu');

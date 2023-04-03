@@ -164,7 +164,7 @@ describe('session module', () => {
       expect(list.some(cookie => cookie.name === name && cookie.value === value)).to.equal(false);
     });
 
-    // FIXME
+    // DISABLED-FIXME
     it('should set cookie for standard scheme', async () => {
       const { cookies } = session.defaultSession;
       const domain = 'fake-host';

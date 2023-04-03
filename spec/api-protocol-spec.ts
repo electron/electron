@@ -276,7 +276,7 @@ describe('protocol module', () => {
         ipcMain.once('loaded-iframe-custom-protocol', () => done());
       });
 
-      // FIXME
+      // DISABLED-FIXME
       it('throws an error when custom headers are invalid', (done) => {
         registerFileProtocol(protocolName, (request, callback) => {
           expect(() => callback({
@@ -874,7 +874,7 @@ describe('protocol module', () => {
       await requestReceived;
     });
 
-    // FIXME
+    // DISABLED-FIXME
     it('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));
@@ -924,7 +924,7 @@ describe('protocol module', () => {
       });
     });
 
-    // FIXME: Figure out why this test is failing
+    // DISABLED-FIXME: Figure out why this test is failing
     it('disallows CORS and fetch requests when only supportFetchAPI is specified', async () => {
       await allowsCORSRequests('no-cors', ['failed xhr', 'failed fetch'], /has been blocked by CORS policy/, () => {
         const { ipcRenderer } = require('electron');

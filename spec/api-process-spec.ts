@@ -204,7 +204,7 @@ describe('process module', () => {
     });
 
     describe('process.takeHeapSnapshot()', () => {
-      // FIXME(nornagon): this seems to take a really long time when run in the
+      // DISABLED-FIXME(nornagon): this seems to take a really long time when run in the
       // main process, for unknown reasons.
       it('returns true on success', () => {
         const filePath = path.join(app.getPath('temp'), 'test.heapsnapshot');

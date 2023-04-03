@@ -359,7 +359,7 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await readyToShow;
     });
-    // FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
+    // DISABLED-FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
     // changed and adjust the test.
     it('should emit did-fail-load event for files that do not exist', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
@@ -3711,7 +3711,7 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    // FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
+    // DISABLED-FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
     // when we introduced the compositor recycling patch.  Should figure out how to fix this
     it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
       const w = new BrowserWindow({

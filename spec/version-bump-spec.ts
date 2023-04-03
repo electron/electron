@@ -132,7 +132,7 @@ describe('version-bumper', () => {
         ).to.be.rejectedWith('Cannot bump to beta from stable.');
       });
 
-      // FIXME(ELECTRON 15): Re-enable after Electron 15 alpha has released
+      // DISABLED-FIXME(ELECTRON 15): Re-enable after Electron 15 alpha has released
       it('bumps to beta from nightly', async () => {
         const version = 'v2.0.0-nightly.19950901';
         const next = await nextVersion('beta', version);
