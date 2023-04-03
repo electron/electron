@@ -12,10 +12,10 @@ should be removed as soon as those have been updated. Patching because
 every instance is a FTBFS that prevents testing any one instance's fix.
 
 diff --git a/base/functional/callback_helpers.h b/base/functional/callback_helpers.h
-index 8bb763638e14d226103338202d617e8836d21389..4b7e96c02da2337478e5b4ed67d293b4e8a036bf 100644
+index 97d181af4cefdbbfe515a61c68d090c89d718484..626113d6645d0c046ad2b7087fb5e9b618d18026 100644
 --- a/base/functional/callback_helpers.h
 +++ b/base/functional/callback_helpers.h
-@@ -97,6 +97,22 @@ class OnceCallbackHolder final {
+@@ -98,6 +98,22 @@ class OnceCallbackHolder final {
  
  }  // namespace internal
  

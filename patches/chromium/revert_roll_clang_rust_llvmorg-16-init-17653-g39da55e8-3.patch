@@ -7,7 +7,7 @@ Subject: Revert "Roll clang+rust llvmorg-16-init-17653-g39da55e8-3 :
 This reverts commit eb840ac593ad7af941acf510ea6ce84c48bde748.
 
 diff --git a/build/toolchain/toolchain.gni b/build/toolchain/toolchain.gni
-index 7ddeb126840f554955f6339a54756e21382d5a7d..c9558ee8b59f2824df9f4f103099a9d360735919 100644
+index d32d7d0e9dd960cde356481d208672d97dac0655..69bffc4c243a0ab31cd1c3877b7001ea6622a052 100644
 --- a/build/toolchain/toolchain.gni
 +++ b/build/toolchain/toolchain.gni
 @@ -38,7 +38,12 @@ if (generate_linker_map) {
