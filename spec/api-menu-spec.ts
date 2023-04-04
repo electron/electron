@@ -817,10 +817,7 @@ describe('Menu module', function () {
     it('should emit menu-will-close event', (done) => {
       menu.on('menu-will-close', () => { done(); });
       menu.popup({ window: w });
-      // https://github.com/electron/electron/issues/19411
-      setTimeout().then(() => {
-        menu.closePopup();
-      });
+      menu.closePopup();
     });
 
     it('returns immediately', () => {
@@ -849,18 +846,12 @@ describe('Menu module', function () {
 
       expect(x).to.equal(100);
       expect(y).to.equal(101);
-      // https://github.com/electron/electron/issues/19411
-      setTimeout().then(() => {
-        menu.closePopup();
-      });
+      menu.closePopup();
     });
 
     it('works with a given BrowserWindow, no options, and a callback', (done) => {
       menu.popup({ window: w, callback: () => done() });
-      // https://github.com/electron/electron/issues/19411
-      setTimeout().then(() => {
-        menu.closePopup();
-      });
+      menu.closePopup();
     });
 
     it('prevents menu from getting garbage-collected when popuping', async () => {
