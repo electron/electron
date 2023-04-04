@@ -40,12 +40,8 @@ describe('session module', () => {
   });
 
   describe('session.fromPath(path) with a quota.', () => {
-    const pathloc = 'testsession';
-    after(() => {
-      const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
-      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
-    });
     it('Assert that a set quota value is returned when a quota value is specified for a session', async () => {
+      const pathloc = 'testsession';
       const quotasize = 256000;
       const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
       if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
