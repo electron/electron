@@ -430,20 +430,24 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
 v8::Local<v8::Promise> Session::ResolveHost(
     std::string host,
     absl::optional<network::mojom::ResolveHostParametersPtr> params) {
-  gin_helper::Promise<std::vector<net::IPEndPoint>> promise(isolate_);
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate_);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto fn = base::MakeRefCounted<ResolveHostFunction>(
       browser_context_, std::move(host),
       params ? std::move(params.value()) : nullptr,
       base::BindOnce(
-          [](gin_helper::Promise<std::vector<net::IPEndPoint>> promise,
+          [](gin_helper::Promise<gin_helper::Dictionary> promise,
              int64_t net_error, const absl::optional<net::AddressList>& addrs) {
             if (net_error < 0) {
               promise.RejectWithErrorMessage(net::ErrorToString(net_error));
             } else {
               DCHECK(addrs.has_value() && !addrs->empty());
-              promise.Resolve(addrs->endpoints());
+
+              gin_helper::Dictionary dict =
+                  gin::Dictionary::CreateEmpty(promise.isolate());
+              dict.Set("endpoints", addrs->endpoints());
+              promise.Resolve(dict);
             }
           },
           std::move(promise)));

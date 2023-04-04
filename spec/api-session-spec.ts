@@ -498,11 +498,11 @@ describe('session module', () => {
     });
 
     it('resolves ipv4.localhost2', async () => {
-      const addrs = await customSession.resolveHost('ipv4.localhost2');
-      expect(addrs).to.be.a('array');
-      expect(addrs).to.have.lengthOf(1);
-      expect(addrs[0].family).to.equal('ipv4');
-      expect(addrs[0].address).to.equal('10.0.0.1');
+      const { endpoints } = await customSession.resolveHost('ipv4.localhost2');
+      expect(endpoints).to.be.a('array');
+      expect(endpoints).to.have.lengthOf(1);
+      expect(endpoints[0].family).to.equal('ipv4');
+      expect(endpoints[0].address).to.equal('10.0.0.1');
     });
 
     it('fails to resolve AAAA record for ipv4.localhost2', async () => {
@@ -513,11 +513,11 @@ describe('session module', () => {
     });
 
     it('resolves ipv6.localhost2', async () => {
-      const addrs = await customSession.resolveHost('ipv6.localhost2');
-      expect(addrs).to.be.a('array');
-      expect(addrs).to.have.lengthOf(1);
-      expect(addrs[0].family).to.equal('ipv6');
-      expect(addrs[0].address).to.equal('::1');
+      const { endpoints } = await customSession.resolveHost('ipv6.localhost2');
+      expect(endpoints).to.be.a('array');
+      expect(endpoints).to.have.lengthOf(1);
+      expect(endpoints[0].family).to.equal('ipv6');
+      expect(endpoints[0].address).to.equal('::1');
     });
 
     it('fails to resolve A record for ipv6.localhost2', async () => {

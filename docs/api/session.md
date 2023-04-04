@@ -723,7 +723,7 @@ The `proxyBypassRules` is a comma separated list of rules described below:
     * `allow` (default)
     * `disable`
 
-Returns `Promise<ResolvedHost[]>` - Resolves with the resolved IP addresses for the `host`.
+Returns `Promise<ResolvedHost>` - Resolves with the resolved IP addresses for the `host`.
 
 #### `ses.resolveProxy(url)`
 
