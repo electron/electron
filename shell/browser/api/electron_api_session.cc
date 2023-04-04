@@ -434,7 +434,8 @@ v8::Local<v8::Promise> Session::ResolveHost(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   auto fn = base::MakeRefCounted<ResolveHostFunction>(
-      browser_context_, std::move(host), params ? std::move(params.value()) : nullptr,
+      browser_context_, std::move(host),
+      params ? std::move(params.value()) : nullptr,
       base::BindOnce(
           [](gin_helper::Promise<std::vector<net::IPEndPoint>> promise,
              int64_t net_error, const absl::optional<net::AddressList>& addrs) {
