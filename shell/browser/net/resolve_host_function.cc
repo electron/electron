@@ -29,7 +29,7 @@ ResolveHostFunction::ResolveHostFunction(
     network::mojom::ResolveHostParametersPtr params,
     ResolveHostCallback callback)
     : browser_context_(browser_context),
-      host_(host),
+      host_(std::move(host)),
       params_(std::move(params)),
       callback_(std::move(callback)) {}
 
