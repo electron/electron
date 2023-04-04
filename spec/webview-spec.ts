@@ -267,7 +267,7 @@ describe('<webview> tag', function () {
 
   describe('devtools', () => {
     afterEach(closeAllWindows);
-    // This test is flaky on WOA, so skip it there.
+    // FIXME: This test is flaky on WOA, so skip it there.
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('loads devtools extensions registered on the parent window', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -1745,7 +1745,9 @@ describe('<webview> tag', function () {
 
     describe('media-started-playing and media-paused events', () => {
       it('emits when audio starts and stops playing', async function () {
-        if (!await w.executeJavaScript('document.createElement(\'audio\').canPlayType(\'audio/wav\')')) { return this.skip(); }
+        if (!await w.executeJavaScript('document.createElement(\'audio\').canPlayType(\'audio/wav\')')) {
+          return this.skip();
+        }
 
         await loadWebView(w, { src: blankPageUrl });
 

@@ -5,7 +5,7 @@ import * as fs from 'fs';
 import * as http from 'http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { ifdescribe, defer, waitUntil, listen } from './lib/spec-helpers';
+import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 
@@ -372,10 +372,9 @@ describe('webContents module', () => {
         .and.have.property('code', 'ERR_FILE_NOT_FOUND');
     });
 
-    // Temporarily disable on WOA until
+    // FIXME: Temporarily disable on WOA until
     // https://github.com/electron/electron/issues/20008 is resolved
-    const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it);
-    testFn('rejects when loading fails due to DNS not resolved', async () => {
+    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('rejects when loading fails due to DNS not resolved', async () => {
       await expect(w.loadURL('https://err.name.not.resolved')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_NAME_NOT_RESOLVED');
     });
@@ -489,8 +488,8 @@ describe('webContents module', () => {
   describe('getFocusedWebContents() API', () => {
     afterEach(closeAllWindows);
 
-    const testFn = (process.platform === 'win32' && process.arch === 'arm64' ? it.skip : it);
-    testFn('returns the focused web contents', async () => {
+    // FIXME
+    ifit(!(process.platform === 'win32' && process.arch === 'arm64'))('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
