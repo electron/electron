@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 704761e17ad8f4d9b8bbd1f15fa501c35dd2317a..171fd9bfd44c88d62684cda03a390d1d252c5bbe 100644
+index 5c15cdf2ab2a8d41774917e6c006247ea9af44ab..b684afd5ef09fc220c042c44e5fcf7032e4bc92d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1033,6 +1033,7 @@ component("base") {
+@@ -1036,6 +1036,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 89ee70a94fde667db7f5ffd28fc0b08e59a8fd5b..bb09ca96d9db9b74e9f37f9cafc13e4b694af5a5 100644
+index 3b1d9b1a41903d57e65517a046f30b11873b8b73..e231734571cadb6f5aebe49cf853c54f66d7fd8b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -265,10 +265,10 @@ index 00f83601160eb795067bce9532baeaa078259e68..37e40a1bcf770a060fe7803bafb08274
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 0b2f14bbeabbb2f5f79940e3f5c4bf02a4b11c1f..8f9e95e56027920ebedc64a1ab24ca137f3e9127 100644
+index 5aae27d937eb26f0b9f8bdf4f38a5fc48c930ab4..dc8da6198ebf689cf29adc5073c0d5f104535ab6 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -674,6 +674,7 @@ component("views") {
+@@ -675,6 +675,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

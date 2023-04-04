@@ -66,7 +66,7 @@ index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef2
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index f50448237c40710e25644c2f7d44e8d0bc0789c8..752b575cf341546bdcc46e6dfff28fe4c66325b3 100644
+index 2f77943c276b1fed8a35097132d7e03030247bed..e3c1641c570a0df2837b1a44826ab37e87ddac3a 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
 @@ -7,11 +7,11 @@
@@ -82,8 +82,8 @@ index f50448237c40710e25644c2f7d44e8d0bc0789c8..752b575cf341546bdcc46e6dfff28fe4
 +#endif
  namespace content {
  
- void SystemColorsDidChange(int aqua_color_variant,
-@@ -59,8 +59,19 @@ void SystemColorsDidChange(int aqua_color_variant,
+ void SystemColorsDidChange(int aqua_color_variant) {
+@@ -32,8 +32,19 @@ void SystemColorsDidChange(int aqua_color_variant) {
  bool IsSubpixelAntialiasingAvailable() {
    if (__builtin_available(macOS 10.14, *)) {
      // See https://trac.webkit.org/changeset/239306/webkit for more info.
