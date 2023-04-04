@@ -29,4 +29,3 @@ index 2eaa3c5b0609149271afb85d7ecc33272e0ada2e..83b375bd3c5b5dbd5189d48ad5605808
  ];
  const heapSpaceStatistics = v8.getHeapSpaceStatistics();
  const actualHeapSpaceNames = heapSpaceStatistics.map((s) => s.space_name);
-
