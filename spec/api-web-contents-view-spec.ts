@@ -68,6 +68,10 @@ describe('WebContentsView', () => {
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      // We have to wait until the listener above is fully registered before hiding the window.
+      // On Windows, the executeJavaScript and the visibilitychange can happen out of order
+      // without this.
+      await v.webContents.executeJavaScript('0');
       w.hide();
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
@@ -80,6 +84,10 @@ describe('WebContentsView', () => {
       await v.webContents.loadURL('about:blank');
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('hidden');
       const p = v.webContents.executeJavaScript('new Promise(resolve => document.addEventListener("visibilitychange", resolve))');
+      // We have to wait until the listener above is fully registered before hiding the window.
+      // On Windows, the executeJavaScript and the visibilitychange can happen out of order
+      // without this.
+      await v.webContents.executeJavaScript('0');
       w.show();
       await p;
       expect(await v.webContents.executeJavaScript('document.visibilityState')).to.equal('visible');
