@@ -1,7 +1,7 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 
-ipcMain.on('create-frameless-window', (event, {url}) => {
+ipcMain.on('create-frameless-window', (event, { url }) => {
   const win = new BrowserWindow({ frame: false })
   win.loadURL(url)
 })
