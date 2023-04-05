@@ -1,5 +1,5 @@
 const { app, BrowserWindow } = require('electron')
-const os = require('os');
+const os = require('os')
 
 function createWindow () {
   const win = new BrowserWindow({
