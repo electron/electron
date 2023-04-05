@@ -12,7 +12,7 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index 6edab681064213db9af5fefffc5fbc4e426018d9..e729790c4b994378491414f903f4425ff1ff2f4a 100644
+index bcc2798027aaf132d1bcf526357c8fc65b268c2a..6762c090034f5b29e978bfd9ac0a5677d2b779eb 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
 @@ -230,6 +230,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
@@ -28,7 +28,7 @@ index 6edab681064213db9af5fefffc5fbc4e426018d9..e729790c4b994378491414f903f4425f
  
  void GpuDataManagerImpl::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index 1b03f182346d544a2551ab3a8fcad288d819ea26..67884548adff4a8dbda52e68f863445bf28a5286 100644
+index dec0836918007eb0d3be46e57cfc92c31af3dc62..9059320a73d27b81fb627753ce5a379470873f33 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
 @@ -125,6 +125,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
@@ -40,10 +40,10 @@ index 1b03f182346d544a2551ab3a8fcad288d819ea26..67884548adff4a8dbda52e68f863445b
    void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
  
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index f5b4d25d529465085bf07cffd54013520715ee8e..8d92cb3734cfe020f0b3a54436ab9f9c1cc01312 100644
+index 334e31d74104c412e590786959071425ee2e8e03..4e0791a378beceeeb9a74081f773ac35059fb19b 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1199,6 +1199,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1187,6 +1187,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
@@ -57,7 +57,7 @@ index f5b4d25d529465085bf07cffd54013520715ee8e..8d92cb3734cfe020f0b3a54436ab9f9c
  
  void GpuDataManagerImplPrivate::UpdateDawnInfo(
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index 9fcf4d20d90af6195910077443ad9d62e9045322..3c387f6d9d2b30f17e93b1f8a9da14ecd49ea36c 100644
+index ed4a3a959ba33fb893ac64b1f965dc3315e78e2c..2023620a79e7267ad5b5859ebf962b747889cdac 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
 @@ -87,6 +87,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {

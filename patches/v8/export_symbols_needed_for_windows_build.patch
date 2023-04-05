@@ -6,10 +6,10 @@ Subject: Export symbols needed for Windows build
 These symbols are required to build v8 with BUILD_V8_SHARED on Windows.
 
 diff --git a/src/objects/objects.h b/src/objects/objects.h
-index eb0b3d61ddc74f513707643c9316b9f80c0d6ada..90d46b3be7c5141e476fad2744275cd5f751a2d2 100644
+index 7c08126e79d07c9135964043232548e8de08ac5a..e9eb8179fb7388ab2a0d645108141c4797a9dc2f 100644
 --- a/src/objects/objects.h
 +++ b/src/objects/objects.h
-@@ -974,7 +974,7 @@ enum AccessorComponent { ACCESSOR_GETTER, ACCESSOR_SETTER };
+@@ -976,7 +976,7 @@ enum AccessorComponent { ACCESSOR_GETTER, ACCESSOR_SETTER };
  // Utility superclass for stack-allocated objects that must be updated
  // on gc.  It provides two ways for the gc to update instances, either
  // iterating or updating after gc.

@@ -1,6 +1,6 @@
 # Updating an Appveyor Azure Image
 
-Electron CI on Windows uses AppVeyor, which in turn uses Azure VM images to run.  Occasionally, these VM images need to be updated due to changes in Chromium requirements.  In order to update you will need [PowerShell](https://docs.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-6) and the [Azure PowerShell module](https://docs.microsoft.com/en-us/powershell/azure/install-az-ps?view=azps-1.8.0&viewFallbackFrom=azurermps-6.13.0).
+Electron CI on Windows uses AppVeyor, which in turn uses Azure VM images to run.  Occasionally, these VM images need to be updated due to changes in Chromium requirements.  In order to update you will need [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/installing-powershell?view=powershell-7.3&viewFallbackFrom=powershell-6) and the [Azure PowerShell module](https://learn.microsoft.com/en-us/powershell/azure/install-az-ps?view=azps-9.5.0&viewFallbackFrom=azps-1.8.0).
 
 Occasionally we need to update these images owing to changes in Chromium or other miscellaneous build requirement changes.
 
@@ -8,8 +8,8 @@ Example Use Case:
     * We need `VS15.9` and we have `VS15.7` installed; this would require us to update an Azure image.
 
 1. Identify the image you wish to modify.
-    * In [appveyor.yml](https://github.com/electron/electron/blob/main/appveyor.yml), the image is identified by the property *image*.
-        * The names used correspond to the *"images"* defined for a build cloud, eg the [libcc-20 cloud](https://windows-ci.electronjs.org/build-clouds/8).
+    * In [appveyor.yml](https://github.com/electron/electron/blob/main/appveyor.yml), the image is identified by the property _image_.
+        * The names used correspond to the _"images"_ defined for a build cloud, eg the [libcc-20 cloud](https://windows-ci.electronjs.org/build-clouds/8).
     * Find the image you wish to modify in the build cloud and make note of the **VHD Blob Path** for that image, which is the value for that corresponding key.
         * You will need this URI path to copy into a new image.
     * You will also need the storage account name which is labeled in AppVeyor as the **Disk Storage Account Name**

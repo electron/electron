@@ -32,7 +32,7 @@ index 21421aa32047dc1479693c5a5f7aa209aafa05d3..ed1972a765574bdc380ea0670b45906a
    ]
    if (is_linux) {
 diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index 4e1e3346dc4a4463ac99a47ea7f2914945fee9e7..84c1a696dfa45a23505aa681c8ab2a684b3c12c2 100644
+index 3ab30c4f8776b9b60e736e69c9bfbce99263ff97..3e8ed18b836f863deafd28a6363b7de2bcdc1863 100644
 --- a/buildtools/third_party/libc++abi/BUILD.gn
 +++ b/buildtools/third_party/libc++abi/BUILD.gn
 @@ -4,7 +4,7 @@
@@ -42,5 +42,5 @@ index 4e1e3346dc4a4463ac99a47ea7f2914945fee9e7..84c1a696dfa45a23505aa681c8ab2a68
 -source_set("libc++abi") {
 +static_library("libc++abi") {
    if (export_libcxxabi_from_executables) {
-     visibility = [ "//build/config:executable_deps" ]
-   } else {
+     visibility = [
+       "//build/config:executable_deps",

@@ -589,9 +589,9 @@ describe('chrome extensions', () => {
           });
         });
 
-        // TODO(nornagon): real extensions don't load on file: urls, so this
+        // FIXME(nornagon): real extensions don't load on file: urls, so this
         // test needs to be updated to serve its content over http.
-        describe.skip('supports "all_frames" option', () => {
+        xdescribe('supports "all_frames" option', () => {
           const contentScript = path.resolve(fixtures, 'extensions/content-script');
 
           // Computed style values

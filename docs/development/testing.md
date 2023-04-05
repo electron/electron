@@ -79,7 +79,7 @@ the Node.js source tree.
 
 #### Missing fonts
 
-[Some Windows 10 devices](https://docs.microsoft.com/en-us/typography/fonts/windows_10_font_list) do not ship with the Meiryo font installed, which may cause a font fallback test to fail. To install Meiryo:
+[Some Windows 10 devices](https://learn.microsoft.com/en-us/typography/fonts/windows_10_font_list) do not ship with the Meiryo font installed, which may cause a font fallback test to fail. To install Meiryo:
 
 1. Push the Windows key and search for _Manage optional features_.
 2. Click _Add a feature_.

@@ -1,3 +1,16 @@
 [
-  "// NOTE: this file is used to disable tests in our test suite by their full title."
+  "// NOTE: this file is used to disable tests in our test suite by their full title.",
+  "BrowserWindow module BrowserWindow.loadURL(url) should emit did-fail-load event for files that do not exist",
+  "BrowserWindow module document.visibilityState/hidden visibilityState remains visible if backgroundThrottling is disabled",
+  "Menu module Menu.setApplicationMenu unsets a menu with null",
+  "process module main process process.takeHeapSnapshot() returns true on success",
+  "protocol module protocol.registerFileProtocol throws an error when custom headers are invalid",
+  "protocol module protocol.registerProtocol throws an error when custom headers are invalid",
+  "protocol module protocol.registerSchemesAsPrivileged standard can access files through the FileSystem API",
+  "protocol module protocol.registerSchemesAsPrivileged cors-fetch disallows CORS and fetch requests when only supportFetchAPI is specified",
+  "session module ses.cookies should set cookie for standard scheme",
+  "webFrameMain module WebFrame.visibilityState should match window state",
+  "reporting api sends a report for a deprecation",
+  "chromium features SpeechSynthesis should emit lifecycle events",
+  "version-bumper nextVersion bump versions bumps to beta from nightly"
 ]

@@ -18,7 +18,7 @@ index f39533c8951d81fba73910a89b5cf2de9bd34a02..00756eb8a32aec3bc109db9aa1b370ab
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 99375ca00842dabd41280333a680564ac557616e..825f913eb826de264ac101d6810c7f41aa822af2 100644
+index 06405f8cf4ed0571d3df7a3d7a5370005d07c8bd..65c86fc3579ff2f828e5a356dbaffb847db7a795 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -90,6 +90,7 @@
@@ -29,7 +29,7 @@ index 99375ca00842dabd41280333a680564ac557616e..825f913eb826de264ac101d6810c7f41
  /elfutils/src
  /emoji-metadata/src
  /emoji-segmenter/src
-@@ -195,6 +196,7 @@
+@@ -197,6 +198,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -37,7 +37,7 @@ index 99375ca00842dabd41280333a680564ac557616e..825f913eb826de264ac101d6810c7f41
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -258,6 +260,7 @@
+@@ -261,6 +263,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/

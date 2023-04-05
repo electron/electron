@@ -89,7 +89,7 @@ app.setUserTasks([])
 > NOTE: The user tasks will still be displayed even after closing your
 application, so the icon and program path specified for a task should exist until your application is uninstalled.
 
-[msdn-jumplist]: https://docs.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
+[msdn-jumplist]: https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#tasks
 
 ### Thumbnail Toolbars
 
@@ -156,7 +156,7 @@ const win = new BrowserWindow()
 win.setThumbarButtons([])
 ```
 
-[msdn-thumbnail]: https://docs.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#thumbnail-toolbars
+[msdn-thumbnail]: https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#thumbnail-toolbars
 
 ### Icon Overlays in Taskbar
 
@@ -196,7 +196,7 @@ const win = new BrowserWindow()
 win.setOverlayIcon('path/to/overlay.png', 'Description for overlay')
 ```
 
-[msdn-icon-overlay]: https://docs.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#icon-overlays
+[msdn-icon-overlay]: https://learn.microsoft.com/en-us/windows/win32/shell/taskbar-extensions#icon-overlays
 
 ### Flash Frame
 
@@ -230,7 +230,7 @@ win.flashFrame(true)
 In the above example, it is called when the window comes into focus,
 but you might use a timeout or some other event to disable it.
 
-[msdn-flash-frame]: https://docs.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-flashwindow#remarks
+[msdn-flash-frame]: https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-flashwindow#remarks
 
 [setthumbarbuttons]: ../api/browser-window.md#winsetthumbarbuttonsbuttons-windows
 [setusertaskstasks]: ../api/app.md#appsetusertaskstasks-windows

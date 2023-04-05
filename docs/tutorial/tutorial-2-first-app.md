@@ -81,10 +81,13 @@ the exact dependency versions to install.
   "version": "1.0.0",
   "description": "Hello World!",
   "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "author": "Jane Doe",
   "license": "MIT",
   "devDependencies": {
-    "electron": "19.0.0"
+    "electron": "23.1.3"
   }
 }
 ```
@@ -137,13 +140,14 @@ script in the current directory and run it in dev mode.
   "version": "1.0.0",
   "description": "Hello World!",
   "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
   "author": "Jane Doe",
   "license": "MIT",
-  "scripts": {
-    "start": "electron ."
-  },
   "devDependencies": {
-    "electron": "^19.0.0"
+    "electron": "23.1.3"
   }
 }
 ```
@@ -465,7 +469,7 @@ privileged APIs and how to communicate between processes.
 [repl]: ./repl.md
 [webpack]: https://webpack.js.org
 [window-all-closed]: ../api/app.md#event-window-all-closed
-[wsl]: https://docs.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2
+[wsl]: https://learn.microsoft.com/en-us/windows/wsl/about#what-is-wsl-2
 
 <!-- Tutorial links -->
 

@@ -63,7 +63,7 @@ Calling `event.preventDefault()` will prevent the default behavior, which is
 terminating the application.
 
 **Note:** If application quit was initiated by `autoUpdater.quitAndInstall()`,
-then `before-quit` is emitted *after* emitting `close` event on all windows and
+then `before-quit` is emitted _after_ emitting `close` event on all windows and
 closing them.
 
 **Note:** On Windows, this event will not be emitted if the app is closed due
@@ -804,7 +804,7 @@ editor. Please refer to [Apple's documentation][CFBundleURLTypes] for details.
 **Note:** In a Windows Store environment (when packaged as an `appx`) this API
 will return `true` for all calls but the registry key it sets won't be accessible
 by other applications.  In order to register your Windows Store application
-as a default protocol handler you must [declare the protocol in your manifest](https://docs.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
+as a default protocol handler you must [declare the protocol in your manifest](https://learn.microsoft.com/en-us/uwp/schemas/appxpackage/uapmanifestschema/element-uap-protocol).
 
 The API uses the Windows Registry and `LSSetDefaultHandlerForURLScheme` internally.
 

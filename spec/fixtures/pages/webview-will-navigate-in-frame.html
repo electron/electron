@@ -1,0 +1,12 @@
+<html>
+<body>
+  <script>
+    function loadSubframe() {
+      const frame = document.createElement("iframe");
+      frame.id = "frame";
+      frame.setAttribute("src", "./webview-will-navigate.html");
+      document.body.appendChild(frame);
+    }
+  </script>
+</body>
+</html>

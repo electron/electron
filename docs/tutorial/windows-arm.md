@@ -88,7 +88,7 @@ After completing all of the above, open your cross-compilation command prompt an
 
 ## Debugging native modules
 
-Debugging native modules can be done with Visual Studio 2017 (running on your development machine) and corresponding [Visual Studio Remote Debugger](https://docs.microsoft.com/en-us/visualstudio/debugger/remote-debugging-cpp?view=vs-2019) running on the target device. To debug:
+Debugging native modules can be done with Visual Studio 2017 (running on your development machine) and corresponding [Visual Studio Remote Debugger](https://learn.microsoft.com/en-us/visualstudio/debugger/remote-debugging-cpp?view=vs-2019) running on the target device. To debug:
 
 1. Launch your app `.exe` on the target device via the _Command Prompt_ (passing `--inspect-brk` to pause it before any native modules are loaded).
 2. Launch Visual Studio 2017 on your development machine.

@@ -40,7 +40,9 @@ jobs:
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
       uses: mikefarah/yq@1c7dc0e88aad311c89889bc5ce5d8f96931a1bd0 # v4.27.2
       with:
-        cmd: yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor.yml" > "appveyor2.yml"
+        cmd: |
+          yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor.yml" > "appveyor2.yml"
+          yq '.image = "${{ env.APPVEYOR_IMAGE_VERSION }}"' "appveyor-woa.yml" > "appveyor-woa2.yml"
     - name: (Optionally) Generate Commit Diff
       if: ${{ env.APPVEYOR_IMAGE_VERSION }}
       run: |
@@ -67,3 +69,4 @@ jobs:
         title: 'build: update appveyor image to latest version'
         body: |
           This PR updates appveyor.yml to the latest baked image, ${{ env.APPVEYOR_IMAGE_VERSION }}.
+          Notes: none

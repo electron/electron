@@ -200,4 +200,4 @@ See the [Windows Store Guide][].
 [windows store guide]: ./windows-store-guide.md
 [maker-squirrel]: https://www.electronforge.io/config/makers/squirrel.windows
 [maker-msi]: https://www.electronforge.io/config/makers/wix-msi
-[signtool.exe]: https://docs.microsoft.com/en-us/dotnet/framework/tools/signtool-exe
+[signtool.exe]: https://learn.microsoft.com/en-us/dotnet/framework/tools/signtool-exe

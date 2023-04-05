@@ -185,9 +185,8 @@ describe('webFrameMain module', () => {
   });
 
   describe('WebFrame.visibilityState', () => {
-    // TODO(MarshallOfSound): Fix flaky test
-    // @flaky-test
-    it.skip('should match window state', async () => {
+    // DISABLED-FIXME(MarshallOfSound): Fix flaky test
+    it('should match window state', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
