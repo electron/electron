@@ -355,28 +355,74 @@ describe('web security', () => {
     });
   });
 
-  describe('csp in sandbox: false', () => {
-    it('is correctly applied', async () => {
-      const w = new BrowserWindow({
-        show: false,
-        webPreferences: { sandbox: false }
+  describe('csp', () => {
+    for (const sandbox of [true, false]) {
+      describe(`when sandbox: ${sandbox}`, () => {
+        for (const contextIsolation of [true, false]) {
+          describe(`when contextIsolation: ${contextIsolation}`, () => {
+            it('prevents eval from running in an inline script', async () => {
+              const w = new BrowserWindow({
+                show: false,
+                webPreferences: { sandbox, contextIsolation }
+              });
+              w.loadURL(`data:text/html,<head>
+              <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
+            </head>
+            <script>
+              try {
+                // We use console.log here because it is easier than making a
+                // preload script, and the behavior under test changes when
+                // contextIsolation: false
+                console.log(eval('true'))
+              } catch (e) {
+                console.log(e.message)
+              }
+            </script>`);
+              const [,, message] = await emittedOnce(w.webContents, 'console-message');
+              expect(message).to.match(/Refused to evaluate a string/);
+            });
+
+            it('does not prevent eval from running in an inline script when there is no csp', async () => {
+              const w = new BrowserWindow({
+                show: false,
+                webPreferences: { sandbox, contextIsolation }
+              });
+              w.loadURL(`data:text/html,
+            <script>
+              try {
+                // We use console.log here because it is easier than making a
+                // preload script, and the behavior under test changes when
+                // contextIsolation: false
+                console.log(eval('true'))
+              } catch (e) {
+                console.log(e.message)
+              }
+            </script>`);
+              const [,, message] = await emittedOnce(w.webContents, 'console-message');
+              expect(message).to.equal('true');
+            });
+
+            it('prevents eval from running in executeJavaScript', async () => {
+              const w = new BrowserWindow({
+                show: false,
+                webPreferences: { sandbox, contextIsolation }
+              });
+              w.loadURL('data:text/html,<head><meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\' \'unsafe-inline\'"></meta></head>');
+              await expect(w.webContents.executeJavaScript('eval("true")')).to.be.rejected();
+            });
+
+            it('does not prevent eval from running in executeJavaScript when there is no csp', async () => {
+              const w = new BrowserWindow({
+                show: false,
+                webPreferences: { sandbox, contextIsolation }
+              });
+              w.loadURL('data:text/html,');
+              expect(await w.webContents.executeJavaScript('eval("true")')).to.be.true();
+            });
+          });
+        }
       });
-      w.loadURL(`data:text/html,<head>
-          <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'">
-        </head>
-        <script>
-          try {
-            // We use console.log here because it is easier than making a
-            // preload script, and the behavior under test changes when
-            // contextIsolation: false
-            console.log(eval('failure'))
-          } catch (e) {
-            console.log('success')
-          }
-        </script>`);
-      const [,, message] = await emittedOnce(w.webContents, 'console-message');
-      expect(message).to.equal('success');
-    });
+    }
   });
 
   it('does not crash when multiple WebContent are created with web security disabled', () => {
