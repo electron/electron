@@ -157,6 +157,7 @@ class ElectronBrowserContext : public content::BrowserContext {
       override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
+  content::StoragePartition* GetDefaultStoragePartition();
   content::PlatformNotificationService* GetPlatformNotificationService()
       override;
   content::PermissionControllerDelegate* GetPermissionControllerDelegate()
@@ -257,6 +258,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;
+  absl::optional<int> user_set_quota_ = absl::nullopt;
   int max_cache_size_ = 0;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)

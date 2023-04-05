@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as ChildProcess from 'node:child_process';
@@ -33,6 +34,74 @@ describe('session module', () => {
       const tmppath = require('electron').app.getPath('temp');
       const ses = session.fromPath(tmppath);
       expect(ses.storagePath).to.equal(tmppath);
+    });
+  });
+
+  describe('session.fromPath(path) with a quota.', () => {
+    const pathloc = 'testsession';
+    const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
+
+    after(() => {
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+    });
+    it('Assert that a set quota value is returned when a quota value is specified for a session', async () => {
+      const quotasize = 256000;
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+      fs.mkdirSync(tmppath);
+      const localsession = session.fromPath(tmppath, { quota: quotasize });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: localsession
+        }
+      });
+
+      const readQuotaSize: any = () => {
+        return w.webContents.executeJavaScript(`
+          navigator.storage.estimate().then(estimate => estimate.quota).catch(err => err.message);
+        `);
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      const size = await readQuotaSize();
+      expect(size).to.equal(quotasize);
+    });
+  });
+
+  /* Note : This test cannot be up-streamed */
+  describe('session.fromPath(path) with no quota.', () => {
+    const pathloc = 'sessionnoquota';
+    const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
+
+    after(() => {
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+    });
+    it('Assert that free space value is returned when a quota value is not specified for a session', async () => {
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+      fs.mkdirSync(tmppath);
+      const localsession = session.fromPath(tmppath);
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: localsession
+        }
+      });
+
+      const readQuotaSize: any = () => {
+        return w.webContents.executeJavaScript(`
+          navigator.storage.estimate().then(estimate => estimate.quota).catch(err => err.message);
+        `);
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      const size = await readQuotaSize();
+      expect(size).to.be.greaterThan(0);
+
+      if (os.platform() === 'linux') {
+        const output = ChildProcess.execSync(`df ${tmppath} --output=avail | tail -n1`);
+        const availablespace = parseInt(output.toString(), 10) * 1024;
+        expect(availablespace).to.be.greaterThan(0);
+      }
     });
   });
 
