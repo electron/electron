@@ -317,7 +317,7 @@ name, no matter what label you set. To change it, modify your app bundle's
 [About Information Property List Files][AboutInformationPropertyListFiles]
 for more information.
 
-## Setting Menu for Specific Browser Window (*Linux* *Windows*)
+## Setting Menu for Specific Browser Window (_Linux_ _Windows_)
 
 The [`setMenu` method][setMenu] of browser windows can set the menu of certain
 browser windows.
