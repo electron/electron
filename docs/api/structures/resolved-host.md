@@ -1,3 +1,3 @@
 # ResolvedHost Object
 
-* `endpoints` ResolvedEndpoint[] - resolved DNS entries for the hostname
+* `endpoints` [ResolvedEndpoint[]](resolved-endpoint.md) - resolved DNS entries for the hostname
