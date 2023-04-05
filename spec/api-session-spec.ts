@@ -39,6 +39,72 @@ describe('session module', () => {
     });
   });
 
+  describe('session.fromPath(path) with a quota.', () => {
+    const pathloc = 'testsession';
+    const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
+
+    after(() => {
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+    });
+    it('Assert that a set quota value is returned when a quota value is specified for a session', async () => {
+      const quotasize = 256000;
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+      fs.mkdirSync(tmppath);
+      const localsession = session.fromPath(tmppath, { quota: quotasize });
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: localsession
+        }
+      });
+
+      const readQuotaSize: any = () => {
+        return w.webContents.executeJavaScript(`
+          navigator.storage.estimate().then(estimate => estimate.quota).catch(err => err.message);
+        `);
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      const size = await readQuotaSize();
+      expect(size).to.equal(quotasize);
+    });
+  });
+
+  /* Note : This test cannot be up-streamed */
+  describe('session.fromPath(path) with no quota.', () => {
+    const pathloc = 'sessionnoquota';
+    const tmppath = require('electron').app.getPath('temp') + path.sep + pathloc;
+
+    after(() => {
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+    });
+    it('Assert that free space value is returned when a quota value is not specified for a session', async () => {
+      /* NOTE: The following code can only run on Linux and best case a Mac.  It will not run on Windows. */
+      const output = ChildProcess.execSync(`df ${tmppath} --output=avail | tail -n1`);
+      const availablespace = parseInt(output.toString(), 10) * 1024;
+      if (fs.existsSync(tmppath)) { fs.rmSync(tmppath, { recursive: true, force: true }); }
+      fs.mkdirSync(tmppath);
+      const localsession = session.fromPath(tmppath);
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: localsession
+        }
+      });
+
+      const readQuotaSize: any = () => {
+        return w.webContents.executeJavaScript(`
+          navigator.storage.estimate().then(estimate => estimate.quota).catch(err => err.message);
+        `);
+      };
+
+      await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
+      const size = await readQuotaSize();
+      // An empty session uses about 1.5 - 2 MB of disk space.
+      expect(size).to.be.approximately(availablespace, 2 * 1024 * 1024);
+    });
+  });
+
   describe('ses.cookies', () => {
     const name = '0';
     const value = '0';
