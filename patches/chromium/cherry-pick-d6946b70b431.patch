@@ -1,7 +1,7 @@
-From d6946b70b4318a8793f9356eed146a8e722ea5ce Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Dave Tapuska <dtapuska@chromium.org>
 Date: Fri, 24 Mar 2023 19:32:54 +0000
-Subject: [PATCH] [M112] Move the edit commands to an on stack variable
+Subject: Move the edit commands to an on stack variable
 
 DevTools uses nested event loops and the usage of the class member can
 be problematic for iteration because the nested loop can change the
@@ -19,13 +19,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1120123}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4369603
 Cr-Commit-Position: refs/branch-heads/5615@{#809}
 Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
----
 
 diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-index 9dd9c28..9f8bda0 100644
+index 7d3c2c0a0db83ae5b7980deedd605174837fa801..0da9bc6d464f09d81c0bd8943f74370ee81325b0 100644
 --- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
-@@ -3210,11 +3210,18 @@
+@@ -3198,11 +3198,18 @@ void WebFrameWidgetImpl::AddEditCommandForNextKeyEvent(const WebString& name,
  }
  
  bool WebFrameWidgetImpl::HandleCurrentKeyboardEvent() {
