@@ -1,7 +1,7 @@
-From d9081493c4b2d7dece6312335c868a33f7c4958e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: kylechar <kylechar@chromium.org>
 Date: Tue, 28 Feb 2023 21:02:51 +0000
-Subject: [PATCH] Add CHECKs in HostFrameSinkManager
+Subject: Add CHECKs in HostFrameSinkManager
 
 It looks like it's possible for a compromised renderer to get multiple
 things to register the same FrameSinkId with HostFrameSinkManager. This
@@ -21,13 +21,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#1109533}
 Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4298330
 Cr-Commit-Position: refs/branch-heads/5615@{#69}
 Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
----
 
 diff --git a/components/viz/host/host_frame_sink_manager.cc b/components/viz/host/host_frame_sink_manager.cc
-index 284e9ef..21e6cab 100644
+index 8d724edf1624b83f896a9d2200542fc981e4005e..3ac8a9c13b6655591bf737578d7f9b5aa5874e57 100644
 --- a/components/viz/host/host_frame_sink_manager.cc
 +++ b/components/viz/host/host_frame_sink_manager.cc
-@@ -65,7 +65,7 @@
+@@ -68,7 +68,7 @@ void HostFrameSinkManager::RegisterFrameSinkId(
    DCHECK(client);
  
    FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
@@ -36,7 +35,7 @@ index 284e9ef..21e6cab 100644
    DCHECK(!data.has_created_compositor_frame_sink);
    data.client = client;
    data.report_activation = report_activation;
-@@ -84,7 +84,7 @@
+@@ -87,7 +87,7 @@ void HostFrameSinkManager::InvalidateFrameSinkId(
    DCHECK(frame_sink_id.is_valid());
  
    FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
@@ -45,7 +44,7 @@ index 284e9ef..21e6cab 100644
  
    const bool destroy_synchronously =
        data.has_created_compositor_frame_sink && data.wait_on_destruction;
-@@ -225,14 +225,14 @@
+@@ -227,14 +227,14 @@ bool HostFrameSinkManager::RegisterFrameSinkHierarchy(
      return false;
    }
  
@@ -64,7 +63,7 @@ index 284e9ef..21e6cab 100644
    return true;
  }
  
-@@ -241,8 +241,9 @@
+@@ -243,8 +243,9 @@ void HostFrameSinkManager::UnregisterFrameSinkHierarchy(
      const FrameSinkId& child_frame_sink_id) {
    // Unregister and clear the stored parent.
    FrameSinkData& parent_data = frame_sink_data_map_[parent_frame_sink_id];
@@ -77,10 +76,10 @@ index 284e9ef..21e6cab 100644
      frame_sink_data_map_.erase(parent_frame_sink_id);
  
 diff --git a/components/viz/service/frame_sinks/frame_sink_manager_impl.cc b/components/viz/service/frame_sinks/frame_sink_manager_impl.cc
-index 5e18213..cfbc9d1 100644
+index 7c25edc433792408a7a285f9cc976289f6500398..20fa10b1e812b97337bfd57c2e4e18d03888c2f3 100644
 --- a/components/viz/service/frame_sinks/frame_sink_manager_impl.cc
 +++ b/components/viz/service/frame_sinks/frame_sink_manager_impl.cc
-@@ -286,7 +286,7 @@
+@@ -284,7 +284,7 @@ void FrameSinkManagerImpl::UnregisterFrameSinkHierarchy(
    }
  
    auto iter = frame_sink_source_map_.find(parent_frame_sink_id);
