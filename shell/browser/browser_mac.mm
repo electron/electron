@@ -432,10 +432,10 @@ void Browser::DockHide() {
   // To work around this, we make sure DockHide does nothing if it is called
   // immediately after DockShow. After some experiments, 1 second seems to be
   // a proper interval.
-  if (!last_dock_show_.is_null() &&
-      base::Time::Now() - last_dock_show_ < base::Seconds(1)) {
+  bool shown_in_last_second =
+      base::Time::Now() - last_dock_show_ < base::Seconds(1);
+  if (!DockIsVisible() || (!last_dock_show_.is_null() && shown_in_last_second))
     return;
-  }
 
   for (auto* const& window : WindowList::GetWindows())
     [window->GetNativeWindow().GetNativeNSWindow() setCanHide:NO];
@@ -455,6 +455,11 @@ v8::Local<v8::Promise> Browser::DockShow(v8::Isolate* isolate) {
   last_dock_show_ = base::Time::Now();
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  if (DockIsVisible()) {
+    promise.Resolve();
+    return handle;
+  }
 
   BOOL active = [[NSRunningApplication currentApplication] isActive];
   ProcessSerialNumber psn = {0, kCurrentProcess};
