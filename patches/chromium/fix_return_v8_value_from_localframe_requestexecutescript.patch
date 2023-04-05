@@ -8,10 +8,10 @@ v8::Value instead of base::Value.
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=1323953
 
 diff --git a/extensions/renderer/script_injection.cc b/extensions/renderer/script_injection.cc
-index 318198eb2be08d44106722568fb737ab1b9ddc08..2868139a02ae92f3e4ae47292651fba8995dd04b 100644
+index e9371fb6de28abf0cc0d35cf144427b65fe7dc04..892c1bbae90725a97db6dbcb82e732303f20199f 100644
 --- a/extensions/renderer/script_injection.cc
 +++ b/extensions/renderer/script_injection.cc
-@@ -274,6 +274,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
+@@ -275,6 +275,7 @@ void ScriptInjection::InjectJs(std::set<std::string>* executing_scripts,
        blink::mojom::LoadEventBlockingOption::kBlock,
        base::BindOnce(&ScriptInjection::OnJsInjectionCompleted,
                       weak_ptr_factory_.GetWeakPtr()),

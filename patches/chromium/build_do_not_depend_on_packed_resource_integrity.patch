@@ -33,7 +33,7 @@ index e7637ff3b63b0ac8cf72302396b5bcfb1b54eb9b..bae707e8a49cbb7acd64ea0461c598b7
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 47689ecf0ca3218aa38a702a3fd9ceb0e6b07551..f8fda254f5975c8be561847f7817fb1d1a65b2f0 100644
+index ed28fdc9aaef2a4b3c37cd9fd7897bba3a7d7440..559892d3878d6cc779af17485f56b2e4bf30cebc 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4567,7 +4567,7 @@ static_library("browser") {
@@ -46,7 +46,7 @@ index 47689ecf0ca3218aa38a702a3fd9ceb0e6b07551..f8fda254f5975c8be561847f7817fb1d
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 12881870e9a7dbdc7ae0dedbe668c01ff7ad881b..399badb6531ab04939d494a09def9e20bec63499 100644
+index 29bc3cebbeed8b7fa04d48317c8002a3b9e00e5a..fea5a3f3dcdf923d4dd7ae8b004cdc8cd68dad73 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -6387,7 +6387,6 @@ test("unit_tests") {
