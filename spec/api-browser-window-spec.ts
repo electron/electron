@@ -378,6 +378,15 @@ describe('BrowserWindow module', () => {
       expect(code).to.equal(-300);
       expect(isMainFrame).to.equal(true);
     });
+    it('should not emit did-fail-load for a successfully loaded media file', async () => {
+      w.webContents.on('did-fail-load', () => {
+        expect.fail('did-fail-load should not emit on media file loads');
+      });
+
+      const mediaStarted = emittedOnce(w.webContents, 'media-started-playing');
+      w.loadFile(path.join(fixtures, 'cat-spin.mp4'));
+      await mediaStarted;
+    });
     it('should set `mainFrame = false` on did-fail-load events in iframes', async () => {
       const didFailLoad = emittedOnce(w.webContents, 'did-fail-load');
       w.loadFile(path.join(fixtures, 'api', 'did-fail-load-iframe.html'));
