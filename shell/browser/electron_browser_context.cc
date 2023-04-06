@@ -126,8 +126,9 @@ ElectronBrowserContext::ElectronBrowserContext(
   base::StringToInt(command_line->GetSwitchValueASCII(switches::kDiskCacheSize),
                     &max_cache_size_);
 
-  if (auto* path_value = std::get_if<std::reference_wrapper<const std::string>>(
-          &partition_location)) {
+  if (auto* path_value =
+          absl::get_if<std::reference_wrapper<const std::string>>(
+              &partition_location)) {
     base::PathService::Get(DIR_SESSION_DATA, &path_);
     const std::string& partition_loc = path_value->get();
     if (!in_memory && !partition_loc.empty()) {
@@ -136,7 +137,7 @@ ElectronBrowserContext::ElectronBrowserContext(
                       MakePartitionName(partition_loc)));
     }
   } else if (auto* filepath_partition =
-                 std::get_if<std::reference_wrapper<const base::FilePath>>(
+                 absl::get_if<std::reference_wrapper<const base::FilePath>>(
                      &partition_location)) {
     const base::FilePath& partition_path = filepath_partition->get();
     path_ = std::move(partition_path);

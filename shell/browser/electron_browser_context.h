@@ -66,8 +66,8 @@ using DisplayMediaRequestHandler =
     base::RepeatingCallback<void(const content::MediaStreamRequest&,
                                  DisplayMediaResponseCallbackJs)>;
 using PartitionOrPath =
-    std::variant<std::reference_wrapper<const std::string>,
-                 std::reference_wrapper<const base::FilePath>>;
+    absl::variant<std::reference_wrapper<const std::string>,
+                  std::reference_wrapper<const base::FilePath>>;
 
 class ElectronBrowserContext : public content::BrowserContext {
  public:
