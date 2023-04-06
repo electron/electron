@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 4b0513b4ecc79a06899b080650dd4a9002c9995e..f796965aa26d1d08178377140c12a94977ec1c14 100644
+index 82b4978f1b4610650a15d7ecb3063de0e1f13183..972be1b245da8b82af4e475704efd6a971166451 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -978,7 +978,6 @@ if (is_win) {
@@ -579,10 +579,10 @@ index ca71560874a0189068dd11fbc039f5673bf6bd96..a8551d95e64da2afbc1685b2df8f1fc3
                        mojom::PrintFailureReason reason) override;
  
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index c440ebb5c43d7d6bd6aa1a32aad77980644f9f3e..6a1872f69998fb7dbcef048eb580fdf908c6f8af 100644
+index 82f44b6c90f292772b56253a99578394b5cc2881..91ee0c3d66c33adee346060a0ecd931d3dc282a2 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
-@@ -288,7 +288,7 @@ union PrintWithParamsResult {
+@@ -292,7 +292,7 @@ union PrintWithParamsResult {
  interface PrintRenderFrame {
    // Tells the RenderFrame to switch the CSS to print media type, render every
    // requested page, and then switch back the CSS to display media type.
@@ -591,7 +591,7 @@ index c440ebb5c43d7d6bd6aa1a32aad77980644f9f3e..6a1872f69998fb7dbcef048eb580fdf9
  
    // Requests the frame to be printed with specified parameters. This is used
    // to programmatically produce PDF by request from the browser (e.g. over
-@@ -380,7 +380,10 @@ interface PrintManagerHost {
+@@ -384,7 +384,10 @@ interface PrintManagerHost {
    // UI to the user to select the final print settings. If the user cancels or
    // an error occurs, return null.
    [Sync]
