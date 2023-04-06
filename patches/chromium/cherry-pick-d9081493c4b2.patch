@@ -1,0 +1,90 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Tue, 28 Feb 2023 21:02:51 +0000
+Subject: Add CHECKs in HostFrameSinkManager
+
+It looks like it's possible for a compromised renderer to get multiple
+things to register the same FrameSinkId with HostFrameSinkManager. This
+violates assumptions around ownership so turn DCHECKs here into CHECKs.
+Also convert DCHECKs into CHECKs for registering/unregistering frame
+sink hierarchy just in case.
+
+(cherry picked from commit a707ac2d95e4726f4cf0267c9b0c038926c2a691)
+
+Bug: 1414018
+Change-Id: If948e758a8484024666f4066360620bc3a9cb493
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4283141
+Reviewed-by: Martin Kreichgauer <martinkr@google.com>
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1109533}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4298330
+Cr-Commit-Position: refs/branch-heads/5615@{#69}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/components/viz/host/host_frame_sink_manager.cc b/components/viz/host/host_frame_sink_manager.cc
+index 8d724edf1624b83f896a9d2200542fc981e4005e..3ac8a9c13b6655591bf737578d7f9b5aa5874e57 100644
+--- a/components/viz/host/host_frame_sink_manager.cc
++++ b/components/viz/host/host_frame_sink_manager.cc
+@@ -68,7 +68,7 @@ void HostFrameSinkManager::RegisterFrameSinkId(
+   DCHECK(client);
+ 
+   FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
+-  DCHECK(!data.IsFrameSinkRegistered());
++  CHECK(!data.IsFrameSinkRegistered());
+   DCHECK(!data.has_created_compositor_frame_sink);
+   data.client = client;
+   data.report_activation = report_activation;
+@@ -87,7 +87,7 @@ void HostFrameSinkManager::InvalidateFrameSinkId(
+   DCHECK(frame_sink_id.is_valid());
+ 
+   FrameSinkData& data = frame_sink_data_map_[frame_sink_id];
+-  DCHECK(data.IsFrameSinkRegistered());
++  CHECK(data.IsFrameSinkRegistered());
+ 
+   const bool destroy_synchronously =
+       data.has_created_compositor_frame_sink && data.wait_on_destruction;
+@@ -227,14 +227,14 @@ bool HostFrameSinkManager::RegisterFrameSinkHierarchy(
+     return false;
+   }
+ 
++  FrameSinkData& parent_data = iter->second;
++  CHECK(!base::Contains(parent_data.children, child_frame_sink_id));
++  parent_data.children.push_back(child_frame_sink_id);
++
+   // Register and store the parent.
+   frame_sink_manager_->RegisterFrameSinkHierarchy(parent_frame_sink_id,
+                                                   child_frame_sink_id);
+ 
+-  FrameSinkData& parent_data = iter->second;
+-  DCHECK(!base::Contains(parent_data.children, child_frame_sink_id));
+-  parent_data.children.push_back(child_frame_sink_id);
+-
+   return true;
+ }
+ 
+@@ -243,8 +243,9 @@ void HostFrameSinkManager::UnregisterFrameSinkHierarchy(
+     const FrameSinkId& child_frame_sink_id) {
+   // Unregister and clear the stored parent.
+   FrameSinkData& parent_data = frame_sink_data_map_[parent_frame_sink_id];
+-  DCHECK(base::Contains(parent_data.children, child_frame_sink_id));
+-  base::Erase(parent_data.children, child_frame_sink_id);
++  size_t num_erased = base::Erase(parent_data.children, child_frame_sink_id);
++  CHECK_EQ(num_erased, 1u);
++
+   if (parent_data.IsEmpty())
+     frame_sink_data_map_.erase(parent_frame_sink_id);
+ 
+diff --git a/components/viz/service/frame_sinks/frame_sink_manager_impl.cc b/components/viz/service/frame_sinks/frame_sink_manager_impl.cc
+index 7c25edc433792408a7a285f9cc976289f6500398..20fa10b1e812b97337bfd57c2e4e18d03888c2f3 100644
+--- a/components/viz/service/frame_sinks/frame_sink_manager_impl.cc
++++ b/components/viz/service/frame_sinks/frame_sink_manager_impl.cc
+@@ -284,7 +284,7 @@ void FrameSinkManagerImpl::UnregisterFrameSinkHierarchy(
+   }
+ 
+   auto iter = frame_sink_source_map_.find(parent_frame_sink_id);
+-  DCHECK(iter != frame_sink_source_map_.end());
++  CHECK(iter != frame_sink_source_map_.end());
+ 
+   // Remove |child_frame_sink_id| from parents list of children.
+   auto& mapping = iter->second;
