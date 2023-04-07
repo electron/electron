@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 37c1c1ce70b6f4fd5e0cc9b31964ded96928804c..958240a2f1dc1b52e2f6f16de207d7926befa8a0 100644
+index c41f25e9b5453acf1d73ddf1cf1a17416417315a..200fc18d2e63afaa22ca09f1471a10a323b4508b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1030,6 +1030,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3b1d9b1a41903d57e65517a046f30b11873b8b73..e231734571cadb6f5aebe49cf853c54f66d7fd8b 100644
+index eae5646524501a8a3d62206f9bcd307c55766f9c..dd09bfa44128bc2bc7d907b903f06570d655e5d3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -136,7 +136,7 @@ index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index f1b4cd5055d00df425926e83a3b2e7f32af4c2e6..a80aaa7fde1fd9c70e7038aef4e322f1ec6a307a 100644
+index 609c60d94cdbf4755f60323734b976b49f03fecb..09a3871bfef3ba7a523ac37a80a4aa86ce2975ae 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -194,6 +194,7 @@ source_set("audio") {
