@@ -61,6 +61,44 @@ protocol.handle('some-protocol', () => {
 })
 ```
 
+### Deprecated: `BrowserWindow.setTrafficLightPosition(position)`
+
+`BrowserWindow.setTrafficLightPosition(position)` has been deprecated, the
+`BrowserWindow.setWindowButtonPosition(position)` API should be used instead
+which accepts `null` instead of `{ x: 0, y: 0 }` to reset the position to
+system default.
+
+```js
+// Deprecated in Electron 25
+win.setTrafficLightPosition({ x: 10, y: 10 })
+win.setTrafficLightPosition({ x: 0, y: 0 })
+
+// Replace with
+win.setWindowButtonPosition({ x: 10, y: 10 })
+win.setWindowButtonPosition(null)
+```
+
+### Deprecated: `BrowserWindow.getTrafficLightPosition()`
+
+`BrowserWindow.getTrafficLightPosition()` has been deprecated, the
+`BrowserWindow.getWindowButtonPosition()` API should be used instead
+which returns `null` instead of `{ x: 0, y: 0 }` when there is no custom
+position.
+
+```js
+// Deprecated in Electron 25
+const pos = win.getTrafficLightPosition()
+if (pos.x === 0 && pos.y === 0) {
+  // No custom position.
+}
+
+// Replace with
+const ret = win.getWindowButtonPosition()
+if (ret === null) {
+  // No custom position.
+}
+```
+
 ## Planned Breaking API Changes (24.0)
 
 ### API Changed: `nativeImage.createThumbnailFromPath(path, size)`
