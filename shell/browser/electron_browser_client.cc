@@ -349,23 +349,24 @@ ElectronBrowserClient::~ElectronBrowserClient() {
 
 absl::optional<int> ElectronBrowserClient::GetRenderFrameProcessID(
     const GURL& service_worker_scope) {
-    absl::optional<int> proc_id;
+  absl::optional<int> proc_id;
 
-    const auto last = std::end(pending_processes_);
-    const auto find = std::find_if(
-        std::begin(pending_processes_), last,
-        [service_worker_scope](const std::pair<int, content::WebContents*>& proc_item) {
-          auto* web_contents{proc_item.second};
-          if (!web_contents || web_contents->GetURL().is_empty()) {
-            return false;
-          }
-          return web_contents->GetURL().spec().find(
-                 service_worker_scope.spec()) != std::string::npos;
-        });
-    if (find != last)
-      proc_id = find->first;
+  const auto last = std::end(pending_processes_);
+  const auto find = std::find_if(
+      std::begin(pending_processes_), last,
+      [service_worker_scope](
+          const std::pair<int, content::WebContents*>& proc_item) {
+        auto* web_contents{proc_item.second};
+        if (!web_contents || web_contents->GetURL().is_empty()) {
+          return false;
+        }
+        return web_contents->GetURL().spec().find(
+                   service_worker_scope.spec()) != std::string::npos;
+      });
+  if (find != last)
+    proc_id = find->first;
 
-    return proc_id;
+  return proc_id;
 }
 
 content::WebContents* ElectronBrowserClient::GetWebContentsFromProcessID(
