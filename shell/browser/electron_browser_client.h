@@ -57,6 +57,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
 
   using Delegate = content::ContentBrowserClient;
   void set_delegate(Delegate* delegate) { delegate_ = delegate; }
+
   // Returns regestered frame host process id
   absl::optional<int> GetRenderFrameProcessID(const GURL& service_worker_scope);
 
