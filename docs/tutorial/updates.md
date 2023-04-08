@@ -150,6 +150,9 @@ field supports the `file://` protocol, which means that with some effort, you ca
 server-communication aspect of the process by loading your update from a local directory.
 [Here's an example of how this could work](https://github.com/electron/electron/issues/5020#issuecomment-477636990).
 
+A easiest way if you need authentification is using a `?token=""` argument in your url and manage the authentification 
+before `autoUpdater.checkForUpdates()`. A way of implementing this is using [Nuts as a middelware](https://nuts.gitbook.com/module.html)
+and implementing your own middelware for authentification on top of it.
 :::
 
 [vercel]: https://vercel.com
