@@ -7,7 +7,6 @@
 #include <algorithm>
 #include <set>
 #include <utility>
-#include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/notification_event_dispatcher.h"
 #include "content/public/browser/render_process_host.h"
 #include "shell/browser/electron_browser_client.h"
@@ -225,7 +224,8 @@ void PlatformNotificationService::DisplayPersistentNotification(
     const GURL& origin,
     const blink::PlatformNotificationData& notification_data,
     const blink::NotificationResources& notification_resources) {
-  absl::optional<int> proc_id = browser_client_->GetRenderFrameProcessID(service_worker_scope);
+  absl::optional<int> proc_id =
+      browser_client_->GetRenderFrameProcessID(service_worker_scope);
   if (!proc_id.has_value())
     return;
 
