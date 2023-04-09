@@ -229,6 +229,11 @@ void PlatformNotificationService::DisplayPersistentNotification(
   if (!proc_id.has_value())
     return;
 
+  content::WebContents* web_ctx =
+      browser_client_->GetWebContentsFromProcessID(proc_id.value());
+  if (!web_ctx)
+    return;
+
   auto* presenter = browser_client_->GetNotificationPresenter();
   if (!presenter)
     return;
@@ -243,10 +248,7 @@ void PlatformNotificationService::DisplayPersistentNotification(
 
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
-    content::WebContents* web_ctx =
-        browser_client_->GetWebContentsFromProcessID(proc_id.value());
-    if (web_ctx)
-      delegate->SetBrowserContext(web_ctx->GetBrowserContext());
+    delegate->SetBrowserContext(web_ctx->GetBrowserContext());
     // feat: Correct processing for the persistent notification without
     // actions
     const bool is_persistent(true);
