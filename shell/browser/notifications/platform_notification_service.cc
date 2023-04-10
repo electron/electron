@@ -18,15 +18,18 @@
 #include "third_party/blink/public/mojom/notifications/notification.mojom.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 
+#include "base/command_line.h"
+#include "base/containers/span.h"
+#include "base/strings/utf_string_conversions.h"
+
+#include "v8/include/libplatform/libplatform.h"
+#include "v8/include/v8-platform.h"
+#include "v8/include/v8-value-serializer.h"
+#include "v8/include/v8.h"
+
 namespace electron {
 
 namespace {
-
-// feat: support Notification.data property
-// header calculation bellow is caused by presence some not described hader
-// into data received see ReadData in
-// ./electron/src/third_party/blink/common/notifications/notification_mojom_traits.cc
-static const std::string blink_data_header("\xFF\x14\xFF", 3);
 
 void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
                               const SkBitmap& icon,
@@ -57,27 +60,59 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
     options.require_interaction = data.require_interaction;
     // feat: Display toast according to Notification.renotify
     options.should_be_presented = data.renotify ? true : !is_replacing;
-    // feat: Support Notification.data property
-    // header calculation bellow is caused by presence some not described hader
-    // into data received see ReadData in
-    // ./electron/src/third_party/blink/common/notifications/notification_mojom_traits.cc
-    std::size_t data_start_pos(0);
-    if (data.data.size() > 4 &&  // blink::PlatformNotificationData::data header
-        std::equal(data.data.begin(), data.data.begin() + 3, "\xFF\x14\xFF")) {
-      // simple algorithm to find data start position after variable length
-      // header
-      if (data.data.size() > SHRT_MAX)
-        data_start_pos = 8;
-      else if (data.data.size() > SCHAR_MAX)
-        data_start_pos = 7;
-      else
-        data_start_pos = 6;
+    {
+      // feat: support Notification.data property
+      v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+      // Create a stack-allocated handle scope.
+      v8::HandleScope handle_scope(isolate);
+      v8::Local<v8::Context> context = isolate->GetCurrentContext();
+
+      v8::ValueDeserializer deserializer(
+          isolate, reinterpret_cast<const uint8_t*>(data.data.data()),
+          data.data.size());
+
+      v8::Maybe<bool> is_header_valid = deserializer.ReadHeader(context);
+      if (is_header_valid.IsNothing()) {
+        // see
+        // third_party\blink\renderer\bindings\core\v8\serialization\v8_script_value_deserializer.cc
+        // V8ScriptValueDeserializer::Deserialize -> ReadVersionEnvelope
+        // we have case with blink extra data and need to skip some portion of
+        // data till valid header start
+        auto begin = std::begin(data.data);
+        auto last = std::end(data.data);
+
+        auto find = std::find_if(std::next(begin), last, [](const char ch) {
+          // //v8/src/objects/value-serializer.cc
+          // enum class SerializationTag : uint8_t
+          // `0xFF` - Version tag
+          return static_cast<const uint8_t>(ch) == 0xFF;
+        });
+
+        if (find != last) {
+          size_t count = std::distance(begin, find);
+          const void* bytes;
+          // we have 1 bytes from inital ReadHeader call
+          // now we need to set internal pointer on byte
+          // before version tag to allow ReadHeader again
+          if (deserializer.ReadRawBytes(count - 2, &bytes)) {
+            is_header_valid = deserializer.ReadHeader(context);
+          }
+        }
+      }
+      v8::MaybeLocal<v8::Value> str_value = deserializer.ReadValue(context);
+
+      v8::Local<v8::Value> result;
+      if (!is_header_valid.IsNothing() && is_header_valid.ToChecked() &&
+          str_value.ToLocal(&result)) {
+        v8::String::Utf8Value utf8(isolate, result);
+        const char* bgn = utf8.operator*();
+        const char* end = bgn + utf8.length();
+        std::transform(bgn, end, std::back_inserter(options.data),
+                       [](const char ch) { return ch; });
+      }
     }
     // feat: Add the reply field on a notification
     auto& has_reply = options.has_reply;
-    std::transform(data.data.begin() + data_start_pos, data.data.end(),
-                   std::back_inserter(options.data),
-                   [](const char ch) { return ch; });
     // feat: Support for actions(buttons) in toast
     std::transform(
         data.actions.begin(), data.actions.end(),
@@ -172,7 +207,10 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
 
 PlatformNotificationService::PlatformNotificationService(
     ElectronBrowserClient* browser_client)
-    : browser_client_(browser_client), next_persistent_id_(0) {}
+    : browser_client_(browser_client), next_persistent_id_(0) {
+  // WTF::Partitions::Initialize();
+  // WTF::Partitions::InitializeArrayBufferPartition();
+}
 
 PlatformNotificationService::~PlatformNotificationService() = default;
 
