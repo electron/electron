@@ -608,7 +608,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
     api::context_bridge::ObjectCache object_cache;
     auto result = api::PassValueToOtherContext(
-        source_context, context, guest_view_internal, &object_cache, false, 0);
+        source_context, context, guest_view_internal, &object_cache, false, 0,
+        api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }
