@@ -72,8 +72,6 @@ class BrowserWindow : public BaseWindow,
   void SetBackgroundColor(const std::string& color_name) override;
   void SetBrowserView(
       absl::optional<gin::Handle<BrowserView>> browser_view) override;
-  void OnWindowShow() override;
-  void OnWindowHide() override;
 
   // BrowserWindow APIs.
   void FocusOnWebView();
