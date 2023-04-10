@@ -802,6 +802,14 @@ describe('contextBridge', () => {
             throwNotClonable: () => {
               return Object(Symbol('foo'));
             },
+            throwNotClonableNestedArray: () => {
+              return [Object(Symbol('foo'))];
+            },
+            throwNotClonableNestedObject: () => {
+              return {
+                bad: Object(Symbol('foo'))
+              };
+            },
             argumentConvert: () => {}
           });
         });
@@ -817,10 +825,12 @@ describe('contextBridge', () => {
           const normalIsError = Object.getPrototypeOf(getError(root.example.throwNormal)) === Error.prototype;
           const weirdIsError = Object.getPrototypeOf(getError(root.example.throwWeird)) === Error.prototype;
           const notClonableIsError = Object.getPrototypeOf(getError(root.example.throwNotClonable)) === Error.prototype;
+          const notClonableNestedArrayIsError = Object.getPrototypeOf(getError(root.example.throwNotClonableNestedArray)) === Error.prototype;
+          const notClonableNestedObjectIsError = Object.getPrototypeOf(getError(root.example.throwNotClonableNestedObject)) === Error.prototype;
           const argumentConvertIsError = Object.getPrototypeOf(getError(() => root.example.argumentConvert(Object(Symbol('test'))))) === Error.prototype;
-          return [normalIsError, weirdIsError, notClonableIsError, argumentConvertIsError];
+          return [normalIsError, weirdIsError, notClonableIsError, notClonableNestedArrayIsError, notClonableNestedObjectIsError, argumentConvertIsError];
         });
-        expect(result).to.deep.equal([true, true, true, true], 'should all be errors in the current context');
+        expect(result).to.deep.equal([true, true, true, true, true, true], 'should all be errors in the current context');
       });
 
       it('should not leak prototypes', async () => {
