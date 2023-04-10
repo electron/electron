@@ -1180,52 +1180,13 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
       // we need to post dismissed only for that case
       reason == ToastDismissalReason::ToastDismissalReason_UserCanceled) {
     // feat: Clear notifications
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotificationHistory> hist;
-    RETURN_IF_FAILED(toast_manager_->get_History(&hist));
+    // when it's cleared within Action Center
+    content::GetUIThreadTaskRunner({})->PostTask(
+        FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
+                                  notification_, options_.is_persistent));
 
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotificationHistory2> hist2;
-    RETURN_IF_FAILED(hist->QueryInterface(IID_PPV_ARGS(&hist2)));
-
-    ComPtr<ABI::Windows::Foundation::Collections::IVectorView<
-        ABI::Windows::UI::Notifications::ToastNotification*>>
-        hist_view;
-    RETURN_IF_FAILED(
-        hist2->GetHistoryWithId(registrator_->AppId(), &hist_view));
-
-    unsigned size = 0;
-    RETURN_IF_FAILED(hist_view->get_Size(&size));
-
-    ComPtr<ABI::Windows::UI::Notifications::IToastNotification2> notif2;
-    RETURN_IF_FAILED(sender->QueryInterface(IID_PPV_ARGS(&notif2)));
-
-    HSTRING ref;
-    RETURN_IF_FAILED(notif2->get_Tag(&ref));
-
-    bool notification_is_exisit(false);
-    for (unsigned i = 0; !notification_is_exisit && i < size; i++) {
-      ComPtr<ABI::Windows::UI::Notifications::IToastNotification> n;
-      RETURN_IF_FAILED(hist_view->GetAt(i, &n));
-
-      ComPtr<ABI::Windows::UI::Notifications::IToastNotification2> n2;
-      RETURN_IF_FAILED(n->QueryInterface(IID_PPV_ARGS(&n2)));
-
-      HSTRING tag;
-      RETURN_IF_FAILED(n2->get_Tag(&tag));
-
-      INT32 result;
-      RETURN_IF_FAILED(WindowsCompareStringOrdinal(ref, tag, &result));
-
-      notification_is_exisit = result == 0;
-    }
-
-    if (!notification_is_exisit) {
-      content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
-                                    notification_, options_.is_persistent));
-
-      if (IsDebuggingNotifications())
-        LOG(INFO) << "Notification dismissed";
-    }
+    if (IsDebuggingNotifications())
+      LOG(INFO) << "Notification dismissed";
   }
 
   return S_OK;
