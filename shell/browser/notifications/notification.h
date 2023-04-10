@@ -76,7 +76,7 @@ class Notification {
 
   // Should be called by derived classes.
   void NotificationClicked();
-  void NotificationDismissed(bool is_persistent = false);
+  void NotificationDismissed();
   void NotificationFailed(const std::string& error = "");
   // feat: Notification was replied to
   void NotificationReplied(const std::string& reply);

@@ -23,7 +23,7 @@ class NotificationDelegate {
   virtual void NotificationAction(int index) {}
 
   virtual void NotificationClick() {}
-  virtual void NotificationClosed(bool is_persistent = false) {}
+  virtual void NotificationClosed() {}
   virtual void NotificationDisplayed() {}
 
  protected:

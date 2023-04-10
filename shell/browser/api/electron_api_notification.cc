@@ -210,7 +210,7 @@ void Notification::NotificationFailed(const std::string& error) {
 
 void Notification::NotificationDestroyed() {}
 
-void Notification::NotificationClosed(bool is_persistent) {
+void Notification::NotificationClosed() {
   Emit("close");
 }
 

@@ -41,9 +41,9 @@ void Notification::NotificationClicked() {
   Destroy();
 }
 
-void Notification::NotificationDismissed(bool is_persistent) {
+void Notification::NotificationDismissed() {
   if (delegate())
-    delegate()->NotificationClosed(is_persistent);
+    delegate()->NotificationClosed();
   Destroy();
 }
 
