@@ -239,8 +239,8 @@ std::vector<blink::MessagePortChannel> MessagePort::DisentanglePorts(
   // Passed-in ports passed validity checks, so we can disentangle them.
   std::vector<blink::MessagePortChannel> channels;
   channels.reserve(ports.size());
-  for (unsigned i = 0; i < ports.size(); ++i)
-    channels.push_back(ports[i]->Disentangle());
+  for (auto port : ports)
+    channels.push_back(port->Disentangle());
   return channels;
 }
 

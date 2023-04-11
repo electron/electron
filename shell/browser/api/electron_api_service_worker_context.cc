@@ -115,10 +115,10 @@ v8::Local<v8::Value> ServiceWorkerContext::GetAllRunningWorkerInfo(
   gin::DataObjectBuilder builder(isolate);
   const base::flat_map<int64_t, content::ServiceWorkerRunningInfo>& info_map =
       service_worker_context_->GetRunningServiceWorkerInfos();
-  for (auto iter = info_map.begin(); iter != info_map.end(); ++iter) {
+  for (const auto& iter : info_map) {
     builder.Set(
-        std::to_string(iter->first),
-        ServiceWorkerRunningInfoToDict(isolate, std::move(iter->second)));
+        std::to_string(iter.first),
+        ServiceWorkerRunningInfoToDict(isolate, std::move(iter.second)));
   }
   return builder.Build();
 }
