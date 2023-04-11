@@ -29,7 +29,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
     app.emit('browser-window-focus', event, this);
   });
 
-  let unresponsiveEvent: any = null;
+  let unresponsiveEvent: NodeJS.Timer | null = null;
   const emitUnresponsiveEvent = () => {
     unresponsiveEvent = null;
     if (!this.isDestroyed() && this.isEnabled()) { this.emit('unresponsive'); }
@@ -53,7 +53,7 @@ BrowserWindow.prototype._init = function (this: BWT) {
     this.webContents.close({ waitForBeforeUnload: true });
   });
   this.webContents.on('destroyed', () => {
-    clearTimeout(unresponsiveEvent);
+    if (unresponsiveEvent) clearTimeout(unresponsiveEvent);
     unresponsiveEvent = null;
   });
 
