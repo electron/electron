@@ -24,6 +24,14 @@ Emitted when the system changes to AC power.
 
 Emitted when system changes to battery power.
 
+### Event: 'thermal-state-change' _macOS_
+
+* `state` string - one of `unknown`, `nominal`, `fair`, `serious`, `critical`.
+
+### Event: 'speed-limit-change' _macOS_
+
+* `limit` number
+
 ### Event: 'shutdown' _Linux_ _macOS_
 
 Emitted when the system is about to reboot or shut down. If the event handler
@@ -55,7 +63,7 @@ The `powerMonitor` module has the following methods:
 
 * `idleThreshold` Integer
 
-Returns `string` - The system's current state. Can be `active`, `idle`, `locked` or `unknown`.
+Returns `string` - The system's current idle state. Can be `active`, `idle`, `locked` or `unknown`.
 
 Calculate the system idle state. `idleThreshold` is the amount of time (in seconds)
 before considered idle.  `locked` is available on supported systems only.
@@ -65,6 +73,10 @@ before considered idle.  `locked` is available on supported systems only.
 Returns `Integer` - Idle time in seconds
 
 Calculate system idle time in seconds.
+
+### `powerMonitor.getCurrentThermalState()` _macOS_
+
+Returns `string` - The system's current thermal state. Can be `unknown`, `nominal`, `fair`, `serious`, or `critical`.
 
 ### `powerMonitor.isOnBatteryPower()`
 
