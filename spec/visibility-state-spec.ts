@@ -74,6 +74,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
       await setTimeout(10000);
     }
     w.hide();
+    await setTimeout(1000);
     load();
     const [, state] = await once(ipcMain, 'initial-visibility-state');
     expect(state).to.equal('hidden');
