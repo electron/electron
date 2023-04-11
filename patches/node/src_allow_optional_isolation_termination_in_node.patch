@@ -61,7 +61,7 @@ index 1067dee74c8877d9a3a0da6527c4c37faf9bd15f..b550fd4aa8488c6d721db3dee94cc4ce
  }
  
 diff --git a/src/node.h b/src/node.h
-index 5a849f047feca5d4d101c21c125e1c0500150077..db9a9c5c54f176ffdfc67e045b970729341eee7f 100644
+index 47ac8c24ef5e26822f694b583767e850fc5f7d96..f1fb363becf1f1b3b3ef0b2782c6561d29aa7cbd 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -316,7 +316,7 @@ NODE_EXTERN int Start(int argc, char* argv[]);
