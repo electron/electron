@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Dave Tapuska <dtapuska@chromium.org>
+Date: Fri, 24 Mar 2023 19:32:54 +0000
+Subject: Move the edit commands to an on stack variable
+
+DevTools uses nested event loops and the usage of the class member can
+be problematic for iteration because the nested loop can change the
+variable's storage causing a UAF.
+
+(cherry picked from commit d9b34f0f3a2d0dd73648eca3ef940fb66806227b)
+
+Bug: 1420510
+Change-Id: Ie08a71b60401fa4322cca0cc31062ba64672126a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4355811
+Reviewed-by: David Bokan <bokan@chromium.org>
+Commit-Queue: Dave Tapuska <dtapuska@chromium.org>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1120123}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4369603
+Cr-Commit-Position: refs/branch-heads/5615@{#809}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+index 2779b0a23477d33e747cb0d97079b463b1060652..b4ca94c7b39a090b7d9700cd86f04a71ebdfcf1f 100644
+--- a/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
++++ b/third_party/blink/renderer/core/frame/web_frame_widget_impl.cc
+@@ -3182,11 +3182,18 @@ void WebFrameWidgetImpl::AddEditCommandForNextKeyEvent(const WebString& name,
+ }
+ 
+ bool WebFrameWidgetImpl::HandleCurrentKeyboardEvent() {
+-  bool did_execute_command = false;
++  if (edit_commands_.empty()) {
++    return false;
++  }
+   WebLocalFrame* frame = FocusedWebLocalFrameInWidget();
+   if (!frame)
+     frame = local_root_;
+-  for (const auto& command : edit_commands_) {
++  bool did_execute_command = false;
++  // Executing an edit command can run JS and we can end up reassigning
++  // `edit_commands_` so move it to a stack variable before iterating on it.
++  Vector<mojom::blink::EditCommandPtr> edit_commands =
++      std::move(edit_commands_);
++  for (const auto& command : edit_commands) {
+     // In gtk and cocoa, it's possible to bind multiple edit commands to one
+     // key (but it's the exception). Once one edit command is not executed, it
+     // seems safest to not execute the rest.
