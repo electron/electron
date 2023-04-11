@@ -13,10 +13,10 @@ The patch can be removed once the upstream issue is fixed. That
 was reported in https://crbug.com/1429935.
 
 diff --git a/ui/base/x/x11_whole_screen_move_loop.cc b/ui/base/x/x11_whole_screen_move_loop.cc
-index 08e1c09749c5c39d99deec75c1a914c43936a6a5..ccd4785415a743a9519e750d5f0e334632058654 100644
+index 14b7a26e474f1a11937c3923d6ef715568c30f20..a0baf8a03c8f614af37954fecd543375fc56e2b1 100644
 --- a/ui/base/x/x11_whole_screen_move_loop.cc
 +++ b/ui/base/x/x11_whole_screen_move_loop.cc
-@@ -25,6 +25,7 @@
+@@ -26,6 +26,7 @@
  #include "ui/events/x/x11_event_translation.h"
  #include "ui/gfx/x/connection.h"
  #include "ui/gfx/x/keysyms/keysyms.h"
@@ -24,7 +24,7 @@ index 08e1c09749c5c39d99deec75c1a914c43936a6a5..ccd4785415a743a9519e750d5f0e3346
  #include "ui/gfx/x/x11_window_event_manager.h"
  #include "ui/gfx/x/xproto.h"
  
-@@ -150,6 +151,10 @@ bool X11WholeScreenMoveLoop::RunMoveLoop(
+@@ -151,6 +152,10 @@ bool X11WholeScreenMoveLoop::RunMoveLoop(
    auto* connection = x11::Connection::Get();
    CreateDragInputWindow(connection);
  
@@ -36,7 +36,7 @@ index 08e1c09749c5c39d99deec75c1a914c43936a6a5..ccd4785415a743a9519e750d5f0e3346
    // true aka the source that initiated the move loop doesn't have explicit
    // grab.
 diff --git a/ui/gfx/x/window_cache.cc b/ui/gfx/x/window_cache.cc
-index 9c603366a657954b4be44d0a30fcf428265f95e7..03885b55354c37e04bc016b509ac2ae8bd6191c2 100644
+index 048a9068a8671ec40acc1f91fdc0ddce0b3645c7..e2ababce59750952dba1dc0976db47338ecfef87 100644
 --- a/ui/gfx/x/window_cache.cc
 +++ b/ui/gfx/x/window_cache.cc
 @@ -11,8 +11,6 @@
