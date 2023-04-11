@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 520cb8b5e06f74931bde13bfd445b485b09c2832..575571b9afbd45e54968807aa91e4509f3db7ec8 100644
+index 058e2edda155ea73c29f70d81b2cbb6d3a709d9f..dfbcac6934da1a28f09afa4d60f26f1e1eaeebd5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1030,6 +1030,7 @@ component("base") {
@@ -253,7 +253,7 @@ index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 00f83601160eb795067bce9532baeaa078259e68..37e40a1bcf770a060fe7803bafb08274254a3fdf 100644
+index 171bc18462841b58dd31c58bbb000abac852337d..2eaa15b5aba46a796905ed45d893db17d566af15 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -193,6 +193,7 @@ component("gfx") {
