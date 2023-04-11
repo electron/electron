@@ -44,9 +44,6 @@ class BrowserWindow : public BaseWindow,
 
   // content::WebContentsObserver:
   void BeforeUnloadDialogCancelled() override;
-  void OnRendererUnresponsive(content::RenderProcessHost*) override;
-  void OnRendererResponsive(
-      content::RenderProcessHost* render_process_host) override;
   void WebContentsDestroyed() override;
 
   // ExtendedWebContentsObserver:
