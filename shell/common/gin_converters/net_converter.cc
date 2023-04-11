@@ -663,4 +663,154 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
   return ConvertToV8(isolate, dict);
 }
 
+// static
+v8::Local<v8::Value> Converter<net::IPEndPoint>::ToV8(
+    v8::Isolate* isolate,
+    const net::IPEndPoint& val) {
+  gin::Dictionary dict(isolate, v8::Object::New(isolate));
+  dict.Set("address", val.ToStringWithoutPort());
+  switch (val.GetFamily()) {
+    case net::ADDRESS_FAMILY_IPV4: {
+      dict.Set("family", "ipv4");
+      break;
+    }
+    case net::ADDRESS_FAMILY_IPV6: {
+      dict.Set("family", "ipv6");
+      break;
+    }
+    case net::ADDRESS_FAMILY_UNSPECIFIED: {
+      dict.Set("family", "unspec");
+      break;
+    }
+  }
+  return ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<net::DnsQueryType>::FromV8(v8::Isolate* isolate,
+                                          v8::Local<v8::Value> val,
+                                          net::DnsQueryType* out) {
+  std::string query_type;
+  if (!ConvertFromV8(isolate, val, &query_type))
+    return false;
+
+  if (query_type == "A") {
+    *out = net::DnsQueryType::A;
+    return true;
+  }
+
+  if (query_type == "AAAA") {
+    *out = net::DnsQueryType::AAAA;
+    return true;
+  }
+
+  return false;
+}
+
+// static
+bool Converter<net::HostResolverSource>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                net::HostResolverSource* out) {
+  std::string query_type;
+  if (!ConvertFromV8(isolate, val, &query_type))
+    return false;
+
+  if (query_type == "any") {
+    *out = net::HostResolverSource::ANY;
+    return true;
+  }
+
+  if (query_type == "system") {
+    *out = net::HostResolverSource::SYSTEM;
+    return true;
+  }
+
+  if (query_type == "dns") {
+    *out = net::HostResolverSource::DNS;
+    return true;
+  }
+
+  if (query_type == "mdns") {
+    *out = net::HostResolverSource::MULTICAST_DNS;
+    return true;
+  }
+
+  if (query_type == "localOnly") {
+    *out = net::HostResolverSource::LOCAL_ONLY;
+    return true;
+  }
+
+  return false;
+}
+
+// static
+bool Converter<network::mojom::ResolveHostParameters::CacheUsage>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    network::mojom::ResolveHostParameters::CacheUsage* out) {
+  std::string query_type;
+  if (!ConvertFromV8(isolate, val, &query_type))
+    return false;
+
+  if (query_type == "allowed") {
+    *out = network::mojom::ResolveHostParameters::CacheUsage::ALLOWED;
+    return true;
+  }
+
+  if (query_type == "staleAllowed") {
+    *out = network::mojom::ResolveHostParameters::CacheUsage::STALE_ALLOWED;
+    return true;
+  }
+
+  if (query_type == "disallowed") {
+    *out = network::mojom::ResolveHostParameters::CacheUsage::DISALLOWED;
+    return true;
+  }
+
+  return false;
+}
+
+// static
+bool Converter<network::mojom::SecureDnsPolicy>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    network::mojom::SecureDnsPolicy* out) {
+  std::string query_type;
+  if (!ConvertFromV8(isolate, val, &query_type))
+    return false;
+
+  if (query_type == "allow") {
+    *out = network::mojom::SecureDnsPolicy::ALLOW;
+    return true;
+  }
+
+  if (query_type == "disable") {
+    *out = network::mojom::SecureDnsPolicy::DISABLE;
+    return true;
+  }
+
+  return false;
+}
+
+// static
+bool Converter<network::mojom::ResolveHostParametersPtr>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    network::mojom::ResolveHostParametersPtr* out) {
+  gin::Dictionary dict(nullptr);
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  network::mojom::ResolveHostParametersPtr params =
+      network::mojom::ResolveHostParameters::New();
+
+  dict.Get("queryType", &(params->dns_query_type));
+  dict.Get("source", &(params->source));
+  dict.Get("cacheUsage", &(params->cache_usage));
+  dict.Get("secureDnsPolicy", &(params->secure_dns_policy));
+
+  *out = std::move(params);
+  return true;
+}
+
 }  // namespace gin

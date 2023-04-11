@@ -4,7 +4,7 @@ const { app, BrowserWindow, ipcMain } = require('electron')
 ipcMain.on('create-demo-window', (event) => {
   const win = new BrowserWindow({ width: 400, height: 275 })
 
-  function updateReply() {
+  function updateReply () {
     event.sender.send('bounds-changed', {
       size: win.getSize(),
       position: win.getPosition()

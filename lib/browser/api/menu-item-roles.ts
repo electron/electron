@@ -26,7 +26,7 @@ export const roleList: Record<RoleId, Role> = {
     get label () {
       return isLinux ? 'About' : `About ${app.name}`;
     },
-    ...(isWindows && { appMethod: () => app.showAboutPanel() })
+    ...((isWindows || isLinux) && { appMethod: () => app.showAboutPanel() })
   },
   close: {
     label: isMac ? 'Close Window' : 'Close',

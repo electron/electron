@@ -52,7 +52,6 @@ app.on('activate', function () {
   }
 })
 
-
 ipcMain.on('open-file-dialog', event => {
   dialog.showOpenDialog(
     {

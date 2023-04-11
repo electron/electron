@@ -39,7 +39,7 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
     int recursion_depth,
-    BridgeErrorTarget error_target = BridgeErrorTarget::kSource);
+    BridgeErrorTarget error_target);
 
 v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Object>& api_object,
@@ -47,7 +47,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
     const v8::Local<v8::Context>& destination_context,
     context_bridge::ObjectCache* object_cache,
     bool support_dynamic_properties,
-    int recursion_depth);
+    int recursion_depth,
+    BridgeErrorTarget error_target);
 
 }  // namespace electron::api
 

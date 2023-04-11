@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain} = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
 let bluetoothPinCallback 
@@ -38,7 +38,6 @@ function createWindow () {
   })
 
   mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
-
     bluetoothPinCallback = callback
     // Send a message to the renderer to prompt the user to confirm the pairing.
     mainWindow.webContents.send('bluetooth-pairing-request', details)

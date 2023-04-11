@@ -433,6 +433,8 @@ filenames = {
     "shell/browser/net/proxying_url_loader_factory.h",
     "shell/browser/net/proxying_websocket.cc",
     "shell/browser/net/proxying_websocket.h",
+    "shell/browser/net/resolve_host_function.cc",
+    "shell/browser/net/resolve_host_function.h",
     "shell/browser/net/resolve_proxy_helper.cc",
     "shell/browser/net/resolve_proxy_helper.h",
     "shell/browser/net/system_network_context_manager.cc",
