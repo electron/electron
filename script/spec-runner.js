@@ -64,10 +64,24 @@ if (args.runners !== undefined) {
 async function main () {
   if (args.electronVersion) {
     const versions = await ElectronVersions.create();
-    if (!versions.isVersion(args.electronVersion)) {
+    if (args.electronVersion === 'latest') {
+      args.electronVersion = versions.latest.version;
+    } else if (args.electronVersion.startsWith('latest@')) {
+      const majorVersion = parseInt(args.electronVersion.slice('latest@'.length));
+      const ver = versions.inMajor(majorVersion).slice(-1)[0];
+      if (ver) {
+        args.electronVersion = ver.version;
+      } else {
+        console.log(`${fail} '${majorVersion}' is not a recognized Electron major version`);
+        process.exit(1);
+      }
+    } else if (!versions.isVersion(args.electronVersion)) {
       console.log(`${fail} '${args.electronVersion}' is not a recognized Electron version`);
       process.exit(1);
     }
+
+    const versionString = `v${args.electronVersion}`;
+    console.log(`Running against Electron ${versionString.green}`);
   }
 
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash();
