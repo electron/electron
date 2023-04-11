@@ -106,10 +106,10 @@ UtilityProcessWrapper::UtilityProcessWrapper(
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
-        fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDOUT_FILENO));
+        fds_to_remap.emplace_back(pipe_fd[1], STDOUT_FILENO);
         stdout_read_fd_ = pipe_fd[0];
       } else if (io_handle == IOHandle::STDERR) {
-        fds_to_remap.push_back(std::make_pair(pipe_fd[1], STDERR_FILENO));
+        fds_to_remap.emplace_back(pipe_fd[1], STDERR_FILENO);
         stderr_read_fd_ = pipe_fd[0];
       }
 #endif
@@ -135,9 +135,9 @@ UtilityProcessWrapper::UtilityProcessWrapper(
         return;
       }
       if (io_handle == IOHandle::STDOUT) {
-        fds_to_remap.push_back(std::make_pair(devnull, STDOUT_FILENO));
+        fds_to_remap.emplace_back(devnull, STDOUT_FILENO);
       } else if (io_handle == IOHandle::STDERR) {
-        fds_to_remap.push_back(std::make_pair(devnull, STDERR_FILENO));
+        fds_to_remap.emplace_back(devnull, STDERR_FILENO);
       }
 #endif
     }
