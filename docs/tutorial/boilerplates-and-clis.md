@@ -21,8 +21,8 @@ can clone and customize to your heart's content.
 
 A command line tool on the other hand continues to support you throughout the
 development and release. They are more helpful and supportive but enforce
-guidelines on how your code should be structured and built. *Especially for
-beginners, using a command line tool is likely to be helpful*.
+guidelines on how your code should be structured and built. _Especially for
+beginners, using a command line tool is likely to be helpful_.
 
 ## Electron Forge
 

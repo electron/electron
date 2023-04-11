@@ -219,7 +219,7 @@ of the area you modified in order to land. Whenever a maintainer reviews a pull
 request they may request changes. These may be small, such as fixing a typo, or
 may involve substantive changes. Such requests are intended to be helpful, but
 at times may come across as abrupt or unhelpful, especially if they do not include
-concrete suggestions on *how* to change them.
+concrete suggestions on _how_ to change them.
 
 Try not to be discouraged. If you feel that a review is unfair, say so or seek
 the input of another project contributor. Often such comments are the result of
