@@ -19,7 +19,7 @@ void ObjectCache::CacheProxiedObject(v8::Local<v8::Value> from,
     auto obj = from.As<v8::Object>();
     int hash = obj->GetIdentityHash();
 
-    proxy_map_[hash].push_front(std::make_pair(from, proxy_value));
+    proxy_map_[hash].emplace_front(from, proxy_value);
   }
 }
 
