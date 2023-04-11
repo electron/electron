@@ -241,10 +241,29 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
               global_destination_context.IsEmpty())
             return;
           context_bridge::ObjectCache object_cache;
-          auto val = PassValueToOtherContext(
-              global_source_context.Get(isolate),
-              global_destination_context.Get(isolate), result, &object_cache,
-              false, 0, BridgeErrorTarget::kSource);
+          v8::MaybeLocal<v8::Value> val;
+          {
+            v8::TryCatch try_catch(isolate);
+            val = PassValueToOtherContext(
+                global_source_context.Get(isolate),
+                global_destination_context.Get(isolate), result, &object_cache,
+                false, 0, BridgeErrorTarget::kDestination);
+            if (try_catch.HasCaught()) {
+              if (try_catch.Message().IsEmpty()) {
+                proxied_promise->RejectWithErrorMessage(
+                    "An error was thrown while sending a promise result over "
+                    "the context bridge but it was not actually an Error "
+                    "object. This normally means that a promise was resolved "
+                    "with a value that is not supported by the Context "
+                    "Bridge.");
+              } else {
+                proxied_promise->Reject(
+                    v8::Exception::Error(try_catch.Message()->Get()));
+              }
+              return;
+            }
+          }
+          DCHECK(!val.IsEmpty());
           if (!val.IsEmpty())
             proxied_promise->Resolve(val.ToLocalChecked());
         },
@@ -268,10 +287,28 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
               global_destination_context.IsEmpty())
             return;
           context_bridge::ObjectCache object_cache;
-          auto val = PassValueToOtherContext(
-              global_source_context.Get(isolate),
-              global_destination_context.Get(isolate), result, &object_cache,
-              false, 0, BridgeErrorTarget::kSource);
+          v8::MaybeLocal<v8::Value> val;
+          {
+            v8::TryCatch try_catch(isolate);
+            val = PassValueToOtherContext(
+                global_source_context.Get(isolate),
+                global_destination_context.Get(isolate), result, &object_cache,
+                false, 0, BridgeErrorTarget::kDestination);
+            if (try_catch.HasCaught()) {
+              if (try_catch.Message().IsEmpty()) {
+                proxied_promise->RejectWithErrorMessage(
+                    "An error was thrown while sending a promise rejection "
+                    "over the context bridge but it was not actually an Error "
+                    "object. This normally means that a promise was rejected "
+                    "with a value that is not supported by the Context "
+                    "Bridge.");
+              } else {
+                proxied_promise->Reject(
+                    v8::Exception::Error(try_catch.Message()->Get()));
+              }
+              return;
+            }
+          }
           if (!val.IsEmpty())
             proxied_promise->Reject(val.ToLocalChecked());
         },
@@ -470,10 +507,50 @@ void ProxyFunctionWrapper(const v8::FunctionCallbackInfo<v8::Value>& info) {
     if (maybe_return_value.IsEmpty())
       return;
 
-    auto ret = PassValueToOtherContext(
-        func_owning_context, calling_context,
-        maybe_return_value.ToLocalChecked(), &object_cache,
-        support_dynamic_properties, 0, BridgeErrorTarget::kDestination);
+    // In the case where we encounted an exception converting the return value
+    // of the function we need to ensure that the exception / thrown value is
+    // safely transferred from the function_owning_context (where it was thrown)
+    // into the calling_context (where it needs to be thrown) To do this we pull
+    // the message off the exception and later re-throw it in the right context.
+    // In some cases the caught thing is not an exception i.e. it's technically
+    // valid to `throw 123`.  In these cases to avoid infinite
+    // PassValueToOtherContext recursion we bail early as being unable to send
+    // the value from one context to the other.
+    // TODO(MarshallOfSound): In this case and other cases where the error can't
+    // be sent _across_ worlds we should probably log it globally in some way to
+    // allow easier debugging.  This is not trivial though so is left to a
+    // future change.
+    bool did_error_converting_result = false;
+    v8::MaybeLocal<v8::Value> ret;
+    v8::Local<v8::String> exception;
+    {
+      v8::TryCatch try_catch(args.isolate());
+      ret = PassValueToOtherContext(func_owning_context, calling_context,
+                                    maybe_return_value.ToLocalChecked(),
+                                    &object_cache, support_dynamic_properties,
+                                    0, BridgeErrorTarget::kDestination);
+      if (try_catch.HasCaught()) {
+        did_error_converting_result = true;
+        if (!try_catch.Message().IsEmpty()) {
+          exception = try_catch.Message()->Get();
+        }
+      }
+    }
+    if (did_error_converting_result) {
+      v8::Context::Scope calling_context_scope(calling_context);
+      if (exception.IsEmpty()) {
+        const char err_msg[] =
+            "An unknown exception occurred while sending a function return "
+            "value over the context bridge, an error "
+            "occurred but a valid exception was not thrown.";
+        args.isolate()->ThrowException(v8::Exception::Error(
+            gin::StringToV8(args.isolate(), err_msg).As<v8::String>()));
+      } else {
+        args.isolate()->ThrowException(v8::Exception::Error(exception));
+      }
+      return;
+    }
+    DCHECK(!ret.IsEmpty());
     if (ret.IsEmpty())
       return;
     info.GetReturnValue().Set(ret.ToLocalChecked());
