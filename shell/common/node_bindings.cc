@@ -184,9 +184,10 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
     v8::Local<v8::Context> context,
     v8::Local<v8::Value> source,
     bool is_code_like) {
-  // If we're running with contextIsolation enabled in the renderer process,
-  // fall back to Blink's logic.
   if (node::Environment::GetCurrent(context) == nullptr) {
+    // No node environment means we're in the renderer process, either in a
+    // sandboxed renderer or in an unsandboxed renderer with context isolation
+    // enabled.
     if (gin_helper::Locker::IsBrowserProcess()) {
       NOTREACHED();
       return {false, {}};
@@ -195,6 +196,22 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
         context, source, is_code_like);
   }
 
+  // If we get here then we have a node environment, so either a) we're in the
+  // main process, or b) we're in the renderer process in a context that has
+  // both node and blink, i.e. contextIsolation disabled.
+
+  // If we're in the main process, delegate to node.
+  if (gin_helper::Locker::IsBrowserProcess()) {
+    return node::ModifyCodeGenerationFromStrings(context, source, is_code_like);
+  }
+
+  // If we're in the renderer with contextIsolation disabled, ask blink first
+  // (for CSP), and iff that allows codegen, delegate to node.
+  v8::ModifyCodeGenerationFromStringsResult result =
+      blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
+          context, source, is_code_like);
+  if (!result.codegen_allowed)
+    return result;
   return node::ModifyCodeGenerationFromStrings(context, source, is_code_like);
 }
 
