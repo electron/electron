@@ -814,13 +814,32 @@ describe('contextBridge', () => {
                 bad: Object(Symbol('foo'))
               };
             },
-            argumentConvert: () => {}
+            throwDynamic: () => {
+              return {
+                get bad () {
+                  throw new Error('damm');
+                }
+              };
+            },
+            argumentConvert: () => {},
+            rejectNotClonable: async () => {
+              throw Object(Symbol('foo'));
+            },
+            resolveNotClonable: async () => Object(Symbol('foo'))
           });
         });
-        const result = await callWithBindings((root: any) => {
+        const result = await callWithBindings(async (root: any) => {
           const getError = (fn: Function) => {
             try {
               fn();
+            } catch (e) {
+              return e;
+            }
+            return null;
+          };
+          const getAsyncError = async (fn: Function) => {
+            try {
+              await fn();
             } catch (e) {
               return e;
             }
@@ -831,10 +850,13 @@ describe('contextBridge', () => {
           const notClonableIsError = Object.getPrototypeOf(getError(root.example.throwNotClonable)) === Error.prototype;
           const notClonableNestedArrayIsError = Object.getPrototypeOf(getError(root.example.throwNotClonableNestedArray)) === Error.prototype;
           const notClonableNestedObjectIsError = Object.getPrototypeOf(getError(root.example.throwNotClonableNestedObject)) === Error.prototype;
+          const dynamicIsError = Object.getPrototypeOf(getError(root.example.throwDynamic)) === Error.prototype;
           const argumentConvertIsError = Object.getPrototypeOf(getError(() => root.example.argumentConvert(Object(Symbol('test'))))) === Error.prototype;
-          return [normalIsError, weirdIsError, notClonableIsError, notClonableNestedArrayIsError, notClonableNestedObjectIsError, argumentConvertIsError];
+          const rejectNotClonableIsError = Object.getPrototypeOf(await getAsyncError(root.example.rejectNotClonable)) === Error.prototype;
+          const resolveNotClonableIsError = Object.getPrototypeOf(await getAsyncError(root.example.resolveNotClonable)) === Error.prototype;
+          return [normalIsError, weirdIsError, notClonableIsError, notClonableNestedArrayIsError, notClonableNestedObjectIsError, dynamicIsError, argumentConvertIsError, rejectNotClonableIsError, resolveNotClonableIsError];
         });
-        expect(result).to.deep.equal([true, true, true, true, true, true], 'should all be errors in the current context');
+        expect(result).to.deep.equal([true, true, true, true, true, true, true, true, true], 'should all be errors in the current context');
       });
 
       it('should not leak prototypes', async () => {
