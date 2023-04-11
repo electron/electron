@@ -108,6 +108,18 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
       expect(methodName).to.equal('Notify');
 
       const args = unmarshalDBusNotifyArgs(lastCall[2]);
+      console.log(`methodName: ${methodName}`);
+      console.log(`appName: ${appName}`);
+      console.log(`unmarshalDBusNotifyArgs: ${args}`);
+      for (const [key, value] of Object.entries(args)) {
+        if (typeof value === 'object' && value !== null) {
+          for (const [key, value] of Object.entries(value)) {
+            console.log(`${key}: ${value}`);
+          }
+        } else { console.log(`${key}: ${value}`); }
+      }
+      console.log('keys: ', Object.keys(args));
+      console.log('values: ', Object.values(args));
       expect(args).to.deep.equal({
         app_name: appName,
         replaces_id: 0,
