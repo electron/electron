@@ -1410,8 +1410,8 @@ describe('asar package', function () {
         expect(process.noAsar).to.be.false();
       });
     });
-    /*
 
+    /*
     describe('process.env.ELECTRON_NO_ASAR', function () {
       before(function () {
         if (!features.isRunAsNodeEnabled()) {

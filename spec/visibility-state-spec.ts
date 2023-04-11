@@ -109,12 +109,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     await once(ipcMain, 'visibility-change-visible');
   });
 
-  describe('on platforms that support occlusion detection', () => {
+  ifdescribe(process.platform === 'darwin')('on platforms that support occlusion detection', () => {
     let child: cp.ChildProcess;
-
-    before(function () {
-      if (process.platform !== 'darwin') this.skip();
-    });
 
     const makeOtherWindow = (opts: { x: number; y: number; width: number; height: number; }) => {
       child = cp.spawn(process.execPath, [path.resolve(__dirname, 'fixtures', 'chromium', 'other-window.js'), `${opts.x}`, `${opts.y}`, `${opts.width}`, `${opts.height}`]);

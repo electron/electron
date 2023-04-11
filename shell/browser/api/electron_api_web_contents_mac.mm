@@ -7,6 +7,8 @@
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "ui/base/cocoa/command_dispatcher.h"
+#include "ui/base/cocoa/nsmenu_additions.h"
+#include "ui/base/cocoa/nsmenuitem_additions.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 #import <Cocoa/Cocoa.h>
@@ -52,9 +54,26 @@ bool WebContents::PlatformHandleKeyboardEvent(
     return false;
 
   // Send the event to the menu before sending it to the window
-  if (event.os_event.type == NSEventTypeKeyDown &&
-      [[NSApp mainMenu] performKeyEquivalent:event.os_event])
-    return true;
+  if (event.os_event.type == NSEventTypeKeyDown) {
+    // If the keyboard event is a system shortcut, it's already sent to the
+    // NSMenu instance in
+    // content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm via
+    // keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv. If we let the
+    // NSMenu handle it here as well, it'll be sent twice with unexpected side
+    // effects.
+    bool is_a_keyboard_shortcut_event =
+        [[NSApp mainMenu] cr_menuItemForKeyEquivalentEvent:event.os_event] !=
+        nil;
+    bool is_a_system_shortcut_event =
+        is_a_keyboard_shortcut_event &&
+        (ui::cocoa::ModifierMaskForKeyEvent(event.os_event) &
+         NSEventModifierFlagFunction) != 0;
+    if (is_a_system_shortcut_event)
+      return false;
+
+    if ([[NSApp mainMenu] performKeyEquivalent:event.os_event])
+      return true;
+  }
 
   // Let the window redispatch the OS event
   if (event.os_event.window &&

@@ -21,17 +21,17 @@ There are several different ways to install native modules:
 ### Installing modules and rebuilding for Electron
 
 You can install modules like other Node projects, and then rebuild the modules
-for Electron with the [`electron-rebuild`][electron-rebuild] package. This
+for Electron with the [`@electron/rebuild`][@electron/rebuild] package. This
 module can automatically determine the version of Electron and handle the
 manual steps of downloading headers and rebuilding native modules for your app.
 If you are using [Electron Forge][electron-forge], this tool is used automatically
 in both development mode and when making distributables.
 
-For example, to install the standalone `electron-rebuild` tool and then rebuild
+For example, to install the standalone `@electron/rebuild` tool and then rebuild
 modules with it via the command line:
 
 ```sh
-npm install --save-dev electron-rebuild
+npm install --save-dev @electron/rebuild
 
 # Every time you run "npm install", run this:
 ./node_modules/.bin/electron-rebuild
@@ -53,8 +53,7 @@ For example, to install all dependencies for Electron:
 ```sh
 # Electron's version.
 export npm_config_target=1.2.3
-# The architecture of Electron, see https://electronjs.org/docs/tutorial/support#supported-platforms
-# for supported architectures.
+# The architecture of your machine
 export npm_config_arch=x64
 export npm_config_target_arch=x64
 # Download headers for Electron.
@@ -98,7 +97,7 @@ npm rebuild --nodedir=/path/to/src/out/Default/gen/node_headers
 If you installed a native module and found it was not working, you need to check
 the following things:
 
-* When in doubt, run `electron-rebuild` first.
+* When in doubt, run `@electron/rebuild` first.
 * Make sure the native module is compatible with the target platform and
   architecture for your Electron app.
 * Make sure `win_delay_load_hook` is not set to `false` in the module's `binding.gyp`.
@@ -161,14 +160,14 @@ modules with prebuilt binaries, and many popular modules are using it.
 
 Sometimes those modules work fine under Electron, but when there are no
 Electron-specific binaries available, you'll need to build from source.
-Because of this, it is recommended to use `electron-rebuild` for these modules.
+Because of this, it is recommended to use `@electron/rebuild` for these modules.
 
 If you are following the `npm` way of installing modules, you'll need to pass
 `--build-from-source` to `npm`, or set the `npm_config_build_from_source`
 environment variable.
 
 [abi]: https://en.wikipedia.org/wiki/Application_binary_interface
-[electron-rebuild]: https://github.com/electron/electron-rebuild
+[@electron/rebuild]: https://github.com/electron/rebuild
 [electron-forge]: https://electronforge.io/
 [electron-packager]: https://github.com/electron/electron-packager
 [node-pre-gyp]: https://github.com/mapbox/node-pre-gyp

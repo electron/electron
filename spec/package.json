@@ -6,6 +6,7 @@
   "devDependencies": {
     "@electron-ci/echo": "file:./fixtures/native-addon/echo",
     "@electron-ci/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen/",
+    "@marshallofsound/mocha-appveyor-reporter": "^0.4.3",
     "@types/sinon": "^9.0.4",
     "@types/ws": "^7.2.0",
     "basic-auth": "^2.0.1",
@@ -19,7 +20,6 @@
     "is-valid-window": "0.0.5",
     "mkdirp": "^0.5.1",
     "mocha": "^10.0.0",
-    "mocha-appveyor-reporter": "^0.4.2",
     "mocha-junit-reporter": "^1.18.0",
     "mocha-multi-reporters": "^1.1.7",
     "pdfjs-dist": "^2.2.228",

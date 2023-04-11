@@ -7,7 +7,7 @@ Subject: Revert "Roll clang+rust llvmorg-16-init-17653-g39da55e8-3 :
 This reverts commit eb840ac593ad7af941acf510ea6ce84c48bde748.
 
 diff --git a/build/toolchain/toolchain.gni b/build/toolchain/toolchain.gni
-index 7ddeb126840f554955f6339a54756e21382d5a7d..c9558ee8b59f2824df9f4f103099a9d360735919 100644
+index d32d7d0e9dd960cde356481d208672d97dac0655..69bffc4c243a0ab31cd1c3877b7001ea6622a052 100644
 --- a/build/toolchain/toolchain.gni
 +++ b/build/toolchain/toolchain.gni
 @@ -38,7 +38,12 @@ if (generate_linker_map) {
@@ -45,7 +45,7 @@ index 2dc93235a96d610b0bdfa9cad2c4be36df18b96f..392eb396c124a2e4179522d3f8d08ad0
      print('--pgo/--thinlto requires --bootstrap')
      return 1
 diff --git a/tools/clang/scripts/update.py b/tools/clang/scripts/update.py
-index 192249784d60626d6dbd3ef5143fa4db28a868ad..36b276b84a950a51f68b80d277ddf40d9d70fe47 100755
+index eb513199556f9f13819fb4e20617182195f3e748..34ea16b0401205397d8bc78a3ef8f1d6fc573b67 100755
 --- a/tools/clang/scripts/update.py
 +++ b/tools/clang/scripts/update.py
 @@ -35,11 +35,12 @@ import zlib

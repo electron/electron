@@ -33,9 +33,7 @@ namespace base {
 class Process;
 }  // namespace base
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 class UtilityProcessWrapper
     : public gin::Wrappable<UtilityProcessWrapper>,
@@ -93,8 +91,6 @@ class UtilityProcessWrapper
   base::WeakPtrFactory<UtilityProcessWrapper> weak_factory_{this};
 };
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api
 
 #endif  // ELECTRON_SHELL_BROWSER_API_ELECTRON_API_UTILITY_PROCESS_H_

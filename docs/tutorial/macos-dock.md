@@ -15,7 +15,7 @@ icon as the entry point for cross-platform features like
 The custom dock is commonly used to add shortcuts to tasks the user wouldn't
 want to open the whole app window for.
 
-__Dock menu of Terminal.app:__
+**Dock menu of Terminal.app:**
 
 ![Dock Menu][dock-menu-image]
 

@@ -52,7 +52,6 @@ app.on('activate', function () {
   }
 })
 
-
 ipcMain.on('open-information-dialog', event => {
   const options = {
     type: 'info',
@@ -64,7 +63,6 @@ ipcMain.on('open-information-dialog', event => {
     event.sender.send('information-dialog-selection', index)
   })
 })
-
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

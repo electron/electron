@@ -22,6 +22,11 @@ app.on('window-all-closed', () => null);
 // Use fake device for Media Stream to replace actual camera and microphone.
 app.commandLine.appendSwitch('use-fake-device-for-media-stream');
 app.commandLine.appendSwitch('host-rules', 'MAP localhost2 127.0.0.1');
+app.commandLine.appendSwitch('host-resolver-rules', [
+  'MAP ipv4.localhost2 10.0.0.1',
+  'MAP ipv6.localhost2 [::1]',
+  'MAP notfound.localhost2 ~NOTFOUND'
+].join(', '));
 
 global.standardScheme = 'app';
 global.zoomScheme = 'zoom';
@@ -73,6 +78,7 @@ app.whenReady().then(async () => {
     )
   );
   mocha.suite.beforeEach(function () {
+    // TODO(clavin): add support for disabling *suites* by title, not just tests
     if (disabledTests.has(this.currentTest?.fullTitle())) {
       this.skip();
     }
