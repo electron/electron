@@ -134,10 +134,10 @@
   optionalDependencies:
     "@types/glob" "^7.1.1"
 
-"@electron/docs-parser@^1.0.0":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.0.1.tgz#f9856d00ec1663a0fb6301f55bc674f44c7dc543"
-  integrity sha512-jqUHwo3MWUhWusHtTVpSHTZqWSVuc1sPUfavI5Zwdx64q7qd4phqOPGoxScWS3JthKt7Wydvo/eReIUNDJ0gRg==
+"@electron/docs-parser@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.1.0.tgz#ba095def41746bde56bee731feaf22272bf0b765"
+  integrity sha512-qrjIKJk8t4/xAYldDVNQgcF8zdAAuG260bzPxdh/xI3p/yddm61bftoct+Tx2crnWFnOfOkr6nGERsDknNiT8A==
   dependencies:
     "@types/markdown-it" "^12.0.0"
     chai "^4.2.0"
@@ -187,10 +187,10 @@
     "@octokit/auth-app" "^3.6.1"
     "@octokit/rest" "^18.12.0"
 
-"@electron/typescript-definitions@^8.10.0":
-  version "8.10.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.10.0.tgz#e9cf2b329ec4b0b76947ef751725383a6cf8994d"
-  integrity sha512-FVc2y0GUfxFZDoma0scYiMxkoalle19Fq332fNFGWoCJ9rCj5OUvriewSjPtGBsRuHv2xaMS5MhBuy2/pRuFuQ==
+"@electron/typescript-definitions@^8.14.0":
+  version "8.14.0"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.0.tgz#a88f74e915317ba943b57ffe499b319d04f01ee3"
+  integrity sha512-J3b4is6L0NB4+r+7s1Hl1YlzaveKnQt1gswadRyMRwb4gFU3VAe2oBMJLOhFRJMs/9PK/Xp+y9QwyC92Tyqe6A==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"

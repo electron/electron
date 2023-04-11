@@ -1481,12 +1481,53 @@ describe('<webview> tag', function () {
     });
 
     describe('will-navigate event', () => {
-      it('emits when a url that leads to outside of the page is clicked', async () => {
+      it('emits when a url that leads to outside of the page is loaded', async () => {
         const { url } = await loadWebViewAndWaitForEvent(w, {
           src: `file://${fixtures}/pages/webview-will-navigate.html`
         }, 'will-navigate');
 
         expect(url).to.equal('http://host/');
+      });
+    });
+
+    describe('will-frame-navigate event', () => {
+      it('emits when a link that leads to outside of the page is loaded', async () => {
+        const { url, isMainFrame } = await loadWebViewAndWaitForEvent(w, {
+          src: `file://${fixtures}/pages/webview-will-navigate.html`
+        }, 'will-frame-navigate');
+        expect(url).to.equal('http://host/');
+        expect(isMainFrame).to.be.true();
+      });
+
+      it('emits when a link within an iframe, which leads to outside of the page, is loaded', async () => {
+        await loadWebView(w, {
+          src: `file://${fixtures}/pages/webview-will-navigate-in-frame.html`,
+          nodeIntegration: ''
+        });
+
+        const { url, frameProcessId, frameRoutingId } = await w.executeJavaScript(`
+          new Promise((resolve, reject) => {
+            let hasFrameNavigatedOnce = false;
+            const webview = document.getElementById('webview');
+            webview.addEventListener('will-frame-navigate', ({url, isMainFrame, frameProcessId, frameRoutingId}) => {
+              if (isMainFrame) return;
+              if (hasFrameNavigatedOnce) resolve({
+                url,
+                isMainFrame,
+                frameProcessId,
+                frameRoutingId,
+              });
+
+              // First navigation is the initial iframe load within the <webview>
+              hasFrameNavigatedOnce = true;
+            });
+            webview.executeJavaScript('loadSubframe()');
+          });
+        `);
+
+        expect(url).to.equal('http://host/');
+        expect(frameProcessId).to.be.a('number');
+        expect(frameRoutingId).to.be.a('number');
       });
     });
 

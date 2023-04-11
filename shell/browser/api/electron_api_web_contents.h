@@ -348,6 +348,8 @@ class WebContents : public ExclusiveAccessContext,
 
   bool EmitNavigationEvent(const std::string& event,
                            content::NavigationHandle* navigation_handle);
+  bool EmitNavigationEventNew(const std::string& event,
+                              content::NavigationHandle* navigation_handle);
 
   // this.emit(name, new Event(sender, message), args...);
   template <typename... Args>

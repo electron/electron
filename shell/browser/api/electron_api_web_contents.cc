@@ -114,6 +114,7 @@
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/event_new.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
 #include "shell/common/mouse_util.h"
@@ -620,6 +621,23 @@ void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
   rwhv->SetBackgroundColor(color);
   static_cast<content::RenderWidgetHostViewBase*>(rwhv)
       ->SetContentBackgroundColor(color);
+}
+
+content::RenderFrameHost* GetRenderFrameHost(
+    content::NavigationHandle* navigation_handle) {
+  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
+  content::FrameTreeNode* frame_tree_node =
+      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
+  content::RenderFrameHostManager* render_manager =
+      frame_tree_node->render_manager();
+  content::RenderFrameHost* frame_host = nullptr;
+  if (render_manager) {
+    frame_host = render_manager->speculative_frame_host();
+    if (!frame_host)
+      frame_host = render_manager->current_frame_host();
+  }
+
+  return frame_host;
 }
 
 }  // namespace
@@ -1761,18 +1779,8 @@ bool WebContents::EmitNavigationEvent(
     const std::string& event,
     content::NavigationHandle* navigation_handle) {
   bool is_main_frame = navigation_handle->IsInMainFrame();
-  int frame_tree_node_id = navigation_handle->GetFrameTreeNodeId();
-  content::FrameTreeNode* frame_tree_node =
-      content::FrameTreeNode::GloballyFindByID(frame_tree_node_id);
-  content::RenderFrameHostManager* render_manager =
-      frame_tree_node->render_manager();
-  content::RenderFrameHost* frame_host = nullptr;
-  if (render_manager) {
-    frame_host = render_manager->speculative_frame_host();
-    if (!frame_host)
-      frame_host = render_manager->current_frame_host();
-  }
   int frame_process_id = -1, frame_routing_id = -1;
+  content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
   if (frame_host) {
     frame_process_id = frame_host->GetProcess()->GetID();
     frame_routing_id = frame_host->GetRoutingID();
@@ -1781,6 +1789,38 @@ bool WebContents::EmitNavigationEvent(
   auto url = navigation_handle->GetURL();
   return Emit(event, url, is_same_document, is_main_frame, frame_process_id,
               frame_routing_id);
+}
+
+bool WebContents::EmitNavigationEventNew(
+    const std::string& event_name,
+    content::NavigationHandle* navigation_handle) {
+  bool is_main_frame = navigation_handle->IsInMainFrame();
+  content::RenderFrameHost* frame_host = GetRenderFrameHost(navigation_handle);
+  bool is_same_document = navigation_handle->IsSameDocument();
+  auto url = navigation_handle->GetURL();
+  content::RenderFrameHost* initiator_frame_host =
+      navigation_handle->GetInitiatorFrameToken().has_value()
+          ? content::RenderFrameHost::FromFrameToken(
+                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorFrameToken().value())
+          : nullptr;
+
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope handle_scope(isolate);
+
+  gin::Handle<gin_helper::internal::EventNew> event =
+      gin_helper::internal::EventNew::New(isolate);
+  v8::Local<v8::Object> event_object = event.ToV8().As<v8::Object>();
+
+  gin_helper::Dictionary dict(isolate, event_object);
+  dict.Set("url", url);
+  dict.Set("isSameDocument", is_same_document);
+  dict.Set("isMainFrame", is_main_frame);
+  dict.Set("frame", frame_host);
+  dict.SetGetter("initiator", initiator_frame_host);
+
+  EmitWithoutCustomEvent(event_name, event);
+  return event->GetDefaultPrevented();
 }
 
 void WebContents::Message(bool internal,
