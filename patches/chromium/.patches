@@ -147,3 +147,8 @@ cherry-pick-56bd20b295b4.patch
 cherry-pick-1235110fce18.patch
 cherry-pick-b041159d06ad.patch
 cherry-pick-d9081493c4b2.patch
+chore_patch_out_profile_methods_in_profile_selections_cc.patch
+add_gin_converter_support_for_arraybufferview.patch
+chore_defer_usb_service_getdevices_request_until_usb_service_is.patch
+revert_roll_clang_rust_llvmorg-16-init-17653-g39da55e8-3.patch
+revert_x11_keep_windowcache_alive_for_a_time_interval.patch
