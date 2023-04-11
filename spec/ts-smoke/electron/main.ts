@@ -23,7 +23,6 @@ import {
   session,
   systemPreferences,
   webContents,
-  Event,
   TouchBar
 } from 'electron'
 

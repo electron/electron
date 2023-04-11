@@ -608,6 +608,8 @@ filenames = {
     "shell/common/gin_helper/event_emitter.h",
     "shell/common/gin_helper/event_emitter_caller.cc",
     "shell/common/gin_helper/event_emitter_caller.h",
+    "shell/common/gin_helper/event_new.cc",
+    "shell/common/gin_helper/event_new.h",
     "shell/common/gin_helper/function_template.cc",
     "shell/common/gin_helper/function_template.h",
     "shell/common/gin_helper/function_template_extensions.h",
