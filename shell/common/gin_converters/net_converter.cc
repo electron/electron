@@ -578,8 +578,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     return false;
   base::Value::List& list = list_value.GetList();
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
-  for (size_t i = 0; i < list.size(); ++i) {
-    base::Value& dict_value = list[i];
+  for (base::Value& dict_value : list) {
     if (!dict_value.is_dict())
       return false;
     base::Value::Dict& dict = dict_value.GetDict();
