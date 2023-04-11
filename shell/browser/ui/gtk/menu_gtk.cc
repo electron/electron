@@ -9,9 +9,7 @@
 #include "shell/browser/ui/gtk/menu_util.h"
 #include "ui/base/models/menu_model.h"
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 MenuGtk::MenuGtk(ui::MenuModel* model)
     : menu_model_(model), gtk_menu_(TakeGObject(gtk_menu_new())) {
@@ -65,6 +63,4 @@ void MenuGtk::OnMenuItemActivated(GtkWidget* menu_item) {
     ExecuteCommand(model, id);
 }
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
