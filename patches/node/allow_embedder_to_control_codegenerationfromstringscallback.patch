@@ -30,7 +30,7 @@ index b6981c37d5b286e22f24d11751eb05f72ca27619..c4a3a54753767e7686a0e32996bcda0c
    Mutex::ScopedLock lock(node::per_process::cli_options_mutex);
    if (per_process::cli_options->get_per_isolate_options()
 diff --git a/src/node.h b/src/node.h
-index bee494f9da8470530ee9ec58958f8f2c7ce6a302..387ce8e5edf6524db170e2d46ef501a1cd956d98 100644
+index f8f2cde5c2e07e032955b0342a31db52f20460f3..7e1be61a9cca8205666a129bafa2b2f4f4dbcc4b 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -461,6 +461,8 @@ struct IsolateSettings {
