@@ -107,9 +107,9 @@ versions.
 
 ```sh
 $ node -v
-v16.14.2
+v18.15.0
 $ npm -v
-8.7.0
+9.5.0
 ```
 
 :::caution
