@@ -52,7 +52,7 @@ index 1b7a721585764aecfd855ee47c47a3bd235d2ef3..c152ea9f29478729ec3752132140e3ec
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 10061d4298368bc0ad53c0c8c3a3c964c13d4c3c..bee494f9da8470530ee9ec58958f8f2c7ce6a302 100644
+index 10061d4298368bc0ad53c0c8c3a3c964c13d4c3c..f8f2cde5c2e07e032955b0342a31db52f20460f3 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@
@@ -61,7 +61,7 @@ index 10061d4298368bc0ad53c0c8c3a3c964c13d4c3c..bee494f9da8470530ee9ec58958f8f2c
  
 +#ifdef ELECTRON_ENSURE_CONFIG_GYPI
 +#ifndef USING_ELECTRON_CONFIG_GYPI
-+#error "It looks like you are building this native module without using the right config.gypi.  This normally means that you need to update electron-rebuild (>=3.2.8) or node-gyp (>=8.4.0) if you're building modules directly."
++#error "It looks like you are building this native module without using the right config.gypi.  This normally means that you need to update electron-rebuild (>=3.2.8) or node-gyp (>=9.0.0) if you're building modules directly."
 +#endif
 +#endif
 +
