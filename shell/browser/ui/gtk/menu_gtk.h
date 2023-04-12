@@ -17,9 +17,7 @@ namespace ui {
 class MenuModel;
 }
 
-namespace electron {
-
-namespace gtkui {
+namespace electron::gtkui {
 
 class MenuGtk {
  public:
@@ -41,8 +39,6 @@ class MenuGtk {
   bool block_activation_ = false;
 };
 
-}  // namespace gtkui
-
-}  // namespace electron
+}  // namespace electron::gtkui
 
 #endif  // ELECTRON_SHELL_BROWSER_UI_GTK_MENU_GTK_H_

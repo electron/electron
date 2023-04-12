@@ -65,6 +65,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
+#include "shell/browser/net/resolve_host_function.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -422,6 +423,37 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
       url, base::BindOnce(gin_helper::Promise<std::string>::ResolvePromise,
                           std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Session::ResolveHost(
+    std::string host,
+    absl::optional<network::mojom::ResolveHostParametersPtr> params) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate_);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto fn = base::MakeRefCounted<ResolveHostFunction>(
+      browser_context_, std::move(host),
+      params ? std::move(params.value()) : nullptr,
+      base::BindOnce(
+          [](gin_helper::Promise<gin_helper::Dictionary> promise,
+             int64_t net_error, const absl::optional<net::AddressList>& addrs) {
+            if (net_error < 0) {
+              promise.RejectWithErrorMessage(net::ErrorToString(net_error));
+            } else {
+              DCHECK(addrs.has_value() && !addrs->empty());
+
+              v8::HandleScope handle_scope(promise.isolate());
+              gin_helper::Dictionary dict =
+                  gin::Dictionary::CreateEmpty(promise.isolate());
+              dict.Set("endpoints", addrs->endpoints());
+              promise.Resolve(dict);
+            }
+          },
+          std::move(promise)));
+
+  fn->Run();
 
   return handle;
 }
@@ -1242,6 +1274,7 @@ gin::Handle<Session> Session::New() {
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
   gin::ObjectTemplateBuilder(isolate, "Session", templ)
+      .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)

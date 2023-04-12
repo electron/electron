@@ -142,7 +142,7 @@ class ScriptExecutionCallback {
       context_bridge::ObjectCache object_cache;
       maybe_result = PassValueToOtherContext(
           result->GetCreationContextChecked(), promise_.GetContext(), result,
-          &object_cache, false, 0);
+          &object_cache, false, 0, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }

@@ -359,9 +359,9 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await readyToShow;
     });
-    // TODO(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
+    // DISABLED-FIXME(deepak1556): The error code now seems to be `ERR_FAILED`, verify what
     // changed and adjust the test.
-    it.skip('should emit did-fail-load event for files that do not exist', async () => {
+    it('should emit did-fail-load event for files that do not exist', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
       w.loadURL('file://a.txt');
       const [, code, desc,, isMainFrame] = await didFailLoad;
@@ -376,6 +376,15 @@ describe('BrowserWindow module', () => {
       expect(desc).to.equal('ERR_INVALID_URL');
       expect(code).to.equal(-300);
       expect(isMainFrame).to.equal(true);
+    });
+    it('should not emit did-fail-load for a successfully loaded media file', async () => {
+      w.webContents.on('did-fail-load', () => {
+        expect.fail('did-fail-load should not emit on media file loads');
+      });
+
+      const mediaStarted = once(w.webContents, 'media-started-playing');
+      w.loadFile(path.join(fixtures, 'cat-spin.mp4'));
+      await mediaStarted;
     });
     it('should set `mainFrame = false` on did-fail-load events in iframes', async () => {
       const didFailLoad = once(w.webContents, 'did-fail-load');
@@ -4083,9 +4092,9 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    // FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
+    // DISABLED-FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
     // when we introduced the compositor recycling patch.  Should figure out how to fix this
-    it.skip('visibilityState remains visible if backgroundThrottling is disabled', async () => {
+    it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
       const w = new BrowserWindow({
         show: false,
         width: 100,

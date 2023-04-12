@@ -1,5 +1,6 @@
 import { BrowserWindow, app, Menu, MenuItem, MenuItemConstructorOptions } from 'electron/main';
 import { expect } from 'chai';
+import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { roleList, execute } from '../lib/browser/api/menu-item-roles';
 
@@ -280,13 +281,7 @@ describe('MenuItems', () => {
     });
   });
 
-  describe('MenuItem appMenu', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'darwin')('MenuItem appMenu', () => {
     it('includes a default submenu layout when submenu is empty', () => {
       const item = new MenuItem({ role: 'appMenu' });
 

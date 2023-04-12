@@ -18,7 +18,7 @@ index f39533c8951d81fba73910a89b5cf2de9bd34a02..00756eb8a32aec3bc109db9aa1b370ab
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 7d0f066d786fc0ca3b17c557a7089070e8c06d51..22a9d0bca1fc09d8dbd1ab0fbf30d421718c6367 100644
+index 06405f8cf4ed0571d3df7a3d7a5370005d07c8bd..65c86fc3579ff2f828e5a356dbaffb847db7a795 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -90,6 +90,7 @@
@@ -37,7 +37,7 @@ index 7d0f066d786fc0ca3b17c557a7089070e8c06d51..22a9d0bca1fc09d8dbd1ab0fbf30d421
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -260,6 +262,7 @@
+@@ -261,6 +263,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/

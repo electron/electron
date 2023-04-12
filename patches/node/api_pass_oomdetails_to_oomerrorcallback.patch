@@ -5,8 +5,7 @@ Subject: Pass OOMDetails to OOMErrorCallback
 
 Introduced in https://chromium-review.googlesource.com/c/v8/v8/+/3647827.
 
-This patch can be removed when Node.js updates to a V8 version containing
-the above CL.
+This patch can be removed when Electron updates to Node.js v20.
 
 diff --git a/src/node_errors.cc b/src/node_errors.cc
 index 9f620154ce3696cff90bf308da934147319b1096..806d9700ca4b5faf46042814c0e2ce212945bece 100644

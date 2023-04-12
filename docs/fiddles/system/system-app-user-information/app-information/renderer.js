@@ -1,4 +1,4 @@
-const {ipcRenderer} = require('electron')
+const { ipcRenderer } = require('electron')
 
 const appInfoBtn = document.getElementById('app-info')
 const electron_doc_link = document.querySelectorAll('a[href]')

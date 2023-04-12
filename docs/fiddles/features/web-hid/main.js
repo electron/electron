@@ -1,5 +1,4 @@
-const {app, BrowserWindow} = require('electron')
-const path = require('path')
+const { app, BrowserWindow } = require('electron')
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
@@ -8,16 +7,16 @@ function createWindow () {
   })
 
   mainWindow.webContents.session.on('select-hid-device', (event, details, callback) => {
-    //Add events to handle devices being added or removed before the callback on
-    //`select-hid-device` is called.
+    // Add events to handle devices being added or removed before the callback on
+    // `select-hid-device` is called.
     mainWindow.webContents.session.on('hid-device-added', (event, device) => {
       console.log('hid-device-added FIRED WITH', device)
-      //Optionally update details.deviceList
+      // Optionally update details.deviceList
     })
 
     mainWindow.webContents.session.on('hid-device-removed', (event, device) => {
       console.log('hid-device-removed FIRED WITH', device)
-      //Optionally update details.deviceList
+      // Optionally update details.deviceList
     })
 
     event.preventDefault()

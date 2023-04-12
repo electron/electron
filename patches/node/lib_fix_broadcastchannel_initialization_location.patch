@@ -10,7 +10,7 @@ initialized in bootstrap/browser instead of bootstrap/node. That
 inadvertently made it such that there was incorrect handling of the
 DOM vs Node.js implementations of BroadcastChannel.
 
-This will be upstreamed.
+Upstreamed in https://github.com/nodejs/node/pull/46864.
 
 diff --git a/lib/internal/bootstrap/browser.js b/lib/internal/bootstrap/browser.js
 index d0c01ca2a512be549b0fea8a829c05eabbec799a..210a1bb7e929021725b04786bc11d9b3ce09ad04 100644

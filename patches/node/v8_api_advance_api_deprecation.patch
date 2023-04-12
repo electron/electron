@@ -4,7 +4,8 @@ Date: Fri, 26 Aug 2022 00:03:44 +0900
 Subject: v8: [api] Advance API deprecation
 
 Refs https://chromium-review.googlesource.com/c/v8/v8/+/3702449
-Should be upstreamed.
+
+This can be removed when Electron upgrades to Node.js v20.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
 index 1abf6801e0544b14dd26f0b96536bd78c5b01679..93e339602800a21726c9414bf2ebe9a2e5517a3b 100644

@@ -35,12 +35,11 @@ const char MenuBar::kViewClassName[] = "ElectronMenuBar";
 MenuBar::MenuBar(NativeWindow* window, RootView* root_view)
     : background_color_(kDefaultColor), window_(window), root_view_(root_view) {
   const ui::NativeTheme* theme = root_view_->GetNativeTheme();
-  RefreshColorCache(theme);
-  UpdateViewColors();
 #if BUILDFLAG(IS_WIN)
   SetBackground(views::CreateThemedSolidBackground(ui::kColorMenuBackground));
-  background_color_ = GetBackground()->get_color();
 #endif
+  RefreshColorCache(theme);
+  UpdateViewColors();
   SetFocusBehavior(FocusBehavior::ALWAYS);
   SetLayoutManager(std::make_unique<views::BoxLayout>(
       views::BoxLayout::Orientation::kHorizontal));
@@ -209,6 +208,14 @@ void MenuBar::ButtonPressed(size_t id, const ui::Event& event) {
   menu_delegate->AddObserver(this);
 }
 
+void MenuBar::ViewHierarchyChanged(
+    const views::ViewHierarchyChangedDetails& details) {
+  views::AccessiblePaneView::ViewHierarchyChanged(details);
+#if BUILDFLAG(IS_WIN)
+  background_color_ = GetBackground()->get_color();
+#endif
+}
+
 void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
   if (theme) {
 #if BUILDFLAG(IS_LINUX)
@@ -217,6 +224,8 @@ void MenuBar::RefreshColorCache(const ui::NativeTheme* theme) {
         gtk::GetFgColor("GtkMenuBar#menubar GtkMenuItem#menuitem GtkLabel");
     disabled_color_ = gtk::GetFgColor(
         "GtkMenuBar#menubar GtkMenuItem#menuitem:disabled GtkLabel");
+#elif BUILDFLAG(IS_WIN)
+    background_color_ = GetBackground()->get_color();
 #endif
   }
 }

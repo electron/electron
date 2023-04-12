@@ -44,7 +44,7 @@ machine you can monitor compile jobs as they flow through the goma system.
 For security and cost reasons, access to Electron's Goma cluster is currently restricted
 to Electron Maintainers.  If you want access please head to `#access-requests` in
 Slack and ping `@goma-squad` to ask for access.  Please be aware that being a
-maintainer does not *automatically* grant access and access is determined on a
+maintainer does not _automatically_ grant access and access is determined on a
 case by case basis.
 
 ## Uptime / Support

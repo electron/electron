@@ -14,7 +14,7 @@
 #include "base/win/win_util.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
-#include "content/public/browser/browser_task_traits.h"
+#include "content/public/browser/browser_thread.h"
 #include "shell/browser/ui/win/notify_icon.h"
 #include "ui/events/event_constants.h"
 #include "ui/events/win/system_event_state_lookup.h"
