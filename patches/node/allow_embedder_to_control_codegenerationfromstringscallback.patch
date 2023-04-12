@@ -30,7 +30,7 @@ index 93d85d46dc6b3b30795b88ffa8070253f62e51bd..05f8232c4b38f51e8059e8d01b0eb247
    if ((s.flags & SHOULD_NOT_SET_PROMISE_REJECTION_CALLBACK) == 0) {
      auto* promise_reject_cb = s.promise_reject_callback ?
 diff --git a/src/node.h b/src/node.h
-index 38bbb20968772a4ba6bceddb04a83589f8582fc8..a5ee97ae83149a1924e9d6198ad4b2a7fd8b876d 100644
+index b5e4d42035a23b49fd144d563f5716fcaed2b45c..f2e2acc98c1165430e46351fe07637315cc2c38e 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -374,6 +374,8 @@ struct IsolateSettings {
