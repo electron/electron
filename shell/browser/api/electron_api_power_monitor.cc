@@ -91,7 +91,6 @@ void PowerMonitor::SetListeningForShutdown(bool is_listening) {
 
 // static
 v8::Local<v8::Value> PowerMonitor::Create(v8::Isolate* isolate) {
-  CHECK(Browser::Get()->is_ready());
   auto* pm = new PowerMonitor(isolate);
   auto handle = gin::CreateHandle(isolate, pm).ToV8();
   pm->Pin(isolate);
