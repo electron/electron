@@ -497,8 +497,7 @@ scoped_refptr<base::TaskRunner> CreatePrinterHandlerTaskRunner() {
 #elif BUILDFLAG(IS_WIN)
   // Windows drivers are likely not thread-safe and need to be accessed on the
   // UI thread.
-  return content::GetUIThreadTaskRunner(
-      {base::MayBlock(), base::TaskPriority::USER_VISIBLE});
+  return content::GetUIThreadTaskRunner({base::TaskPriority::USER_VISIBLE});
 #else
   // Be conservative on unsupported platforms.
   return base::ThreadPool::CreateSingleThreadTaskRunner(kTraits);
