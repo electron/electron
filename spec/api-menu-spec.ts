@@ -886,7 +886,9 @@ describe('Menu module', function () {
         await delay(1000);
         menu.popup({ window: w, x: 50, y: 50 });
         await delay(500);
-        const closed = emittedOnce(menu, 'menu-will-close');
+        const closed = new Promise((resolve) => {
+          menu.once('menu-will-close', resolve);
+        });
         menu.closePopup();
         await closed;
       };
