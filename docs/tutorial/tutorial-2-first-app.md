@@ -274,7 +274,7 @@ calling `createWindow()` once its promise is fulfilled.
 You typically listen to Node.js events by using an emitter's `.on` function.
 
 ```diff
-+ app.on('ready').then(() => {
++ app.on('ready', () => {
 - app.whenReady().then(() => {
   createWindow()
 })
