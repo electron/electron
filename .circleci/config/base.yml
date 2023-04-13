@@ -524,6 +524,18 @@ step-fix-sync: &step-fix-sync
       mv .git/config.backup .git/config
       git fetch
 
+step-fix-clang: &step-fix-clang
+  run:
+    name: Fix Clang on 32-bit Linux ARM
+    command: |
+      if [ "$TARGET_ARCH" == "arm" ]; then
+        # The following custom clang needed on 32-bit Linux ARM due to https://crbug.com/1431201.
+        # Once https://crbug.com/1425409 has been resolved this workaround can be remove
+        cd src/third_party/llvm-build/Release+Asserts
+        curl -O https://dev-cdn.electronjs.org/clang/clang-llvmorg-17-init-4759-g547e3456-2.tar.xz
+        tar xvf clang-llvmorg-17-init-4759-g547e3456-2.tar.xz
+      fi
+
 step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
   run:
     name: Import and trust self-signed codesigning cert on MacOS
@@ -1056,6 +1068,7 @@ commands:
         default: true
     steps:
       - *step-gn-gen-default
+      - *step-fix-clang
       - ninja_build_electron:
           clean-prebuilt-snapshot: false
           build-type: << parameters.build-type >>
@@ -1598,6 +1611,7 @@ commands:
       - *step-setup-goma-for-build
       - *step-wait-for-goma
       - *step-gn-gen-default
+      - *step-fix-clang
 
       # Electron app
       - ninja_build_electron:

@@ -137,7 +137,7 @@ index b9f62726f3808636bdb513ad10d89277b7837b82..eada168aff54aebf84e80a2df5363fe7
      if (__builtin_available(macOS 10.14, *)) {
        DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index cfe208403514b55abc6d5b5695882ac50e08db8a..654e5f560c7dccd7bd4ec36a821a7478e3289a61 100644
+index 0b52fe6bd877347ac79a780aefc3c5c4b382f80e..5313bf169fdd6f86433db0fefe704f52011da861 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@

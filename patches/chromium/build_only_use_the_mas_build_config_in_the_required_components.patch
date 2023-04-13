@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 5c15cdf2ab2a8d41774917e6c006247ea9af44ab..b684afd5ef09fc220c042c44e5fcf7032e4bc92d 100644
+index 058e2edda155ea73c29f70d81b2cbb6d3a709d9f..dfbcac6934da1a28f09afa4d60f26f1e1eaeebd5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1036,6 +1036,7 @@ component("base") {
+@@ -1030,6 +1030,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3b1d9b1a41903d57e65517a046f30b11873b8b73..e231734571cadb6f5aebe49cf853c54f66d7fd8b 100644
+index 8750a47c50ddcc3e3c853639d9cadd8e66c7dcaa..3e54be9dc2a2dbcd65a5382fa179ca092b8cfe6e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -136,7 +136,7 @@ index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index f1b4cd5055d00df425926e83a3b2e7f32af4c2e6..a80aaa7fde1fd9c70e7038aef4e322f1ec6a307a 100644
+index 609c60d94cdbf4755f60323734b976b49f03fecb..09a3871bfef3ba7a523ac37a80a4aa86ce2975ae 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -194,6 +194,7 @@ source_set("audio") {
@@ -253,7 +253,7 @@ index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 00f83601160eb795067bce9532baeaa078259e68..37e40a1bcf770a060fe7803bafb08274254a3fdf 100644
+index 171bc18462841b58dd31c58bbb000abac852337d..2eaa15b5aba46a796905ed45d893db17d566af15 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -193,6 +193,7 @@ component("gfx") {
