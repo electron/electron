@@ -432,14 +432,16 @@ void WebContentsPreferences::OverrideWebkitPrefs(
           iter->second;
     if (auto iter = default_font_family_.find("serif");
         iter != default_font_family_.end())
-      prefs->serif_font_family_map[blink::web_pref::kCommonScript] = iter->second;
+      prefs->serif_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
     if (auto iter = default_font_family_.find("sansSerif");
         iter != default_font_family_.end())
       prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] =
           iter->second;
     if (auto iter = default_font_family_.find("monospace");
         iter != default_font_family_.end())
-      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = iter->second;
+      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
     if (auto iter = default_font_family_.find("cursive");
         iter != default_font_family_.end())
       prefs->cursive_font_family_map[blink::web_pref::kCommonScript] =
