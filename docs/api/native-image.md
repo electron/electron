@@ -47,7 +47,7 @@ quality, it is recommended to include at least the following sizes in the:
   * 64x64 (200% DPI scale)
   * 256x256
 
-Check the *Size requirements* section in [this article][icons].
+Check the _Size requirements_ section in [this article][icons].
 
 [icons]: https://learn.microsoft.com/en-us/windows/win32/uxguide/vis-icons
 

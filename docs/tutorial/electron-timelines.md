@@ -65,7 +65,7 @@ the Electron team will drop support back to the latest three stable major versio
 
 :::
 
-The latest three *stable* major versions are supported by the Electron team.
+The latest three _stable_ major versions are supported by the Electron team.
 For example, if the latest release is 6.1.x, then the 5.0.x as well
 as the 4.2.x series are supported. We only support the latest minor release
 for each stable release series. This means that in the case of a security fix,
