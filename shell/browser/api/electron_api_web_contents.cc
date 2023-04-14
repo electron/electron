@@ -3127,11 +3127,20 @@ void WebContents::ScrollToBottomOfDocument() {
   web_contents()->ScrollToBottomOfDocument();
 }
 
-void WebContents::AdjustSelectionByCharacterOffset(int start_adjust,
-                                                   int end_adjust,
-                                                   bool show_selection_menu) {
-  web_contents()->AdjustSelectionByCharacterOffset(start_adjust, end_adjust,
-                                                   show_selection_menu);
+void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
+  int start_adjust = 0;
+  int end_adjust = 0;
+
+  gin_helper::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    dict.Get("start", &start_adjust);
+    dict.Get("matchCase", &end_adjust);
+  }
+
+  // The selection menu is a Chrome-specific piece of UI.
+  // TODO(codebytere): maybe surface as an event in the future?
+  web_contents()->AdjustSelectionByCharacterOffset(
+      start_adjust, end_adjust, false /* show_selection_menu */);
 }
 
 void WebContents::Replace(const std::u16string& word) {
