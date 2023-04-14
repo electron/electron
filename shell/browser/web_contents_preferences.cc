@@ -430,24 +430,32 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->web_security_enabled = web_security_;
   prefs->allow_running_insecure_content = allow_running_insecure_content_;
 
-  if (auto font =
-          default_font_family_.find("standard") != default_font_family_.end())
-    prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("serif") != default_font_family_.end())
-    prefs->serif_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("sansSerif") != default_font_family_.end())
-    prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("monospace") != default_font_family_.end())
-    prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("cursive") != default_font_family_.end())
-    prefs->cursive_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("fantasy") != default_font_family_.end())
-    prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (!default_font_family_.empty()) {
+    if (auto iter = default_font_family_.find("standard");
+        iter != default_font_family_.end())
+      prefs->standard_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("serif");
+        iter != default_font_family_.end())
+      prefs->serif_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("sansSerif");
+        iter != default_font_family_.end())
+      prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("monospace");
+        iter != default_font_family_.end())
+      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("cursive");
+        iter != default_font_family_.end())
+      prefs->cursive_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("fantasy");
+        iter != default_font_family_.end())
+      prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+  }
 
   if (default_font_size_)
     prefs->default_font_size = *default_font_size_;
