@@ -516,10 +516,10 @@ index 5aec0843d4882155d109f9d2d639e4f52f0e5bd2..2bdfbb8f020814b13efca34d13d570dc
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 53e3de608b6770ce096603e8e0e8c28e272c2435..613957730f0c09eceae076139311affb6154873e 100644
+index e5171c723b3eb897c5dfc081f61380c0d61647f6..f950f7da946a20354aa84f072b5c86d7f8dc42ad 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
-@@ -338,17 +338,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
+@@ -334,17 +334,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
  #endif  // BUILDFLAG(IS_LINUX) && BUILDFLAG(USE_CUPS)
    }
  
@@ -834,10 +834,10 @@ index 146fbcb2e6bd4348110ecc3220d6ac0ac59babf3..eecc3118033ef7fe1f17aba48cd19b17
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8c56bcba80506b47c7257d340e4600dc75f2c998..d7ee2e5d8226a7e9dfdea4c6acdb86029a342e92 100644
+index 64545f656ebaea21acfb98f21d4988296dc19334..7274b2166905e5d61de8daef5ff2e71effd427a1 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2853,8 +2853,9 @@ source_set("browser") {
+@@ -2856,8 +2856,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
