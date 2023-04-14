@@ -2389,7 +2389,7 @@ index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..c9ea9f67d3ccb213db3a5d149f045898
      action(files_arg, dest)
  
 @@ -282,7 +296,7 @@ def headers(action):
-   if sys.platform.startswith('aix'):
+   if sys.platform.startswith('aix') or sys.platform == "os400":
      action(['out/Release/node.exp'], 'include/node/')
  
 -  subdir_files('deps/v8/include', 'include/node/', wanted_v8_headers)
