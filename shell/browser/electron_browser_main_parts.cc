@@ -625,7 +625,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // invoke Node/V8 APIs inside them.
   node_env_->env()->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
-  node::Stop(node_env_->env(), false);
+  node::Stop(node_env_->env(), node::StopFlags::kDoNotTerminateIsolate);
   node_env_.reset();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);

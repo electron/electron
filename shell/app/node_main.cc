@@ -266,7 +266,7 @@ int NodeMain(int argc, char* argv[]) {
 
     node::ResetStdio();
 
-    node::Stop(env, false);
+    node::Stop(env, node::StopFlags::kDoNotTerminateIsolate);
 
     node::FreeEnvironment(env);
     node::FreeIsolateData(isolate_data);
