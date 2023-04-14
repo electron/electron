@@ -31,10 +31,10 @@ index 2685f5ea0bea998094453a5a29d23b1aaae55667..0ad4ba47b50a87bcf9e31a73c20a3a51
    case EVP_CIPH_GCM_MODE:
  #ifndef OPENSSL_NO_OCB
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index a1d0dfc16ce23503b0985ec6e185fb54758c8893..85daa8c8c12c28571f0ee739868549335cb1f730 100644
+index 41e607e9298314bd7dd9e61643650f3ec75caea8..bd3228a67e1bda671488b347bd53ca805f09be87 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
-@@ -159,7 +159,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -158,7 +158,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    const unsigned char* buf;
    size_t len;
    size_t rem;
@@ -43,7 +43,7 @@ index a1d0dfc16ce23503b0985ec6e185fb54758c8893..85daa8c8c12c28571f0ee73986854933
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_application_layer_protocol_negotiation,
-@@ -172,13 +172,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
+@@ -171,13 +171,15 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
    len = (buf[0] << 8) | buf[1];
    if (len + 2 != rem) return nullptr;
    return reinterpret_cast<const char*>(buf + 3);
@@ -60,7 +60,7 @@ index a1d0dfc16ce23503b0985ec6e185fb54758c8893..85daa8c8c12c28571f0ee73986854933
    if (!SSL_client_hello_get0_ext(
            ssl.get(),
            TLSEXT_TYPE_server_name,
-@@ -200,15 +202,20 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
+@@ -199,15 +201,20 @@ const char* GetClientHelloServerName(const SSLPointer& ssl) {
    if (len + 2 > rem)
      return nullptr;
    return reinterpret_cast<const char*>(buf + 5);
@@ -84,7 +84,7 @@ index a1d0dfc16ce23503b0985ec6e185fb54758c8893..85daa8c8c12c28571f0ee73986854933
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
    const char* code = "UNSPECIFIED";
-@@ -1039,14 +1046,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1048,14 +1055,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -248,10 +248,10 @@ index 47a42246eddfc795b735f5efd08edf2832bbf6c1..7e6afaa1d3a4612fd567924b40438a31
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 8ead5fcbb55afbdf657603e85fddf28ac4874e04..e12ccf8162ee799beb3d4f0832054b5c4d397631 100644
+index 247067a9908717ba1323bd610eeeedf3aba008a4..0fe7358d3f419f6e6f00eb4cc8422e9c5cb6cb9a 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -507,24 +507,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -508,24 +508,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -277,7 +277,7 @@ index 8ead5fcbb55afbdf657603e85fddf28ac4874e04..e12ccf8162ee799beb3d4f0832054b5c
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -698,7 +689,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -699,7 +690,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -286,7 +286,7 @@ index 8ead5fcbb55afbdf657603e85fddf28ac4874e04..e12ccf8162ee799beb3d4f0832054b5c
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -709,7 +700,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -710,7 +701,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -295,7 +295,7 @@ index 8ead5fcbb55afbdf657603e85fddf28ac4874e04..e12ccf8162ee799beb3d4f0832054b5c
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -717,10 +708,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -718,10 +709,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -309,10 +309,10 @@ index 8ead5fcbb55afbdf657603e85fddf28ac4874e04..e12ccf8162ee799beb3d4f0832054b5c
  }  // namespace
  
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index ed28871c385532b13e102200ba549bb7d7e901e6..c69d3f1867cd1b86194b109351643d9520c661e7 100644
+index 6fe09f843e26b7f29faadf5035d368ed8b7eba38..326a9ee8a6d24d0c78537bfe5d9da394a439da90 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
-@@ -13,7 +13,7 @@
+@@ -14,7 +14,7 @@
  #include "v8.h"
  #include "zlib.h"
  
@@ -322,7 +322,7 @@ index ed28871c385532b13e102200ba549bb7d7e901e6..c69d3f1867cd1b86194b109351643d95
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 2a924141d6edbaade371dd29d553eb1107ff5f75..be37169bb1d5e70e11601ccf00db0552ee3511ed 100644
+index 1831bfd0baaac70277fc274a72235bf6a04697cb..1c0a3fcdeb44dc947bb8c38459533779575379da 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -6,7 +6,7 @@
@@ -347,7 +347,6 @@ index 6e156fa1ba448f8d0c709eb7ba7112e92909a8fc..8bbee83ddb32a31ada18d7a6e8be7cdf
  #include "openssl/opensslv.h"
  #endif
  
-
 diff --git a/src/node_options.h b/src/node_options.h
 index 665ea4ceb779f7c7747e53aba4beba0494fa7ebe..22a346eb23274374d5a5aa4a1b2219e6ebdee48a 100644
 --- a/src/node_options.h

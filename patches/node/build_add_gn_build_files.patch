@@ -2124,7 +2124,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index ee035efadf123464a7b4696a6351364a642cd947..afb9c47cc9324a6197a66e58bc59d40afc37dcf8 100644
+index cfab30173a4311582b1ebdc5a1b84b37117a8e69..c254fe22f9e2bc0f1746e773f7ecb0d1db31294b 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -2257,7 +2257,7 @@ index 0000000000000000000000000000000000000000..2a92eccfa582df361f2a889c0d9b32c1
 +
 +  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..c9ea9f67d3ccb213db3a5d149f0458987e855c08 100755
+index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd4c536570 100755
 --- a/tools/install.py
 +++ b/tools/install.py
 @@ -202,60 +202,74 @@ def files(action):
@@ -2398,7 +2398,7 @@ index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..c9ea9f67d3ccb213db3a5d149f045898
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index e295949a18508d7989f0925093a9dd6a284fecd6..8ba46c5d78c5c86d9f7b8b6972f3febbe87de61e 100755
+index f9c202e861b986e3171aa21079c3b29f51fe0398..ef24c4de0aaa2cd5f3c06e5bd8dd90de2b30ffcb 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -131,6 +131,14 @@ def NormalizeFileName(filename):

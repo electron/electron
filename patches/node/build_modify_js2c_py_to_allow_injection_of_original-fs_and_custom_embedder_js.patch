@@ -14,7 +14,7 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/lib/internal/fs/watchers.js b/lib/internal/fs/watchers.js
-index bc4555584ab1f97806a1e9cd17085a2488320908..b17dbf2a98c9f4b14fea60c87f05afcee6ec54fb 100644
+index ce885c154c81c5703365fa34957697698da9aff6..229b0d522aeee3632145c86715bea1394d496bc4 100644
 --- a/lib/internal/fs/watchers.js
 +++ b/lib/internal/fs/watchers.js
 @@ -293,11 +293,13 @@ function emitCloseNT(self) {
@@ -61,7 +61,7 @@ index 90b158b84bb2a66781cf92f5b4c1a64f9e2ee651..8d9f7c409659a30747e5feeac6cfec42
  
    std::vector<std::string> GetBuiltinIds();
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 8ba46c5d78c5c86d9f7b8b6972f3febbe87de61e..38057495e04eba46ca87f6a0ea607f0fff46846e 100755
+index ef24c4de0aaa2cd5f3c06e5bd8dd90de2b30ffcb..ece70a8d7a1fdca051d4b821ba114be54bd34e4e 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -39,6 +39,8 @@ import codecs

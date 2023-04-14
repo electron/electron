@@ -8,10 +8,10 @@ Introduced in https://chromium-review.googlesource.com/c/v8/v8/+/3647827.
 This patch can be removed when Electron updates to Node.js v20.
 
 diff --git a/src/node_errors.cc b/src/node_errors.cc
-index 9f620154ce3696cff90bf308da934147319b1096..806d9700ca4b5faf46042814c0e2ce212945bece 100644
+index 2dc9e085269222c70902698020fc5c7b1af2f004..655f54e369c35efefa75c69cc57776249405dc76 100644
 --- a/src/node_errors.cc
 +++ b/src/node_errors.cc
-@@ -495,9 +495,9 @@ void OnFatalError(const char* location, const char* message) {
+@@ -527,9 +527,9 @@ void OnFatalError(const char* location, const char* message) {
    ABORT();
  }
  
