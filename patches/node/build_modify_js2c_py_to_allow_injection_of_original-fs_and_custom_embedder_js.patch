@@ -24,7 +24,7 @@ index bc4555584ab1f97806a1e9cd17085a2488320908..b17dbf2a98c9f4b14fea60c87f05afce
 -ObjectDefineProperty(FSEvent.prototype, 'owner', {
 -  __proto__: null,
 -  get() { return this[owner_symbol]; },
--  set(v) { return this[owner_symbol] = v; }
+-  set(v) { return this[owner_symbol] = v; },
 -});
 +if (!'owner' in FSEvent.prototype) {
 +  ObjectDefineProperty(FSEvent.prototype, 'owner', {

@@ -62,6 +62,6 @@ index 09eb12bd1533bfed44d9cb62c068e2c880df8ba2..11a6e4b2edc0930049d7acecf2a6e94e
  
 -  const { 0: string, 1: containsKeys } = internalModuleReadJSON(
 +  const { 0: string, 1: containsKeys } = internalFsBinding.internalModuleReadJSON(
-     toNamespacedPath(jsonPath)
+     toNamespacedPath(jsonPath),
    );
    const result = { string, containsKeys };
