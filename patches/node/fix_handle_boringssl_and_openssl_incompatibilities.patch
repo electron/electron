@@ -335,18 +335,19 @@ index 2a924141d6edbaade371dd29d553eb1107ff5f75..be37169bb1d5e70e11601ccf00db0552
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 6eabf78f1b67c8f31a9faac16386e00f2f9427f3..bc3c58b0ce8666f978de39ef57832b077bb181a3 100644
+index 6e156fa1ba448f8d0c709eb7ba7112e92909a8fc..8bbee83ddb32a31ada18d7a6e8be7cdf33321b69 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -5,7 +5,7 @@
- #include "node_binding.h"
+@@ -6,7 +6,7 @@
  #include "node_external_reference.h"
  #include "node_internals.h"
+ #include "node_sea.h"
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
  #include "openssl/opensslv.h"
  #endif
  
+
 diff --git a/src/node_options.h b/src/node_options.h
 index 665ea4ceb779f7c7747e53aba4beba0494fa7ebe..22a346eb23274374d5a5aa4a1b2219e6ebdee48a 100644
 --- a/src/node_options.h
