@@ -22,6 +22,7 @@
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
+#include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 
 class PrefService;
 class ValueMapPrefStore;
@@ -134,6 +135,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
+  void SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_metadata);
+  blink::UserAgentMetadata GetUserAgentMetadata() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
   ResolveProxyHelper* GetResolveProxyHelper();
@@ -252,6 +255,7 @@ class ElectronBrowserContext : public content::BrowserContext {
   std::unique_ptr<ProtocolRegistry> protocol_registry_;
 
   absl::optional<std::string> user_agent_;
+  absl::optional<blink::UserAgentMetadata> ua_metadata_;
   base::FilePath path_;
   bool in_memory_ = false;
   bool use_cache_ = true;

@@ -1003,6 +1003,7 @@ Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<i
 * `options` Object (optional)
   * `httpReferrer` (string | [Referrer](structures/referrer.md)) (optional) - An HTTP Referrer url.
   * `userAgent` string (optional) - A user agent originating the request.
+  * `userAgentMetadata` [UserAgentMetadata](structures/useragent-metadata.md) (optional) - The user agent metadata.
   * `extraHeaders` string (optional) - Extra headers separated by "\n".
   * `postData` ([UploadRawData](structures/upload-raw-data.md) | [UploadFile](structures/upload-file.md))[] (optional)
   * `baseURLForDataURL` string (optional) - Base url (with trailing path separator) for files to be loaded by the data url. This is needed only if the specified `url` is a data url and needs to load other files.
@@ -1199,11 +1200,12 @@ contents.on('unresponsive', async () => {
 })
 ```
 
-#### `contents.setUserAgent(userAgent)`
+#### `contents.setUserAgent(userAgent[, userAgentMetadata])`
 
-* `userAgent` string
+* `userAgent` string - The user agent string.
+* `userAgentMetadata` [UserAgentMetadata](structures/useragent-metadata.md) (optional) - The user agent metadata.
 
-Overrides the user agent for this web page.
+Overrides the user agent and metadata for this web page.
 
 #### `contents.getUserAgent()`
 

@@ -189,7 +189,7 @@ class WebContents : public ExclusiveAccessContext,
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
-  void SetUserAgent(const std::string& user_agent);
+  void SetUserAgent(const std::string& user_agent, absl::optional<blink::UserAgentMetadata> ua_metadata_override);
   std::string GetUserAgent();
   void InsertCSS(const std::string& css);
   v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,

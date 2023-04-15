@@ -1057,7 +1057,14 @@ void ElectronBrowserClient::SetUserAgent(const std::string& user_agent) {
 }
 
 blink::UserAgentMetadata ElectronBrowserClient::GetUserAgentMetadata() {
+  if (ua_metadata_override_) {
+    return ua_metadata_override_.value();
+  }
   return embedder_support::GetUserAgentMetadata();
+}
+
+void ElectronBrowserClient::SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_metadata) {
+  ua_metadata_override_ = ua_metadata;
 }
 
 void ElectronBrowserClient::RegisterNonNetworkNavigationURLLoaderFactories(

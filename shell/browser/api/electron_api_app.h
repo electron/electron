@@ -29,6 +29,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
+#include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "shell/browser/certificate_manager_model.h"
@@ -220,6 +221,8 @@ class App : public ElectronBrowserClient::Delegate,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
+  void SetUserAgentMetadataFallback(absl::optional<blink::UserAgentMetadata> ua_meta);
+  v8::Local<v8::Value> GetUserAgentMetadataFallback(v8::Isolate* isolate);
 
 #if BUILDFLAG(IS_MAC)
   void SetActivationPolicy(gin_helper::ErrorThrower thrower,
