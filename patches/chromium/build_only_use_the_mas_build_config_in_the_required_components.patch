@@ -55,10 +55,10 @@ index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42452908a8 100644
+index 8c8c29706ebec0be7ca25d63fc5e8af4a212e8bc..66fd728dc1ec5079a8d227f4e88d0d38b9ada5a1 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -314,6 +314,7 @@ viz_component("service") {
+@@ -320,6 +320,7 @@ viz_component("service") {
  
        frameworks += [ "CoreGraphics.framework" ]
      }
@@ -66,7 +66,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
    }
  
    if (is_android || use_ozone) {
-@@ -568,6 +569,8 @@ viz_source_set("unit_tests") {
+@@ -574,6 +575,8 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -88,7 +88,7 @@ index 7274b2166905e5d61de8daef5ff2e71effd427a1..282395a2682448907a3f22ebe8a887c1
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index a164080599beb28449c6bda91a0f7373c6434019..44750c770ff445cf1b38da27922caa94357baac0 100644
+index a92d1339b0ec7980dc9b73dcbad834c3ffca8211..5a07df3e8a31f6d5bfc5d27bf804517fb27239b2 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -170,6 +170,7 @@ source_set("common") {

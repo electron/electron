@@ -87,7 +87,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 395917cde8db720a3f246f41c174ff45506cf24a..6926bd6766603f8de2237447c0a8fde2d09b67b4 100644
+index 96fe556f6046ca86b9ddc488fd25a2c641299768..8c8c29706ebec0be7ca25d63fc5e8af4a212e8bc 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -137,6 +137,8 @@ viz_component("service") {
@@ -513,10 +513,10 @@ index d4d4c1444e7a169d154bb9062f09f2270e7e9734..01943e14de567afd7b14f6a92eec651d
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index b2dec274a0851432cbf7469ccee1f654c1d9ce16..c7e2ec5d20f10a523375c41b3026f4d250d3b68a 100644
+index 01109192627543a27140e311d718b0317be8ee54..63597d58cf6b43ae9769ab0b8cf7d480c756f2b2 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -89,7 +89,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -90,7 +90,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
