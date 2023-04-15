@@ -1,0 +1,13 @@
+# UserAgentMetadata Object
+
+* `brands` [BrandVersion[]](brand-version.md) - The brand and versions.
+* `fullVersionList` [BrandVersion[]](brand-version.md) - The brand and full versions.
+* `fullVersion` string - full browser version.
+* `platform` string - The platform.
+* `platformVersion` string - The platform version.
+* `model` string - The model of mobile device.
+* `mobile` boolean - Whether the Electron is running on a mobile device.
+* `architecture` string - The platform architecture.
+* `bitness` string - The architecture bitness.
+* `wow64` string - Whether the Electron is running on a Wow64 platform.
+

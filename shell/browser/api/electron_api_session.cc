@@ -82,12 +82,14 @@
 #include "shell/browser/net/resolve_host_function.h"
 #include "shell/browser/net/resolve_proxy_helper.h"
 #include "shell/browser/session_preferences.h"
+#include "shell/common/gin_converters/blink_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/time_converter.h"
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
@@ -1026,14 +1028,27 @@ void Session::SetUserAgent(const std::string& user_agent,
   network_context->SetUserAgent(user_agent);
 
   std::string accept_lang;
-  if (args->GetNext(&accept_lang)) {
+  if (args->GetNext(&accept_lang) && accept_lang.size() > 0) {
     network_context->SetAcceptLanguage(
         net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang));
+  }
+
+  blink::UserAgentMetadata ua_metadata;
+  if (args->GetNext(&ua_metadata)) {
+    browser_context_->SetUserAgentMetadata(ua_metadata);
   }
 }
 
 std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
+}
+
+void Session::SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_metadata) {
+  browser_context_->SetUserAgentMetadata(ua_metadata);
+}
+
+v8::Local<v8::Value> Session::GetUserAgentMetadata(v8::Isolate* isolate) {
+  return gin::ConvertToV8(isolate, browser_context_->GetUserAgentMetadata());
 }
 
 void Session::SetSSLConfig(network::mojom::SSLConfigPtr config) {
@@ -1846,6 +1861,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isPersistent", &Session::IsPersistent)
       .SetMethod("setUserAgent", &Session::SetUserAgent)
       .SetMethod("getUserAgent", &Session::GetUserAgent)
+      .SetMethod("setUserAgentMetadata", &Session::SetUserAgentMetadata)
+      .SetMethod("getUserAgentMetadata", &Session::GetUserAgentMetadata)
       .SetMethod("setSSLConfig", &Session::SetSSLConfig)
       .SetMethod("getBlobData", &Session::GetBlobData)
       .SetMethod("downloadURL", &Session::DownloadURL)

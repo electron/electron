@@ -22,6 +22,7 @@
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/constructible.h"
 #include "shell/common/gin_helper/self_keep_alive.h"
+#include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
@@ -143,6 +144,8 @@ class Session final : public gin::Wrappable<Session>,
   void AllowNTLMCredentialsForDomains(const std::string& domains);
   void SetUserAgent(const std::string& user_agent, gin::Arguments* args);
   std::string GetUserAgent();
+  void SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_meta);
+  v8::Local<v8::Value> GetUserAgentMetadata(v8::Isolate* isolate);
   void SetSSLConfig(network::mojom::SSLConfigPtr config);
   bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,

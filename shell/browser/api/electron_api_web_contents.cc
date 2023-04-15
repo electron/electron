@@ -858,7 +858,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
 
-  SetUserAgent(GetBrowserContext()->GetUserAgent());
+  SetUserAgent(GetBrowserContext()->GetUserAgent(), GetBrowserContext()->GetUserAgentMetadata());
 
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
@@ -1135,7 +1135,7 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  SetUserAgent(GetBrowserContext()->GetUserAgent());
+  SetUserAgent(GetBrowserContext()->GetUserAgent(), GetBrowserContext()->GetUserAgentMetadata());
 
   if (is_guest()) {
     NativeWindow* owner_window = nullptr;
@@ -2859,8 +2859,14 @@ void WebContents::LoadURL(const GURL& url,
   }
 
   std::string user_agent;
-  if (options.Get("userAgent", &user_agent))
-    SetUserAgent(user_agent);
+  if (options.Get("userAgent", &user_agent)) {
+    blink::UserAgentMetadata ua_metadata;
+    if (options.Get("userAgentMetadata", &ua_metadata)) {
+      SetUserAgent(user_agent, ua_metadata);
+    } else {
+      SetUserAgent(user_agent, absl::optional<blink::UserAgentMetadata>());
+    }
+  }
 
   std::string extra_headers;
   if (options.Get("extraHeaders", &extra_headers))
@@ -3277,11 +3283,14 @@ void WebContents::ForcefullyCrashRenderer() {
   }
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent) {
+void WebContents::SetUserAgent(const std::string& user_agent, absl::optional<blink::UserAgentMetadata> ua_metadata) {
   blink::UserAgentOverride ua_override;
   ua_override.ua_string_override = user_agent;
-  if (!user_agent.empty())
-    ua_override.ua_metadata_override = embedder_support::GetUserAgentMetadata();
+  if (ua_metadata) {
+    ua_override.ua_metadata_override = ua_metadata;
+  } else {
+    ua_override.ua_metadata_override = ElectronBrowserClient::Get()->GetUserAgentMetadata();
+  }
 
   web_contents()->SetUserAgentOverride(ua_override, false);
 }

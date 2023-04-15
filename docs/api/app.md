@@ -1974,6 +1974,17 @@ This is the user agent that will be used when no user agent is set at the
 app has the same user agent.  Set to a custom value as early as possible
 in your app's initialization to ensure that your overridden value is used.
 
+#### `app.userAgentMetadataFallback`
+
+A [`UserAgentMetadata`](structures/useragent-metadata.md) object.
+
+The user agent metadata Electron will use as a global fallback.
+
+This is the metadata that will be used when no user agent metadata is set at the
+`webContents` or `session` level.  It is useful for ensuring that your entire
+app has the same user agent and metadata.  Set to a custom value as early as possible
+in your app's initialization to ensure that your overridden value is used.
+
 ### `app.runningUnderARM64Translation` _Readonly_ _macOS_ _Windows_
 
 A `boolean` which when `true` indicates that the app is currently running under
