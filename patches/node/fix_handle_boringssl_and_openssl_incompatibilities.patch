@@ -103,6 +103,23 @@ index 41e607e9298314bd7dd9e61643650f3ec75caea8..bd3228a67e1bda671488b347bd53ca80
      Local<Object> obj = Object::New(env->isolate());
      if (!Set(env->context(),
               obj,
+diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
+index b9f323035ff543ecb6f7bd577512729f0d60a156..0262dee543359c85c2c293ee22a8697b05f75feb 100644
+--- a/src/crypto/crypto_context.cc
++++ b/src/crypto/crypto_context.cc
+@@ -857,10 +857,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+   // If the user specified "auto" for dhparams, the JavaScript layer will pass
+   // true to this function instead of the original string. Any other string
+   // value will be interpreted as custom DH parameters below.
++#ifndef OPENSSL_IS_BORINGSSL
+   if (args[0]->IsTrue()) {
+     CHECK(SSL_CTX_set_dh_auto(sc->ctx_.get(), true));
+     return;
+   }
++#endif
+ 
+   DHPointer dh;
+   {
 diff --git a/src/crypto/crypto_dh.cc b/src/crypto/crypto_dh.cc
 index dd69323b80076d7333b80453c9cc9ef5b680ce27..6431b768c83fa27b2287588e936f93ae00169ad5 100644
 --- a/src/crypto/crypto_dh.cc
