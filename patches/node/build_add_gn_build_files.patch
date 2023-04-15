@@ -1937,10 +1937,10 @@ index cf52281bb4479ba20fbe852518edadc2185f0dae..81254f1d4fff9be925ecbb85fb0811c0
          '<@(deps_files)',
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb3048361d9d591
+index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868bd1321be2
 --- /dev/null
 +++ b/src/inspector/BUILD.gn
-@@ -0,0 +1,199 @@
+@@ -0,0 +1,200 @@
 +import("//v8/gni/v8.gni")
 +
 +inspector_protocol_dir = "../../tools/inspector_protocol"
@@ -2000,6 +2000,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +    ":protocol_generated_sources",
 +    ":v8_inspector_compress_protocol_json",
 +    "../../deps/uv",
++    "../../deps/simdutf",
 +    "//third_party/icu:icuuc",
 +  ]
 +  configs += [ "../..:node_internal_config" ]
