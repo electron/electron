@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..66baf5ac46bb6564e0e4e3150c8df195bbd17cf4
+index 0000000000000000000000000000000000000000..a3e4599c21f2faa92a0dca47b1e0b4e836bb475d
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,440 @@
+@@ -0,0 +1,443 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -249,7 +249,10 @@ index 0000000000000000000000000000000000000000..66baf5ac46bb6564e0e4e3150c8df195
 +  ]
 +  configs += [ ":node_internal_config" ]
 +  public_configs = [ ":node_lib_config" ]
-+  include_dirs = [ "src" ]
++  include_dirs = [
++    "src",
++    "deps/postject"
++  ]
 +  libs = []
 +  if (use_system_llhttp) {
 +    libs += [ "llhttp" ]
