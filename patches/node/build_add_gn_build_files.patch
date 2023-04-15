@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17f44b0f88
+index 0000000000000000000000000000000000000000..66baf5ac46bb6564e0e4e3150c8df195bbd17cf4
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,439 @@
+@@ -0,0 +1,440 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -223,6 +223,7 @@ index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17
 +  deps = [
 +    ":node_js2c",
 +    "deps/googletest:gtest",
++    "deps/ada",
 +    "deps/base64",
 +    "deps/simdutf",
 +    "deps/uvwasi",
@@ -449,6 +450,40 @@ index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17
 +  public_deps = [
 +    ":tar_headers",
 +  ]
++}
+diff --git a/deps/ada/BUILD.gn b/deps/ada/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..a564653c3f05608d59fed5aa071d63b81f4e0e42
+--- /dev/null
++++ b/deps/ada/BUILD.gn
+@@ -0,0 +1,28 @@
++import("//v8/gni/v8.gni")
++
++config("ada_config") {
++  include_dirs = [ "." ]
++}
++
++static_library("ada") {
++  include_dirs = [ "." ]
++  sources = [ "ada.cpp" ]
++
++  public_configs = [ ":ada_config" ]
++
++  defines = []
++  deps = []
++
++  if (v8_enable_i18n_support) {
++    deps += [
++      "//third_party/icu:icui18n",
++      "//third_party/icu:icuuc",
++    ]
++
++    if (is_win) {
++      deps += [ "//third_party/icu:icudata" ]
++    }
++  } else {
++    defines += [ "ADA_HAS_ICU=0" ]
++  }
 +}
 diff --git a/deps/base64/BUILD.gn b/deps/base64/BUILD.gn
 new file mode 100644
