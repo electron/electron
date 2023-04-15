@@ -250,7 +250,7 @@ class WebContents final : public ExclusiveAccessContext,
   std::string GetOrCreateDevToolsTargetId();
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
-  void SetUserAgent(const std::string& user_agent);
+  void SetUserAgent(const std::string& user_agent, absl::optional<blink::UserAgentMetadata> ua_metadata_override);
   std::string GetUserAgent();
   v8::Local<v8::Promise> SavePage(const base::FilePath& full_file_path,
                                   const content::SavePageType& save_type);

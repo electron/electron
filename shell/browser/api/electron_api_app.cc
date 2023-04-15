@@ -80,6 +80,7 @@
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_converters/login_item_settings_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/optional_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -1674,6 +1675,14 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
   ElectronBrowserClient::Get()->SetUserAgent(user_agent);
 }
 
+void App::SetUserAgentMetadataFallback(absl::optional<blink::UserAgentMetadata> ua_metadata) {
+  ElectronBrowserClient::Get()->SetUserAgentMetadata(ua_metadata);
+}
+
+v8::Local<v8::Value> App::GetUserAgentMetadataFallback(v8::Isolate* isolate) {
+  return gin::ConvertToV8(isolate, ElectronBrowserClient::Get()->GetUserAgentMetadata());
+}
+
 #if BUILDFLAG(IS_WIN)
 bool App::IsRunningUnderARM64Translation() const {
   return base::win::OSInfo::IsRunningEmulatedOnArm64();
@@ -2057,6 +2066,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
+      .SetProperty("userAgentMetadataFallback", &App::GetUserAgentMetadataFallback,
+                   &App::SetUserAgentMetadataFallback)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox)
       .SetMethod("setProxy", &App::SetProxy)

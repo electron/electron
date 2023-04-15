@@ -28,6 +28,7 @@
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "v8/include/cppgc/persistent.h"
+#include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
 #include "shell/browser/certificate_manager_model.h"
@@ -236,6 +237,9 @@ class App final : public gin::Wrappable<App>,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(const std::string& user_agent);
   std::string GetUserAgentFallback();
+  void SetUserAgentMetadataFallback(
+      absl::optional<blink::UserAgentMetadata> ua_meta);
+  v8::Local<v8::Value> GetUserAgentMetadataFallback(v8::Isolate* isolate);
   v8::Local<v8::Promise> SetProxy(gin::Arguments* args);
   v8::Local<v8::Promise> ResolveProxy(gin::Arguments* args);
 
