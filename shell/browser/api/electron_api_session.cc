@@ -94,6 +94,7 @@
 #include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/cleaned_up_at_exit.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/handle.h"
@@ -1020,22 +1021,42 @@ void Session::AllowNTLMCredentialsForDomains(const std::string& domains) {
       std::move(auth_dynamic_params));
 }
 
-void Session::SetUserAgent(const std::string& user_agent,
-                           gin::Arguments* args) {
-  browser_context_->SetUserAgent(user_agent);
-  auto* network_context =
-      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
-  network_context->SetUserAgent(user_agent);
+void Session::SetUserAgent(gin::Arguments* gin_args) {
+  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
 
+  std::string user_agent;
   std::string accept_lang;
-  if (args->GetNext(&accept_lang) && accept_lang.size() > 0) {
-    network_context->SetAcceptLanguage(
-        net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang));
+  absl::optional<blink::UserAgentMetadata> ua_metadata;
+  bool has_user_agent = false;
+  bool has_ua_metadata = false;
+  bool has_accept_lang = false;
+
+  gin_helper::Dictionary opts;
+
+  if (args->GetNext(&user_agent)) {
+    has_user_agent = true;
+  } else if (args->GetNext(&opts)) {
+    has_user_agent = opts.Get("userAgent", &user_agent);
+    has_ua_metadata = opts.Get("userAgentMetadata", &ua_metadata);
+    has_accept_lang = opts.Get("acceptLanguages", &accept_lang);
+  }
+  if (!has_accept_lang) {
+    has_accept_lang = args->GetNext(&accept_lang);
   }
 
-  blink::UserAgentMetadata ua_metadata;
-  if (args->GetNext(&ua_metadata)) {
+  auto* network_context =
+    browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
+  if (has_user_agent) {
+    browser_context_->SetUserAgent(user_agent);
+    network_context->SetUserAgent(user_agent);
+  }
+
+  if (has_ua_metadata) {
     browser_context_->SetUserAgentMetadata(ua_metadata);
+  }
+  if (has_accept_lang) {
+    network_context->SetAcceptLanguage(
+      net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang));
   }
 }
 

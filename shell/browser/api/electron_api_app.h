@@ -28,6 +28,7 @@
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "v8/include/cppgc/persistent.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 
 #if BUILDFLAG(USE_NSS_CERTS)
@@ -235,7 +236,7 @@ class App final : public gin::Wrappable<App>,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(gin_helper::ErrorThrower thrower);
-  void SetUserAgentFallback(const std::string& user_agent);
+  void SetUserAgentFallback(gin::Arguments* args);
   std::string GetUserAgentFallback();
   void SetUserAgentMetadataFallback(
       absl::optional<blink::UserAgentMetadata> ua_meta);
