@@ -1487,7 +1487,7 @@ session.defaultSession.allowNTLMCredentialsForDomains('*')
 
 * `userAgent` string
 * `acceptLanguages` string (optional)
-* `userAgentMetadata` [UserAgentMetadata](structures/useragent-metadata.md) (optional)
+* `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 
 Overrides the `userAgent`, `acceptLanguages` and `userAgentMetadata` for this session.
 
@@ -1510,7 +1510,7 @@ Returns `string` - The user agent for this session.
 
 #### `ses.setUserAgentMetadata([userAgentMetadata])`
 
-* `userAgentMetadata` [UserAgentMetadata](structures/useragent-metadata.md) (optional)
+* `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 
 Overrides the `userAgentMetadata` for this session.
 
