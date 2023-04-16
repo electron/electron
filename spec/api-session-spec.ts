@@ -1311,6 +1311,23 @@ describe('session module', () => {
       expect(headers!['user-agent']).to.equal(userAgent);
       expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
     });
+
+    it('sets the User-Agent header for web requests made from renderers (options)', async () => {
+      const userAgent = 'test-agent';
+      const ses = session.fromPartition('' + Math.random());
+      ses.setUserAgent({ userAgent }, 'en-US,fr,de');
+      const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+      let headers: http.IncomingHttpHeaders | null = null;
+      const server = http.createServer((req, res) => {
+        headers = req.headers;
+        res.end();
+        server.close();
+      });
+      const { url } = await listen(server);
+      await w.loadURL(url);
+      expect(headers!['user-agent']).to.equal(userAgent);
+      expect(headers!['accept-language']).to.equal('en-US,fr;q=0.9,de;q=0.8');
+    });
   });
 
   describe('session-created event', () => {

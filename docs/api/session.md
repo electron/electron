@@ -1182,11 +1182,13 @@ session.defaultSession.allowNTLMCredentialsForDomains('*example.com, *foobar.com
 session.defaultSession.allowNTLMCredentialsForDomains('*')
 ```
 
-#### `ses.setUserAgent(userAgent[, acceptLanguages][, userAgentMetadata])`
+#### `ses.setUserAgent(options[, acceptLanguages])`
 
-* `userAgent` string
+* `options` (Object | string) - If `options` is a string, it is interpreted as
+the user agent string.
+  * `userAgent` string
+  * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 * `acceptLanguages` string (optional)
-* `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional)
 
 Overrides the `userAgent`, `acceptLanguages` and `userAgentMetadata` for this session.
 

@@ -26,6 +26,7 @@
 #include "shell/browser/browser_observer.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/browser/event_emitter_mixin.h"
+#include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
@@ -219,7 +220,7 @@ class App : public ElectronBrowserClient::Delegate,
   v8::Local<v8::Promise> GetGPUInfo(v8::Isolate* isolate,
                                     const std::string& info_type);
   void EnableSandbox(gin_helper::ErrorThrower thrower);
-  void SetUserAgentFallback(const std::string& user_agent);
+  void SetUserAgentFallback(gin::Arguments* args);
   std::string GetUserAgentFallback();
   void SetUserAgentMetadataFallback(absl::optional<blink::UserAgentMetadata> ua_meta);
   v8::Local<v8::Value> GetUserAgentMetadataFallback(v8::Isolate* isolate);

@@ -1200,10 +1200,12 @@ contents.on('unresponsive', async () => {
 })
 ```
 
-#### `contents.setUserAgent(userAgent[, userAgentMetadata])`
+#### `contents.setUserAgent(options)`
 
-* `userAgent` string - The user agent string.
-* `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
+* `options` (Object | string) - If `options` is a string, it is interpreted as
+the user agent stringL.
+  * `userAgent` string - The user agent string.
+  * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
 
 Overrides the user agent and metadata for this web page.
 

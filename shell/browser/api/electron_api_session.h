@@ -124,7 +124,7 @@ class Session : public gin::Wrappable<Session>,
   v8::Local<v8::Promise> ClearHostResolverCache(gin::Arguments* args);
   v8::Local<v8::Promise> ClearAuthCache();
   void AllowNTLMCredentialsForDomains(const std::string& domains);
-  void SetUserAgent(const std::string& user_agent, gin::Arguments* args);
+  void SetUserAgent(gin::Arguments* args);
   std::string GetUserAgent();
   void SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_meta);
   v8::Local<v8::Value> GetUserAgentMetadata(v8::Isolate* isolate);

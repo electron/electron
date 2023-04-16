@@ -1523,8 +1523,24 @@ void App::EnableSandbox(gin_helper::ErrorThrower thrower) {
   command_line->AppendSwitch(switches::kEnableSandbox);
 }
 
-void App::SetUserAgentFallback(const std::string& user_agent) {
-  ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+void App::SetUserAgentFallback(gin::Arguments* gin_args) {
+  gin_helper::Arguments* args = static_cast<gin_helper::Arguments*>(gin_args);
+
+  std::string user_agent;
+  gin_helper::Dictionary opts;
+
+  if (args->GetNext(&user_agent)) {
+    ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+    return;
+  } else if (args->GetNext(&opts)) {
+    if (opts.Get("userAgent", &user_agent)) {
+      ElectronBrowserClient::Get()->SetUserAgent(user_agent);
+    }
+    absl::optional<blink::UserAgentMetadata> ua_metadata;
+    if (opts.Get("userAgentMetadata", &ua_metadata)) {
+      ElectronBrowserClient::Get()->SetUserAgentMetadata(ua_metadata);
+    }
+  }
 }
 
 void App::SetUserAgentMetadataFallback(absl::optional<blink::UserAgentMetadata> ua_metadata) {
@@ -1849,6 +1865,8 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("runningUnderARM64Translation",
                    &App::IsRunningUnderARM64Translation)
 #endif
+      .SetMethod("setUserAgentFallback",
+                  &App::SetUserAgentFallback)
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
       .SetProperty("userAgentMetadataFallback", &App::GetUserAgentMetadataFallback,

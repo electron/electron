@@ -1410,6 +1410,18 @@ Enables full sandbox mode on the app. This means that all renderers will be laun
 
 This method can only be called before app is ready.
 
+### `app.setUserAgentFallback(options)`
+
+* `options` (Object | string) - If `options` is a string, it is interpreted as
+the user agent string.
+  * `userAgent` string (optional) - which is the user agent string Electron will use as a global fallback.
+  * `userAgentMetadata` UserAgentMetadata (optional) - which is the user agent metadata Electron will use as a global fallback.
+
+This is the user agent that will be used when no user agent is set at the
+`webContents` or `session` level.  It is useful for ensuring that your entire
+app has the same user agent.  Set to a custom value as early as possible
+in your app's initialization to ensure that your overridden value is used.
+
 ### `app.isInApplicationsFolder()` _macOS_
 
 Returns `boolean` - Whether the application is currently running from the
