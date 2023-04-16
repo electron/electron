@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 058e2edda155ea73c29f70d81b2cbb6d3a709d9f..dfbcac6934da1a28f09afa4d60f26f1e1eaeebd5 100644
+index de465c107163124c6be79c3d10c2dd5678436b5a..b464fac54c13c176cca30bccd51dc25efdc8720b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1030,6 +1030,7 @@ component("base") {
@@ -76,7 +76,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8750a47c50ddcc3e3c853639d9cadd8e66c7dcaa..3e54be9dc2a2dbcd65a5382fa179ca092b8cfe6e 100644
+index 6b988eeae6411649bc35321dd22805a5c5439fb5..e78f16518da14411ceb74c88be31ffce413f986e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -112,7 +112,7 @@ index 3ec54c242fb920a53fcaa6d8040f2ec88c2727df..27dee1596183d2ead5290a60c08e47e6
  
    public_deps = [
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 5e9f447e4d946cd48d7b18d81c256baa169f93ea..fcfda1b4fde66c39b53a52d57c5e57b7f239bda1 100644
+index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942d1a20b90 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -240,6 +240,7 @@ component("bluetooth") {
@@ -253,7 +253,7 @@ index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 171bc18462841b58dd31c58bbb000abac852337d..2eaa15b5aba46a796905ed45d893db17d566af15 100644
+index 34a269ee4d47a2597fd098bc9eabe10685f4fc86..8a96f5abc4e0092bca15dbf6e5098a64d81a3ff7 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -193,6 +193,7 @@ component("gfx") {

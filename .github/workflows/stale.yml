@@ -33,6 +33,7 @@ jobs:
         with:
           days-before-stale: -1
           days-before-close: 10
+          remove-stale-when-updated: false
           stale-issue-label: blocked/need-repro
           stale-pr-label: not-a-real-label
           operations-per-run: 1750

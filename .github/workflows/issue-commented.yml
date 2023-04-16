@@ -1,0 +1,23 @@
+name: Issue Commented
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions:
+  contents: read
+
+jobs:
+  issue-commented:
+    permissions:
+      issues: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove blocked/need-repro on comment
+        if: ${{ contains(github.event.issue.labels.*.name, 'blocked/need-repro') && !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.comment.author_association) }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro'

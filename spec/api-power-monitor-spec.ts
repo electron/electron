@@ -8,7 +8,7 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers';
 import { promisify } from 'util';
 import { setTimeout } from 'timers/promises';
 
@@ -133,6 +133,11 @@ describe('powerMonitor', () => {
         });
       });
     });
+  });
+
+  it('is usable before app ready', async () => {
+    const remoteApp = await startRemoteControlApp(['--boot-eval=globalThis.initialValue=require("electron").powerMonitor.getSystemIdleTime()']);
+    expect(await remoteApp.remoteEval('globalThis.initialValue')).to.be.a('number');
   });
 
   describe('when powerMonitor module is loaded', () => {

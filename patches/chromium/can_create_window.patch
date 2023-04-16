@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 43c31d210e70f28d5da8b05d0348bc8bf762ecf9..8becad9c30cfb15fda735ced3dbbe7ab81949b91 100644
+index 24563bf259de8735e161ff462711ac2f3b96c738..46e8acf1267ffb24de71c4239121e787f5291fd4 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -7702,6 +7702,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -7710,6 +7710,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,10 +66,10 @@ index 12f4a2066a2a31e9852216c0cb3344095c7b0e39..588ca46227c58f9596317d6d4d05d0b3
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index b789b7b1bbe4ef23df29da44883f69195dc784fd..772bd32d27f1c54410f2f0ce2784616b4dc49ef9 100644
+index bf19525ff2a04cbaccd519de35bb25880a255892..233c048f9afb3f3bcdc1ff2d071730379f4f7e22 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -640,6 +640,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -635,6 +635,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index b789b7b1bbe4ef23df29da44883f69195dc784fd..772bd32d27f1c54410f2f0ce2784616b
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 57ffe3e1603c24abcb8df1ec2a8192160afb07e3..0a65089a09c7d7d157d1facdfa4efd289e77edbb 100644
+index 3a843b83b86f868998ea9c2289874eb89fdec41a..b0534cbc6754f313b798436b39146da59d3fb32c 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -165,6 +165,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index 57ffe3e1603c24abcb8df1ec2a8192160afb07e3..0a65089a09c7d7d157d1facdfa4efd28
  }  // namespace network
  
  namespace sandbox {
-@@ -1038,6 +1039,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1031,6 +1032,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -189,33 +189,33 @@ index 22254206063abe36739e1c0e7c065223ab6807d2..7f5d89f8dc8b46ac1338e73b03948725
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index 19e505a2d434dfd219b12304238e3b654eb8395f..314d1e63c55fae58e9f7ad0ce10045d3133f4882 100644
+index 4156256596276015ca3205b0f49f69d1ab47208e..271bc153afe3e3bfa98a7baa6ae4f92285d41929 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
-@@ -34,6 +34,7 @@
- #include "third_party/abseil-cpp/absl/types/optional.h"
+@@ -32,6 +32,7 @@
+ #define THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_WINDOW_FEATURES_H_
  
- #include "third_party/blink/public/common/navigation/impression.h"
+ #include "third_party/blink/public/platform/web_string.h"
 +#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
  
  namespace blink {
  
 @@ -68,6 +69,8 @@ struct WebWindowFeatures {
-   // Represents the attribution source declared by Attribution Reporting related
-   // window features, if any.
-   absl::optional<Impression> impression;
+   // request should be made. Otherwise, an impression should be set and a
+   // background request should be made to the contained relative URL.
+   WebString attribution_src;
 +
 +  String raw_features;
  };
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 6e4235ff40d88880e5928cbca2a593264d6da527..814781746df6fd0b2cedc2f3aa77759aa1c7a868 100644
+index 805528d51c5eef239154be54d4d484db15cb0d4d..2d75600164d736b8d6ecf3855681c4f076b6e181 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2212,6 +2212,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2217,6 +2217,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
-       GetWindowFeaturesFromString(features, entered_window, completed_url);
+       GetWindowFeaturesFromString(features, entered_window);
  
 +  window_features.raw_features = features;
 +

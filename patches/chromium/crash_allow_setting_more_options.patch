@@ -31,18 +31,18 @@ index 284dd099122df85d2cebf467cdb3a54b45a343eb..bb21ddbd2ee4d2952a4b753a5c553005
  unsigned int CrashReporterClient::GetCrashDumpPercentage() {
    return 100;
 diff --git a/components/crash/core/app/crash_reporter_client.h b/components/crash/core/app/crash_reporter_client.h
-index 9f8f20dfa65068a13ce3b035a7e3ce062d767161..9b45c7276e97253f79f4555ee692687b040afa67 100644
+index a604df7a5ea6a1f5613acc032a65668364aadf89..93a8bf787bdaa0e4251a41453eb22062646f4bcb 100644
 --- a/components/crash/core/app/crash_reporter_client.h
 +++ b/components/crash/core/app/crash_reporter_client.h
-@@ -5,6 +5,7 @@
- #ifndef COMPONENTS_CRASH_CORE_APP_CRASH_REPORTER_CLIENT_H_
- #define COMPONENTS_CRASH_CORE_APP_CRASH_REPORTER_CLIENT_H_
+@@ -7,6 +7,7 @@
+ 
+ #include <stdint.h>
  
 +#include <map>
  #include <string>
  
  #include "build/build_config.h"
-@@ -151,6 +152,19 @@ class CrashReporterClient {
+@@ -153,6 +154,19 @@ class CrashReporterClient {
    // that case, |breakpad_enabled| is set to the value enforced by policies.
    virtual bool ReportingIsEnforcedByPolicy(bool* breakpad_enabled);
  
