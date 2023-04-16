@@ -682,37 +682,16 @@ bool Converter<blink::UserAgentMetadata>::FromV8(v8::Isolate* isolate,
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
 
-  if (!dict.Get("brands", &out->brand_version_list)) {
-    return false;
-  }
-  if (!dict.Get("fullVersionList", &out->brand_full_version_list)) {
-    return false;
-  }
-  if (!dict.Get("fullVersion", &out->full_version)) {
-    return false;
-  }
-  if (!dict.Get("platform", &out->platform)) {
-    return false;
-  }
-  if (!dict.Get("platformVersion", &out->platform_version)) {
-    return false;
-  }
-  if (!dict.Get("architecture", &out->architecture))  {
-    return false;
-  }
-  if (!dict.Get("model", &out->model)) {
-    return false;
-  }
-  if (!dict.Get("mobile", &out->mobile)) {
-    return false;
-  }
-  if (!dict.Get("bitness", &out->bitness)) {
-    return false;
-  }
-  if (!dict.Get("wow64", &out->wow64)) {
-    return false;
-  }
-
+  dict.Get("brands", &out->brand_version_list);
+  dict.Get("fullVersionList", &out->brand_full_version_list);
+  dict.Get("fullVersion", &out->full_version);
+  dict.Get("platform", &out->platform);
+  dict.Get("platformVersion", &out->platform_version);
+  dict.Get("architecture", &out->architecture);
+  dict.Get("model", &out->model);
+  dict.Get("mobile", &out->mobile);
+  dict.Get("bitness", &out->bitness);
+  dict.Get("wow64", &out->wow64);
   return true;
 }
 
