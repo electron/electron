@@ -54,7 +54,7 @@ UsbChooserController::UsbChooserController(
 }
 
 UsbChooserController::~UsbChooserController() {
-  RunCallback(/*device=*/nullptr);
+  RunCallback(/*device_info=*/nullptr);
 }
 
 api::Session* UsbChooserController::GetSession() {
@@ -85,7 +85,7 @@ void UsbChooserController::OnDeviceRemoved(
 void UsbChooserController::OnDeviceChosen(gin::Arguments* args) {
   std::string device_id;
   if (!args->GetNext(&device_id) || device_id.empty()) {
-    RunCallback(/*device=*/nullptr);
+    RunCallback(/*device_info=*/nullptr);
   } else {
     auto* device_info = chooser_context_->GetDeviceInfo(device_id);
     if (device_info) {
@@ -95,7 +95,7 @@ void UsbChooserController::OnDeviceChosen(gin::Arguments* args) {
       node::Environment* env = node::Environment::GetCurrent(isolate);
       EmitWarning(env, "The device id " + device_id + " was not found.",
                   "UnknownUsbDeviceId");
-      RunCallback(/*device=*/nullptr);
+      RunCallback(/*device_info=*/nullptr);
     }
   }
 }
@@ -131,7 +131,7 @@ void UsbChooserController::GotUsbDeviceList(
                                          weak_factory_.GetWeakPtr())));
   }
   if (!prevent_default) {
-    RunCallback(/*port=*/nullptr);
+    RunCallback(/*device_info=*/nullptr);
   }
 }
 

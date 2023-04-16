@@ -61,7 +61,7 @@ class ShowItemHelper {
     return *instance;
   }
 
-  ShowItemHelper() {}
+  ShowItemHelper() = default;
 
   ShowItemHelper(const ShowItemHelper&) = delete;
   ShowItemHelper& operator=(const ShowItemHelper&) = delete;

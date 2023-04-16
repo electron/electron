@@ -17,12 +17,14 @@ namespace electron::api {
 
 gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
 
+// NOLINTNEXTLINE(modernize-use-equals-default)
 SystemPreferences::SystemPreferences() {
 #if BUILDFLAG(IS_WIN)
   InitializeWindow();
 #endif
 }
 
+// NOLINTNEXTLINE(modernize-use-equals-default)
 SystemPreferences::~SystemPreferences() {
 #if BUILDFLAG(IS_WIN)
   Browser::Get()->RemoveObserver(this);

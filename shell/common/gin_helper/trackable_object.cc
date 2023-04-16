@@ -21,7 +21,7 @@ class IDUserData : public base::SupportsUserData::Data {
  public:
   explicit IDUserData(int32_t id) : id_(id) {}
 
-  operator int32_t() const { return id_; }
+  explicit operator int32_t() const { return id_; }
 
  private:
   int32_t id_;
@@ -58,7 +58,7 @@ int32_t TrackableObjectBase::GetIDFromWrappedClass(
     auto* id =
         static_cast<IDUserData*>(wrapped->GetUserData(kTrackedObjectKey));
     if (id)
-      return *id;
+      return int32_t(*id);
   }
   return 0;
 }

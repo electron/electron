@@ -152,7 +152,7 @@ void AddPropertyFilters(std::vector<ui::AXPropertyFilter>* property_filters,
                         ui::AXPropertyFilter::Type type) {
   for (const std::string& attribute : base::SplitString(
            attributes, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY)) {
-    property_filters->push_back(ui::AXPropertyFilter(attribute, type));
+    property_filters->emplace_back(attribute, type);
   }
 }
 

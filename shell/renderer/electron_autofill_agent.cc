@@ -46,7 +46,7 @@ void GetDataListSuggestions(const blink::WebInputElement& element,
     if (option.Value() != option.Label())
       labels->push_back(option.Label().Utf16());
     else
-      labels->push_back(std::u16string());
+      labels->emplace_back();
   }
 
   TrimStringVectorForIPC(values);
