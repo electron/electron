@@ -1551,7 +1551,7 @@ in your app's initialization to ensure that your overridden value is used.
 
 #### `app.userAgentMetadataFallback`
 
-A [`UserAgentMetadata`](structures/useragent-metadata.md) object.
+A [`UserAgentMetadata`](structures/user-agent-metadata.md) object.
 
 The user agent metadata Electron will use as a global fallback.
 
