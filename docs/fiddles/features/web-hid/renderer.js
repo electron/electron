@@ -1,4 +1,4 @@
-async function testIt() {
+async function testIt () {
   const grantedDevices = await navigator.hid.getDevices()
   let grantedDeviceList = ''
   grantedDevices.forEach(device => {
@@ -10,10 +10,10 @@ async function testIt() {
   })
 
   grantedDeviceList = ''
-   grantedDevices2.forEach(device => {
+  grantedDevices2.forEach(device => {
     grantedDeviceList += `<hr>${device.productName}</hr>`
   })
   document.getElementById('granted-devices2').innerHTML = grantedDeviceList
 }
 
-document.getElementById('clickme').addEventListener('click',testIt)
+document.getElementById('clickme').addEventListener('click', testIt)

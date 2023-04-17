@@ -95,6 +95,7 @@
     "lint:py": "node ./script/lint.js --py",
     "lint:gn": "node ./script/lint.js --gn",
     "lint:docs": "remark docs -qf && npm run lint:js-in-markdown && npm run create-typescript-definitions && npm run lint:docs-relative-links && npm run lint:markdownlint",
+    "lint:docs-fiddles": "standard \"docs/fiddles/**/*.js\"",
     "lint:docs-relative-links": "ts-node script/lint-docs-links.ts",
     "lint:markdownlint": "markdownlint -r ./script/markdownlint-emd001.js \"*.md\" \"docs/**/*.md\"",
     "lint:js-in-markdown": "standard-markdown docs",
