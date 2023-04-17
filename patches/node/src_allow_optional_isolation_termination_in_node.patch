@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Tue, 7 Feb 2023 10:53:11 +0100
+Subject: src: allow optional isolation termination in node
+
+This patch allows for node::Stop() to conditionally call
+V8:Isolate::TerminateExecution().
+
+We do not want to invoke a termination exception at exit when
+we're running with only_terminate_in_safe_scope set to false. Heap and
+coverage profilers run after environment exit and if there is a pending
+exception at this stage then they will fail to generate the appropriate
+profiles. Node.js does not call node::Stop(), which previously always
+called isolate->TerminateExecution(), and therefore does not have this
+issue when also running with only_terminate_in_safe_scope set to false.
+
+diff --git a/src/env.cc b/src/env.cc
+index de41e5b7f6ff9f818c661484a93b74db7569e31f..819fcfa6be46328a01a612315d48e93eb025423c 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -920,10 +920,11 @@ void Environment::InitializeLibuv() {
+   StartProfilerIdleNotifier();
+ }
+ 
+-void Environment::ExitEnv() {
++void Environment::ExitEnv(bool terminate) {
+   set_can_call_into_js(false);
+   set_stopping(true);
+-  isolate_->TerminateExecution();
++  if (terminate)
++    isolate_->TerminateExecution();
+   SetImmediateThreadsafe([](Environment* env) { uv_stop(env->event_loop()); });
+ }
+ 
+diff --git a/src/env.h b/src/env.h
+index 34c88c1addc5f64bd46332451e5b4ba8343c8818..1d32bf5945ab814294b5b5676b228c86518a05cd 100644
+--- a/src/env.h
++++ b/src/env.h
+@@ -1100,7 +1100,7 @@ class Environment : public MemoryRetainer {
+   void RegisterHandleCleanups();
+   void CleanupHandles();
+   void Exit(int code);
+-  void ExitEnv();
++  void ExitEnv(bool terminate);
+ 
+   // Register clean-up cb to be called on environment destruction.
+   inline void RegisterHandleCleanup(uv_handle_t* handle,
+diff --git a/src/node.cc b/src/node.cc
+index 357ca1eb55652d88d6de60618e62cd54eaff6601..e0f84c3a7ba1c1866971eacfe0b508a52446bd7e 100644
+--- a/src/node.cc
++++ b/src/node.cc
+@@ -1344,8 +1344,8 @@ int Start(int argc, char** argv) {
+   return LoadSnapshotDataAndRun(&snapshot_data, result.get());
+ }
+ 
+-int Stop(Environment* env) {
+-  env->ExitEnv();
++int Stop(Environment* env, bool terminate) {
++  env->ExitEnv(terminate);
+   return 0;
+ }
+ 
+diff --git a/src/node.h b/src/node.h
+index 7e1be61a9cca8205666a129bafa2b2f4f4dbcc4b..00ff1d6d6560a2e97da1c675a46bcd6defe963d7 100644
+--- a/src/node.h
++++ b/src/node.h
+@@ -314,7 +314,7 @@ NODE_EXTERN int Start(int argc, char* argv[]);
+ 
+ // Tear down Node.js while it is running (there are active handles
+ // in the loop and / or actively executing JavaScript code).
+-NODE_EXTERN int Stop(Environment* env);
++NODE_EXTERN int Stop(Environment* env, bool terminate = true);
+ 
+ // This runs a subset of the initialization performed by
+ // InitializeOncePerProcess(), which supersedes this function.

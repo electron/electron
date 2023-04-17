@@ -73,21 +73,42 @@ struct base::trace_event::TraceValue::Helper<
 
 namespace electron {
 
+namespace {
+
+gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
+  std::unique_ptr<v8::Isolate::CreateParams> create_params =
+      gin::IsolateHolder::getDefaultIsolateParams();
+  // Align behavior with V8 Isolate default for Node.js.
+  // This is necessary for important aspects of Node.js
+  // including heap and cpu profilers to function properly.
+  //
+  // Additional note:
+  // We do not want to invoke a termination exception at exit when
+  // we're running with only_terminate_in_safe_scope set to false. Heap and
+  // coverage profilers run after environment exit and if there is a pending
+  // exception at this stage then they will fail to generate the appropriate
+  // profiles. Node.js does not call node::Stop(), which calls
+  // isolate->TerminateExecution(), and therefore does not have this issue
+  // when also running with only_terminate_in_safe_scope set to false.
+  create_params->only_terminate_in_safe_scope = false;
+
+  return gin::IsolateHolder(
+      base::SingleThreadTaskRunner::GetCurrentDefault(),
+      gin::IsolateHolder::kSingleThread,
+      gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
+      gin::IsolateHolder::IsolateCreationMode::kNormal, isolate);
+}
+
+}  // namespace
+
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop)
     : isolate_(Initialize(event_loop)),
-      isolate_holder_(base::ThreadTaskRunnerHandle::Get(),
-                      gin::IsolateHolder::kSingleThread,
-                      gin::IsolateHolder::kAllowAtomicsWait,
-                      gin::IsolateHolder::IsolateType::kUtility,
-                      gin::IsolateHolder::IsolateCreationMode::kNormal,
-                      nullptr,
-                      nullptr,
-                      isolate_),
+      isolate_holder_(CreateIsolateHolder(isolate_)),
       locker_(isolate_) {
   isolate_->Enter();
   v8::HandleScope scope(isolate_);
   auto context = node::NewContext(isolate_);
-  context_ = v8::Global<v8::Context>(isolate_, context);
+  CHECK(!context.IsEmpty());
   context->Enter();
 }
 
@@ -97,7 +118,7 @@ JavascriptEnvironment::~JavascriptEnvironment() {
 
   {
     v8::HandleScope scope(isolate_);
-    context_.Get(isolate_)->Exit();
+    isolate_->GetCurrentContext()->Exit();
   }
   isolate_->Exit();
   g_isolate = nullptr;
