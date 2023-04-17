@@ -78,7 +78,7 @@ index b496ff49232f449fd6cea9dc1927b833c049497b..4c12ca65c1f800ddbbb792716f09f63f
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 5e6e88ba07a304ce4412b1d157e33d77ec5547e1..6b03b3cd63406f1270a74aa4919de85b12e129c4 100644
+index 5e6e88ba07a304ce4412b1d157e33d77ec5547e1..7bd6dc2c63ee97a3d145f65a6904775af5743098 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -23,7 +23,9 @@
@@ -237,7 +237,7 @@ index 5e6e88ba07a304ce4412b1d157e33d77ec5547e1..6b03b3cd63406f1270a74aa4919de85b
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
    if (printing::features::kEnableOopPrintDriversJobPrint.Get() &&
  #if BUILDFLAG(ENABLE_PRINT_CONTENT_ANALYSIS)
-@@ -593,6 +627,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -593,10 +627,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value::Dict job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -245,7 +245,20 @@ index 5e6e88ba07a304ce4412b1d157e33d77ec5547e1..6b03b3cd63406f1270a74aa4919de85b
    if (!printing_enabled_.GetValue()) {
      std::move(callback).Run(nullptr);
      return;
-@@ -626,6 +661,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+   }
++#endif // Printing is always enabled.
+ 
+   absl::optional<int> printer_type_value =
+       job_settings.FindInt(kSettingPrinterType);
+@@ -607,6 +643,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+ 
+   mojom::PrinterType printer_type =
+       static_cast<mojom::PrinterType>(*printer_type_value);
++#if 0 // Printing is always enabled.
+   if (printer_type != mojom::PrinterType::kExtension &&
+       printer_type != mojom::PrinterType::kPdf &&
+       printer_type != mojom::PrinterType::kLocal) {
+@@ -626,6 +663,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
      if (value > 0)
        job_settings.Set(kSettingRasterizePdfDpi, value);
    }
@@ -253,22 +266,6 @@ index 5e6e88ba07a304ce4412b1d157e33d77ec5547e1..6b03b3cd63406f1270a74aa4919de85b
  
    std::unique_ptr<PrintSettings> print_settings =
        PrintSettingsFromJobSettings(job_settings);
-@@ -634,6 +670,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
-     return;
-   }
- 
-+#if 0  // Printing is always enabled.
- #if BUILDFLAG(IS_WIN)
-   // TODO(crbug.com/1424368):  Remove this if the printable areas can be made
-   // fully available from `PrintBackend::GetPrinterSemanticCapsAndDefaults()`
-@@ -648,6 +685,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
-     }
-   }
- #endif
-+#endif // Printing is always enabled.
- 
-   mojom::PrintPagesParamsPtr settings = mojom::PrintPagesParams::New();
-   settings->pages = GetPageRangesFromJobSettings(job_settings);
 @@ -671,7 +709,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
  void PrintViewManagerBase::IsPrintingEnabled(
      IsPrintingEnabledCallback callback) {
