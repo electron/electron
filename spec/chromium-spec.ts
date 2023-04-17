@@ -2047,6 +2047,19 @@ describe('chromium features', () => {
         expect(platform).to.equal('electron');
       });
 
+      it('for child window when there is a WebContents-specific UA metadata override', async () => {
+        const userAgentMetadata = app.userAgentMetadataFallback;
+        userAgentMetadata.platform = 'electron';
+        const w = new BrowserWindow({ show: false });
+        w.webContents.setUserAgent({ userAgent: 'foo', userAgentMetadata });
+        await w.loadURL(serverUrl);
+        const childPromise = once(w.webContents, 'did-create-window');
+        w.webContents.executeJavaScript('window.open("about:blank")', true);
+        const [childWindow] = await childPromise;
+        const platform = await childWindow.webContents.executeJavaScript('navigator.userAgentData.platform');
+        expect(platform).to.equal('electron');
+      });
+
       it('when there is a WebContents-specific UA override at load time', async () => {
         const w = new BrowserWindow({ show: false });
         await w.loadURL(serverUrl, {
