@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 12 Apr 2023 16:12:16 +0200
+Subject: Make Error.captureStackTrace() a no-op for global object
+
+(cherry picked from commit fa81078cca6964def7a3833704e0dba7b05065d8)
+
+Bug: chromium:1432210
+Change-Id: I8aa4c3f1d9ecbfffce503085c2879416ff916c69
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4417690
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#87045}
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4419050
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Lutz Vahl <vahl@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.2@{#31}
+Cr-Branched-From: 755511a138609ac5939449a8ac615c15603a4454-refs/heads/11.2.214@{#1}
+Cr-Branched-From: e6b1ccefb0f0f1ff8d310578878130dc53d73749-refs/heads/main@{#86014}
+
+diff --git a/src/builtins/builtins-error.cc b/src/builtins/builtins-error.cc
+index adb180fba89b61279895e0427caa71703769e28a..4a8dec419d3f483826467a7244b89ad03fa7ff1f 100644
+--- a/src/builtins/builtins-error.cc
++++ b/src/builtins/builtins-error.cc
+@@ -35,6 +35,9 @@ BUILTIN(ErrorCaptureStackTrace) {
+     THROW_NEW_ERROR_RETURN_FAILURE(
+         isolate, NewTypeError(MessageTemplate::kInvalidArgument, object_obj));
+   }
++  if (object_obj->IsJSGlobalProxy()) {
++    return ReadOnlyRoots(isolate).undefined_value();
++  }
+ 
+   Handle<JSObject> object = Handle<JSObject>::cast(object_obj);
+   Handle<Object> caller = args.atOrUndefined(isolate, 2);
