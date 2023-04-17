@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 50a1715278cb1bbc25bd2270860b41229e884000..e53c59416a088dca3757d873a40120acacb7dc79 100644
+index 98c9dca792522fd27774d9d22ead61ee546b1832..d255787f554b71cb9034229212f80b0fdd5c73f9 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -193,11 +193,16 @@ if (!is_android && !is_mac) {
@@ -33,7 +33,7 @@ index 50a1715278cb1bbc25bd2270860b41229e884000..e53c59416a088dca3757d873a40120ac
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 6b1cd116564be4257c0d17a2fe89c809bba30798..f2c294ce29b3eae2f07489393516591c4d9c7768 100644
+index 8f91c97f281d98f4f6ca4dedc85be92f28a7f01c..42e31a4480ecf36e7170095b0ab5d83dbcf814ae 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4568,7 +4568,7 @@ static_library("browser") {
@@ -46,7 +46,7 @@ index 6b1cd116564be4257c0d17a2fe89c809bba30798..f2c294ce29b3eae2f07489393516591c
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index bc6868fa3bfdf36e21af8458c768a35819447443..433d89a4205b0521fcd82fa0f9ed383e7d5e4fa7 100644
+index 5324dbaed520217d60b1334ecd5ce6c878b91720..dbe7b2e2126438164b1f1851fc403ab8998ef1bb 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -6406,7 +6406,6 @@ test("unit_tests") {

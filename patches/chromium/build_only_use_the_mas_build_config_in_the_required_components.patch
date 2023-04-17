@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index de465c107163124c6be79c3d10c2dd5678436b5a..b464fac54c13c176cca30bccd51dc25efdc8720b 100644
+index df71fc228f245784ba0eef24c6a58dd1b12f3266..f2d5236e7c49b835799cccbc5ba78d793dce6371 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1030,6 +1030,7 @@ component("base") {
@@ -18,7 +18,7 @@ index de465c107163124c6be79c3d10c2dd5678436b5a..b464fac54c13c176cca30bccd51dc25e
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 21cc8f57ed0fe4151a95bb9520d84e73988de6af..421fc44fa6ee63b60e65c973dd8920d339cb01f6 100644
+index 82ec974552d89ce178c19e67ff19cfba2564ab3e..9c0a08d708535b1559e206e5bb35f16b24a61941 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -76,7 +76,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6b988eeae6411649bc35321dd22805a5c5439fb5..e78f16518da14411ceb74c88be31ffce413f986e 100644
+index d7ee2e5d8226a7e9dfdea4c6acdb86029a342e92..500511fb034fa58fd1df1c404c1eab521d54f5d8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -214,10 +214,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682ca6f07179 100644
+index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb277468cb424d 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -249,6 +249,7 @@ component("platform") {
+@@ -250,6 +250,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
@@ -226,7 +226,7 @@ index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682c
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 9631446ea47a2d8c5d2483ed13cf17a023c49ab6..0e61c424c7529cd469582d200bb6f42e795942a0 100644
+index 4f41808bcabe9c1f4277d877d597b4f0c43030f9..69f412ed84d6b4134961c91e5056ed42b678f5ed 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -343,6 +343,7 @@ component("base") {
@@ -238,7 +238,7 @@ index 9631446ea47a2d8c5d2483ed13cf17a023c49ab6..0e61c424c7529cd469582d200bb6f42e
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35132e0b32 100644
+index 1bfc640fe1443ef783977ac16510d5e042db9137..fac4aad72c4de0657df64ec49e3d15b009541f69 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
