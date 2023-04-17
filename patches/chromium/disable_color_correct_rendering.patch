@@ -93,7 +93,7 @@ index 9e53989c27763d082dabbaee2149206906977d10..7f6698c75db98e0a239a9144c73362f5
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index da3254d252dabca7593eb46c461ce4063137d957..cd0bd70cbefa80246fc4624a718585cf63c13e96 100644
+index da1b9e452b349b05c985791847044a33ad04f97a..844a544811b5470ee3ce90105cfc655cfb353b9a 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -3333,6 +3333,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
