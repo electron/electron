@@ -816,6 +816,22 @@ WebContents.prototype._init = function () {
       callback('');
     }
   });
+  // Bluetooth connect
+  this.on('select-bluetooth-device',(navigator)=>{
+    if ("bluetooth" in navigator) {
+    navigator.bluetooth
+      .requestDevice({ acceptAllDevices: true })
+      .then((device: BluetoothDevice) => {
+        console.log(`Connected to device: ${device.name}`);
+        // Device is now connected, perform operations on the device
+      })
+      .catch((error: Error) => {
+        console.error(`Error connecting to device: ${error}`);
+      });
+  } else {
+    console.error("Web Bluetooth API is not supported on this browser.");
+  }}
+
 
   app.emit('web-contents-created', { sender: this, preventDefault () {}, get defaultPrevented () { return false; } }, this);
 
