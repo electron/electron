@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Darius M <dmercadier@chromium.org>
+Date: Mon, 27 Mar 2023 13:39:50 +0200
+Subject: Merged: [compiler] Prevent constant folding of TypeGuard
+
+TypeGuard are used to prevent operations from floating before a
+preceding check, and thus shouldn't be constant-folded.
+
+Bug: chromium:1427388
+(cherry picked from commit 867716437273c16dc6ef5bc85b9c18affa1fb242)
+
+Change-Id: Ia334d079707f13974235f8c04ccb468ac16ff794
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4386487
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.2@{#23}
+Cr-Branched-From: 755511a138609ac5939449a8ac615c15603a4454-refs/heads/11.2.214@{#1}
+Cr-Branched-From: e6b1ccefb0f0f1ff8d310578878130dc53d73749-refs/heads/main@{#86014}
+
+diff --git a/src/compiler/constant-folding-reducer.cc b/src/compiler/constant-folding-reducer.cc
+index 5e74ba75352cc3e7bf29a83ee72273e45720907b..4059e47c2db00e0df82296fa63e09147095f7ba7 100644
+--- a/src/compiler/constant-folding-reducer.cc
++++ b/src/compiler/constant-folding-reducer.cc
+@@ -66,7 +66,8 @@ ConstantFoldingReducer::~ConstantFoldingReducer() = default;
+ Reduction ConstantFoldingReducer::Reduce(Node* node) {
+   if (!NodeProperties::IsConstant(node) && NodeProperties::IsTyped(node) &&
+       node->op()->HasProperty(Operator::kEliminatable) &&
+-      node->opcode() != IrOpcode::kFinishRegion) {
++      node->opcode() != IrOpcode::kFinishRegion &&
++      node->opcode() != IrOpcode::kTypeGuard) {
+     Node* constant = TryGetConstant(jsgraph(), node);
+     if (constant != nullptr) {
+       DCHECK(NodeProperties::IsTyped(constant));

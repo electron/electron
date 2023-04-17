@@ -11,3 +11,4 @@ chore_disable_is_execution_terminating_dcheck.patch
 force_cppheapcreateparams_to_be_noncopyable.patch
 chore_allow_customizing_microtask_policy_per_context.patch
 cherry-pick-c605df24af3c.patch
+cherry-pick-f4b66ae451c2.patch
