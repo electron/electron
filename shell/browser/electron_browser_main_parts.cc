@@ -273,7 +273,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   node_bindings_->Initialize();
   // Create the global environment.
   node::Environment* env = node_bindings_->CreateEnvironment(
-      js_env_->context(), js_env_->platform());
+      js_env_->isolate()->GetCurrentContext(), js_env_->platform());
   node_env_ = std::make_unique<NodeEnvironment>(env);
 
   env->set_trace_sync_io(env->options()->trace_sync_io);
@@ -625,7 +625,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // invoke Node/V8 APIs inside them.
   node_env_->env()->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
-  node::Stop(node_env_->env());
+  node::Stop(node_env_->env(), false);
   node_env_.reset();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
