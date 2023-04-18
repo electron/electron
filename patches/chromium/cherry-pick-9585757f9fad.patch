@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Thu, 19 Jan 2023 17:03:20 +0000
+Subject: StatusIconLinuxDbus: Use default session bus name
+
+The StatusNotifierItem spec requires status items register with the name
+`org.kde.StatusNotifierItem-$PID-$ID`.  However this causes problems
+in sandboxed environments such as flatpak because extra permissions
+are required to register the bus name.  Additionally, the name
+`org.kde.StatusNotifierItem-2-1` will be used every time when PID
+namespaces are used for sandboxing.
+
+To address this, just use the default bus name we were given on
+initially connecting to the bus.  This violates the spec, but there's
+actually no consequence for doing this.
+
+R=sky
+
+Fixed: 1408315
+Change-Id: I1abc4100c2899206eaa1804a3ff47dce7ad4e565
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4179380
+Auto-Submit: Thomas Anderson <thomasanderson@chromium.org>
+Commit-Queue: Scott Violet <sky@chromium.org>
+Reviewed-by: Scott Violet <sky@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1094509}
+
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+index 88289caa2518a2888de596fd65b7dfb6efa3e1ab..c523874ecc329e5a722c5923334fc578ebdf6a84 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc
+@@ -101,12 +101,6 @@ int NextServiceId() {
+   return ++status_icon_count;
+ }
+ 
+-std::string ServiceNameFromId(int service_id) {
+-  return std::string(kInterfaceStatusNotifierItem) + '-' +
+-         base::NumberToString(base::Process::Current().Pid()) + '-' +
+-         base::NumberToString(service_id);
+-}
+-
+ std::string PropertyIdFromId(int service_id) {
+   return "chrome_status_icon_" + base::NumberToString(service_id);
+ }
+@@ -295,19 +289,6 @@ void StatusIconLinuxDbus::OnHostRegisteredResponse(dbus::Response* response) {
+   }
+ 
+   service_id_ = NextServiceId();
+-  bus_->RequestOwnership(ServiceNameFromId(service_id_),
+-                         dbus::Bus::ServiceOwnershipOptions::REQUIRE_PRIMARY,
+-                         base::BindOnce(&StatusIconLinuxDbus::OnOwnership,
+-                                        weak_factory_.GetWeakPtr()));
+-}
+-
+-void StatusIconLinuxDbus::OnOwnership(const std::string& service_name,
+-                                      bool success) {
+-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
+-  if (!success) {
+-    delegate_->OnImplInitializationFailed();
+-    return;
+-  }
+ 
+   static constexpr struct {
+     const char* name;
+@@ -390,7 +371,7 @@ void StatusIconLinuxDbus::RegisterStatusNotifierItem() {
+   dbus::MethodCall method_call(kInterfaceStatusNotifierWatcher,
+                                kMethodRegisterStatusNotifierItem);
+   dbus::MessageWriter writer(&method_call);
+-  writer.AppendString(ServiceNameFromId(service_id_));
++  writer.AppendString(bus_->GetConnectionName());
+   watcher_->CallMethod(&method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT,
+                        base::BindOnce(&StatusIconLinuxDbus::OnRegistered,
+                                       weak_factory_.GetWeakPtr()));
+diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+index eae1c332a0972aefb8843cac947aeb2f4c48d360..d4ad41f9a2a7e2df4bc38889d883f52ad90bd799 100644
+--- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
++++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
+@@ -65,10 +65,7 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
+   // registered.
+   void OnHostRegisteredResponse(dbus::Response* response);
+ 
+-  // Step 3: register a StatusNotifierItem service.
+-  void OnOwnership(const std::string& service_name, bool success);
+-
+-  // Step 4: export methods for the StatusNotifierItem and the properties
++  // Step 3: export methods for the StatusNotifierItem and the properties
+   // interface.
+   void OnExported(const std::string& interface_name,
+                   const std::string& method_name,
