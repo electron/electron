@@ -176,10 +176,10 @@ index d9e36712dc3fbc6a9043e2c33660090ca2f7367b..7d910583eb22fc315eb0619febe518d5
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index b3ef5af4450b3f96787bc3f9935dfdf19ebaaa94..6a4309070e0f6eaa743deefb0aeb2d0be558a787 100644
+index 56b56dff38b6f0e6a2967e10462667e0a8ead6ce..85a1894767df7026388e0486f96d9ddb602391e4 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
-@@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
+@@ -28,6 +28,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
  MockPlatformNotificationService::~MockPlatformNotificationService() = default;
  
  void MockPlatformNotificationService::DisplayNotification(

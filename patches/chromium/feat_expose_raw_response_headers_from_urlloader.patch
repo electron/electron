@@ -90,7 +90,7 @@ index be8d6d82f56fb2841b5e2a084c8320531db16a66..3c10936738c5f487b5a40690fc34e273
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index beab4deddd7681801025992a90f4ee54b7f18076..22f03b5afcd26bd876774a8a9728c430bbe3fe42 100644
+index f232e84621137b4deb4846628e932508d6cf0d1e..415181034418faa4d718fb8748971b4e9cdc9bcf 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -12,6 +12,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
@@ -112,7 +112,7 @@ index beab4deddd7681801025992a90f4ee54b7f18076..22f03b5afcd26bd876774a8a9728c430
    string mime_type;
  
 diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
-index bd09094f349a1051d328c917c29cf4c3a2b9ccdb..42abf94829bb6fc9774c6225c93a77d7366cfba5 100644
+index f2fa6521ac3f2a413c7db2cdad6b5a976e9d6133..04ef118f9b3930935a92c23c0bdfb0d015ee8434 100644
 --- a/services/network/url_loader.cc
 +++ b/services/network/url_loader.cc
 @@ -642,6 +642,7 @@ URLLoader::URLLoader(
@@ -122,8 +122,8 @@ index bd09094f349a1051d328c917c29cf4c3a2b9ccdb..42abf94829bb6fc9774c6225c93a77d7
 +    report_raw_headers_ = request.trusted_params->report_raw_headers;
    }
  
-   throttling_token_ = network::ScopedThrottlingToken::MaybeCreate(
-@@ -708,7 +709,7 @@ URLLoader::URLLoader(
+   // Store any cookies passed from the browser process to later attach them to
+@@ -715,7 +716,7 @@ URLLoader::URLLoader(
    url_request_->SetRequestHeadersCallback(base::BindRepeating(
        &URLLoader::SetRawRequestHeadersAndNotify, base::Unretained(this)));
  
