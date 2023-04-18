@@ -327,6 +327,8 @@ filenames = {
     "shell/browser/api/save_page_handler.h",
     "shell/browser/api/ui_event.cc",
     "shell/browser/api/ui_event.h",
+    "shell/browser/api/views/electron_api_image_view.cc",
+    "shell/browser/api/views/electron_api_image_view.h",
     "shell/browser/auto_updater.cc",
     "shell/browser/auto_updater.h",
     "shell/browser/badging/badge_manager.cc",
