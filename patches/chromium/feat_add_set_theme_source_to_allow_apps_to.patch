@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index 835fa36e64e2cb350f3f09798b0040b234f7c0ee..f9a754acab125bc50660e9c3763b36930ea7fe1d 100644
+index 972b8416c2d6d6bc412567675ba8bb61ba7bec70..a102e864239ab8ac67814c38cedf2e742e05eeeb 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -144,6 +144,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,7 +26,7 @@ index 835fa36e64e2cb350f3f09798b0040b234f7c0ee..f9a754acab125bc50660e9c3763b3693
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 7b361eb310ec1cf8edc7f53e5cc9ba250041841b..cb65bec8f3a9135bdfd0105087676713cb945a95 100644
+index 054fc3f605fd4656023125592d04c489be568ee4..fcc180ef6d3683aed291d2ebf17bbc45c1773942 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -410,6 +410,23 @@ class NATIVE_THEME_EXPORT NativeTheme {

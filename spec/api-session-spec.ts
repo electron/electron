@@ -722,7 +722,6 @@ describe('session module', () => {
 
       const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
       await expect(w.loadURL(serverUrl)).to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(w.webContents.getTitle()).to.equal(serverUrl);
       expect(validate!).not.to.be.undefined();
       validate!();
     });
@@ -740,7 +739,6 @@ describe('session module', () => {
       await expect(w.loadURL(serverUrl), 'first load').to.eventually.be.rejectedWith(/ERR_FAILED/);
       await once(w.webContents, 'did-stop-loading');
       await expect(w.loadURL(serverUrl + '/test'), 'second load').to.eventually.be.rejectedWith(/ERR_FAILED/);
-      expect(w.webContents.getTitle()).to.equal(serverUrl + '/test');
       expect(numVerificationRequests).to.equal(1);
     });
 

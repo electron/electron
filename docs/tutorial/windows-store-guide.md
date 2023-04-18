@@ -152,7 +152,7 @@ Once installation succeeded, you can move on to compiling your Electron app.
 [app-converter]: https://docs.microsoft.com/en-us/windows/uwp/porting/desktop-to-uwp-run-desktop-app-converter
 [add-appxpackage]: https://technet.microsoft.com/en-us/library/hh856048.aspx
 [electron-packager]: https://github.com/electron/electron-packager
-[electron-windows-store]: https://github.com/catalystcode/electron-windows-store
+[electron-windows-store]: https://github.com/electron-userland/electron-windows-store
 [background-task]: https://github.com/felixrieseberg/electron-uwp-background
 [centennial-campaigns]: https://developer.microsoft.com/en-us/windows/projects/campaigns/desktop-bridge
 [how-to-update]: https://blogs.windows.com/windowsexperience/2016/08/02/how-to-get-the-windows-10-anniversary-update
