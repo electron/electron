@@ -61,10 +61,10 @@ index e52dd23cef1ea6cc2b61f51650b94de382683cc0..8b103d7d5a6ed860cb76d3ca7e23bb2e
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 8f39697063d14429cf25cd8a56185d878c2ac3c7..83623e0742b27b5c1f5485e3319a4b52c6370b58 100644
+index 4579b16add6c509a2a8f9c61a07a79b891496f29..7790255f0e9295e30a1ba3060fafdb2d57990dae 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
-@@ -153,6 +153,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -162,6 +162,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
        SetAlpha(kColorNotificationInputForeground, gfx::kGoogleGreyAlpha700);
    mixer[kColorSliderTrack] = AlphaBlend(
        kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
@@ -75,7 +75,7 @@ index 8f39697063d14429cf25cd8a56185d878c2ac3c7..83623e0742b27b5c1f5485e3319a4b52
  
    // Window Background
    mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
-@@ -160,11 +164,13 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -169,11 +173,13 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorFrameActive] = {ui::kColorNativeWindow};
    mixer[kColorFrameInactive] = {ui::kColorNativeWindow};
    mixer[kColorTooltipBackground] = {kColorNativeWindow};
@@ -89,7 +89,7 @@ index 8f39697063d14429cf25cd8a56185d878c2ac3c7..83623e0742b27b5c1f5485e3319a4b52
  
    // Hyperlinks
    mixer[kColorLinkForeground] = {kColorNativeHotlight};
-@@ -198,6 +204,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -207,6 +213,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};
