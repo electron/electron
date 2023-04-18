@@ -11,6 +11,5 @@
   "session module ses.cookies should set cookie for standard scheme",
   "webFrameMain module WebFrame.visibilityState should match window state",
   "reporting api sends a report for a deprecation",
-  "chromium features SpeechSynthesis should emit lifecycle events",
-  "version-bumper nextVersion bump versions bumps to beta from nightly"
+  "chromium features SpeechSynthesis should emit lifecycle events"
 ]
