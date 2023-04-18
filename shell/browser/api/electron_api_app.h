@@ -116,6 +116,7 @@ class App : public ElectronBrowserClient::Delegate,
                                  base::Value::Dict user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
+  void OnDidResignActive() override;
 #endif
 
   // content::ContentBrowserClient:
