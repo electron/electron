@@ -8,7 +8,7 @@ modules from being used in the renderer process. This should be upstreamed as
 a customizable error message.
 
 diff --git a/src/node_binding.cc b/src/node_binding.cc
-index 175d0bee02d3592891f671533857b737057ab684..cf1cbcd54448754c7199a128b5447945aecf3e92 100644
+index 5093c3e53cee6d0ad9a9100b487549c3b4e7ae46..3e7b796fe5d285289e409985a5dba77b0d230910 100644
 --- a/src/node_binding.cc
 +++ b/src/node_binding.cc
 @@ -4,6 +4,7 @@
@@ -19,7 +19,7 @@ index 175d0bee02d3592891f671533857b737057ab684..cf1cbcd54448754c7199a128b5447945
  #include "util.h"
  
  #include <string>
-@@ -474,7 +475,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
+@@ -475,7 +476,12 @@ void DLOpen(const FunctionCallbackInfo<Value>& args) {
        if (mp->nm_context_register_func == nullptr) {
          if (env->force_context_aware()) {
            dlib->Close();

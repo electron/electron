@@ -599,6 +599,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Use a custom callback here to allow us to leverage Blink's logic in the
   // renderer process.
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+  is.flags |= node::IsolateSettingsFlags::
+      ALLOW_MODIFY_CODE_GENERATION_FROM_STRINGS_CALLBACK;
   is.modify_code_generation_from_strings_callback =
       ModifyCodeGenerationFromStrings;
 
