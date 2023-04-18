@@ -74,6 +74,7 @@
     "ts-node": "6.2.0",
     "typescript": "^4.5.5",
     "unist-util-visit": "^4.1.1",
+    "url": "^0.11.0",
     "vscode-languageserver": "^8.0.2",
     "vscode-languageserver-textdocument": "^1.0.7",
     "vscode-uri": "^3.0.6",
