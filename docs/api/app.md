@@ -150,9 +150,20 @@ Returns:
 
 * `event` Event
 
-Emitted when mac application become active. Difference from `activate` event is
+Emitted when the application becomes active. This differs from the `activate` event in
 that `did-become-active` is emitted every time the app becomes active, not only
-when Dock icon is clicked or application is re-launched.
+when Dock icon is clicked or application is re-launched. It is also emitted when a user
+switches to the app via the macOS App Switcher.
+
+### Event: 'did-resign-active' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the app is no longer active and doesn’t have focus. This can be triggered,
+for example, by clicking on another application or by using the macOS App Switcher to
+switch to another application.
 
 ### Event: 'continue-activity' _macOS_
 
