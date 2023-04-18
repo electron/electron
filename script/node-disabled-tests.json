@@ -58,6 +58,7 @@
   "parallel/test-snapshot-weak-reference",
   "parallel/test-snapshot-typescript",
   "parallel/test-stdout-close-catch",
+  "parallel/test-strace-openat-openssl",
   "parallel/test-tls-cert-chains-concat",
   "parallel/test-tls-cert-chains-in-ca",
   "parallel/test-tls-cli-max-version-1.2",
