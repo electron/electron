@@ -37,6 +37,7 @@
   },
   "resolutions": {
     "nan": "github:jkleinsc/nan#remove_accessor_signature",
-    "dbus-native/optimist/minimist": "1.2.7"
+    "dbus-native/optimist/minimist": "1.2.7",
+    "dbus-native/xml2js": "0.5.0"
   }
 }
