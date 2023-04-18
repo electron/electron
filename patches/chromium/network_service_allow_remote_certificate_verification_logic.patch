@@ -177,7 +177,7 @@ index 34b92d40efedb02efd42a8805c7630efd1fd2005..574434c94e0ee145c9a86566baa04d1c
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 915aa8eacd9e9ed1f76418284f272fbdf94dce9d..3b9d7b94d93b7d9f8f5ae54c76fd533d151d54c3 100644
+index 67ec13248477a6897cca614f235f813587e73eb1..8d8899d941050868c80642d6589e4e3bc48462c7 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -297,6 +297,17 @@ struct NetworkContextFilePaths {
