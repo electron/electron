@@ -41,6 +41,7 @@
   "parallel/test-process-versions",
   "parallel/test-repl",
   "parallel/test-repl-underscore",
+  "parallel/test-single-executable-application",
   "parallel/test-snapshot-api",
   "parallel/test-snapshot-basic",
   "parallel/test-snapshot-console",
