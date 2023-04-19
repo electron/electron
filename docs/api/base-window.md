@@ -117,6 +117,7 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
     macOS. Default is `false`.
   * `skipTaskbar` boolean (optional) _macOS_ _Windows_ - Whether to show the window in taskbar.
     Default is `false`.
+  * `hiddenInMissionControl` boolean (optional) _macOS_ - Whether window should be hidden when the user toggles into mission control.
   * `kiosk` boolean (optional) - Whether the window is in kiosk mode. Default is `false`.
   * `title` string (optional) - Window title. Default is `"Electron"`.
   * `icon` ([NativeImage](native-image.md) | string) (optional) - The window icon. On Windows it is
@@ -139,7 +140,7 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
   * `enableLargerThanScreen` boolean (optional) _macOS_ - Enable the window to
     be resized larger than screen. Only relevant for macOS, as other OSes
     allow larger-than-screen windows by default. Default is `false`.
-  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](base-window.md#winsetbackgroundcolorbackgroundcolor) for more information.
+  * `backgroundColor` string (optional) - The window's background color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. Alpha in #AARRGGBB format is supported if `transparent` is set to `true`. Default is `#FFF` (white). See [win.setBackgroundColor](#winsetbackgroundcolorbackgroundcolor) for more information.
   * `hasShadow` boolean (optional) - Whether window should have a shadow. Default is `true`.
   * `opacity` number (optional) _macOS_ _Windows_ - Set the initial opacity of
     the window, between 0.0 (fully transparent) and 1.0 (fully opaque). This
@@ -186,7 +187,7 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
     `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
     deprecated and have been removed in macOS Catalina (10.15).
   * `tabbingIdentifier` string (optional) _macOS_ - Tab group name, allows
-    opening the window as a native tab on macOS 10.12+. Windows with the same
+    opening the window as a native tab. Windows with the same
     tabbing identifier will be grouped together. This also adds a native new
     tab button to your window's tab bar and allows your `app` and window to
     receive the `new-window-for-tab` event.
@@ -371,7 +372,7 @@ Returns:
 * `event` Event
 * `command` string
 
-Emitted when an [App Command](https://msdn.microsoft.com/en-us/library/windows/desktop/ms646275(v=vs.85).aspx)
+Emitted when an [App Command](https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-appcommand)
 is invoked. These are typically related to keyboard media keys or browser
 commands, as well as the "Back" button built into some mice on Windows.
 
@@ -455,7 +456,7 @@ The `BaseWindow` class has the following static methods:
 
 #### `BaseWindow.getAllWindows()`
 
-Returns `BaseWindow[]` - An array of all opened windows.
+Returns `BaseWindow[]` - An array of all opened browser windows.
 
 #### `BaseWindow.getFocusedWindow()`
 
@@ -740,6 +741,8 @@ height areas you have within the overall content view.
 The aspect ratio is not respected when window is resized programmatically with
 APIs like `win.setSize`.
 
+To reset an aspect ratio, pass 0 as the `aspectRatio` value: `win.setAspectRatio(0)`.
+
 #### `win.setBackgroundColor(backgroundColor)`
 
 * `backgroundColor` string - Color in Hex, RGB, RGBA, HSL, HSLA or named CSS color format. The alpha channel is optional for the hex type.
@@ -768,7 +771,7 @@ Examples of valid `backgroundColor` values:
   * Similar to CSS Color Module Level 3 keywords, but case-sensitive.
     * e.g. `blueviolet` or `red`
 
-Sets the background color of the window.
+Sets the background color of the window. See [Setting `backgroundColor`](browser-window.md#setting-the-backgroundcolor-property).
 
 #### `win.previewFile(path[, displayName])` _macOS_
 
@@ -813,6 +816,8 @@ Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `
 #### `win.getBackgroundColor()`
 
 Returns `string` - Gets the background color of the window in Hex (`#RRGGBB`) format.
+
+See [Setting `backgroundColor`](browser-window.md#setting-the-backgroundcolor-property).
 
 **Note:** The alpha value is _not_ returned alongside the red, green, and blue values.
 
@@ -958,6 +963,16 @@ Returns `boolean` - Whether the window can be manually closed by user.
 
 On Linux always returns `true`.
 
+#### `win.setHiddenInMissionControl(hidden)` _macOS_
+
+* `hidden` boolean
+
+Sets whether the window will be hidden when the user toggles into mission control.
+
+#### `win.isHiddenInMissionControl()` _macOS_
+
+Returns `boolean` - Whether the window will be hidden when the user toggles into mission control.
+
 #### `win.setAlwaysOnTop(flag[, level][, relativeLevel])`
 
 * `flag` boolean
@@ -1028,7 +1043,16 @@ window.
 * `offsetX` Float (optional)
 
 Changes the attachment point for sheets on macOS. By default, sheets are
-attached just below the window frame.
+attached just below the window frame, but you may want to offset them. For
+example:
+
+```javascript
+const { BaseWindow } = require('electron')
+const win = new BaseWindow()
+
+const toolbarRect = document.getElementById('toolbar').getBoundingClientRect()
+win.setSheetOffset(toolbarRect.height)
+```
 
 #### `win.flashFrame(flag)`
 
@@ -1083,8 +1107,8 @@ The native type of the handle is `HWND` on Windows, `NSView*` on macOS, and
 
 * `message` Integer
 * `callback` Function
-  * `wParam` any - The `wParam` provided to the WndProc
-  * `lParam` any - The `lParam` provided to the WndProc
+  * `wParam` Buffer - The `wParam` provided to the WndProc
+  * `lParam` Buffer - The `lParam` provided to the WndProc
 
 Hooks a windows message. The `callback` is called when
 the message is received in the WndProc.
@@ -1143,7 +1167,7 @@ Remove the window's menu bar.
 * `options` Object (optional)
   * `mode` string _Windows_ - Mode for the progress bar. Can be `none`, `normal`, `indeterminate`, `error` or `paused`.
 
-Sets progress value in progress bar. Valid range is \[0, 1.0\].
+Sets progress value in progress bar. Valid range is \[0, 1.0].
 
 Remove progress bar when progress < 0;
 Change to indeterminate mode when progress > 1.
@@ -1167,6 +1191,13 @@ screen readers
 Sets a 16 x 16 pixel overlay onto the current taskbar icon, usually used to
 convey some sort of application status or to passively notify the user.
 
+#### `win.invalidateShadow()` _macOS_
+
+Invalidates the window shadow so that it is recomputed based on the current window shape.
+
+`BaseWindow`s that are transparent can sometimes leave behind visual artifacts on macOS.
+This method can be used to clear these artifacts when, for example, performing an animation.
+
 #### `win.setHasShadow(hasShadow)`
 
 * `hasShadow` boolean
@@ -1182,7 +1213,7 @@ Returns `boolean` - Whether the window has a shadow.
 * `opacity` number - between 0.0 (fully transparent) and 1.0 (fully opaque)
 
 Sets the opacity of the window. On Linux, does nothing. Out of bound number
-values are clamped to the \[0, 1\] range.
+values are clamped to the \[0, 1] range.
 
 #### `win.getOpacity()`
 
@@ -1257,13 +1288,13 @@ in the taskbar.
 #### `win.setAppDetails(options)` _Windows_
 
 * `options` Object
-  * `appId` string (optional) - Window's [App User Model ID](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391569(v=vs.85).aspx).
+  * `appId` string (optional) - Window's [App User Model ID](https://learn.microsoft.com/en-us/windows/win32/shell/appids).
     It has to be set, otherwise the other options will have no effect.
-  * `appIconPath` string (optional) - Window's [Relaunch Icon](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391573(v=vs.85).aspx).
+  * `appIconPath` string (optional) - Window's [Relaunch Icon](https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-relaunchiconresource).
   * `appIconIndex` Integer (optional) - Index of the icon in `appIconPath`.
     Ignored when `appIconPath` is not set. Default is `0`.
-  * `relaunchCommand` string (optional) - Window's [Relaunch Command](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391571(v=vs.85).aspx).
-  * `relaunchDisplayName` string (optional) - Window's [Relaunch Display Name](https://msdn.microsoft.com/en-us/library/windows/desktop/dd391572(v=vs.85).aspx).
+  * `relaunchCommand` string (optional) - Window's [Relaunch Command](https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-relaunchcommand).
+  * `relaunchDisplayName` string (optional) - Window's [Relaunch Display Name](https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-relaunchdisplaynameresource).
 
 Sets the properties for the window's taskbar button.
 
@@ -1365,7 +1396,7 @@ On macOS it does not remove the focus from the window.
 
 #### `win.isFocusable()` _macOS_ _Windows_
 
-Returns whether the window can be focused.
+Returns `boolean` - Whether the window can be focused.
 
 #### `win.setParentWindow(parent)`
 
@@ -1431,16 +1462,36 @@ will remove the vibrancy effect on the window.
 Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
 deprecated and will be removed in an upcoming version of macOS.
 
-#### `win.setTrafficLightPosition(position)` _macOS_
+#### `win.setWindowButtonPosition(position)` _macOS_
+
+* `position` [Point](structures/point.md) | null
+
+Set a custom position for the traffic light buttons in frameless window.
+Passing `null` will reset the position to default.
+
+#### `win.getWindowButtonPosition()` _macOS_
+
+Returns `Point | null` - The custom position for the traffic light buttons in
+frameless window, `null` will be returned when there is no custom position.
+
+#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
 
 * `position` [Point](structures/point.md)
 
 Set a custom position for the traffic light buttons in frameless window.
+Passing `{ x: 0, y: 0 }` will reset the position to default.
 
-#### `win.getTrafficLightPosition()` _macOS_
+> **Note**
+> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
+
+#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
 
 Returns `Point` - The custom position for the traffic light buttons in
-frameless window.
+frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
+position.
+
+> **Note**
+> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 
@@ -1448,7 +1499,7 @@ frameless window.
 
 Sets the touchBar layout for the current window. Specifying `null` or
 `undefined` clears the touch bar. This method only has an effect if the
-machine has a touch bar and is running on macOS 10.12.1+.
+machine has a touch bar.
 
 **Note:** The TouchBar API is currently experimental and may change or be
 removed in future Electron releases.
