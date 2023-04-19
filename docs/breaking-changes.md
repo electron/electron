@@ -12,6 +12,18 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
+## Planned Breaking API Changes (26.0)
+
+### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
+
+Previously, the `setAutoResize` function of the `BrowserView` API was backed by [autoresizing](https://developer.apple.com/documentation/appkit/nsview/1483281-autoresizingmask?language=objc) on macOS, and by a custom algorithm on Windows and Linux.
+For simple use cases such as making a BrowserView fill the entire window, the behavior of these two approaches was identical.
+However, in more advanced cases, BrowserViews would be autoresized differently on macOS than they would be on other platforms, as the custom resizing algorithm for Windows and Linux did not perfectly match the behavior of macOS's autoresizing API.
+
+In Electron 26, BrowserView is now a wrapper around the new [WebContentsView](api/web-contents-view.md) API.
+As part of this work, the autoresizing behavior is now standardized across all platforms.
+BrowserView autoresizing on macOS now uses the same algorithm that is used on Windows and Linux.
+
 ## Planned Breaking API Changes (25.0)
 
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
