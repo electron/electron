@@ -1945,7 +1945,7 @@ describe('chromium features', () => {
       await w1.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       await w2.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       await w3.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      expect(webContents.getFocusedWebContents().id).to.equal(w2.webContents.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w2.webContents.id);
       let focus = false;
       focus = await w1.webContents.executeJavaScript(
         'document.hasFocus()'
