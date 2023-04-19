@@ -33,3 +33,4 @@ test_mark_cpu_prof_tests_as_flaky_in_electron.patch
 fix_adapt_debugger_tests_for_upstream_v8_changes.patch
 fix_libc_buffer_overflow_in_string_view_ctor.patch
 fix_preventing_potential_oob_in_ada_no_scheme_parsing.patch
+chore_remove_--no-harmony-atomics_related_code.patch
