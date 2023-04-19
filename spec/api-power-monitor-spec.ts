@@ -178,6 +178,12 @@ describe('powerMonitor', () => {
       });
     });
 
+    describe('powerMonitor.getCurrentThermalState', () => {
+      it('returns a valid state', () => {
+        expect(powerMonitor.getCurrentThermalState()).to.be.oneOf(['unknown', 'nominal', 'fair', 'serious', 'critical']);
+      });
+    });
+
     describe('powerMonitor.onBatteryPower', () => {
       it('returns a boolean', () => {
         expect(powerMonitor.onBatteryPower).to.be.a('boolean');
