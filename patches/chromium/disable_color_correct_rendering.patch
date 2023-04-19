@@ -35,7 +35,7 @@ index ffaf89466d29864bd1bb91565c16303b097e4e5d..56fe848755bc56ddb5b5893476ba82ed
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index d67c103a301f6398084f8db8a7d559981f3c669c..ccec09bdde3b107b0260ec9d26f5db20e023ce89 100644
+index b85b3251a752afc1305108ad370bbe8453e4f789..e24eefabacf2fcdbd15b26e0c696579cca909dd8 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -93,7 +93,7 @@ index 9e53989c27763d082dabbaee2149206906977d10..7f6698c75db98e0a239a9144c73362f5
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index da1b9e452b349b05c985791847044a33ad04f97a..844a544811b5470ee3ce90105cfc655cfb353b9a 100644
+index 59554078c49412f9293fc1b4179d746fac4e0951..391bb62f48c06ffbeccdc191657bc323e3a01655 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -3333,6 +3333,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
@@ -148,7 +148,7 @@ index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace4714
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 77624a8b54b6e05da79bd913aa3d25187118090c..0057d51aebaf7530cc91e87fc826dd70c49c1df4 100644
+index 3ebaee0026affd8a9eb4cf36432cbefc13db8f3b..0a38a4a281b5b90fea38b6a2662ec5da0087f134 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@
@@ -159,7 +159,7 @@ index 77624a8b54b6e05da79bd913aa3d25187118090c..0057d51aebaf7530cc91e87fc826dd70
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -214,6 +215,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -210,6 +211,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  

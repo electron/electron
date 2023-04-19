@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 38103227e6036efec56424223d7ca1b3aceb8a89..9dd0e0f1a0ed794cf3cff2af78c97511935d5b81 100644
+index 4ede18c395ff4afa16095ebc662492bfb0f3e82a..7ccd777f790a172e46d8cd4571aeef235a402897 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1032,6 +1032,7 @@ component("base") {
+@@ -1030,6 +1030,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -55,10 +55,10 @@ index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8c8c29706ebec0be7ca25d63fc5e8af4a212e8bc..66fd728dc1ec5079a8d227f4e88d0d38b9ada5a1 100644
+index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb88c4c7051 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -320,6 +320,7 @@ viz_component("service") {
+@@ -322,6 +322,7 @@ viz_component("service") {
  
        frameworks += [ "CoreGraphics.framework" ]
      }
@@ -66,7 +66,7 @@ index 8c8c29706ebec0be7ca25d63fc5e8af4a212e8bc..66fd728dc1ec5079a8d227f4e88d0d38
    }
  
    if (is_android || use_ozone) {
-@@ -574,6 +575,8 @@ viz_source_set("unit_tests") {
+@@ -576,6 +577,8 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
