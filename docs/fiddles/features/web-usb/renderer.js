@@ -20,7 +20,7 @@ async function testIt () {
     const grantedDevice = await navigator.usb.requestDevice({
       filters: []
     })
-    grantedDeviceList += `<hr>${getDeviceDetails(device)}</hr>`
+    grantedDeviceList += `<hr>${getDeviceDetails(grantedDevice)}</hr>`
   } catch (ex) {
     if (ex.name === 'NotFoundError') {
       grantedDeviceList = noDevicesFoundMsg
