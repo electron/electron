@@ -26,11 +26,27 @@ Emitted when system changes to battery power.
 
 ### Event: 'thermal-state-change' _macOS_
 
-* `state` string - one of `unknown`, `nominal`, `fair`, `serious`, `critical`.
+* `state` string - The system's new thermal state. Can be `unknown`, `nominal`, `fair`, `serious`, `critical`.
 
-### Event: 'speed-limit-change' _macOS_
+Emitted when the thermal state of the system changes. Notification of a change
+in the thermal status of the system, such as entering a critical temperature
+range. Depending on the severity, the system might take steps to reduce said
+temperature, for example, throttling the CPU or switching on the fans if
+available.
 
-* `limit` number
+Apps may react to the new state by reducing expensive computing tasks (e.g.
+video encoding), or notifying the user. The same state might be received
+repeatedly.
+
+See https://developer.apple.com/library/archive/documentation/Performance/Conceptual/power_efficiency_guidelines_osx/RespondToThermalStateChanges.html
+
+### Event: 'speed-limit-change' _macOS_ _Windows_
+
+* `limit` number - The operating system's advertised speed limit for CPUs, in percent.
+
+Notification of a change in the operating system's advertised speed limit for
+CPUs, in percent. Values below 100 indicate that the system is impairing
+processing power due to thermal management.
 
 ### Event: 'shutdown' _Linux_ _macOS_
 

@@ -105,7 +105,7 @@ void PowerMonitor::OnResume() {
 void PowerMonitor::OnThermalStateChange(DeviceThermalState new_state) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutEvent(
+  EmitWithoutCustomEvent(
       "thermal-state-change",
       gin::DataObjectBuilder(isolate).Set("state", new_state).Build());
 }
@@ -113,7 +113,7 @@ void PowerMonitor::OnThermalStateChange(DeviceThermalState new_state) {
 void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  EmitWithoutEvent(
+  EmitWithoutCustomEvent(
       "speed-limit-change",
       gin::DataObjectBuilder(isolate).Set("limit", speed_limit).Build());
 }
