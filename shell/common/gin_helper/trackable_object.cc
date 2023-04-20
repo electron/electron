@@ -9,7 +9,7 @@
 #include "base/bind.h"
 #include "base/supports_user_data.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/common/gin_helper/locker.h"
+#include "shell/common/process_util.h"
 
 namespace gin_helper {
 
@@ -31,7 +31,7 @@ class IDUserData : public base::SupportsUserData::Data {
 
 TrackableObjectBase::TrackableObjectBase() {
   // TODO(zcbenz): Make TrackedObject work in renderer process.
-  DCHECK(gin_helper::Locker::IsBrowserProcess())
+  DCHECK(electron::IsBrowserProcess())
       << "This class only works for browser process";
 }
 
