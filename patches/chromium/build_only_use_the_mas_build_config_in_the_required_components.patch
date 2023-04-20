@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4ede18c395ff4afa16095ebc662492bfb0f3e82a..7ccd777f790a172e46d8cd4571aeef235a402897 100644
+index afe52c062fa8030c200992984b4ec722e11f5f64..bbf8d44337d6e6b9090c7459e8c442ef561797a5 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1030,6 +1030,7 @@ component("base") {
@@ -76,7 +76,7 @@ index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb8
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index fce93ca350d0fa6235f740a8c8ca67b2943a1a30..231b38fba003ad36a4914d615105bd35e8c45b0f 100644
+index d6ae4c3665d85f251d165e5c507dda7869a957a0..8c188f50821e05cf5c67027f042e13a1f7e8a3c1 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -100,7 +100,7 @@ index a92d1339b0ec7980dc9b73dcbad834c3ffca8211..5a07df3e8a31f6d5bfc5d27bf804517f
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 3ec54c242fb920a53fcaa6d8040f2ec88c2727df..27dee1596183d2ead5290a60c08e47e69e905d21 100644
+index 487c06de8be47be8508ef01dd84e444c2cea95ce..c6825189ba5f75f54e6cdbae9a1e9439f361079c 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
@@ -124,10 +124,10 @@ index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff65e17bd9 100644
+index f52c3b6c8daa545baf92eccb6aff4f9afad27632..18ba76df48107403b4996245f3b581edf0269aa7 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -119,6 +119,7 @@ component("service") {
+@@ -123,6 +123,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
