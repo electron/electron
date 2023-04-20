@@ -6,7 +6,6 @@
   "process module main process process.takeHeapSnapshot() returns true on success",
   "protocol module protocol.registerFileProtocol throws an error when custom headers are invalid",
   "protocol module protocol.registerProtocol throws an error when custom headers are invalid",
-  "protocol module protocol.registerSchemesAsPrivileged standard can access files through the FileSystem API",
   "protocol module protocol.registerSchemesAsPrivileged cors-fetch disallows CORS and fetch requests when only supportFetchAPI is specified",
   "session module ses.cookies should set cookie for standard scheme",
   "webFrameMain module WebFrame.visibilityState should match window state",
