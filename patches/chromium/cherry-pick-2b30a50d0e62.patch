@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Mon, 10 Apr 2023 05:32:06 +0000
-Subject: [M112] Use ScriptState::Scope instead of setting HandleScope.
+Subject: Use ScriptState::Scope instead of setting HandleScope.
 
 Since `GetEffectiveFunction` may call `Get` if the given v8 listener is
 an object, we need to prepare `v8::Context::Scope` before calling it.
