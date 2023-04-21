@@ -1,0 +1,127 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Andrey Kosyakov <caseq@chromium.org>
+Date: Thu, 13 Apr 2023 03:55:24 +0000
+Subject: Retain DevToolsAgentHost after ForceDetachAllSessions()
+
+(cherry picked from commit 8c4aee2a90d08535cfb1bf0a59e00cae956b1762)
+
+Bug: 1424337
+Change-Id: Ie0ebe2a49ffbd2356b896c39446b93e09cd81f5a
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4378100
+Reviewed-by: Dmitry Gozman <dgozman@chromium.org>
+Commit-Queue: Andrey Kosyakov <caseq@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1123772}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4420271
+Commit-Queue: Srinivas Sista <srinivassista@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5615@{#1244}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/content/browser/devtools/auction_worklet_devtools_agent_host.cc b/content/browser/devtools/auction_worklet_devtools_agent_host.cc
+index 20a989999b6da5d269bca3d6c9bf181eea7180e7..34a13a884885926e3985098315fd9121902099e9 100644
+--- a/content/browser/devtools/auction_worklet_devtools_agent_host.cc
++++ b/content/browser/devtools/auction_worklet_devtools_agent_host.cc
+@@ -96,7 +96,7 @@ AuctionWorkletDevToolsAgentHost::~AuctionWorkletDevToolsAgentHost() = default;
+ 
+ void AuctionWorkletDevToolsAgentHost::WorkletDestroyed() {
+   worklet_ = nullptr;
+-  ForceDetachAllSessions();
++  auto retain_this = ForceDetachAllSessionsImpl();
+   associated_agent_remote_.reset();
+ }
+ 
+diff --git a/content/browser/devtools/devtools_agent_host_impl.cc b/content/browser/devtools/devtools_agent_host_impl.cc
+index 46314287ac23017f597c8f63d41cab7e46e2a53a..33f8676e811f3f5684bbd7dabae392668f34f20b 100644
+--- a/content/browser/devtools/devtools_agent_host_impl.cc
++++ b/content/browser/devtools/devtools_agent_host_impl.cc
+@@ -350,12 +350,18 @@ bool DevToolsAgentHostImpl::Inspect() {
+ }
+ 
+ void DevToolsAgentHostImpl::ForceDetachAllSessions() {
+-  scoped_refptr<DevToolsAgentHostImpl> protect(this);
++  std::ignore = ForceDetachAllSessionsImpl();
++}
++
++scoped_refptr<DevToolsAgentHost>
++DevToolsAgentHostImpl::ForceDetachAllSessionsImpl() {
++  scoped_refptr<DevToolsAgentHost> retain_this(this);
+   while (!sessions_.empty()) {
+     DevToolsAgentHostClient* client = (*sessions_.begin())->GetClient();
+     DetachClient(client);
+     client->AgentHostClosed(this);
+   }
++  return retain_this;
+ }
+ 
+ void DevToolsAgentHostImpl::ForceDetachRestrictedSessions(
+diff --git a/content/browser/devtools/devtools_agent_host_impl.h b/content/browser/devtools/devtools_agent_host_impl.h
+index 4c54b9100ef287d5ac5c45235d3a93187df2ca14..f29b5323c4555a96c069377df2b7f126abd029af 100644
+--- a/content/browser/devtools/devtools_agent_host_impl.h
++++ b/content/browser/devtools/devtools_agent_host_impl.h
+@@ -119,15 +119,24 @@ class CONTENT_EXPORT DevToolsAgentHostImpl : public DevToolsAgentHost {
+   void NotifyCreated();
+   void NotifyNavigated();
+   void NotifyCrashed(base::TerminationStatus status);
+-  void ForceDetachAllSessions();
+   void ForceDetachRestrictedSessions(
+       const std::vector<DevToolsSession*>& restricted_sessions);
+   DevToolsIOContext* GetIOContext() { return &io_context_; }
+   DevToolsRendererChannel* GetRendererChannel() { return &renderer_channel_; }
+ 
+   const std::vector<DevToolsSession*>& sessions() const { return sessions_; }
++  // Returns refptr retaining `this`. All other references may be removed
++  // at this point, so `this` will become invalid as soon as returned refptr
++  // gets destroyed.
++  [[nodiscard]] scoped_refptr<DevToolsAgentHost> ForceDetachAllSessionsImpl();
+ 
+  private:
++  // Note that calling this may result in the instance being deleted,
++  // as instance may be owned by client sessions. This should not be
++  // used by methods of derived classes, use `ForceDetachAllSessionsImpl()`
++  // above instead.
++  void ForceDetachAllSessions();
++
+   friend class DevToolsAgentHost;  // for static methods
+   friend class DevToolsSession;
+   friend class DevToolsRendererChannel;
+diff --git a/content/browser/devtools/render_frame_devtools_agent_host.cc b/content/browser/devtools/render_frame_devtools_agent_host.cc
+index 2441cbcc429b9458af7743f1a2c5040b91163e4f..71607bffebc49b0a9b898e5ef1ac652190e8eb4f 100644
+--- a/content/browser/devtools/render_frame_devtools_agent_host.cc
++++ b/content/browser/devtools/render_frame_devtools_agent_host.cc
+@@ -541,9 +541,9 @@ void RenderFrameDevToolsAgentHost::RenderFrameDeleted(RenderFrameHost* rfh) {
+ }
+ 
+ void RenderFrameDevToolsAgentHost::DestroyOnRenderFrameGone() {
+-  scoped_refptr<RenderFrameDevToolsAgentHost> protect(this);
++  scoped_refptr<DevToolsAgentHost> retain_this;
+   if (IsAttached()) {
+-    ForceDetachAllSessions();
++    retain_this = ForceDetachAllSessionsImpl();
+     UpdateRawHeadersAccess(frame_host_);
+   }
+   ChangeFrameHostAndObservedProcess(nullptr);
+diff --git a/content/browser/devtools/web_contents_devtools_agent_host.cc b/content/browser/devtools/web_contents_devtools_agent_host.cc
+index 20976a4f189446f0cf3b0a0ab168ceb4a92eebe1..7d12f4f8b030200b49350d379f25d4b64b0d1a06 100644
+--- a/content/browser/devtools/web_contents_devtools_agent_host.cc
++++ b/content/browser/devtools/web_contents_devtools_agent_host.cc
+@@ -299,7 +299,7 @@ DevToolsAgentHostImpl* WebContentsDevToolsAgentHost::GetPrimaryFrameAgent() {
+ 
+ void WebContentsDevToolsAgentHost::WebContentsDestroyed() {
+   DCHECK_EQ(this, FindAgentHost(web_contents()));
+-  ForceDetachAllSessions();
++  auto retain_this = ForceDetachAllSessionsImpl();
+   auto_attacher_.reset();
+   g_agent_host_instances.Get().erase(web_contents());
+   Observe(nullptr);
+diff --git a/content/browser/devtools/worker_devtools_agent_host.cc b/content/browser/devtools/worker_devtools_agent_host.cc
+index db788e7298d6696ec5a354cb387dfdc4030d8ce0..0984b3ae35459d8676b903394577cc6a43601ac8 100644
+--- a/content/browser/devtools/worker_devtools_agent_host.cc
++++ b/content/browser/devtools/worker_devtools_agent_host.cc
+@@ -87,7 +87,7 @@ void WorkerDevToolsAgentHost::ChildWorkerCreated(
+ }
+ 
+ void WorkerDevToolsAgentHost::Disconnected() {
+-  ForceDetachAllSessions();
++  auto retain_this = ForceDetachAllSessionsImpl();
+   GetRendererChannel()->SetRenderer(mojo::NullRemote(), mojo::NullReceiver(),
+                                     ChildProcessHost::kInvalidUniqueID);
+   std::move(destroyed_callback_).Run(this);
