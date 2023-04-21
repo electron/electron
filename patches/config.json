@@ -23,5 +23,7 @@
 
   "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
 
-  "src/electron/patches/pdfium": "src/third_party/pdfium"
+  "src/electron/patches/pdfium": "src/third_party/pdfium",
+
+  "src/electron/patches/skia": "src/third_party/skia"
 }

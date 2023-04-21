@@ -1,0 +1,152 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Stiles <johnstiles@google.com>
+Date: Wed, 12 Apr 2023 14:56:54 -0400
+Subject: Enforce program stack limits on function parameters.
+
+M108 merge issues:
+  resources/sksl/BUILD.bazel:
+    File doesn't exist in M108, tests are added manually to gn/sksl_tests.gni.
+
+  gn/sksl_tests.gni:
+    Conflicting rts entries
+
+  src/sksl/ir/SkSLFunctionDefinition.cpp:
+    - Conflicting includes
+    - visitStatement():
+      Conflicting declarations of const Variable* var (const Variable& var
+      on 108)
+
+Previously, a function's parameter list did not count against its
+stack size limit.
+
+Bug: chromium:1432603
+Change-Id: If49dce98f3155f3144a766c26b5a3a39401ce1b2
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/670236
+Auto-Submit: John Stiles <johnstiles@google.com>
+Commit-Queue: John Stiles <johnstiles@google.com>
+(cherry picked from commit 4dc748f14c6650cb45c7086a39af1760bfda41d2)
+
+diff --git a/gn/sksl_tests.gni b/gn/sksl_tests.gni
+index 2f0100b8b617d3d101660a34c183bcf51a39c11c..6af1a84c6ef8a8853b259815eb17e02cb5027541 100644
+--- a/gn/sksl_tests.gni
++++ b/gn/sksl_tests.gni
+@@ -283,6 +283,7 @@ sksl_error_tests = [
+   "/sksl/errors/VoidInStruct.rts",
+   "/sksl/errors/VoidVariable.rts",
+   "/sksl/errors/WhileTypeMismatch.sksl",
++  "/sksl/errors/ProgramTooLarge_Parameters.rts",
+ ]
+ 
+ sksl_glsl_tests = [
+diff --git a/resources/sksl/errors/ProgramTooLarge_Parameters.rts b/resources/sksl/errors/ProgramTooLarge_Parameters.rts
+new file mode 100644
+index 0000000000000000000000000000000000000000..cced977be40620ffc3b145837bd5ffe16b40295b
+--- /dev/null
++++ b/resources/sksl/errors/ProgramTooLarge_Parameters.rts
+@@ -0,0 +1,14 @@
++struct S {
++    half4 ah4[1];
++    half ah[99999];
++    half4 h4;
++    half h;
++};
++
++void func(int small,
++          S big_chungus,
++          S no_report /*we don't need to report overflows past the first*/) {}
++
++/*%%*
++variable 'big_chungus' exceeds the stack size limit
++*%%*/
+diff --git a/src/sksl/ir/SkSLFunctionDefinition.cpp b/src/sksl/ir/SkSLFunctionDefinition.cpp
+index 45695a1effe1f98d4185aa4c17d6add29281044c..adfe62dfd22e2810c316cd806aaef16a05aca4ad 100644
+--- a/src/sksl/ir/SkSLFunctionDefinition.cpp
++++ b/src/sksl/ir/SkSLFunctionDefinition.cpp
+@@ -37,6 +37,7 @@
+ #include <forward_list>
+ #include <string_view>
+ #include <type_traits>
++#include <vector>
+ 
+ namespace SkSL {
+ 
+@@ -88,9 +89,29 @@ std::unique_ptr<FunctionDefinition> FunctionDefinition::Convert(const Context& c
+                                                                 bool builtin) {
+     class Finalizer : public ProgramWriter {
+     public:
+-        Finalizer(const Context& context, const FunctionDeclaration& function)
++        Finalizer(const Context& context, const FunctionDeclaration& function, Position pos)
+             : fContext(context)
+-            , fFunction(function) {}
++            , fFunction(function) {
++            // Function parameters count as local variables.
++            for (const Variable* var : function.parameters()) {
++                this->addLocalVariable(var, pos);
++            }
++        }
++
++        void addLocalVariable(const Variable* var, Position pos) {
++            // We count the number of slots used, but don't consider the precision of the base type.
++            // In practice, this reflects what GPUs actually do pretty well. (i.e., RelaxedPrecision
++            // math doesn't mean your variable takes less space.) We also don't attempt to reclaim
++            // slots at the end of a Block.
++            size_t prevSlotsUsed = fSlotsUsed;
++            fSlotsUsed = SkSafeMath::Add(fSlotsUsed, var->type().slotCount());
++            // To avoid overzealous error reporting, only trigger the error at the first
++            // place where the stack limit is exceeded.
++            if (prevSlotsUsed < kVariableSlotLimit && fSlotsUsed >= kVariableSlotLimit) {
++                fContext.fErrors->error(pos, "variable '" + std::string(var->name()) +
++                                             "' exceeds the stack size limit");
++            }
++        }
+ 
+         ~Finalizer() override {
+             SkASSERT(fBreakableLevel == 0);
+@@ -109,24 +130,12 @@ std::unique_ptr<FunctionDefinition> FunctionDefinition::Convert(const Context& c
+         bool visitStatement(Statement& stmt) override {
+             switch (stmt.kind()) {
+                 case Statement::Kind::kVarDeclaration: {
+-                    // We count the number of slots used, but don't consider the precision of the
+-                    // base type. In practice, this reflects what GPUs really do pretty well.
+-                    // (i.e., RelaxedPrecision math doesn't mean your variable takes less space.)
+-                    // We also don't attempt to reclaim slots at the end of a Block.
+-                    size_t prevSlotsUsed = fSlotsUsed;
+                     const Variable& var = stmt.as<VarDeclaration>().var();
+                     if (var.type().isOrContainsUnsizedArray()) {
+                         fContext.fErrors->error(stmt.fPosition,
+                                                 "unsized arrays are not permitted here");
+-                        break;
+-                    }
+-                    fSlotsUsed = SkSafeMath::Add(fSlotsUsed, var.type().slotCount());
+-                    // To avoid overzealous error reporting, only trigger the error at the first
+-                    // place where the stack limit is exceeded.
+-                    if (prevSlotsUsed < kVariableSlotLimit && fSlotsUsed >= kVariableSlotLimit) {
+-                        fContext.fErrors->error(stmt.fPosition,
+-                                                "variable '" + std::string(var.name()) +
+-                                                "' exceeds the stack size limit");
++                    } else {
++                        this->addLocalVariable(&var, stmt.fPosition);
+                     }
+                     break;
+                 }
+@@ -219,7 +228,7 @@ std::unique_ptr<FunctionDefinition> FunctionDefinition::Convert(const Context& c
+         using INHERITED = ProgramWriter;
+     };
+ 
+-    Finalizer(context, function).visitStatement(*body);
++    Finalizer(context, function, pos).visitStatement(*body);
+     if (function.isMain() && ProgramConfig::IsVertex(context.fConfig->fKind)) {
+         append_rtadjust_fixup_to_vertex_main(context, function, body->as<Block>());
+     }
+diff --git a/tests/sksl/errors/ProgramTooLarge_Parameters.glsl b/tests/sksl/errors/ProgramTooLarge_Parameters.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..d92c3256e82d52115621cf96d6dba99f62cdd945
+--- /dev/null
++++ b/tests/sksl/errors/ProgramTooLarge_Parameters.glsl
+@@ -0,0 +1,6 @@
++### Compilation failed:
++
++error: 10: variable 'big_chungus' exceeds the stack size limit
++          S no_report /*we don't need to report overflows past the first*/) {}
++                                                                            ^^
++1 error
