@@ -11,7 +11,7 @@ if we ever align our .pak file generation with Chrome we can remove this
 patch.
 
 diff --git a/chrome/BUILD.gn b/chrome/BUILD.gn
-index 98c9dca792522fd27774d9d22ead61ee546b1832..d255787f554b71cb9034229212f80b0fdd5c73f9 100644
+index f9e148eb5b5a9a1da534f5db19227e327282eac0..d95ba090ae13b036b694724d95834e5a62a3fff9 100644
 --- a/chrome/BUILD.gn
 +++ b/chrome/BUILD.gn
 @@ -193,11 +193,16 @@ if (!is_android && !is_mac) {
@@ -33,10 +33,10 @@ index 98c9dca792522fd27774d9d22ead61ee546b1832..d255787f554b71cb9034229212f80b0f
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index c00688f881307a5d1b7447c0713bbe5f29442097..282f87fa7844c76da24379746e03dd80ff801c03 100644
+index 6b371b64d9d566696de2946674313875386e8e32..784dc1444ea6fe2ce9c446b403e01b55a1e02454 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4582,7 +4582,7 @@ static_library("browser") {
+@@ -4584,7 +4584,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index c00688f881307a5d1b7447c0713bbe5f29442097..282f87fa7844c76da24379746e03dd80
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 0474d2861d9605ffc85bac05405c0e784a6f6a8e..0d1c777577252d571a1ec3b7ec084d33c760e79f 100644
+index f8a5ddc00974fd36ebd8ad309b8f587f6d245653..2b5ce740cca6746318ed008724c8ae90438d32dd 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -6416,7 +6416,6 @@ test("unit_tests") {
@@ -68,7 +68,7 @@ index 0474d2861d9605ffc85bac05405c0e784a6f6a8e..0d1c777577252d571a1ec3b7ec084d33
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7371,7 +7374,6 @@ test("unit_tests") {
+@@ -7372,7 +7375,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 0474d2861d9605ffc85bac05405c0e784a6f6a8e..0d1c777577252d571a1ec3b7ec084d33
        "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
-@@ -7452,6 +7454,10 @@ test("unit_tests") {
+@@ -7453,6 +7455,10 @@ test("unit_tests") {
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
  
