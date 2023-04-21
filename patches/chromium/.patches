@@ -163,3 +163,7 @@ m108-lts_do_not_register_browser_watcher_activity_report_with.patch
 cherry-pick-8731bd8a30f6.patch
 cherry-pick-1235110fce18.patch
 cherry-pick-56bd20b295b4.patch
+cherry-pick-ec53103cc72d.patch
+cherry-pick-f58218891f8c.patch
+cherry-pick-2b30a50d0e62.patch
+cherry-pick-f098ff0d1230.patch
