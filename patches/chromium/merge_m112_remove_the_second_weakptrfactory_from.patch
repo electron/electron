@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kenichi Ishibashi <bashi@chromium.org>
 Date: Sat, 8 Apr 2023 01:56:25 +0000
-Subject: [Merge M112] Remove the second WeakPtrFactory from
- SpdyProxyClientSocket
+Subject: Remove the second WeakPtrFactory from SpdyProxyClientSocket
 
 It was introduced [1] to work around an old issue that wouldn't happen
 any more since we store a write callback in the class. Instead of having

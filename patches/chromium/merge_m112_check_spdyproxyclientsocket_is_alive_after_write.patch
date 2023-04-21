@@ -1,8 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kenichi Ishibashi <bashi@chromium.org>
 Date: Sat, 8 Apr 2023 04:16:50 +0000
-Subject: [Merge M112] Check SpdyProxyClientSocket is alive after write
- callback
+Subject: Check SpdyProxyClientSocket is alive after write callback
 
 To ensure that we don't use any member field.
 
