@@ -162,3 +162,6 @@ win_fix_touch_mode_detection_dcheck_in_canary.patch
 cherry-pick-ca2b108a0f1f.patch
 cherry-pick-d652130c4bc2.patch
 cherry-pick-e545559df538.patch
+cherry-pick-ec53103cc72d.patch
+cherry-pick-f58218891f8c.patch
+cherry-pick-2b30a50d0e62.patch
