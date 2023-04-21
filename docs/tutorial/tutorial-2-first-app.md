@@ -134,7 +134,7 @@ add `electron .` to the `start` command in the [`scripts`][package-scripts]
 field of your package.json. This command will tell the Electron executable to look for the main
 script in the current directory and run it in dev mode.
 
-```json {8-10} title='package.json'
+```json {7} title='package.json'
 {
   "name": "my-electron-app",
   "version": "1.0.0",
