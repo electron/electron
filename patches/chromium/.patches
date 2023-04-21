@@ -131,9 +131,11 @@ cherry-pick-d9081493c4b2.patch
 cherry-pick-d6946b70b431.patch
 revert_x11_keep_windowcache_alive_for_a_time_interval.patch
 cherry-pick-9585757f9fad.patch
-cherry-pick-1d491fff578b.patch
 cherry-pick-2b30a50d0e62.patch
 cherry-pick-f58218891f8c.patch
 cherry-pick-ec53103cc72d.patch
 cherry-pick-f098ff0d1230.patch
 cherry-pick-63686953dc22.patch
+merge_m112_remove_the_second_weakptrfactory_from.patch
+merge_m112_check_spdyproxyclientsocket_is_alive_after_write.patch
+check_callback_availability_in.patch
