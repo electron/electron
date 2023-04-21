@@ -5,7 +5,6 @@ Subject: Reland "Enforce program stack limits on function parameters."
 
 This reverts commit f5715362aac554ff3108b9e2a56b8ac8a6ef1acb.
 
-
 Original change's description:
 > Revert "Enforce program stack limits on function parameters."
 >
