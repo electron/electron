@@ -1,0 +1,307 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: John Stiles <johnstiles@google.com>
+Date: Thu, 13 Apr 2023 17:58:24 -0400
+Subject: Enforce size limits on struct and array declarations.
+
+This improves error reporting by more clearly attaching the error
+message to the oversized type.
+
+Bug: chromium:1432603
+Change-Id: I26511f08aff22072cf4913abf7be2c49940a732c
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/671377
+Reviewed-by: Ben Wagner <bungeman@google.com>
+Commit-Queue: John Stiles <johnstiles@google.com>
+(cherry picked from commit 1cbd33ecd73523f8d4bf88e9c5576303b39e5556)
+Reviewed-on: https://skia-review.googlesource.com/c/skia/+/671686
+Reviewed-by: Brian Osman <brianosman@google.com>
+Reviewed-by: John Stiles <johnstiles@google.com>
+
+diff --git a/gn/sksl_tests.gni b/gn/sksl_tests.gni
+index 3da854583d1d8c60aa20774abbc7537c2ca0aa04..1b329ff2665ab2ec1e35b2dfd6164c8895dda1ae 100644
+--- a/gn/sksl_tests.gni
++++ b/gn/sksl_tests.gni
+@@ -193,6 +193,7 @@ sksl_error_tests = [
+   "errors/ProgramTooLarge_Globals.rts",
+   "errors/ProgramTooLarge_Parameters.rts",
+   "errors/ProgramTooLarge_Stack.rts",
++  "errors/ProgramTooLarge_Struct.rts",
+   "errors/PrototypeInFuncBody.rts",
+   "errors/ReadonlyWriteonly.compute",
+   "errors/RedeclareBasicType.rts",
+diff --git a/resources/sksl/BUILD.bazel b/resources/sksl/BUILD.bazel
+index 98cb09574dc8b9fc0fea0e2876eb26111df394f5..654e78f44adede0430b3d2c5308efe9cce6061b3 100644
+--- a/resources/sksl/BUILD.bazel
++++ b/resources/sksl/BUILD.bazel
+@@ -334,6 +334,7 @@ skia_filegroup(
+         "errors/ProgramTooLarge_Globals.rts",
+         "errors/ProgramTooLarge_Parameters.rts",
+         "errors/ProgramTooLarge_Stack.rts",
++        "errors/ProgramTooLarge_Struct.rts",
+         "errors/PrototypeInFuncBody.rts",
+         "errors/RTAdjustType.sksl",
+         "errors/ReadonlyWriteonly.compute",
+diff --git a/resources/sksl/errors/ProgramTooLarge_Globals.rts b/resources/sksl/errors/ProgramTooLarge_Globals.rts
+index af0ad17ce7a591d99a9cbb062278b99046bd2fe8..ee2556bb1a99404ebe53641064bceff3a553ea9a 100644
+--- a/resources/sksl/errors/ProgramTooLarge_Globals.rts
++++ b/resources/sksl/errors/ProgramTooLarge_Globals.rts
+@@ -6,11 +6,10 @@ struct S {
+ };
+ 
+ int small;
+-S medium;
+-S large[10];
+-S extra_large[100];
+-S xxl[50000];
+-
++S medium[30];
++S large[50];
++S extra_large[70];
++S xxl[90];
+ 
+ /*%%*
+ global variable 'extra_large' exceeds the size limit
+diff --git a/resources/sksl/errors/ProgramTooLarge_Parameters.rts b/resources/sksl/errors/ProgramTooLarge_Parameters.rts
+index cced977be40620ffc3b145837bd5ffe16b40295b..cb1225d2442a8da93237a3cc6dcf2948232abde7 100644
+--- a/resources/sksl/errors/ProgramTooLarge_Parameters.rts
++++ b/resources/sksl/errors/ProgramTooLarge_Parameters.rts
+@@ -1,14 +1,17 @@
+ struct S {
+     half4 ah4[1];
+-    half ah[99999];
++    half ah[99990];
+     half4 h4;
+     half h;
+ };
+ 
+ void func(int small,
++          int parameters,
++          int are,
++          int allowed,
+           S big_chungus,
+           S no_report /*we don't need to report overflows past the first*/) {}
+ 
+ /*%%*
+ variable 'big_chungus' exceeds the stack size limit
+-*%%*/
++*%%*/
+\ No newline at end of file
+diff --git a/resources/sksl/errors/ProgramTooLarge_Stack.rts b/resources/sksl/errors/ProgramTooLarge_Stack.rts
+index 4f004368a17b79d960e5cc142db35d82fb627cbd..a8f5217359ad9dab1fdcfcaac862938c1d205f0a 100644
+--- a/resources/sksl/errors/ProgramTooLarge_Stack.rts
++++ b/resources/sksl/errors/ProgramTooLarge_Stack.rts
+@@ -1,12 +1,12 @@
+ struct S {
+     half4 ah4[1];
+-    half ah[99999];
++    half ah[99990];
+     half4 h4;
+     half h;
+ };
+ 
+ void func() {
+-    int small;
++    int small, variables, are, allowed;
+     S big_chungus;
+     S no_report; // we don't need to report overflows past the first
+ }
+diff --git a/resources/sksl/errors/ProgramTooLarge_Struct.rts b/resources/sksl/errors/ProgramTooLarge_Struct.rts
+new file mode 100644
+index 0000000000000000000000000000000000000000..690e1d37311b5d0745d20d71b48738a69c5c3ecb
+--- /dev/null
++++ b/resources/sksl/errors/ProgramTooLarge_Struct.rts
+@@ -0,0 +1,24 @@
++struct A {
++    int4 big[25001]; // 100,004 slots
++};
++
++struct B {
++    int4 a[12500];   // 50,000 slots
++    int b[49999];    // 99,999 slots
++    int c;           // 100,000 slots
++};
++
++struct C {
++    int a[99999];    // 99,999 slots (safe)
++};
++
++struct D {
++    C a;   // 99,999 slots
++    int b; // 100,000 slots
++};
++
++/*%%*
++array size is too large
++struct is too large
++struct is too large
++*%%*/
+diff --git a/src/sksl/dsl/DSLType.cpp b/src/sksl/dsl/DSLType.cpp
+index 6250795ed1e1d6accf362e764a5738cf9db332c2..d27c5c8bc6def2e94bfcb312de6e342676a046f6 100644
+--- a/src/sksl/dsl/DSLType.cpp
++++ b/src/sksl/dsl/DSLType.cpp
+@@ -270,7 +270,7 @@ DSLExpression DSLType::Construct(DSLType type, SkSpan<DSLExpression> argArray) {
+ 
+ DSLType Array(const DSLType& base, int count, Position pos) {
+     count = base.skslType().convertArraySize(ThreadContext::Context(), pos,
+-            DSLExpression(count, pos).release());
++                                             DSLExpression(count, pos).release());
+     if (!count) {
+         return DSLType(kPoison_Type);
+     }
+@@ -282,7 +282,7 @@ DSLType UnsizedArray(const DSLType& base, Position pos) {
+         return DSLType(kPoison_Type);
+     }
+     return ThreadContext::SymbolTable()->addArrayDimension(&base.skslType(),
+-            SkSL::Type::kUnsizedArray);
++                                                           SkSL::Type::kUnsizedArray);
+ }
+ 
+ DSLType StructType(std::string_view name,
+diff --git a/src/sksl/ir/SkSLType.cpp b/src/sksl/ir/SkSLType.cpp
+index 3c8d933bad324602dd6a9f0229f204e883210e3c..eff98031ef5f59e12a3be12c8a7d9607c0077229 100644
+--- a/src/sksl/ir/SkSLType.cpp
++++ b/src/sksl/ir/SkSLType.cpp
+@@ -9,9 +9,9 @@
+ 
+ #include "include/private/SkSLLayout.h"
+ #include "include/private/SkSLString.h"
+-#include "include/private/SkTFitsIn.h"
+ #include "include/sksl/SkSLErrorReporter.h"
+ #include "src/core/SkMathPriv.h"
++#include "src/core/SkSafeMath.h"
+ #include "src/sksl/SkSLBuiltinTypes.h"
+ #include "src/sksl/SkSLConstantFolder.h"
+ #include "src/sksl/SkSLContext.h"
+@@ -694,6 +694,17 @@ std::unique_ptr<Type> Type::MakeStructType(const Context& context,
+             break;
+         }
+     }
++    size_t slots = 0;
++    for (const Field& field : fields) {
++        if (field.fType->isUnsizedArray()) {
++            continue;
++        }
++        slots = SkSafeMath::Add(slots, field.fType->slotCount());
++        if (slots >= kVariableSlotLimit) {
++            context.fErrors->error(pos, "struct is too large");
++            break;
++        }
++    }
+     return std::make_unique<StructType>(pos, name, std::move(fields), interfaceBlock);
+ }
+ 
+@@ -1164,8 +1175,9 @@ bool Type::checkIfUsableInArray(const Context& context, Position arrayPos) const
+     return true;
+ }
+ 
+-SKSL_INT Type::convertArraySize(const Context& context, Position arrayPos,
+-        std::unique_ptr<Expression> size) const {
++SKSL_INT Type::convertArraySize(const Context& context,
++                                Position arrayPos,
++                                std::unique_ptr<Expression> size) const {
+     size = context.fTypes.fInt->coerceExpression(std::move(size), context);
+     if (!size) {
+         return 0;
+@@ -1182,7 +1194,7 @@ SKSL_INT Type::convertArraySize(const Context& context, Position arrayPos,
+         context.fErrors->error(size->fPosition, "array size must be positive");
+         return 0;
+     }
+-    if (!SkTFitsIn<int32_t>(count)) {
++    if (SkSafeMath::Mul(this->slotCount(), count) > kVariableSlotLimit) {
+         context.fErrors->error(size->fPosition, "array size is too large");
+         return 0;
+     }
+diff --git a/tests/sksl/errors/ProgramTooLarge_Globals.glsl b/tests/sksl/errors/ProgramTooLarge_Globals.glsl
+index 406949ad38ecb6ea80bbba505cdf5ad9346c9446..ccb7706c3a66a7b41fd5c6444ea1e9967f314282 100644
+--- a/tests/sksl/errors/ProgramTooLarge_Globals.glsl
++++ b/tests/sksl/errors/ProgramTooLarge_Globals.glsl
+@@ -1,6 +1,6 @@
+ ### Compilation failed:
+ 
+ error: 11: global variable 'extra_large' exceeds the size limit
+-S extra_large[100];
+-^^^^^^^^^^^^^^^^^^
++S extra_large[70];
++^^^^^^^^^^^^^^^^^
+ 1 error
+diff --git a/tests/sksl/errors/ProgramTooLarge_Parameters.glsl b/tests/sksl/errors/ProgramTooLarge_Parameters.glsl
+index d92c3256e82d52115621cf96d6dba99f62cdd945..3ece6f379c8ab64dd846d856301217f95eb3e7ff 100644
+--- a/tests/sksl/errors/ProgramTooLarge_Parameters.glsl
++++ b/tests/sksl/errors/ProgramTooLarge_Parameters.glsl
+@@ -1,6 +1,6 @@
+ ### Compilation failed:
+ 
+-error: 10: variable 'big_chungus' exceeds the stack size limit
++error: 13: variable 'big_chungus' exceeds the stack size limit
+           S no_report /*we don't need to report overflows past the first*/) {}
+                                                                             ^^
+ 1 error
+diff --git a/tests/sksl/errors/ProgramTooLarge_Struct.glsl b/tests/sksl/errors/ProgramTooLarge_Struct.glsl
+new file mode 100644
+index 0000000000000000000000000000000000000000..ebe47f700dfad807fbd7b774f5f2ce851ff28e64
+--- /dev/null
++++ b/tests/sksl/errors/ProgramTooLarge_Struct.glsl
+@@ -0,0 +1,12 @@
++### Compilation failed:
++
++error: 2: array size is too large
++    int4 big[25001]; // 100,004 slots
++    ^^^^^^^^^^^^^^^
++error: 5: struct is too large
++struct B {
++^^^^^^^^^^...
++error: 15: struct is too large
++struct D {
++^^^^^^^^^^...
++3 errors
+diff --git a/tests/sksl/shared/Ossfuzz37900.asm.frag b/tests/sksl/shared/Ossfuzz37900.asm.frag
+index 9751821fc01e704a2f2851c52d1e9489b204c4f7..5fb2b3c5fd467857b653f617976cc3b8af3a15fb 100644
+--- a/tests/sksl/shared/Ossfuzz37900.asm.frag
++++ b/tests/sksl/shared/Ossfuzz37900.asm.frag
+@@ -1,6 +1,6 @@
+ ### Compilation failed:
+ 
+-error: 2: variable 'a' exceeds the stack size limit
++error: 2: array size is too large
+     int[2147483646] a, b=a, c=a, d=a, e=a, f=a, g=a, h=a, i=a, j=a, k=a;
+-    ^^^^^^^^^^^^^^^^^
++    ^^^^^^^^^^^^^^^
+ 1 error
+diff --git a/tests/sksl/shared/Ossfuzz37900.glsl b/tests/sksl/shared/Ossfuzz37900.glsl
+index 9751821fc01e704a2f2851c52d1e9489b204c4f7..5fb2b3c5fd467857b653f617976cc3b8af3a15fb 100644
+--- a/tests/sksl/shared/Ossfuzz37900.glsl
++++ b/tests/sksl/shared/Ossfuzz37900.glsl
+@@ -1,6 +1,6 @@
+ ### Compilation failed:
+ 
+-error: 2: variable 'a' exceeds the stack size limit
++error: 2: array size is too large
+     int[2147483646] a, b=a, c=a, d=a, e=a, f=a, g=a, h=a, i=a, j=a, k=a;
+-    ^^^^^^^^^^^^^^^^^
++    ^^^^^^^^^^^^^^^
+ 1 error
+diff --git a/tests/sksl/shared/Ossfuzz37900.hlsl b/tests/sksl/shared/Ossfuzz37900.hlsl
+index 9751821fc01e704a2f2851c52d1e9489b204c4f7..5fb2b3c5fd467857b653f617976cc3b8af3a15fb 100644
+--- a/tests/sksl/shared/Ossfuzz37900.hlsl
++++ b/tests/sksl/shared/Ossfuzz37900.hlsl
+@@ -1,6 +1,6 @@
+ ### Compilation failed:
+ 
+-error: 2: variable 'a' exceeds the stack size limit
++error: 2: array size is too large
+     int[2147483646] a, b=a, c=a, d=a, e=a, f=a, g=a, h=a, i=a, j=a, k=a;
+-    ^^^^^^^^^^^^^^^^^
++    ^^^^^^^^^^^^^^^
+ 1 error
+diff --git a/tests/sksl/shared/Ossfuzz37900.metal b/tests/sksl/shared/Ossfuzz37900.metal
+index 9751821fc01e704a2f2851c52d1e9489b204c4f7..5fb2b3c5fd467857b653f617976cc3b8af3a15fb 100644
+--- a/tests/sksl/shared/Ossfuzz37900.metal
++++ b/tests/sksl/shared/Ossfuzz37900.metal
+@@ -1,6 +1,6 @@
+ ### Compilation failed:
+ 
+-error: 2: variable 'a' exceeds the stack size limit
++error: 2: array size is too large
+     int[2147483646] a, b=a, c=a, d=a, e=a, f=a, g=a, h=a, i=a, j=a, k=a;
+-    ^^^^^^^^^^^^^^^^^
++    ^^^^^^^^^^^^^^^
+ 1 error
