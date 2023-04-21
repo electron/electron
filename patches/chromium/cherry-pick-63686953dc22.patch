@@ -1,7 +1,7 @@
-From 63686953dc225f0f0cd8026c1589b16daa177532 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Florian Leimgruber <fleimgruber@google.com>
-Date: Thu, 06 Apr 2023 09:21:41 +0000
-Subject: [PATCH] Add lock to AlternativeStateNameMap.
+Date: Thu, 6 Apr 2023 09:21:41 +0000
+Subject: Add lock to AlternativeStateNameMap.
 
 To prevent the class from accessing its localized_state_names_map_ and
 localized_state_names_reverse_lookup_map_ members, a lock is added. It
@@ -19,13 +19,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4402262
 Auto-Submit: Florian Leimgruber <fleimgruber@google.com>
 Cr-Commit-Position: refs/branch-heads/5615@{#1147}
 Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
----
 
 diff --git a/components/autofill/core/browser/geo/alternative_state_name_map.cc b/components/autofill/core/browser/geo/alternative_state_name_map.cc
-index d217082..ed22752 100644
+index d217082a0faf23d2fd74dce8eec1043d83b5e509..ed22752c50f15e1f45e48b9ef561b0cb7134fba8 100644
 --- a/components/autofill/core/browser/geo/alternative_state_name_map.cc
 +++ b/components/autofill/core/browser/geo/alternative_state_name_map.cc
-@@ -53,7 +53,6 @@
+@@ -53,7 +53,6 @@ AlternativeStateNameMap::GetCanonicalStateName(
      const CountryCode& country_code,
      const StateName& state_name,
      bool is_state_name_normalized) const {
@@ -33,7 +32,7 @@ index d217082..ed22752 100644
    // Example:
    //  Entries in |localized_state_names_map_| are:
    //    ("DE", "Bavaria") -> {
-@@ -73,6 +72,7 @@
+@@ -73,6 +72,7 @@ AlternativeStateNameMap::GetCanonicalStateName(
    if (!is_state_name_normalized)
      normalized_state_name = NormalizeStateName(state_name);
  
@@ -41,7 +40,7 @@ index d217082..ed22752 100644
    auto it = localized_state_names_reverse_lookup_map_.find(
        {country_code, normalized_state_name});
    if (it != localized_state_names_reverse_lookup_map_.end())
-@@ -84,8 +84,6 @@
+@@ -84,8 +84,6 @@ AlternativeStateNameMap::GetCanonicalStateName(
  absl::optional<StateEntry> AlternativeStateNameMap::GetEntry(
      const CountryCode& country_code,
      const StateName& state_string_from_profile) const {
@@ -50,7 +49,7 @@ index d217082..ed22752 100644
    StateName normalized_state_string_from_profile =
        NormalizeStateName(state_string_from_profile);
    absl::optional<CanonicalStateName> canonical_state_name =
-@@ -93,6 +91,7 @@
+@@ -93,6 +91,7 @@ absl::optional<StateEntry> AlternativeStateNameMap::GetEntry(
                              /*is_state_name_normalized=*/true);
  
    if (canonical_state_name) {
@@ -58,7 +57,7 @@ index d217082..ed22752 100644
      auto it = localized_state_names_map_.find(
          {country_code, canonical_state_name.value()});
      if (it != localized_state_names_map_.end())
-@@ -108,8 +107,6 @@
+@@ -108,8 +107,6 @@ void AlternativeStateNameMap::AddEntry(
      const StateEntry& state_entry,
      const std::vector<StateName>& normalized_alternative_state_names,
      const CanonicalStateName& normalized_canonical_state_name) {
@@ -67,7 +66,7 @@ index d217082..ed22752 100644
    // Example:
    // AddEntry("DE", "Bavaria", {
    //                              "canonical_name": "Bayern",
-@@ -126,12 +123,15 @@
+@@ -126,12 +123,15 @@ void AlternativeStateNameMap::AddEntry(
    //    ("DE", "Bayern") -> "Bayern"
    //    ("DE", "BY") -> "Bayern"
    //    ("DE", "Bavaria") -> "Bayern"
@@ -85,7 +84,7 @@ index d217082..ed22752 100644
    localized_state_names_map_[{country_code, normalized_canonical_state_name}] =
        state_entry;
    for (const auto& alternative_name : normalized_alternative_state_names) {
-@@ -141,12 +141,12 @@
+@@ -141,12 +141,12 @@ void AlternativeStateNameMap::AddEntry(
  }
  
  bool AlternativeStateNameMap::IsLocalisedStateNamesMapEmpty() const {
@@ -101,7 +100,7 @@ index d217082..ed22752 100644
    localized_state_names_reverse_lookup_map_.clear();
  }
 diff --git a/components/autofill/core/browser/geo/alternative_state_name_map.h b/components/autofill/core/browser/geo/alternative_state_name_map.h
-index d20cdf8..58dd754 100644
+index d20cdf8a02fff5d3c3ea91ef3aa67c6522804692..58dd754bfbf39fd24c82e6d46ccb566008a4cd73 100644
 --- a/components/autofill/core/browser/geo/alternative_state_name_map.h
 +++ b/components/autofill/core/browser/geo/alternative_state_name_map.h
 @@ -9,7 +9,7 @@
@@ -113,7 +112,7 @@ index d20cdf8..58dd754 100644
  #include "base/types/strong_alias.h"
  #include "components/autofill/core/browser/proto/states.pb.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
-@@ -177,7 +177,8 @@
+@@ -177,7 +177,8 @@ class AlternativeStateNameMap {
             CaseInsensitiveLessComparator>
        localized_state_names_reverse_lookup_map_;
  
