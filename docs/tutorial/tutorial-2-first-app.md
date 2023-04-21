@@ -352,6 +352,71 @@ app.whenReady().then(() => {
 
 ```
 
+
+## Optional: Install TypeScript
+If you wanna create an Electron project with TypeScript. Follow these steps:
+
+Install typescript and types.
+```shell
+npm install typescript @types/node -D
+```
+
+Create a `tsconfig.json` in your project.
+
+```json title='tsconfig.json'
+{
+    "compilerOptions": {
+        "isolatedModules": false,
+        "target": "ES6",
+        "allowJs": true,
+        "module": "CommonJS",
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "noImplicitAny": true,
+        "sourceMap": true,
+        "baseUrl": ".",
+        "outDir": "./dist",
+        "moduleResolution": "node",
+        "resolveJsonModule": true,
+    },
+    "include": ["**/*"],
+    "exclude": ["node_modules", "dist"]
+}
+```
+:::info
+
+Please pay attention to "outDir", we will use it later. It means the directory which TypeScript compiler uses to save compiled files.
+
+:::
+
+Then configure the `package.json`. There're two changes:
+1. Added `"prestart": "tsc"` to "scripts", it'll make TypeScript compiler compile your source code first before your application start.
+2. Added the prefix `dist/` to "main", it tells typescript to use the compiled js file as the entry of your application.
+
+```json title='package.json'
+{
+  "name": "my-electron-app",
+  "version": "1.0.0",
+  "description": "Hello World!",
+  "main": "dist/main.js",
+  "scripts": {
+    "prestart": "tsc",
+    "start": "electron .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Jane Doe",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^18.15.13",
+    "electron": "^24.1.2",
+    "typescript": "^5.0.4"
+  }
+}
+```
+
+TypeScript configuration finished!
+You could write TypeScripts in your Electron project and use **import** fragment instead of `require` function of CommonJS now!
+
 ## Optional: Debugging from VS Code
 
 If you want to debug your application using VS Code, you need to attach VS Code to
