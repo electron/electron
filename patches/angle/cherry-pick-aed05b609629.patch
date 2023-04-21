@@ -1,0 +1,109 @@
+From aed05b609629db64999e3a32364ee3a6d9eba4f3 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 31 Mar 2023 16:44:35 -0400
+Subject: [PATCH] M112: Mark RGBX and BGRX formats as having 8 unused bits.
+
+This makes sure that pixelBytes ends up being 4 and fixes potential
+buffer size validation.
+
+Fix EGL configs using pixelBytes to compute EGL_BUFFER_SIZE which
+is not supposed to include unused bits. This is covered by
+dEQP-EGL.functional.query_config.constraints.color_buffer_size
+
+Bug: chromium:1404790
+Change-Id: Ie0480cbdc6229c4bb3a6c6242337eaed5a3ae3b7
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4428752
+Reviewed-by: Amirali Abdolrashidi <abdolrashidi@google.com>
+---
+
+diff --git a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp
+index fc41b9d..0b8d4ee 100644
+--- a/src/libANGLE/formatutils.cpp
++++ b/src/libANGLE/formatutils.cpp
+@@ -549,6 +549,21 @@
+     return depthBits != 0 || stencilBits != 0;
+ }
+ 
++GLuint InternalFormat::getEGLConfigBufferSize() const
++{
++    // EGL config's EGL_BUFFER_SIZE is measured in bits and is the sum of all the color channels for
++    // color formats or the luma channels for luma formats. It ignores unused bits so compute the
++    // bit count by summing instead of using pixelBytes.
++    if (isLUMA())
++    {
++        return luminanceBits + alphaBits;
++    }
++    else
++    {
++        return redBits + greenBits + blueBits + alphaBits;
++    }
++}
++
+ Format::Format(GLenum internalFormat) : Format(GetSizedInternalFormatInfo(internalFormat)) {}
+ 
+ Format::Format(const InternalFormat &internalFormat) : info(&internalFormat) {}
+@@ -1141,10 +1156,10 @@
+     AddRGBAFormat(&map, GL_BGR10_A2_ANGLEX,   true, 10, 10, 10,  2, 0, GL_BGRA_EXT,     GL_UNSIGNED_INT_2_10_10_10_REV,    GL_UNSIGNED_NORMALIZED, false, NeverSupported,                                    NeverSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
+ 
+     // Special format to emulate RGB8 with RGBA8 within ANGLE.
+-    AddRGBAFormat(&map, GL_RGBX8_ANGLE,      true,   8,  8,  8,  0, 0, GL_RGB,          GL_UNSIGNED_BYTE,                  GL_UNSIGNED_NORMALIZED, false, AlwaysSupported,                                   AlwaysSupported, AlwaysSupported,                                   AlwaysSupported,                               NeverSupported);
++    AddRGBAXFormat(&map, GL_RGBX8_ANGLE,      true,   FB< 8,  8,  8,  0, 8, 0>(), GL_RGB,          GL_UNSIGNED_BYTE,                  GL_UNSIGNED_NORMALIZED, false, AlwaysSupported,                                   AlwaysSupported, AlwaysSupported,                                   AlwaysSupported,                               NeverSupported);
+ 
+     // Special format to emulate BGR8 with BGRA8 within ANGLE.
+-    AddRGBAFormat(&map, GL_BGRX8_ANGLEX,      true,  8,  8,  8,  0, 0, GL_BGRA_EXT,     GL_UNSIGNED_BYTE,                  GL_UNSIGNED_NORMALIZED, false, NeverSupported,                                    AlwaysSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
++    AddRGBAXFormat(&map, GL_BGRX8_ANGLEX,      true,  FB< 8,  8,  8,  0, 8, 0>(), GL_BGRA_EXT,     GL_UNSIGNED_BYTE,                  GL_UNSIGNED_NORMALIZED, false, NeverSupported,                                    AlwaysSupported,  NeverSupported,                                    NeverSupported,                                NeverSupported);
+ 
+     // This format is supported on ES 2.0 with two extensions, so keep it out-of-line to not widen the table above even more.
+     //                 | Internal format     |sized| R | G | B | A |S | Format         | Type                             | Component type        | SRGB | Texture supported                                                                            | Filterable     | Texture attachment                               | Renderbuffer                                   | Blend
+diff --git a/src/libANGLE/formatutils.h b/src/libANGLE/formatutils.h
+index af7f6df..a651ab8 100644
+--- a/src/libANGLE/formatutils.h
++++ b/src/libANGLE/formatutils.h
+@@ -205,6 +205,8 @@
+     bool isInt() const;
+     bool isDepthOrStencil() const;
+ 
++    GLuint getEGLConfigBufferSize() const;
++
+     bool operator==(const InternalFormat &other) const;
+     bool operator!=(const InternalFormat &other) const;
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+index cf3c53e..abd3d5f 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Renderer11.cpp
+@@ -1263,7 +1263,7 @@
+                 egl::Config config;
+                 config.renderTargetFormat = colorBufferInternalFormat;
+                 config.depthStencilFormat = depthStencilBufferInternalFormat;
+-                config.bufferSize         = colorBufferFormatInfo.pixelBytes * 8;
++                config.bufferSize         = colorBufferFormatInfo.getEGLConfigBufferSize();
+                 config.redSize            = colorBufferFormatInfo.redBits;
+                 config.greenSize          = colorBufferFormatInfo.greenBits;
+                 config.blueSize           = colorBufferFormatInfo.blueBits;
+diff --git a/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp b/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp
+index cfe6ef8..6695096 100644
+--- a/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp
++++ b/src/libANGLE/renderer/d3d/d3d9/Renderer9.cpp
+@@ -523,7 +523,7 @@
+                     egl::Config config;
+                     config.renderTargetFormat = colorBufferInternalFormat;
+                     config.depthStencilFormat = depthStencilBufferInternalFormat;
+-                    config.bufferSize         = colorBufferFormatInfo.pixelBytes * 8;
++                    config.bufferSize         = colorBufferFormatInfo.getEGLConfigBufferSize();
+                     config.redSize            = colorBufferFormatInfo.redBits;
+                     config.greenSize          = colorBufferFormatInfo.greenBits;
+                     config.blueSize           = colorBufferFormatInfo.blueBits;
+diff --git a/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp b/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
+index 84a02d8..a4100d9 100644
+--- a/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
++++ b/src/libANGLE/renderer/vulkan/vk_caps_utils.cpp
+@@ -1264,7 +1264,7 @@
+ 
+     config.renderTargetFormat = colorFormat.internalFormat;
+     config.depthStencilFormat = depthStencilFormat.internalFormat;
+-    config.bufferSize         = colorFormat.pixelBytes * 8;
++    config.bufferSize         = colorFormat.getEGLConfigBufferSize();
+     config.redSize            = colorFormat.redBits;
+     config.greenSize          = colorFormat.greenBits;
+     config.blueSize           = colorFormat.blueBits;
