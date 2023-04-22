@@ -1,7 +1,7 @@
-From 2b30a50d0e62940cc183c287770a1affeffb7ebf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Mon, 10 Apr 2023 05:32:06 +0000
-Subject: [PATCH] [M112] Use ScriptState::Scope instead of setting HandleScope.
+Subject: Use ScriptState::Scope instead of setting HandleScope.
 
 Since `GetEffectiveFunction` may call `Get` if the given v8 listener is
 an object, we need to prepare `v8::Context::Scope` before calling it.
@@ -25,13 +25,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4411454
 Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5615@{#1191}
 Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
----
 
 diff --git a/content/browser/service_worker/service_worker_version_browsertest.cc b/content/browser/service_worker/service_worker_version_browsertest.cc
-index b422b1d..cc82407 100644
+index 8ab1f54b2453fe100fdc9b4f1b41ce031c5ecf29..5834127a6e70389540cbf347e65ae4bc80495317 100644
 --- a/content/browser/service_worker/service_worker_version_browsertest.cc
 +++ b/content/browser/service_worker/service_worker_version_browsertest.cc
-@@ -975,6 +975,18 @@
+@@ -976,6 +976,18 @@ IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
              version_->fetch_handler_type());
  }
  
@@ -50,21 +49,9 @@ index b422b1d..cc82407 100644
  // Check that fetch event handler added in the install event should result in a
  // service worker that doesn't count as having a fetch event handler.
  IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
-diff --git a/content/test/content_unittests_bundle_data.filelist b/content/test/content_unittests_bundle_data.filelist
-index e44317b9..02ce274 100644
---- a/content/test/content_unittests_bundle_data.filelist
-+++ b/content/test/content_unittests_bundle_data.filelist
-@@ -1472,6 +1472,7 @@
- //content/test/data/service_worker/fetch_event_response_via_cache.js
- //content/test/data/service_worker/fetch_event_set_in_install_event.js
- //content/test/data/service_worker/fetch_event_set_in_install_event.js.mock-http-headers
-+//content/test/data/service_worker/fetch_event_with_handle_event_property.js
- //content/test/data/service_worker/fetch_event_worker_clients.js
- //content/test/data/service_worker/fetch_from_page.html
- //content/test/data/service_worker/fetch_from_service_worker.html
 diff --git a/content/test/data/service_worker/fetch_event_with_handle_event_property.js b/content/test/data/service_worker/fetch_event_with_handle_event_property.js
 new file mode 100644
-index 0000000..2fe6153a
+index 0000000000000000000000000000000000000000..2fe6153af242a10162f7ecb8eaab93c17d840211
 --- /dev/null
 +++ b/content/test/data/service_worker/fetch_event_with_handle_event_property.js
 @@ -0,0 +1,11 @@
@@ -80,10 +67,10 @@ index 0000000..2fe6153a
 +});
 +self.addEventListener('fetch', obj);
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
-index 4d2fe95..bc2946a 100644
+index bbbbcd3691ac646716d78a17251909fc4ba43ea0..9438405e331f1978a5c9b76bf8a7148064fb6b7d 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
-@@ -2627,12 +2627,15 @@
+@@ -2619,12 +2619,15 @@ ServiceWorkerGlobalScope::FetchHandlerType() {
    if (!elv) {
      return mojom::blink::ServiceWorkerFetchHandlerType::kNoHandler;
    }

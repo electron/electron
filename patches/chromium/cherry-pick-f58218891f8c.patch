@@ -1,7 +1,7 @@
-From f58218891f8cbd9186f11e31a0a93391c9f21b2e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Tue, 11 Apr 2023 07:12:34 +0000
-Subject: [PATCH] [M112] Stop supporting { handleEvent }.
+Subject: Stop supporting { handleEvent }.
 
 Make the code aligned with the following specification update:
 https://github.com/w3c/ServiceWorker/pull/1676
@@ -24,13 +24,12 @@ Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
 Reviewed-by: Minoru Chikamune <chikamune@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5615@{#1203}
 Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
----
 
 diff --git a/content/browser/service_worker/service_worker_version_browsertest.cc b/content/browser/service_worker/service_worker_version_browsertest.cc
-index cc82407..48d232bd 100644
+index 5834127a6e70389540cbf347e65ae4bc80495317..bff53482eb05f25542bcd9d7cb5b5a05932b9064 100644
 --- a/content/browser/service_worker/service_worker_version_browsertest.cc
 +++ b/content/browser/service_worker/service_worker_version_browsertest.cc
-@@ -987,6 +987,17 @@
+@@ -988,6 +988,17 @@ IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
              version_->fetch_handler_type());
  }
  
@@ -48,21 +47,9 @@ index cc82407..48d232bd 100644
  // Check that fetch event handler added in the install event should result in a
  // service worker that doesn't count as having a fetch event handler.
  IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
-diff --git a/content/test/content_unittests_bundle_data.filelist b/content/test/content_unittests_bundle_data.filelist
-index 02ce274..6f7de2c 100644
---- a/content/test/content_unittests_bundle_data.filelist
-+++ b/content/test/content_unittests_bundle_data.filelist
-@@ -1463,6 +1463,7 @@
- //content/test/data/service_worker/fetch_event.js.mock-http-headers
- //content/test/data/service_worker/fetch_event_blob.js
- //content/test/data/service_worker/fetch_event_blob.js.mock-http-headers
-+//content/test/data/service_worker/fetch_event_object_removing_itself.js
- //content/test/data/service_worker/fetch_event_pass_through.js
- //content/test/data/service_worker/fetch_event_pass_through.js.mock-http-headers
- //content/test/data/service_worker/fetch_event_rejected.js
 diff --git a/content/test/data/service_worker/fetch_event_object_removing_itself.js b/content/test/data/service_worker/fetch_event_object_removing_itself.js
 new file mode 100644
-index 0000000..110bc48
+index 0000000000000000000000000000000000000000..110bc4821fae3a63a374d3dc6ca954d4bd744952
 --- /dev/null
 +++ b/content/test/data/service_worker/fetch_event_object_removing_itself.js
 @@ -0,0 +1,19 @@
@@ -86,10 +73,10 @@ index 0000000..110bc48
 +self.addEventListener('fetch', obj);
 +self.addEventListener('fetch', victim);
 diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
-index bc2946a..7366f1b 100644
+index 9438405e331f1978a5c9b76bf8a7148064fb6b7d..75d728dd76aec7e5b5a6d2d15e65c65b4c036ca7 100644
 --- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
 +++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
-@@ -2629,7 +2629,7 @@
+@@ -2621,7 +2621,7 @@ ServiceWorkerGlobalScope::FetchHandlerType() {
    }
  
    ScriptState* script_state = ScriptController()->GetScriptState();
@@ -98,7 +85,7 @@ index bc2946a..7366f1b 100644
    ScriptState::Scope scope(script_state);
  
    // TODO(crbug.com/1349613): revisit the way to implement this.
-@@ -2637,8 +2637,8 @@
+@@ -2629,8 +2629,8 @@ ServiceWorkerGlobalScope::FetchHandlerType() {
    for (RegisteredEventListener& e : *elv) {
      EventTarget* et = EventTarget::Create(script_state);
      v8::Local<v8::Value> v =
