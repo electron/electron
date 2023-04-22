@@ -1,7 +1,8 @@
-From ec53103cc72d47e6a46762d77c890d0d36b07ff6 Mon Sep 17 00:00:00 2001
-From: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: chromium-autoroll
+ <chromium-autoroll@skia-public.iam.gserviceaccount.com>
 Date: Wed, 12 Apr 2023 21:54:57 +0000
-Subject: [PATCH] Roll Skia from 288bdaeb99a4 to d5846fb1f236 (5 revisions)
+Subject: Roll Skia from 288bdaeb99a4 to d5846fb1f236 (5 revisions)
 
 https://skia.googlesource.com/skia.git/+log/288bdaeb99a4..d5846fb1f236
 
@@ -35,17 +36,16 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4420129
 Commit-Queue: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
 Bot-Commit: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
 Cr-Commit-Position: refs/heads/main@{#1129520}
----
 
 diff --git a/DEPS b/DEPS
-index df1013d6..e9b0f053 100644
+index 9977dd1a5f299d13d833e7bf266ebd5f3090ac22..1054192d132f42be5130bcc11a2aa9023fbb615a 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -309,7 +309,7 @@
+@@ -299,7 +299,7 @@ vars = {
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling Skia
    # and whatever else without interference from each other.
--  'skia_revision': '288bdaeb99a45c33665fc1fd9dfde8d10ba2fa3c',
+-  'skia_revision': '4dc670a8c5575180caa3d4d03f1e05da0177240d',
 +  'skia_revision': 'd5846fb1f236b9a115f0acd432daa3de18a64419',
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling V8
