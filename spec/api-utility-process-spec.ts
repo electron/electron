@@ -360,5 +360,19 @@ describe('utilityProcess module', () => {
       await once(child, 'exit');
       expect(log).to.equal('hello\n');
     });
+
+    it('does not crash when running eval', async () => {
+      const child = utilityProcess.fork('./eval.js', [], {
+        cwd: fixturesPath,
+        stdio: 'ignore'
+      });
+      await once(child, 'spawn');
+      const [data] = await once(child, 'message');
+      expect(data).to.equal(42);
+      // Cleanup.
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
   });
 });
