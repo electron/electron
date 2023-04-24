@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
 Date: Tue, 11 Apr 2023 07:12:34 +0000
-Subject: [M112] Stop supporting { handleEvent }.
+Subject: Stop supporting { handleEvent }.
 
 Make the code aligned with the following specification update:
 https://github.com/w3c/ServiceWorker/pull/1676
