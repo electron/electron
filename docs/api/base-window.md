@@ -14,7 +14,7 @@ module is emitted.
 
 ```javascript
 // In the main process.
-const { BaseWindow } = require('electron')
+const { BaseWindow, WebContentsView } = require('electron')
 
 const win = new BaseWindow({ width: 800, height: 600 })
 
