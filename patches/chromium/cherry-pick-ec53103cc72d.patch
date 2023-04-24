@@ -38,7 +38,7 @@ Bot-Commit: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount
 Cr-Commit-Position: refs/heads/main@{#1129520}
 
 diff --git a/DEPS b/DEPS
-index 9977dd1a5f299d13d833e7bf266ebd5f3090ac22..1054192d132f42be5130bcc11a2aa9023fbb615a 100644
+index 14b54b64292172381b677f0166f9d530c48d7b65..67300d129c39a5dfe89cb5a015afa203a291ad36 100644
 --- a/DEPS
 +++ b/DEPS
 @@ -299,7 +299,7 @@ vars = {
