@@ -366,18 +366,11 @@ Create a `tsconfig.json` in your project.
 ```json title='tsconfig.json'
 {
     "compilerOptions": {
-        "isolatedModules": false,
-        "target": "ES6",
+        "isolatedModules": true,
         "allowJs": true,
-        "module": "CommonJS",
-        "skipLibCheck": true,
-        "esModuleInterop": true,
-        "noImplicitAny": true,
+        "module": "commonjs",
         "sourceMap": true,
-        "baseUrl": ".",
-        "outDir": "./dist",
-        "moduleResolution": "node",
-        "resolveJsonModule": true,
+        "outDir": "dist"
     },
     "include": ["**/*"],
     "exclude": ["node_modules", "dist"]
