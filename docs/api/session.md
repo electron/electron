@@ -519,9 +519,8 @@ app.whenReady().then(() => {
 Returns:
 
 * `event` Event
-* `details` Object
-  * `device` [USBDevice](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+* `device` [USBDevice](structures/usb-device.md)
+* `webContents` [WebContents](web-contents.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a new device becomes available before
@@ -534,9 +533,8 @@ with the newly added device.
 Returns:
 
 * `event` Event
-* `details` Object
-  * `device` [USBDevice](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+* `device` [USBDevice](structures/usb-device.md)
+* `webContents` [WebContents](web-contents.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a device has been removed before the callback
@@ -550,7 +548,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [USBDevice[]](structures/usb-device.md)
+  * `device` [USBDevice](structures/usb-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
 
 Emitted after `USBDevice.forget()` has been called.  This event can be used
