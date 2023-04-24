@@ -20,11 +20,11 @@ const win = new BaseWindow({ width: 800, height: 600 })
 
 const leftView = new WebContentsView()
 leftView.webContents.loadURL('https://electronjs.org')
-mainWindow.contentView.addChildView(leftView)
+win.contentView.addChildView(leftView)
 
 const rightView = new WebContentsView()
-rightView.webContents.loadURL('https://slack.com')
-mainWindow.contentView.addChildView(rightView)
+rightView.webContents.loadURL('https://github.com/electron/electron')
+win.contentView.addChildView(rightView)
 
 leftView.setBounds({ x: 0, y: 0, width: 400, height: 600 })
 rightView.setBounds({ x: 400, y: 0, width: 400, height: 600 })
@@ -37,11 +37,11 @@ By using `parent` option, you can create child windows:
 ```javascript
 const { BaseWindow } = require('electron')
 
-const top = new BaseWindow()
-const child = new BaseWindow({ parent: top })
+const parent = new BaseWindow()
+const child = new BaseWindow({ parent })
 ```
 
-The `child` window will always show on top of the `top` window.
+The `child` window will always show on top of the `parent` window.
 
 ## Modal windows
 
@@ -51,8 +51,8 @@ window, you have to set both `parent` and `modal` options:
 ```javascript
 const { BaseWindow } = require('electron')
 
-const top = new BaseWindow()
-const child = new BaseWindow({ parent: top, modal: true })
+const parent = new BaseWindow()
+const child = new BaseWindow({ parent, modal: true })
 ```
 
 ## Platform notices
