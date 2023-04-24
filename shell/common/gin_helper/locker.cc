@@ -4,19 +4,15 @@
 
 #include "shell/common/gin_helper/locker.h"
 
+#include "shell/common/process_util.h"
+
 namespace gin_helper {
 
 Locker::Locker(v8::Isolate* isolate) {
-  if (IsBrowserProcess())
+  if (electron::IsBrowserProcess())
     locker_ = std::make_unique<v8::Locker>(isolate);
 }
 
 Locker::~Locker() = default;
-
-void Locker::SetIsBrowserProcess(bool is_browser_process) {
-  g_is_browser_process = is_browser_process;
-}
-
-bool Locker::g_is_browser_process = false;
 
 }  // namespace gin_helper

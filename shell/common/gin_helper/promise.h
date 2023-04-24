@@ -16,6 +16,7 @@
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
+#include "shell/common/process_util.h"
 
 namespace gin_helper {
 
@@ -45,7 +46,7 @@ class PromiseBase {
   // Note: The parameter type is PromiseBase&& so it can take the instances of
   // Promise<T> type.
   static void RejectPromise(PromiseBase&& promise, base::StringPiece errmsg) {
-    if (gin_helper::Locker::IsBrowserProcess() &&
+    if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       content::GetUIThreadTaskRunner({})->PostTask(
           FROM_HERE,
@@ -88,7 +89,7 @@ class Promise : public PromiseBase {
 
   // Helper for resolving the promise with |result|.
   static void ResolvePromise(Promise<RT> promise, RT result) {
-    if (gin_helper::Locker::IsBrowserProcess() &&
+    if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       content::GetUIThreadTaskRunner({})->PostTask(
           FROM_HERE, base::BindOnce([](Promise<RT> promise,
