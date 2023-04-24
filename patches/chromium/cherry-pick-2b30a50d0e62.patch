@@ -1,0 +1,91 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Date: Mon, 10 Apr 2023 05:32:06 +0000
+Subject: Use ScriptState::Scope instead of setting HandleScope.
+
+Since `GetEffectiveFunction` may call `Get` if the given v8 listener is
+an object, we need to prepare `v8::Context::Scope` before calling it.
+Blink already have a helper class to prepare the environment for the
+script execution, which has already been used used in other
+ServiceWorkerGlobalScope member functions.  It is `ScriptState::Scope`
+This CL also use it instead.
+
+(cherry picked from commit 299385e09d41d5ce3abd434879b5f9b0a8880cd7)
+
+Bug: 1429197
+Change-Id: Idbcfdfa9c06160a18b57155a9540f72eed4ec0b8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4387655
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Commit-Queue: Kouhei Ueno <kouhei@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Auto-Submit: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1125148}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4411454
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5615@{#1191}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/content/browser/service_worker/service_worker_version_browsertest.cc b/content/browser/service_worker/service_worker_version_browsertest.cc
+index 5e1aeaa11cc99e9ac4c89be082e0b4254f6df000..0435c5a1850dd3ed16197bbc40c1e276e4613a60 100644
+--- a/content/browser/service_worker/service_worker_version_browsertest.cc
++++ b/content/browser/service_worker/service_worker_version_browsertest.cc
+@@ -976,6 +976,18 @@ IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
+             version_->fetch_handler_type());
+ }
+ 
++IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
++                       NonFunctionFetchHandlerWithHandleEventProperty) {
++  StartServerAndNavigateToSetup();
++  ASSERT_EQ(
++      Install("/service_worker/fetch_event_with_handle_event_property.js"),
++      blink::ServiceWorkerStatusCode::kOk);
++  EXPECT_EQ(ServiceWorkerVersion::FetchHandlerExistence::EXISTS,
++            version_->fetch_handler_existence());
++  EXPECT_EQ(ServiceWorkerVersion::FetchHandlerType::kNotSkippable,
++            version_->fetch_handler_type());
++}
++
+ // Check that fetch event handler added in the install event should result in a
+ // service worker that doesn't count as having a fetch event handler.
+ IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
+diff --git a/content/test/data/service_worker/fetch_event_with_handle_event_property.js b/content/test/data/service_worker/fetch_event_with_handle_event_property.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..2fe6153af242a10162f7ecb8eaab93c17d840211
+--- /dev/null
++++ b/content/test/data/service_worker/fetch_event_with_handle_event_property.js
+@@ -0,0 +1,11 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++let obj = {};
++Object.defineProperty(obj, "handleEvent", {
++  get: () => {},
++  configurable: true,
++  enumerable: true,
++});
++self.addEventListener('fetch', obj);
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index c66d232a65535bf1c66d47c6d51bc56418e57f26..b3a9f691a0fabf14bf6f319173f400c31c664c12 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -2602,12 +2602,15 @@ ServiceWorkerGlobalScope::FetchHandlerType() {
+   if (!elv) {
+     return mojom::blink::ServiceWorkerFetchHandlerType::kNoHandler;
+   }
+-  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+-  v8::HandleScope handle_scope(isolate);
++
++  ScriptState* script_state = ScriptController()->GetScriptState();
++  // Do not remove this, |scope| is needed by `GetEffectiveFunction`.
++  ScriptState::Scope scope(script_state);
++
+   // TODO(crbug.com/1349613): revisit the way to implement this.
+   // The following code returns kEmptyFetchHandler if all handlers are nop.
+   for (RegisteredEventListener& e : *elv) {
+-    EventTarget* et = EventTarget::Create(ScriptController()->GetScriptState());
++    EventTarget* et = EventTarget::Create(script_state);
+     v8::Local<v8::Value> v =
+         To<JSBasedEventListener>(e.Callback())->GetEffectiveFunction(*et);
+     if (!v->IsFunction() ||
