@@ -76,7 +76,7 @@ index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb8
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d6ae4c3665d85f251d165e5c507dda7869a957a0..8c188f50821e05cf5c67027f042e13a1f7e8a3c1 100644
+index 7837a560da68a5aae9ab552b6dfb5f94b5c523e0..2fa6d9490e81cc2cf538b1bb4d0a5bca0d14dcad 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,7 +88,7 @@ index d6ae4c3665d85f251d165e5c507dda7869a957a0..8c188f50821e05cf5c67027f042e13a1
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index a92d1339b0ec7980dc9b73dcbad834c3ffca8211..5a07df3e8a31f6d5bfc5d27bf804517fb27239b2 100644
+index a164080599beb28449c6bda91a0f7373c6434019..44750c770ff445cf1b38da27922caa94357baac0 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -170,6 +170,7 @@ source_set("common") {

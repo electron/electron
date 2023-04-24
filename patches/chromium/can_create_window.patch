@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 823c3b4545a6db7e34390f4669e82f4a2a52ff84..d2f2f71528b35f7cc0d5d84460e4140a9a7aeb2d 100644
+index 31314df9139482e18e22c670d7083404ee6f1af7..a82cf945f04cefac901060770303db79335859c1 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7713,6 +7713,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -66,7 +66,7 @@ index 12f4a2066a2a31e9852216c0cb3344095c7b0e39..588ca46227c58f9596317d6d4d05d0b3
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 7c4d920e241b95b48df2a3698c86a7e2ba061f31..5aa0f8ed61f62a9669ff5ba4f1a8612f4c10b492 100644
+index 6cb63ffe6d8dc3a94d4c6d14492658da3fe1a893..95eea0d32cb1e2c64dacc5f7e57c7372d6515af7 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -631,6 +631,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index 7c4d920e241b95b48df2a3698c86a7e2ba061f31..5aa0f8ed61f62a9669ff5ba4f1a8612f
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6fc121fb5f3a418763df5042619f89cae0551a00..d89b97d141c66696caa5535b03f4da994fd28210 100644
+index a60f331464b1054be021dd9fcbbddf738d100b62..3173d183a4e06c92355e11ad9f4a6c282a6d01ee 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -165,6 +165,7 @@ class NetworkService;
@@ -189,28 +189,28 @@ index 22254206063abe36739e1c0e7c065223ab6807d2..7f5d89f8dc8b46ac1338e73b03948725
                         bool opener_suppressed,
                         bool* no_javascript_access) override;
 diff --git a/third_party/blink/public/web/web_window_features.h b/third_party/blink/public/web/web_window_features.h
-index 4156256596276015ca3205b0f49f69d1ab47208e..271bc153afe3e3bfa98a7baa6ae4f92285d41929 100644
+index bef5a989bac50c177f15f52fe87ac3790d553e85..65dcd2e3b51929400c8bfb6a98a4fb59bb6a3d6b 100644
 --- a/third_party/blink/public/web/web_window_features.h
 +++ b/third_party/blink/public/web/web_window_features.h
-@@ -32,6 +32,7 @@
- #define THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_WINDOW_FEATURES_H_
- 
+@@ -34,6 +34,7 @@
+ #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "third_party/blink/public/platform/web_string.h"
+ #include "third_party/blink/public/platform/web_vector.h"
 +#include "third_party/blink/renderer/platform/wtf/text/wtf_string.h"
  
  namespace blink {
  
-@@ -68,6 +69,8 @@ struct WebWindowFeatures {
-   // request should be made. Otherwise, an impression should be set and a
-   // background request should be made to the contained relative URL.
-   WebString attribution_src;
+@@ -73,6 +74,8 @@ struct WebWindowFeatures {
+   // TODO(apaseltiner): Investigate moving this field to a non-public struct
+   // since it is only needed within //third_party/blink.
+   absl::optional<WebVector<WebString>> attribution_srcs;
 +
 +  String raw_features;
  };
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 1b718368110b62bd3581985a70a441a2d2674056..d38dc86c8368a923a347889b35a00539ae42c50f 100644
+index fcff7671d2a1a5d64996067f7cadf60fb76328f6..8ca720bd2f9e55fbd9d1e0273a3ae78bcb2b489c 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2219,6 +2219,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

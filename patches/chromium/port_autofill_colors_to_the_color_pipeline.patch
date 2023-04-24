@@ -31,10 +31,10 @@ index b2951c1d4ee2218a6beeddfc46a7e726847eeb10..005a75321f86edcd1eb72d954ba38704
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index fe43ba163783a3acec4f30865958b5f1701e236b..75f342a30efed45c1529a620e842df7f5c27ed16 100644
+index dd3dc0dc9e98825102ca1b95a981cb10457a05c8..99c169a0dfe1a3e6f8cf68c1cf3205be9ac13f17 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
-@@ -212,6 +212,17 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -224,6 +224,17 @@ void AddUiColorMixer(ColorProvider* provider,
                                              : SkColorSetA(SK_ColorBLACK, 0x80)};
    mixer[kColorScrollbarTrack] = {dark_mode ? SkColorSetRGB(0x42, 0x42, 0x42)
                                             : SkColorSetRGB(0xF1, 0xF1, 0xF1)};
@@ -52,7 +52,7 @@ index fe43ba163783a3acec4f30865958b5f1701e236b..75f342a30efed45c1529a620e842df7f
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -309,6 +320,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -321,6 +332,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
