@@ -6,27 +6,6 @@ const pathFile = path.join(__dirname, 'path.txt');
 
 function getElectronPath() {
 
-  // Create the application menu.
-  const template = [
-    {
-      label: 'Help',
-      submenu: [
-        {
-          label: 'Node.js Documentation',
-          click() { require('electron').shell.openExternal('https://nodejs.org/docs/') }
-        },
-        {
-          label: 'Chromium Documentation',
-          click() { require('electron').shell.openExternal('https://www.chromium.org/Home') }
-        },
-        {
-          label: 'Electron Documentation',
-          click() { require('electron').shell.openExternal('https://www.electronjs.org/docs') }
-        }
-      ]
-    }
-  ];
-
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 

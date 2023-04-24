@@ -1,5 +1,4 @@
-import { shell } from 'electron/common';
-import { app, dialog, BrowserWindow, ipcMain } from 'electron/main';
+import { shell, app, dialog, BrowserWindow, ipcMain, Menu } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 
@@ -10,7 +9,7 @@ app.on('window-all-closed', () => {
   app.quit();
 });
 
-function decorateURL (url: string) {
+function decorateURL(url: string) {
   // safely add `?utm_source=default_app
   const parsedUrl = new URL(url);
   parsedUrl.searchParams.append('utm_source', 'default_app');
@@ -26,7 +25,7 @@ const electronPath = absoluteElectronPath.length < relativeElectronPath.length
 
 const indexPath = path.resolve(app.getAppPath(), 'index.html');
 
-function isTrustedSender (webContents: Electron.WebContents) {
+function isTrustedSender(webContents: Electron.WebContents) {
   if (webContents !== (mainWindow && mainWindow.webContents)) {
     return false;
   }
@@ -38,19 +37,16 @@ function isTrustedSender (webContents: Electron.WebContents) {
   }
 }
 
-ipcMain.handle('bootstrap', (event) => {
-  return isTrustedSender(event.sender) ? electronPath : null;
-});
-
-async function createWindow (backgroundColor?: string) {
+async function createWindow(backgroundColor?: string) {
   await app.whenReady();
 
   const options: Electron.BrowserWindowConstructorOptions = {
-    width: 960,
-    height: 620,
+    width: 800,
+    height: 600,
     autoHideMenuBar: true,
     backgroundColor,
     webPreferences: {
+      nodeIntegration: true,
       preload: path.resolve(__dirname, 'preload.js'),
       contextIsolation: true,
       sandbox: true
@@ -74,29 +70,44 @@ async function createWindow (backgroundColor?: string) {
   mainWindow.webContents.session.setPermissionRequestHandler((webContents, permission, done) => {
     const parsedUrl = new URL(webContents.getURL());
 
-    const options: Electron.MessageBoxOptions = {
+    const messageBoxOptions: Electron.MessageBoxOptions = {
       title: 'Permission Request',
       message: `Allow '${parsedUrl.origin}' to access '${permission}'?`,
       buttons: ['OK', 'Cancel'],
       cancelId: 1
     };
 
-    dialog.showMessageBox(mainWindow!, options).then(({ response }) => {
+    dialog.showMessageBox(mainWindow!, messageBoxOptions).then(({ response }) => {
       done(response === 0);
     });
   });
 
-  return mainWindow;
-}
+  const template: Electron.MenuItemConstructorOptions[] = [
+    {
+      label: 'File',
+      submenu: [
+        { role: 'quit' }
+      ]
+    },
+    {
+      label: 'Help',
+      submenu: [
+        {
+          label: 'Node.js Documentation',
+          click() { shell.openExternal('https://nodejs.org/docs/') }
+        },
+        {
+          label: 'Chromium Documentation',
+          click() { shell.openExternal('https://www.chromium.org/Home') }
+        },
+        {
+          label: 'Electron Documentation',
+          click() { shell.openExternal('https://www.electronjs.org/docs') }
+        }
+      ]
+    }
+  ];
 
-export const loadURL = async (appUrl: string) => {
-  mainWindow = await createWindow();
-  mainWindow.loadURL(appUrl);
-  mainWindow.focus();
-};
-
-export const loadFile = async (appPath: string) => {
-  mainWindow = await createWindow(appPath === 'index.html' ? '#2f3241' : undefined);
-  mainWindow.loadFile(appPath);
-  mainWindow.focus();
+  const menu = Menu.buildFromTemplate(template);
+  Menu.setApplicationMenu(menu);
 };
