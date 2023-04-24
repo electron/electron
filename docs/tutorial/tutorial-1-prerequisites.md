@@ -9,12 +9,12 @@ hide_title: false
 
 This is **part 1** of the Electron tutorial.
 
-1. **[Prerequisites][prerequisites]**
-1. [Building your First App][building your first app]
+1. **[Erste Schritte][prerequisites]**
+1. [Erstelle deine erste App][building your first app]
 1. [Using Preload Scripts][preload]
-1. [Adding Features][features]
-1. [Packaging Your Application][packaging]
-1. [Publishing and Updating][updates]
+1. [Füge Erweiterungen hinzu][features]
+1. [Verpacke deine App][packaging]
+1. [Veröffentlichung und Wartung][updates]
 
 :::
 
@@ -26,14 +26,12 @@ work on Windows, macOS, and Linux with a single JavaScript codebase.
 This tutorial will guide you through the process of developing a desktop
 application with Electron and distributing it to end users.
 
-## Goals
+## Ziele
 
-This tutorial starts by guiding you through the process of piecing together
-a minimal Electron application from scratch, then teaches you how to
-package and distribute it to users using Electron Forge.
+Dieses Tutorial führt dich zunächst durch den Prozess des Zusammensetzens 
+einer minimalen Electron App. Danach lernst du wie du daraus ein Paket zusammenstellen und mit  mit [`Electron Forge`](https://www.electronforge.io/) veröffentlichen kannst.
 
-If you prefer to get a project started with a single-command boilerplate, we recommend you start
-with Electron Forge's [`create-electron-app`](https://www.electronforge.io/) command.
+Wenn du jedoch mit einem vorgefertigsten Dummy-Projekt starten möchtest, empfehlen wir dir den [`create-electron-app`](https://www.electronforge.io/) Befehl.
 
 ## Assumptions
 
