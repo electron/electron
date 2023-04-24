@@ -150,7 +150,7 @@ As a result, if your app uses a frameless window with draggable regions on macOS
 
 [Windows 7, Windows 8, and Windows 8.1 are no longer supported](https://www.electronjs.org/blog/windows-7-to-8-1-deprecation-notice). Electron follows the planned Chromium deprecation policy, which will [deprecate Windows 7 support beginning in Chromium 109](https://support.google.com/chrome/thread/185534985/sunsetting-support-for-windows-7-8-8-1-in-early-2023?hl=en).
 
-Older versions of Electron will continue to run on these operating systems, but Windows 10 or later will be required to run Electron v23.0.0 and higher.
+Older versions of Electron will continue to run on these operating systems, but Electron v23.0.0 and above can only run on Window10 and later systems.
 
 ### Removed: BrowserWindow `scroll-touch-*` events
 
