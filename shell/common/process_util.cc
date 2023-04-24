@@ -4,6 +4,8 @@
 
 #include "shell/common/process_util.h"
 
+#include "base/command_line.h"
+#include "content/public/common/content_switches.h"
 #include "gin/dictionary.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/node_includes.h"
@@ -22,6 +24,20 @@ void EmitWarning(node::Environment* env,
   process.Get("emitWarning", &emit_warning);
 
   emit_warning.Run(warning_msg, warning_type, "");
+}
+
+bool IsBrowserProcess() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(switches::kProcessType);
+  return process_type.empty();
+}
+
+bool IsRendererProcess() {
+  auto* command_line = base::CommandLine::ForCurrentProcess();
+  std::string process_type =
+      command_line->GetSwitchValueASCII(switches::kProcessType);
+  return process_type == switches::kRendererProcess;
 }
 
 }  // namespace electron

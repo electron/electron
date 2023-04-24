@@ -7,6 +7,7 @@
 #include "base/cxx17_backports.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/dictionary.h"
+#include "shell/common/process_util.h"
 
 namespace gin_helper {
 
@@ -70,7 +71,7 @@ void CallTranslater(v8::Local<v8::External> external,
 struct DeleteOnUIThread {
   template <typename T>
   static void Destruct(const T* x) {
-    if (gin_helper::Locker::IsBrowserProcess() &&
+    if (electron::IsBrowserProcess() &&
         !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
       content::BrowserThread::DeleteSoon(content::BrowserThread::UI, FROM_HERE,
                                          x);
