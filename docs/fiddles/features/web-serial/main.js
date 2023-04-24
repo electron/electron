@@ -23,6 +23,7 @@ function createWindow () {
     if (portList && portList.length > 0) {
       callback(portList[0].portId)
     } else {
+      // eslint-disable-next-line standard/no-callback-literal
       callback('') // Could not find any matching devices
     }
   })
