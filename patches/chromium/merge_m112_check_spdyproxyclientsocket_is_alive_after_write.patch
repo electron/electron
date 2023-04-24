@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenichi Ishibashi <bashi@chromium.org>
+Date: Sat, 8 Apr 2023 04:16:50 +0000
+Subject: Check SpdyProxyClientSocket is alive after write callback
+
+To ensure that we don't use any member field.
+
+(cherry picked from commit b71541b22ca19d5c3a7c01fedffe521b26577b72)
+
+Bug: 1428820
+Change-Id: Icf6677c652a47dc2fd2d01675e94cda031a015f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4394863
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1125634}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4410322
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Kenichi Ishibashi <bashi@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5615@{#1172}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/net/spdy/spdy_proxy_client_socket.cc b/net/spdy/spdy_proxy_client_socket.cc
+index 173fc5cdbb67958cc9ca43284ff989196b287a8e..d9b67febc27cc99e5b3383a372451345cec6daaa 100644
+--- a/net/spdy/spdy_proxy_client_socket.cc
++++ b/net/spdy/spdy_proxy_client_socket.cc
+@@ -279,7 +279,14 @@ int SpdyProxyClientSocket::GetLocalAddress(IPEndPoint* address) const {
+ 
+ void SpdyProxyClientSocket::RunWriteCallback(int result) {
+   CHECK(write_callback_);
++
++  base::WeakPtr<SpdyProxyClientSocket> weak_ptr = weak_factory_.GetWeakPtr();
+   std::move(write_callback_).Run(result);
++  if (!weak_ptr) {
++    // `this` was already destroyed while running `write_callback_`. Must
++    // return immediately without touching any field member.
++    return;
++  }
+ 
+   if (end_stream_state_ == EndStreamState::kEndStreamReceived) {
+     base::ThreadTaskRunnerHandle::Get()->PostTask(

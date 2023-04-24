@@ -1,0 +1,94 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenichi Ishibashi <bashi@chromium.org>
+Date: Sat, 8 Apr 2023 01:56:25 +0000
+Subject: Remove the second WeakPtrFactory from SpdyProxyClientSocket
+
+It was introduced [1] to work around an old issue that wouldn't happen
+any more since we store a write callback in the class. Instead of having
+the second WeakPtrFactory and moving the callback, we can just keep it
+until RunWriteCallback() is called.
+
+This is a speculative fix for the linked bug.
+
+[1] https://codereview.chromium.org/338583003/
+
+(cherry picked from commit 01b25615896b911e21103dd381fafc1f85886d91)
+
+Bug: 1428820
+Change-Id: I0b5af2675b68188e208c2ecd42293251b2722b28
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4393905
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1125216}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4410320
+Auto-Submit: Kenichi Ishibashi <bashi@chromium.org>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5615@{#1171}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/net/spdy/spdy_proxy_client_socket.cc b/net/spdy/spdy_proxy_client_socket.cc
+index 5984ecedb3a14274bc33efe20b407dd33bc8a410..173fc5cdbb67958cc9ca43284ff989196b287a8e 100644
+--- a/net/spdy/spdy_proxy_client_socket.cc
++++ b/net/spdy/spdy_proxy_client_socket.cc
+@@ -123,7 +123,6 @@ void SpdyProxyClientSocket::Disconnect() {
+ 
+   write_buffer_len_ = 0;
+   write_callback_.Reset();
+-  write_callback_weak_factory_.InvalidateWeakPtrs();
+ 
+   next_state_ = STATE_DISCONNECTED;
+ 
+@@ -278,9 +277,9 @@ int SpdyProxyClientSocket::GetLocalAddress(IPEndPoint* address) const {
+   return spdy_stream_->GetLocalAddress(address);
+ }
+ 
+-void SpdyProxyClientSocket::RunWriteCallback(CompletionOnceCallback callback,
+-                                             int result) const {
+-  std::move(callback).Run(result);
++void SpdyProxyClientSocket::RunWriteCallback(int result) {
++  CHECK(write_callback_);
++  std::move(write_callback_).Run(result);
+ 
+   if (end_stream_state_ == EndStreamState::kEndStreamReceived) {
+     base::ThreadTaskRunnerHandle::Get()->PostTask(
+@@ -517,8 +516,7 @@ void SpdyProxyClientSocket::OnDataSent() {
+   // stream's write callback chain to unwind (see crbug.com/355511).
+   base::ThreadTaskRunnerHandle::Get()->PostTask(
+       FROM_HERE, base::BindOnce(&SpdyProxyClientSocket::RunWriteCallback,
+-                                write_callback_weak_factory_.GetWeakPtr(),
+-                                std::move(write_callback_), rv));
++                                weak_factory_.GetWeakPtr(), rv));
+ }
+ 
+ void SpdyProxyClientSocket::OnTrailers(const spdy::Http2HeaderBlock& trailers) {
+diff --git a/net/spdy/spdy_proxy_client_socket.h b/net/spdy/spdy_proxy_client_socket.h
+index cbb961a68c93b9485bd0bf1c5e31014bdc95a84e..98b9e74427f48399bbc53bfad5b45a8dc18ab84b 100644
+--- a/net/spdy/spdy_proxy_client_socket.h
++++ b/net/spdy/spdy_proxy_client_socket.h
+@@ -121,9 +121,9 @@ class NET_EXPORT_PRIVATE SpdyProxyClientSocket : public ProxyClientSocket,
+     STATE_CLOSED
+   };
+ 
+-  // Calls |callback.Run(result)|. Used to run a callback posted to the
++  // Calls `write_callback_(result)`. Used to run a callback posted to the
+   // message loop.
+-  void RunWriteCallback(CompletionOnceCallback callback, int result) const;
++  void RunWriteCallback(int result);
+ 
+   void OnIOComplete(int result);
+ 
+@@ -195,13 +195,7 @@ class NET_EXPORT_PRIVATE SpdyProxyClientSocket : public ProxyClientSocket,
+   };
+   EndStreamState end_stream_state_ = EndStreamState::kNone;
+ 
+-  // The default weak pointer factory.
+   base::WeakPtrFactory<SpdyProxyClientSocket> weak_factory_{this};
+-
+-  // Only used for posting write callbacks. Weak pointers created by this
+-  // factory are invalidated in Disconnect().
+-  base::WeakPtrFactory<SpdyProxyClientSocket> write_callback_weak_factory_{
+-      this};
+ };
+ 
+ }  // namespace net

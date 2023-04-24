@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kenichi Ishibashi <bashi@chromium.org>
+Date: Tue, 18 Apr 2023 05:58:29 +0000
+Subject: Check callback availability in
+ SpdyProxyClientSocket::RunWriteCallback
+
+OnClose() could consume `write_callback_` so it may not be available
+when RunWriteCallback() is invoked.
+
+Bug: 1428820
+Change-Id: I9a5ade62d67f5bf15e12d0915d1ad6098657ffd4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4437791
+Code-Coverage: Findit <findit-for-me@appspot.gserviceaccount.com>
+Reviewed-by: Adam Rice <ricea@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1131689}
+
+diff --git a/net/spdy/spdy_proxy_client_socket.cc b/net/spdy/spdy_proxy_client_socket.cc
+index d9b67febc27cc99e5b3383a372451345cec6daaa..bdcf24a1cb65f5df291bd91784d68aa9c05e7b0d 100644
+--- a/net/spdy/spdy_proxy_client_socket.cc
++++ b/net/spdy/spdy_proxy_client_socket.cc
+@@ -278,10 +278,11 @@ int SpdyProxyClientSocket::GetLocalAddress(IPEndPoint* address) const {
+ }
+ 
+ void SpdyProxyClientSocket::RunWriteCallback(int result) {
+-  CHECK(write_callback_);
+-
+   base::WeakPtr<SpdyProxyClientSocket> weak_ptr = weak_factory_.GetWeakPtr();
+-  std::move(write_callback_).Run(result);
++  // `write_callback_` might be consumed by OnClose().
++  if (write_callback_) {
++    std::move(write_callback_).Run(result);
++  }
+   if (!weak_ptr) {
+     // `this` was already destroyed while running `write_callback_`. Must
+     // return immediately without touching any field member.
