@@ -1,0 +1,52 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: chromium-autoroll
+ <chromium-autoroll@skia-public.iam.gserviceaccount.com>
+Date: Wed, 12 Apr 2023 21:54:57 +0000
+Subject: Roll Skia from 288bdaeb99a4 to d5846fb1f236 (5 revisions)
+
+https://skia.googlesource.com/skia.git/+log/288bdaeb99a4..d5846fb1f236
+
+2023-04-12 johnstiles@google.com Use packed contexts for binary ops in SkRP.
+2023-04-12 kjlubick@google.com Add more stubs for encoders
+2023-04-12 johnstiles@google.com Enforce program stack limits on function parameters.
+2023-04-12 johnstiles@google.com Reland "Use packed contexts for copy/splat-constant ops in SkRP."
+2023-04-12 jamesgk@google.com [graphite] Use replay translation in Dawn backend
+
+If this roll has caused a breakage, revert this CL and stop the roller
+using the controls here:
+https://autoroll.skia.org/r/skia-autoroll
+Please CC borenet@google.com,lovisolo@google.com on the revert to ensure that a human
+is aware of the problem.
+
+To file a bug in Skia: https://bugs.chromium.org/p/skia/issues/entry
+To file a bug in Chromium: https://bugs.chromium.org/p/chromium/issues/entry
+
+To report a problem with the AutoRoller itself, please file a bug:
+https://bugs.chromium.org/p/skia/issues/entry?template=Autoroller+Bug
+
+Documentation for the AutoRoller is here:
+https://skia.googlesource.com/buildbot/+doc/main/autoroll/README.md
+
+Cq-Include-Trybots: luci.chromium.try:android_optional_gpu_tests_rel;luci.chromium.try:linux-blink-rel;luci.chromium.try:linux-chromeos-compile-dbg;luci.chromium.try:linux_optional_gpu_tests_rel;luci.chromium.try:mac_optional_gpu_tests_rel;luci.chromium.try:win_optional_gpu_tests_rel
+Cq-Do-Not-Cancel-Tryjobs: true
+Bug: chromium:1432603
+Tbr: lovisolo@google.com
+Change-Id: I8e08120b5eabe293c64fecfd76ff60b2d73401c5
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4420129
+Commit-Queue: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
+Bot-Commit: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
+Cr-Commit-Position: refs/heads/main@{#1129520}
+
+diff --git a/DEPS b/DEPS
+index eefdda416ecc032bf2fad613c64efde49a59e9ad..7440c4f0394f9457b69da3ab41906650847ae6c8 100644
+--- a/DEPS
++++ b/DEPS
+@@ -299,7 +299,7 @@ vars = {
+   # Three lines of non-changing comments so that
+   # the commit queue can handle CLs rolling Skia
+   # and whatever else without interference from each other.
+-  'skia_revision': 'aab9fb4100da797d25fe340e9a2fcb2ae30fc2e1',
++  'skia_revision': 'd5846fb1f236b9a115f0acd432daa3de18a64419',
+   # Three lines of non-changing comments so that
+   # the commit queue can handle CLs rolling V8
+   # and whatever else without interference from each other.
