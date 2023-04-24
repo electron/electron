@@ -59,12 +59,10 @@ v8::Local<v8::Promise> OpenExternal(const GURL& url, gin::Arguments* args) {
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   platform_util::OpenExternalOptions options;
-  if (args->Length() >= 2) {
-    gin::Dictionary obj(nullptr);
-    if (args->GetNext(&obj)) {
-      obj.Get("activate", &options.activate);
-      obj.Get("workingDirectory", &options.working_dir);
-    }
+  gin_helper::Dictionary obj;
+  if (args->GetNext(&obj)) {
+    obj.Get("activate", &options.activate);
+    obj.Get("workingDirectory", &options.working_dir);
   }
 
   platform_util::OpenExternal(
