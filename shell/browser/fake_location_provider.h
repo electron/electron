@@ -24,11 +24,11 @@ class FakeLocationProvider : public device::LocationProvider {
       const LocationProviderUpdateCallback& callback) override;
   void StartProvider(bool high_accuracy) override;
   void StopProvider() override;
-  const device::mojom::Geoposition& GetPosition() override;
+  const device::mojom::GeopositionResult* GetPosition() override;
   void OnPermissionGranted() override;
 
  private:
-  device::mojom::Geoposition position_;
+  device::mojom::GeopositionResultPtr result_;
   LocationProviderUpdateCallback callback_;
 };
 
