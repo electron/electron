@@ -25,7 +25,7 @@
 
 // To add a new component to this API, simply:
 // 1. Add your component to the Component enum in
-//      chrome/common/extensions/api/resources_private.idl
+//      shell/common/extensions/api/resources_private.idl
 // 2. Create an AddStringsForMyComponent(base::Value::Dict* dict) method.
 // 3. Tie in that method to the switch statement in Run()
 

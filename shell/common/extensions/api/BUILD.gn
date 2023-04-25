@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//electron/buildflags/buildflags.gni")
 import("//extensions/buildflags/buildflags.gni")
 import("//tools/json_schema_compiler/json_features.gni")
 import("//tools/json_schema_compiler/json_schema_api.gni")
@@ -41,6 +42,10 @@ generated_json_strings("generated_api_json_strings") {
     "tabs.json",
   ]
 
+  if (enable_pdf_viewer) {
+    sources += [ "pdf_viewer_private.idl" ]
+  }
+
   configs = [ "//build/config:precompiled_headers" ]
   bundle_name = "Electron"
   schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
@@ -56,6 +61,11 @@ generated_types("generated_api_types") {
     "resources_private.idl",
     "tabs.json",
   ]
+
+  if (enable_pdf_viewer) {
+    sources += [ "pdf_viewer_private.idl" ]
+  }
+
   configs = [ "//build/config:precompiled_headers" ]
   schema_include_rules = "extensions/common/api:extensions::api::%(namespace)s"
 

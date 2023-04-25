@@ -1,0 +1,22 @@
+import("//extensions/buildflags/buildflags.gni")
+import("//pdf/features.gni")
+
+assert(enable_extensions,
+       "Cannot depend on extensions because enable_extensions=false.")
+assert(enable_pdf)
+
+source_set("pdf_viewer_private") {
+  sources = [
+    "pdf_viewer_private_api.cc",
+    "pdf_viewer_private_api.h",
+  ]
+
+  deps = [
+    "//base",
+    "//chrome/browser/pdf:pdf_pref_names",
+    "//chrome/common:constants",
+    "//chrome/common/extensions/api",
+    "//extensions/browser",
+    "//url",
+  ]
+}
