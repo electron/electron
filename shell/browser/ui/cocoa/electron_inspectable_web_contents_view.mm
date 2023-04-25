@@ -287,12 +287,14 @@
     // Temporarily pretend that the WebContents is fully non-draggable while we
     // re-send the mouse event. This allows the re-dispatched event to "land"
     // on the WebContents, instead of "falling through" back to the window.
-    api_contents->SetForceNonDraggable(true);
-    BaseView* contentsView = (BaseView*)contents->GetRenderWidgetHostView()
-                                 ->GetNativeView()
-                                 .GetNativeNSView();
-    [contentsView mouseEvent:event];
-    api_contents->SetForceNonDraggable(false);
+    auto* rwhv = contents->GetRenderWidgetHostView();
+    if (rwhv) {
+      api_contents->SetForceNonDraggable(true);
+      BaseView* contentsView =
+          (BaseView*)rwhv->GetNativeView().GetNativeNSView();
+      [contentsView mouseEvent:event];
+      api_contents->SetForceNonDraggable(false);
+    }
   }
 }
 
