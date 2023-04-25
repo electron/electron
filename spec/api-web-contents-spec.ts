@@ -497,16 +497,16 @@ describe('webContents module', () => {
     testFn('returns the focused web contents', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.id);
 
       const devToolsOpened = emittedOnce(w.webContents, 'devtools-opened');
       w.webContents.openDevTools();
       await devToolsOpened;
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.devToolsWebContents!.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.devToolsWebContents!.id);
       const devToolsClosed = emittedOnce(w.webContents, 'devtools-closed');
       w.webContents.closeDevTools();
       await devToolsClosed;
-      expect(webContents.getFocusedWebContents().id).to.equal(w.webContents.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w.webContents.id);
     });
 
     it('does not crash when called on a detached dev tools window', async () => {
