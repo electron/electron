@@ -1,0 +1,98 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Date: Tue, 11 Apr 2023 07:12:34 +0000
+Subject: Stop supporting { handleEvent }.
+
+Make the code aligned with the following specification update:
+https://github.com/w3c/ServiceWorker/pull/1676
+
+With the previous specification and code, event listener vector
+can be modified during the GetEffectiveFunction execution, which may
+bring unexpected vector state.
+
+(cherry picked from commit 5105ce37a6853d52ec97894bf6969b3c29a23afd)
+
+Change-Id: I732c4c9ab2caebc49a7f4ef52640df7b8476d838
+Bug: 1429201
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4394402
+Commit-Queue: Yoshisato Yanagisawa <yyanagisawa@chromium.org>
+Reviewed-by: Kouhei Ueno <kouhei@chromium.org>
+Reviewed-by: Domenic Denicola <domenic@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1126483}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4408837
+Reviewed-by: Shunya Shishido <sisidovski@chromium.org>
+Reviewed-by: Minoru Chikamune <chikamune@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5615@{#1203}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/content/browser/service_worker/service_worker_version_browsertest.cc b/content/browser/service_worker/service_worker_version_browsertest.cc
+index 0435c5a1850dd3ed16197bbc40c1e276e4613a60..a9ad30764c578d1e6cf15bd114ca46e169012039 100644
+--- a/content/browser/service_worker/service_worker_version_browsertest.cc
++++ b/content/browser/service_worker/service_worker_version_browsertest.cc
+@@ -988,6 +988,17 @@ IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
+             version_->fetch_handler_type());
+ }
+ 
++IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
++                       RemoveFetchEventListenersInGet) {
++  StartServerAndNavigateToSetup();
++  ASSERT_EQ(Install("/service_worker/fetch_event_object_removing_itself.js"),
++            blink::ServiceWorkerStatusCode::kOk);
++  EXPECT_EQ(ServiceWorkerVersion::FetchHandlerExistence::EXISTS,
++            version_->fetch_handler_existence());
++  EXPECT_EQ(ServiceWorkerVersion::FetchHandlerType::kNotSkippable,
++            version_->fetch_handler_type());
++}
++
+ // Check that fetch event handler added in the install event should result in a
+ // service worker that doesn't count as having a fetch event handler.
+ IN_PROC_BROWSER_TEST_F(ServiceWorkerVersionBrowserTest,
+diff --git a/content/test/data/service_worker/fetch_event_object_removing_itself.js b/content/test/data/service_worker/fetch_event_object_removing_itself.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..110bc4821fae3a63a374d3dc6ca954d4bd744952
+--- /dev/null
++++ b/content/test/data/service_worker/fetch_event_object_removing_itself.js
+@@ -0,0 +1,19 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++let obj = {};
++function victim() {}
++
++Object.defineProperty(obj, 'handleEvent', {
++  get: () => {
++    // Remove the victim function from the listener vector to break the loop.
++    self.removeEventListener('fetch', victim);
++    return () => {};
++  },
++  configurable: true,
++  enumerable: true,
++});
++
++self.addEventListener('fetch', obj);
++self.addEventListener('fetch', victim);
+diff --git a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+index b3a9f691a0fabf14bf6f319173f400c31c664c12..9523aa1ee53aeabe03281a34b4a290a68f6a7dc4 100644
+--- a/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
++++ b/third_party/blink/renderer/modules/service_worker/service_worker_global_scope.cc
+@@ -2604,7 +2604,7 @@ ServiceWorkerGlobalScope::FetchHandlerType() {
+   }
+ 
+   ScriptState* script_state = ScriptController()->GetScriptState();
+-  // Do not remove this, |scope| is needed by `GetEffectiveFunction`.
++  // Do not remove this, |scope| is needed by `GetListenerObject`.
+   ScriptState::Scope scope(script_state);
+ 
+   // TODO(crbug.com/1349613): revisit the way to implement this.
+@@ -2612,8 +2612,8 @@ ServiceWorkerGlobalScope::FetchHandlerType() {
+   for (RegisteredEventListener& e : *elv) {
+     EventTarget* et = EventTarget::Create(script_state);
+     v8::Local<v8::Value> v =
+-        To<JSBasedEventListener>(e.Callback())->GetEffectiveFunction(*et);
+-    if (!v->IsFunction() ||
++        To<JSBasedEventListener>(e.Callback())->GetListenerObject(*et);
++    if (v.IsEmpty() || !v->IsFunction() ||
+         !v.As<v8::Function>()->Experimental_IsNopFunction()) {
+       return mojom::blink::ServiceWorkerFetchHandlerType::kNotSkippable;
+     }

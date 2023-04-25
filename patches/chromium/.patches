@@ -155,3 +155,4 @@ merge_m112_check_spdyproxyclientsocket_is_alive_after_write.patch
 check_callback_availability_in.patch
 cherry-pick-63686953dc22.patch
 cherry-pick-f098ff0d1230.patch
+cherry-pick-f58218891f8c.patch
