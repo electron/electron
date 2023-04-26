@@ -94,7 +94,7 @@ class ElectronHidDelegate : public content::HidDelegate,
 namespace base {
 
 template <>
-struct base::ScopedObservationTraits<
+struct ScopedObservationTraits<
     electron::HidChooserContext,
     electron::HidChooserContext::DeviceObserver> {
   static void AddObserver(
