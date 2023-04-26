@@ -746,8 +746,8 @@ describe('chromium features', () => {
     });
   });
 
-  ifdescribe(features.isFakeLocationProviderEnabled())('navigator.geolocation', () => {
-    it('returns error when permission is denied', async () => {
+  describe('navigator.geolocation', () => {
+    ifit(features.isFakeLocationProviderEnabled())('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -769,13 +769,21 @@ describe('chromium features', () => {
       expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
 
-    it('returns position when permission is granted', async () => {
-      const w = new BrowserWindow({ show: false });
+    ifit(!features.isFakeLocationProviderEnabled())('returns position when permission is granted', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'geolocation-spec'
+        }
+      });
+      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+        callback(true);
+      });
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const position = await w.webContents.executeJavaScript(`new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(
           x => resolve({coords: x.coords, timestamp: x.timestamp}),
-          reject))`);
+          err => reject(new Error(err.message))))`);
       expect(position).to.have.property('coords');
       expect(position).to.have.property('timestamp');
     });
