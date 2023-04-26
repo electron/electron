@@ -875,6 +875,39 @@ describe('net module', () => {
       expect(cookies[0].name).to.equal('cookie2');
     });
 
+    it('should be able correctly filter out cookies that are httpOnly', async () => {
+      const sess = session.fromPartition(`cookie-tests-${Math.random()}`);
+
+      await Promise.all([
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie1',
+          value: '1',
+          httpOnly: true
+        }),
+        sess.cookies.set({
+          url: 'https://electronjs.org',
+          domain: 'electronjs.org',
+          name: 'cookie2',
+          value: '2',
+          httpOnly: false
+        })
+      ]);
+
+      const httpOnlyCookies = await sess.cookies.get({
+        httpOnly: true
+      });
+      expect(httpOnlyCookies).to.have.lengthOf(1);
+      expect(httpOnlyCookies[0].name).to.equal('cookie1');
+
+      const cookies = await sess.cookies.get({
+        httpOnly: false
+      });
+      expect(cookies).to.have.lengthOf(1);
+      expect(cookies[0].name).to.equal('cookie2');
+    });
+
     describe('when {"credentials":"omit"}', () => {
       it('should not send cookies');
       it('should not store cookies');

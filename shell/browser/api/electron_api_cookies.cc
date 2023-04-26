@@ -133,6 +133,9 @@ bool MatchesCookie(const base::Value::Dict& filter,
   absl::optional<bool> session_filter = filter.FindBool("session");
   if (session_filter && *session_filter == cookie.IsPersistent())
     return false;
+  absl::optional<bool> httpOnly_filter = filter.FindBool("httpOnly");
+  if (httpOnly_filter && *httpOnly_filter != cookie.IsHttpOnly())
+    return false;
   return true;
 }
 
