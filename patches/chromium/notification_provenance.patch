@@ -92,10 +92,10 @@ index 00965c253f28bd3947255b2ab77bf3a0bb71f14a..e04a7eef94990dfb0e2fca2e116352fe
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index aa04c672494e5ecb9ca43eb7e0d3b49bad01e29b..ff24af7f921dc86c00bfd7151dc8d70af6f1b99a 100644
+index 9814861ab18fa88bc781f83acb602129b6f3de1f..1c5a2efc2749697aa3d38247f491eabf240c1aa5 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
-@@ -283,6 +283,7 @@ void PlatformNotificationContextImpl::Shutdown() {
+@@ -268,6 +268,7 @@ void PlatformNotificationContextImpl::Shutdown() {
  
  void PlatformNotificationContextImpl::CreateService(
      RenderProcessHost* render_process_host,
@@ -103,7 +103,7 @@ index aa04c672494e5ecb9ca43eb7e0d3b49bad01e29b..ff24af7f921dc86c00bfd7151dc8d70a
      const blink::StorageKey& storage_key,
      const GURL& document_url,
      const WeakDocumentPtr& weak_document_ptr,
-@@ -291,7 +292,7 @@ void PlatformNotificationContextImpl::CreateService(
+@@ -276,7 +277,7 @@ void PlatformNotificationContextImpl::CreateService(
    DCHECK_CURRENTLY_ON(BrowserThread::UI);
    services_.push_back(std::make_unique<BlinkNotificationServiceImpl>(
        this, browser_context_, service_worker_context_, render_process_host,
@@ -133,7 +133,7 @@ index bbd2aa78722fc0a14ac815ca0243b83965ad8d7c..b6e0a2fce3a0fb9c449aa1bef6a0f970
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 62f922b2b572b1e28436eaa72279fc801eeee82a..ef77e2cf6277533d81e596e0be237d6b076ae9f8 100644
+index 2e3678ffc6a9d073bba333ba31858d473da378b9..3f47c9590594ee0b7f560119e795cbd73bf0709e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -2120,7 +2120,7 @@ void RenderProcessHostImpl::CreateNotificationService(

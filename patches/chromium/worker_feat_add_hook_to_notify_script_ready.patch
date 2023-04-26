@@ -35,7 +35,7 @@ index 7aa2059f33dfa92828beec95f4716775e7291fed..df919b894d4f29274696806444d034d4
    // from the worker thread.
    virtual void WillDestroyWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index 1f7612131e06ffb25977518908dbdb2ef15d19d1..9b4a94272dc97d381b0337a85c4b4ee20f0e8395 100644
+index 1eabc24a28cb5af2ebd8d4a91d780ae9a556f739..1a115c9156504591f0b99b6a5995be243846d3d4 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
 @@ -838,6 +838,12 @@ void RendererBlinkPlatformImpl::WorkerContextCreated(
@@ -52,7 +52,7 @@ index 1f7612131e06ffb25977518908dbdb2ef15d19d1..9b4a94272dc97d381b0337a85c4b4ee2
      const blink::WebSecurityOrigin& script_origin) {
    return GetContentClient()->renderer()->AllowScriptExtensionForServiceWorker(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 4f2cddad660f929a4f0b5e35e85523bb76cc30ca..2ff98fcd05a1d0a1135179c86c5c975a6da5937f 100644
+index 7745e4e1ea98a5a2dd1199984e16b34762cc16ba..bb00825868260da07d72b772312baeba57456e63 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -176,6 +176,8 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
@@ -65,7 +65,7 @@ index 4f2cddad660f929a4f0b5e35e85523bb76cc30ca..2ff98fcd05a1d0a1135179c86c5c975a
    bool AllowScriptExtensionForServiceWorker(
        const blink::WebSecurityOrigin& script_origin) override;
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 978680e871bd8035eec3e4cefcd2ffbbcc5e81c4..f8ad0882a8d03258d9b7d9ec615847e39a886a8d 100644
+index 1a149e3508c8b3735635ec6f55f0f0ab314f1cf1..ec2093be7989039981647cf8c6a7f6a1583fbd3f 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -633,6 +633,8 @@ class BLINK_PLATFORM_EXPORT Platform {

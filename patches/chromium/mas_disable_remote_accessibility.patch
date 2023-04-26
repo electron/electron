@@ -44,7 +44,7 @@ index 3600a7ce7b3e6540767f64c631f352aa62240459..3147961f3d1c2c1690b5adf16a9a58f7
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 129ba29c0ebe84663fa73881f6c7141c114c25ee..d3a8b711c2cd03f9cd3377929d2a60a814223634 100644
+index f13ccec0334aa6b47cce180630b15298b86a4162..fa76a984f3dea99bdb337b44ceb8e397cae6a4ec 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 @@ -572,10 +572,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
@@ -61,7 +61,7 @@ index 129ba29c0ebe84663fa73881f6c7141c114c25ee..d3a8b711c2cd03f9cd3377929d2a60a8
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index f553d52bcc00acc9f1e2d87ee618efb7b24b389d..672aa22e5d1eeecfca3c780822024037e04ae4e2 100644
+index c87ae83d0a9755401a343b5392a22540c7051769..dc01554c00518561b1b7275c1eeea94785310a78 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -87,8 +87,10 @@ id GetFocusedBrowserAccessibilityElement() override {

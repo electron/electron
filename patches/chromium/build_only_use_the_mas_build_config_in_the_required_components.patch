@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1b938cb0a833cf541d7ef384b086fc1628248f2c..b287f98d35ee6f4de6a23487373e5736535647fa 100644
+index 425cb0ab0af169222d29794310167557dbbc8da2..2cec28651ee9e0a70ddf5a785f2259abedbb7f52 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1030,6 +1030,7 @@ component("base") {
+@@ -1032,6 +1032,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb8
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7837a560da68a5aae9ab552b6dfb5f94b5c523e0..2fa6d9490e81cc2cf538b1bb4d0a5bca0d14dcad 100644
+index ab9889dc4d631df1ddc61565eb0fe35c06e45b72..416b801add9b122a0c8d9747bf46f0096cf70464 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index 7837a560da68a5aae9ab552b6dfb5f94b5c523e0..2fa6d9490e81cc2cf538b1bb4d0a5bca
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index a164080599beb28449c6bda91a0f7373c6434019..44750c770ff445cf1b38da27922caa94357baac0 100644
+index 90e39f11ef8d0755a1d9823a7783cd7124819e91..53994eaa27dbcf7b4ee9d60056db737cd2db6fd7 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -170,6 +170,7 @@ source_set("common") {
+@@ -171,6 +171,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -265,7 +265,7 @@ index 34a269ee4d47a2597fd098bc9eabe10685f4fc86..8a96f5abc4e0092bca15dbf6e5098a64
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 444ceb361b871a6db4c37a0dc548a3210b248d2d..f18c6542a198e2acc3c39decccb3107d760de71c 100644
+index 11515d6de3e8b017f03f4d6665f1e57b1f6dceb3..6b5c3d3a9f6cab7dcc97830f2e76c93b3ed79d8d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -675,6 +675,7 @@ component("views") {
