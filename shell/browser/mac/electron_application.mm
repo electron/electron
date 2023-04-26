@@ -175,11 +175,13 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   electron::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
+// AXEnhancedUserInterface is an undocumented attribute that screen reader
+// related functionality sets when running, and AXManualAccessibility is an
+// attribute Electron specifically allows third-party apps to use to enable
+// a11y features in Electron.
 - (void)accessibilitySetValue:(id)value forAttribute:(NSString*)attribute {
-  // Undocumented attribute that screen reader related functionality
-  // sets when running.
-  if ([attribute isEqualToString:@"AXEnhancedUserInterface"] ||
-      [attribute isEqualToString:@"AXManualAccessibility"]) {
+  bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
+  if ([attribute isEqualToString:@"AXEnhancedUserInterface"] || is_manual_ax) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
     if ([value boolValue]) {
       ax_state->OnScreenReaderDetected();
@@ -188,6 +190,12 @@ inline void dispatch_sync_main(dispatch_block_t block) {
     }
 
     electron::Browser::Get()->OnAccessibilitySupportChanged();
+
+    // Don't call the superclass function for AXManualAccessibility,
+    // as it will log an AXError and make it appear as though the attribute
+    // failed to take effect.
+    if (is_manual_ax)
+      return;
   }
 
   return [super accessibilitySetValue:value forAttribute:attribute];
