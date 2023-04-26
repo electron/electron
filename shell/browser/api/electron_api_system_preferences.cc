@@ -17,19 +17,21 @@ namespace electron::api {
 
 gin::WrapperInfo SystemPreferences::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-// NOLINTNEXTLINE(modernize-use-equals-default)
+#if BUILDFLAG(IS_WIN)
 SystemPreferences::SystemPreferences() {
-#if BUILDFLAG(IS_WIN)
   InitializeWindow();
-#endif
 }
+#else
+SystemPreferences::SystemPreferences() = default;
+#endif
 
-// NOLINTNEXTLINE(modernize-use-equals-default)
-SystemPreferences::~SystemPreferences() {
 #if BUILDFLAG(IS_WIN)
+SystemPreferences::~SystemPreferences() {
   Browser::Get()->RemoveObserver(this);
-#endif
 }
+#else
+SystemPreferences::~SystemPreferences() = default;
+#endif
 
 bool SystemPreferences::IsInvertedColorScheme() {
   return ui::NativeTheme::GetInstanceForNativeUi()
