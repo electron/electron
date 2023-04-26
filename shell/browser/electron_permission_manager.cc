@@ -203,16 +203,16 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, permissions, std::move(response_callback)));
 
+  details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
+  details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+  base::Value dict_value(std::move(details));
+
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
-    details.Set("requestingUrl",
-                render_frame_host->GetLastCommittedURL().spec());
-    details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
-    request_handler_.Run(web_contents, permission, callback,
-                         base::Value(std::move(details)));
+    request_handler_.Run(web_contents, permission, callback, dict_value);
   }
 }
 

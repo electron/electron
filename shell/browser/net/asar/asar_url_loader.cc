@@ -166,8 +166,8 @@ class AsarURLLoader : public network::mojom::URLLoader {
       auto asar_validator = std::make_unique<AsarFileValidator>(
           std::move(info.integrity.value()), std::move(file));
       file_validator_raw = asar_validator.get();
-      readable_data_source.reset(new mojo::FilteredDataSource(
-          std::move(file_data_source), std::move(asar_validator)));
+      readable_data_source = std::make_unique<mojo::FilteredDataSource>(
+          std::move(file_data_source), std::move(asar_validator));
     } else {
       readable_data_source = std::move(file_data_source);
     }

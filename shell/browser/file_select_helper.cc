@@ -71,8 +71,6 @@ struct FileSelectHelper::ActiveDirectoryEnumeration {
 FileSelectHelper::FileSelectHelper()
     : render_frame_host_(nullptr),
       web_contents_(nullptr),
-      select_file_dialog_(),
-      select_file_types_(),
       dialog_type_(ui::SelectFileDialog::SELECT_OPEN_FILE),
       dialog_mode_(FileChooserParams::Mode::kOpen) {}
 

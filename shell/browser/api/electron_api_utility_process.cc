@@ -279,7 +279,7 @@ void UtilityProcessWrapper::PostMessage(gin::Arguments* args) {
 
 bool UtilityProcessWrapper::Kill() const {
   if (pid_ == base::kNullProcessId)
-    return 0;
+    return false;
   base::Process process = base::Process::Open(pid_);
   bool result = process.Terminate(content::RESULT_CODE_NORMAL_EXIT, false);
   // Refs https://bugs.chromium.org/p/chromium/issues/detail?id=818244

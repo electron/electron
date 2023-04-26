@@ -36,8 +36,7 @@ std::string MakeCaseInsensitivePattern(const std::string& extension) {
     return extension;
 
   std::string pattern("*.");
-  for (std::size_t i = 0, n = extension.size(); i < n; i++) {
-    char ch = extension[i];
+  for (char ch : extension) {
     if (!base::IsAsciiAlpha(ch)) {
       pattern.push_back(ch);
       continue;

@@ -84,7 +84,7 @@ std::string ElectronBluetoothDelegate::GetDeviceAddress(
     RenderFrameHost* frame,
     const WebBluetoothDeviceId& device_id) {
   NOTIMPLEMENTED();
-  return nullptr;
+  return "";
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::AddScannedDevice(
