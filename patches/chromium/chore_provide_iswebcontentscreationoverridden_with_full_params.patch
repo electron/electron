@@ -52,10 +52,10 @@ index a3add3e3811f5f31d615800b1852f56afde63edc..2f3132e450f883460e0325c4a0bb91f0
                                  /*from_user_gesture=*/true);
      return true;
 diff --git a/chrome/browser/ui/ash/ash_web_view_impl.h b/chrome/browser/ui/ash/ash_web_view_impl.h
-index 1af9377f917f4659149698593dbe85d98ed3409e..52771e9703663e60ed8ac77fff5abf9c85e21f4f 100644
+index 68fec72b3b97a18563fade50dd129eba49a86bb6..d3d4af06542c73c61cf8b8ee510a0345ba666739 100644
 --- a/chrome/browser/ui/ash/ash_web_view_impl.h
 +++ b/chrome/browser/ui/ash/ash_web_view_impl.h
-@@ -48,8 +48,7 @@ class AshWebViewImpl : public ash::AshWebView,
+@@ -49,8 +49,7 @@ class AshWebViewImpl : public ash::AshWebView,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
