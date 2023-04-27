@@ -590,17 +590,32 @@ describe('chrome extensions', () => {
           });
         });
 
-        // FIXME(nornagon): real extensions don't load on file: urls, so this
-        // test needs to be updated to serve its content over http.
-        xdescribe('supports "all_frames" option', () => {
+        describe('supports "all_frames" option', () => {
           const contentScript = path.resolve(fixtures, 'extensions/content-script');
+          const contentPath = path.join(contentScript, 'frame-with-frame.html');
 
           // Computed style values
           const COLOR_RED = 'rgb(255, 0, 0)';
           const COLOR_BLUE = 'rgb(0, 0, 255)';
           const COLOR_TRANSPARENT = 'rgba(0, 0, 0, 0)';
 
-          before(() => {
+          let server: http.Server;
+          let port: number;
+          before(async () => {
+            server = http.createServer((_, res) => {
+              fs.readFile(contentPath, (error, content) => {
+                if (error) {
+                  res.writeHead(500);
+                  res.end(`Failed to load ${contentPath} : ${error.code}`);
+                } else {
+                  res.writeHead(200, { 'Content-Type': 'text/html' });
+                  res.end(content, 'utf-8');
+                }
+              });
+            });
+
+            ({ port, url } = await listen(server));
+
             session.defaultSession.loadExtension(contentScript);
           });
 
@@ -627,7 +642,8 @@ describe('chrome extensions', () => {
 
           it('applies matching rules in subframes', async () => {
             const detailsPromise = emittedNTimes(w.webContents, 'did-frame-finish-load', 2);
-            w.loadFile(path.join(contentScript, 'frame-with-frame.html'));
+
+            w.loadURL(`http://127.0.0.1:${port}`);
             const frameEvents = await detailsPromise;
             await Promise.all(
               frameEvents.map(async frameEvent => {
@@ -644,12 +660,9 @@ describe('chrome extensions', () => {
                     }
                   })()`
                 );
+
                 expect(result.enabledColor).to.equal(COLOR_RED);
-                if (isMainFrame) {
-                  expect(result.disabledColor).to.equal(COLOR_BLUE);
-                } else {
-                  expect(result.disabledColor).to.equal(COLOR_TRANSPARENT); // null color
-                }
+                expect(result.disabledColor).to.equal(isMainFrame ? COLOR_BLUE : COLOR_TRANSPARENT);
               })
             );
           });
