@@ -5,6 +5,7 @@
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <dwmapi.h>
 #include <wrl/client.h>
 #endif
 
@@ -68,6 +69,7 @@
 
 #elif BUILDFLAG(IS_WIN)
 #include "base/win/win_util.h"
+#include "base/win/windows_version.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
@@ -81,6 +83,19 @@
 namespace electron {
 
 #if BUILDFLAG(IS_WIN)
+
+DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
+  if (material == "none") {
+    return DWMSBT_NONE;
+  } else if (material == "acrylic") {
+    return DWMSBT_TRANSIENTWINDOW;
+  } else if (material == "mica") {
+    return DWMSBT_MAINWINDOW;
+  } else if (material == "tabbed") {
+    return DWMSBT_TABBEDWINDOW;
+  }
+  return DWMSBT_AUTO;
+}
 
 // Similar to the ones in display::win::ScreenWin, but with rounded values
 // These help to avoid problems that arise from unresizable windows where the
@@ -1376,6 +1391,21 @@ void NativeWindowViews::SetMenuBarVisibility(bool visible) {
 
 bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
+}
+
+void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
+#if BUILDFLAG(IS_WIN)
+  // DWMWA_USE_HOSTBACKDROPBRUSH is only supported on Windows 11 22H2 and up.
+  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
+    return;
+
+  DWM_SYSTEMBACKDROP_TYPE backdrop_type = GetBackdropFromString(material);
+  HRESULT result =
+      DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_SYSTEMBACKDROP_TYPE,
+                            &backdrop_type, sizeof(backdrop_type));
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set background material to " << material;
+#endif
 }
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(
