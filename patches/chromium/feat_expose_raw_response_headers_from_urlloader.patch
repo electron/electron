@@ -37,7 +37,7 @@ index 6d42ae691a2c4a8cf51501bc4c690aca328001f5..71ac9d67eaa87346e7348e63d10157fb
           allow_cookies_from_browser == other.allow_cookies_from_browser &&
           client_security_state == other.client_security_state;
 diff --git a/services/network/public/cpp/resource_request.h b/services/network/public/cpp/resource_request.h
-index a7d49b5e37c521ed3816b61b0180d0179b728fea..9ad0609beb7b27429aad9ad4950abb7cacceb719 100644
+index 97bc15e4dbd30364a3ea9d2cc2961d8e0dce2473..c84bc3991722a252c03ebc61451cf8933e55e6f9 100644
 --- a/services/network/public/cpp/resource_request.h
 +++ b/services/network/public/cpp/resource_request.h
 @@ -65,6 +65,7 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE) ResourceRequest {
@@ -49,7 +49,7 @@ index a7d49b5e37c521ed3816b61b0180d0179b728fea..9ad0609beb7b27429aad9ad4950abb7c
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 76eaeb32663d1c2864aaf6518f08d67a62f71013..0553578eb181f716be012d908e98ffb344113a2d 100644
+index e716df9998d8ec8125c7c5ceb46a0abfcd8a1538..780ffaae2f608f7e153a62adf4e61fad42d01888 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
 @@ -90,6 +90,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
@@ -61,7 +61,7 @@ index 76eaeb32663d1c2864aaf6518f08d67a62f71013..0553578eb181f716be012d908e98ffb3
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index 40f1cba36cc06bcb0bbe8e21e070d3999ea4699e..f9ab554258a7e1f1969f134e0f9e21e5b4da11f3 100644
+index fc841300bd332d240ff73dfb2991151dbc853110..4b6f6df75b42bc167da145c4e95310a10e4c91ef 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -71,6 +71,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -76,7 +76,7 @@ index 40f1cba36cc06bcb0bbe8e21e070d3999ea4699e..f9ab554258a7e1f1969f134e0f9e21e5
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index bc368719aea83917e69486de20ceea4d958d41f5..c10439b1c38293b7b1caf36a08994f0904076d05 100644
+index 515e4b9d26b26e23d41a43e601c667c765b0dff1..d3f1d984e663121b97a9129b576142963ad72612 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -72,6 +72,9 @@ struct TrustedUrlRequestParams {

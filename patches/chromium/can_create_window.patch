@@ -21,7 +21,7 @@ index 9d0dfb6bf7884f770bc03e5917cbff859b6f5e43..437e34ce85f2a392ae60588f4eb10fef
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e4f917be1206411bada8e4677497a95668c64c95..afdf6c98157797bfbbabd381daa42ad22d7a63d0 100644
+index 8ce3cb655be6e5cd3916fc6c2da811083e4c85ef..a3b18d7141c6a2ce6fb34a50c7b3d837f81c24f1 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4161,6 +4161,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -163,10 +163,10 @@ index c921467ec58895143efc7ba11661f5a529e14ad6..026a6934997f0825c3f2c0a40551ce77
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index 48a07780e61463b7e70e2a511bc6f81bd6fbdbf3..465cfb29380df203de7bcf2d27617b604097118a 100644
+index 0fe31461d3b29dde0bf3754287eed766371e10f2..d1426c424b0861b3b713cd3face4f2473a356e82 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
-@@ -499,6 +499,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
+@@ -497,6 +497,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -176,10 +176,10 @@ index 48a07780e61463b7e70e2a511bc6f81bd6fbdbf3..465cfb29380df203de7bcf2d27617b60
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/web_test/browser/web_test_content_browser_client.h b/content/web_test/browser/web_test_content_browser_client.h
-index 22254206063abe36739e1c0e7c065223ab6807d2..7f5d89f8dc8b46ac1338e73b0394872569d803b8 100644
+index 6e9041279578d8365a4eae6bd9f221baf79324d7..39ff665cc8b87ed4997a60a18c05cd42bc6ffd24 100644
 --- a/content/web_test/browser/web_test_content_browser_client.h
 +++ b/content/web_test/browser/web_test_content_browser_client.h
-@@ -84,6 +84,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
+@@ -83,6 +83,8 @@ class WebTestContentBrowserClient : public ShellContentBrowserClient {
                         const std::string& frame_name,
                         WindowOpenDisposition disposition,
                         const blink::mojom::WindowFeatures& features,
