@@ -1,7 +1,7 @@
 # Copyright (c) 2018 GitHub, Inc.
 # Use of this source code is governed by the MIT license that can be
 # found in the LICENSE file.
-
+{
 import("//build/config/ozone.gni")
 import("//build/config/ui.gni")
 import("//components/spellcheck/spellcheck_build_features.gni")
@@ -9,7 +9,7 @@ import("//electron/buildflags/buildflags.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//third_party/widevine/cdm/widevine.gni")
-
+}
 # Builds some of the chrome sources that Electron depends on.
 static_library("chrome") {
   visibility = [ "//electron:electron_lib" ]
