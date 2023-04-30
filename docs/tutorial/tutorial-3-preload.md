@@ -214,10 +214,12 @@ const createWindow = () => {
       preload: path.join(__dirname, 'preload.js'),
     },
   })
-  ipcMain.handle('ping', () => 'pong')
   win.loadFile('index.html')
 }
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  ipcMain.handle('ping', () => 'pong')
+  createWindow()
+})
 ```
 
 Once you have the sender and receiver set up, you can now send messages from the renderer
