@@ -3731,6 +3731,12 @@ bool WebContents::IsFullscreenForTabOrPending(
   return is_html_fullscreen() || (in_transition && is_html_transition);
 }
 
+content::FullscreenState WebContents::GetFullscreenState(
+    const content::WebContents* source) const {
+  return exclusive_access_manager_->fullscreen_controller()->GetFullscreenState(
+      source);
+}
+
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
   if (source && source->GetOutermostWebContents() == source) {
     // If this is the outermost web contents and the user has tabbed or
