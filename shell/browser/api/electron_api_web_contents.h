@@ -694,6 +694,7 @@ class WebContents : public ExclusiveAccessContext,
   bool CanUserExitFullscreen() const override;
   bool IsExclusiveAccessBubbleDisplayed() const override;
 
+  // content::WebContentsDelegate
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
   content::FullscreenState GetFullscreenState(
       const content::WebContents* web_contents) const override;
