@@ -183,10 +183,10 @@ index 4d4c17b8fe687e01f7403335c88453998259d647..22c1e5fd0c6f16a101b2578675704f18
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index d2bd22ce6875e7cf160a8699b8d888c564b3ef89..46cfc20f31a2b13fe5cb9dfa7eae62fd74bbc096 100644
+index 475614df3115ac27fafa4cf23f65be8e794e9f90..d3a5fd8531754c07aa1fa7e175d4a650cbbeb885 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -146,11 +146,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -156,11 +156,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -202,7 +202,7 @@ index d2bd22ce6875e7cf160a8699b8d888c564b3ef89..46cfc20f31a2b13fe5cb9dfa7eae62fd
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -206,6 +208,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -216,6 +218,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -227,7 +227,7 @@ index d2bd22ce6875e7cf160a8699b8d888c564b3ef89..46cfc20f31a2b13fe5cb9dfa7eae62fd
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -410,9 +430,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -431,9 +451,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX)
  
@@ -252,7 +252,7 @@ index d2bd22ce6875e7cf160a8699b8d888c564b3ef89..46cfc20f31a2b13fe5cb9dfa7eae62fd
  #if BUILDFLAG(USE_ZYGOTE)
      if (zygote_for_testing_.has_value()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515a7027ea8 100644
+index 65e59b1cbf33c065a500b7d304ed6618d0a24808..e3b1aa7963b4ab9daafdd3340ecfaee07d93f8ea 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@
@@ -266,7 +266,7 @@ index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515
  namespace base {
  class Thread;
  }  // namespace base
-@@ -98,9 +102,13 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -104,9 +108,13 @@ class CONTENT_EXPORT UtilityProcessHost
  
    // Returns information about the utility child process.
    const ChildProcessData& GetData();
@@ -282,7 +282,7 @@ index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515
  
    // Starts the utility process.
    bool Start();
-@@ -140,6 +148,16 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -146,6 +154,16 @@ class CONTENT_EXPORT UtilityProcessHost
    void SetZygoteForTesting(ZygoteCommunication* handle);
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -299,7 +299,7 @@ index 64ca6bc6657572bc4f878391ed9528704ce579af..095971ae67ce51f80d24f73fe69d7515
    // Returns a control interface for the running child process.
    mojom::ChildProcess* GetChildProcess();
  
-@@ -188,6 +206,22 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -194,6 +212,22 @@ class CONTENT_EXPORT UtilityProcessHost
    absl::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
