@@ -1,7 +1,10 @@
-import { BrowserWindow } from 'electron';
+import { BrowserWindow, screen } from 'electron';
 import { expect, assert } from 'chai';
+import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
+import { ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 import { once } from 'events';
+import { setTimeout as setTimeoutAsync } from 'timers/promises';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;
@@ -192,5 +195,32 @@ describe('webContents.setWindowOpenHandler', () => {
     browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
     browserWindow.webContents.executeJavaScript("window.open('https://127.0.0.1')");
     expect(await browserWindow.webContents.executeJavaScript('42')).to.equal(42);
+  });
+
+  // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+  ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make child window background transparent', (done) => {
+    browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
+
+    browserWindow.webContents.once('did-create-window', async (childWindow) => {
+      const display = screen.getPrimaryDisplay();
+      childWindow.setBounds(display.bounds);
+      await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
+      await setTimeoutAsync(1000);
+      const screenCapture = await captureScreen();
+      const centerColor = getPixelColor(screenCapture, {
+        x: display.size.width / 2,
+        y: display.size.height / 2
+      });
+
+      try {
+        // color-scheme is set to dark so background should not be white
+        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+        done();
+      } catch (err) {
+        done(err);
+      }
+    });
+
+    browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
   });
 });

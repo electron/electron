@@ -6013,7 +6013,7 @@ describe('BrowserWindow module', () => {
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch !== 'x64')('should not display a visible background', async () => {
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6085,6 +6085,32 @@ describe('BrowserWindow module', () => {
       });
 
       expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make background transparent if falsy', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      for (const transparent of [false, undefined]) {
+        const window = new BrowserWindow({
+          ...display.bounds,
+          transparent
+        });
+
+        await once(window, 'show');
+        await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
+
+        await setTimeout(500);
+        const screenCapture = await captureScreen();
+        const centerColor = getPixelColor(screenCapture, {
+          x: display.size.width / 2,
+          y: display.size.height / 2
+        });
+        window.close();
+
+        // color-scheme is set to dark so background should not be white
+        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+      }
     });
   });
 

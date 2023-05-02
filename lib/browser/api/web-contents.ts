@@ -519,17 +519,10 @@ WebContents.prototype._callWindowOpenHandler = function (event: Electron.Event, 
     event.preventDefault();
     return defaultResponse;
   } else if (response.action === 'allow') {
-    if (typeof response.overrideBrowserWindowOptions === 'object' && response.overrideBrowserWindowOptions !== null) {
-      return {
-        browserWindowConstructorOptions: response.overrideBrowserWindowOptions,
-        outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
-      };
-    } else {
-      return {
-        browserWindowConstructorOptions: {},
-        outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
-      };
-    }
+    return {
+      browserWindowConstructorOptions: typeof response.overrideBrowserWindowOptions === 'object' ? response.overrideBrowserWindowOptions : null,
+      outlivesOpener: typeof response.outlivesOpener === 'boolean' ? response.outlivesOpener : false
+    };
   } else {
     event.preventDefault();
     console.error('The window open handler response must be an object with an \'action\' property of \'allow\' or \'deny\'.');
