@@ -8,7 +8,8 @@ export enum HexColors {
   GREEN = '#00b140',
   PURPLE = '#6a0dad',
   RED = '#ff0000',
-  BLUE = '#0000ff'
+  BLUE = '#0000ff',
+  WHITE = '#ffffff'
 };
 
 /**
