@@ -1,6 +1,6 @@
 import * as url from 'url';
 import { Readable, Writable } from 'stream';
-import { app } from 'electron/main';
+import { app, session } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 
 const {
@@ -524,6 +524,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
 
 export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
   return new ClientRequest(options, callback);
+}
+
+export function resolveHost (host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost> {
+  return session.defaultSession.resolveHost(host, options);
 }
 
 exports.isOnline = isOnline;
