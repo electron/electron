@@ -526,6 +526,10 @@ export function request (options: ClientRequestConstructorOptions | string, call
   return new ClientRequest(options, callback);
 }
 
+export function resolveHost (host: string, options?: Electron.ResolveHostOptions): Promise<Electron.ResolvedHost> {
+  return session.defaultSession.resolveHost(host, options);
+}
+
 exports.isOnline = isOnline;
 
 Object.defineProperty(exports, 'online', {
