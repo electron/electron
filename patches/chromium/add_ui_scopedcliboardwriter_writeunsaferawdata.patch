@@ -8,10 +8,10 @@ was removed as part of the Raw Clipboard API scrubbing.
 https://bugs.chromium.org/p/chromium/issues/detail?id=1217643
 
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.cc b/ui/base/clipboard/scoped_clipboard_writer.cc
-index 0aef31c1e881fdcb5bfe09fd5ba47b1c5bd861bc..0864450bdcb5577b3ccdf2b6bd97198f283db295 100644
+index e27df1c5b234490a2679fc3428e59b92970f1ec0..54a0be1dde7d059f5102ead4a77b828eff1eeadb 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.cc
 +++ b/ui/base/clipboard/scoped_clipboard_writer.cc
-@@ -249,6 +249,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
+@@ -239,6 +239,16 @@ void ScopedClipboardWriter::WriteEncodedDataTransferEndpointForTesting(
  }
  #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
  
@@ -29,7 +29,7 @@ index 0aef31c1e881fdcb5bfe09fd5ba47b1c5bd861bc..0864450bdcb5577b3ccdf2b6bd97198f
    objects_.clear();
    platform_representations_.clear();
 diff --git a/ui/base/clipboard/scoped_clipboard_writer.h b/ui/base/clipboard/scoped_clipboard_writer.h
-index 569aa7f3673f16c126e7c0b8ea34cac483c7b38d..e494fcc56d4182175943ce0f4190f23a86b9f3a5 100644
+index ec10abcafda69417044a4e792c3637bba5dcd54e..e4ef4f98f3c96c1813f000e185d81ec6082b48ca 100644
 --- a/ui/base/clipboard/scoped_clipboard_writer.h
 +++ b/ui/base/clipboard/scoped_clipboard_writer.h
 @@ -91,6 +91,10 @@ class COMPONENT_EXPORT(UI_BASE_CLIPBOARD) ScopedClipboardWriter {

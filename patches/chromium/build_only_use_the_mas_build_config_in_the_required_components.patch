@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 826bec8deca0b151348d068086e696a7f5f8e63b..d93f8e8ecff665ae36b6ebe2032df33bb037bce0 100644
+index d4eac5820262eea7854feb6d4d850481cef05510..4f0ed33f928dfe59b553cacb93d7cddfb609e524 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1029,6 +1029,7 @@ component("base") {
@@ -76,7 +76,7 @@ index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb8
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f674d6178c2ceae12101bade280cb4dc8f8dbd0a..51b27c7e81c45fd249d53d70a85407841594f521 100644
+index f40b1d01a1f5a3f269600fd0f896d4336f7ef54f..759893e44396367ea72835a32be300d2c9951570 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -214,10 +214,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682ca6f07179 100644
+index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb277468cb424d 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -249,6 +249,7 @@ component("platform") {
+@@ -250,6 +250,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
@@ -238,7 +238,7 @@ index 056a7b1bd399510688841cb68da3985690deb0c7..3c0c0f625156adcc9204ff718703e831
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 1bfc640fe1443ef783977ac16510d5e042db9137..fac4aad72c4de0657df64ec49e3d15b009541f69 100644
+index b6146484de06fc1e317f9018f344ab4baf2dd781..886e5964bba4563e4a9da96625255999ef0414ee 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
