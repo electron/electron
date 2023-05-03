@@ -3095,6 +3095,10 @@ void WebContents::Copy() {
   web_contents()->Copy();
 }
 
+void WebContents::CenterSelection() {
+  web_contents()->CenterSelection();
+}
+
 void WebContents::Paste() {
   web_contents()->Paste();
 }
@@ -3113,6 +3117,30 @@ void WebContents::SelectAll() {
 
 void WebContents::Unselect() {
   web_contents()->CollapseSelection();
+}
+
+void WebContents::ScrollToTopOfDocument() {
+  web_contents()->ScrollToTopOfDocument();
+}
+
+void WebContents::ScrollToBottomOfDocument() {
+  web_contents()->ScrollToBottomOfDocument();
+}
+
+void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
+  int start_adjust = 0;
+  int end_adjust = 0;
+
+  gin_helper::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    dict.Get("start", &start_adjust);
+    dict.Get("matchCase", &end_adjust);
+  }
+
+  // The selection menu is a Chrome-specific piece of UI.
+  // TODO(codebytere): maybe surface as an event in the future?
+  web_contents()->AdjustSelectionByCharacterOffset(
+      start_adjust, end_adjust, false /* show_selection_menu */);
 }
 
 void WebContents::Replace(const std::u16string& word) {
@@ -4148,11 +4176,16 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)
       .SetMethod("copy", &WebContents::Copy)
+      .SetMethod("centerSelection", &WebContents::CenterSelection)
       .SetMethod("paste", &WebContents::Paste)
       .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
       .SetMethod("delete", &WebContents::Delete)
       .SetMethod("selectAll", &WebContents::SelectAll)
       .SetMethod("unselect", &WebContents::Unselect)
+      .SetMethod("scrollToTop", &WebContents::ScrollToTopOfDocument)
+      .SetMethod("scrollToBottom", &WebContents::ScrollToBottomOfDocument)
+      .SetMethod("adjustSelection",
+                 &WebContents::AdjustSelectionByCharacterOffset)
       .SetMethod("replace", &WebContents::Replace)
       .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
       .SetMethod("findInPage", &WebContents::FindInPage)
