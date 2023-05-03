@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/common/gin_helper/error_thrower.h"
@@ -53,7 +54,7 @@ class Screen : public gin::Wrappable<Screen>,
                                uint32_t changed_metrics) override;
 
  private:
-  display::Screen* screen_;
+  raw_ptr<display::Screen> screen_;
 };
 
 }  // namespace electron::api

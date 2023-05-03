@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -54,7 +55,7 @@ class NativeBrowserView : public content::WebContentsObserver {
   // content::WebContentsObserver:
   void WebContentsDestroyed() override;
 
-  InspectableWebContents* inspectable_web_contents_;
+  raw_ptr<InspectableWebContents> inspectable_web_contents_;
 };
 
 }  // namespace electron

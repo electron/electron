@@ -7,6 +7,7 @@
 
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "extensions/browser/api/runtime/runtime_api_delegate.h"
 
 namespace content {
@@ -36,7 +37,7 @@ class ElectronRuntimeAPIDelegate : public RuntimeAPIDelegate {
   bool RestartDevice(std::string* error_message) override;
 
  private:
-  content::BrowserContext* browser_context_;
+  raw_ptr<content::BrowserContext> browser_context_;
 };
 
 }  // namespace extensions

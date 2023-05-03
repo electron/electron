@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_OBJECT_TEMPLATE_BUILDER_H_
 
+#include "base/memory/raw_ptr.h"
 #include "shell/common/gin_helper/function_template.h"
 
 namespace gin_helper {
@@ -66,7 +67,7 @@ class ObjectTemplateBuilder {
       v8::Local<v8::FunctionTemplate> getter,
       v8::Local<v8::FunctionTemplate> setter);
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
 
   // ObjectTemplateBuilder should only be used on the stack.
   v8::Local<v8::ObjectTemplate> template_;

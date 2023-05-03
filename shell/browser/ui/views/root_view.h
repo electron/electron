@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/accelerator_util.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/views/view.h"
@@ -53,7 +54,7 @@ class RootView : public views::View {
 
  private:
   // Parent window, weak ref.
-  NativeWindow* window_;
+  raw_ptr<NativeWindow> window_;
 
   // Menu bar.
   std::unique_ptr<MenuBar> menu_bar_;

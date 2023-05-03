@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/bindings/receiver_set.h"
@@ -122,7 +123,7 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;

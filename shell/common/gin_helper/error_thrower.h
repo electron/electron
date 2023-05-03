@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_HELPER_ERROR_THROWER_H_
 #define ELECTRON_SHELL_COMMON_GIN_HELPER_ERROR_THROWER_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_piece.h"
 #include "v8/include/v8.h"
 
@@ -29,7 +30,7 @@ class ErrorThrower {
       v8::Local<v8::Value> (*)(v8::Local<v8::String> err_msg);
   void Throw(ErrorGenerator gen, base::StringPiece err_msg) const;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
 };
 
 }  // namespace gin_helper

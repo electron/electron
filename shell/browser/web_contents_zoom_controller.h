@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_WEB_CONTENTS_ZOOM_CONTROLLER_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
 #include "content/public/browser/host_zoom_map.h"
@@ -111,11 +112,11 @@ class WebContentsZoomController
   int old_process_id_ = -1;
   int old_view_id_ = -1;
 
-  WebContentsZoomController* embedder_zoom_controller_ = nullptr;
+  raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 
   base::ObserverList<Observer> observers_;
 
-  content::HostZoomMap* host_zoom_map_;
+  raw_ptr<content::HostZoomMap> host_zoom_map_;
 
   WEB_CONTENTS_USER_DATA_KEY_DECL();
 };

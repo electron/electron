@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/cxx17_backports.h"
+#include "base/memory/raw_ptr.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
@@ -163,7 +164,7 @@ class NativeWindowClientView : public views::ClientView {
   }
 
  private:
-  NativeWindowViews* window_;
+  raw_ptr<NativeWindowViews> window_;
 };
 
 }  // namespace

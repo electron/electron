@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "url/gurl.h"
@@ -81,8 +82,8 @@ class Notification {
                NotificationPresenter* presenter);
 
  private:
-  NotificationDelegate* delegate_;
-  NotificationPresenter* presenter_;
+  raw_ptr<NotificationDelegate> delegate_;
+  raw_ptr<NotificationPresenter> presenter_;
   std::string notification_id_;
 
   base::WeakPtrFactory<Notification> weak_factory_{this};
