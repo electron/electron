@@ -562,9 +562,10 @@ describe('chrome extensions', () => {
             });
           });
 
-          afterEach(() => {
+          afterEach(async () => {
             removeAllExtensions();
-            return closeWindow(w).then(() => { w = null as unknown as BrowserWindow; });
+            await closeWindow(w);
+            w = null as unknown as BrowserWindow;
           });
 
           it('should run content script at document_start', async () => {
