@@ -28,6 +28,10 @@
     "channel": "stable",
     "matches": ["<all_urls>"]
   },
+  "pdfViewerPrivate": {
+    "dependencies": ["permission:pdfViewerPrivate"],
+    "contexts": ["blessed_extension"]
+  },
   "resourcesPrivate": [{
     "dependencies": ["permission:resourcesPrivate"],
     "contexts": ["blessed_extension"]

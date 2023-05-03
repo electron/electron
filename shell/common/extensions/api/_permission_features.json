@@ -6,6 +6,15 @@
     ],
     "location": "component"
   },
+  "pdfViewerPrivate": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ],
+    "allowlist": [
+      "CBCC42ABED43A4B58FE3810E62AFFA010EB0349F"
+    ]
+  },
   "management": {
     "channel": "stable",
     "extension_types": [

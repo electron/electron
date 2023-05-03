@@ -34,6 +34,9 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
          APIPermissionInfo::kFlagInternal},
     {mojom::APIPermissionID::kResourcesPrivate, "resourcesPrivate",
      APIPermissionInfo::kFlagCannotBeOptional},
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+    {mojom::APIPermissionID::kPdfViewerPrivate, "pdfViewerPrivate"},
+#endif
     {mojom::APIPermissionID::kManagement, "management"},
 };
 base::span<const APIPermissionInfo::InitInfo> GetPermissionInfos() {
