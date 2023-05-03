@@ -23,11 +23,11 @@
 #include "shell/common/application_info.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/heap_snapshot.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "third_party/blink/renderer/platform/heap/process_heap.h"  // nogncheck
 
 namespace electron {
@@ -50,7 +50,7 @@ void ElectronBindings::BindProcess(v8::Isolate* isolate,
   process->SetMethod("getCreationTime", &GetCreationTime);
   process->SetMethod("getHeapStatistics", &GetHeapStatistics);
   process->SetMethod("getBlinkMemoryInfo", &GetBlinkMemoryInfo);
-  if (gin_helper::Locker::IsBrowserProcess()) {
+  if (electron::IsBrowserProcess()) {
     process->SetMethod("getProcessMemoryInfo", &GetProcessMemoryInfo);
   }
   process->SetMethod("getSystemMemoryInfo", &GetSystemMemoryInfo);
@@ -209,7 +209,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
 // static
 v8::Local<v8::Promise> ElectronBindings::GetProcessMemoryInfo(
     v8::Isolate* isolate) {
-  CHECK(gin_helper::Locker::IsBrowserProcess());
+  CHECK(electron::IsBrowserProcess());
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 

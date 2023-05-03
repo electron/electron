@@ -63,7 +63,7 @@ v8::Local<v8::Promise::Resolver> PromiseBase::GetInner() const {
 
 // static
 void Promise<void>::ResolvePromise(Promise<void> promise) {
-  if (gin_helper::Locker::IsBrowserProcess() &&
+  if (electron::IsBrowserProcess() &&
       !content::BrowserThread::CurrentlyOn(content::BrowserThread::UI)) {
     content::GetUIThreadTaskRunner({})->PostTask(
         FROM_HERE,
