@@ -617,7 +617,7 @@ index 82f44b6c90f292772b56253a99578394b5cc2881..91ee0c3d66c33adee346060a0ecd931d
    // Tells the browser printing failed.
    PrintingFailed(int32 cookie, PrintFailureReason reason);
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index f1e72946e69e8e12d0436366587648b683d9f4f8..2c7db9c160ac200a2abf671c9b01a24acba4207a 100644
+index f1e72946e69e8e12d0436366587648b683d9f4f8..205598b3b14d72dc97bf664143a97073677fe52b 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -45,6 +45,7 @@
@@ -748,7 +748,7 @@ index f1e72946e69e8e12d0436366587648b683d9f4f8..2c7db9c160ac200a2abf671c9b01a24a
    // Check if the printer returned any settings, if the settings are null,
    // assume there are no printer drivers configured. So safely terminate.
 -  if (!settings.params) {
-+  if (!settings->params) {
++  if (!settings || !settings->params) {
      // Caller will reset `print_pages_params_`.
      return false;
    }
