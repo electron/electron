@@ -195,7 +195,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (id)accessibilityAttributeValue:(NSString*)attribute {
   if ([attribute isEqualToString:@"AXManualAccessibility"]) {
     auto* ax_state = content::BrowserAccessibilityState::GetInstance();
-    return [NSNumber numberWithBool:ax_state->IsRendererAccessibilityEnabled()];
+    return [NSNumber numberWithBool:ax_state->IsAccessibleBrowser()];
   }
 
   return [super accessibilityAttributeValue:attribute];
