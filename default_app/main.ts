@@ -15,7 +15,23 @@ type DefaultAppOptions = {
   modules: string[];
 }
 
-const Module = require('module');
+
+let isModule = false;
+try {
+  // If import.meta is available, then the code is running as an ES module
+  isModule = !!import.meta;
+} catch (error) {
+  // If accessing import.meta causes a syntax error, then the code is not running as an ES module
+  isModule = false;
+}
+
+
+let Module = undefined;
+if (isModule) {
+  Module = require('module');
+} else {
+  Module = await import('module');
+}
 
 // Parse command line options.
 const argv = process.argv.slice(1);
