@@ -108,7 +108,10 @@ app.whenReady().then(async () => {
   if (argv.invert) mocha.invert();
 
   const baseElectronDir = path.resolve(__dirname, '..');
-  const validTestPaths = argv.files && argv.files.map(file => path.relative(baseElectronDir, file));
+  const validTestPaths = argv.files && argv.files.map(file =>
+    path.isAbsolute(file)
+      ? path.relative(baseElectronDir, file)
+      : file);
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
