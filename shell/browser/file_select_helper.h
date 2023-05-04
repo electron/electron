@@ -42,7 +42,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
                              content::BrowserThread::DeleteOnUIThread>,
                          public ui::SelectFileDialog::Listener,
                          public content::WebContentsObserver,
-                         public content::RenderWidgetHostObserver,
                          private net::DirectoryLister::DirectoryListerDelegate {
  public:
   // disable copy
@@ -97,10 +96,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
       const std::vector<ui::SelectedFileInfo>& files,
       void* params) override;
   void FileSelectionCanceled(void* params) override;
-
-  // content::RenderWidgetHostObserver overrides.
-  void RenderWidgetHostDestroyed(
-      content::RenderWidgetHost* widget_host) override;
 
   // content::WebContentsObserver overrides.
   void RenderFrameHostChanged(content::RenderFrameHost* old_host,
@@ -219,10 +214,6 @@ class FileSelectHelper : public base::RefCountedThreadSafe<
   // more than one going on at a time.
   struct ActiveDirectoryEnumeration;
   std::unique_ptr<ActiveDirectoryEnumeration> directory_enumeration_;
-
-  base::ScopedObservation<content::RenderWidgetHost,
-                          content::RenderWidgetHostObserver>
-      observation_{this};
 
   // Temporary files only used on OSX. This class is responsible for deleting
   // these files when they are no longer needed.
