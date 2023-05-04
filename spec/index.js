@@ -134,6 +134,7 @@ app.whenReady().then(async () => {
   testFiles.sort().forEach((file) => {
     mocha.addFile(file);
   });
+  console.log('Test files: ', testFiles);
 
   const cb = () => {
     // Ensure the callback is called after runner is defined
