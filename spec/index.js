@@ -138,7 +138,12 @@ app.whenReady().then(async () => {
   testFiles.sort().forEach((file) => {
     mocha.addFile(file);
   });
-  console.log('Test files: ', testFiles);
+
+  if (validTestPaths.length > 0 && testFiles.length === 0) {
+    console.error('Test files were provided, but they did not match any searched files');
+    console.error('provided file paths (relative to electron/):', validTestPaths);
+    process.exit(1);
+  }
 
   const cb = () => {
     // Ensure the callback is called after runner is defined
