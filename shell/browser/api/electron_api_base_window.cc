@@ -864,10 +864,8 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
-void BaseWindow::SetBackgroundMaterial(v8::Isolate* isolate,
-                                       v8::Local<v8::Value> value) {
-  std::string type = gin::V8ToString(isolate, value);
-  window_->SetBackgroundMaterial(type);
+void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
+  window_->SetBackgroundMaterial(material_type);
 }
 
 #if BUILDFLAG(IS_MAC)

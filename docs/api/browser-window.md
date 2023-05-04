@@ -1570,6 +1570,8 @@ This method sets the browser window's system-drawn background material, includin
 
 See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_systembackdrop_type) for more details.
 
+**Note:** This method is only supported on Windows 11 22H2 and up.
+
 #### `win.setWindowButtonPosition(position)` _macOS_
 
 * `position` [Point](structures/point.md) | null
