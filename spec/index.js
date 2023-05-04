@@ -107,6 +107,8 @@ app.whenReady().then(async () => {
   if (argv.grep) mocha.grep(argv.grep);
   if (argv.invert) mocha.invert();
 
+  const baseElectronDir = path.resolve(__dirname, '..');
+  const validTestPaths = argv.files && argv.files.map(file => path.relative(baseElectronDir, file));
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
@@ -121,8 +123,7 @@ app.whenReady().then(async () => {
       return false;
     }
 
-    const baseElectronDir = path.resolve(__dirname, '..');
-    if (argv.files && !argv.files.includes(path.relative(baseElectronDir, file))) {
+    if (validTestPaths && !validTestPaths.includes(path.relative(baseElectronDir, file))) {
       return false;
     }
 
