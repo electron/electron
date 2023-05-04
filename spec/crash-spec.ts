@@ -72,9 +72,3 @@ describe('crash cases', () => {
     });
   }
 });
-
-describe('testing circleci config change', () => {
-  it('fails', () => {
-    expect(true).to.be.false();
-  });
-});
