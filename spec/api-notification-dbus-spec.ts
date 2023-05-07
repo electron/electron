@@ -108,8 +108,9 @@ ifdescribe(!skip)('Notification module (dbus)', () => {
       expect(methodName).to.equal('Notify');
 
       const args = unmarshalDBusNotifyArgs(lastCall[2]);
+
       expect(args).to.deep.equal({
-        app_name: appName,
+        app_name: realAppName,
         replaces_id: 0,
         app_icon: '',
         title: 'title',
