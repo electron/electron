@@ -47,7 +47,7 @@ class Notification : public gin::Wrappable<Notification>,
   void NotificationReplied(const std::string& reply) override;
   void NotificationDisplayed() override;
   void NotificationDestroyed() override;
-  void NotificationClosed(bool is_persistent = false) override;
+  void NotificationClosed() override;
   void NotificationFailed(const std::string& error) override;
 
   // gin::Wrappable

@@ -151,8 +151,12 @@ void OnWebNotificationAllowed(base::WeakPtr<Notification> notification,
 class NotificationDelegateImpl final : public electron::NotificationDelegate {
  public:
   explicit NotificationDelegateImpl(const std::string& notification_id,
-                                    const GURL& origin)
-      : notification_id_(notification_id), context_(nullptr), origin_(origin) {}
+                                    const GURL& origin,
+                                    const bool is_persistent)
+      : notification_id_(notification_id),
+        context_(nullptr),
+        origin_(origin),
+        is_persistent_(is_persistent) {}
 
   void SetBrowserContext(content::BrowserContext* context) {
     context_ = context;
@@ -162,15 +166,15 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
   NotificationDelegateImpl(const NotificationDelegateImpl&) = delete;
   NotificationDelegateImpl& operator=(const NotificationDelegateImpl&) = delete;
 
-  void NotificationDestroyed() override { delete this; }
+  void NotificationDestroyed() final { delete this; }
 
-  void NotificationClick() override {
+  void NotificationClick() final {
     content::NotificationEventDispatcher::GetInstance()
         ->DispatchNonPersistentClickEvent(notification_id_, base::DoNothing());
   }
 
-  void NotificationClosed(bool is_persistent) override {
-    if (is_persistent) {
+  void NotificationClosed() final {
+    if (is_persistent_) {
       content::NotificationEventDispatcher::GetInstance()
           ->DispatchNotificationCloseEvent(context_, notification_id_, origin_,
                                            true, base::DoNothing());
@@ -181,14 +185,14 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
     }
   }
 
-  void NotificationAction(int index) override {
+  void NotificationAction(int index) final {
     content::NotificationEventDispatcher::GetInstance()
         ->DispatchNotificationClickEvent(context_, notification_id_, origin_,
                                          index, std::u16string(),
                                          base::DoNothing());
   }
 
-  void NotificationReplied(const std::string& reply) override {
+  void NotificationReplied(const std::string& reply) final {
     // feat: Add the reply field on a notification
     content::NotificationEventDispatcher::GetInstance()
         ->DispatchNotificationClickEvent(context_, notification_id_, origin_, 0,
@@ -201,6 +205,7 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
   content::BrowserContext*
       context_;  // context is necessary for Event dispatching
   GURL origin_;
+  const bool is_persistent_;
 };
 
 }  // namespace
@@ -233,18 +238,18 @@ void PlatformNotificationService::DisplayNotification(
   //
   // See: https://notifications.spec.whatwg.org/#showing-a-notification
   const size_t prev_notif_count = presenter->notifications().size();
-  const bool try_pending_deletion(notification_data.renotify &&
-                                  !notification_data.require_interaction);
+  const bool try_pending_deletion(true);
   presenter->CloseNotificationWithId(notification_id, try_pending_deletion);
   const size_t curr_notif_count = presenter->notifications().size();
 
-  auto* delegate = new NotificationDelegateImpl(notification_id, origin);
+  const bool is_persistent(false);
+  auto* delegate =
+      new NotificationDelegateImpl(notification_id, origin, is_persistent);
 
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
     // feat: correct processing for the persistent notification without
     // actions
-    const bool is_persistent(false);
     const bool is_replacing(prev_notif_count > curr_notif_count);
     browser_client_->WebNotificationAllowed(
         // content::WebContents::FromRenderFrameHost(render_frame_host),
@@ -277,19 +282,19 @@ void PlatformNotificationService::DisplayPersistentNotification(
     return;
 
   const size_t prev_notif_count = presenter->notifications().size();
-  const bool try_pending_deletion(notification_data.renotify &&
-                                  !notification_data.require_interaction);
+  const bool try_pending_deletion(true);
   presenter->CloseNotificationWithId(notification_id, try_pending_deletion);
   const size_t curr_notif_count = presenter->notifications().size();
 
-  auto* delegate = new NotificationDelegateImpl(notification_id, origin);
+  const bool is_persistent(true);
+  auto* delegate =
+      new NotificationDelegateImpl(notification_id, origin, is_persistent);
 
   auto notification = presenter->CreateNotification(delegate, notification_id);
   if (notification) {
     delegate->SetBrowserContext(web_ctx->GetBrowserContext());
     // feat: Correct processing for the persistent notification without
     // actions
-    const bool is_persistent(true);
     const bool is_replacing(prev_notif_count > curr_notif_count);
     browser_client_->WebNotificationAllowed(
         web_ctx->GetPrimaryMainFrame(),

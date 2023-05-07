@@ -1220,8 +1220,8 @@ IFACEMETHODIMP ToastEventHandler::Invoke(
 
     if (!notification_is_exisit) {
       content::GetUIThreadTaskRunner({})->PostTask(
-          FROM_HERE, base::BindOnce(&Notification::NotificationDismissed,
-                                    notification_, options_.is_persistent));
+          FROM_HERE,
+          base::BindOnce(&Notification::NotificationDismissed, notification_));
 
       if (IsDebuggingNotifications())
         LOG(INFO) << "Notification dismissed";
