@@ -1,0 +1,55 @@
+name: Branch Created
+
+on:
+  create:
+
+permissions: {}
+
+jobs:
+  release-branch-created:
+    name: Release Branch Created
+    if: ${{ github.event.ref_type == 'branch' && endsWith(github.event.ref, '-x-y') }}
+    permissions:
+      contents: read
+      pull-requests: write
+      repository-projects: write  # Required for labels
+    runs-on: ubuntu-latest
+    steps:
+      - name: New Release Branch Tasks
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: electron/electron
+          NUM_SUPPORTED_VERSIONS: 3
+        run: |
+          if [[ ${{ github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
+            MAJOR=${BASH_REMATCH[1]}
+            PREVIOUS_MAJOR=$((MAJOR - 1))
+            UNSUPPORTED_MAJOR=$((MAJOR - NUM_SUPPORTED_VERSIONS - 1))
+
+            # Create new labels
+            gh label create $MAJOR-x-y --color 8d9ee8 || true
+            gh label create target/$MAJOR-x-y --color ad244f || true
+            gh label create merged/$MAJOR-x-y --color 61a3c6 || true
+            gh label create in-flight/$MAJOR-x-y --color db69a6 || true
+            gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
+
+            # Change color of old labels
+            gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || true
+            gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+            gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+            gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+            gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+
+            # Add the new target label to any PRs which:
+            #   * target the previous major
+            #   * are in-flight for the previous major
+            #   * need manual backport for the previous major
+            for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
+              PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --jq .[].number --json number --limit 500)
+              if [[ $PULL_REQUESTS ]]; then
+                echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
+              fi
+            done
+          else
+            echo "Not a release branch: ${{ github.event.ref }}"
+          fi
