@@ -8,7 +8,7 @@ body {
 }
 
 .container {
-  margin: 15px 30px;
+  margin: -40px 30px;
   background-color: #2f3241;
   flex: 1;
   display: flex;
@@ -73,21 +73,58 @@ pre, code, .code {
   color: #c2f5ff;
 }
 
+.command-line{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80px;
+}
+
+p {
+  margin-top: -20px;
+  line-height: 1;
+}
+
 pre {
   background-color: #26282E;
   white-space: pre-wrap;
-  line-height: 2.5;
+  line-height: 1;
   overflow: auto;
-  margin: 0 auto;
+  /* margin: 0 auto; */
   display: inline-block;
   padding: 6px 15px;
   text-align: center;
   border-radius: 3px;
+  margin-top: -24px;
+  margin-left: 8px;
 }
 
 pre.with-prompt:before {
   content: "$ ";
   opacity: 0.7;
+}
+
+.custom-icon {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  background: url(assests/blog.png) no-repeat center center;
+}
+
+span.octicon.hero-octicon.octicon-code-square-24 img{
+  width: 100%;
+}
+span.octicon.hero-octicon.octicon-mark-github-16 img{
+  width: 100%;
+}
+span.octicon.hero-octicon.octicon-book-24 img{
+  width: 100%;
+}
+span.octicon.hero-octicon.octicon-star-fill-24 img{
+  width: 100%;
+}
+span.octicon.hero-octicon.octicon-gift-24 img{
+  width: 100%;
 }
 
 code {
@@ -119,13 +156,38 @@ code {
 }
 
 nav {
-  margin: 40px 0 0 0;
+  margin: 30px 15px 0 100px;
+  display: flex;
+  justify-content: center;
+}
+
+nav h4{
+  width: 35%;
 }
 
 .linkcol {
   width: 19%;
   display: inline-block;
   text-align: center;
+}
+
+.linkcol span:hover {
+  animation: glowing 1500ms infinite;
+}
+
+@keyframes glowing {
+  0% {
+    background-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    background-color: rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    background-color: rgba(255, 255, 255, 0.2);
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.2);
+  }
 }
 
 .hero-octicon {
