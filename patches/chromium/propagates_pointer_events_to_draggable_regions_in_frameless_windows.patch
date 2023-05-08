@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Gellert Hegyi <gellert.hegyi@around.co>
+Date: Mon, 8 May 2023 08:10:12 +0200
+Subject: propagates pointer events to draggable regions in frameless windows
+
+This patch changes Chromiums built-in hit testing so in frameless windows pointer events are propagated even in draggable regions.
+
+diff --git a/components/remote_cocoa/app_shim/bridged_content_view.h b/components/remote_cocoa/app_shim/bridged_content_view.h
+index 55e7037125eff691c02429c0462cce86792440d0..39e687247fc5c13e8dfb445f8af4f0fb19500adc 100644
+--- a/components/remote_cocoa/app_shim/bridged_content_view.h
++++ b/components/remote_cocoa/app_shim/bridged_content_view.h
+@@ -91,6 +91,8 @@ REMOTE_COCOA_APP_SHIM_EXPORT
+ // Action for Cmd-E
+ - (void)copyToFindPboard:(id)sender;
+ 
++- (bool)isDraggableBackgroundAt:(NSPoint)point;
++
+ @end
+ 
+ #endif  // COMPONENTS_REMOTE_COCOA_APP_SHIM_BRIDGED_CONTENT_VIEW_H_
+diff --git a/components/remote_cocoa/app_shim/bridged_content_view.mm b/components/remote_cocoa/app_shim/bridged_content_view.mm
+index fc9c7b30f0353451fdbe4676be5c90c3656b8109..6691609e06786a15afc399c0d8eba9dc13954e69 100644
+--- a/components/remote_cocoa/app_shim/bridged_content_view.mm
++++ b/components/remote_cocoa/app_shim/bridged_content_view.mm
+@@ -288,13 +288,15 @@ - (bool)needsUpdateWindows {
+ // could be optimized by telling the window server which regions should be
+ // instantly draggable without asking (tracked at https://crbug.com/830962).
+ - (NSView*)hitTest:(NSPoint)point {
++  return [super hitTest:point];
++}
++
++- (bool)isDraggableBackgroundAt:(NSPoint)point {
+   gfx::Point flippedPoint(point.x, NSHeight(self.superview.bounds) - point.y);
+   bool isDraggableBackground = false;
+   _bridge->host()->GetIsDraggableBackgroundAt(flippedPoint,
+                                               &isDraggableBackground);
+-  if (isDraggableBackground)
+-    return nil;
+-  return [super hitTest:point];
++  return isDraggableBackground;
+ }
+ 
+ - (void)processCapturedMouseEvent:(NSEvent*)theEvent {
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
+index 09b562ff00eb69beeab3332cfa0cd4b2005dda9e..3339187988296c6b03f8ff4aae4389d36a73b430 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
+@@ -208,6 +208,8 @@ struct DidOverscrollParams;
+   base::scoped_nsobject<id> _accessibilityParent;
+ 
+   uint64_t popup_parent_ns_view_id_;
++
++  BOOL _isDragging;
+ }
+ 
+ @property(nonatomic, assign) NSRange markedRange;
+diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+index 949f9a615d1842be4be496a4523411aa4e97a3a6..ad93ea0a2c41176db3f599695d14b0c4163044a5 100644
+--- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
++++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
+@@ -162,6 +162,7 @@ - (BOOL)disableAutoHideCursor;
+ 
+ @interface NSView (ElectronCustomMethods)
+ - (BOOL)shouldIgnoreMouseEvent;
++- (BOOL)isDraggableBackgroundAt:(NSPoint)point;
+ @end
+ 
+ // RenderWidgetHostViewCocoa ---------------------------------------------------
+@@ -785,6 +786,20 @@ - (void)mouseEvent:(NSEvent*)theEvent {
+   else if (type == NSEventTypeLeftMouseUp)
+     _hasOpenMouseDown = NO;
+ 
++  if (type == NSEventTypeLeftMouseDown || type == NSEventTypeMouseMoved) {
++    NSView* contentView = [self.window contentView];
++    if ([contentView respondsToSelector:@selector(isDraggableBackgroundAt:)] &&
++        [contentView isDraggableBackgroundAt:[theEvent locationInWindow]]) {
++      _isDragging = YES;
++      [self.window performWindowDragWithEvent:theEvent];
++    }
++  } else if (type == NSEventTypeLeftMouseUp) {
++    if (_isDragging) {
++      [self.window performWindowDragWithEvent:theEvent];
++      _isDragging = NO;
++    }
++  }
++
+   // TODO(suzhe): We should send mouse events to the input method first if it
+   // wants to handle them. But it won't work without implementing method
+   // - (NSUInteger)characterIndexForPoint:.
