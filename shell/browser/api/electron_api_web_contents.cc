@@ -116,7 +116,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
-#include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
@@ -379,6 +378,101 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
 namespace electron::api {
 
 namespace {
+
+std::string CursorTypeToString(const ui::Cursor& cursor) {
+  switch (cursor.type()) {
+    case ui::mojom::CursorType::kPointer:
+      return "default";
+    case ui::mojom::CursorType::kCross:
+      return "crosshair";
+    case ui::mojom::CursorType::kHand:
+      return "pointer";
+    case ui::mojom::CursorType::kIBeam:
+      return "text";
+    case ui::mojom::CursorType::kWait:
+      return "wait";
+    case ui::mojom::CursorType::kHelp:
+      return "help";
+    case ui::mojom::CursorType::kEastResize:
+      return "e-resize";
+    case ui::mojom::CursorType::kNorthResize:
+      return "n-resize";
+    case ui::mojom::CursorType::kNorthEastResize:
+      return "ne-resize";
+    case ui::mojom::CursorType::kNorthWestResize:
+      return "nw-resize";
+    case ui::mojom::CursorType::kSouthResize:
+      return "s-resize";
+    case ui::mojom::CursorType::kSouthEastResize:
+      return "se-resize";
+    case ui::mojom::CursorType::kSouthWestResize:
+      return "sw-resize";
+    case ui::mojom::CursorType::kWestResize:
+      return "w-resize";
+    case ui::mojom::CursorType::kNorthSouthResize:
+      return "ns-resize";
+    case ui::mojom::CursorType::kEastWestResize:
+      return "ew-resize";
+    case ui::mojom::CursorType::kNorthEastSouthWestResize:
+      return "nesw-resize";
+    case ui::mojom::CursorType::kNorthWestSouthEastResize:
+      return "nwse-resize";
+    case ui::mojom::CursorType::kColumnResize:
+      return "col-resize";
+    case ui::mojom::CursorType::kRowResize:
+      return "row-resize";
+    case ui::mojom::CursorType::kMiddlePanning:
+      return "m-panning";
+    case ui::mojom::CursorType::kEastPanning:
+      return "e-panning";
+    case ui::mojom::CursorType::kNorthPanning:
+      return "n-panning";
+    case ui::mojom::CursorType::kNorthEastPanning:
+      return "ne-panning";
+    case ui::mojom::CursorType::kNorthWestPanning:
+      return "nw-panning";
+    case ui::mojom::CursorType::kSouthPanning:
+      return "s-panning";
+    case ui::mojom::CursorType::kSouthEastPanning:
+      return "se-panning";
+    case ui::mojom::CursorType::kSouthWestPanning:
+      return "sw-panning";
+    case ui::mojom::CursorType::kWestPanning:
+      return "w-panning";
+    case ui::mojom::CursorType::kMove:
+      return "move";
+    case ui::mojom::CursorType::kVerticalText:
+      return "vertical-text";
+    case ui::mojom::CursorType::kCell:
+      return "cell";
+    case ui::mojom::CursorType::kContextMenu:
+      return "context-menu";
+    case ui::mojom::CursorType::kAlias:
+      return "alias";
+    case ui::mojom::CursorType::kProgress:
+      return "progress";
+    case ui::mojom::CursorType::kNoDrop:
+      return "nodrop";
+    case ui::mojom::CursorType::kCopy:
+      return "copy";
+    case ui::mojom::CursorType::kNone:
+      return "none";
+    case ui::mojom::CursorType::kNotAllowed:
+      return "not-allowed";
+    case ui::mojom::CursorType::kZoomIn:
+      return "zoom-in";
+    case ui::mojom::CursorType::kZoomOut:
+      return "zoom-out";
+    case ui::mojom::CursorType::kGrab:
+      return "grab";
+    case ui::mojom::CursorType::kGrabbing:
+      return "grabbing";
+    case ui::mojom::CursorType::kCustom:
+      return "custom";
+    default:
+      return "default";
+  }
+}
 
 base::IDMap<WebContents*>& GetAllWebContents() {
   static base::NoDestructor<base::IDMap<WebContents*>> s_all_web_contents;
