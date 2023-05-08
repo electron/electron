@@ -109,6 +109,7 @@
     "preinstall": "node -e 'process.exit(0)'",
     "prepack": "check-for-leaks",
     "prepare": "husky install",
+    "pretest": "npm run create-typescript-definitions",
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
