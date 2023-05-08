@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 81da351d30ee746993b1c0b66fc8aedd0cb70f55..de818a18bad48d0a1a9b5bebba75ff3a0caa7c63 100644
+index 9c4b529ba6998cd0078b2b686008d14ee3fa204c..b598c88e4992d0ba327b8c1f23c826fe3ee50e0e 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -974,7 +974,6 @@ if (is_win) {
@@ -834,10 +834,10 @@ index 63376c5e434a8e2afa8e6c0f194377c6b5b8aff5..901dd4671ecee953927ab746eb974dcc
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6f16b6adf2d1c33e3188183b4ee4ad37620e4345..f40b1d01a1f5a3f269600fd0f896d4336f7ef54f 100644
+index aa0030b7e54a411afd858803fa884f7e25783115..b2f8d8dab348d031510b3ff8a5cf5854feb77282 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2863,8 +2863,9 @@ source_set("browser") {
+@@ -2868,8 +2868,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
@@ -886,17 +886,17 @@ index 2fb3aef0797f204f08c20e48987cd8c2703185de..75a70e331f8b539027748dad3252912c
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index 99a89b0334b703b021e40baafe7fb1184405e072..28b74e85619368703cde82ed7caeca438d596d36 100644
+index cc0e9b58d2686c45f8471eccdde7d9c5b03b4cae..d0ad07b3205aa7e9dcb8cc6217426a1bde22a15f 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
-@@ -37,6 +37,10 @@
- #include "sandbox/policy/mac/utility.sb.h"
- #include "sandbox/policy/mojom/sandbox.mojom.h"
+@@ -41,6 +41,10 @@
+ #error "This file requires ARC support."
+ #endif
  
 +#if BUILDFLAG(ENABLE_PRINTING)
 +#include "sandbox/policy/mac/print_backend.sb.h"
 +#endif
 +
- namespace sandbox {
- namespace policy {
+ namespace sandbox::policy {
  
+ base::FilePath GetCanonicalPath(const base::FilePath& path) {
