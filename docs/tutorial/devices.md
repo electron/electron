@@ -129,7 +129,7 @@ Electron provides several APIs for working with the WebUSB API:
   when handling the `select-usb-device` event.
   **Note:** These two events only fire until the callback from `select-usb-device`
   is called.  They are not intended to be used as a generic usb device listener.
-* The [`usb-device-revoked' event on the Session](../api/session.md#event-usb-device-revoked) can
+* The [`usb-device-revoked` event on the Session](../api/session.md#event-usb-device-revoked) can
   be used to respond when [device.forget()](https://developer.chrome.com/articles/usb/#revoke-access)
   is called on a USB device.
 * [`ses.setDevicePermissionHandler(handler)`](../api/session.md#sessetdevicepermissionhandlerhandler)
