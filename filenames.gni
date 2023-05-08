@@ -637,8 +637,6 @@ filenames = {
     "shell/common/language_util.h",
     "shell/common/logging.cc",
     "shell/common/logging.h",
-    "shell/common/mouse_util.cc",
-    "shell/common/mouse_util.h",
     "shell/common/node_bindings.cc",
     "shell/common/node_bindings.h",
     "shell/common/node_includes.h",
