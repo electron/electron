@@ -452,7 +452,7 @@ step-get-more-space-on-mac: &step-get-more-space-on-mac
       fi
     background: true
 
-# On macOS delete all .git directories under src/ expect for
+# On macOS delete all .git directories under src/ except for
 # third_party/angle/ and third_party/dawn/ because of build time generation of files
 # gen/angle/commit.h depends on third_party/angle/.git/HEAD
 # https://chromium-review.googlesource.com/c/angle/angle/+/2074924
@@ -1492,7 +1492,7 @@ commands:
               export LLVM_SYMBOLIZER_PATH=$PWD/third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer
               export MOCHA_TIMEOUT=180000
               echo "Piping output to ASAN_SYMBOLIZE ($ASAN_SYMBOLIZE)"
-              (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings)) 2>&1 | $ASAN_SYMBOLIZE
+              (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings 2>&1)) | $ASAN_SYMBOLIZE
             else
               if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
                 export ELECTRON_SKIP_NATIVE_MODULE_TESTS=true
@@ -1501,17 +1501,8 @@ commands:
                 if [ "$TARGET_ARCH" == "ia32" ]; then
                   npm_config_arch=x64 node electron/node_modules/dugite/script/download-git.js
                 fi
-                (cd electron && node script/yarn test --runners=main --trace-uncaught --enable-logging --files $(circleci tests glob spec/*-spec.ts | circleci tests split --split-by=timings))
+                (cd electron && (circleci tests glob "spec/*-spec.ts" | circleci tests run --command="xargs node script/yarn test --runners=main --trace-uncaught --enable-logging --files" --split-by=timings))
               fi
-            fi
-      - run:
-          name: Check test results existence
-          command: |
-            cd src
-
-            # Check if test results exist and are not empty.
-            if [ ! -s "junit/test-results-main.xml" ]; then
-              exit 1
             fi
       - store_test_results:
           path: src/junit
