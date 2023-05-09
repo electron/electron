@@ -1476,7 +1476,7 @@ void WebContents::OnEnterFullscreenModeForTab(
   }
 
   owner_window()->set_fullscreen_transition_type(
-      NativeWindow::FullScreenTransitionType::HTML);
+      NativeWindow::FullScreenTransitionType::kHTML);
   exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
       requesting_frame, options.display_id);
 
@@ -3846,9 +3846,9 @@ bool WebContents::IsFullscreenForTabOrPending(
     return is_html_fullscreen();
 
   bool in_transition = owner_window()->fullscreen_transition_state() !=
-                       NativeWindow::FullScreenTransitionState::NONE;
+                       NativeWindow::FullScreenTransitionState::kNone;
   bool is_html_transition = owner_window()->fullscreen_transition_type() ==
-                            NativeWindow::FullScreenTransitionType::HTML;
+                            NativeWindow::FullScreenTransitionType::kHTML;
 
   return is_html_fullscreen() || (in_transition && is_html_transition);
 }
