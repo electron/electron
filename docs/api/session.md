@@ -955,7 +955,7 @@ Passing `null` instead of a function resets the handler to its default state.
   * `details` Object
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
     * `origin` string - The origin URL of the device permission check.
-    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md)- the device that permission is being requested for.
+    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md) | [USBDevice](structures/usb-device.md) - the device that permission is being requested for.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
