@@ -1,0 +1,109 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Anderson <thomasanderson@chromium.org>
+Date: Tue, 13 Dec 2022 22:49:47 +0000
+Subject: Ensure DND buffer size is a multiple of scale
+
+When using a scale factor of 2.0 on Sway ToT, this fixes a crash when
+trying to DND an image or text that happens to have an odd width or
+height. The issue is Wlroots will not allow attaching a buffer to a
+surface when the buffer's size isn't a multiple of the surface's scale
+factor.
+
+R=nickdiego
+
+Bug: 578890
+Change-Id: I283ed27a7d0051b895e0eed3b9a74d83feac3a37
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4099423
+Reviewed-by: Nick Yamane <nickdiego@igalia.com>
+Commit-Queue: Thomas Anderson <thomasanderson@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1082777}
+
+diff --git a/ui/ozone/platform/wayland/common/wayland_util.cc b/ui/ozone/platform/wayland/common/wayland_util.cc
+index 4e8aa4b1e5530311338fbb43483e16d845707d2f..9b5806895a92cc92176644a0477d48bf79a35606 100644
+--- a/ui/ozone/platform/wayland/common/wayland_util.cc
++++ b/ui/ozone/platform/wayland/common/wayland_util.cc
+@@ -115,7 +115,8 @@ uint32_t IdentifyDirection(const ui::WaylandConnection& connection,
+ bool DrawBitmap(const SkBitmap& bitmap, ui::WaylandShmBuffer* out_buffer) {
+   DCHECK(out_buffer);
+   DCHECK(out_buffer->GetMemory());
+-  DCHECK_EQ(out_buffer->size(), gfx::Size(bitmap.width(), bitmap.height()));
++  DCHECK(gfx::Rect(out_buffer->size())
++             .Contains(gfx::Rect(bitmap.width(), bitmap.height())));
+ 
+   auto* mapped_memory = out_buffer->GetMemory();
+   auto size = out_buffer->size();
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
+index f2123ec8bac3f6afe9f46ba358cb9c829b2e9325..2bb7d0f4de6f8c50cc2bbaba6baaa0b684531115 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.cc
+@@ -140,7 +140,8 @@ bool WaylandDataDragController::StartSession(const OSExchangeData& data,
+     icon_surface_ = std::make_unique<WaylandSurface>(connection_, nullptr);
+     if (icon_surface_->Initialize()) {
+       // Corresponds to actual scale factor of the origin surface.
+-      icon_surface_->set_surface_buffer_scale(origin_window->window_scale());
++      icon_surface_buffer_scale_ = origin_window->window_scale();
++      icon_surface_->set_surface_buffer_scale(icon_surface_buffer_scale_);
+       // Icon surface do not need input.
+       const gfx::Rect empty_region_px;
+       icon_surface_->set_input_region(&empty_region_px);
+@@ -153,6 +154,7 @@ bool WaylandDataDragController::StartSession(const OSExchangeData& data,
+     } else {
+       LOG(ERROR) << "Failed to create drag icon surface.";
+       icon_surface_.reset();
++      icon_surface_buffer_scale_ = 1.0f;
+     }
+   }
+ 
+@@ -225,21 +227,28 @@ void WaylandDataDragController::DrawIconInternal() {
+     return;
+ 
+   DCHECK(!icon_bitmap_->empty());
+-  gfx::Size size(icon_bitmap_->width(), icon_bitmap_->height());
++  // The protocol expects the attached buffer to have a pixel size that is a
++  // multiple of the surface's scale factor. Some compositors (eg. Wlroots) will
++  // refuse to attach the buffer if this condition is not met.
++  const gfx::Size size_dip =
++      gfx::ScaleToCeiledSize({icon_bitmap_->width(), icon_bitmap_->height()},
++                             1.0f / icon_surface_buffer_scale_);
++  const gfx::Size size_px =
++      gfx::ScaleToCeiledSize(size_dip, icon_surface_buffer_scale_);
+ 
+   icon_buffer_ = std::make_unique<WaylandShmBuffer>(
+-      connection_->wayland_buffer_factory(), size);
++      connection_->wayland_buffer_factory(), size_px);
+   if (!icon_buffer_->IsValid()) {
+     LOG(ERROR) << "Failed to create drag icon buffer.";
+     return;
+   }
+ 
+-  DVLOG(3) << "Drawing drag icon. size=" << size.ToString();
++  DVLOG(3) << "Drawing drag icon. size_px=" << size_px.ToString();
+   wl::DrawBitmap(*icon_bitmap_, icon_buffer_.get());
+   auto* const surface = icon_surface_->surface();
+   wl_surface_attach(surface, icon_buffer_->get(), icon_offset_.x(),
+                     icon_offset_.y());
+-  wl_surface_damage(surface, 0, 0, size.width(), size.height());
++  wl_surface_damage(surface, 0, 0, size_px.width(), size_px.height());
+   wl_surface_commit(surface);
+ }
+ 
+@@ -370,6 +379,7 @@ void WaylandDataDragController::OnDataSourceFinish(bool completed) {
+   data_offer_.reset();
+   icon_buffer_.reset();
+   icon_surface_.reset();
++  icon_surface_buffer_scale_ = 1.0f;
+   icon_bitmap_ = nullptr;
+   icon_frame_callback_.reset();
+   offered_exchange_data_provider_.reset();
+diff --git a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
+index 9912f1e0aebaf8289d2cdcdbff472a0baa91a981..39acda6bae9eb3a3f7837f6c93fafcee493bf78b 100644
+--- a/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
++++ b/ui/ozone/platform/wayland/host/wayland_data_drag_controller.h
+@@ -224,6 +224,7 @@ class WaylandDataDragController : public WaylandDataDevice::DragDelegate,
+ 
+   // Drag icon related variables.
+   std::unique_ptr<WaylandSurface> icon_surface_;
++  float icon_surface_buffer_scale_ = 1.0f;
+   std::unique_ptr<WaylandShmBuffer> icon_buffer_;
+   raw_ptr<const SkBitmap> icon_bitmap_ = nullptr;
+   gfx::Point icon_offset_;
