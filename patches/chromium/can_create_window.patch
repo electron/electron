@@ -21,10 +21,10 @@ index 87878ae6a1cfebb3c49e6ef16e35390d9197711d..166293ad0d6246bcf477e6af57a9e680
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ccdd2332d7a848680d4540b9d18f74430ca1e8f0..deaa14f8feec2e41a7228fc95c40db31184d5d96 100644
+index 1603b08eb7d7f423a2f968ad1f1b254261f9f6c9..87dcf40a7619ad8e9999cf07e2aa7a16e380125e 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4163,6 +4163,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4167,6 +4167,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index ccdd2332d7a848680d4540b9d18f74430ca1e8f0..deaa14f8feec2e41a7228fc95c40db31
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4204,12 +4210,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4208,12 +4214,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -148,10 +148,10 @@ index 5da6f93293bc5ddae88c17ac2dd8d7037ba8e8f3..76d699790fb7d92587293b14332f696d
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 5348159986141b2d82c40bc696bb0d476307a9ab..2053eff0d7892a0bbfa8bf2613da43371a5ccec1 100644
+index 741d2e447107a34eab153d4d7cf8a600b3fac1b3..3b50524b8e33d99874dd58d78ef7c96a9eaa7205 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6306,6 +6306,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6295,6 +6295,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
        blink::GetNavigationInitiatorActivationAndAdStatus(
            request.HasUserGesture(), GetWebFrame()->IsAdScriptInStack());
  

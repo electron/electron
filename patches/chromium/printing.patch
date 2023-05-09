@@ -620,7 +620,7 @@ index a65f892c435369b8a9a645ab4cc757ba8bdb68cc..50b51b702d565febf1b8bbe8cd58bcef
    // Tells the browser printing failed.
    PrintingFailed(int32 cookie, PrintFailureReason reason);
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 35a39df3f062708d9eeefab7ec6876294046412b..7aa089798faa41a5e59bc16090bc26c28129b155 100644
+index 9328ac374483e44200c6f85cb42462d2734c00a8..8eb81badf2ca16d0faca63a4021187426530b0d5 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -45,6 +45,7 @@
