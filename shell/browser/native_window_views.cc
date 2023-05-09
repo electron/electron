@@ -656,7 +656,7 @@ bool NativeWindowViews::IsMaximized() {
     return true;
   } else {
 #if BUILDFLAG(IS_WIN)
-    if (transparent()) {
+    if (transparent() && !IsMinimized()) {
       // Compare the size of the window with the size of the display
       auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
           GetNativeWindow());
