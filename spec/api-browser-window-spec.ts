@@ -5171,19 +5171,32 @@ describe('BrowserWindow module', () => {
 
       it('should not be changed by setKiosk method', async () => {
         const w = new BrowserWindow();
+
+        const enterFullScreen = emittedOnce(w, 'enter-full-screen');
+        w.setKiosk(true);
+        await enterFullScreen;
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
+        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
+        w.setKiosk(false);
+        await leaveFullScreen;
+        expect(w.isFullScreen()).to.be.false('isFullScreen');
+      });
+
+      it('should stay fullscreen if fullscreen before kiosk', async () => {
+        const w = new BrowserWindow();
+
         const enterFullScreen = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFullScreen;
         expect(w.isFullScreen()).to.be.true('isFullScreen');
-        await delay();
+
         w.setKiosk(true);
-        await delay();
         w.setKiosk(false);
+
+        // Wait enough time for a fullscreen change to take effect.
+        await delay(2000);
         expect(w.isFullScreen()).to.be.true('isFullScreen');
-        const leaveFullScreen = emittedOnce(w, 'leave-full-screen');
-        w.setFullScreen(false);
-        await leaveFullScreen;
-        expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
 
       // FIXME: https://github.com/electron/electron/issues/30140
