@@ -388,7 +388,6 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
     GetDelegatedFrameHost()->TakeFallbackContentFrom(
         view_osr->GetDelegatedFrameHost());
   }
-  host()->GetContentRenderingTimeoutFrom(view_osr->host());
 }
 
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {

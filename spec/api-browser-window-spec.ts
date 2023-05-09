@@ -2227,13 +2227,17 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
 
-    ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
+    ifit(process.platform === 'darwin')('resets the windows level on minimize', async () => {
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
       w.setAlwaysOnTop(true, 'screen-saver');
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+      const minimized = once(w, 'minimize');
       w.minimize();
+      await minimized;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
+      const restored = once(w, 'restore');
       w.restore();
+      await restored;
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
 
