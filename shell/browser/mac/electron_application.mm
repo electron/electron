@@ -175,6 +175,33 @@ inline void dispatch_sync_main(dispatch_block_t block) {
   electron::Browser::Get()->OpenURL(base::SysNSStringToUTF8(url));
 }
 
+// Returns the list of accessibility attributes that this object supports.
+- (NSArray*)accessibilityAttributeNames {
+  NSMutableArray* attributes =
+      [[super accessibilityAttributeNames] mutableCopy];
+  [attributes addObject:@"AXManualAccessibility"];
+  return attributes;
+}
+
+// Returns whether or not the specified attribute can be set by the
+// accessibility API via |accessibilitySetValue:forAttribute:|.
+- (BOOL)accessibilityIsAttributeSettable:(NSString*)attribute {
+  bool is_manual_ax = [attribute isEqualToString:@"AXManualAccessibility"];
+  return is_manual_ax || [super accessibilityIsAttributeSettable:attribute];
+}
+
+// Returns the accessibility value for the given attribute.  If the value isn't
+// supported this will return nil.
+- (id)accessibilityAttributeValue:(NSString*)attribute {
+  if ([attribute isEqualToString:@"AXManualAccessibility"]) {
+    auto* ax_state = content::BrowserAccessibilityState::GetInstance();
+    return [NSNumber numberWithBool:ax_state->IsAccessibleBrowser()];
+  }
+
+  return [super accessibilityAttributeValue:attribute];
+}
+
+// Sets the value for an accessibility attribute via the accessibility API.
 // AXEnhancedUserInterface is an undocumented attribute that screen reader
 // related functionality sets when running, and AXManualAccessibility is an
 // attribute Electron specifically allows third-party apps to use to enable
