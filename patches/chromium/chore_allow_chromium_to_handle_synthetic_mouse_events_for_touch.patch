@@ -34,7 +34,7 @@ index 2e4bacce52a45b5d9d7829c1f88f82aa0bb1b4bb..f3537e89191bd2c6d9b06c9b741a1680
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 0740176e4e5a87ed2786fd7c3b9a7e97a5ebd907..f86d7ebb92261cb118e6fc6e9abd943d44962ea8 100644
+index 81d3612a4d0a56c0e3fdc57a3e1718984014f7bc..6b7366dfd43ca13587f0fc430eb1b11f2ed0436a 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -3225,15 +3225,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
