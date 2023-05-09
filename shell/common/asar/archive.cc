@@ -138,7 +138,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
           }
         }
         if (*algorithm == "SHA256") {
-          integrity_payload.algorithm = HashAlgorithm::SHA256;
+          integrity_payload.algorithm = HashAlgorithm::kSHA256;
           info->integrity = std::move(integrity_payload);
         }
       }
@@ -157,7 +157,7 @@ bool FillFileInfoWithNode(Archive::FileInfo* info,
 }  // namespace
 
 IntegrityPayload::IntegrityPayload()
-    : algorithm(HashAlgorithm::NONE), block_size(0) {}
+    : algorithm(HashAlgorithm::kNone), block_size(0) {}
 IntegrityPayload::~IntegrityPayload() = default;
 IntegrityPayload::IntegrityPayload(const IntegrityPayload& other) = default;
 
@@ -252,7 +252,7 @@ bool Archive::Init() {
     // Currently we only support the sha256 algorithm, we can add support for
     // more below ensure we read them in preference order from most secure to
     // least
-    if (integrity.value().algorithm != HashAlgorithm::NONE) {
+    if (integrity.value().algorithm != HashAlgorithm::kNone) {
       ValidateIntegrityOrDie(header.c_str(), header.length(),
                              integrity.value());
     } else {

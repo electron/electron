@@ -89,10 +89,10 @@ class Archive : public node::ObjectWrap {
       gin_helper::Dictionary integrity(isolate, v8::Object::New(isolate));
       asar::HashAlgorithm algorithm = info.integrity.value().algorithm;
       switch (algorithm) {
-        case asar::HashAlgorithm::SHA256:
+        case asar::HashAlgorithm::kSHA256:
           integrity.Set("algorithm", "SHA256");
           break;
-        case asar::HashAlgorithm::NONE:
+        case asar::HashAlgorithm::kNone:
           CHECK(false);
           break;
       }
