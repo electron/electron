@@ -146,6 +146,6 @@ GNOME, and KDE.
 [set-app-user-model-id]: ../api/app.md#appsetappusermodelidid-windows
 [squirrel-events]: https://github.com/electron/windows-installer/blob/main/README.md#handling-squirrel-events
 [toast-activator-clsid]: https://learn.microsoft.com/en-us/windows/win32/properties/props-system-appusermodel-toastactivatorclsid
-[apple-notification-guidelines]: https://developer.apple.com/macos/human-interface-guidelines/system-capabilities/notifications/
+[apple-notification-guidelines]: https://developer.apple.com/design/human-interface-guidelines/notifications
 [windows-notification-state]: https://github.com/felixrieseberg/windows-notification-state
 [macos-notification-state]: https://github.com/felixrieseberg/macos-notification-state
