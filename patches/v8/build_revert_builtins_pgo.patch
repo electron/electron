@@ -11,7 +11,7 @@ can be removed when 1) the issue is resolved with Chromium upstream or
 2) when Electron disables builtins PGO.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 2dc5737260d544460e00b037fe62d3ecf846d46d..056246860e885c9c689162fd976226923734ed05 100644
+index 2dc5737260d544460e00b037fe62d3ecf846d46d..7434814cc3ec451a33106a8aec9648427f7d3bbb 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -578,30 +578,20 @@ if (v8_builtins_profiling_log_file == "default") {
@@ -51,3 +51,21 @@ index 2dc5737260d544460e00b037fe62d3ecf846d46d..056246860e885c9c689162fd97622692
      }
    }
  }
+@@ -2266,11 +2256,13 @@ template("run_mksnapshot") {
+       args += [
+         "--turbo-profiling-input",
+         rebase_path(v8_builtins_profiling_log_file, root_build_dir),
+-
+-        # Replace this with --warn-about-builtin-profile-data to see the full
+-        # list of builtins with incompatible profiles.
+-        "--abort-on-bad-builtin-profile-data",
+       ]
++
++      # Replace this with --warn-about-builtin-profile-data to see the full
++      # list of builtins with incompatible profiles.
++      # TODO(crbug.com/v8/13647): Do not fail for invalid profiles
++      # args += [ "--abort-on-bad-builtin-profile-data" ]
++      args += [ "--warn-about-builtin-profile-data" ]
+     }
+ 
+     # This is needed to distinguish between generating code for the simulator
