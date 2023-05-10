@@ -85,7 +85,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
                                         bool install_immediately) override;
   void PerformActionBasedOnOmahaAttributes(
       const std::string& extension_id,
-      const base::Value& attributes) override;
+      const base::Value::Dict& attributes) override;
 
  private:
   void OnExtensionRegisteredWithRequestContexts(

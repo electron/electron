@@ -127,6 +127,7 @@
   "parallel/test-webcrypto-sign-verify-eddsa",
   "parallel/test-webcrypto-wrap-unwrap",
   "parallel/test-worker-no-atomics",
+  "parallel/test-worker-no-sab",
   "parallel/test-zlib-unused-weak",
   "report/test-report-fatalerror-oomerror-set",
   "report/test-report-fatalerror-oomerror-directory",

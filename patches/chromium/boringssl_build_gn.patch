@@ -6,10 +6,10 @@ Subject: boringssl BUILD.gn
 Build BoringSSL with some extra functions that nodejs needs.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index 40073723173388015f0c78899214ba155e7cdc53..72978c43a522e5716ba06e8b989710cc99bd8773 100644
+index 6fb13437c6bcca2aff102b04f3a46d2ad6a791c5..c61c60c7cb968c2b730a14de9ac0629aaceb73d3 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
-@@ -44,6 +44,20 @@ config("no_asm_config") {
+@@ -49,6 +49,20 @@ config("no_asm_config") {
  
  all_sources = crypto_sources + ssl_sources
  all_headers = crypto_headers + ssl_headers
@@ -28,5 +28,5 @@ index 40073723173388015f0c78899214ba155e7cdc53..72978c43a522e5716ba06e8b989710cc
 +  ]
 +}
  
- # Windows' assembly is built with NASM. The other platforms use the platform
- # assembler. Exclude Windows ARM64 because NASM targets x86 and x64 only.
+ if (enable_rust_boringssl) {
+   rust_bindgen("raw_bssl_sys_bindings") {
