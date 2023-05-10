@@ -60,6 +60,7 @@
     "mdast-util-from-markdown": "^1.2.0",
     "minimist": "^1.2.6",
     "null-loader": "^4.0.0",
+    "patch-package": "^7.0.0",
     "pre-flight": "^1.1.0",
     "process": "^0.11.10",
     "remark-cli": "^10.0.0",
