@@ -667,7 +667,7 @@ Hides the window.
 
 #### `win.isVisible()`
 
-Returns `boolean` - Whether the window is visible to the user.
+Returns `boolean` - Whether the window is visible to the user in the foreground of the app.
 
 #### `win.isModal()`
 
