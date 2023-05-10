@@ -1,0 +1,19 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tariq Bashir <tbashir@brightsign.biz>
+Date: Wed, 3 May 2023 18:18:33 +0100
+Subject: fixup! OS-15118: add bs set z order custom feature to wayland
+
+This patch adds a missing include for file <bs-z-order-unstable-v1-client-protocol.h>
+
+diff --git a/ui/ozone/platform/wayland/common/wayland_object.h b/ui/ozone/platform/wayland/common/wayland_object.h
+index 1be7773a1f35fb53cf6f2c9fb82056040dc485c7..15793309681ae76535d02e1ad3f8fd93a1c1f4b7 100644
+--- a/ui/ozone/platform/wayland/common/wayland_object.h
++++ b/ui/ozone/platform/wayland/common/wayland_object.h
+@@ -6,6 +6,7 @@
+ #define UI_OZONE_PLATFORM_WAYLAND_COMMON_WAYLAND_OBJECT_H_
+ 
+ #include <memory>
++#include <bs-z-order-unstable-v1-client-protocol.h>
+ 
+ #include "base/check.h"
+ #include "ui/ozone/platform/wayland/common/wayland.h"
