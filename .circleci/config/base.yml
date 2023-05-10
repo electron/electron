@@ -1665,7 +1665,7 @@ jobs:
           artifact-key: 'nil'
           build-type: 'nil'
 
-  mac-make-src-cache:
+  mac-make-src-cache-x64:
     executor:
       name: linux-docker
       size: xlarge
@@ -1674,6 +1674,25 @@ jobs:
       <<: *env-testing-build
       <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
+    steps:
+      - electron-build:
+          persist: false
+          build: false
+          checkout: true
+          save-git-cache: true
+          checkout-to-create-src-cache: true
+          artifact-key: 'nil'
+          build-type: 'nil'
+
+  mac-make-src-cache-arm64:
+    executor:
+      name: linux-docker
+      size: xlarge
+    environment:
+      <<: *env-linux-2xlarge
+      <<: *env-testing-build
+      <<: *env-macos-build
+      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac --custom-var=host_cpu=arm64'
     steps:
       - electron-build:
           persist: false
@@ -2271,19 +2290,20 @@ workflows:
         - equal: [false, << pipeline.parameters.run-linux-publish >>]
         - equal: [true, << pipeline.parameters.run-build-mac >>]
     jobs:
-      - mac-make-src-cache
+      - mac-make-src-cache-x64
+      - mac-make-src-cache-arm64
       - osx-testing-x64:
           requires:
-            - mac-make-src-cache
+            - mac-make-src-cache-x64
       - osx-testing-x64-gn-check:
           requires:
-            - mac-make-src-cache
+            - mac-make-src-cache-x64
       - darwin-testing-x64-tests:
           requires:
             - osx-testing-x64
       - osx-testing-arm64:
           requires:
-            - mac-make-src-cache
+            - mac-make-src-cache-arm64
       - darwin-testing-arm64-tests:
           filters:
             branches:
