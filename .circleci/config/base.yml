@@ -52,7 +52,7 @@ executors:
       size:
         description: "macOS executor size"
         type: enum
-        enum: ["macos.x86.medium.gen2"]
+        enum: ["macos.x86.medium.gen2", "macos.m1.large.gen1"]
       version:
         description: "xcode version"
         type: enum
@@ -1964,7 +1964,7 @@ jobs:
   osx-testing-arm64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
