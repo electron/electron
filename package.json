@@ -57,6 +57,7 @@
     "lint-staged": "^10.2.11",
     "minimist": "^1.2.6",
     "null-loader": "^4.0.0",
+    "patch-package": "^7.0.0",
     "pre-flight": "^1.1.0",
     "process": "^0.11.10",
     "remark-cli": "^10.0.0",
@@ -101,9 +102,9 @@
     "gn-format": "python3 script/run-gn-format.py",
     "precommit": "lint-staged",
     "preinstall": "node -e 'process.exit(0)'",
-    "prepack": "check-for-leaks",
-    "prepare": "husky install",
     "pretest": "npm run create-typescript-definitions",
+    "prepack": "check-for-leaks",
+    "prepare": "husky install && patch-package --patch-dir patches_npm",
     "repl": "node ./script/start.js --interactive",
     "start": "node ./script/start.js",
     "test": "node ./script/spec-runner.js",
@@ -150,6 +151,7 @@
     ]
   },
   "resolutions": {
-    "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac"
+    "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac",
+    "@octokit/request": "6.2.3"
   }
 }

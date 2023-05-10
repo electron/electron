@@ -1,0 +1,26 @@
+diff --git a/node_modules/@octokit/request/dist-node/index.js b/node_modules/@octokit/request/dist-node/index.js
+index 11ac3f4..c4d9331 100644
+--- a/node_modules/@octokit/request/dist-node/index.js
++++ b/node_modules/@octokit/request/dist-node/index.js
+@@ -29,7 +29,8 @@ function fetchWrapper(requestOptions) {
+     method: requestOptions.method,
+     body: requestOptions.body,
+     headers: requestOptions.headers,
+-    redirect: requestOptions.redirect
++    redirect: requestOptions.redirect,
++    ...(requestOptions.body && { duplex: "half" }),
+   },
+   // `requestOptions.request.agent` type is incompatible
+   // see https://github.com/octokit/types.ts/pull/264
+diff --git a/node_modules/@octokit/request/dist-src/fetch-wrapper.js b/node_modules/@octokit/request/dist-src/fetch-wrapper.js
+index 223307a..15114d5 100644
+--- a/node_modules/@octokit/request/dist-src/fetch-wrapper.js
++++ b/node_modules/@octokit/request/dist-src/fetch-wrapper.js
+@@ -21,6 +21,7 @@ export default function fetchWrapper(requestOptions) {
+         body: requestOptions.body,
+         headers: requestOptions.headers,
+         redirect: requestOptions.redirect,
++        ...(requestOptions.body && { duplex: "half" }),
+     }, 
+     // `requestOptions.request.agent` type is incompatible
+     // see https://github.com/octokit/types.ts/pull/264
