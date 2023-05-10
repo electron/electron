@@ -1,0 +1,198 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tariq Bashir <120014322+t-bashir-bs@users.noreply.github.com>
+Date: Fri, 19 Apr 2024 19:01:06 +0100
+Subject: OS-15118: add bs set z order custom feature to wayland
+
+A custom feature has been added to BrightSign Weston server to enable
+a z-index to be set to top level xdg windows.
+This patch adds the functionality into third_party/wayland-protocols and
+chromium ui/ozone/platform/wayland.
+
+diff --git a/third_party/wayland-protocols/BUILD.gn b/third_party/wayland-protocols/BUILD.gn
+index b0c0082769055..c59c5a182c8de 100644
+--- a/third_party/wayland-protocols/BUILD.gn
++++ b/third_party/wayland-protocols/BUILD.gn
+@@ -11,6 +11,10 @@ wayland_protocol("alpha_compositing_protocol") {
+   sources = [ "unstable/alpha-compositing/alpha-compositing-unstable-v1.xml" ]
+ }
+ 
++wayland_protocol("bs_z_order_protocol") {
++  sources = [ "unstable/bs-z-order/bs-z-order-unstable-v1.xml" ]
++}
++
+ wayland_protocol("content_type_protocol") {
+   sources = [ "unstable/content-type/content-type-v1.xml" ]
+ }
+diff --git a/third_party/wayland-protocols/unstable/bs-z-order/bs-z-order-unstable-v1.xml b/third_party/wayland-protocols/unstable/bs-z-order/bs-z-order-unstable-v1.xml
+new file mode 100644
+index 0000000000000..da7ae7a6e2024
+--- /dev/null
++++ b/third_party/wayland-protocols/unstable/bs-z-order/bs-z-order-unstable-v1.xml
+@@ -0,0 +1,14 @@
++<protocol name="bs_z_order">
++
++  <interface name="bs_z_order_v1" version="1">
++    <request name="set_z_index">
++      <arg name="surface" type="object" interface="wl_surface" />
++      <arg name="z_index" type="int" />
++    </request>
++    <request name="set_background_color">
++      <arg name="output" type="object" interface="wl_output" />
++      <arg name="background_color" type="uint" />
++    </request>
++  </interface>
++
++</protocol>
+diff --git a/ui/ozone/platform/wayland/BUILD.gn b/ui/ozone/platform/wayland/BUILD.gn
+index 1ec252c342cb6..ee2574fa24219 100644
+--- a/ui/ozone/platform/wayland/BUILD.gn
++++ b/ui/ozone/platform/wayland/BUILD.gn
+@@ -255,6 +255,7 @@ source_set("wayland") {
+     "//third_party/wayland:wayland_egl",
+     "//third_party/wayland:wayland_util",
+     "//third_party/wayland-protocols:alpha_compositing_protocol",
++    "//third_party/wayland-protocols:bs_z_order_protocol",
+     "//third_party/wayland-protocols:content_type_protocol",
+     "//third_party/wayland-protocols:cursor_shapes_protocol",
+     "//third_party/wayland-protocols:extended_drag",
+diff --git a/ui/ozone/platform/wayland/common/wayland_object.cc b/ui/ozone/platform/wayland/common/wayland_object.cc
+index bcc48aaeb186e..cf291424ff56d 100644
+--- a/ui/ozone/platform/wayland/common/wayland_object.cc
++++ b/ui/ozone/platform/wayland/common/wayland_object.cc
+@@ -190,6 +190,7 @@ void (*ObjectTraits<wl_proxy>::deleter)(void*) = &wl_proxy_wrapper_destroy;
+ // For convenience, keep aphabetical order in this list.
+ IMPLEMENT_WAYLAND_OBJECT_TRAITS(augmented_surface)
+ IMPLEMENT_WAYLAND_OBJECT_TRAITS(augmented_sub_surface)
++IMPLEMENT_WAYLAND_OBJECT_TRAITS(bs_z_order_v1)
+ IMPLEMENT_WAYLAND_OBJECT_TRAITS(gtk_primary_selection_device)
+ IMPLEMENT_WAYLAND_OBJECT_TRAITS(gtk_primary_selection_device_manager)
+ IMPLEMENT_WAYLAND_OBJECT_TRAITS(gtk_primary_selection_offer)
+diff --git a/ui/ozone/platform/wayland/common/wayland_object.h b/ui/ozone/platform/wayland/common/wayland_object.h
+index c84c084841ea9..9f2c034da7698 100644
+--- a/ui/ozone/platform/wayland/common/wayland_object.h
++++ b/ui/ozone/platform/wayland/common/wayland_object.h
+@@ -6,6 +6,7 @@
+ #define UI_OZONE_PLATFORM_WAYLAND_COMMON_WAYLAND_OBJECT_H_
+ 
+ #include <memory>
++#include <bs-z-order-unstable-v1-client-protocol.h>
+ 
+ #include "base/check.h"
+ #include "ui/ozone/platform/wayland/common/wayland.h"
+@@ -105,6 +106,7 @@ bool CanBind(const std::string& interface,
+ // For convenience, keep aphabetical order in this list.
+ DECLARE_WAYLAND_OBJECT_TRAITS(augmented_surface)
+ DECLARE_WAYLAND_OBJECT_TRAITS(augmented_sub_surface)
++DECLARE_WAYLAND_OBJECT_TRAITS(bs_z_order_v1)
+ DECLARE_WAYLAND_OBJECT_TRAITS(gtk_primary_selection_device)
+ DECLARE_WAYLAND_OBJECT_TRAITS(gtk_primary_selection_device_manager)
+ DECLARE_WAYLAND_OBJECT_TRAITS(gtk_primary_selection_offer)
+diff --git a/ui/ozone/platform/wayland/host/wayland_connection.cc b/ui/ozone/platform/wayland/host/wayland_connection.cc
+index a7c0943650f05..2a018c632898d 100644
+--- a/ui/ozone/platform/wayland/host/wayland_connection.cc
++++ b/ui/ozone/platform/wayland/host/wayland_connection.cc
+@@ -8,6 +8,7 @@
+ #include <extended-drag-unstable-v1-client-protocol.h>
+ #include <presentation-time-client-protocol.h>
+ #include <xdg-shell-client-protocol.h>
++#include <bs-z-order-unstable-v1-client-protocol.h>
+ 
+ #include <algorithm>
+ #include <cstdint>
+@@ -75,6 +76,7 @@ namespace {
+ // The maximum supported versions for a given interface.
+ // The version bound will be the minimum of the value and the version
+ // advertised by the server.
++constexpr uint32_t kMaxBsZOrderVersion = 1;
+ constexpr uint32_t kMaxCompositorVersion = 4;
+ constexpr uint32_t kMaxKeyboardExtensionVersion = 2;
+ constexpr uint32_t kMaxXdgShellVersion = 5;
+@@ -490,7 +492,7 @@ void WaylandConnection::OnGlobal(void* data,
+                                  uint32_t version) {
+   auto* self = static_cast<WaylandConnection*>(data);
+   DCHECK(self);
+-  self->HandleGlobal(registry, name, interface, version);
++  self->HandleGlobal(data, registry, name, interface, version);
+ }
+ 
+ // static
+@@ -528,13 +530,24 @@ void WaylandConnection::OnClockId(void* data,
+   connection->presentation_clk_id_ = clk_id;
+ }
+ 
+-void WaylandConnection::HandleGlobal(wl_registry* registry,
++void WaylandConnection::HandleGlobal(void* data,
++                                     wl_registry* registry,
+                                      uint32_t name,
+                                      const char* interface,
+                                      uint32_t version) {
++  auto* connection = static_cast<WaylandConnection*>(data);
++
+   auto factory_it = global_object_factories_.find(interface);
+   if (factory_it != global_object_factories_.end()) {
+     (*factory_it->second)(this, registry, name, interface, version);
++  } else if (!connection->bs_z_order_v1_ &&
++             strcmp(interface, "bs_z_order_v1") == 0) {
++    connection->bs_z_order_v1_ = wl::Bind<bs_z_order_v1>(
++        registry, name, std::min(version, kMaxBsZOrderVersion));
++    if (!connection->bs_z_order_v1_) {
++      LOG(ERROR) << "Failed to bind to bs_z_order_v1 global";
++      return;
++    }
+   } else if (!compositor_ && strcmp(interface, "wl_compositor") == 0) {
+     compositor_ = wl::Bind<wl_compositor>(
+         registry, name, std::min(version, kMaxCompositorVersion));
+diff --git a/ui/ozone/platform/wayland/host/wayland_connection.h b/ui/ozone/platform/wayland/host/wayland_connection.h
+index c78d900d03acd..2cb8078dbaab0 100644
+--- a/ui/ozone/platform/wayland/host/wayland_connection.h
++++ b/ui/ozone/platform/wayland/host/wayland_connection.h
+@@ -110,6 +110,8 @@ class WaylandConnection {
+   // error. Called by WaylandEventWatcher.
+   void SetShutdownCb(base::OnceCallback<void()> shutdown_cb);
+ 
++  bs_z_order_v1* bs_z_order() const { return bs_z_order_v1_.get(); }
++
+   // A correct display must be chosen when creating objects or calling
+   // roundrips.  That is, all the methods that deal with polling, pulling event
+   // queues, etc, must use original display. All the other methods that create
+@@ -422,7 +424,8 @@ class WaylandConnection {
+                         wp_presentation* presentation,
+                         uint32_t clk_id);
+ 
+-  void HandleGlobal(wl_registry* registry,
++  void HandleGlobal(void* data,
++                    wl_registry* registry,
+                     uint32_t name,
+                     const char* interface,
+                     uint32_t version);
+@@ -430,6 +433,7 @@ class WaylandConnection {
+   base::flat_map<std::string, wl::GlobalObjectFactory> global_object_factories_;
+ 
+   uint32_t compositor_version_ = 0;
++  wl::Object<bs_z_order_v1> bs_z_order_v1_;
+   wl::Object<wl_display> display_;
+   wl::Object<wl_proxy> wrapped_display_;
+   wl::Object<wl_event_queue> event_queue_;
+diff --git a/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc b/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc
+index bd3f0ce0d7e29..dd66fd2e2a635 100644
+--- a/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc
++++ b/ui/ozone/platform/wayland/host/xdg_toplevel_wrapper_impl.cc
+@@ -6,6 +6,7 @@
+ 
+ #include <aura-shell-client-protocol.h>
+ #include <xdg-decoration-unstable-v1-client-protocol.h>
++#include <bs-z-order-unstable-v1-client-protocol.h>
+ 
+ #include "base/logging.h"
+ #include "base/notreached.h"
+@@ -577,6 +578,10 @@ void XDGToplevelWrapperImpl::SetZOrder(ZOrderLevel z_order) {
+     zaura_toplevel_set_z_order(aura_toplevel_.get(),
+                                ToZauraToplevelZOrderLevel(z_order));
+   }
++  else if (!aura_toplevel_ && connection_->bs_z_order()) {
++    // The z-index we get if we are using xdg on a BS device is an absolute value.
++    bs_z_order_v1_set_z_index(connection_->bs_z_order(), wayland_window_->root_surface()->surface(), (int)z_order);
++  }
+ }
+ 
+ bool XDGToplevelWrapperImpl::SupportsActivation() {
