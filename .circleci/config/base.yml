@@ -1973,7 +1973,6 @@ jobs:
       <<: *env-macos-build
       <<: *env-apple-silicon
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-      GENERATE_CROSS_ARCH_SNAPSHOT: true
     steps:
       - electron-build:
           persist: true
