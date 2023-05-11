@@ -625,7 +625,7 @@ step-electron-chromedriver-build: &step-electron-chromedriver-build
         electron/script/strip-binaries.py --target-cpu="$TARGET_ARCH" --file $PWD/$CHROMEDRIVER_DIR/chromedriver
       fi
       ninja -C $CHROMEDRIVER_DIR electron:electron_chromedriver_zip
-      if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+      if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
         cp out/chromedriver/chromedriver.zip out/Default
       fi
 
