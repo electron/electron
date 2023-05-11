@@ -702,7 +702,7 @@ step-verify-mksnapshot: &step-verify-mksnapshot
     command: |
       if [ "$IS_ASAN" != "1" ]; then
         cd src
-        if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
+        if [ "`uname`" != "Darwin" ] && ([ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]); then
           python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
         else
           python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
@@ -1942,7 +1942,7 @@ jobs:
   osx-publish-arm64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2023,7 +2023,7 @@ jobs:
   mas-publish-arm64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
