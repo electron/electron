@@ -52,3 +52,6 @@ use_perfetto_client_library = false
 
 # Ref: https://chromium-review.googlesource.com/c/chromium/src/+/4402277
 enable_check_raw_ptr_fields = false
+
+# Disables the builtins PGO for V8
+v8_builtins_profiling_log_file = ""
