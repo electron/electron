@@ -32,6 +32,25 @@ This directory contains helpful, reusable modules for making our tests more cons
 * `spec-conditional`: Specifying preconditions for specs
   * `ifit`, `ifdescribe`: Provide a precondition for a spec (`it` or `describe`), otherwise skip it.
 
+### Older Utilities
+
+These utilities are much older than the ones above, but are in widespread use in our test suite. They are not as well-documented, but may still prove useful in certain test suties. You may have to consult the code to understand how to best use them.
+
+* `spec-helpers`: Catch-all module for various helpers that don't fit elsewhere
+  * `defer`: Adds a function to clean up some resource after tests finish running.
+    * `runCleanupFunctions`: Eagerly run all deferred cleanup functions.
+  * Remote control & remote context: Historically, some of our tests were written to run in the renderer process. These utilities are a sort of compatibility layer for those tests, allowing them to work without major rewrites. Consider writing new tests in a way that doesn't require these utilities.
+    * `startRemoteControlApp`
+    * `makeRemoteContext`
+    * `getRemoteContext`: Reuse or create a remote context for the current test spec closure.
+    * `useRemoteContext`: Creates a new remote context for the current test spec closure. This new context is cleaned up and removed at the end of the test scope.
+    * `itremote`: Similar to the `it` test descriptor, but the provided closure is stringified and run in the renderer process.
+  * `listen`: Accepts a server (HTTP or HTTPS) and returns a promise that resolves when the server has started listening for incoming connections. The resolved value includes information about the chosen port and a URL to the server.
+* `video-helpers`: A copy of the [whammy](https://github.com/antimatter15/whammy) library. Used to generate WebM videos from a sequence of images.
+* `window-helpers`: Various helpers for working with `BrowserWindow`
+  * `closeWindow`: Close a window and wait for it to be destroyed.
+  * `closeAllWindows`: Close all windows and wait for them to be destroyed.
+
 [AsyncIterator]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols
 [Array.fromAsync]: https://github.com/tc39/proposal-array-from-async
 [node:events:on]: https://nodejs.org/api/events.html#eventsonemitter-eventname-options
