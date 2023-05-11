@@ -35,6 +35,8 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   ElectronPermissionManager& operator=(const ElectronPermissionManager&) =
       delete;
 
+  using USBProtectedClasses = std::vector<uint8_t>;
+
   using StatusCallback =
       base::OnceCallback<void(blink::mojom::PermissionStatus)>;
   using StatusesCallback = base::OnceCallback<void(
@@ -52,6 +54,10 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
 
   using DeviceCheckHandler =
       base::RepeatingCallback<bool(const v8::Local<v8::Object>&)>;
+
+  using ProtectedUSBHandler = base::RepeatingCallback<USBProtectedClasses(
+      const v8::Local<v8::Object>&)>;
+
   using BluetoothPairingHandler =
       base::RepeatingCallback<void(gin_helper::Dictionary, PairCallback)>;
 
@@ -59,6 +65,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   void SetPermissionRequestHandler(const RequestHandler& handler);
   void SetPermissionCheckHandler(const CheckHandler& handler);
   void SetDevicePermissionHandler(const DeviceCheckHandler& handler);
+  void SetProtectedUSBHandler(const ProtectedUSBHandler& handler);
   void SetBluetoothPairingHandler(const BluetoothPairingHandler& handler);
 
   // content::PermissionControllerDelegate:
@@ -108,6 +115,9 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
                               const url::Origin& origin,
                               const base::Value& object,
                               ElectronBrowserContext* browser_context) const;
+
+  USBProtectedClasses CheckProtectedUSBClasses(
+      const USBProtectedClasses& classes) const;
 
  protected:
   void OnPermissionResponse(int request_id,
@@ -159,6 +169,7 @@ class ElectronPermissionManager : public content::PermissionControllerDelegate {
   RequestHandler request_handler_;
   CheckHandler check_handler_;
   DeviceCheckHandler device_permission_handler_;
+  ProtectedUSBHandler protected_usb_handler_;
   BluetoothPairingHandler bluetooth_pairing_handler_;
 
   PendingRequestsMap pending_requests_;

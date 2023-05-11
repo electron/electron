@@ -51,6 +51,13 @@ function createWindow () {
     }
   })
 
+  mainWindow.webContents.session.setUSBProtectedClassesHandler((details) => {
+    return details.protectedClasses.filter((usbClass) => {
+      // Exclude classes except for audio classes
+      return usbClass.indexOf('audio') === -1
+    })
+  })
+
   mainWindow.loadFile('index.html')
 }
 
