@@ -24,9 +24,7 @@ function createWindow () {
     event.preventDefault()
     if (details.deviceList && details.deviceList.length > 0) {
       const deviceToReturn = details.deviceList.find((device) => {
-        if (!grantedDeviceThroughPermHandler || (device.deviceId !== grantedDeviceThroughPermHandler.deviceId)) {
-          return true
-        }
+        return !grantedDeviceThroughPermHandler || (device.deviceId !== grantedDeviceThroughPermHandler.deviceId)
       })
       if (deviceToReturn) {
         callback(deviceToReturn.deviceId)

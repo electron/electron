@@ -1346,7 +1346,7 @@ app.setLoginItemSettings({
   path: updateExe,
   args: [
     '--processStart', `"${exeName}"`,
-    '--process-start-args', `"--hidden"`
+    '--process-start-args', '"--hidden"'
   ]
 })
 ```

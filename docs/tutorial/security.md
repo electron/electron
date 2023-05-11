@@ -742,19 +742,19 @@ You should be validating the `sender` of **all** IPC messages by default.
 ```js title='main.js (Main Process)'
 // Bad
 ipcMain.handle('get-secrets', () => {
-  return getSecrets();
-});
+  return getSecrets()
+})
 
 // Good
 ipcMain.handle('get-secrets', (e) => {
-  if (!validateSender(e.senderFrame)) return null;
-  return getSecrets();
-});
+  if (!validateSender(e.senderFrame)) return null
+  return getSecrets()
+})
 
-function validateSender(frame) {
+function validateSender (frame) {
   // Value the host of the URL using an actual URL parser and an allowlist
-  if ((new URL(frame.url)).host === 'electronjs.org') return true;
-  return false;
+  if ((new URL(frame.url)).host === 'electronjs.org') return true
+  return false
 }
 ```
 
