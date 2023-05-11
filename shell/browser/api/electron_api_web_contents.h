@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
@@ -766,13 +768,13 @@ class WebContents : public ExclusiveAccessContext,
 #endif
 
   // The host webcontents that may contain this webcontents.
-  WebContents* embedder_ = nullptr;
+  RAW_PTR_EXCLUSION WebContents* embedder_ = nullptr;
 
   // Whether the guest view has been attached.
   bool attached_ = false;
 
   // The zoom controller for this webContents.
-  WebContentsZoomController* zoom_controller_ = nullptr;
+  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
 
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
@@ -810,7 +812,7 @@ class WebContents : public ExclusiveAccessContext,
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   // The stored InspectableWebContents object.
   // Notice that inspectable_web_contents_ must be placed after
@@ -835,7 +837,7 @@ class WebContents : public ExclusiveAccessContext,
 #endif
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
-  content::RenderFrameHost* fullscreen_frame_ = nullptr;
+  raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;
 

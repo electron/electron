@@ -41,7 +41,7 @@ index 707a8346ea5bf49e20bac5669d777a8ab247dc51..69c82dd102e7e746db68c6ab4768a40a
      content::RenderProcessHost* host) {
    InitForRenderer(host);
 diff --git a/chrome/browser/spellchecker/spellcheck_service.h b/chrome/browser/spellchecker/spellcheck_service.h
-index 00e613bb4ca4346eb0b0e65b9b818d817ac724d9..bd9745d29a61944a23b83b274aace2ea8cb37a0f 100644
+index 00e613bb4ca4346eb0b0e65b9b818d817ac724d9..1b40931b8654b80e9a5fd0f170217b4b008eaae9 100644
 --- a/chrome/browser/spellchecker/spellcheck_service.h
 +++ b/chrome/browser/spellchecker/spellcheck_service.h
 @@ -135,6 +135,8 @@ class SpellcheckService : public KeyedService,
@@ -57,7 +57,7 @@ index 00e613bb4ca4346eb0b0e65b9b818d817ac724d9..bd9745d29a61944a23b83b274aace2ea
    // A pointer to the BrowserContext which this service refers to.
    raw_ptr<content::BrowserContext> context_;
  
-+  SpellcheckHunspellDictionary::Observer* hunspell_observer_ = nullptr;
++  raw_ptr<SpellcheckHunspellDictionary::Observer> hunspell_observer_ = nullptr;
 +
    std::unique_ptr<SpellCheckHostMetrics> metrics_;
  

@@ -8,6 +8,8 @@
 
 #include "base/containers/contains.h"
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -194,8 +196,8 @@ class GtkMessageBox : public NativeWindowObserver {
 
   bool checkbox_checked_ = false;
 
-  NativeWindow* parent_;
-  GtkWidget* dialog_;
+  raw_ptr<NativeWindow> parent_;
+  RAW_PTR_EXCLUSION GtkWidget* dialog_;
   MessageBoxCallback callback_;
 };
 

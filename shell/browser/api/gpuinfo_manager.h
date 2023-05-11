@@ -8,6 +8,7 @@
 #include <memory>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "content/browser/gpu/gpu_data_manager_impl.h"  // nogncheck
 #include "content/public/browser/gpu_data_manager.h"
 #include "content/public/browser/gpu_data_manager_observer.h"
@@ -42,7 +43,7 @@ class GPUInfoManager : public content::GpuDataManagerObserver {
   // This set maintains all the promises that should be fulfilled
   // once we have the complete information data
   std::vector<gin_helper::Promise<base::Value>> complete_info_promise_set_;
-  content::GpuDataManagerImpl* gpu_data_manager_;
+  raw_ptr<content::GpuDataManagerImpl> gpu_data_manager_;
 };
 
 }  // namespace electron

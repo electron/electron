@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 #define ELECTRON_SHELL_BROWSER_NOTIFICATIONS_LINUX_LIBNOTIFY_NOTIFICATION_H_
 
+#include "base/memory/raw_ptr_exclusion.h"
 #include "library_loaders/libnotify_loader.h"
 #include "shell/browser/notifications/notification.h"
 #include "ui/base/glib/glib_signal.h"
@@ -34,7 +35,7 @@ class LibnotifyNotification : public Notification {
                      NotifyNotification*,
                      char*);
 
-  NotifyNotification* notification_ = nullptr;
+  RAW_PTR_EXCLUSION NotifyNotification* notification_ = nullptr;
 };
 
 }  // namespace electron

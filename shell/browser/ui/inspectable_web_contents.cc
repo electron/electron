@@ -13,6 +13,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/json/string_escape.h"
+#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
@@ -314,7 +315,7 @@ class InspectableWebContents::NetworkResourceLoader
   void OnRetry(base::OnceClosure start_retry) override {}
 
   const int stream_id_;
-  InspectableWebContents* const bindings_;
+  raw_ptr<InspectableWebContents> const bindings_;
   const network::ResourceRequest resource_request_;
   const net::NetworkTrafficAnnotationTag traffic_annotation_;
   std::unique_ptr<network::SimpleURLLoader> loader_;

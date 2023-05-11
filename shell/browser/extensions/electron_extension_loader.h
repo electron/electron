@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "extensions/browser/extension_registrar.h"
@@ -80,7 +81,7 @@ class ElectronExtensionLoader : public ExtensionRegistrar::Delegate {
   bool CanDisableExtension(const Extension* extension) override;
   bool ShouldBlockExtension(const Extension* extension) override;
 
-  content::BrowserContext* browser_context_;  // Not owned.
+  raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
 
   // Registers and unregisters extensions.
   ExtensionRegistrar extension_registrar_;

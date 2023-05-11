@@ -7,6 +7,7 @@
 
 #include <memory>
 
+#include "base/memory/raw_ptr.h"
 #include "gin/public/isolate_holder.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8-locker.h"
@@ -42,7 +43,7 @@ class JavascriptEnvironment {
   v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   gin::IsolateHolder isolate_holder_;
   v8::Locker locker_;
 
@@ -62,7 +63,7 @@ class NodeEnvironment {
   node::Environment* env() { return env_; }
 
  private:
-  node::Environment* env_;
+  raw_ptr<node::Environment> env_;
 };
 
 }  // namespace electron

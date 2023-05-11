@@ -9,6 +9,7 @@
 #include <string>
 
 #include "base/compiler_specific.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/weak_ptr.h"
 #include "base/one_shot_event.h"
@@ -92,7 +93,7 @@ class ElectronExtensionSystem : public ExtensionSystem {
       scoped_refptr<Extension> extension);
   void LoadComponentExtensions();
 
-  content::BrowserContext* browser_context_;  // Not owned.
+  raw_ptr<content::BrowserContext> browser_context_;  // Not owned.
 
   std::unique_ptr<ServiceWorkerManager> service_worker_manager_;
   std::unique_ptr<QuotaService> quota_service_;

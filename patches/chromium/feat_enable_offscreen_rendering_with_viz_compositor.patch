@@ -583,7 +583,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index c9f14ed6547ba1f5cdaade063452036ac402885a..2d1718afbea84b3e4395ce511e2618848ef85859 100644
+index c9f14ed6547ba1f5cdaade063452036ac402885a..ddb28fd6f7549759df7e3b7d6b309cd982e199af 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -625,7 +625,7 @@ index c9f14ed6547ba1f5cdaade063452036ac402885a..2d1718afbea84b3e4395ce511e261884
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
-+  CompositorDelegate* delegate_ = nullptr;
++  raw_ptr<CompositorDelegate> delegate_ = nullptr;
 +
    // The root of the Layer tree drawn by this compositor.
    raw_ptr<Layer> root_layer_ = nullptr;

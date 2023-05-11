@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 #define ELECTRON_SHELL_BROWSER_ELECTRON_DOWNLOAD_MANAGER_DELEGATE_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/download_manager_delegate.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -58,7 +59,7 @@ class ElectronDownloadManagerDelegate
 
   base::FilePath last_saved_directory_;
 
-  content::DownloadManager* download_manager_;
+  raw_ptr<content::DownloadManager> download_manager_;
   base::WeakPtrFactory<ElectronDownloadManagerDelegate> weak_ptr_factory_{this};
 };
 

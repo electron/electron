@@ -35,7 +35,7 @@ index 57a810427461b8240d5f8da88e6ae2815b06c69a..a114c8a72670037fe0f4b9d95c16a670
    CHECK(view_.get());
  
 diff --git a/content/public/browser/web_contents.h b/content/public/browser/web_contents.h
-index 8baf744895c941df36d770ad17fca925a1dfd45f..86cb0de1e87a444bdd8d00bc2a981a8abbb94234 100644
+index 8baf744895c941df36d770ad17fca925a1dfd45f..44d75c043805f9bfb4b08741fc652aafc6c50740 100644
 --- a/content/public/browser/web_contents.h
 +++ b/content/public/browser/web_contents.h
 @@ -96,10 +96,13 @@ class BrowserContext;
@@ -57,8 +57,8 @@ index 8baf744895c941df36d770ad17fca925a1dfd45f..86cb0de1e87a444bdd8d00bc2a981a8a
          network::mojom::WebSandboxFlags::kNone;
  
 +    // Optionally specify the view and delegate view.
-+    content::WebContentsView* view = nullptr;
-+    content::RenderViewHostDelegateView* delegate_view = nullptr;
++    raw_ptr<content::WebContentsView> view = nullptr;
++    raw_ptr<content::RenderViewHostDelegateView> delegate_view = nullptr;
 +
      // Value used to set the last time the WebContents was made active, this is
      // the value that'll be returned by GetLastActiveTime(). If this is left

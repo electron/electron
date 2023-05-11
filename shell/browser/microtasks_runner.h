@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_MICROTASKS_RUNNER_H_
 #define ELECTRON_SHELL_BROWSER_MICROTASKS_RUNNER_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/task/task_observer.h"
 
 namespace v8 {
@@ -29,7 +30,7 @@ class MicrotasksRunner : public base::TaskObserver {
   void DidProcessTask(const base::PendingTask& pending_task) override;
 
  private:
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
 };
 
 }  // namespace electron
