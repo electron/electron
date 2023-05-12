@@ -1277,22 +1277,20 @@ class NotificationActivator final
            _In_reads_(dataCount) const NOTIFICATION_USER_INPUT_DATA* data,
            ULONG dataCount) override {
     // packing user input structs into stream
-    std::wstringstream stm;
+    std::wstringstream json;
     // feat: Refine notification-activation for cold start
-    stm << L"[";  // json array open brace
+    json << L"[";  // json array open brace
     std::for_each(
         data, data + dataCount, [&](const NOTIFICATION_USER_INPUT_DATA& item) {
-          stm << item
-              // note: c-tor for empty string is fully valid
-              // according to standard, test is here https://ideone.com/6yi3PL
-              // avoid problem with last
-              << std::wstring((&item + 1 == data + dataCount) ? L"" : L",");
+          json << item
+               // avoid problem with last delimeter durig array-items packing
+               << (--dataCount == 0 ? L"" : L",");
         });
-    stm << L"]";  // json array close brace
+    json << L"]";  // json array close brace
     auto* app = api::App::Get();
     if (app)
       app->Emit("notification-activation", std::wstring(invokedArgs),
-                stm.str());
+                json.str());
     return S_OK;
   }
 };
