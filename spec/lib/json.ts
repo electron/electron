@@ -10,7 +10,7 @@ export type ToJson =
   | null
   | undefined // NOTE: `undefined` doesn't exist in JSON, but it *is* accepted by `JSON.stringify`.
   | readonly ToJson[]
-  | { [P in string]: ToJson }
+  | {}
   | { toJSON(): string };
 
 /**
