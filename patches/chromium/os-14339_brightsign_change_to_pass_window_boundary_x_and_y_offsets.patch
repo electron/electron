@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tariq Bashir <tbashir@brightsign.biz>
+Date: Thu, 11 May 2023 17:53:08 +0100
+Subject: OS-14339: BrightSign change to pass window boundary x and y offsets
+ to SetGeometry
+
+Patch to set the x & y offsets from the window bounds in the SetWindowGeometry call.
+This ensures that the offsets are passed to the Wayland compositor through the
+xdg_surface_set_window_geometry call. This is because we don't support aura shell
+and hence cannot use RequestWindowBounds calls to set the offset.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+index 9113d5e4be1ca48567c79522cb38cca9981b4ffc..4a7e082f5390efad0432d4d56b0116a9fd7a6ee7 100644
+--- a/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
++++ b/ui/ozone/platform/wayland/host/wayland_toplevel_window.cc
+@@ -621,6 +621,13 @@ void WaylandToplevelWindow::SetWindowGeometry(gfx::Size size_dip) {
+   const auto insets = GetDecorationInsetsInDIP();
+   if (state_ == PlatformWindowState::kNormal && !insets.IsEmpty())
+     geometry_dip.Inset(insets);
++
++  // BrightSign modification to set the x & y offsets from the window bounds
++  // in the SetWindowGeometry call. This is because we don't support aura shell
++  // and hence cannot use RequestWindowBounds calls to set the offset.
++  geometry_dip.set_x(GetBoundsInDIP().x());
++  geometry_dip.set_y(GetBoundsInDIP().y());
++
+   shell_toplevel_->SetWindowGeometry(geometry_dip);
+ }
+ 
