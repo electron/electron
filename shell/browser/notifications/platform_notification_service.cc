@@ -202,7 +202,7 @@ class NotificationDelegateImpl final : public electron::NotificationDelegate {
 
  private:
   std::string notification_id_;
-  content::BrowserContext*
+  raw_ptr<content::BrowserContext>
       context_;  // context is necessary for Event dispatching
   GURL origin_;
   const bool is_persistent_;
