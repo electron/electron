@@ -56,7 +56,7 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
   NSString* hash = [integrity_payload objectForKey:@"hash"];
   if (algorithm && hash && [algorithm isEqualToString:@"SHA256"]) {
     IntegrityPayload header_integrity;
-    header_integrity.algorithm = HashAlgorithm::SHA256;
+    header_integrity.algorithm = HashAlgorithm::kSHA256;
     header_integrity.hash = base::SysNSStringToUTF8(hash);
     return header_integrity;
   }
