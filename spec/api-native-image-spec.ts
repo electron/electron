@@ -449,7 +449,7 @@ describe('nativeImage module', () => {
 
     it('returns the correct size if larger than the initial image', async () => {
       // capybara.png is a 128x128 image.
-      const imgPath = path.join(fixturesPath, 'assets', 'capybara.png');
+      const imgPath = fixturePath('assets', 'capybara.png');
       const size = { width: 256, height: 256 };
       const result = await nativeImage.createThumbnailFromPath(imgPath, size);
       expect(result.getSize()).to.deep.equal(size);
@@ -457,7 +457,7 @@ describe('nativeImage module', () => {
 
     it('returns the correct size if is the same as the initial image', async () => {
       // capybara.png is a 128x128 image.
-      const imgPath = path.join(fixturesPath, 'assets', 'capybara.png');
+      const imgPath = fixturePath('assets', 'capybara.png');
       const size = { width: 128, height: 128 };
       const result = await nativeImage.createThumbnailFromPath(imgPath, size);
       expect(result.getSize()).to.deep.equal(size);
@@ -465,7 +465,7 @@ describe('nativeImage module', () => {
 
     it('returns the correct size if smaller than the initial image', async () => {
       // capybara.png is a 128x128 image.
-      const imgPath = path.join(fixturesPath, 'assets', 'capybara.png');
+      const imgPath = fixturePath('assets', 'capybara.png');
       const maxSize = { width: 64, height: 64 };
       const result = await nativeImage.createThumbnailFromPath(imgPath, maxSize);
       expect(result.getSize()).to.deep.equal(maxSize);

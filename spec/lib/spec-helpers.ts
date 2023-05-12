@@ -1,5 +1,4 @@
 import * as childProcess from 'child_process';
-import * as path from 'path';
 import * as http from 'http';
 import * as https from 'https';
 import * as net from 'net';
@@ -7,6 +6,7 @@ import * as v8 from 'v8';
 import * as url from 'url';
 import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
+import { fixturePath } from './fixtures';
 
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];
@@ -60,7 +60,7 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp (extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
+  const appPath = fixturePath('apps', 'remote-control');
   const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
   appProcess.stderr.on('data', d => {
     process.stderr.write(d);

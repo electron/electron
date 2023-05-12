@@ -34,7 +34,7 @@ This directory contains helpful, reusable modules for making our tests more cons
 
 ### Older Utilities
 
-These utilities are much older than the ones above, but are in widespread use in our test suite. They are not as well-documented, but may still prove useful in certain test suties. You may have to consult the code to understand how to best use them.
+These utilities are older than the ones above, but are widely used in our test suite. They still prove useful in certain test suites. You may have to consult their source code to understand how to best use them.
 
 * `spec-helpers`: Catch-all module for various helpers that don't fit elsewhere
   * `defer`: Adds a function to clean up some resource after tests finish running.
@@ -50,6 +50,10 @@ These utilities are much older than the ones above, but are in widespread use in
 * `window-helpers`: Various helpers for working with `BrowserWindow`
   * `closeWindow`: Close a window and wait for it to be destroyed.
   * `closeAllWindows`: Close all windows and wait for them to be destroyed.
+* `get-files`
+  * `getFiles`: Walks the paths within a directory and collects them into a list, optionally filtering by a predicate function.
+* `pipe-transport`
+  * `PipeTransport`: A small pipe transport for talking to Electron over CDP.
 
 [AsyncIterator]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Iteration_protocols#the_async_iterator_and_async_iterable_protocols
 [Array.fromAsync]: https://github.com/tc39/proposal-array-from-async

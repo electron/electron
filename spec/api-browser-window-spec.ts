@@ -14,18 +14,10 @@ import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { emittedN, findEmit } from './lib/events';
 import { captureScreenBitmap } from './lib/screen-capture';
-import { areColorsSimilar } from './lib/color';
+import { HexColors, areColorsSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 import { ifdescribe, ifit } from './lib/spec-conditional';
 import { jsont } from './lib/json';
-
-const Colors = {
-  GREEN: '#00b140',
-  PURPLE: '#6a0dad',
-  RED: '#ff0000',
-  BLUE: '#0000ff',
-  WHITE: '#ffffff'
-};
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -393,7 +385,7 @@ describe('BrowserWindow module', () => {
       });
 
       const mediaStarted = once(w.webContents, 'media-started-playing');
-      w.loadFile(path.join(fixtures, 'cat-spin.mp4'));
+      w.loadFile(fixturePath('cat-spin.mp4'));
       await mediaStarted;
     });
     it('should set `mainFrame = false` on did-fail-load events in iframes', async () => {
@@ -630,7 +622,7 @@ describe('BrowserWindow module', () => {
             w.close();
             done();
           });
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          w.loadFile(fixturePath('pages', 'will-navigate.html'));
         });
 
         it('can be prevented', (done) => {
@@ -650,7 +642,7 @@ describe('BrowserWindow module', () => {
               }
             }
           });
-          w.loadFile(path.join(fixtures, 'pages', 'will-navigate.html'));
+          w.loadFile(fixturePath('pages', 'will-navigate.html'));
         });
 
         it('can be prevented when navigating subframe', (done) => {
@@ -681,7 +673,7 @@ describe('BrowserWindow module', () => {
         });
 
         it('is triggered when navigating from file: to http:', async () => {
-          await w.loadFile(path.join(fixtures, 'api', 'blank.html'));
+          await w.loadFile(fixturePath('api', 'blank.html'));
           w.webContents.executeJavaScript(`location.href = ${JSON.stringify(url)}`);
           const navigatedTo = await new Promise(resolve => {
             w.webContents.once('will-frame-navigate', (e) => {
@@ -3889,7 +3881,7 @@ describe('BrowserWindow module', () => {
             }
           }
         });
-        await w.loadFile(path.join(fixtures, 'pages', 'content.html'));
+        await w.loadFile(fixturePath('pages', 'content.html'));
         const fontFamily = await w.webContents.executeJavaScript("window.getComputedStyle(document.getElementsByTagName('p')[0])['font-family']", true);
         expect(fontFamily).to.equal('Impact');
       });
@@ -6042,7 +6034,7 @@ describe('BrowserWindow module', () => {
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: Colors.GREEN,
+        backgroundColor: HexColors.GREEN,
         hasShadow: false
       });
 
@@ -6070,8 +6062,8 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(leftHalfColor, Colors.GREEN)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, Colors.RED)).to.be.true();
+      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
+      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
     });
 
     ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
@@ -6080,7 +6072,7 @@ describe('BrowserWindow module', () => {
       const backgroundWindow = new BrowserWindow({
         ...display.bounds,
         frame: false,
-        backgroundColor: Colors.PURPLE,
+        backgroundColor: HexColors.PURPLE,
         hasShadow: false
       });
 
@@ -6107,7 +6099,7 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, Colors.PURPLE)).to.be.true();
+      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -6124,8 +6116,8 @@ describe('BrowserWindow module', () => {
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
         await setTimeout(500);
-        const screenCapture = await captureScreen();
-        const centerColor = getPixelColor(screenCapture, {
+        const screenCapture = await captureScreenBitmap();
+        const centerColor = screenCapture.colorAt({
           x: display.size.width / 2,
           y: display.size.height / 2
         });
@@ -6147,7 +6139,7 @@ describe('BrowserWindow module', () => {
       const w = new BrowserWindow({
         ...display.bounds,
         show: true,
-        backgroundColor: Colors.BLUE
+        backgroundColor: HexColors.BLUE
       });
 
       w.loadURL('about:blank');
@@ -6159,7 +6151,7 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, Colors.BLUE)).to.be.true();
+      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
     });
   });
 });

@@ -5,7 +5,7 @@ import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main
 import { ifit } from './lib/spec-conditional';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'events';
-import { fixturePath } from './lib/fixtures';
+import { FIXTURES_PATH, fixturePath } from './lib/fixtures';
 
 const baseFixturePath = fixturePath('api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -364,7 +364,7 @@ describe('utilityProcess module', () => {
 
     it('does not crash when running eval', async () => {
       const child = utilityProcess.fork('./eval.js', [], {
-        cwd: fixturesPath,
+        cwd: FIXTURES_PATH,
         stdio: 'ignore'
       });
       await once(child, 'spawn');

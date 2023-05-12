@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
 import * as ChildProcess from 'child_process';
-import * as url from 'url';
 import * as http from 'http';
 import * as fs from 'fs';
 import * as qs from 'querystring';
@@ -10,10 +9,11 @@ import * as stream from 'stream';
 import { EventEmitter, once } from 'events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { WebmGenerator } from './lib/video-helpers';
-import { listen, defer, ifit } from './lib/spec-helpers';
+import { listen, defer } from './lib/spec-helpers';
 import { setTimeout } from 'timers/promises';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 import { jsont } from './lib/json';
+import { ifit } from './lib/spec-conditional';
 
 const registerStringProtocol = protocol.registerStringProtocol;
 const registerBufferProtocol = protocol.registerBufferProtocol;
@@ -1278,7 +1278,7 @@ describe('protocol module', () => {
     });
 
     it('can forward to file', async () => {
-      protocol.handle('test-scheme', () => net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString()));
+      protocol.handle('test-scheme', () => net.fetch(fixtureFileURL('hello.txt')));
       defer(() => { protocol.unhandle('test-scheme'); });
 
       const body = await net.fetch('test-scheme://foo').then(r => r.text());
@@ -1316,7 +1316,7 @@ describe('protocol module', () => {
     it('can receive file postData from loadURL', async () => {
       protocol.handle('test-scheme', (req) => new Response(req.body));
       defer(() => { protocol.unhandle('test-scheme'); });
-      await contents.loadURL('test-scheme://foo', { postData: [{ type: 'file', filePath: path.join(fixturesPath, 'hello.txt'), length: 'hello world\n'.length, offset: 0, modificationTime: 0 }] });
+      await contents.loadURL('test-scheme://foo', { postData: [{ type: 'file', filePath: fixturePath('hello.txt'), length: 'hello world\n'.length, offset: 0, modificationTime: 0 }] });
       expect(await contents.executeJavaScript('document.documentElement.textContent')).to.equal('hello world\n');
     });
 
@@ -1331,7 +1331,7 @@ describe('protocol module', () => {
       await dbg.sendCommand('DOM.setFileInputFiles', {
         nodeId: fileInputNodeId,
         files: [
-          path.join(fixturesPath, 'hello.txt')
+          fixturePath('hello.txt')
         ]
       });
       const navigated = once(contents, 'did-finish-load');

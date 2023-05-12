@@ -273,7 +273,7 @@ describe('app module', () => {
           `argument ${arg} is missing from received second args`);
       }
       expect(secondInstanceDataReceived).to.be.deep.equal(testArgs.expectedAdditionalData,
-        jsont`received data ${secondInstanceDataReceived} is not equal to expected data ${testArgs.expectedAdditionalData}.`);
+        jsont`received data ${secondInstanceDataReceived} is not equal to expected data ${testArgs.expectedAdditionalData as any}.`);
     }
 
     it('passes arguments to the second-instance event no additional data', async () => {

@@ -11,7 +11,7 @@ import { EventEmitter, once } from 'events';
 import { promisify } from 'util';
 import { defer, itremote, listen } from './lib/spec-helpers';
 import { ifdescribe, ifit } from './lib/spec-conditional';
-import { PipeTransport } from './pipe-transport';
+import { PipeTransport } from './lib/pipe-transport';
 import * as ws from 'ws';
 import { setTimeout } from 'timers/promises';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';

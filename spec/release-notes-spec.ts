@@ -3,7 +3,7 @@ import { expect } from 'chai';
 import * as notes from '../script/release/notes/notes.js';
 import * as path from 'path';
 import * as sinon from 'sinon';
-import { fixturePath } from './lib/fixtures.js';
+import { fixturePath } from './lib/fixtures';
 
 /* Fake a Dugite GitProcess that only returns the specific
    commits that we want to test */

@@ -1,4 +1,15 @@
 /**
+ * Common colors used by specs.
+ */
+export const HexColors = {
+  GREEN: '#00b140',
+  PURPLE: '#6a0dad',
+  RED: '#ff0000',
+  BLUE: '#0000ff',
+  WHITE: '#ffffff'
+};
+
+/**
  * Represents a color in either RGB or sRGB color space, depending on context.
  */
 export interface Color {

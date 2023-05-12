@@ -1,10 +1,11 @@
 import { BrowserWindow, screen } from 'electron';
 import { expect, assert } from 'chai';
-import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
-import { ifit } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 import { closeAllWindows } from './lib/window-helpers';
 import { once } from 'events';
 import { setTimeout as setTimeoutAsync } from 'timers/promises';
+import { captureScreenBitmap } from './lib/screen-capture';
+import { HexColors, areColorsSimilar } from './lib/color';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;
@@ -206,8 +207,8 @@ describe('webContents.setWindowOpenHandler', () => {
       childWindow.setBounds(display.bounds);
       await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
       await setTimeoutAsync(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });

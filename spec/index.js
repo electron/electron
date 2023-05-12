@@ -133,7 +133,7 @@ app.whenReady().then(async () => {
     return true;
   };
 
-  const { getFiles } = require('./get-files');
+  const { getFiles } = require('./lib/get-files');
   const testFiles = await getFiles(__dirname, { filter });
   testFiles.sort().forEach((file) => {
     mocha.addFile(file);
