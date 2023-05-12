@@ -279,7 +279,7 @@ step-gclient-sync: &step-gclient-sync
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
         if [ "$IS_RELEASE" != "true" ]; then
           # Re-export all the patches to check if there were changes.
-          python src/electron/script/export_all_patches.py src/electron/patches/config.json
+          python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
           git update-index --refresh || true
           if ! git diff-index --quiet HEAD --; then
@@ -680,9 +680,9 @@ step-verify-mksnapshot: &step-verify-mksnapshot
       if [ "$IS_ASAN" != "1" ]; then
         cd src
         if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+          python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
         else
-          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+          python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
         fi
       fi
 
@@ -692,7 +692,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     command: |
       if [ "$IS_ASAN" != "1" ]; then
         cd src
-        python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+        python3 electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
       fi
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
@@ -818,7 +818,7 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         elif [ "`uname`" == "Darwin" ]; then
           cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.dylib" out/Default
         fi
-        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
+        python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
         # Clean up so that ninja does not get confused
