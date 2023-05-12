@@ -332,7 +332,7 @@ class NativeWindow : public base::SupportsUserData,
   // Handle fullscreen transitions.
   void HandlePendingFullscreenTransitions();
 
-  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+  enum class FullScreenTransitionState { kEntering, kExiting, kNone };
 
   void set_fullscreen_transition_state(FullScreenTransitionState state) {
     fullscreen_transition_state_ = state;
@@ -341,7 +341,7 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_state_;
   }
 
-  enum class FullScreenTransitionType { HTML, NATIVE, NONE };
+  enum class FullScreenTransitionType { kHTML, kNative, kNone };
 
   void set_fullscreen_transition_type(FullScreenTransitionType type) {
     fullscreen_transition_type_ = type;
@@ -416,9 +416,9 @@ class NativeWindow : public base::SupportsUserData,
 
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::NONE;
+      FullScreenTransitionState::kNone;
   FullScreenTransitionType fullscreen_transition_type_ =
-      FullScreenTransitionType::NONE;
+      FullScreenTransitionType::kNone;
 
  private:
   std::unique_ptr<views::Widget> widget_;
