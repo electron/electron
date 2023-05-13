@@ -4,18 +4,19 @@ This directory contains helpful, reusable modules for making our tests more cons
 
 ## Library Tour
 
-* `async-iter`: Async iterators (i.e. [`AsyncIterator`][AsyncIterator])
-  * `until`, `firstN`: Modify how many elements the iterator emits.
-  * `last`: Retrieve the last element the iterator emits.
-  * `iterable`: Turn any `AsyncIterator` into an `AsyncIterableIterator`.
+* `async-iter`: [Async iterators (`AsyncIterator`)][AsyncIterator]
+  * `firstN`: Limit how many elements an iterator emits.
+  * `find`: Find a matching element in an iterator.
   * `arrayFromAsync`: Implementation of the pending [`Array.fromAsync`][Array.fromAsync] proposal.
+  * `iterable`: Turn any `AsyncIterator` into an `AsyncIterableIterator`.
 * `async-loop`: Async looping
   * `pollUntil`: Run an async function repeatedly until it returns a predicate-satisfying value (or just any truthy value, by default).
 * `color`: Colors
+  * `HexColors`: Common, named hex color strings.
   * `Color`: RGB color interface.
   * `colorFromHex`: Parse 6-digit hex color strings (e.g. `#1a2b3c`).
   * `areColorsSimilar`: Roughly check if two colors are similar enough to be considered the same color.
-* `events`: Events (i.e. `EventEmitter`, `node:events`)
+* `events`: Events (`EventEmitter`, `node:events`)
   * `scopedOn`: Similar to the [`on` helper from `node:events`][node:events:on] but automatically cancelled after the provided closer resolves. Used to clean up event listeners proactively.
   * `emittedN`: Collect the first n emitted arguments from an event emitter.
   * `findEmit`: Resolves when an event emitter emits an event that satisfies a predicate function.
@@ -59,3 +60,15 @@ These utilities are older than the ones above, but are widely used in our test s
 [Array.fromAsync]: https://github.com/tc39/proposal-array-from-async
 [node:events:on]: https://nodejs.org/api/events.html#eventsonemitter-eventname-options
 [fixtures-dir]: ../fixtures/
+
+## Recipes 🍱 🥗 🥘
+
+Here are some common use cases for the various utilities in this library.
+
+### HTTP/HTTPS Server
+
+To do.
+
+### Fixture file paths
+
+To do.
