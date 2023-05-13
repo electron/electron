@@ -17,6 +17,7 @@ def main():
   chromedriver_name = {
     'darwin': 'chromedriver',
     'win32': 'chromedriver.exe',
+    'linux': 'chromedriver',
     'linux2': 'chromedriver'
 }
 
