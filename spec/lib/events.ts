@@ -72,7 +72,7 @@ export async function findEmit (
   eventName: string,
   predicate: (...args: any[]) => boolean
 ): Promise<any[] | undefined> {
-  return scopedOn(emitter, eventName, async (events) =>
-    find(events, predicate)
+  return scopedOn(emitter, eventName, (events) =>
+    find(events, (args) => predicate(...args))
   );
 }

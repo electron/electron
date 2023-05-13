@@ -3425,7 +3425,7 @@ describe('BrowserWindow module', () => {
           }
         }));
 
-        const pageUrl = fixtureFileURL('api', 'sandbox', { search: 'window-open' });
+        const pageUrl = fixtureFileURL('api', 'sandbox.html', { search: 'window-open' });
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
         const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window');

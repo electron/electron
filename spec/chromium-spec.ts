@@ -1426,7 +1426,7 @@ describe('chromium features', () => {
               window.addEventListener('message', function f(e) {
                 resolve(e.data)
               })
-              window.open(${child}, "", "show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}")
+              window.open(${child}, "", ${`show=no,nodeIntegration=${nodeIntegration ? 'yes' : 'no'}`})
             })`);
             if (openerAccessible) {
               expect(childOpenerLocation).to.be.a('string');
