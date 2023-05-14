@@ -71,8 +71,14 @@ export async function findEmit (
   emitter: NodeJS.EventEmitter,
   eventName: string,
   predicate: (...args: any[]) => boolean
-): Promise<any[] | undefined> {
-  return scopedOn(emitter, eventName, (events) =>
+): Promise<any[]> {
+  const result = await scopedOn(emitter, eventName, (events) =>
     find(events, (args) => predicate(...args))
   );
+
+  if (result === undefined) {
+    throw new Error(`No emit of '${eventName}' was found`);
+  }
+
+  return result;
 }
