@@ -995,7 +995,8 @@ WebContents::WebContents(v8::Isolate* isolate,
 
   session_ = Session::FromOrCreate(isolate, GetBrowserContext());
 
-  SetUserAgent(GetBrowserContext()->GetUserAgent(), GetBrowserContext()->GetUserAgentMetadata());
+  SetUserAgent(GetBrowserContext()->GetUserAgent(),
+               GetBrowserContext()->GetUserAgentMetadata());
 
   web_contents->SetUserData(kElectronApiWebContentsKey,
                             std::make_unique<UserDataLink>(GetWeakPtr()));
@@ -1276,7 +1277,8 @@ void WebContents::InitWithSessionAndOptions(
 
   AutofillDriverFactory::CreateForWebContents(web_contents());
 
-  SetUserAgent(GetBrowserContext()->GetUserAgent(), GetBrowserContext()->GetUserAgentMetadata());
+  SetUserAgent(GetBrowserContext()->GetUserAgent(),
+               GetBrowserContext()->GetUserAgentMetadata());
 
   if (is_guest()) {
     NativeWindow* owner_window = nullptr;
@@ -3235,7 +3237,7 @@ v8::Local<v8::Promise> WebContents::LoadURL(gin::Arguments* args,
   if (options.Get("userAgent", &user_agent)) {
     absl::optional<blink::UserAgentMetadata> ua_metadata;
     options.Get("userAgentMetadata", &ua_metadata);
-    SetUserAgent(user_agent, ua_metadata);
+    SetUserAgent(user_agent, std::move(ua_metadata));
   }
 
   std::string extra_headers;
@@ -3702,19 +3704,23 @@ void WebContents::SetUserAgentForJS(gin_helper::Arguments* args) {
   } else {
     gin_helper::ErrorThrower thrower(args->isolate());
     thrower.ThrowError(
-      "Expected options to be a string or an object contains a 'userAgent' string property.");
+        "Expected options to be a string or an object contains a 'userAgent' "
+        "string property.");
     return;
   }
-  SetUserAgent(user_agent, ua_metadata);
+  SetUserAgent(user_agent, std::move(ua_metadata));
 }
 
-void WebContents::SetUserAgent(const std::string& user_agent, absl::optional<blink::UserAgentMetadata> ua_metadata) {
+void WebContents::SetUserAgent(
+    const std::string& user_agent,
+    absl::optional<blink::UserAgentMetadata> ua_metadata) {
   blink::UserAgentOverride ua_override;
   ua_override.ua_string_override = user_agent;
   if (ua_metadata) {
-    ua_override.ua_metadata_override = ua_metadata;
+    ua_override.ua_metadata_override = std::move(ua_metadata);
   } else {
-    ua_override.ua_metadata_override = ElectronBrowserClient::Get()->GetUserAgentMetadata();
+    ua_override.ua_metadata_override =
+        ElectronBrowserClient::Get()->GetUserAgentMetadata();
   }
 
   web_contents()->SetUserAgentOverride(ua_override, false);
@@ -3725,7 +3731,8 @@ std::string WebContents::GetUserAgent() {
 }
 
 blink::UserAgentMetadata WebContents::GetUserAgentMetadata() {
-  return web_contents()->GetUserAgentOverride().ua_metadata_override.value_or(ElectronBrowserClient::Get()->GetUserAgentMetadata());
+  return web_contents()->GetUserAgentOverride().ua_metadata_override.value_or(
+      ElectronBrowserClient::Get()->GetUserAgentMetadata());
 }
 
 v8::Local<v8::Promise> WebContents::SavePage(
