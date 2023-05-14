@@ -1,3 +1,7 @@
+import { assert } from 'chai';
+
+const DEFAULT_COLOR_THRESHOLD = 90;
+
 /**
  * Common colors used by specs.
  */
@@ -36,7 +40,19 @@ export function colorFromHex (hexColor: string): Color {
 }
 
 /**
- * Compare if two colors are withing a threshold of difference, indicating they
+ * Displays a color as a 6-digit hexidecimal number with a leading `#`.
+ */
+function colorAsHexStr (color: Color): string {
+  return (
+    '#' +
+    [color.r, color.b, color.g]
+      .map((n) => n.toString(16).padStart(2, '0'))
+      .join()
+  );
+}
+
+/**
+ * Compare if two colors are within a threshold of difference, indicating they
  * are similar enough to be considered the same.
  *
  * The threshold value can be understood based on the comparison heuristic. This
@@ -45,11 +61,17 @@ export function colorFromHex (hexColor: string): Color {
  * is the maximum distance (literally) between those points where they can still
  * be considered close enough to represent the same point (that is, the same
  * color).
+ *
+ * ### Assertions
+ *
+ * When asserting that colors are similar or dissimilar, consider using the
+ * `expectColorsAreSimilar` and `expectColorsAreDissimilar` functions as they
+ * provide more helpful assertion error messages.
  */
 export function areColorsSimilar (
   color1: Color | string,
   color2: Color | string,
-  threshold: number = 90
+  threshold: number = DEFAULT_COLOR_THRESHOLD
 ): boolean {
   // Coerce both colors into their numeric components
   const {
@@ -69,6 +91,46 @@ export function areColorsSimilar (
   );
 
   return distance <= threshold;
+}
+
+/**
+ * Convenience function that asserts that two colors are within a threshold of
+ * difference, showing a helpful assertion error message if they are not.
+ *
+ * See `areColorsSimilar` for more information on the threshold value.
+ */
+export function expectColorsAreSimilar (
+  color1: Color | string,
+  color2: Color | string,
+  threshold: number = DEFAULT_COLOR_THRESHOLD
+) {
+  const color1str = typeof color1 === 'string' ? color1 : colorAsHexStr(color1);
+  const color2str = typeof color2 === 'string' ? color2 : colorAsHexStr(color2);
+
+  assert(
+    areColorsSimilar(color1, color2, threshold),
+    `expected ${color1str} to be similar (threshold = ${threshold}) to ${color2str}`
+  );
+}
+
+/**
+ * Convenience function that asserts that two colors are not within a threshold
+ * of difference, showing a helpful assertion error message if they are.
+ *
+ * See `areColorsSimilar` for more information on the threshold value.
+ */
+export function expectColorsAreDissimilar (
+  color1: Color | string,
+  color2: Color | string,
+  threshold: number = DEFAULT_COLOR_THRESHOLD
+) {
+  const color1str = typeof color1 === 'string' ? color1 : colorAsHexStr(color1);
+  const color2str = typeof color2 === 'string' ? color2 : colorAsHexStr(color2);
+
+  assert(
+    !areColorsSimilar(color1, color2, threshold),
+    `expected ${color1str} to *not* be similar (threshold = ${threshold}) to ${color2str}`
+  );
 }
 
 /**

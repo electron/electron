@@ -16,6 +16,7 @@ This directory contains helpful, reusable modules for making our tests more cons
   * `Color`: RGB color interface.
   * `colorFromHex`: Parse 6-digit hex color strings (e.g. `#1a2b3c`).
   * `areColorsSimilar`: Roughly check if two colors are similar enough to be considered the same color.
+  * `expectColorsAreSimilar`, `expectColorsAreDissimilar`: Convenience functions that assert that two colors are similar or dissimilar, respectively. These functions display a helpful assertion error message when they fail.
 * `events`: Events (`EventEmitter`, `node:events`)
   * `scopedOn`: Similar to the [`on` helper from `node:events`][node:events:on] but automatically cancelled after the provided closer resolves. Used to clean up event listeners proactively.
   * `emittedN`: Collect the first n emitted arguments from an event emitter.
@@ -65,10 +66,28 @@ These utilities are older than the ones above, but are widely used in our test s
 
 Here are some common use cases for the various utilities in this library.
 
-### HTTP/HTTPS Server
+Each recipe will include a **main idea** that briefly references what utilities to use, followed by a full **code example**, and finally an in-depth **explanation** of how the recipe works.
 
-To do.
+### HTTP/HTTPS Server 🌐
 
-### Fixture file paths
+**Main idea**: To do.
 
-To do.
+**Code example**:
+
+```ts
+// To do.
+```
+
+**Explanation**: To do.
+
+### Fixture file paths 🧱
+
+**Main idea**: To do.
+
+**Code example**:
+
+```ts
+// To do.
+```
+
+**Explanation**: To do.

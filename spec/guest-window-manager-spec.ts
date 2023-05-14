@@ -5,7 +5,7 @@ import { closeAllWindows } from './lib/window-helpers';
 import { once } from 'events';
 import { setTimeout as setTimeoutAsync } from 'timers/promises';
 import { captureScreenBitmap } from './lib/screen-capture';
-import { HexColors, areColorsSimilar } from './lib/color';
+import { HexColors, expectColorsAreDissimilar } from './lib/color';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;
@@ -215,7 +215,7 @@ describe('webContents.setWindowOpenHandler', () => {
 
       try {
         // color-scheme is set to dark so background should not be white
-        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+        expectColorsAreDissimilar(centerColor, HexColors.WHITE);
         done();
       } catch (err) {
         done(err);

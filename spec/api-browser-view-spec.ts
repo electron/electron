@@ -4,9 +4,9 @@ import { closeWindow } from './lib/window-helpers';
 import { defer, startRemoteControlApp } from './lib/spec-helpers';
 import { once } from 'events';
 import { captureScreenBitmap } from './lib/screen-capture';
-import { areColorsSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 import { ifit } from './lib/spec-conditional';
+import { expectColorsAreSimilar } from './lib/color';
 
 describe('BrowserView module', () => {
   let w: BrowserWindow;
@@ -83,7 +83,7 @@ describe('BrowserView module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+      expectColorsAreSimilar(centerColor, WINDOW_BACKGROUND_COLOR);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -109,7 +109,7 @@ describe('BrowserView module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
+      expectColorsAreSimilar(centerColor, VIEW_BACKGROUND_COLOR);
     });
   });
 

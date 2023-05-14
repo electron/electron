@@ -14,7 +14,7 @@ import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 import { emittedN, findEmit } from './lib/events';
 import { captureScreenBitmap } from './lib/screen-capture';
-import { HexColors, areColorsSimilar } from './lib/color';
+import { HexColors, expectColorsAreDissimilar, expectColorsAreSimilar } from './lib/color';
 import { fixtureFileURL, fixturePath } from './lib/fixtures';
 import { ifdescribe, ifit } from './lib/spec-conditional';
 import { jsont } from './lib/json';
@@ -6062,8 +6062,8 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(leftHalfColor, HexColors.GREEN)).to.be.true();
-      expect(areColorsSimilar(rightHalfColor, HexColors.RED)).to.be.true();
+      expectColorsAreSimilar(leftHalfColor, HexColors.GREEN);
+      expectColorsAreSimilar(rightHalfColor, HexColors.RED);
     });
 
     ifit(process.platform === 'darwin')('Allows setting a transparent window via CSS', async () => {
@@ -6099,7 +6099,7 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+      expectColorsAreSimilar(centerColor, HexColors.PURPLE);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -6124,7 +6124,7 @@ describe('BrowserWindow module', () => {
         window.close();
 
         // color-scheme is set to dark so background should not be white
-        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+        expectColorsAreDissimilar(centerColor, HexColors.WHITE);
       }
     });
   });
@@ -6151,7 +6151,7 @@ describe('BrowserWindow module', () => {
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
+      expectColorsAreSimilar(centerColor, HexColors.BLUE);
     });
   });
 });
