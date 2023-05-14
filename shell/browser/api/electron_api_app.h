@@ -222,7 +222,8 @@ class App : public ElectronBrowserClient::Delegate,
   void EnableSandbox(gin_helper::ErrorThrower thrower);
   void SetUserAgentFallback(gin::Arguments* args);
   std::string GetUserAgentFallback();
-  void SetUserAgentMetadataFallback(absl::optional<blink::UserAgentMetadata> ua_meta);
+  void SetUserAgentMetadataFallback(
+      absl::optional<blink::UserAgentMetadata> ua_meta);
   v8::Local<v8::Value> GetUserAgentMetadataFallback(v8::Isolate* isolate);
 
 #if BUILDFLAG(IS_MAC)

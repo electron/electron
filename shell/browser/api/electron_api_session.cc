@@ -779,18 +779,18 @@ void Session::SetUserAgent(gin::Arguments* gin_args) {
   }
 
   auto* network_context =
-    browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
+      browser_context_->GetDefaultStoragePartition()->GetNetworkContext();
   if (has_user_agent) {
     browser_context_->SetUserAgent(user_agent);
     network_context->SetUserAgent(user_agent);
   }
 
   if (has_ua_metadata) {
-    browser_context_->SetUserAgentMetadata(ua_metadata);
+    browser_context_->SetUserAgentMetadata(std::move(ua_metadata));
   }
   if (has_accept_lang) {
     network_context->SetAcceptLanguage(
-      net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang));
+        net::HttpUtil::GenerateAcceptLanguageHeader(accept_lang));
   }
 }
 
@@ -798,8 +798,9 @@ std::string Session::GetUserAgent() {
   return browser_context_->GetUserAgent();
 }
 
-void Session::SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_metadata) {
-  browser_context_->SetUserAgentMetadata(ua_metadata);
+void Session::SetUserAgentMetadata(
+    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+  browser_context_->SetUserAgentMetadata(std::move(ua_metadata));
 }
 
 v8::Local<v8::Value> Session::GetUserAgentMetadata(v8::Isolate* isolate) {

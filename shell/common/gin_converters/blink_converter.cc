@@ -640,9 +640,10 @@ v8::Local<v8::Value> Converter<blink::UserAgentBrandVersion>::ToV8(
 }
 //
 // static
-bool Converter<blink::UserAgentBrandVersion>::FromV8(v8::Isolate* isolate,
-                                                     v8::Local<v8::Value> val,
-                                                     blink::UserAgentBrandVersion* out) {
+bool Converter<blink::UserAgentBrandVersion>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::UserAgentBrandVersion* out) {
   gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;
@@ -662,7 +663,8 @@ v8::Local<v8::Value> Converter<blink::UserAgentMetadata>::ToV8(
     const blink::UserAgentMetadata& val) {
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("brands", ConvertToV8(isolate, val.brand_version_list));
-  dict.Set("fullVersionList", ConvertToV8(isolate, val.brand_full_version_list));
+  dict.Set("fullVersionList",
+           ConvertToV8(isolate, val.brand_full_version_list));
   dict.Set("fullVersion", ConvertToV8(isolate, val.full_version));
   dict.Set("platform", ConvertToV8(isolate, val.platform));
   dict.Set("architecture", ConvertToV8(isolate, val.architecture));
@@ -675,9 +677,10 @@ v8::Local<v8::Value> Converter<blink::UserAgentMetadata>::ToV8(
 }
 //
 // static
-bool Converter<blink::UserAgentMetadata>::FromV8(v8::Isolate* isolate,
-                                                 v8::Local<v8::Value> val,
-                                                 blink::UserAgentMetadata* out) {
+bool Converter<blink::UserAgentMetadata>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    blink::UserAgentMetadata* out) {
   gin_helper::Dictionary dict;
   if (!ConvertFromV8(isolate, val, &dict))
     return false;

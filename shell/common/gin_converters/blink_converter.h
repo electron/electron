@@ -128,12 +128,12 @@ struct Converter<blink::CloneableMessage> {
 };
 
 template <>
-struct Converter<blink::UserAgentBrandVersion > {
+struct Converter<blink::UserAgentBrandVersion> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const blink::UserAgentBrandVersion & in);
+                                   const blink::UserAgentBrandVersion& in);
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     blink::UserAgentBrandVersion * out);
+                     blink::UserAgentBrandVersion* out);
 };
 
 template <>

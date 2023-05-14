@@ -25,7 +25,6 @@
 #include "shell/common/gin_helper/promise.h"
 #include "third_party/blink/public/common/user_agent/user_agent_metadata.h"
 
-
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
 #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"  // nogncheck
 #endif

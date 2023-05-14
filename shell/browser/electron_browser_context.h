@@ -135,7 +135,8 @@ class ElectronBrowserContext : public content::BrowserContext {
 
   void SetUserAgent(const std::string& user_agent);
   std::string GetUserAgent() const;
-  void SetUserAgentMetadata(absl::optional<blink::UserAgentMetadata> ua_metadata);
+  void SetUserAgentMetadata(
+      absl::optional<blink::UserAgentMetadata> ua_metadata);
   blink::UserAgentMetadata GetUserAgentMetadata() const;
   bool CanUseHttpCache() const;
   int GetMaxCacheSize() const;
