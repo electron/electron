@@ -3,6 +3,9 @@
   "productName": "Electron Test Main",
   "main": "index.js",
   "version": "0.1.0",
+  "scripts": {
+    "node-gyp-install": "node-gyp install"
+  },
   "devDependencies": {
     "@electron-ci/echo": "file:./fixtures/native-addon/echo",
     "@electron-ci/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen/",
