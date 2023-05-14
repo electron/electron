@@ -1682,17 +1682,20 @@ void App::SetUserAgentFallback(gin::Arguments* gin_args) {
     }
     absl::optional<blink::UserAgentMetadata> ua_metadata;
     if (opts.Get("userAgentMetadata", &ua_metadata)) {
-      ElectronBrowserClient::Get()->SetUserAgentMetadata(ua_metadata);
+      ElectronBrowserClient::Get()->SetUserAgentMetadata(
+          std::move(ua_metadata));
     }
   }
 }
 
-void App::SetUserAgentMetadataFallback(absl::optional<blink::UserAgentMetadata> ua_metadata) {
-  ElectronBrowserClient::Get()->SetUserAgentMetadata(ua_metadata);
+void App::SetUserAgentMetadataFallback(
+    absl::optional<blink::UserAgentMetadata> ua_metadata) {
+  ElectronBrowserClient::Get()->SetUserAgentMetadata(std::move(ua_metadata));
 }
 
 v8::Local<v8::Value> App::GetUserAgentMetadataFallback(v8::Isolate* isolate) {
-  return gin::ConvertToV8(isolate, ElectronBrowserClient::Get()->GetUserAgentMetadata());
+  return gin::ConvertToV8(isolate,
+                          ElectronBrowserClient::Get()->GetUserAgentMetadata());
 }
 
 #if BUILDFLAG(IS_WIN)
@@ -2076,11 +2079,11 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
       .SetProperty("runningUnderARM64Translation",
                    &App::IsRunningUnderARM64Translation)
 #endif
-      .SetMethod("setUserAgentFallback",
-                  &App::SetUserAgentFallback)
+      .SetMethod("setUserAgentFallback", &App::SetUserAgentFallback)
       .SetProperty("userAgentFallback", &App::GetUserAgentFallback,
                    &App::SetUserAgentFallback)
-      .SetProperty("userAgentMetadataFallback", &App::GetUserAgentMetadataFallback,
+      .SetProperty("userAgentMetadataFallback",
+                   &App::GetUserAgentMetadataFallback,
                    &App::SetUserAgentMetadataFallback)
       .SetMethod("configureHostResolver", &ConfigureHostResolver)
       .SetMethod("enableSandbox", &App::EnableSandbox)

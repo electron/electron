@@ -523,7 +523,7 @@ void ElectronBrowserContext::SetUserAgent(const std::string& user_agent) {
 
 void ElectronBrowserContext::SetUserAgentMetadata(
     absl::optional<blink::UserAgentMetadata> ua_metadata) {
-  ua_metadata_ = ua_metadata;
+  ua_metadata_ = std::move(ua_metadata);
 }
 
 base::FilePath ElectronBrowserContext::GetPath() const {
