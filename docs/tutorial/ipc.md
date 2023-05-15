@@ -51,10 +51,10 @@ sections.
 In the main process, set an IPC listener on the `set-title` channel with the `ipcMain.on` API:
 
 ```javascript {6-10,22} title='main.js (Main Process)'
-const {app, BrowserWindow, ipcMain} = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
-//...
+// ...
 
 function handleSetTitle (event, title) {
   const webContents = event.sender
@@ -74,8 +74,8 @@ function createWindow () {
 app.whenReady().then(() => {
   ipcMain.on('set-title', handleSetTitle)
   createWindow()
-}
-//...
+})
+// ...
 ```
 
 The above `handleSetTitle` callback has two parameters: an [IpcMainEvent][] structure and a
@@ -100,7 +100,7 @@ variable to your renderer process.
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    setTitle: (title) => ipcRenderer.send('set-title', title)
+  setTitle: (title) => ipcRenderer.send('set-title', title)
 })
 ```
 
@@ -142,9 +142,9 @@ script:
 const setButton = document.getElementById('btn')
 const titleInput = document.getElementById('title')
 setButton.addEventListener('click', () => {
-    const title = titleInput.value
-    window.electronAPI.setTitle(title)
-});
+  const title = titleInput.value
+  window.electronAPI.setTitle(title)
+})
 ```
 
 At this point, your demo should be fully functional. Try using the input field and see what happens
@@ -185,13 +185,11 @@ provided to the renderer process. Please refer to
 const { BrowserWindow, dialog, ipcMain } = require('electron')
 const path = require('path')
 
-//...
+// ...
 
-async function handleFileOpen() {
+async function handleFileOpen () {
   const { canceled, filePaths } = await dialog.showOpenDialog()
-  if (canceled) {
-    return
-  } else {
+  if (!canceled) {
     return filePaths[0]
   }
 }
@@ -209,7 +207,7 @@ app.whenReady(() => {
   ipcMain.handle('dialog:openFile', handleFileOpen)
   createWindow()
 })
-//...
+// ...
 ```
 
 :::tip on channel names
@@ -379,7 +377,7 @@ module that uses the `webContents.send` API to send an IPC message from the main
 target renderer.
 
 ```javascript {11-26} title='main.js (Main Process)'
-const {app, BrowserWindow, Menu, ipcMain} = require('electron')
+const { app, BrowserWindow, Menu, ipcMain } = require('electron')
 const path = require('path')
 
 function createWindow () {
@@ -395,11 +393,11 @@ function createWindow () {
       submenu: [
         {
           click: () => mainWindow.webContents.send('update-counter', 1),
-          label: 'Increment',
+          label: 'Increment'
         },
         {
           click: () => mainWindow.webContents.send('update-counter', -1),
-          label: 'Decrement',
+          label: 'Decrement'
         }
       ]
     }
@@ -408,8 +406,7 @@ function createWindow () {
 
   mainWindow.loadFile('index.html')
 }
-//...
-
+// ...
 ```
 
 For the purposes of the tutorial, it's important to note that the `click` handler
@@ -432,7 +429,7 @@ modules in the preload script to expose IPC functionality to the renderer proces
 const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-    onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback)
+  onUpdateCounter: (callback) => ipcRenderer.on('update-counter', callback)
 })
 ```
 
@@ -452,12 +449,12 @@ rather than exposing it over the context bridge.
 const { ipcRenderer } = require('electron')
 
 window.addEventListener('DOMContentLoaded', () => {
-    const counter = document.getElementById('counter')
-    ipcRenderer.on('update-counter', (_event, value) => {
-        const oldValue = Number(counter.innerText)
-        const newValue = oldValue + value
-        counter.innerText = newValue
-    })
+  const counter = document.getElementById('counter')
+  ipcRenderer.on('update-counter', (_event, value) => {
+    const oldValue = Number(counter.innerText)
+    const newValue = oldValue + value
+    counter.innerText = newValue
+  })
 })
 ```
 
@@ -493,9 +490,9 @@ so that the value of the `#counter` element is updated whenever we fire an `upda
 const counter = document.getElementById('counter')
 
 window.electronAPI.onUpdateCounter((_event, value) => {
-    const oldValue = Number(counter.innerText)
-    const newValue = oldValue + value
-    counter.innerText = newValue
+  const oldValue = Number(counter.innerText)
+  const newValue = oldValue + value
+  counter.innerText = newValue
 })
 ```
 
@@ -526,11 +523,11 @@ window.electronAPI.onUpdateCounter((event, value) => {
 In the main process, listen for `counter-value` events and handle them appropriately.
 
 ```javascript title='main.js (Main Process)'
-//...
+// ...
 ipcMain.on('counter-value', (_event, value) => {
   console.log(value) // will print value to Node console
 })
-//...
+// ...
 ```
 
 ## Pattern 4: Renderer to renderer

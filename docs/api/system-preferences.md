@@ -228,10 +228,10 @@ const win = new BrowserWindow(browserOptions)
 
 // Navigate.
 if (browserOptions.transparent) {
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadFile('index.html')
 } else {
   // No transparency, so we load a fallback that uses basic styles.
-  win.loadURL(`file://${__dirname}/fallback.html`)
+  win.loadFile('fallback.html')
 }
 ```
 
