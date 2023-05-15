@@ -2375,12 +2375,8 @@ int WebContents::GetProcessID() const {
 }
 
 base::ProcessId WebContents::GetOSProcessID() const {
-  base::ProcessHandle process_handle = web_contents()
-                                           ->GetPrimaryMainFrame()
-                                           ->GetProcess()
-                                           ->GetProcess()
-                                           .Handle();
-  return base::GetProcId(process_handle);
+  auto proc = web_contents()->GetPrimaryMainFrame()->GetProcess()->GetProcess();
+  return proc.IsValid() ? proc.Pid() : 0;
 }
 
 WebContents::Type WebContents::GetType() const {
