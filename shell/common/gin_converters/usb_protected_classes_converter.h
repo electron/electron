@@ -32,10 +32,11 @@ struct Converter<electron::ElectronPermissionManager::USBProtectedClasses> {
       v8::Isolate* isolate,
       const electron::ElectronPermissionManager::USBProtectedClasses& classes) {
     std::vector<std::string> class_strings;
-    for (auto itr : classes) {
-      for (auto const& [usb_class, name] : ClassMapping) {
+    class_strings.reserve(std::size(classes));
+    for (const auto& itr : classes) {
+      for (const auto& [usb_class, name] : ClassMapping) {
         if (usb_class == itr)
-          class_strings.push_back(static_cast<std::string>(name));
+          class_strings.emplace_back(name);
       }
     }
     return gin::ConvertToV8(isolate, class_strings);
@@ -47,10 +48,11 @@ struct Converter<electron::ElectronPermissionManager::USBProtectedClasses> {
       electron::ElectronPermissionManager::USBProtectedClasses* out) {
     std::vector<std::string> class_strings;
     if (ConvertFromV8(isolate, val, &class_strings)) {
-      for (auto itr : class_strings) {
-        for (auto const& [usb_class, name] : ClassMapping) {
-          if (static_cast<std::string>(name) == itr)
-            out->push_back(usb_class);
+      out->reserve(std::size(class_strings));
+      for (const auto& itr : class_strings) {
+        for (const auto& [usb_class, name] : ClassMapping) {
+          if (name == itr)
+            out->emplace_back(usb_class);
         }
       }
       return true;
