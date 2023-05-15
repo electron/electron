@@ -110,6 +110,9 @@
   `tooltip`, `content`, `under-window`, or `under-page`. Please note that
   `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
   deprecated and have been removed in macOS Catalina (10.15).
+* `backgroundMaterial` string (optional) _Windows_ - Set the window's
+  system-drawn background material, including behind the non-client area.
+  Can be `auto`, `none`, `mica`, `acrylic` or `tabbed`. See [win.setBackgroundMaterial](../browser-window.md#winsetbackgroundmaterialmaterial-windows) for more information.
 * `zoomToPageWidth` boolean (optional) _macOS_ - Controls the behavior on
   macOS when option-clicking the green stoplight button on the toolbar or by
   clicking the Window > Zoom menu item. If `true`, the window will grow to

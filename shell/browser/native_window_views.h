@@ -138,6 +138,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
+  void SetBackgroundMaterial(const std::string& type) override;
 
   void SetVisibleOnAllWorkspaces(bool visible,
                                  bool visibleOnFullScreen,
