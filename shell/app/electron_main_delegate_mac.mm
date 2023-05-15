@@ -6,9 +6,9 @@
 
 #include <string>
 
+#include "base/apple/bundle_locations.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"

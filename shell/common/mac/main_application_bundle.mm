@@ -5,8 +5,8 @@
 
 #import "shell/common/mac/main_application_bundle.h"
 
+#include "base/apple/bundle_locations.h"
 #include "base/files/file_path.h"
-#include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"

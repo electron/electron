@@ -9,13 +9,13 @@
 #include <string>
 #include <utility>
 
+#include "base/apple/bundle_locations.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
