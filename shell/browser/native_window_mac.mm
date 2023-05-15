@@ -384,7 +384,7 @@ void NativeWindowMac::Close() {
     return;
   }
 
-  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
     SetHasDeferredWindowClose(true);
     return;
   }
@@ -607,7 +607,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
   // so we want to schedule a transition for when the current one has completed.
-  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
     if (!pending_transitions_.empty()) {
       bool last_pending = pending_transitions_.back();
       // Only push new transitions if they're different than the last transition
@@ -632,8 +632,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // or windowWillExitFullScreen are invoked, and so a potential transition
   // could be dropped.
   fullscreen_transition_state_ = fullscreen
-                                     ? FullScreenTransitionState::ENTERING
-                                     : FullScreenTransitionState::EXITING;
+                                     ? FullScreenTransitionState::kEntering
+                                     : FullScreenTransitionState::kExiting;
 
   [window_ toggleFullScreenMode:nil];
 }
@@ -742,7 +742,7 @@ void NativeWindowMac::SetResizable(bool resizable) {
 
 bool NativeWindowMac::IsResizable() {
   bool in_fs_transition =
-      fullscreen_transition_state() != FullScreenTransitionState::NONE;
+      fullscreen_transition_state() != FullScreenTransitionState::kNone;
   bool has_rs_mask = HasStyleMask(NSWindowStyleMaskResizable);
   return has_rs_mask && !IsFullscreen() && !in_fs_transition;
 }
@@ -1029,10 +1029,13 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    SetFullScreen(true);
+    fullscreen_before_kiosk_ = IsFullscreen();
+    if (!fullscreen_before_kiosk_)
+      SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
     is_kiosk_ = false;
-    SetFullScreen(false);
+    if (!fullscreen_before_kiosk_)
+      SetFullScreen(false);
 
     // Set presentation options *after* asynchronously exiting
     // fullscreen to ensure they take effect.

@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "base/memory/raw_ptr.h"
 #include "base/stl_util.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -91,7 +92,7 @@ const char kUserDataKey[] = "WebRequest";
 // BrowserContext <=> WebRequest relationship.
 struct UserData : public base::SupportsUserData::Data {
   explicit UserData(WebRequest* data) : data(data) {}
-  WebRequest* data;
+  raw_ptr<WebRequest> data;
 };
 
 extensions::WebRequestResourceType ParseResourceType(const std::string& value) {
@@ -612,7 +613,7 @@ gin::Handle<WebRequest> WebRequest::From(
       static_cast<UserData*>(browser_context->GetUserData(kUserDataKey));
   if (!user_data)
     return gin::Handle<WebRequest>();
-  return gin::CreateHandle(isolate, user_data->data);
+  return gin::CreateHandle(isolate, user_data->data.get());
 }
 
 }  // namespace electron::api

@@ -7,6 +7,8 @@
 
 #include "base/files/file_util.h"
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/strings/string_util.h"
 #include "electron/electron_gtk_stubs.h"
 #include "shell/browser/javascript_environment.h"
@@ -36,8 +38,7 @@ std::string MakeCaseInsensitivePattern(const std::string& extension) {
     return extension;
 
   std::string pattern("*.");
-  for (std::size_t i = 0, n = extension.size(); i < n; i++) {
-    char ch = extension[i];
+  for (char ch : extension) {
     if (!base::IsAsciiAlpha(ch)) {
       pattern.push_back(ch);
       continue;
@@ -220,10 +221,10 @@ class FileChooserDialog {
  private:
   void AddFilters(const Filters& filters);
 
-  electron::NativeWindowViews* parent_;
+  raw_ptr<electron::NativeWindowViews> parent_;
 
-  GtkFileChooser* dialog_;
-  GtkWidget* preview_;
+  RAW_PTR_EXCLUSION GtkFileChooser* dialog_;
+  RAW_PTR_EXCLUSION GtkWidget* preview_;
 
   Filters filters_;
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> save_promise_;

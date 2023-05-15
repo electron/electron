@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
@@ -129,7 +130,7 @@ class DataPipeReader {
   std::vector<char> buffer_;
 
   // The head of buffer.
-  char* head_ = nullptr;
+  raw_ptr<char> head_ = nullptr;
 
   // Remaining data to read.
   uint64_t remaining_size_ = 0;

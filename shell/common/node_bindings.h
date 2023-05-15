@@ -11,6 +11,8 @@
 
 #include "base/files/file_path.h"
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "uv.h"  // NOLINT(build/include_directory)
@@ -73,7 +75,7 @@ class UvHandle {
     delete reinterpret_cast<T*>(handle);
   }
 
-  T* t_ = {};
+  RAW_PTR_EXCLUSION T* t_ = {};
 };
 
 class NodeBindings {
@@ -158,7 +160,7 @@ class NodeBindings {
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
   // Current thread's libuv loop.
-  uv_loop_t* uv_loop_;
+  raw_ptr<uv_loop_t> uv_loop_;
 
  private:
   // Default callback to indicate when the node environment has finished
@@ -191,10 +193,10 @@ class NodeBindings {
   uv_sem_t embed_sem_;
 
   // Environment that to wrap the uv loop.
-  node::Environment* uv_env_ = nullptr;
+  raw_ptr<node::Environment> uv_env_ = nullptr;
 
   // Isolate data used in creating the environment
-  node::IsolateData* isolate_data_ = nullptr;
+  raw_ptr<node::IsolateData> isolate_data_ = nullptr;
 
   base::WeakPtrFactory<NodeBindings> weak_factory_{this};
 };

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
@@ -74,7 +75,7 @@ class TransactionObserver {
       const std::vector<Transaction>& transactions) = 0;
 
  private:
-  InAppTransactionObserver* observer_;
+  RAW_PTR_EXCLUSION InAppTransactionObserver* observer_;
 
   base::WeakPtrFactory<TransactionObserver> weak_ptr_factory_{this};
 };

@@ -34,7 +34,7 @@ index 6840358c3187522c63dff66b5a85567aaadc5c12..72c57fbc5fbb267f96ff9e21915fb801
  }
  
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef225b0ca59 100644
+index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ced88f21a5 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -10,9 +10,11 @@
@@ -47,9 +47,9 @@ index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef2
  }
 +#endif
  
- namespace content {
- 
-@@ -22,6 +24,7 @@
+ #if !defined(__has_feature) || !__has_feature(objc_arc)
+ #error "This file requires ARC support."
+@@ -26,6 +28,7 @@
  // verifies there are no existing open connections), and then indicates that
  // Chrome should continue execution without access to launchservicesd.
  void DisableSystemServices() {
@@ -57,7 +57,7 @@ index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef2
    // Tell the WindowServer that we don't want to make any future connections.
    // This will return Success as long as there are no open connections, which
    // is what we want.
-@@ -30,6 +33,7 @@ void DisableSystemServices() {
+@@ -34,6 +37,7 @@ void DisableSystemServices() {
  
    sandbox::DisableLaunchServices();
    sandbox::DisableCoreServicesCheckFix();
@@ -66,14 +66,13 @@ index add9345fdd076698fc7ec654d7ef1701699639a4..ea5287cbe878014e4f0f6124a459bef2
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index 2f77943c276b1fed8a35097132d7e03030247bed..e3c1641c570a0df2837b1a44826ab37e87ddac3a 100644
+index 55ef23bac1acd703d4e29a4418d85676f8b56be3..42bd5787bfc77dac3e309f1075325368d508f9b7 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
-@@ -7,11 +7,11 @@
- #include <Cocoa/Cocoa.h>
+@@ -12,10 +12,11 @@
+ #error "This file requires ARC support."
+ #endif
  
- #include "base/strings/sys_string_conversions.h"
--
 +#if !IS_MAS_BUILD()
  extern "C" {
  bool CGFontRenderingGetFontSmoothingDisabled(void) API_AVAILABLE(macos(10.14));
@@ -83,9 +82,9 @@ index 2f77943c276b1fed8a35097132d7e03030247bed..e3c1641c570a0df2837b1a44826ab37e
  namespace content {
  
  void SystemColorsDidChange(int aqua_color_variant) {
-@@ -32,8 +32,19 @@ void SystemColorsDidChange(int aqua_color_variant) {
+@@ -36,8 +37,19 @@ void SystemColorsDidChange(int aqua_color_variant) {
  bool IsSubpixelAntialiasingAvailable() {
-   if (__builtin_available(macOS 10.14, *)) {
+   if (@available(macOS 10.14, *)) {
      // See https://trac.webkit.org/changeset/239306/webkit for more info.
 +#if !IS_MAS_BUILD()
      return !CGFontRenderingGetFontSmoothingDisabled();

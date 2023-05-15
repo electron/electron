@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_NATIVE_FRAME_VIEW_H_
 
+#include "base/memory/raw_ptr.h"
 #include "ui/views/window/native_frame_view.h"
 
 namespace electron {
@@ -29,7 +30,7 @@ class NativeFrameView : public views::NativeFrameView {
   const char* GetClassName() const override;
 
  private:
-  NativeWindow* window_;  // weak ref.
+  raw_ptr<NativeWindow> window_;  // weak ref.
 };
 
 }  // namespace electron

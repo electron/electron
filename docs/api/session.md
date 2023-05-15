@@ -519,9 +519,8 @@ app.whenReady().then(() => {
 Returns:
 
 * `event` Event
-* `details` Object
-  * `device` [USBDevice](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+* `device` [USBDevice](structures/usb-device.md)
+* `webContents` [WebContents](web-contents.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a new device becomes available before
@@ -534,9 +533,8 @@ with the newly added device.
 Returns:
 
 * `event` Event
-* `details` Object
-  * `device` [USBDevice](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+* `device` [USBDevice](structures/usb-device.md)
+* `webContents` [WebContents](web-contents.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a device has been removed before the callback
@@ -550,7 +548,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [USBDevice[]](structures/usb-device.md)
+  * `device` [USBDevice](structures/usb-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
 
 Emitted after `USBDevice.forget()` has been called.  This event can be used
@@ -1026,7 +1024,7 @@ Passing `null` instead of a function resets the handler to its default state.
   * `details` Object
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
     * `origin` string - The origin URL of the device permission check.
-    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md)- the device that permission is being requested for.
+    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md) | [USBDevice](structures/usb-device.md) - the device that permission is being requested for.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
@@ -1483,7 +1481,7 @@ app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
   if (!protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback({ path: path.normalize(`${__dirname}/${url}`) })
+    callback({ path: path.normalize(path.join(__dirname, url)) })
   })) {
     console.error('Failed to register protocol')
   }

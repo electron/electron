@@ -152,7 +152,7 @@ void AddPropertyFilters(std::vector<ui::AXPropertyFilter>* property_filters,
                         ui::AXPropertyFilter::Type type) {
   for (const std::string& attribute : base::SplitString(
            attributes, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY)) {
-    property_filters->push_back(ui::AXPropertyFilter(attribute, type));
+    property_filters->emplace_back(attribute, type);
   }
 }
 
@@ -320,6 +320,10 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
       base::BindRepeating(&ShouldHandleAccessibilityRequestCallback),
       base::BindRepeating(&HandleAccessibilityRequestCallback,
                           web_ui->GetWebContents()->GetBrowserContext()));
+
+  html_source->OverrideContentSecurityPolicy(
+      network::mojom::CSPDirectiveName::TrustedTypes,
+      "trusted-types parse-html-subset sanitize-inner-html;");
 
   web_ui->AddMessageHandler(
       std::make_unique<ElectronAccessibilityUIMessageHandler>());

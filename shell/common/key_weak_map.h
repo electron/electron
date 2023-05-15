@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "v8/include/v8.h"
 
 namespace electron {
@@ -20,7 +21,7 @@ class KeyWeakMap {
   // Records the key and self, used by SetWeak.
   struct KeyObject {
     K key;
-    KeyWeakMap* self;
+    raw_ptr<KeyWeakMap> self;
   };
 
   KeyWeakMap() {}

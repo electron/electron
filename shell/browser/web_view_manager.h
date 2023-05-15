@@ -7,6 +7,7 @@
 
 #include <map>
 
+#include "base/memory/raw_ptr.h"
 #include "content/public/browser/browser_plugin_guest_manager.h"
 
 namespace electron {
@@ -33,8 +34,8 @@ class WebViewManager : public content::BrowserPluginGuestManager {
 
  private:
   struct WebContentsWithEmbedder {
-    content::WebContents* web_contents;
-    content::WebContents* embedder;
+    raw_ptr<content::WebContents> web_contents;
+    raw_ptr<content::WebContents> embedder;
   };
   // guest_instance_id => (web_contents, embedder)
   std::map<int, WebContentsWithEmbedder> web_contents_embedder_map_;

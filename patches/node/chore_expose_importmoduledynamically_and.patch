@@ -11,7 +11,7 @@ its own blended handler between Node and Blink.
 Not upstreamable.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 51e50801a92997797b6cb3f0ae91a1945a551c0f..cf6d4e33da8e7039f8fbf5d62d0af504f8ca778f 100644
+index 421b0ada67e281b4d269c7d3154e42f63e1e2cc7..6b404521be7cbb23003fca4da974ccd126805df8 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -560,7 +560,7 @@ function initializeESMLoader() {
@@ -35,10 +35,10 @@ index 51e50801a92997797b6cb3f0ae91a1945a551c0f..cf6d4e33da8e7039f8fbf5d62d0af504
    // Patch the vm module when --experimental-vm-modules is on.
    // Please update the comments in vm.js when this block changes.
 diff --git a/src/module_wrap.cc b/src/module_wrap.cc
-index 73ce4aa42035a15a5d417263b6cf9f57e79252af..b4b9fe1e88b17747756b8420de175271c6cc9119 100644
+index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd1048b645dd9 100644
 --- a/src/module_wrap.cc
 +++ b/src/module_wrap.cc
-@@ -550,7 +550,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+@@ -547,7 +547,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
    return module->module_.Get(isolate);
  }
  
@@ -47,7 +47,7 @@ index 73ce4aa42035a15a5d417263b6cf9f57e79252af..b4b9fe1e88b17747756b8420de175271
      Local<Context> context,
      Local<v8::Data> host_defined_options,
      Local<Value> resource_name,
-@@ -632,12 +632,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+@@ -629,12 +629,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
    Environment* env = Environment::GetCurrent(args);
    HandleScope handle_scope(isolate);
  
@@ -63,7 +63,7 @@ index 73ce4aa42035a15a5d417263b6cf9f57e79252af..b4b9fe1e88b17747756b8420de175271
  }
  
  void ModuleWrap::HostInitializeImportMetaObjectCallback(
-@@ -668,13 +669,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+@@ -665,13 +666,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
    Environment* env = Environment::GetCurrent(args);
    Isolate* isolate = env->isolate();
  

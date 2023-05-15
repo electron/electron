@@ -73,7 +73,7 @@ const { contextBridge } = require('electron')
 contextBridge.exposeInMainWorld('versions', {
   node: () => process.versions.node,
   chrome: () => process.versions.chrome,
-  electron: () => process.versions.electron,
+  electron: () => process.versions.electron
   // we can also expose variables, not just functions
 })
 ```
@@ -90,8 +90,8 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
 
   win.loadFile('index.html')
@@ -183,7 +183,7 @@ contextBridge.exposeInMainWorld('versions', {
   node: () => process.versions.node,
   chrome: () => process.versions.chrome,
   electron: () => process.versions.electron,
-  ping: () => ipcRenderer.invoke('ping'),
+  ping: () => ipcRenderer.invoke('ping')
   // we can also expose variables, not just functions
 })
 ```
@@ -202,7 +202,7 @@ Then, set up your `handle` listener in the main process. We do this _before_
 loading the HTML file so that the handler is guaranteed to be ready before
 you send out the `invoke` call from the renderer.
 
-```js {1,12} title="main.js"
+```js {1,15} title="main.js"
 const { app, BrowserWindow, ipcMain } = require('electron')
 const path = require('path')
 
@@ -211,13 +211,15 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
-  ipcMain.handle('ping', () => 'pong')
   win.loadFile('index.html')
 }
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  ipcMain.handle('ping', () => 'pong')
+  createWindow()
+})
 ```
 
 Once you have the sender and receiver set up, you can now send messages from the renderer

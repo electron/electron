@@ -28,7 +28,7 @@ index a01852a241f9b4a575360a8464d77e3f5c6a5770..e6d8faa01afa51e33a9450b578278170
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, parsed.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 15415e0652864d059390bc7383e073c86f5d0c03..c8fd2ca438eb546f2149f9636d7454e81d44d5f9 100644
+index 3c9b1ad93f2c6b5fde5e9ed2a8bf1dc01d94a8de..3dfa5bad50b8b12291f22bf5e8598b3eba2ced38 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -27,11 +27,7 @@ const {
@@ -67,11 +67,11 @@ index 15415e0652864d059390bc7383e073c86f5d0c03..c8fd2ca438eb546f2149f9636d7454e8
    if (!preserveSymlinks) {
 -    const real = realpathSync(path, {
 +    const real = fs.realpathSync(path, {
-       [internalFS.realpathCacheKey]: realpathCache
+       [internalFS.realpathCacheKey]: realpathCache,
      });
      const { search, hash } = resolved;
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 010fa8f78a21a8146879849e2e887332e2694e51..1d4462748e76364078c457ebf9d62bd744c22bac 100644
+index 1ceb89da21610c703f4a18be5888373c7feaa370..347558c805c8ecd3f7ff4f6324ef7df68badc52f 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -24,7 +24,7 @@ function lazyTypes() {

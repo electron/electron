@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc7106159218 100644
+index eb5f0be49395b0192f18738d549241ae98793df7..522fd5cc6bea3e7fe4089eb25d64d65d2e8784ca 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -30,6 +30,7 @@ const protocolHandlers = {
@@ -18,7 +18,7 @@ index a7329d279bb07542d3f4027e0c8e2b035d493e5b..5cff70923b4ea7a4df918b2d3d1fbc71
  
  /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 646b12382f6ebd073fe5968f8c1c0f36dbc64eac..15415e0652864d059390bc7383e073c86f5d0c03 100644
+index fd7d2feada9bbbba589fe89230e45954fa2dd3be..3c9b1ad93f2c6b5fde5e9ed2a8bf1dc01d94a8de 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -824,6 +824,8 @@ function parsePackageName(specifier, base) {
@@ -51,7 +51,7 @@ index 646b12382f6ebd073fe5968f8c1c0f36dbc64eac..15415e0652864d059390bc7383e073c8
    }
  }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..010fa8f78a21a8146879849e2e887332e2694e51 100644
+index a425749e82acd7593c9fb1ceffedc119a4e416f2..1ceb89da21610c703f4a18be5888373c7feaa370 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -154,7 +154,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
@@ -77,10 +77,10 @@ index 6f25b2e67ab77613c6ed63c227bb875d5461f45f..010fa8f78a21a8146879849e2e887332
        // We might trigger a getter -> dont fail.
        let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index ae133b02e20fa183d610da97ae0a50522318b4fc..433b51a6fec589f8c1fd2791fd685b3b4964cada 100644
+index 7b2e0b4ffa6cc71b78dd1a1f64f7f491a6669383..41327e0f33828b1a3f276c9054293d89a7956e1d 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1489,6 +1489,8 @@ function fileURLToPath(path) {
+@@ -1221,6 +1221,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURLInstance(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);

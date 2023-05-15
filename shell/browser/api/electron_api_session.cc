@@ -16,6 +16,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/guid.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -327,7 +328,7 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 struct UserDataLink : base::SupportsUserData::Data {
   explicit UserDataLink(Session* ses) : session(ses) {}
 
-  Session* session;
+  raw_ptr<Session> session;
 };
 
 const void* kElectronApiSessionKey = &kElectronApiSessionKey;

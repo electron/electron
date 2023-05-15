@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "shell/common/api/api.mojom.h"
 #include "ui/gfx/native_widget_types.h"
 
@@ -64,10 +65,11 @@ class InspectableWebContentsView {
 
  protected:
   // Owns us.
-  InspectableWebContents* inspectable_web_contents_;
+  raw_ptr<InspectableWebContents> inspectable_web_contents_;
 
  private:
-  InspectableWebContentsViewDelegate* delegate_ = nullptr;  // weak references.
+  raw_ptr<InspectableWebContentsViewDelegate> delegate_ =
+      nullptr;  // weak references.
 };
 
 }  // namespace electron

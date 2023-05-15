@@ -15,6 +15,7 @@
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
+#include "base/memory/raw_ptr.h"
 #include "base/nix/xdg_util.h"
 #include "base/no_destructor.h"
 #include "base/posix/eintr_wrapper.h"
@@ -61,7 +62,7 @@ class ShowItemHelper {
     return *instance;
   }
 
-  ShowItemHelper() {}
+  ShowItemHelper() = default;
 
   ShowItemHelper(const ShowItemHelper&) = delete;
   ShowItemHelper& operator=(const ShowItemHelper&) = delete;
@@ -241,8 +242,8 @@ class ShowItemHelper {
   }
 
   scoped_refptr<dbus::Bus> bus_;
-  dbus::ObjectProxy* dbus_proxy_ = nullptr;
-  dbus::ObjectProxy* object_proxy_ = nullptr;
+  raw_ptr<dbus::ObjectProxy> dbus_proxy_ = nullptr;
+  raw_ptr<dbus::ObjectProxy> object_proxy_ = nullptr;
 
   absl::optional<bool> prefer_filemanager_interface_;
 };

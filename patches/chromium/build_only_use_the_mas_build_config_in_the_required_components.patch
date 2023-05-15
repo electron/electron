@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index de465c107163124c6be79c3d10c2dd5678436b5a..b464fac54c13c176cca30bccd51dc25efdc8720b 100644
+index 4858b4c2c1b34434db7cf1d6dd2d166cfea9c312..304d704f5115c8f888366c47eda771381212fa5e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1030,6 +1030,7 @@ component("base") {
+@@ -1029,6 +1029,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -18,7 +18,7 @@ index de465c107163124c6be79c3d10c2dd5678436b5a..b464fac54c13c176cca30bccd51dc25e
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 21cc8f57ed0fe4151a95bb9520d84e73988de6af..421fc44fa6ee63b60e65c973dd8920d339cb01f6 100644
+index b791580cffc200aa161478bf7060156cec5adc0a..253f8bd1e0c6adaca5a7c223eaa031bedd61af08 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -55,10 +55,10 @@ index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42452908a8 100644
+index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb88c4c7051 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -314,6 +314,7 @@ viz_component("service") {
+@@ -322,6 +322,7 @@ viz_component("service") {
  
        frameworks += [ "CoreGraphics.framework" ]
      }
@@ -66,7 +66,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
    }
  
    if (is_android || use_ozone) {
-@@ -568,6 +569,8 @@ viz_source_set("unit_tests") {
+@@ -576,6 +577,8 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -76,7 +76,7 @@ index 6926bd6766603f8de2237447c0a8fde2d09b67b4..707a943dd2bbc89917bd4b5b0fbc1d42
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6b988eeae6411649bc35321dd22805a5c5439fb5..e78f16518da14411ceb74c88be31ffce413f986e 100644
+index b2f8d8dab348d031510b3ff8a5cf5854feb77282..898525c4ff6517dd1c1341394b248ecbfe6527f3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index 6b988eeae6411649bc35321dd22805a5c5439fb5..e78f16518da14411ceb74c88be31ffce
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index a92d1339b0ec7980dc9b73dcbad834c3ffca8211..5a07df3e8a31f6d5bfc5d27bf804517fb27239b2 100644
+index 7490e10b3741a0680b0fbe7b069bd5803dccfd42..40d243c84e0336b6f413caf3a8eee96cab62fcf8 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -170,6 +170,7 @@ source_set("common") {
+@@ -171,6 +171,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -100,10 +100,10 @@ index a92d1339b0ec7980dc9b73dcbad834c3ffca8211..5a07df3e8a31f6d5bfc5d27bf804517f
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 3ec54c242fb920a53fcaa6d8040f2ec88c2727df..27dee1596183d2ead5290a60c08e47e69e905d21 100644
+index 8177e8f11818639b4bafbb860a0f3edd69289465..23e19a8550c20c01e5c04388fe1f0294eae9507e 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
+@@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -124,10 +124,10 @@ index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff65e17bd9 100644
+index 1e7a52437d36b3e55eb45f546c8449b98533ad73..dee8f9a33ed80ad52122c967c35674954ba39560 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -119,6 +119,7 @@ component("service") {
+@@ -129,6 +129,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -136,10 +136,10 @@ index 89e0e91bb24cb1b92abb8670f56328499c0669e0..6b6dd9c74011c1acafb931842d6675ff
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 609c60d94cdbf4755f60323734b976b49f03fecb..09a3871bfef3ba7a523ac37a80a4aa86ce2975ae 100644
+index 8aaf3f77faa5be3078888da392c2e2fb0d1d6959..b557f0edfe8bf4cd8c0185a94c83e53932d064b6 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -194,6 +194,7 @@ source_set("audio") {
+@@ -197,6 +197,7 @@ source_set("audio") {
        "mac/coreaudio_dispatch_override.h",
      ]
      frameworks += [ "AudioUnit.framework" ]
@@ -189,7 +189,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 94aece314a1ba9418f1e5a3e015088a3395500d4..239527d1aebefa2496a5d3fe2afa2ab1e8c63bed 100644
+index c0c09f37b3332772dcd71cddb3114c44648ffe06..946684da595074c4b968500594018ae5d316d569 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -304,6 +304,7 @@ component("core") {
@@ -214,10 +214,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682ca6f07179 100644
+index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb277468cb424d 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -249,6 +249,7 @@ component("platform") {
+@@ -250,6 +250,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
@@ -226,10 +226,10 @@ index ebc2470893838ec41ac1bf536c5a6db304bfa7cb..4a2082c2fed4e220cb8cbc2c803f682c
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 9631446ea47a2d8c5d2483ed13cf17a023c49ab6..0e61c424c7529cd469582d200bb6f42e795942a0 100644
+index 056a7b1bd399510688841cb68da3985690deb0c7..3c0c0f625156adcc9204ff718703e8314034dba4 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -343,6 +343,7 @@ component("base") {
+@@ -353,6 +353,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
@@ -238,7 +238,7 @@ index 9631446ea47a2d8c5d2483ed13cf17a023c49ab6..0e61c424c7529cd469582d200bb6f42e
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 20e72272bfd36d8411e7ecb8a83c75d9f95632e4..9784269499bccc19161a613aa1bb3a35132e0b32 100644
+index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecbfd9da778 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -265,7 +265,7 @@ index 34a269ee4d47a2597fd098bc9eabe10685f4fc86..8a96f5abc4e0092bca15dbf6e5098a64
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5aae27d937eb26f0b9f8bdf4f38a5fc48c930ab4..dc8da6198ebf689cf29adc5073c0d5f104535ab6 100644
+index 11515d6de3e8b017f03f4d6665f1e57b1f6dceb3..6b5c3d3a9f6cab7dcc97830f2e76c93b3ed79d8d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -675,6 +675,7 @@ component("views") {

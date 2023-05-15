@@ -2227,13 +2227,17 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
 
-    ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
+    ifit(process.platform === 'darwin')('resets the windows level on minimize', async () => {
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
       w.setAlwaysOnTop(true, 'screen-saver');
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+      const minimized = once(w, 'minimize');
       w.minimize();
+      await minimized;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
+      const restored = once(w, 'restore');
       w.restore();
+      await restored;
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
 
@@ -5521,29 +5525,41 @@ describe('BrowserWindow module', () => {
 
       it('should not be changed by setKiosk method', async () => {
         const w = new BrowserWindow();
+
         const enterFullScreen = once(w, 'enter-full-screen');
-        w.setFullScreen(true);
+        w.setKiosk(true);
         await enterFullScreen;
         expect(w.isFullScreen()).to.be.true('isFullScreen');
-        await setTimeout();
-        w.setKiosk(true);
-        await setTimeout();
-        w.setKiosk(false);
-        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
         const leaveFullScreen = once(w, 'leave-full-screen');
-        w.setFullScreen(false);
+        w.setKiosk(false);
         await leaveFullScreen;
         expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
 
-      // FIXME: https://github.com/electron/electron/issues/30140
-      xit('multiple windows inherit correct fullscreen state', async () => {
+      it('should stay fullscreen if fullscreen before kiosk', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
+        w.setKiosk(true);
+
+        w.setKiosk(false);
+        // Wait enough time for a fullscreen change to take effect.
+        await setTimeout(2000);
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+      });
+
+      it('multiple windows inherit correct fullscreen state', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = once(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFullScreen;
         expect(w.isFullScreen()).to.be.true('isFullScreen');
-        await setTimeout();
+        await setTimeout(1000);
         const w2 = new BrowserWindow({ show: false });
         const enterFullScreen2 = once(w2, 'enter-full-screen');
         w2.show();
@@ -6013,7 +6029,7 @@ describe('BrowserWindow module', () => {
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch !== 'x64')('should not display a visible background', async () => {
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6085,6 +6101,32 @@ describe('BrowserWindow module', () => {
       });
 
       expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make background transparent if falsy', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      for (const transparent of [false, undefined]) {
+        const window = new BrowserWindow({
+          ...display.bounds,
+          transparent
+        });
+
+        await once(window, 'show');
+        await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
+
+        await setTimeout(500);
+        const screenCapture = await captureScreen();
+        const centerColor = getPixelColor(screenCapture, {
+          x: display.size.width / 2,
+          y: display.size.height / 2
+        });
+        window.close();
+
+        // color-scheme is set to dark so background should not be white
+        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+      }
     });
   });
 

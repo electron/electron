@@ -15,7 +15,7 @@ UsbChooserContextFactory::UsbChooserContextFactory()
           "UsbChooserContext",
           BrowserContextDependencyManager::GetInstance()) {}
 
-UsbChooserContextFactory::~UsbChooserContextFactory() {}
+UsbChooserContextFactory::~UsbChooserContextFactory() = default;
 
 KeyedService* UsbChooserContextFactory::BuildServiceInstanceFor(
     content::BrowserContext* context) const {

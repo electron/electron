@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//electron/buildflags/buildflags.gni")
 import("//extensions/buildflags/buildflags.gni")
 import("//tools/json_schema_compiler/json_schema_api.gni")
 
@@ -14,6 +15,12 @@ function_registration("api_registration") {
     "//electron/shell/common/extensions/api/resources_private.idl",
     "//electron/shell/common/extensions/api/tabs.json",
   ]
+
+  if (enable_pdf_viewer) {
+    sources +=
+        [ "//electron/shell/common/extensions/api/pdf_viewer_private.idl" ]
+  }
+
   impl_dir = "//electron/shell/browser/extensions/api"
   configs = [ "//build/config:precompiled_headers" ]
   bundle_name = "Electron"

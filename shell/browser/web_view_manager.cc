@@ -29,7 +29,7 @@ bool WebViewManager::ForEachGuest(content::WebContents* embedder_web_contents,
     if (item.second.embedder != embedder_web_contents)
       continue;
 
-    auto* guest_web_contents = item.second.web_contents;
+    content::WebContents* guest_web_contents = item.second.web_contents;
     if (guest_web_contents && callback.Run(guest_web_contents))
       return true;
   }
