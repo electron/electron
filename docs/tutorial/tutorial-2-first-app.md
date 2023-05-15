@@ -125,7 +125,7 @@ main process entry point is configured correctly. Create a `main.js` file in the
 of your project with a single line of code:
 
 ```js title='main.js'
-console.log(`Hello from Electron 👋`)
+console.log('Hello from Electron 👋')
 ```
 
 Because Electron's main process is a Node.js runtime, you can execute arbitrary Node.js code
@@ -199,7 +199,7 @@ const { app, BrowserWindow } = require('electron')
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
 
   win.loadFile('index.html')
@@ -247,7 +247,7 @@ The `createWindow()` function loads your web page into a new BrowserWindow insta
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
 
   win.loadFile('index.html')

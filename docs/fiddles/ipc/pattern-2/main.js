@@ -3,9 +3,7 @@ const path = require('path')
 
 async function handleFileOpen () {
   const { canceled, filePaths } = await dialog.showOpenDialog()
-  if (canceled) {
-
-  } else {
+  if (!canceled) {
     return filePaths[0]
   }
 }
