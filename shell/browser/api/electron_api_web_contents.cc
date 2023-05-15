@@ -2617,7 +2617,7 @@ std::string WebContents::GetMediaSourceID(
           request_frame_host->GetRoutingID(),
           url::Origin::Create(request_frame_host->GetLastCommittedURL()
                                   .DeprecatedGetOriginAsURL()),
-          media_id, "", content::kRegistryStreamTypeTab);
+          media_id, content::kRegistryStreamTypeTab);
 
   return id;
 }
