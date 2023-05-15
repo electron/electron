@@ -89,6 +89,7 @@ extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
 extern const char kEnableWebSQL[];
 extern const char kEnablePreferredSizeMode[];
+extern const char kHideScrollBars[];
 
 extern const char kHiddenPage[];
 

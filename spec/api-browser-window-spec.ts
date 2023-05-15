@@ -6568,4 +6568,41 @@ describe('BrowserWindow module', () => {
       expect(areColorsSimilar(centerColor, HexColors.BLUE)).to.be.true();
     });
   });
+
+  describe('hideScrollBars webpreference', () => {
+    const fixturesPath = path.resolve(__dirname, '..', 'spec', 'fixtures');
+    let w: BrowserWindow;
+
+    afterEach(closeAllWindows);
+
+    it('shows scrollbar by default', async () => {
+      w = new BrowserWindow({ width: 400, height: 400 });
+      const url = `file://${fixturesPath}/pages/scrollbars.html`;
+      await w.loadURL(url);
+      const { scrollWidth } = await w.webContents.executeJavaScript('({scrollWidth: window.innerWidth - document.documentElement.clientWidth})');
+      expect(scrollWidth).to.be.greaterThan(0);
+      const { scrollHeight } = await w.webContents.executeJavaScript('({scrollHeight: window.innerHeight - document.documentElement.clientHeight})');
+      expect(scrollHeight).to.be.greaterThan(0);
+    });
+
+    it('shows scrollbar when set to false', async () => {
+      w = new BrowserWindow({ width: 400, height: 400, webPreferences: { hideScrollBars: false } });
+      const url = `file://${fixturesPath}/pages/scrollbars.html`;
+      await w.loadURL(url);
+      const { scrollWidth } = await w.webContents.executeJavaScript('({scrollWidth: window.innerWidth - document.documentElement.clientWidth})');
+      expect(scrollWidth).to.be.greaterThan(0);
+      const { scrollHeight } = await w.webContents.executeJavaScript('({scrollHeight: window.innerHeight - document.documentElement.clientHeight})');
+      expect(scrollHeight).to.be.greaterThan(0);
+    });
+
+    it('hides scrollbar when set to true', async () => {
+      w = new BrowserWindow({ width: 400, height: 400, webPreferences: { hideScrollBars: true } });
+      const url = `file://${fixturesPath}/pages/scrollbars.html`;
+      await w.loadURL(url);
+      const { scrollWidth } = await w.webContents.executeJavaScript('({scrollWidth: window.innerWidth - document.documentElement.clientWidth})');
+      expect(scrollWidth).to.be.equal(0);
+      const { scrollHeight } = await w.webContents.executeJavaScript('({scrollHeight: window.innerHeight - document.documentElement.clientHeight})');
+      expect(scrollHeight).to.be.equal(0);
+    });
+  });
 });

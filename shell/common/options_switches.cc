@@ -188,6 +188,8 @@ const char kEnableWebSQL[] = "enableWebSQL";
 
 const char kEnablePreferredSizeMode[] = "enablePreferredSizeMode";
 
+const char kHideScrollBars[] = "hideScrollBars";
+
 const char ktitleBarOverlay[] = "titleBarOverlay";
 
 }  // namespace options

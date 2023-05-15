@@ -112,6 +112,7 @@ class WebContentsPreferences
   bool webgl_;
   bool enable_websql_;
   bool enable_preferred_size_mode_;
+  bool hide_scroll_bars_;
   bool web_security_;
   bool allow_running_insecure_content_;
   bool offscreen_;

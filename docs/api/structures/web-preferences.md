@@ -143,6 +143,8 @@
   contain the layout of the document—without requiring scrolling. Enabling
   this will cause the `preferred-size-changed` event to be emitted on the
   `WebContents` when the preferred size changes. Default is `false`.
+* `hideScrollBars` boolean (optional) - Sets the Chromium WebPreferences
+   hide_scrollbars field. Default is `false`.
 
 [chrome-content-scripts]: https://developer.chrome.com/extensions/content_scripts#execution-environment
 [runtime-enabled-features]: https://source.chromium.org/chromium/chromium/src/+/main:third_party/blink/renderer/platform/runtime_enabled_features.json5
