@@ -1226,6 +1226,10 @@ win4.webContents.on('paint', (event, dirty, _image) => {
   console.log(dirty, _image.getBitmap());
 });
 
+win4.webContents.on('devtools-open-url', (event, url) => {
+  console.log(url);
+});
+
 win4.loadURL('http://github.com');
 
 // TouchBar
