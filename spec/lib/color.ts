@@ -47,7 +47,7 @@ function colorAsHexStr (color: Color): string {
     '#' +
     [color.r, color.b, color.g]
       .map((n) => n.toString(16).padStart(2, '0'))
-      .join()
+      .join('')
   );
 }
 

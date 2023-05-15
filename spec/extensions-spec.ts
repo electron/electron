@@ -154,11 +154,13 @@ describe('chrome extensions', () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
 
     const loadedPromise = once(customSession, 'extension-loaded');
-    const extension = await customSession.loadExtension(fixturePath('extensions', 'red-bg'));
-    const [, loadedExtension] = await loadedPromise;
-    const [, readyExtension] = await findEmit(customSession, 'extension-ready', (event: Event, extension: Extension) => {
+    const readyPromise = findEmit(customSession, 'extension-ready', (event: Event, extension: Extension) => {
       return extension.name !== 'Chromium PDF Viewer';
     });
+
+    const extension = await customSession.loadExtension(fixturePath('extensions', 'red-bg'));
+    const [, loadedExtension] = await loadedPromise;
+    const [, readyExtension] = await readyPromise;
 
     expect(loadedExtension).to.deep.equal(extension);
     expect(readyExtension).to.deep.equal(extension);
@@ -352,7 +354,7 @@ describe('chrome extensions', () => {
       await w.loadURL(url);
 
       const message = { method: 'executeScript', args: ['1 + 2'] };
-      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${JSON.stringify(message)}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
@@ -366,7 +368,7 @@ describe('chrome extensions', () => {
 
       const portName = uuid.v4();
       const message = { method: 'connectTab', args: [portName] };
-      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${JSON.stringify(message)}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = responseString.split(',');
@@ -379,7 +381,7 @@ describe('chrome extensions', () => {
       await w.loadURL(url);
 
       const message = { method: 'sendMessage', args: ['Hello World!'] };
-      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${JSON.stringify(message)}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
@@ -398,7 +400,7 @@ describe('chrome extensions', () => {
       const w2Navigated = once(w2.webContents, 'did-navigate');
 
       const message = { method: 'update', args: [w2.webContents.id, { url }] };
-      w.webContents.executeJavaScript(jsont`window.postMessage(${message}, '*')`);
+      w.webContents.executeJavaScript(jsont`window.postMessage(${JSON.stringify(message)}, '*')`);
 
       const [,, responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);

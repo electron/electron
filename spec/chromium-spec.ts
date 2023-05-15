@@ -1398,7 +1398,7 @@ describe('chromium features', () => {
         if (request.url.includes('blank')) {
           callback(fixturePath('pages', 'blank.html'));
         } else {
-          callback(fixturePath('pages', 'window-opener-location'));
+          callback(fixturePath('pages', 'window-opener-location.html'));
         }
       });
     });

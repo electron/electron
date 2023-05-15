@@ -1813,30 +1813,31 @@ describe('<webview> tag', function () {
     describe('<webview>.goForward()', () => {
       useRemoteContext({ webPreferences: { webviewTag: true } });
       itremote('should work after a replaced history entry', async (fixtureBase: string) => {
-        function waitForEvent (target: EventTarget, event: string) {
-          return new Promise<any>(resolve => target.addEventListener(event, resolve, { once: true }));
+        function waitForEvent (event: string): Promise<any> {
+          return new Promise(resolve => webview.addEventListener(event, resolve, { once: true }));
         }
 
-        function waitForEvents (target: EventTarget, ...events: string[]) {
-          return Promise.all(events.map(event => waitForEvent(webview, event)));
+        function waitForEvents (...events: string[]) {
+          return Promise.all(events.map(event => waitForEvent(event)));
         }
 
         const webview = new WebView();
 
         webview.setAttribute('nodeintegration', 'on');
         webview.setAttribute('webpreferences', 'contextIsolation=no');
-        webview.src = `${fixtureBase}/pages/history-replace.html`;
+        webview.src = `${fixtureBase}/history-replace.html`;
+        console.log('0', webview.src);
         document.body.appendChild(webview);
 
         {
-          const [e] = await waitForEvents(webview, 'ipc-message', 'did-stop-loading');
+          const [e] = await waitForEvents('ipc-message', 'did-stop-loading');
           expect(e.channel).to.equal('history');
           expect(e.args[0]).to.equal(1);
           expect(webview.canGoBack()).to.be.false();
           expect(webview.canGoForward()).to.be.false();
         }
 
-        webview.src = `${fixtureBase}/pages/base-page.html`;
+        webview.src = `${fixtureBase}/base-page.html`;
 
         await new Promise<void>(resolve => webview.addEventListener('did-stop-loading', resolve, { once: true }));
 
@@ -1846,7 +1847,7 @@ describe('<webview> tag', function () {
         webview.goBack();
 
         {
-          const [e] = await waitForEvents(webview, 'ipc-message', 'did-stop-loading');
+          const [e] = await waitForEvents('ipc-message', 'did-stop-loading');
           expect(e.channel).to.equal('history');
           expect(e.args[0]).to.equal(2);
           expect(webview.canGoBack()).to.be.false();
