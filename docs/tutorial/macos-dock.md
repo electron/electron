@@ -29,7 +29,7 @@ const { app, BrowserWindow, Menu } = require('electron')
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
 
   win.loadFile('index.html')
@@ -66,7 +66,6 @@ app.on('activate', () => {
     createWindow()
   }
 })
-
 ```
 
 After launching the Electron application, right click the application icon.

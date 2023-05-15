@@ -86,13 +86,13 @@ module.exports = {
       config: {
         repository: {
           owner: 'github-user-name',
-          name: 'github-repo-name',
+          name: 'github-repo-name'
         },
         prerelease: false,
-        draft: true,
-      },
-    },
-  ],
+        draft: true
+      }
+    }
+  ]
 }
 ```
 

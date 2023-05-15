@@ -153,14 +153,14 @@ For more information on code signing, check out the
 module.exports = {
   packagerConfig: {
     osxSign: {},
-    //...
+    // ...
     osxNotarize: {
       tool: 'notarytool',
       appleId: process.env.APPLE_ID,
       appleIdPassword: process.env.APPLE_PASSWORD,
-      teamId: process.env.APPLE_TEAM_ID,
+      teamId: process.env.APPLE_TEAM_ID
     }
-    //...
+    // ...
   }
 }
 ```
@@ -170,17 +170,17 @@ module.exports = {
 
 ```js title='forge.config.js'
 module.exports = {
-  //...
+  // ...
   makers: [
     {
       name: '@electron-forge/maker-squirrel',
       config: {
         certificateFile: './cert.pfx',
-        certificatePassword: process.env.CERTIFICATE_PASSWORD,
-      },
-    },
-  ],
-  //...
+        certificatePassword: process.env.CERTIFICATE_PASSWORD
+      }
+    }
+  ]
+  // ...
 }
 ```
 
