@@ -126,9 +126,8 @@ void UsbChooserController::GotUsbDeviceList(
 
     prevent_default =
         session->Emit("select-usb-device", details,
-                      base::AdaptCallbackForRepeating(
-                          base::BindOnce(&UsbChooserController::OnDeviceChosen,
-                                         weak_factory_.GetWeakPtr())));
+                      base::BindRepeating(&UsbChooserController::OnDeviceChosen,
+                                          weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback(/*device_info=*/nullptr);

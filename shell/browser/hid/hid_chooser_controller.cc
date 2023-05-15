@@ -247,9 +247,8 @@ void HidChooserController::OnGotDevices(
                                         .Build();
     prevent_default =
         session->Emit("select-hid-device", details,
-                      base::AdaptCallbackForRepeating(
-                          base::BindOnce(&HidChooserController::OnDeviceChosen,
-                                         weak_factory_.GetWeakPtr())));
+                      base::BindRepeating(&HidChooserController::OnDeviceChosen,
+                                          weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback({});

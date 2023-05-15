@@ -179,9 +179,9 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
     }
 
     permission_manager->CheckBluetoothDevicePair(
-        details, base::AdaptCallbackForRepeating(base::BindOnce(
-                     &ElectronBluetoothDelegate::OnDevicePairPromptResponse,
-                     weak_factory_.GetWeakPtr(), std::move(callback))));
+        details,
+        base::BindOnce(&ElectronBluetoothDelegate::OnDevicePairPromptResponse,
+                       weak_factory_.GetWeakPtr(), std::move(callback)));
   }
 }
 

@@ -653,8 +653,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
-        handler->Run(web_contents, permission_type,
-                     base::AdaptCallbackForRepeating(std::move(callback)),
+        handler->Run(web_contents, permission_type, std::move(callback),
                      details);
       },
       base::Owned(std::move(handler))));
