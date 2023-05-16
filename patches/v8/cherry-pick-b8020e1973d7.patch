@@ -1,7 +1,7 @@
-From b8020e1973d7d3a50b17c076cd948f079e59f9e5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Thu, 27 Apr 2023 11:11:32 +0200
-Subject: [PATCH] [api] Fix v8::Object::SetAccessorProperty
+Subject: Fix v8::Object::SetAccessorProperty
 
 ... by using JavaScript spec compliant JSReceiver::DefineOwnProperty.
 
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4458947
 Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#87302}
----
 
 diff --git a/include/v8-object.h b/include/v8-object.h
-index 6c03d63..6954c00 100644
+index 6c03d63c482c4096777b887d6f6a22336f82147e..6954c00b50a504d2a0205fb67f314e4e50fb455a 100644
 --- a/include/v8-object.h
 +++ b/include/v8-object.h
-@@ -247,13 +247,16 @@
+@@ -247,13 +247,16 @@ class V8_EXPORT Object : public Value {
    V8_WARN_UNUSED_RESULT Maybe<bool> Set(Local<Context> context, uint32_t index,
                                          Local<Value> value);
  
@@ -47,7 +46,7 @@ index 6c03d63..6954c00 100644
    V8_WARN_UNUSED_RESULT Maybe<bool> CreateDataProperty(Local<Context> context,
                                                         Local<Name> key,
                                                         Local<Value> value);
-@@ -261,29 +264,35 @@
+@@ -261,29 +264,35 @@ class V8_EXPORT Object : public Value {
                                                         uint32_t index,
                                                         Local<Value> value);
  
@@ -102,7 +101,7 @@ index 6c03d63..6954c00 100644
    V8_WARN_UNUSED_RESULT Maybe<bool> DefineProperty(
        Local<Context> context, Local<Name> key, PropertyDescriptor& descriptor);
  
-@@ -302,14 +311,15 @@
+@@ -302,14 +311,15 @@ class V8_EXPORT Object : public Value {
        Local<Context> context, Local<Value> key);
  
    /**
@@ -121,7 +120,7 @@ index 6c03d63..6954c00 100644
     * true, if the object has the property, either own or on the prototype chain.
     * Interceptors, i.e., PropertyQueryCallbacks, are called if present.
     *
-@@ -347,7 +357,7 @@
+@@ -347,7 +357,7 @@ class V8_EXPORT Object : public Value {
  
    void SetAccessorProperty(Local<Name> name, Local<Function> getter,
                             Local<Function> setter = Local<Function>(),
@@ -131,10 +130,10 @@ index 6c03d63..6954c00 100644
  
    /**
 diff --git a/src/api/api-natives.cc b/src/api/api-natives.cc
-index 1ce33d5..f4fe0ae 100644
+index 05a883f2d560e360b6933639dab3ec956464cb1a..905f29bf253c443204f3f9f36fd4c948ed434f15 100644
 --- a/src/api/api-natives.cc
 +++ b/src/api/api-natives.cc
-@@ -97,10 +97,10 @@
+@@ -96,10 +96,10 @@ MaybeHandle<Object> DefineAccessorProperty(Isolate* isolate,
      Handle<Code> trampoline = BUILTIN_CODE(isolate, DebugBreakTrampoline);
      Handle<JSFunction>::cast(setter)->set_code(*trampoline);
    }
@@ -150,10 +149,10 @@ index 1ce33d5..f4fe0ae 100644
  }
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index 8113cf7..6f70ee5 100644
+index d664893fca9e378853eaaae5b174679dadc75d91..a30c50948ab634313f33d5eb96cef98fa671d121 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -5138,7 +5138,7 @@
+@@ -5138,7 +5138,7 @@ Maybe<bool> Object::SetAccessor(Local<Context> context, Local<Name> name,
  
  void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
                                   Local<Function> setter,
@@ -162,7 +161,7 @@ index 8113cf7..6f70ee5 100644
                                   AccessControl settings) {
    // TODO(verwaest): Remove |settings|.
    DCHECK_EQ(v8::DEFAULT, settings);
-@@ -5150,9 +5150,20 @@
+@@ -5150,9 +5150,20 @@ void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
    i::Handle<i::Object> getter_i = v8::Utils::OpenHandle(*getter);
    i::Handle<i::Object> setter_i = v8::Utils::OpenHandle(*setter, true);
    if (setter_i.is_null()) setter_i = i_isolate->factory()->null_value();
@@ -187,10 +186,10 @@ index 8113cf7..6f70ee5 100644
  
  Maybe<bool> Object::SetNativeDataProperty(
 diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
-index 05ac99f..7a63bf6 100644
+index 06d945e25356958b206cadc352829ae37610ec16..139acc88ac7efa74182f2c43dacf039c87e08f32 100644
 --- a/src/init/bootstrapper.cc
 +++ b/src/init/bootstrapper.cc
-@@ -638,7 +638,9 @@
+@@ -638,7 +638,9 @@ V8_NOINLINE void SimpleInstallGetterSetter(Isolate* isolate,
    Handle<JSFunction> setter =
        SimpleCreateFunction(isolate, setter_name, call_setter, 1, true);
  
@@ -201,7 +200,7 @@ index 05ac99f..7a63bf6 100644
  }
  
  void SimpleInstallGetterSetter(Isolate* isolate, Handle<JSObject> base,
-@@ -662,7 +664,8 @@
+@@ -662,7 +664,8 @@ V8_NOINLINE Handle<JSFunction> SimpleInstallGetter(Isolate* isolate,
  
    Handle<Object> setter = isolate->factory()->undefined_value();
  
@@ -212,10 +211,10 @@ index 05ac99f..7a63bf6 100644
  
    return getter;
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 8fbf7a1..f3a45f1 100644
+index 8fbf7a135e36085e8a32c8224c35db45702b4ab1..f3a45f1a1220f68a277617617cc0c534d5e542a2 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -1541,7 +1541,8 @@
+@@ -1541,7 +1541,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
                  ? desc->set()
                  : Handle<Object>::cast(isolate->factory()->null_value()));
          MaybeHandle<Object> result =
@@ -225,7 +224,7 @@ index 8fbf7a1..f3a45f1 100644
          if (result.is_null()) return Nothing<bool>();
        }
      }
-@@ -1725,8 +1726,8 @@
+@@ -1725,8 +1726,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
                : current->has_set()
                      ? current->set()
                      : Handle<Object>::cast(isolate->factory()->null_value()));
@@ -236,7 +235,7 @@ index 8fbf7a1..f3a45f1 100644
        if (result.is_null()) return Nothing<bool>();
      }
    }
-@@ -4703,22 +4704,19 @@
+@@ -4703,22 +4704,19 @@ bool JSObject::HasEnumerableElements() {
    UNREACHABLE();
  }
  
@@ -267,10 +266,10 @@ index 8fbf7a1..f3a45f1 100644
  
    it->UpdateProtector();
 diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
-index 80a64a6..870eb81 100644
+index 80a64a63a16e2aaed7aeacbd734f4488df34e91b..870eb81553f0debadea08a20aad44ff216f09226 100644
 --- a/src/objects/js-objects.h
 +++ b/src/objects/js-objects.h
-@@ -538,13 +538,14 @@
+@@ -538,13 +538,14 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
    GetPropertyAttributesWithFailedAccessCheck(LookupIterator* it);
  
    // Defines an AccessorPair property on the given object.
@@ -293,10 +292,10 @@ index 80a64a6..870eb81 100644
    // Defines an AccessorInfo property on the given object.
    V8_WARN_UNUSED_RESULT static MaybeHandle<Object> SetAccessor(
 diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
-index d72c1fd..c83ee5e 100644
+index d72c1fd4e08e0d4620ff63da6aa49c20123ea6dc..c83ee5ed097c4e0c1cb8d4f703389df5c48799ad 100644
 --- a/src/runtime/runtime-object.cc
 +++ b/src/runtime/runtime-object.cc
-@@ -1082,7 +1082,8 @@
+@@ -1082,7 +1082,8 @@ RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
    auto attrs = PropertyAttributesFromInt(args.smi_value_at(4));
  
    RETURN_FAILURE_ON_EXCEPTION(
@@ -306,7 +305,7 @@ index d72c1fd..c83ee5e 100644
    return ReadOnlyRoots(isolate).undefined_value();
  }
  
-@@ -1209,8 +1210,8 @@
+@@ -1209,8 +1210,8 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
  
    RETURN_FAILURE_ON_EXCEPTION(
        isolate,
@@ -317,7 +316,7 @@ index d72c1fd..c83ee5e 100644
    return ReadOnlyRoots(isolate).undefined_value();
  }
  
-@@ -1354,8 +1355,8 @@
+@@ -1354,8 +1355,8 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
  
    RETURN_FAILURE_ON_EXCEPTION(
        isolate,
@@ -329,10 +328,10 @@ index d72c1fd..c83ee5e 100644
  }
  
 diff --git a/src/sandbox/testing.cc b/src/sandbox/testing.cc
-index adf8696..0dec24c 100644
+index adf86969f0eeeb8aa92056b40f7998eed8a473fe..0dec24c43fd02e7333380cf80b355e2e078b8ec3 100644
 --- a/src/sandbox/testing.cc
 +++ b/src/sandbox/testing.cc
-@@ -160,7 +160,8 @@
+@@ -160,7 +160,8 @@ void InstallGetter(Isolate* isolate, Handle<JSObject> object,
    Handle<String> property_name = factory->NewStringFromAsciiChecked(name);
    Handle<JSFunction> getter = CreateFunc(isolate, func, property_name, false);
    Handle<Object> setter = factory->null_value();
@@ -343,10 +342,10 @@ index adf8696..0dec24c 100644
  
  void InstallFunction(Isolate* isolate, Handle<JSObject> holder,
 diff --git a/test/cctest/test-code-stub-assembler.cc b/test/cctest/test-code-stub-assembler.cc
-index 5efe528..4c2c8ed 100644
+index 5efe5281c26937cdf6e79e07cfb01b8233c3a1f4..4c2c8ed11eb7cdf504c9549d6c8c8ba61f7ce765 100644
 --- a/test/cctest/test-code-stub-assembler.cc
 +++ b/test/cctest/test-code-stub-assembler.cc
-@@ -1178,7 +1178,9 @@
+@@ -1178,7 +1178,9 @@ void AddProperties(Handle<JSObject> object, Handle<Name> names[],
        Handle<AccessorPair> pair = Handle<AccessorPair>::cast(value);
        Handle<Object> getter(pair->getter(), isolate);
        Handle<Object> setter(pair->setter(), isolate);

@@ -1,7 +1,7 @@
-From 9b6ca211234b057a9ce4184a3315741dc040ecbf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kevin McNee <mcnee@chromium.org>
 Date: Fri, 12 May 2023 19:53:19 +0000
-Subject: [PATCH] M114: Store BrowserPluginGuestDelegate as a weak ptr
+Subject: M114: Store BrowserPluginGuestDelegate as a weak ptr
 
 Store BrowserPluginGuestDelegate as a weak ptr
 
@@ -28,10 +28,9 @@ Auto-Submit: Kevin McNee <mcnee@chromium.org>
 Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5735@{#540}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
-index 7cd25c75..014e41d1 100644
+index 7cd25c756975cc073b9c2211f98ac1f483b5d8de..014e41d120ad17f54d89d1dd74f70b8b51ae8445 100644
 --- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
 +++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
 @@ -48,6 +48,7 @@
@@ -42,7 +41,7 @@ index 7cd25c75..014e41d1 100644
  #include "chrome/test/base/ui_test_utils.h"
  #include "components/download/public/common/download_task_runner.h"
  #include "components/find_in_page/find_tab_helper.h"
-@@ -5554,6 +5555,63 @@
+@@ -5554,6 +5555,63 @@ IN_PROC_BROWSER_TEST_F(WebViewTest, LoadDisallowedExtensionURLInSubframe) {
              entry->metrics.begin()->second);
  }
  
@@ -107,10 +106,10 @@ index 7cd25c75..014e41d1 100644
    TestHelper("testInsertIntoDetachedIframe", "web_view/shim",
               NEEDS_TEST_SERVER);
 diff --git a/components/guest_view/browser/guest_view_base.cc b/components/guest_view/browser/guest_view_base.cc
-index 4ef55d1c..ba2fac2 100644
+index 4ef55d1c5e49a23240916c891f84f142a42a9160..ba2fac244ddbbabfd36cd3f4e0f39e29994fc86b 100644
 --- a/components/guest_view/browser/guest_view_base.cc
 +++ b/components/guest_view/browser/guest_view_base.cc
-@@ -124,6 +124,9 @@
+@@ -124,6 +124,9 @@ class GuestViewBase::OpenerLifetimeObserver : public WebContentsObserver {
    void WebContentsDestroyed() override {
      // If the opener is destroyed and the guest has not been attached, then
      // destroy the guest.
@@ -120,7 +119,7 @@ index 4ef55d1c..ba2fac2 100644
      // Destroys `this`.
      DestroyGuestIfUnattached(guest_);
    }
-@@ -915,4 +918,9 @@
+@@ -915,4 +918,9 @@ content::RenderFrameHost* GuestViewBase::GetGuestMainFrame() const {
    return web_contents()->GetPrimaryMainFrame();
  }
  
@@ -131,10 +130,10 @@ index 4ef55d1c..ba2fac2 100644
 +
  }  // namespace guest_view
 diff --git a/components/guest_view/browser/guest_view_base.h b/components/guest_view/browser/guest_view_base.h
-index dccb7fcf..a15c73f 100644
+index dccb7fcf6e21260081f4c4a32878faf5ed482de8..a15c73fb116586bfd578d562d3164b38d290ee41 100644
 --- a/components/guest_view/browser/guest_view_base.h
 +++ b/components/guest_view/browser/guest_view_base.h
-@@ -353,6 +353,8 @@
+@@ -353,6 +353,8 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
    std::unique_ptr<content::WebContents> CreateNewGuestWindow(
        const content::WebContents::CreateParams& create_params) final;
    content::WebContents* GetOwnerWebContents() final;
@@ -144,10 +143,10 @@ index dccb7fcf..a15c73f 100644
    // WebContentsDelegate implementation.
    void ActivateContents(content::WebContents* contents) final;
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
-index a7501a5..2e47c12 100644
+index a7501a57c5149448c0fa467af9f8ba1f4d0ccc90..2e47c128f4d5c0fa2f22f98340f2ba1863d36fad 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.cc
 +++ b/content/browser/browser_plugin/browser_plugin_guest.cc
-@@ -25,9 +25,10 @@
+@@ -25,9 +25,10 @@ namespace content {
  
  BrowserPluginGuest::BrowserPluginGuest(WebContentsImpl* web_contents,
                                         BrowserPluginGuestDelegate* delegate)
@@ -161,7 +160,7 @@ index a7501a5..2e47c12 100644
    RecordAction(base::UserMetricsAction("BrowserPlugin.Guest.Create"));
  }
  
-@@ -97,6 +98,11 @@
+@@ -97,6 +98,11 @@ WebContentsImpl* BrowserPluginGuest::GetWebContents() const {
  }
  
  RenderFrameHostImpl* BrowserPluginGuest::GetProspectiveOuterDocument() {
@@ -174,7 +173,7 @@ index a7501a5..2e47c12 100644
        delegate_->GetProspectiveOuterDocument());
  }
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.h b/content/browser/browser_plugin/browser_plugin_guest.h
-index 17e98b6..7f308302 100644
+index 17e98b60e8f7e5066cdbe115adcdd813cc581403..7f3083029d45e7a0d45b989a07013709a7be2f1d 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.h
 +++ b/content/browser/browser_plugin/browser_plugin_guest.h
 @@ -7,7 +7,7 @@
@@ -186,7 +185,7 @@ index 17e98b6..7f308302 100644
  #include "build/build_config.h"
  #include "content/public/browser/browser_plugin_guest_delegate.h"
  #include "content/public/browser/web_contents_observer.h"
-@@ -78,7 +78,8 @@
+@@ -78,7 +78,8 @@ class BrowserPluginGuest : public WebContentsObserver {
  
    void InitInternal(WebContentsImpl* owner_web_contents);
  
@@ -197,10 +196,10 @@ index 17e98b6..7f308302 100644
  
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.cc b/content/public/browser/browser_plugin_guest_delegate.cc
-index 62cbad1..040d36a 100644
+index 62cbad1500229efeba44e467778e3fdfaf1f4ace..040d36ae694412f06243581984d048a877cfd59b 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.cc
 +++ b/content/public/browser/browser_plugin_guest_delegate.cc
-@@ -20,4 +20,10 @@
+@@ -20,4 +20,10 @@ RenderFrameHost* BrowserPluginGuestDelegate::GetProspectiveOuterDocument() {
    return nullptr;
  }
  
@@ -212,7 +211,7 @@ index 62cbad1..040d36a 100644
 +
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.h b/content/public/browser/browser_plugin_guest_delegate.h
-index 51a4efa8..d588b4d3 100644
+index 51a4efa8163208a5cf9468c8ba72afa89fe79e5d..d588b4d39933b8cada1007699f5cc8e4b1e3e505 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.h
 +++ b/content/public/browser/browser_plugin_guest_delegate.h
 @@ -5,6 +5,7 @@
@@ -223,7 +222,7 @@ index 51a4efa8..d588b4d3 100644
  #include "content/common/content_export.h"
  #include "content/public/browser/web_contents.h"
  
-@@ -28,6 +29,8 @@
+@@ -28,6 +29,8 @@ class CONTENT_EXPORT BrowserPluginGuestDelegate {
    // TODO(crbug.com/769461): Have all guest types return the specific owner
    // RenderFrameHost and not assume it's the owner's main frame.
    virtual RenderFrameHost* GetProspectiveOuterDocument();

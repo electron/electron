@@ -1,7 +1,8 @@
-From 6755626950491fac28d6631b19e16a5733435070 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rakina Zata Amni <rakina@chromium.org>
 Date: Mon, 15 May 2023 03:21:49 +0000
-Subject: [PATCH] [M114] Return after ReadyCommitNavigation call in CommitErrorPage if it deletes NavigationRequest
+Subject: Return after ReadyCommitNavigation call in CommitErrorPage if it
+ deletes NavigationRequest
 
 NavigationRequest::ReadyToCommitNavigation() can cause deletion of the
 NavigationRequest, so callers should check for that possibility after
@@ -23,13 +24,12 @@ Commit-Queue: Prudhvikumar Bommana <pbommana@google.com>
 Owners-Override: Prudhvikumar Bommana <pbommana@google.com>
 Cr-Commit-Position: refs/branch-heads/5735@{#607}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index c7cc3b84..a2530d4 100644
+index d0f07ecdc9fae8d7c38a34ef071b79b97c080e5b..40c2dd985007a4b4b408814391834eec6e3bc123 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -5453,7 +5453,13 @@
+@@ -5453,7 +5453,13 @@ void NavigationRequest::CommitErrorPage(
      topics_eligible_ = false;
    }
  
@@ -44,7 +44,7 @@ index c7cc3b84..a2530d4 100644
    PopulateDocumentTokenForCrossDocumentNavigation();
    // Use a separate cache shard, and no cookies, for error pages.
 diff --git a/content/browser/renderer_host/navigation_request_browsertest.cc b/content/browser/renderer_host/navigation_request_browsertest.cc
-index f55e3f4..58f3526 100644
+index f55e3f4f96181d92ad768e431a4844ae774a7c9e..58f3526fe0a60b499fd06943b0577a52210338fb 100644
 --- a/content/browser/renderer_host/navigation_request_browsertest.cc
 +++ b/content/browser/renderer_host/navigation_request_browsertest.cc
 @@ -46,6 +46,7 @@
@@ -55,7 +55,7 @@ index f55e3f4..58f3526 100644
  #include "content/public/test/test_utils.h"
  #include "content/public/test/url_loader_interceptor.h"
  #include "content/shell/browser/shell.h"
-@@ -4384,4 +4385,84 @@
+@@ -4384,4 +4385,84 @@ IN_PROC_BROWSER_TEST_P(NavigationRequestMPArchBrowserTest,
    }
  }
  

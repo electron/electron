@@ -1,7 +1,10 @@
-From d6272b794cbbb146303c3acb48713244a92cce48 Mon Sep 17 00:00:00 2001
-From: Simon Zünd <szuend@chromium.org>
-Date: Tue, 02 May 2023 06:05:35 +0000
-Subject: [PATCH] [devtools] Delete PendingRequest first in DevToolsDataSource
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Simon=20Z=C3=BCnd?= <szuend@chromium.org>
+Date: Tue, 2 May 2023 06:05:35 +0000
+Subject: Delete PendingRequest first in DevToolsDataSource
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 The way URLDataSources are used in Chromium, it can happen that the
 "content::URLDataSource::GotDataCallback" closure is the last shared
@@ -21,13 +24,12 @@ Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
 Commit-Queue: Simon Zünd <szuend@chromium.org>
 Reviewed-by: Danil Somsikov <dsv@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1138173}
----
 
 diff --git a/chrome/browser/ui/webui/devtools_ui_data_source.cc b/chrome/browser/ui/webui/devtools_ui_data_source.cc
-index c60d70f..991599d 100644
+index c60d70fb3271e2459634709f015901b70db5b64c..991599d11df139173b356d50d3027c38a356eeb8 100644
 --- a/chrome/browser/ui/webui/devtools_ui_data_source.cc
 +++ b/chrome/browser/ui/webui/devtools_ui_data_source.cc
-@@ -365,11 +365,13 @@
+@@ -365,11 +365,13 @@ void DevToolsDataSource::StartFileRequest(const std::string& path,
  void DevToolsDataSource::OnLoadComplete(
      std::list<PendingRequest>::iterator request_iter,
      std::unique_ptr<std::string> response_body) {
@@ -46,7 +48,7 @@ index c60d70f..991599d 100644
  
  DevToolsDataSource::PendingRequest::PendingRequest() = default;
 diff --git a/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc b/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc
-index b4f41411..c07c43b 100644
+index b4f41411c578b0a0c1b3fcd65e170744b4e62ee3..c07c43b6a139bfbdbe4a0bbaa7e4dfb425442d99 100644
 --- a/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc
 +++ b/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc
 @@ -9,13 +9,17 @@
@@ -67,7 +69,7 @@ index b4f41411..c07c43b 100644
  #include "testing/gtest/include/gtest/gtest.h"
  
  namespace {
-@@ -356,3 +360,36 @@
+@@ -356,3 +360,36 @@ TEST_F(DevToolsUIDataSourceTest, TestDevToolsNoRouteWithSwitch) {
    ASSERT_TRUE(base::StartsWith(data(), kDevToolsUITest404Response,
                                 base::CompareCase::SENSITIVE));
  }
