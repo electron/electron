@@ -285,7 +285,7 @@ step-gclient-sync: &step-gclient-sync
         ELECTRON_USE_THREE_WAY_MERGE_FOR_PATCHES=1 gclient sync --with_branch_heads --with_tags
         if [ "$IS_RELEASE" != "true" ]; then
           # Re-export all the patches to check if there were changes.
-          python src/electron/script/export_all_patches.py src/electron/patches/config.json
+          python3 src/electron/script/export_all_patches.py src/electron/patches/config.json
           cd src/electron
           git update-index --refresh || true
           if ! git diff-index --quiet HEAD --; then
@@ -339,8 +339,8 @@ step-setup-goma-for-build: &step-setup-goma-for-build
       mkdir third_party
       node -e "require('./src/utils/goma.js').downloadAndPrepare({ gomaOneForAll: true })"
       export GOMA_FALLBACK_ON_AUTH_FAILURE=true
-      third_party/goma/goma_ctl.py ensure_start
-      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`third_party/goma/goma_auth.py info`" != "Login as Fermi Planck" ]; then
+      python3 third_party/goma/goma_ctl.py ensure_start
+      if [ ! -z "$RAW_GOMA_AUTH" ] && [ "`python3 third_party/goma/goma_auth.py info`" != "Login as Fermi Planck" ]; then
         echo "WARNING!!!!!! Goma authentication is incorrect; please update Goma auth token."
         exit 1
       fi
@@ -368,14 +368,14 @@ step-restore-brew-cache: &step-restore-brew-cache
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
     keys:
-      - v6-brew-cache-{{ arch }}
+      - v7-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
-    key: v6-brew-cache-{{ arch }}
+    key: v7-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
@@ -744,9 +744,9 @@ step-verify-mksnapshot: &step-verify-mksnapshot
       if [ "$IS_ASAN" != "1" ]; then
         cd src
         if [ "$TARGET_ARCH" == "arm" ] || [ "$TARGET_ARCH" == "arm64" ]; then
-          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
+          python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --snapshot-files-dir $PWD/cross-arch-snapshots
         else
-          python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
+          python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default
         fi
       fi
 
@@ -756,7 +756,7 @@ step-verify-chromedriver: &step-verify-chromedriver
     command: |
       if [ "$IS_ASAN" != "1" ]; then
         cd src
-        python electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
+        python3 electron/script/verify-chromedriver.py --source-root "$PWD" --build-dir out/Default
       fi
 
 step-setup-linux-for-headless-testing: &step-setup-linux-for-headless-testing
@@ -872,7 +872,7 @@ step-maybe-cross-arch-snapshot: &step-maybe-cross-arch-snapshot
         elif [ "`uname`" == "Darwin" ]; then
           cp "out/Default/$MKSNAPSHOT_PATH/libffmpeg.dylib" out/Default
         fi
-        python electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
+        python3 electron/script/verify-mksnapshot.py --source-root "$PWD" --build-dir out/Default --create-snapshot-only
         mkdir cross-arch-snapshots
         cp out/Default-mksnapshot-test/*.bin cross-arch-snapshots
       fi
@@ -1024,7 +1024,6 @@ step-ts-compile: &step-ts-compile
 # List of all steps.
 steps-electron-gn-check: &steps-electron-gn-check
   steps:
-    - install-python2-mac
     - *step-setup-goma-for-build
     - checkout-from-cache
     - *step-setup-env-for-build
@@ -1052,7 +1051,6 @@ steps-tests: &steps-tests
     - *step-setup-linux-for-headless-testing
     - *step-restore-brew-cache
     - *step-fix-known-hosts-linux
-    - install-python2-mac
     - *step-install-signing-cert-on-mac
 
     - run:
@@ -1136,31 +1134,6 @@ steps-test-node: &steps-test-node
 
 # Command Aliases
 commands:
-  install-python2-mac:
-    steps:
-      - restore_cache:
-          keys:
-            - v2.7.18-python-cache-{{ arch }}
-          name: Restore python cache
-      - run:
-          name: Install python2 on macos
-          command: |
-            if [ "`uname`" == "Darwin" ] && [ "$IS_ELECTRON_RUNNER" != "1" ]; then
-              if [ ! -f "python-downloads/python-2.7.18-macosx10.9.pkg" ]; then
-                mkdir python-downloads
-                echo 'Downloading Python 2.7.18'
-                curl -O https://dev-cdn.electronjs.org/python/python-2.7.18-macosx10.9.pkg
-                mv python-2.7.18-macosx10.9.pkg python-downloads
-              else
-                echo 'Using Python install from cache'
-              fi
-              sudo installer -pkg python-downloads/python-2.7.18-macosx10.9.pkg -target /        
-            fi
-      - save_cache:
-          paths:
-            - python-downloads
-          key: v2.7.18-python-cache-{{ arch }}
-          name: Persisting python cache
   maybe-restore-portaled-src-cache:
     parameters:
       halt-if-successful:
@@ -1324,7 +1297,6 @@ commands:
             - run: rm -rf src/electron
       - *step-restore-brew-cache
       - *step-install-gnutar-on-mac
-      - install-python2-mac
       - *step-save-brew-cache
       - when:
           condition: << parameters.build >>
@@ -1496,7 +1468,6 @@ commands:
             - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-restore-brew-cache
-      - install-python2-mac
       - *step-get-more-space-on-mac
       - when:
           condition: << parameters.checkout >>
