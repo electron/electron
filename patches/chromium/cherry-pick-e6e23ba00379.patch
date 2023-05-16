@@ -1,7 +1,7 @@
-From e6e23ba003793daeedeee849354ca4d8fa5cd8d3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Christopher Cameron <ccameron@chromium.org>
 Date: Mon, 15 May 2023 15:30:36 +0200
-Subject: [PATCH] Use ExternalBeginFrameSourceMac on macOS
+Subject: Use ExternalBeginFrameSourceMac on macOS
 
 Change ExternalBeginFrameSourceMac from being a
 SyntheticBeginFrameSource to being an ExternalBeginFrameSource.
@@ -21,16 +21,15 @@ instead of creating a DelayBasedBeginFrameSource.
 
 Bug: 1404797
 Change-Id: I288497d94cc66356586e8da34852d53d05cf42f3
----
 
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 8e944b5..55832333 100644
+index 5b0a12d8b69c0b79fefcb9194e0f3fb88c4c7051..8ebcf88eadb7fbc3ce781b9094ec88f6d23134c1 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -324,6 +324,12 @@
- 
+@@ -323,6 +323,12 @@ viz_component("service") {
        frameworks += [ "CoreGraphics.framework" ]
      }
+     configs = ["//electron/build/config:mas_build"]
 +    if (is_mac) {
 +      sources += [
 +        "frame_sinks/external_begin_frame_source_mac.cc",
@@ -41,10 +40,10 @@ index 8e944b5..55832333 100644
  
    if (is_android || use_ozone) {
 diff --git a/components/viz/service/frame_sinks/DEPS b/components/viz/service/frame_sinks/DEPS
-index 163224a..c0e240ec 100644
+index 163224a3cdb78d1eee055491c2daa7ca09fe4baa..c0e240ec70f7b7d4da92b497ac607e73d1168923 100644
 --- a/components/viz/service/frame_sinks/DEPS
 +++ b/components/viz/service/frame_sinks/DEPS
-@@ -26,4 +26,8 @@
+@@ -26,4 +26,8 @@ specific_include_rules = {
    "external_begin_frame_source_android.cc": [
      "+components/viz/service/service_jni_headers/ExternalBeginFrameSourceAndroid_jni.h",
    ],
@@ -55,7 +54,7 @@ index 163224a..c0e240ec 100644
  }
 diff --git a/components/viz/service/frame_sinks/external_begin_frame_source_mac.cc b/components/viz/service/frame_sinks/external_begin_frame_source_mac.cc
 new file mode 100644
-index 0000000..f5bd62e
+index 0000000000000000000000000000000000000000..f5bd62e7c486b8e6bb58d59984f363867015486c
 --- /dev/null
 +++ b/components/viz/service/frame_sinks/external_begin_frame_source_mac.cc
 @@ -0,0 +1,97 @@
@@ -158,7 +157,7 @@ index 0000000..f5bd62e
 +}  // namespace viz
 diff --git a/components/viz/service/frame_sinks/external_begin_frame_source_mac.h b/components/viz/service/frame_sinks/external_begin_frame_source_mac.h
 new file mode 100644
-index 0000000..4753f86
+index 0000000000000000000000000000000000000000..4753f86371d97ec0470e355258bae17e10e77dcf
 --- /dev/null
 +++ b/components/viz/service/frame_sinks/external_begin_frame_source_mac.h
 @@ -0,0 +1,74 @@
@@ -237,7 +236,7 @@ index 0000000..4753f86
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_MAC_H_
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 0c438db..f7979fc 100644
+index 13962687d262434de77f76c1c5a0f39f0fd9fb43..4d07b897a158bf39d9b29e3ac90920aee3050ce0 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -36,6 +36,10 @@
@@ -251,7 +250,7 @@ index 0c438db..f7979fc 100644
  namespace viz {
  
  class RootCompositorFrameSinkImpl::StandaloneBeginFrameObserver
-@@ -139,6 +143,11 @@
+@@ -140,6 +144,11 @@ RootCompositorFrameSinkImpl::Create(
      hw_support_for_multiple_refresh_rates = true;
      external_begin_frame_source =
          std::make_unique<ExternalBeginFrameSourceIOS>(restart_id);
@@ -264,7 +263,7 @@ index 0c438db..f7979fc 100644
      if (params->disable_frame_rate_limit) {
        synthetic_begin_frame_source =
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 2185525..4a7d465 100644
+index 0d5ef8c48f08b1eb5ed878ab8934f2ecd04083fa..30f72b9655e790d864fc7e28983b6a37074448a5 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -9,6 +9,7 @@
@@ -283,9 +282,9 @@ index 2185525..4a7d465 100644
  #include "ui/display/util/display_util.h"
  #include "ui/gfx/geometry/point.h"
  #include "ui/gfx/icc_profile.h"
-@@ -270,8 +270,22 @@
-   }
+@@ -280,8 +280,22 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
    display.set_is_monochrome(CGDisplayUsesForceToGray());
+ #endif
  
 -  if (auto display_link = ui::DisplayLinkMac::GetForDisplay(display_id))
 -    display.set_display_frequency(display_link->GetRefreshRate());
@@ -309,7 +308,7 @@ index 2185525..4a7d465 100644
    // CGDisplayRotation returns a double. Display::SetRotationAsDegree will
    // handle the unexpected situations were the angle is not a multiple of 90.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
-index aa89421..51162de 100644
+index e63b249a9bdc23545121a513156bfa32e92fec0b..e21c2df5d19bf01271bee91f792a3dbae29c55b7 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
 @@ -24,7 +24,6 @@
@@ -320,7 +319,7 @@ index aa89421..51162de 100644
  #include "ui/views/cocoa/drag_drop_client_mac.h"
  #include "ui/views/cocoa/native_widget_mac_event_monitor.h"
  #include "ui/views/views_export.h"
-@@ -419,12 +418,6 @@
+@@ -421,12 +420,6 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    // ui::AcceleratedWidgetMacNSView:
    void AcceleratedWidgetCALayerParamsUpdated() override;
  
@@ -333,7 +332,7 @@ index aa89421..51162de 100644
    // The id that this bridge may be looked up from.
    const uint64_t widget_id_;
    const raw_ptr<views::NativeWidgetMac>
-@@ -490,15 +483,6 @@
+@@ -494,15 +487,6 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
    // The display that the window is currently on.
    display::Display display_;
  
@@ -350,10 +349,10 @@ index aa89421..51162de 100644
    gfx::Rect window_bounds_in_screen_;
    gfx::Rect content_bounds_in_screen_;
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index ca1a9e0..e970acc 100644
+index f1f25bf0e19a918c3fcc7b7610ecf2924a880ff4..a0c9f71c5eb97091941ba7d9955854af74bd67d5 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -1163,32 +1163,18 @@
+@@ -1163,32 +1163,19 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  
  void NativeWidgetMacNSWindowHost::OnWindowDisplayChanged(
      const display::Display& new_display) {
@@ -371,7 +370,7 @@ index ca1a9e0..e970acc 100644
 +  if (!compositor_) {
 +    return;
    }
--
+ 
 -  if (display_id_changed) {
 -    display_link_ = ui::DisplayLinkMac::GetForDisplay(
 -        base::checked_cast<CGDirectDisplayID>(display_.id()));
@@ -396,7 +395,7 @@ index ca1a9e0..e970acc 100644
  }
  
  void NativeWidgetMacNSWindowHost::OnWindowWillClose() {
-@@ -1615,32 +1601,6 @@
+@@ -1619,32 +1606,6 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  void NativeWidgetMacNSWindowHost::AcceleratedWidgetCALayerParamsUpdated() {
    if (const auto* ca_layer_params = compositor_->widget()->GetCALayerParams())
      GetNSWindowMojo()->SetCALayerParams(*ca_layer_params);
