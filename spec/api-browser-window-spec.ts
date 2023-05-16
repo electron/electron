@@ -1428,6 +1428,42 @@ describe('BrowserWindow module', () => {
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
 
+        it('correctly reports maximized state after maximizing then minimizing', async () => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const minimize = emittedOnce(w, 'minimize');
+          w.minimize();
+          await minimize;
+
+          expect(w.isMaximized()).to.equal(false);
+          expect(w.isMinimized()).to.equal(true);
+        });
+
+        it('correctly reports maximized state after maximizing then fullscreening', async () => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const enterFS = emittedOnce(w, 'enter-full-screen');
+          w.setFullScreen(true);
+          await enterFS;
+
+          expect(w.isMaximized()).to.equal(false);
+          expect(w.isFullScreen()).to.equal(true);
+        });
+
         it('does not change size for a frameless window with min size', async () => {
           w.destroy();
           w = new BrowserWindow({
