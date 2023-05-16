@@ -1,0 +1,47 @@
+From 91fce33456683ec1d132c645ce927f9bdf92637e Mon Sep 17 00:00:00 2001
+From: pthier <pthier@chromium.org>
+Date: Tue, 25 Apr 2023 11:00:10 +0200
+Subject: [PATCH] [regexp] Handle empty ranges in unicode sets
+
+If a unicode set operation contains only an empty range, we generated a
+set expression without operands. However the expression should match
+nothing, so add the special operand not matching anything instead.
+
+Bug: chromium:1437346
+Change-Id: I8dd58884aaf6915277c80effbda43ea715049146
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4474547
+Commit-Queue: Patrick Thier <pthier@chromium.org>
+Reviewed-by: Jakob Linke <jgruber@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#87257}
+---
+
+diff --git a/src/regexp/regexp-parser.cc b/src/regexp/regexp-parser.cc
+index ef7ae24..8d27289 100644
+--- a/src/regexp/regexp-parser.cc
++++ b/src/regexp/regexp-parser.cc
+@@ -2774,6 +2774,14 @@
+     return ReportError(RegExpError::kNegatedCharacterClassWithStrings);
+   }
+ 
++  if (operands->is_empty()) {
++    // Return empty expression if no operands were added (e.g. [\P{Any}]
++    // produces an empty range).
++    DCHECK(ranges->is_empty());
++    DCHECK(strings->empty());
++    return RegExpClassSetExpression::Empty(zone(), is_negated);
++  }
++
+   return zone()->template New<RegExpClassSetExpression>(
+       RegExpClassSetExpression::OperationType::kUnion, is_negated,
+       may_contain_strings, operands);
+diff --git a/test/mjsunit/regress/regress-crbug-1437346.js b/test/mjsunit/regress/regress-crbug-1437346.js
+new file mode 100644
+index 0000000..d94789c
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1437346.js
+@@ -0,0 +1,5 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++assertFalse(/[\P{Any}]/v.test());
