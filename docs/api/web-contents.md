@@ -752,7 +752,7 @@ app.whenReady().then(() => {
     })
     if (!result) {
       // The device wasn't found so we need to either wait longer (eg until the
-      // device is turned on) or cancel the request by calling the callback 
+      // device is turned on) or cancel the request by calling the callback
       // with an empty string.
       callback('')
     } else {

@@ -73,7 +73,7 @@ const { contextBridge } = require('electron')
 contextBridge.exposeInMainWorld('versions', {
   node: () => process.versions.node,
   chrome: () => process.versions.chrome,
-  electron: () => process.versions.electron,
+  electron: () => process.versions.electron
   // we can also expose variables, not just functions
 })
 ```
@@ -90,8 +90,8 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
 
   win.loadFile('index.html')
@@ -183,7 +183,7 @@ contextBridge.exposeInMainWorld('versions', {
   node: () => process.versions.node,
   chrome: () => process.versions.chrome,
   electron: () => process.versions.electron,
-  ping: () => ipcRenderer.invoke('ping'),
+  ping: () => ipcRenderer.invoke('ping')
   // we can also expose variables, not just functions
 })
 ```
@@ -211,8 +211,8 @@ const createWindow = () => {
     width: 800,
     height: 600,
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
+      preload: path.join(__dirname, 'preload.js')
+    }
   })
   ipcMain.handle('ping', () => 'pong')
   win.loadFile('index.html')

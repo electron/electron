@@ -158,13 +158,13 @@ A preload script can be attached to the main process in the `BrowserWindow` cons
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
-//...
+// ...
 const win = new BrowserWindow({
   webPreferences: {
-    preload: 'path/to/preload.js',
-  },
+    preload: 'path/to/preload.js'
+  }
 })
-//...
+// ...
 ```
 
 Because the preload script shares a global [`Window`][window-mdn] interface with the
@@ -177,7 +177,7 @@ the [`contextIsolation`][context-isolation] default.
 
 ```js title='preload.js'
 window.myAPI = {
-  desktop: true,
+  desktop: true
 }
 ```
 
@@ -196,7 +196,7 @@ securely:
 const { contextBridge } = require('electron')
 
 contextBridge.exposeInMainWorld('myAPI', {
-  desktop: true,
+  desktop: true
 })
 ```
 
