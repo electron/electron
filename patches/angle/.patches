@@ -1,3 +1,4 @@
 fix_rename_webswapcgllayer_to_webswapcgllayerchromium.patch
 cherry-pick-6da1a8953313.patch
 cherry-pick-aed05b609629.patch
+cherry-pick-d0ee0197ddff.patch
