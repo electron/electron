@@ -126,3 +126,7 @@ expose_v8initializer_codegenerationcheckcallbackinmainthread.patch
 chore_patch_out_profile_methods_in_profile_selections_cc.patch
 add_gin_converter_support_for_arraybufferview.patch
 chore_defer_usb_service_getdevices_request_until_usb_service_is.patch
+cherry-pick-d6272b794cbb.patch
+cherry-pick-48785f698b1c.patch
+cherry-pick-9b6ca211234b.patch
+cherry-pick-675562695049.patch
