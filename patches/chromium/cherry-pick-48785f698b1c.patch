@@ -1,0 +1,107 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Arthur Sonzogni <arthursonzogni@chromium.org>
+Date: Tue, 2 May 2023 09:40:37 +0000
+Subject: Avoid buffer overflow read in HFSReadNextNonIgnorableCodePoint
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Unicode codepoints goes beyond 0xFFFF.
+
+It exists upper and lower case characters there: `𞤡 `vs `𞥃`.
+
+The buffer overflow occurred when using the lookup table:
+```
+lower_case_table[codepoint >> 8]
+```
+
+Bug: 1425115
+Fixed: 1425115
+Change-Id: I679da02dbe570283a68176fbd3c0c620caa4f9ce
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4481260
+Reviewed-by: Alexander Timin <altimin@chromium.org>
+Commit-Queue: Arthur Sonzogni <arthursonzogni@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1138234}
+
+diff --git a/base/files/file_path.cc b/base/files/file_path.cc
+index a43c09317da96332584286fdb67284b2bedd753f..3a7cca6fad051816d6d018857c8039594c51ec65 100644
+--- a/base/files/file_path.cc
++++ b/base/files/file_path.cc
+@@ -775,7 +775,7 @@ int FilePath::CompareIgnoreCase(StringPieceType string1,
+ #elif BUILDFLAG(IS_APPLE)
+ // Mac OS X specific implementation of file string comparisons.
+ 
+-// cf. http://developer.apple.com/mac/library/technotes/tn/tn1150.html#UnicodeSubtleties
++// cf. https://developer.apple.com/library/archive/technotes/tn/tn1150.html#UnicodeSubtleties
+ //
+ // "When using CreateTextEncoding to create a text encoding, you should set
+ // the TextEncodingBase to kTextEncodingUnicodeV2_0, set the
+@@ -801,11 +801,12 @@ int FilePath::CompareIgnoreCase(StringPieceType string1,
+ // Ignored characters are mapped to zero.
+ //
+ // cf. downloadable file linked in
+-// http://developer.apple.com/mac/library/technotes/tn/tn1150.html#StringComparisonAlgorithm
++// https://developer.apple.com/library/archive/technotes/tn/tn1150.html#Downloads
+ 
+ namespace {
+ 
+-const UInt16 lower_case_table[] = {
++// clang-format off
++const UInt16 lower_case_table[11 * 256] = {
+   // High-byte indices ( == 0 iff no case mapping and no ignorables )
+ 
+   /* 0 */ 0x0100, 0x0200, 0x0000, 0x0300, 0x0400, 0x0500, 0x0000, 0x0000,
+@@ -1191,11 +1192,12 @@ const UInt16 lower_case_table[] = {
+   /* F */ 0xFFF0, 0xFFF1, 0xFFF2, 0xFFF3, 0xFFF4, 0xFFF5, 0xFFF6, 0xFFF7,
+           0xFFF8, 0xFFF9, 0xFFFA, 0xFFFB, 0xFFFC, 0xFFFD, 0xFFFE, 0xFFFF,
+ };
++// clang-format on
+ 
+-// Returns the next non-ignorable codepoint within string starting from the
+-// position indicated by index, or zero if there are no more.
+-// The passed-in index is automatically advanced as the characters in the input
+-// HFS-decomposed UTF-8 strings are read.
++// Returns the next non-ignorable codepoint within `string` starting from the
++// position indicated by `index`, or zero if there are no more.
++// The passed-in `index` is automatically advanced as the characters in the
++// input HFS-decomposed UTF-8 strings are read.
+ inline base_icu::UChar32 HFSReadNextNonIgnorableCodepoint(const char* string,
+                                                           size_t length,
+                                                           size_t* index) {
+@@ -1206,12 +1208,16 @@ inline base_icu::UChar32 HFSReadNextNonIgnorableCodepoint(const char* string,
+     CBU8_NEXT(reinterpret_cast<const uint8_t*>(string), *index, length,
+               codepoint);
+     DCHECK_GT(codepoint, 0);
+-    if (codepoint > 0) {
++
++    // Note: Here, there are no lower case conversion implemented in the
++    // Supplementary Multilingual Plane (codepoint > 0xFFFF).
++
++    if (codepoint > 0 && codepoint <= 0xFFFF) {
+       // Check if there is a subtable for this upper byte.
+       int lookup_offset = lower_case_table[codepoint >> 8];
+       if (lookup_offset != 0)
+         codepoint = lower_case_table[lookup_offset + (codepoint & 0x00FF)];
+-      // Note: codepoint1 may be again 0 at this point if the character was
++      // Note: `codepoint` may be again 0 at this point if the character was
+       // an ignorable.
+     }
+   }
+diff --git a/base/files/file_path_unittest.cc b/base/files/file_path_unittest.cc
+index b9b14c1ebb6a7046f6432531913fd72b045d6cb0..90457a001c2f0d5652ae1394c9d142bfd0003ca6 100644
+--- a/base/files/file_path_unittest.cc
++++ b/base/files/file_path_unittest.cc
+@@ -1188,6 +1188,13 @@ TEST_F(FilePathTest, CompareIgnoreCase) {
+     {{FPL("K\u0301U\u032DO\u0304\u0301N"), FPL("\u1E31\u1E77\u1E53n")}, 0},
+     {{FPL("k\u0301u\u032Do\u0304\u0301n"), FPL("\u1E30\u1E76\u1E52n")}, 0},
+     {{FPL("k\u0301u\u032Do\u0304\u0302n"), FPL("\u1E30\u1E76\u1E52n")}, 1},
++
++    // Codepoints > 0xFFFF
++    // Here, we compare the `Adlam Letter Shu` in its capital and small version.
++    {{FPL("\U0001E921"), FPL("\U0001E943")}, -1},
++    {{FPL("\U0001E943"), FPL("\U0001E921")}, 1},
++    {{FPL("\U0001E921"), FPL("\U0001E921")}, 0},
++    {{FPL("\U0001E943"), FPL("\U0001E943")}, 0},
+ #endif
+   };
+ 
