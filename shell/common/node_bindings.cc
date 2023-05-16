@@ -191,7 +191,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
     v8::Local<v8::String> v8_specifier,
     v8::Local<v8::FixedArray> v8_import_assertions) {
   if (node::Environment::GetCurrent(context) == nullptr) {
-    if (gin_helper::Locker::IsBrowserProcess())
+    if (electron::IsBrowserProcess())
       return v8::MaybeLocal<v8::Promise>();
     return blink::V8Initializer::HostImportModuleDynamically(
         context, v8_host_defined_options, v8_referrer_resource_url,
@@ -200,7 +200,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
 
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
-  if (gin_helper::Locker::IsRendererProcess()) {
+  if (electron::IsRendererProcess()) {
     blink::WebLocalFrame* frame =
         blink::WebLocalFrame::FrameForContext(context);
     if (!frame || frame->GetScriptContextWorldId(context) !=
@@ -220,7 +220,7 @@ void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
                                     v8::Local<v8::Module> module,
                                     v8::Local<v8::Object> meta) {
   if (node::Environment::GetCurrent(context) == nullptr) {
-    if (gin_helper::Locker::IsBrowserProcess())
+    if (electron::IsBrowserProcess())
       return;
     return blink::V8Initializer::HostGetImportMetaProperties(context, module,
                                                              meta);
@@ -228,7 +228,7 @@ void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
 
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
-  if (gin_helper::Locker::IsRendererProcess()) {
+  if (electron::IsRendererProcess()) {
     blink::WebLocalFrame* frame =
         blink::WebLocalFrame::FrameForContext(context);
     if (!frame || frame->GetScriptContextWorldId(context) !=
