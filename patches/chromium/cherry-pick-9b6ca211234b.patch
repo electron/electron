@@ -1,0 +1,234 @@
+From 9b6ca211234b057a9ce4184a3315741dc040ecbf Mon Sep 17 00:00:00 2001
+From: Kevin McNee <mcnee@chromium.org>
+Date: Fri, 12 May 2023 19:53:19 +0000
+Subject: [PATCH] M114: Store BrowserPluginGuestDelegate as a weak ptr
+
+Store BrowserPluginGuestDelegate as a weak ptr
+
+In the case where a webview creates a popup window, the opener web
+contents temporarily owns the new guest web contents between the
+renderer creating and showing the window. If the opener is destroyed at
+this time, the new guest (WebViewGuest) is destroyed as well. Due to
+the ordering of the destruction of the new guest web contents, it may
+attempt to access the destroyed WebViewGuest through the delegate
+interface. We now access this delegate through a weak ptr.
+
+(cherry picked from commit db32d6929cf3177b52b034541e5bd6d3e19e18ca)
+
+Low-Coverage-Reason: NOTREACHED
+Bug: 1442516
+Change-Id: I417431ad487bc9db0551c1e0363379c5ff455d59
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4515455
+Reviewed-by: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: James Maclean <wjmaclean@chromium.org>
+Commit-Queue: Kevin McNee <mcnee@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1141602}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4528155
+Auto-Submit: Kevin McNee <mcnee@chromium.org>
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5735@{#540}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+---
+
+diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+index 7cd25c75..014e41d1 100644
+--- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
++++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+@@ -48,6 +48,7 @@
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/common/pref_names.h"
+ #include "chrome/common/webui_url_constants.h"
++#include "chrome/test/base/tracing.h"
+ #include "chrome/test/base/ui_test_utils.h"
+ #include "components/download/public/common/download_task_runner.h"
+ #include "components/find_in_page/find_tab_helper.h"
+@@ -5554,6 +5555,63 @@
+             entry->metrics.begin()->second);
+ }
+ 
++class PopupWaiter : public content::WebContentsObserver {
++ public:
++  PopupWaiter(content::WebContents* opener, base::OnceClosure on_popup)
++      : content::WebContentsObserver(opener), on_popup_(std::move(on_popup)) {}
++
++  // WebContentsObserver:
++  // Note that `DidOpenRequestedURL` is used as it fires precisely after a new
++  // WebContents is created but before it is shown. This timing is necessary for
++  // the `ShutdownWithUnshownPopup` test.
++  void DidOpenRequestedURL(content::WebContents* new_contents,
++                           content::RenderFrameHost* source_render_frame_host,
++                           const GURL& url,
++                           const content::Referrer& referrer,
++                           WindowOpenDisposition disposition,
++                           ui::PageTransition transition,
++                           bool started_from_context_menu,
++                           bool renderer_initiated) override {
++    if (on_popup_) {
++      std::move(on_popup_).Run();
++    }
++  }
++
++ private:
++  base::OnceClosure on_popup_;
++};
++
++// Test destroying an opener webview while the created window has not been
++// shown by the renderer. Between the time of the renderer creating and showing
++// the new window, the created guest WebContents is owned by content/ and not by
++// WebViewGuest. See `WebContentsImpl::pending_contents_` for details. When we
++// destroy the new WebViewGuest, content/ must ensure that the guest WebContents
++// is destroyed safely.
++//
++// This test is conceptually similar to
++// testNewWindowOpenerDestroyedWhileUnattached, but for this test, we have
++// precise timing requirements that need to be controlled by the browser such
++// that we shutdown while the new window is pending.
++//
++// Regression test for https://crbug.com/1442516
++IN_PROC_BROWSER_TEST_F(WebViewTest, ShutdownWithUnshownPopup) {
++  ASSERT_TRUE(StartEmbeddedTestServer());
++
++  // Core classes in content often record trace events during destruction.
++  // Enable tracing to test that writing traces with partially destructed
++  // objects is done safely.
++  ASSERT_TRUE(tracing::BeginTracing("content,navigation"));
++
++  LoadAppWithGuest("web_view/simple");
++
++  base::RunLoop run_loop;
++  PopupWaiter popup_waiter(GetGuestWebContents(), run_loop.QuitClosure());
++  content::ExecuteScriptAsync(GetGuestRenderFrameHost(),
++                              "window.open(location.href);");
++  run_loop.Run();
++  CloseAppWindow(GetFirstAppWindow());
++}
++
+ IN_PROC_BROWSER_TEST_F(WebViewTest, InsertIntoDetachedIframe) {
+   TestHelper("testInsertIntoDetachedIframe", "web_view/shim",
+              NEEDS_TEST_SERVER);
+diff --git a/components/guest_view/browser/guest_view_base.cc b/components/guest_view/browser/guest_view_base.cc
+index 4ef55d1c..ba2fac2 100644
+--- a/components/guest_view/browser/guest_view_base.cc
++++ b/components/guest_view/browser/guest_view_base.cc
+@@ -124,6 +124,9 @@
+   void WebContentsDestroyed() override {
+     // If the opener is destroyed and the guest has not been attached, then
+     // destroy the guest.
++    // Note that the guest contents may be owned by content/ at this point. In
++    // this case, we expect content/ to safely destroy the contents without
++    // accessing delegate methods of the destroyed guest.
+     // Destroys `this`.
+     DestroyGuestIfUnattached(guest_);
+   }
+@@ -915,4 +918,9 @@
+   return web_contents()->GetPrimaryMainFrame();
+ }
+ 
++base::WeakPtr<content::BrowserPluginGuestDelegate>
++GuestViewBase::GetGuestDelegateWeakPtr() {
++  return weak_ptr_factory_.GetWeakPtr();
++}
++
+ }  // namespace guest_view
+diff --git a/components/guest_view/browser/guest_view_base.h b/components/guest_view/browser/guest_view_base.h
+index dccb7fcf..a15c73f 100644
+--- a/components/guest_view/browser/guest_view_base.h
++++ b/components/guest_view/browser/guest_view_base.h
+@@ -353,6 +353,8 @@
+   std::unique_ptr<content::WebContents> CreateNewGuestWindow(
+       const content::WebContents::CreateParams& create_params) final;
+   content::WebContents* GetOwnerWebContents() final;
++  base::WeakPtr<content::BrowserPluginGuestDelegate> GetGuestDelegateWeakPtr()
++      final;
+ 
+   // WebContentsDelegate implementation.
+   void ActivateContents(content::WebContents* contents) final;
+diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
+index a7501a5..2e47c12 100644
+--- a/content/browser/browser_plugin/browser_plugin_guest.cc
++++ b/content/browser/browser_plugin/browser_plugin_guest.cc
+@@ -25,9 +25,10 @@
+ 
+ BrowserPluginGuest::BrowserPluginGuest(WebContentsImpl* web_contents,
+                                        BrowserPluginGuestDelegate* delegate)
+-    : WebContentsObserver(web_contents), delegate_(delegate) {
+-  DCHECK(web_contents);
+-  DCHECK(delegate);
++    : WebContentsObserver(web_contents),
++      delegate_(delegate->GetGuestDelegateWeakPtr()) {
++  CHECK(web_contents);
++  CHECK(delegate_);
+   RecordAction(base::UserMetricsAction("BrowserPlugin.Guest.Create"));
+ }
+ 
+@@ -97,6 +98,11 @@
+ }
+ 
+ RenderFrameHostImpl* BrowserPluginGuest::GetProspectiveOuterDocument() {
++  if (!delegate_) {
++    // The guest delegate may only be null during some destruction scenarios.
++    CHECK(web_contents()->IsBeingDestroyed());
++    return nullptr;
++  }
+   return static_cast<RenderFrameHostImpl*>(
+       delegate_->GetProspectiveOuterDocument());
+ }
+diff --git a/content/browser/browser_plugin/browser_plugin_guest.h b/content/browser/browser_plugin/browser_plugin_guest.h
+index 17e98b6..7f308302 100644
+--- a/content/browser/browser_plugin/browser_plugin_guest.h
++++ b/content/browser/browser_plugin/browser_plugin_guest.h
+@@ -7,7 +7,7 @@
+ 
+ #include <vector>
+ 
+-#include "base/memory/raw_ptr.h"
++#include "base/memory/weak_ptr.h"
+ #include "build/build_config.h"
+ #include "content/public/browser/browser_plugin_guest_delegate.h"
+ #include "content/public/browser/web_contents_observer.h"
+@@ -78,7 +78,8 @@
+ 
+   void InitInternal(WebContentsImpl* owner_web_contents);
+ 
+-  const raw_ptr<BrowserPluginGuestDelegate, DanglingUntriaged> delegate_;
++  // May be null during guest destruction.
++  const base::WeakPtr<BrowserPluginGuestDelegate> delegate_;
+ };
+ 
+ }  // namespace content
+diff --git a/content/public/browser/browser_plugin_guest_delegate.cc b/content/public/browser/browser_plugin_guest_delegate.cc
+index 62cbad1..040d36a 100644
+--- a/content/public/browser/browser_plugin_guest_delegate.cc
++++ b/content/public/browser/browser_plugin_guest_delegate.cc
+@@ -20,4 +20,10 @@
+   return nullptr;
+ }
+ 
++base::WeakPtr<BrowserPluginGuestDelegate>
++BrowserPluginGuestDelegate::GetGuestDelegateWeakPtr() {
++  NOTREACHED();
++  return nullptr;
++}
++
+ }  // namespace content
+diff --git a/content/public/browser/browser_plugin_guest_delegate.h b/content/public/browser/browser_plugin_guest_delegate.h
+index 51a4efa8..d588b4d3 100644
+--- a/content/public/browser/browser_plugin_guest_delegate.h
++++ b/content/public/browser/browser_plugin_guest_delegate.h
+@@ -5,6 +5,7 @@
+ #ifndef CONTENT_PUBLIC_BROWSER_BROWSER_PLUGIN_GUEST_DELEGATE_H_
+ #define CONTENT_PUBLIC_BROWSER_BROWSER_PLUGIN_GUEST_DELEGATE_H_
+ 
++#include "base/memory/weak_ptr.h"
+ #include "content/common/content_export.h"
+ #include "content/public/browser/web_contents.h"
+ 
+@@ -28,6 +29,8 @@
+   // TODO(crbug.com/769461): Have all guest types return the specific owner
+   // RenderFrameHost and not assume it's the owner's main frame.
+   virtual RenderFrameHost* GetProspectiveOuterDocument();
++
++  virtual base::WeakPtr<BrowserPluginGuestDelegate> GetGuestDelegateWeakPtr();
+ };
+ 
+ }  // namespace content

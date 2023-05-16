@@ -1,0 +1,106 @@
+From d6272b794cbbb146303c3acb48713244a92cce48 Mon Sep 17 00:00:00 2001
+From: Simon Zünd <szuend@chromium.org>
+Date: Tue, 02 May 2023 06:05:35 +0000
+Subject: [PATCH] [devtools] Delete PendingRequest first in DevToolsDataSource
+
+The way URLDataSources are used in Chromium, it can happen that the
+"content::URLDataSource::GotDataCallback" closure is the last shared
+owner of the data source itself. This means that the URLDataSource
+is deleted after the callback is done running.
+
+This CL fixes an invalid access to DevToolsDataSource, where we
+access `this` in the OnLoadComplete method after we call the
+GotDataCallback.
+
+R=dsv@chromium.org
+
+Fixed: 1435166
+Change-Id: I32e4a717ca27bc011449c8f8efeaffe70aaa8898
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4487280
+Reviewed-by: Andrey Kosyakov <caseq@chromium.org>
+Commit-Queue: Simon Zünd <szuend@chromium.org>
+Reviewed-by: Danil Somsikov <dsv@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1138173}
+---
+
+diff --git a/chrome/browser/ui/webui/devtools_ui_data_source.cc b/chrome/browser/ui/webui/devtools_ui_data_source.cc
+index c60d70f..991599d 100644
+--- a/chrome/browser/ui/webui/devtools_ui_data_source.cc
++++ b/chrome/browser/ui/webui/devtools_ui_data_source.cc
+@@ -365,11 +365,13 @@
+ void DevToolsDataSource::OnLoadComplete(
+     std::list<PendingRequest>::iterator request_iter,
+     std::unique_ptr<std::string> response_body) {
+-  std::move(request_iter->callback)
+-      .Run(response_body ? base::MakeRefCounted<base::RefCountedString>(
+-                               std::move(*response_body))
+-                         : CreateNotFoundResponse());
++  GotDataCallback callback = std::move(request_iter->callback);
+   pending_requests_.erase(request_iter);
++  std::move(callback).Run(response_body
++                              ? base::MakeRefCounted<base::RefCountedString>(
++                                    std::move(*response_body))
++                              : CreateNotFoundResponse());
++  // `this` might no longer be valid after `callback` has run.
+ }
+ 
+ DevToolsDataSource::PendingRequest::PendingRequest() = default;
+diff --git a/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc b/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc
+index b4f41411..c07c43b 100644
+--- a/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc
++++ b/chrome/browser/ui/webui/devtools_ui_data_source_unittest.cc
+@@ -9,13 +9,17 @@
+ #include "base/command_line.h"
+ #include "base/functional/bind.h"
+ #include "base/memory/ref_counted_memory.h"
++#include "base/memory/scoped_refptr.h"
+ #include "base/strings/strcat.h"
+ #include "base/strings/string_piece.h"
++#include "base/test/bind.h"
+ #include "build/build_config.h"
+ #include "chrome/common/chrome_switches.h"
+ #include "chrome/common/url_constants.h"
+ #include "content/public/browser/url_data_source.h"
++#include "content/public/test/browser_task_environment.h"
+ #include "services/network/public/cpp/weak_wrapper_shared_url_loader_factory.h"
++#include "services/network/test/test_shared_url_loader_factory.h"
+ #include "testing/gtest/include/gtest/gtest.h"
+ 
+ namespace {
+@@ -356,3 +360,36 @@
+   ASSERT_TRUE(base::StartsWith(data(), kDevToolsUITest404Response,
+                                base::CompareCase::SENSITIVE));
+ }
++
++class DevToolsUIDataSourceWithTaskEnvTest : public testing::Test {
++ public:
++  DevToolsUIDataSourceWithTaskEnvTest()
++      : task_environment_(content::BrowserTaskEnvironment::IO_MAINLOOP) {}
++
++ private:
++  content::BrowserTaskEnvironment task_environment_;
++};
++
++TEST_F(DevToolsUIDataSourceWithTaskEnvTest,
++       GotDataCallbackOwnsDevToolsDataSource) {
++  scoped_refptr<network::SharedURLLoaderFactory> factory =
++      base::MakeRefCounted<network::TestSharedURLLoaderFactory>();
++  DevToolsDataSource* data_source = new DevToolsDataSource(factory);
++
++  DevToolsDataSource::GotDataCallback callback = base::BindOnce(
++      [](DevToolsDataSource* data_source,
++         scoped_refptr<base::RefCountedMemory> payload) {
++        // Do nothing in the callback.
++      },
++      base::Owned(data_source));
++
++  // `callback` controls the life-time of the data_source now, so data_source is
++  // deleted after the callback is done running. This is similar to what
++  // WebUIURLLoaderFactory is doing.
++
++  const GURL path =
++      DevToolsUrl().Resolve(DevToolsRemotePath(kDevToolsUITestFrontEndUrl));
++  content::WebContents::Getter wc_getter;
++  data_source->StartDataRequest(path, std::move(wc_getter),
++                                std::move(callback));
++}
