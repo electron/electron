@@ -355,14 +355,14 @@ step-restore-brew-cache: &step-restore-brew-cache
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
     keys:
-      - v5-brew-cache-{{ arch }}
+      - v6-brew-cache-{{ arch }}
 
 step-save-brew-cache: &step-save-brew-cache
   save_cache:
     paths:
       - /usr/local/Cellar/gnu-tar
       - /usr/local/bin/gtar
-    key: v5-brew-cache-{{ arch }}
+    key: v6-brew-cache-{{ arch }}
     name: Persisting brew cache
 
 step-get-more-space-on-mac: &step-get-more-space-on-mac
