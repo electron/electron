@@ -126,6 +126,13 @@ describe('BrowserWindow module', () => {
       w.webContents.on('destroyed', () => w.close());
     });
 
+    it('should allow access to id after destruction', async () => {
+      const closed = once(w, 'closed');
+      w.destroy();
+      await closed;
+      expect(w.id).to.be.a('number');
+    });
+
     it('should emit unload handler', async () => {
       await w.loadFile(path.join(fixtures, 'api', 'unload.html'));
       const closed = once(w, 'closed');
