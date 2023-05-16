@@ -1095,6 +1095,18 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('BrowserWindow.minimize()', () => {
+      // TODO(codebytere): Enable for Linux once maximize/minimize events work in CI.
+      ifit(process.platform !== 'linux')('should not be visible when the window is minimized', async () => {
+        const minimize = once(w, 'minimize');
+        w.minimize();
+        await minimize;
+
+        expect(w.isMinimized()).to.equal(true);
+        expect(w.isVisible()).to.equal(false);
+      });
+    });
+
     describe('BrowserWindow.showInactive()', () => {
       it('should not focus on window', () => {
         w.showInactive();
