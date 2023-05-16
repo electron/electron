@@ -236,7 +236,7 @@ index 0000000000000000000000000000000000000000..4753f86371d97ec0470e355258bae17e
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_MAC_H_
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 13962687d262434de77f76c1c5a0f39f0fd9fb43..4d07b897a158bf39d9b29e3ac90920aee3050ce0 100644
+index 055b0a2df07954b8e28f2a6f36b446339ae9ef9f..895dff4c0587dbca26f5178b116d914e15bcefa3 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -36,6 +36,10 @@
