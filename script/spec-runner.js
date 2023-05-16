@@ -5,6 +5,7 @@ const childProcess = require('child_process');
 const crypto = require('crypto');
 const fs = require('fs-extra');
 const { hashElement } = require('folder-hash');
+const os = require('os');
 const path = require('path');
 const unknownFlags = [];
 
@@ -260,7 +261,18 @@ async function installSpecModules (dir) {
     env.npm_config_target = args.electronVersion;
     env.npm_config_disturl = 'https://electronjs.org/headers';
     env.npm_config_runtime = 'electron';
+    env.npm_config_devdir = path.join(os.homedir(), '.electron-gyp');
     env.npm_config_build_from_source = 'true';
+    const { status } = childProcess.spawnSync('npm', ['run', 'node-gyp-install', '--ensure'], {
+      env,
+      cwd: dir,
+      stdio: 'inherit',
+      shell: true
+    });
+    if (status !== 0) {
+      console.log(`${fail} Failed to "npm run node-gyp-install" install in '${dir}'`);
+      process.exit(1);
+    }
   } else {
     env.npm_config_nodedir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   }
