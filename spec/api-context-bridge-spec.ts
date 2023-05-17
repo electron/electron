@@ -22,7 +22,7 @@ describe('contextBridge', () => {
   before(async () => {
     server = http.createServer((req, res) => {
       res.setHeader('Content-Type', 'text/html');
-      res.end('<html></html>');
+      res.end('');
     });
     serverUrl = (await listen(server)).url;
   });
