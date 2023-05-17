@@ -384,11 +384,11 @@ namespace {
 std::string CursorTypeToString(const ui::Cursor& cursor) {
   switch (cursor.type()) {
     case ui::mojom::CursorType::kPointer:
-      return "default";
+      return "pointer";
     case ui::mojom::CursorType::kCross:
       return "crosshair";
     case ui::mojom::CursorType::kHand:
-      return "pointer";
+      return "hand";
     case ui::mojom::CursorType::kIBeam:
       return "text";
     case ui::mojom::CursorType::kWait:
@@ -425,6 +425,10 @@ std::string CursorTypeToString(const ui::Cursor& cursor) {
       return "row-resize";
     case ui::mojom::CursorType::kMiddlePanning:
       return "m-panning";
+    case ui::mojom::CursorType::kMiddlePanningVertical:
+      return "m-panning-vertical";
+    case ui::mojom::CursorType::kMiddlePanningHorizontal:
+      return "m-panning-horizontal";
     case ui::mojom::CursorType::kEastPanning:
       return "e-panning";
     case ui::mojom::CursorType::kNorthPanning:
@@ -471,6 +475,24 @@ std::string CursorTypeToString(const ui::Cursor& cursor) {
       return "grabbing";
     case ui::mojom::CursorType::kCustom:
       return "custom";
+    case ui::mojom::CursorType::kNull:
+      return "null";
+    case ui::mojom::CursorType::kDndNone:
+      return "drag-drop-none";
+    case ui::mojom::CursorType::kDndMove:
+      return "drag-drop-move";
+    case ui::mojom::CursorType::kDndCopy:
+      return "drag-drop-copy";
+    case ui::mojom::CursorType::kDndLink:
+      return "drag-drop-link";
+    case ui::mojom::CursorType::kNorthSouthNoResize:
+      return "ns-no-resize";
+    case ui::mojom::CursorType::kEastWestNoResize:
+      return "ew-no-resize";
+    case ui::mojom::CursorType::kNorthEastSouthWestNoResize:
+      return "nesw-no-resize";
+    case ui::mojom::CursorType::kNorthWestSouthEastNoResize:
+      return "nwse-no-resize";
     default:
       return "default";
   }
