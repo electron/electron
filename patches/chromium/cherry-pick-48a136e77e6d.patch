@@ -1,0 +1,232 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Mon, 15 May 2023 23:09:29 +0000
+Subject: ui::Compositor: Propagate display ID
+
+The display ID originates in BrowserCompositorMac (for things like
+ContentShell) or in NativeWidgetMacNSWindowHost (for views).
+
+Add it as a parameter to RecyclableCompositorMac::UpdateSurface and
+use this to propagate it to ui::Compositor.
+
+Ensure that its initial value is propagated correctly in
+ui::Compositor::SetLayerTreeFrameSink.
+
+Remove use of base::LazyInstance from BrowserCompositorMac (it is
+long deprecated, and touching the file triggered presubmit failures).
+
+Bug: 1404797
+Change-Id: Ib39addd1ac2a3b2f42e1958d7ab7c6c4750224f8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4517539
+Commit-Queue: ccameron chromium <ccameron@chromium.org>
+Reviewed-by: Maggie Chen <magchen@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1144438}
+
+diff --git a/content/browser/renderer_host/browser_compositor_view_mac.mm b/content/browser/renderer_host/browser_compositor_view_mac.mm
+index 323548d3ed7be2e2572c0048dbf5f0fa464016dc..b7311c83633746855b1e7086b6824879c1870b28 100644
+--- a/content/browser/renderer_host/browser_compositor_view_mac.mm
++++ b/content/browser/renderer_host/browser_compositor_view_mac.mm
+@@ -12,7 +12,7 @@
+ 
+ #include "base/command_line.h"
+ #include "base/containers/circular_deque.h"
+-#include "base/lazy_instance.h"
++#include "base/no_destructor.h"
+ #include "base/trace_event/trace_event.h"
+ #include "components/viz/common/features.h"
+ #include "components/viz/common/surfaces/local_surface_id.h"
+@@ -38,8 +38,10 @@
+ //   signals to shut down will come in very late, long after things that the
+ //   ui::Compositor depend on have been destroyed).
+ //   https://crbug.com/805726
+-base::LazyInstance<std::set<BrowserCompositorMac*>>::Leaky
+-    g_browser_compositors;
++std::set<BrowserCompositorMac*>& GetBrowserCompositors() {
++  static base::NoDestructor<std::set<BrowserCompositorMac*>> instance;
++  return *instance.get();
++}
+ 
+ }  // namespace
+ 
+@@ -54,7 +56,7 @@
+     : client_(client),
+       accelerated_widget_mac_ns_view_(accelerated_widget_mac_ns_view),
+       weak_factory_(this) {
+-  g_browser_compositors.Get().insert(this);
++  GetBrowserCompositors().insert(this);
+ 
+   root_layer_ = std::make_unique<ui::Layer>(ui::LAYER_SOLID_COLOR);
+   // Ensure that this layer draws nothing when it does not not have delegated
+@@ -75,7 +77,7 @@
+   delegated_frame_host_.reset();
+   root_layer_.reset();
+ 
+-  size_t num_erased = g_browser_compositors.Get().erase(this);
++  size_t num_erased = GetBrowserCompositors().erase(this);
+   DCHECK_EQ(1u, num_erased);
+ }
+ 
+@@ -138,9 +140,9 @@
+   }
+ 
+   if (recyclable_compositor_) {
+-    recyclable_compositor_->UpdateSurface(dfh_size_pixels_,
+-                                          current.device_scale_factor,
+-                                          current.display_color_spaces);
++    recyclable_compositor_->UpdateSurface(
++        dfh_size_pixels_, current.device_scale_factor,
++        current.display_color_spaces, current.display_id);
+   }
+ }
+ 
+@@ -160,9 +162,9 @@
+       dfh_device_scale_factor_ = new_device_scale_factor;
+       root_layer_->SetBounds(gfx::Rect(dfh_size_dip_));
+       if (recyclable_compositor_) {
+-        recyclable_compositor_->UpdateSurface(dfh_size_pixels_,
+-                                              current.device_scale_factor,
+-                                              current.display_color_spaces);
++        recyclable_compositor_->UpdateSurface(
++            dfh_size_pixels_, current.device_scale_factor,
++            current.display_color_spaces, current.display_id);
+       }
+     }
+     delegated_frame_host_->EmbedSurface(
+@@ -252,9 +254,9 @@
+     recyclable_compositor_ = std::make_unique<ui::RecyclableCompositorMac>(
+         content::GetContextFactory());
+     display::ScreenInfo current = client_->GetCurrentScreenInfo();
+-    recyclable_compositor_->UpdateSurface(dfh_size_pixels_,
+-                                          current.device_scale_factor,
+-                                          current.display_color_spaces);
++    recyclable_compositor_->UpdateSurface(
++        dfh_size_pixels_, current.device_scale_factor,
++        current.display_color_spaces, current.display_id);
+     recyclable_compositor_->compositor()->SetRootLayer(root_layer_.get());
+     recyclable_compositor_->compositor()->SetBackgroundColor(background_color_);
+     recyclable_compositor_->widget()->SetNSView(
+@@ -273,9 +275,8 @@
+   // Ensure that the client has destroyed its BrowserCompositorViewMac before
+   // it dependencies are destroyed.
+   // https://crbug.com/805726
+-  while (!g_browser_compositors.Get().empty()) {
+-    BrowserCompositorMac* browser_compositor =
+-        *g_browser_compositors.Get().begin();
++  while (!GetBrowserCompositors().empty()) {
++    BrowserCompositorMac* browser_compositor = *GetBrowserCompositors().begin();
+     browser_compositor->client_->DestroyCompositorForShutdown();
+   }
+ }
+diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
+index c652c0dfd2e6c464c91e3522902ee96dd19b0287..e52e5b74146d0709925e87c6f4d5dc551ec8eec8 100644
+--- a/ui/compositor/compositor.cc
++++ b/ui/compositor/compositor.cc
+@@ -347,6 +347,9 @@ void Compositor::SetLayerTreeFrameSink(
+     display_private_->SetDisplayColorMatrix(
+         gfx::SkM44ToTransform(display_color_matrix_));
+     display_private_->SetOutputIsSecure(output_is_secure_);
++#if BUILDFLAG(IS_MAC)
++    display_private_->SetVSyncDisplayID(display_id_);
++#endif
+     if (has_vsync_params_) {
+       display_private_->SetDisplayVSyncParameters(vsync_timebase_,
+                                                   vsync_interval_);
+diff --git a/ui/compositor/recyclable_compositor_mac.cc b/ui/compositor/recyclable_compositor_mac.cc
+index 0e30e781760d38778ec0e741ddae250e96c6d671..0c57b17778872702f887e5fe9d95dc8ad98d654f 100644
+--- a/ui/compositor/recyclable_compositor_mac.cc
++++ b/ui/compositor/recyclable_compositor_mac.cc
+@@ -12,6 +12,7 @@
+ #include "ui/compositor/compositor.h"
+ #include "ui/compositor/compositor_observer.h"
+ #include "ui/compositor/compositor_switches.h"
++#include "ui/display/types/display_constants.h"
+ 
+ namespace ui {
+ 
+@@ -65,7 +66,8 @@ void RecyclableCompositorMac::Unsuspend() {
+ void RecyclableCompositorMac::UpdateSurface(
+     const gfx::Size& size_pixels,
+     float scale_factor,
+-    const gfx::DisplayColorSpaces& display_color_spaces) {
++    const gfx::DisplayColorSpaces& display_color_spaces,
++    int64_t display_id) {
+   if (size_pixels != size_pixels_ || scale_factor != scale_factor_) {
+     size_pixels_ = size_pixels;
+     scale_factor_ = scale_factor;
+@@ -75,21 +77,19 @@ void RecyclableCompositorMac::UpdateSurface(
+     compositor()->SetScaleAndSize(scale_factor_, size_pixels_,
+                                   local_surface_id);
+   }
+-  if (display_color_spaces != display_color_spaces_) {
+-    display_color_spaces_ = display_color_spaces;
+-    compositor()->SetDisplayColorSpaces(display_color_spaces_);
+-  }
++  compositor()->SetDisplayColorSpaces(display_color_spaces);
++  compositor()->SetVSyncDisplayID(display_id);
+ }
+ 
+ void RecyclableCompositorMac::InvalidateSurface() {
+   size_pixels_ = gfx::Size();
+   scale_factor_ = 1.f;
+   local_surface_id_allocator_.Invalidate();
+-  display_color_spaces_ = gfx::DisplayColorSpaces();
+   compositor()->SetScaleAndSize(
+       scale_factor_, size_pixels_,
+       local_surface_id_allocator_.GetCurrentLocalSurfaceId());
+   compositor()->SetDisplayColorSpaces(gfx::DisplayColorSpaces());
++  compositor()->SetVSyncDisplayID(display::kInvalidDisplayId);
+ }
+ 
+ void RecyclableCompositorMac::OnCompositingDidCommit(
+diff --git a/ui/compositor/recyclable_compositor_mac.h b/ui/compositor/recyclable_compositor_mac.h
+index 891204a715de65bce5103b85490bb66de401ba0e..778842bee9395101c6f8b2c182e4b6de7a8a039e 100644
+--- a/ui/compositor/recyclable_compositor_mac.h
++++ b/ui/compositor/recyclable_compositor_mac.h
+@@ -49,7 +49,8 @@ class COMPOSITOR_EXPORT RecyclableCompositorMac
+   // Update the compositor's surface information, if needed.
+   void UpdateSurface(const gfx::Size& size_pixels,
+                      float scale_factor,
+-                     const gfx::DisplayColorSpaces& display_color_spaces);
++                     const gfx::DisplayColorSpaces& display_color_spaces,
++                     int64_t display_id);
+ 
+  private:
+   // Invalidate the compositor's surface information.
+@@ -63,7 +64,6 @@ class COMPOSITOR_EXPORT RecyclableCompositorMac
+   viz::ParentLocalSurfaceIdAllocator local_surface_id_allocator_;
+   gfx::Size size_pixels_;
+   float scale_factor_ = 1.f;
+-  gfx::DisplayColorSpaces display_color_spaces_;
+ 
+   std::unique_ptr<ui::AcceleratedWidgetMac> accelerated_widget_mac_;
+   ui::Compositor compositor_;
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+index c6a33c2a85206295426292406291af670ce65ab0..f1f25bf0e19a918c3fcc7b7610ecf2924a880ff4 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+@@ -617,7 +617,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+           content_bounds_in_screen_.size(), display_.device_scale_factor()));
+   compositor_->UpdateSurface(content_bounds_in_pixels,
+                              display_.device_scale_factor(),
+-                             display_.color_spaces());
++                             display_.color_spaces(), display_.id());
+ }
+ 
+ void NativeWidgetMacNSWindowHost::DestroyCompositor() {
+@@ -1173,7 +1173,7 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+             content_bounds_in_screen_.size(), display_.device_scale_factor()));
+     compositor_->UpdateSurface(content_bounds_in_pixels,
+                                display_.device_scale_factor(),
+-                               display_.color_spaces());
++                               display_.color_spaces(), display_.id());
+   }
+ 
+   if (display_id_changed) {
+@@ -1187,7 +1187,6 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+ 
+     if (compositor_) {
+       RequestVSyncParametersUpdate();
+-      compositor_->compositor()->SetVSyncDisplayID(display_.id());
+     }
+   }
+ }

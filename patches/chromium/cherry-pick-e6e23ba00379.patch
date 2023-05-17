@@ -1,0 +1,430 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Christopher Cameron <ccameron@chromium.org>
+Date: Mon, 15 May 2023 15:30:36 +0200
+Subject: Use ExternalBeginFrameSourceMac on macOS
+
+Change ExternalBeginFrameSourceMac from being a
+SyntheticBeginFrameSource to being an ExternalBeginFrameSource.
+
+Move all of the code that is responsible for updating the VSync
+parameters every 10 seconds from NativeWidgetMacNSWindowHost to
+ExternalBeginFrameSourceMac.
+
+Wire up ExternalBeginFrameSourceMac::SetVSyncDisplayID to create
+the DisplayLinkMac (that was previously created in
+NativeWidgetMacNSWindowHost). Set the VSyncCallbackMac callback in
+ExternalBeginFrameSourceMac to update the timer based VSync
+parameters the same way that was done in SyntheticBeginFrameSource.
+
+Make RootCompositorFrameSinkImpl create a ExternalBeginFrameSourceMac
+instead of creating a DelayBasedBeginFrameSource.
+
+Bug: 1404797
+Change-Id: I288497d94cc66356586e8da34852d53d05cf42f3
+
+diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
+index 5b0a12d8b69c0b79fefcb9194e0f3fb88c4c7051..8ebcf88eadb7fbc3ce781b9094ec88f6d23134c1 100644
+--- a/components/viz/service/BUILD.gn
++++ b/components/viz/service/BUILD.gn
+@@ -323,6 +323,12 @@ viz_component("service") {
+       frameworks += [ "CoreGraphics.framework" ]
+     }
+     configs = ["//electron/build/config:mas_build"]
++    if (is_mac) {
++      sources += [
++        "frame_sinks/external_begin_frame_source_mac.cc",
++        "frame_sinks/external_begin_frame_source_mac.h",
++      ]
++    }
+   }
+ 
+   if (is_android || use_ozone) {
+diff --git a/components/viz/service/frame_sinks/DEPS b/components/viz/service/frame_sinks/DEPS
+index 163224a3cdb78d1eee055491c2daa7ca09fe4baa..c0e240ec70f7b7d4da92b497ac607e73d1168923 100644
+--- a/components/viz/service/frame_sinks/DEPS
++++ b/components/viz/service/frame_sinks/DEPS
+@@ -26,4 +26,8 @@ specific_include_rules = {
+   "external_begin_frame_source_android.cc": [
+     "+components/viz/service/service_jni_headers/ExternalBeginFrameSourceAndroid_jni.h",
+   ],
++  "external_begin_frame_source_mac.h": [
++    "+ui/display/mac/display_link_mac.h",
++    "+ui/display/types/display_constants.h",
++  ],
+ }
+diff --git a/components/viz/service/frame_sinks/external_begin_frame_source_mac.cc b/components/viz/service/frame_sinks/external_begin_frame_source_mac.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..f5bd62e7c486b8e6bb58d59984f363867015486c
+--- /dev/null
++++ b/components/viz/service/frame_sinks/external_begin_frame_source_mac.cc
+@@ -0,0 +1,97 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "components/viz/service/frame_sinks/external_begin_frame_source_mac.h"
++
++#include <algorithm>
++#include <memory>
++#include <utility>
++
++#include "base/containers/contains.h"
++#include "base/trace_event/trace_event.h"
++
++namespace viz {
++
++ExternalBeginFrameSourceMac::ExternalBeginFrameSourceMac(
++    std::unique_ptr<DelayBasedTimeSource> time_source,
++    uint32_t restart_id)
++    : ExternalBeginFrameSource(this, restart_id),
++      time_source_(std::move(time_source)) {
++  time_source_->SetClient(this);
++}
++
++ExternalBeginFrameSourceMac::~ExternalBeginFrameSourceMac() = default;
++
++void ExternalBeginFrameSourceMac::SetDynamicBeginFrameDeadlineOffsetSource(
++    DynamicBeginFrameDeadlineOffsetSource*
++        dynamic_begin_frame_deadline_offset_source) {
++  begin_frame_args_generator_.set_dynamic_begin_frame_deadline_offset_source(
++      dynamic_begin_frame_deadline_offset_source);
++}
++
++void ExternalBeginFrameSourceMac::SetVSyncDisplayID(int64_t display_id) {
++  if (display_id_ == display_id) {
++    return;
++  }
++
++  display_id_ = display_id;
++  display_link_ = ui::DisplayLinkMac::GetForDisplay(
++      base::checked_cast<CGDirectDisplayID>(display_id_));
++  time_source_next_update_time_ = base::TimeTicks();
++  RequestTimeSourceParamsUpdate();
++}
++
++void ExternalBeginFrameSourceMac::OnNeedsBeginFrames(bool needs_begin_frames) {
++  if (needs_begin_frames_ == needs_begin_frames) {
++    return;
++  }
++  needs_begin_frames_ = needs_begin_frames;
++
++  DCHECK_NE(time_source_->Active(), needs_begin_frames_);
++  time_source_->SetActive(needs_begin_frames_);
++}
++
++void ExternalBeginFrameSourceMac::OnTimerTick() {
++  // The VSync parameters skew over time (astonishingly quickly -- 0.1 msec per
++  // second). If too much time has elapsed since the last time the vsync
++  // parameters were calculated, re-calculate them.
++  if (base::TimeTicks::Now() >= time_source_next_update_time_) {
++    RequestTimeSourceParamsUpdate();
++  }
++
++  // See comments in DelayBasedBeginFrameSource::OnTimerTick regarding the
++  // computation of `frame_time`.
++  base::TimeTicks frame_time =
++      std::max(time_source_->LastTickTime(),
++               time_source_->NextTickTime() - time_source_->Interval());
++  OnBeginFrame(begin_frame_args_generator_.GenerateBeginFrameArgs(
++      source_id(), frame_time, time_source_->NextTickTime(),
++      time_source_->Interval()));
++}
++
++void ExternalBeginFrameSourceMac::RequestTimeSourceParamsUpdate() {
++  if (!display_link_ || time_source_updater_) {
++    return;
++  }
++  time_source_updater_ = display_link_->RegisterCallback(base::BindRepeating(
++      &ExternalBeginFrameSourceMac::OnTimeSourceParamsUpdate,
++      weak_factory_.GetWeakPtr()));
++}
++
++void ExternalBeginFrameSourceMac::OnTimeSourceParamsUpdate(
++    ui::VSyncParamsMac params) {
++  time_source_next_update_time_ = base::TimeTicks::Now() + base::Seconds(10);
++  time_source_updater_ = nullptr;
++
++  if (params.display_times_valid) {
++    time_source_->SetTimebaseAndInterval(params.display_timebase,
++                                         params.display_interval);
++    last_timebase_ = params.display_timebase;
++  } else {
++    time_source_->SetTimebaseAndInterval(last_timebase_,
++                                         BeginFrameArgs::DefaultInterval());
++  }
++}
++
++}  // namespace viz
+diff --git a/components/viz/service/frame_sinks/external_begin_frame_source_mac.h b/components/viz/service/frame_sinks/external_begin_frame_source_mac.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..4753f86371d97ec0470e355258bae17e10e77dcf
+--- /dev/null
++++ b/components/viz/service/frame_sinks/external_begin_frame_source_mac.h
+@@ -0,0 +1,74 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_MAC_H_
++#define COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_MAC_H_
++
++#include <memory>
++
++#include "components/viz/common/frame_sinks/begin_frame_source.h"
++#include "components/viz/service/viz_service_export.h"
++#include "ui/display/mac/display_link_mac.h"
++#include "ui/display/types/display_constants.h"
++
++namespace viz {
++
++// A begin frame source for use on macOS. This behaves like a
++// DelayBasedBeginFrameSource, but, instead of being informed externally of its
++// timebase and interval, it is informed externally of its display::DisplayId
++// and uses that to query its timebase and interval from a DisplayLinkMac.
++class VIZ_COMMON_EXPORT ExternalBeginFrameSourceMac
++    : public ExternalBeginFrameSource,
++      public ExternalBeginFrameSourceClient,
++      public DelayBasedTimeSourceClient {
++ public:
++  ExternalBeginFrameSourceMac(std::unique_ptr<DelayBasedTimeSource> time_source,
++                              uint32_t restart_id);
++
++  ExternalBeginFrameSourceMac(const ExternalBeginFrameSourceMac&) = delete;
++  ExternalBeginFrameSourceMac& operator=(const ExternalBeginFrameSourceMac&) =
++      delete;
++  ~ExternalBeginFrameSourceMac() override;
++
++  // BeginFrameSource implementation.
++  void SetDynamicBeginFrameDeadlineOffsetSource(
++      DynamicBeginFrameDeadlineOffsetSource*
++          dynamic_begin_frame_deadline_offset_source) override;
++  void SetVSyncDisplayID(int64_t display_id) override;
++
++  // ExternalBeginFrameSourceClient implementation.
++  void OnNeedsBeginFrames(bool needs_begin_frames) override;
++
++  // DelayBasedTimeSourceClient implementation.
++  void OnTimerTick() override;
++
++ private:
++  // Request a callback from DisplayLinkMac, and the callback function.
++  void RequestTimeSourceParamsUpdate();
++  void OnTimeSourceParamsUpdate(ui::VSyncParamsMac params);
++
++  BeginFrameArgsGenerator begin_frame_args_generator_;
++
++  bool needs_begin_frames_ = false;
++
++  // CVDisplayLink and related structures to set timer parameters.
++  int64_t display_id_ = display::kInvalidDisplayId;
++  scoped_refptr<ui::DisplayLinkMac> display_link_;
++
++  // Timer used to drive callbacks.
++  // TODO(https://crbug.com/1404797): Only use this when it is not possible or
++  // efficient to use `display_link_`.
++  std::unique_ptr<DelayBasedTimeSource> time_source_;
++  base::TimeTicks last_timebase_;
++
++  // The callback that is used to update `time_source_`.
++  base::TimeTicks time_source_next_update_time_;
++  std::unique_ptr<ui::VSyncCallbackMac> time_source_updater_;
++
++  base::WeakPtrFactory<ExternalBeginFrameSourceMac> weak_factory_{this};
++};
++
++}  // namespace viz
++
++#endif  // COMPONENTS_VIZ_SERVICE_FRAME_SINKS_EXTERNAL_BEGIN_FRAME_SOURCE_MAC_H_
+diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
+index 055b0a2df07954b8e28f2a6f36b446339ae9ef9f..895dff4c0587dbca26f5178b116d914e15bcefa3 100644
+--- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
++++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
+@@ -36,6 +36,10 @@
+ #include "components/viz/service/frame_sinks/external_begin_frame_source_ios.h"
+ #endif
+ 
++#if BUILDFLAG(IS_MAC)
++#include "components/viz/service/frame_sinks/external_begin_frame_source_mac.h"
++#endif
++
+ namespace viz {
+ 
+ class RootCompositorFrameSinkImpl::StandaloneBeginFrameObserver
+@@ -140,6 +144,11 @@ RootCompositorFrameSinkImpl::Create(
+     hw_support_for_multiple_refresh_rates = true;
+     external_begin_frame_source =
+         std::make_unique<ExternalBeginFrameSourceIOS>(restart_id);
++#elif BUILDFLAG(IS_MAC)
++    external_begin_frame_source = std::make_unique<ExternalBeginFrameSourceMac>(
++        std::make_unique<DelayBasedTimeSource>(
++            base::SingleThreadTaskRunner::GetCurrentDefault().get()),
++        restart_id);
+ #else
+     if (params->disable_frame_rate_limit) {
+       synthetic_begin_frame_source =
+diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
+index 0d5ef8c48f08b1eb5ed878ab8934f2ecd04083fa..30f72b9655e790d864fc7e28983b6a37074448a5 100644
+--- a/ui/display/mac/screen_mac.mm
++++ b/ui/display/mac/screen_mac.mm
+@@ -9,6 +9,7 @@
+ #import <Cocoa/Cocoa.h>
+ #include <IOKit/IOKitLib.h>
+ #include <IOKit/graphics/IOGraphicsLib.h>
++#include <QuartzCore/CVDisplayLink.h>
+ #include <stdint.h>
+ 
+ #include <map>
+@@ -27,7 +28,6 @@
+ #include "base/trace_event/trace_event.h"
+ #include "ui/display/display.h"
+ #include "ui/display/display_change_notifier.h"
+-#include "ui/display/mac/display_link_mac.h"
+ #include "ui/display/util/display_util.h"
+ #include "ui/gfx/geometry/point.h"
+ #include "ui/gfx/icc_profile.h"
+@@ -280,8 +280,22 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
+   display.set_is_monochrome(CGDisplayUsesForceToGray());
+ #endif
+ 
+-  if (auto display_link = ui::DisplayLinkMac::GetForDisplay(display_id))
+-    display.set_display_frequency(display_link->GetRefreshRate());
++  // Query the display's referesh rate.
++  {
++    CVDisplayLinkRef display_link = nullptr;
++    if (CVDisplayLinkCreateWithCGDisplay(display_id, &display_link) ==
++        kCVReturnSuccess) {
++      DCHECK(display_link);
++      CVTime cv_time =
++          CVDisplayLinkGetNominalOutputVideoRefreshPeriod(display_link);
++      if (!(cv_time.flags & kCVTimeIsIndefinite)) {
++        double refresh_rate = (static_cast<double>(cv_time.timeScale) /
++                               static_cast<double>(cv_time.timeValue));
++        display.set_display_frequency(refresh_rate);
++      }
++      CVDisplayLinkRelease(display_link);
++    }
++  }
+ 
+   // CGDisplayRotation returns a double. Display::SetRotationAsDegree will
+   // handle the unexpected situations were the angle is not a multiple of 90.
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.h b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+index e63b249a9bdc23545121a513156bfa32e92fec0b..e21c2df5d19bf01271bee91f792a3dbae29c55b7 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.h
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.h
+@@ -24,7 +24,6 @@
+ #include "ui/accelerated_widget_mac/accelerated_widget_mac.h"
+ #include "ui/base/cocoa/accessibility_focus_overrider.h"
+ #include "ui/compositor/layer_owner.h"
+-#include "ui/display/mac/display_link_mac.h"
+ #include "ui/views/cocoa/drag_drop_client_mac.h"
+ #include "ui/views/cocoa/native_widget_mac_event_monitor.h"
+ #include "ui/views/views_export.h"
+@@ -421,12 +420,6 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+   // ui::AcceleratedWidgetMacNSView:
+   void AcceleratedWidgetCALayerParamsUpdated() override;
+ 
+-  // If `display_link_` is valid and `display_link_updater_` does not exist,
+-  // create it. It will call back to OnVSyncParametersUpdated with new VSync
+-  // parameters.
+-  void RequestVSyncParametersUpdate();
+-  void OnVSyncParametersUpdated(ui::VSyncParamsMac params);
+-
+   // The id that this bridge may be looked up from.
+   const uint64_t widget_id_;
+   const raw_ptr<views::NativeWidgetMac>
+@@ -494,15 +487,6 @@ class VIEWS_EXPORT NativeWidgetMacNSWindowHost
+   // The display that the window is currently on.
+   display::Display display_;
+ 
+-  // Display link for getting vsync info for `display_`, and VSyncCallbackMac to
+-  // use for callbacks.
+-  scoped_refptr<ui::DisplayLinkMac> display_link_;
+-  std::unique_ptr<ui::VSyncCallbackMac> display_link_updater_;
+-
+-  // Updating VSync parameters can be expensive, so set this to the next time
+-  // when we should update VSync parameters.
+-  base::TimeTicks display_link_next_update_time_;
+-
+   // The geometry of the window and its contents view, in screen coordinates.
+   gfx::Rect window_bounds_in_screen_;
+   gfx::Rect content_bounds_in_screen_;
+diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+index f1f25bf0e19a918c3fcc7b7610ecf2924a880ff4..a0c9f71c5eb97091941ba7d9955854af74bd67d5 100644
+--- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
++++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
+@@ -1163,32 +1163,19 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+ 
+ void NativeWidgetMacNSWindowHost::OnWindowDisplayChanged(
+     const display::Display& new_display) {
+-  bool display_id_changed = display_.id() != new_display.id();
+   display_ = new_display;
+-  if (compositor_) {
+-    // Mac device scale factor is always an integer so the result here is an
+-    // integer pixel size.
+-    gfx::Size content_bounds_in_pixels =
+-        gfx::ToRoundedSize(gfx::ConvertSizeToPixels(
+-            content_bounds_in_screen_.size(), display_.device_scale_factor()));
+-    compositor_->UpdateSurface(content_bounds_in_pixels,
+-                               display_.device_scale_factor(),
+-                               display_.color_spaces(), display_.id());
++  if (!compositor_) {
++    return;
+   }
+ 
+-  if (display_id_changed) {
+-    display_link_ = ui::DisplayLinkMac::GetForDisplay(
+-        base::checked_cast<CGDirectDisplayID>(display_.id()));
+-    if (!display_link_) {
+-      // Note that on some headless systems, the display link will fail to be
+-      // created, so this should not be a fatal error.
+-      LOG(ERROR) << "Failed to create display link.";
+-    }
+-
+-    if (compositor_) {
+-      RequestVSyncParametersUpdate();
+-    }
+-  }
++  // Mac device scale factor is always an integer so the result here is an
++  // integer pixel size.
++  gfx::Size content_bounds_in_pixels =
++      gfx::ToRoundedSize(gfx::ConvertSizeToPixels(
++          content_bounds_in_screen_.size(), display_.device_scale_factor()));
++  compositor_->UpdateSurface(content_bounds_in_pixels,
++                             display_.device_scale_factor(),
++                             display_.color_spaces(), display_.id());
+ }
+ 
+ void NativeWidgetMacNSWindowHost::OnWindowWillClose() {
+@@ -1619,32 +1606,6 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+ void NativeWidgetMacNSWindowHost::AcceleratedWidgetCALayerParamsUpdated() {
+   if (const auto* ca_layer_params = compositor_->widget()->GetCALayerParams())
+     GetNSWindowMojo()->SetCALayerParams(*ca_layer_params);
+-
+-  // The VSync parameters skew over time (astonishingly quickly -- 0.1 msec per
+-  // second). If too much time has elapsed since the last time the vsync
+-  // parameters were calculated, re-calculate them.
+-  if (base::TimeTicks::Now() >= display_link_next_update_time_) {
+-    RequestVSyncParametersUpdate();
+-  }
+-}
+-
+-void NativeWidgetMacNSWindowHost::RequestVSyncParametersUpdate() {
+-  if (!display_link_ || display_link_updater_) {
+-    return;
+-  }
+-  display_link_updater_ = display_link_->RegisterCallback(base::BindRepeating(
+-      &NativeWidgetMacNSWindowHost::OnVSyncParametersUpdated,
+-      weak_factory_for_vsync_update_.GetWeakPtr()));
+-}
+-
+-void NativeWidgetMacNSWindowHost::OnVSyncParametersUpdated(
+-    ui::VSyncParamsMac params) {
+-  if (compositor_ && params.display_times_valid) {
+-    compositor_->compositor()->SetDisplayVSyncParameters(
+-        params.display_timebase, params.display_interval);
+-    display_link_next_update_time_ = base::TimeTicks::Now() + base::Seconds(10);
+-  }
+-  display_link_updater_ = nullptr;
+ }
+ 
+ }  // namespace views
