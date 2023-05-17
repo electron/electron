@@ -97,7 +97,7 @@ describe('dialog module', () => {
 
     it('throws errors when the options are invalid', () => {
       expect(() => {
-        dialog.showMessageBox(undefined as any, { type: 'not-a-valid-type', message: '' });
+        dialog.showMessageBox(undefined as any, { type: 'not-a-valid-type' as any, message: '' });
       }).to.throw(/Invalid message box type/);
 
       expect(() => {
