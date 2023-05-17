@@ -495,15 +495,15 @@ Scrolls to the top of the current `<webview>`.
 
 Scrolls to the bottom of the current `<webview>`.
 
-#### `<webview>.adjustSelection(start, end, showMenu)`
+#### `<webview>.adjustSelection(options)`
 
-* `start` Number - Index at which to begin the adjustment.
-* `end` Number - Index at which to end the adjustment.
-* `showMenu` Boolean - Whether to show the selection menu.
+* `options` Object
+  * `start` Number - Index at which to begin the adjustment.
+  * `end` Number - Index at which to end the adjustment.
 
 Adjusts the current text selection starting and ending points in the focused frame by the given amounts. A negative amount moves the selection towards the beginning of the document, and a positive amount moves the selection towards the end of the document.
 
-See [`webContents.adjustSelection`](web-contents.md#contentsadjustselectionstart-end-showmenu) for
+See [`webContents.adjustSelection`](web-contents.md#contentsadjustselectionoptions) for
 examples.
 
 ### `<webview>.replace(text)`
