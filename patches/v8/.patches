@@ -1,5 +1,4 @@
 build_gn.patch
-expose_mksnapshot.patch
 dcheck.patch
 export_symbols_needed_for_windows_build.patch
 do_not_export_private_v8_symbols_on_windows.patch
