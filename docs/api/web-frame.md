@@ -102,7 +102,6 @@ const spellChecker = require('spellchecker')
 webFrame.setSpellCheckProvider('en-US', {
   spellCheck (words, callback) {
     setTimeout(() => {
-      const spellchecker = require('spellchecker')
       const misspelled = words.filter(x => spellchecker.isMisspelled(x))
       callback(misspelled)
     }, 0)

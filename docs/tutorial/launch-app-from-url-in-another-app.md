@@ -45,6 +45,8 @@ if (process.defaultApp) {
 We will now define the function in charge of creating our browser window and load our application's `index.html` file.
 
 ```javascript
+let mainWindow
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({

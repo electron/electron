@@ -204,7 +204,7 @@ class Parser {
     // Touch the disk as soon as `getFiles` is called, not sooner.
     // Also, ensure that we're not blocking other operations by using
     // the asynchronous version.
-    this.files = this.files || await fs.readdir('.')
+    this.files = this.files || await fs.promises.readdir('.')
 
     return this.files
   }

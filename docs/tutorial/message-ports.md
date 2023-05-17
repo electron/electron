@@ -181,7 +181,7 @@ app.whenReady().then(async () => {
   // We can't use ipcMain.handle() here, because the reply needs to transfer a
   // MessagePort.
   // Listen for message sent from the top-level frame
-  mainWindow.webContents.mainFrame.on('request-worker-channel', (event) => {
+  mainWindow.webContents.mainFrame.ipc.on('request-worker-channel', (event) => {
     // Create a new channel ...
     const { port1, port2 } = new MessageChannelMain()
     // ... send one end to the worker ...

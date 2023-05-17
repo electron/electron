@@ -253,7 +253,7 @@ app.whenReady().then(() => {
   win.webContents.session.on('select-hid-device', (event, details, callback) => {
     event.preventDefault()
     const selectedDevice = details.deviceList.find((device) => {
-      return device.vendorId === '9025' && device.productId === '67'
+      return device.vendorId === 9025 && device.productId === 67
     })
     callback(selectedDevice?.deviceId)
   })
@@ -502,7 +502,7 @@ app.whenReady().then(() => {
   win.webContents.session.on('select-usb-device', (event, details, callback) => {
     event.preventDefault()
     const selectedDevice = details.deviceList.find((device) => {
-      return device.vendorId === '9025' && device.productId === '67'
+      return device.vendorId === 9025 && device.productId === 67
     })
     if (selectedDevice) {
       // Optionally, add this to the persisted devices (updateGrantedDevices needs to be implemented by developer to persist permissions)
@@ -755,15 +755,17 @@ Sets download saving directory. By default, the download directory will be the
 Emulates network with the given configuration for the `session`.
 
 ```javascript
+const win = new BrowserWindow()
+
 // To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
-window.webContents.session.enableNetworkEmulation({
+win.webContents.session.enableNetworkEmulation({
   latency: 500,
   downloadThroughput: 6400,
   uploadThroughput: 6400
 })
 
 // To emulate a network outage.
-window.webContents.session.enableNetworkEmulation({ offline: true })
+win.webContents.session.enableNetworkEmulation({ offline: true })
 ```
 
 #### `ses.preconnect(options)`
@@ -1084,9 +1086,9 @@ app.whenReady().then(() => {
   win.webContents.session.on('select-hid-device', (event, details, callback) => {
     event.preventDefault()
     const selectedDevice = details.deviceList.find((device) => {
-      return device.vendorId === '9025' && device.productId === '67'
+      return device.vendorId === 9025 && device.productId === 67
     })
-    callback(selectedPort?.deviceId)
+    callback(selectedDevice?.deviceId)
   })
 })
 ```
@@ -1125,31 +1127,31 @@ macOS does not require a handler because macOS handles the pairing
 automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```javascript
-
-const { app, BrowserWindow, ipcMain, session } = require('electron')
-
-let bluetoothPinCallback = null
+const { app, BrowserWindow, session } = require('electron')
+const path = require('path')
 
 function createWindow () {
+  let bluetoothPinCallback = null
+
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+
+  mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+    bluetoothPinCallback = callback
+    // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+    // Note that this will require logic in the renderer to handle this message and
+    // display a prompt to the user.
+    mainWindow.webContents.send('bluetooth-pairing-request', details)
+  })
+
+  // Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
+  mainWindow.webContents.ipc.on('bluetooth-pairing-response', (event, response) => {
+    bluetoothPinCallback(response)
+  })
 }
-
-// Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
-ipcMain.on('bluetooth-pairing-response', (event, response) => {
-  bluetoothPinCallback(response)
-})
-
-mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
-  bluetoothPinCallback = callback
-  // Send a IPC message to the renderer to prompt the user to confirm the pairing.
-  // Note that this will require logic in the renderer to handle this message and
-  // display a prompt to the user.
-  mainWindow.webContents.send('bluetooth-pairing-request', details)
-})
 
 app.whenReady().then(() => {
   createWindow()

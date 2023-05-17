@@ -104,6 +104,7 @@ window, you have to set both `parent` and `modal` options:
 ```javascript
 const { BrowserWindow } = require('electron')
 
+const top = new BrowserWindow()
 const child = new BrowserWindow({ parent: top, modal: true, show: false })
 child.loadURL('https://github.com')
 child.once('ready-to-show', () => {
@@ -1200,6 +1201,9 @@ Node's [`url.format`](https://nodejs.org/api/url.html#url_url_format_urlobject)
 method:
 
 ```javascript
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow()
+
 const url = require('url').format({
   protocol: 'file',
   slashes: true,
@@ -1213,6 +1217,9 @@ You can load a URL using a `POST` request with URL-encoded data by doing
 the following:
 
 ```javascript
+const { BrowserWindow } = require('electron')
+const win = new BrowserWindow()
+
 win.loadURL('http://localhost:8000/post', {
   postData: [{
     type: 'rawData',

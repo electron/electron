@@ -182,13 +182,13 @@ provided to the renderer process. Please refer to
 :::
 
 ```javascript {6-13,25} title='main.js (Main Process)'
-const { BrowserWindow, dialog, ipcMain } = require('electron')
+const { app, BrowserWindow, dialog, ipcMain } = require('electron')
 const path = require('path')
 
 // ...
 
 async function handleFileOpen () {
-  const { canceled, filePaths } = await dialog.showOpenDialog()
+  const { canceled, filePaths } = await dialog.showOpenDialog({})
   if (!canceled) {
     return filePaths[0]
   }
@@ -203,7 +203,7 @@ function createWindow () {
   mainWindow.loadFile('index.html')
 }
 
-app.whenReady(() => {
+app.whenReady().then(() => {
   ipcMain.handle('dialog:openFile', handleFileOpen)
   createWindow()
 })

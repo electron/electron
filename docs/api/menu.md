@@ -289,7 +289,7 @@ ipcMain.on('show-context-menu', (event) => {
     { label: 'Menu Item 2', type: 'checkbox', checked: true }
   ]
   const menu = Menu.buildFromTemplate(template)
-  menu.popup(BrowserWindow.fromWebContents(event.sender))
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) })
 })
 ```
 

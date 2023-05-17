@@ -290,6 +290,7 @@ To attach this script to your renderer process, pass in the path to your preload
 to the `webPreferences.preload` option in your existing `BrowserWindow` constructor.
 
 ```js
+const { app, BrowserWindow } = require('electron')
 // include the Node.js 'path' module at the top of your file
 const path = require('path')
 
