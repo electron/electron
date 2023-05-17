@@ -601,6 +601,7 @@ window.
 
 Returns:
 
+* `event` Event
 * `url` string - URL of the link that was clicked or selected.
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
