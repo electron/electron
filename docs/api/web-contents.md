@@ -1428,11 +1428,11 @@ Scrolls to the top of the current `webContents`.
 
 Scrolls to the bottom of the current `webContents`.
 
-#### `contents.adjustSelection(start, end, showMenu)`
+#### `contents.adjustSelection(options)`
 
-* `start` Number - Index at which to begin the adjustment.
-* `end` Number - Index at which to end the adjustment.
-* `showMenu` Boolean - Whether to show the selection menu.
+* `options` Object
+  * `start` Number - Index at which to begin the adjustment.
+  * `end` Number - Index at which to end the adjustment.
 
 Adjusts the current text selection starting and ending points in the focused frame by the given amounts. A negative amount moves the selection towards the beginning of the document, and a positive amount moves the selection towards the end of the document.
 
@@ -1443,14 +1443,14 @@ const win = new BrowserWindow()
 
 // Adjusts the beginning of the selection 1 letter forward,
 // and the end of the selection 5 letters forward.
-win.webContents.adjustSelection(1, 5, false)
+win.webContents.adjustSelection({ start: 1, end: 5 })
 
 // Adjusts the beginning of the selection 2 letters forward,
 // and the end of the selection 3 letters backward.
-win.webContents.adjustSelection(2, -3, false)
+win.webContents.adjustSelection({ start: 2, end: -3 })
 ```
 
-For a call of `win.webContents.adjustSelection(1, 5, false)`
+For a call of `win.webContents.adjustSelection({ start: 1, end: 5 })`
 
 Before:
 
