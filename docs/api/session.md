@@ -1390,7 +1390,7 @@ extension to be loaded.
 const { app, session } = require('electron')
 const path = require('path')
 
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   await session.defaultSession.loadExtension(
     path.join(__dirname, 'react-devtools'),
     // allowFileAccess is required to load the devtools extension on file:// URLs.
