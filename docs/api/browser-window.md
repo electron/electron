@@ -597,7 +597,7 @@ On Linux the setter is a no-op, although the getter returns `true`.
 
 A `boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
 
-```js
+```js @ts-expect-error=[11]
 const win = new BrowserWindow({ height: 600, width: 600 })
 
 const template = [

@@ -32,7 +32,7 @@ npm install update-electron-app
 
 Then, invoke the updater from your app's main process file:
 
-```js title="main.js"
+```js title="main.js" @ts-nocheck
 require('update-electron-app')()
 ```
 
@@ -113,7 +113,7 @@ Now that you've configured the basic update mechanism for your application, you
 need to ensure that the user will get notified when there's an update. This
 can be achieved using the [autoUpdater API events](../api/auto-updater.md#events):
 
-```javascript title="main.js"
+```javascript title="main.js" @ts-expect-error=[11]
 autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
   const dialogOpts = {
     type: 'info',

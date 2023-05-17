@@ -166,7 +166,7 @@ If you're using Electron Packager's API, adding support for protocol handlers is
 Electron Forge is handled, except
 `protocols` is part of the Packager options passed to the `packager` function.
 
-```javascript
+```javascript @ts-nocheck
 const packager = require('electron-packager')
 
 packager({

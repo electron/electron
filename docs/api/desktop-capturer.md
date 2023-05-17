@@ -22,7 +22,7 @@ desktopCapturer.getSources({ types: ['window', 'screen'] }).then(async sources =
 })
 ```
 
-```javascript
+```javascript @ts-nocheck
 // In the preload script.
 const { ipcRenderer } = require('electron')
 

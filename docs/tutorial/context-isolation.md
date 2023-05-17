@@ -16,7 +16,7 @@ Context isolation has been enabled by default since Electron 12, and it is a rec
 
 Exposing APIs from your preload script to a loaded website in the renderer process is a common use-case. With context isolation disabled, your preload script would share a common global `window` object with the renderer. You could then attach arbitrary properties to a preload script:
 
-```javascript title='preload.js'
+```javascript title='preload.js' @ts-nocheck
 // preload with contextIsolation disabled
 window.myAPI = {
   doAThing: () => {}
@@ -25,7 +25,7 @@ window.myAPI = {
 
 The `doAThing()` function could then be used directly in the renderer process:
 
-```javascript title='renderer.js'
+```javascript title='renderer.js' @ts-nocheck
 // use the exposed API in the renderer
 window.myAPI.doAThing()
 ```
@@ -43,7 +43,7 @@ contextBridge.exposeInMainWorld('myAPI', {
 })
 ```
 
-```javascript title='renderer.js'
+```javascript title='renderer.js' @ts-nocheck
 // use the exposed API in the renderer
 window.myAPI.doAThing()
 ```
@@ -98,7 +98,7 @@ declare global {
 
 Doing so will ensure that the TypeScript compiler will know about the `electronAPI` property on your global `window` object when writing scripts in your renderer process:
 
-```typescript title='renderer.ts'
+```typescript title='renderer.ts' @ts-nocheck
 window.electronAPI.loadPreferences()
 ```
 

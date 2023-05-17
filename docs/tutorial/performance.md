@@ -172,7 +172,7 @@ in the fictitious `.foo` format. In order to do that, it relies on the
 equally fictitious `foo-parser` module. In traditional Node.js development,
 you might write code that eagerly loads dependencies:
 
-```js title='parser.js'
+```js title='parser.js' @ts-expect-error=[2]
 const fs = require('fs')
 const fooParser = require('foo-parser')
 
@@ -195,7 +195,7 @@ In the above example, we're doing a lot of work that's being executed as soon
 as the file is loaded. Do we need to get parsed files right away? Could we
 do this work a little later, when `getParsedFiles()` is actually called?
 
-```js title='parser.js'
+```js title='parser.js' @ts-expect-error=[20]
 // "fs" is likely already being loaded, so the `require()` call is cheap
 const fs = require('fs')
 

@@ -147,7 +147,7 @@ can have a submenu.
 
 An example of creating the application menu with the simple template API:
 
-```javascript
+```javascript @ts-expect-error=[107]
 const { app, Menu } = require('electron')
 
 const isMac = process.platform === 'darwin'
@@ -267,7 +267,7 @@ menu on behalf of the renderer.
 
 Below is an example of showing a menu when the user right clicks the page:
 
-```js
+```js @ts-expect-error=[21]
 // renderer
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault()

@@ -126,7 +126,7 @@ app.whenReady().then(async () => {
 Then, in your preload scripts you receive the port through IPC and set up the
 listeners.
 
-```js title='preloadMain.js and preloadSecondary.js (Preload scripts)'
+```js title='preloadMain.js and preloadSecondary.js (Preload scripts)' @ts-nocheck
 const { ipcRenderer } = require('electron')
 
 ipcRenderer.on('port', e => {
@@ -148,7 +148,7 @@ That means window.electronMessagePort is globally available and you can call
 `postMessage` on it from anywhere in your app to send a message to the other
 renderer.
 
-```js title='renderer.js (Renderer Process)'
+```js title='renderer.js (Renderer Process)' @ts-nocheck
 // elsewhere in your code to send a message to the other renderers message handler
 window.electronMessagePort.postmessage('ping')
 ```
@@ -245,7 +245,7 @@ Electron's built-in IPC methods only support two modes: fire-and-forget
 can implement a "response stream", where a single request responds with a
 stream of data.
 
-```js title='renderer.js (Renderer Process)'
+```js title='renderer.js (Renderer Process)' @ts-expect-error=[18]
 const makeStreamingRequest = (element, callback) => {
   // MessageChannels are lightweight--it's cheap to create a new one for each
   // request.

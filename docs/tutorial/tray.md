@@ -51,7 +51,7 @@ app.whenReady().then(() => {
 
 Great! Now we can start attaching a context menu to our Tray, like so:
 
-```js
+```js @ts-expect-error=[8]
 const contextMenu = Menu.buildFromTemplate([
   { label: 'Item1', type: 'radio' },
   { label: 'Item2', type: 'radio' },

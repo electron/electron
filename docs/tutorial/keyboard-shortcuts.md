@@ -131,7 +131,7 @@ If you don't want to do manual shortcut parsing, there are libraries that do
 advanced key detection, such as [mousetrap][]. Below are examples of usage of the
 `mousetrap` running in the Renderer process:
 
-```js
+```js @ts-nocheck
 Mousetrap.bind('4', () => { console.log('4') })
 Mousetrap.bind('?', () => { console.log('show shortcuts!') })
 Mousetrap.bind('esc', () => { console.log('escape') }, 'keyup')
