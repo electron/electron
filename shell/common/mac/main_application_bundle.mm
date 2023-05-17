@@ -17,7 +17,7 @@ namespace electron {
 namespace {
 
 bool HasMainProcessKey() {
-  NSDictionary* info_dictionary = [base::mac::MainBundle() infoDictionary];
+  NSDictionary* info_dictionary = [base::apple::MainBundle() infoDictionary];
   return
       [[info_dictionary objectForKey:@"ElectronMainProcess"] boolValue] != NO;
 }

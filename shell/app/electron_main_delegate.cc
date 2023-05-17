@@ -216,7 +216,7 @@ std::string LoadResourceBundle(const std::string& locale) {
   base::FilePath pak_dir;
 #if BUILDFLAG(IS_MAC)
   pak_dir =
-      base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
+      base::apple::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
   base::PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif

@@ -169,7 +169,7 @@ void Browser::ClearRecentDocuments() {
 
 bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
                                             gin::Arguments* args) {
-  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
 
@@ -207,7 +207,7 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
 
@@ -222,7 +222,7 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
   if (protocol.empty())
     return false;
 
-  NSString* identifier = [base::mac::MainBundle() bundleIdentifier];
+  NSString* identifier = [base::apple::MainBundle() bundleIdentifier];
   if (!identifier)
     return false;
 
@@ -381,10 +381,10 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
   }
 #else
   if (settings.open_at_login) {
-    base::mac::AddToLoginItems(base::mac::MainBundlePath(),
+    base::mac::AddToLoginItems(base::apple::MainBundlePath(),
                                settings.open_as_hidden);
   } else {
-    base::mac::RemoveFromLoginItems(base::mac::MainBundlePath());
+    base::mac::RemoveFromLoginItems(base::apple::MainBundlePath());
   }
 #endif
 }
