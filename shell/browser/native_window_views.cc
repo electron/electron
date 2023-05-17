@@ -771,6 +771,10 @@ gfx::Size NativeWindowViews::GetContentSize() {
 }
 
 gfx::Rect NativeWindowViews::GetNormalBounds() {
+#if BUILDFLAG(IS_WIN)
+  if (IsMaximized() && transparent())
+    return restore_bounds_;
+#endif
   return widget()->GetRestoredBounds();
 }
 
