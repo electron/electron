@@ -241,11 +241,17 @@ class WebContents : public ExclusiveAccessContext,
   void Redo();
   void Cut();
   void Copy();
+  void CenterSelection();
   void Paste();
   void PasteAndMatchStyle();
   void Delete();
   void SelectAll();
   void Unselect();
+  void ScrollToTopOfDocument();
+  void ScrollToBottomOfDocument();
+  void AdjustSelectionByCharacterOffset(int start_adjust,
+                                        int end_adjust,
+                                        bool show_selection_menu);
   void Replace(const std::u16string& word);
   void ReplaceMisspelling(const std::u16string& word);
   uint32_t FindInPage(gin::Arguments* args);

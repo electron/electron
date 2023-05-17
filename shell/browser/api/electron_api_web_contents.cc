@@ -3189,6 +3189,10 @@ void WebContents::Copy() {
   web_contents()->Copy();
 }
 
+void WebContents::CenterSelection() {
+  web_contents()->CenterSelection();
+}
+
 void WebContents::Paste() {
   web_contents()->Paste();
 }
@@ -3207,6 +3211,21 @@ void WebContents::SelectAll() {
 
 void WebContents::Unselect() {
   web_contents()->CollapseSelection();
+}
+
+void WebContents::ScrollToTopOfDocument() {
+  web_contents()->ScrollToTopOfDocument();
+}
+
+void WebContents::ScrollToBottomOfDocument() {
+  web_contents()->ScrollToBottomOfDocument();
+}
+
+void WebContents::AdjustSelectionByCharacterOffset(int start_adjust,
+                                                   int end_adjust,
+                                                   bool show_selection_menu) {
+  web_contents()->AdjustSelectionByCharacterOffset(start_adjust, end_adjust,
+                                                   show_selection_menu);
 }
 
 void WebContents::Replace(const std::u16string& word) {
@@ -4242,11 +4261,16 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)
       .SetMethod("copy", &WebContents::Copy)
+      .SetMethod("centerSelection", &WebContents::CenterSelection)
       .SetMethod("paste", &WebContents::Paste)
       .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
       .SetMethod("delete", &WebContents::Delete)
       .SetMethod("selectAll", &WebContents::SelectAll)
       .SetMethod("unselect", &WebContents::Unselect)
+      .SetMethod("scrollToTop", &WebContents::ScrollToTopOfDocument)
+      .SetMethod("scrollToBottom", &WebContents::ScrollToBottomOfDocument)
+      .SetMethod("adjustSelection",
+                 &WebContents::AdjustSelectionByCharacterOffset)
       .SetMethod("replace", &WebContents::Replace)
       .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
       .SetMethod("findInPage", &WebContents::FindInPage)
