@@ -249,6 +249,11 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kVibrancyType, &type)) {
     SetVibrancy(type);
   }
+#elif BUILDFLAG(IS_WIN)
+  std::string material;
+  if (options.Get(options::kBackgroundMaterial, &material)) {
+    SetBackgroundMaterial(material);
+  }
 #endif
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
@@ -444,6 +449,8 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 }
 
 void NativeWindow::SetVibrancy(const std::string& type) {}
+
+void NativeWindow::SetBackgroundMaterial(const std::string& type) {}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}

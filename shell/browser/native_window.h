@@ -215,6 +215,8 @@ class NativeWindow : public base::SupportsUserData,
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
 
+  virtual void SetBackgroundMaterial(const std::string& type);
+
   // Traffic Light API
 #if BUILDFLAG(IS_MAC)
   virtual void SetWindowButtonVisibility(bool visible) = 0;

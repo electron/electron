@@ -863,6 +863,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
+void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
+  window_->SetBackgroundMaterial(material_type);
+}
+
 #if BUILDFLAG(IS_MAC)
 std::string BaseWindow::GetAlwaysOnTopLevel() {
   return window_->GetAlwaysOnTopLevel();
@@ -1276,15 +1280,12 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
                  &BaseWindow::SetTrafficLightPosition)
       .SetMethod("getTrafficLightPosition",
                  &BaseWindow::GetTrafficLightPosition)
-#endif
-
-#if BUILDFLAG(IS_MAC)
       .SetMethod("isHiddenInMissionControl",
                  &BaseWindow::IsHiddenInMissionControl)
       .SetMethod("setHiddenInMissionControl",
                  &BaseWindow::SetHiddenInMissionControl)
 #endif
-
+      .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
       .SetMethod("_setTouchBarItems", &BaseWindow::SetTouchBar)
       .SetMethod("_refreshTouchBarItem", &BaseWindow::RefreshTouchBarItem)
       .SetMethod("_setEscapeTouchBarItem", &BaseWindow::SetEscapeTouchBarItem)
