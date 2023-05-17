@@ -6047,6 +6047,24 @@ describe('BrowserWindow module', () => {
   describe('"transparent" option', () => {
     afterEach(closeAllWindows);
 
+    ifit(process.platform !== 'linux')('correctly returns isMaximized() when the window is maximized then minimized', async () => {
+      const w = new BrowserWindow({
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = once(w, 'maximize');
+      w.maximize();
+      await maximize;
+
+      const minimize = once(w, 'minimize');
+      w.minimize();
+      await minimize;
+
+      expect(w.isMaximized()).to.be.false();
+      expect(w.isMinimized()).to.be.true();
+    });
+
     // Only applicable on Windows where transparent windows can't be maximized.
     ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
       const display = screen.getPrimaryDisplay();
