@@ -267,9 +267,10 @@ step-depot-tools-get: &step-depot-tools-get
                          parent=self,
       EOF
         git apply --3way gclient.diff
-        # Ensure depot_tools does not update.
-        touch .disable_auto_update
       fi
+      # Ensure depot_tools does not update.
+      test -d depot_tools && cd depot_tools
+      touch .disable_auto_update
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
   run:
