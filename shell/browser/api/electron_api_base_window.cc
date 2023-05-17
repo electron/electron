@@ -864,6 +864,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
+void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
+  window_->SetBackgroundMaterial(material_type);
+}
+
 #if BUILDFLAG(IS_MAC)
 std::string BaseWindow::GetAlwaysOnTopLevel() {
   return window_->GetAlwaysOnTopLevel();
@@ -1267,6 +1271,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
+      .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
 
 #if BUILDFLAG(IS_MAC)
       .SetMethod("isHiddenInMissionControl",
