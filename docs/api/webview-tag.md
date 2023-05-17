@@ -498,8 +498,8 @@ Scrolls to the bottom of the current `<webview>`.
 #### `<webview>.adjustSelection(options)`
 
 * `options` Object
-  * `start` Number - Index at which to begin the adjustment.
-  * `end` Number - Index at which to end the adjustment.
+  * `start` Number (optional) - Amount to shift the start index of the current selection.
+  * `end` Number (optional) - Amount to shift the end index of the current selection.
 
 Adjusts the current text selection starting and ending points in the focused frame by the given amounts. A negative amount moves the selection towards the beginning of the document, and a positive amount moves the selection towards the end of the document.
 
