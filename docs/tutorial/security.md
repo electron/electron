@@ -141,7 +141,7 @@ like `HTTP`. Similarly, we recommend the use of `WSS` over `WS`, `FTPS` over
 
 #### How?
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={browserWindow:Electron.BrowserWindow}
 // Bad
 browserWindow.loadURL('http://example.com')
 
@@ -648,7 +648,7 @@ receive, amongst other parameters, the `url` the window was requested to open
 and the options used to create it. We recommend that you register a handler to
 monitor the creation of windows, and deny any unexpected window creation.
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={isSafeForExternalOpen:(url:string)=>boolean}
 const { app, shell } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
@@ -684,7 +684,7 @@ leveraged to execute arbitrary commands.
 
 #### How?
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={USER_CONTROLLED_DATA_HERE:string}
 //  Bad
 const { shell } = require('electron')
 shell.openExternal(USER_CONTROLLED_DATA_HERE)
@@ -740,7 +740,7 @@ You should be validating the `sender` of **all** IPC messages by default.
 
 #### How?
 
-```js title='main.js (Main Process)'
+```js title='main.js (Main Process)' @ts-type={getSecrets:()=>unknown}
 // Bad
 ipcMain.handle('get-secrets', () => {
   return getSecrets()

@@ -182,7 +182,7 @@ In Electron, browser windows can only be created after the `app` module's
 [`app.whenReady()`][app-when-ready] API. Call `createWindow()` after `whenReady()`
 resolves its Promise.
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 })
@@ -239,7 +239,7 @@ from within your existing `whenReady()` callback.
 
 [activate]: ../api/app.md#event-activate-macos
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 

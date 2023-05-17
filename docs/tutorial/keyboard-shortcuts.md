@@ -56,7 +56,7 @@ Starting with a working application from the
 [Quick Start Guide](quick-start.md), update the `main.js` file with the
 following lines:
 
-```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global'
+```javascript fiddle='docs/fiddles/features/keyboard-shortcuts/global' @ts-type={createWindow:()=>void}
 const { app, globalShortcut } = require('electron')
 
 app.whenReady().then(() => {

@@ -67,7 +67,7 @@ This code will be different in Windows compared to MacOS and Linux. This is due 
 
 #### Windows code:
 
-```javascript
+```javascript @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -93,7 +93,7 @@ if (!gotTheLock) {
 
 #### MacOS and Linux code:
 
-```javascript
+```javascript @ts-type={createWindow:()=>void}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.

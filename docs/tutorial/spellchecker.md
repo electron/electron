@@ -20,7 +20,7 @@ On macOS as we use the native APIs there is no way to set the language that the 
 
 For Windows and Linux there are a few Electron APIs you should use to set the languages for the spellchecker.
 
-```js
+```js @ts-type={myWindow:Electron.BrowserWindow}
 // Sets the spellchecker to check English US and French
 myWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'fr'])
 
@@ -35,7 +35,7 @@ By default the spellchecker will enable the language matching the current OS loc
 All the required information to generate a context menu is provided in the [`context-menu`](../api/web-contents.md#event-context-menu) event on each `webContents` instance.  A small example
 of how to make a context menu with this information is provided below.
 
-```js
+```js @ts-type={myWindow:Electron.BrowserWindow}
 const { Menu, MenuItem } = require('electron')
 
 myWindow.webContents.on('context-menu', (event, params) => {
@@ -67,7 +67,7 @@ myWindow.webContents.on('context-menu', (event, params) => {
 
 Although the spellchecker itself does not send any typings, words or user input to Google services the hunspell dictionary files are downloaded from a Google CDN by default.  If you want to avoid this you can provide an alternative URL to download the dictionaries from.
 
-```js
+```js @ts-type={myWindow:Electron.BrowserWindow}
 myWindow.webContents.session.setSpellCheckerDictionaryDownloadURL('https://example.com/dictionaries/')
 ```
 

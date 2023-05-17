@@ -68,7 +68,7 @@ To read more about constructing native menus, click
 
 Finally, let's give our tray a tooltip and a title.
 
-```js
+```js @ts-type={tray:Electron.Tray}
 tray.setToolTip('This is my application')
 tray.setTitle('This is my title')
 ```
