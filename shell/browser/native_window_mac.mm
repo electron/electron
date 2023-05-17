@@ -558,6 +558,11 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
+  // It's possible for [window_ isZoomed] to be true
+  // when the window is minimized or fullscreened.
+  if (IsMinimized() || IsFullscreen())
+    return false;
+
   if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
