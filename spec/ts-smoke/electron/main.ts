@@ -503,6 +503,24 @@ dialog.showOpenDialog(win3, {
   console.log(ret);
 });
 
+// variants without browserWindow
+dialog.showMessageBox({ message: 'test', type: 'warning' });
+dialog.showMessageBoxSync({ message: 'test', type: 'error' });
+
+// @ts-expect-error Invalid type value
+dialog.showMessageBox({ message: 'test', type: 'foo' });
+// @ts-expect-error Invalid type value
+dialog.showMessageBoxSync({ message: 'test', type: 'foo' });
+
+// variants with browserWindow
+dialog.showMessageBox(win3, { message: 'test', type: 'question' });
+dialog.showMessageBoxSync(win3, { message: 'test', type: 'info' });
+
+// @ts-expect-error Invalid type value
+dialog.showMessageBox(win3, { message: 'test', type: 'foo' });
+// @ts-expect-error Invalid type value
+dialog.showMessageBoxSync(win3, { message: 'test', type: 'foo' });
+
 // desktopCapturer
 // https://github.com/electron/electron/blob/main/docs/api/desktop-capturer.md
 
