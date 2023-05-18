@@ -690,6 +690,8 @@ class WebContents : public ExclusiveAccessContext,
   bool IsExclusiveAccessBubbleDisplayed() const override;
 
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
+  content::FullscreenState GetFullscreenState(
+      const content::WebContents* web_contents) const override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents) override;
