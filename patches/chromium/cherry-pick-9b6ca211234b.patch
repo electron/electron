@@ -196,16 +196,15 @@ index 17e98b60e8f7e5066cdbe115adcdd813cc581403..7f3083029d45e7a0d45b989a07013709
  
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.cc b/content/public/browser/browser_plugin_guest_delegate.cc
-index 62cbad1500229efeba44e467778e3fdfaf1f4ace..040d36ae694412f06243581984d048a877cfd59b 100644
+index 62cbad1500229efeba44e467778e3fdfaf1f4ace..72f5f665b43b0fac04a38228b3fa04c66b2304c8 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.cc
 +++ b/content/public/browser/browser_plugin_guest_delegate.cc
-@@ -20,4 +20,10 @@ RenderFrameHost* BrowserPluginGuestDelegate::GetProspectiveOuterDocument() {
+@@ -20,4 +20,9 @@ RenderFrameHost* BrowserPluginGuestDelegate::GetProspectiveOuterDocument() {
    return nullptr;
  }
  
 +base::WeakPtr<BrowserPluginGuestDelegate>
 +BrowserPluginGuestDelegate::GetGuestDelegateWeakPtr() {
-+  NOTREACHED();
 +  return nullptr;
 +}
 +
