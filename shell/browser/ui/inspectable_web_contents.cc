@@ -97,13 +97,12 @@ const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 // Stores all instances of InspectableWebContents.
 InspectableWebContents::List g_web_contents_instances_;
 
-base::Value RectToDictionary(const gfx::Rect& bounds) {
-  base::Value::Dict dict;
-  dict.Set("x", bounds.x());
-  dict.Set("y", bounds.y());
-  dict.Set("width", bounds.width());
-  dict.Set("height", bounds.height());
-  return base::Value(std::move(dict));
+base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
+  return base::Value::Dict{}
+      .Set("x", bounds.x())
+      .Set("y", bounds.y())
+      .Set("width", bounds.width())
+      .Set("height", bounds.height());
 }
 
 gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
@@ -338,7 +337,7 @@ const InspectableWebContents::List& InspectableWebContents::GetAll() {
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
-                                   RectToDictionary(gfx::Rect(0, 0, 800, 600)));
+                                   RectToDictionary(gfx::Rect{0, 0, 800, 600}));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
@@ -544,7 +543,8 @@ gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
 }
 
 void InspectableWebContents::SaveDevToolsBounds(const gfx::Rect& bounds) {
-  pref_service_->Set(kDevToolsBoundsPref, RectToDictionary(bounds));
+  pref_service_->Set(kDevToolsBoundsPref,
+                     base::Value{RectToDictionary(bounds)});
   devtools_bounds_ = bounds;
 }
 
