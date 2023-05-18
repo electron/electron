@@ -196,13 +196,11 @@ class FakeBrowserProcessImpl : public BrowserProcessImpl {
  public:
   embedder_support::OriginTrialsSettingsStorage*
   GetOriginTrialsSettingsStorage() override {
-    return origin_trials_settings_storage_.get();
+    return &origin_trials_settings_storage_;
   }
 
  private:
-  std::unique_ptr<embedder_support::OriginTrialsSettingsStorage>
-      origin_trials_settings_storage_ =
-          std::make_unique<embedder_support::OriginTrialsSettingsStorage>();
+  embedder_support::OriginTrialsSettingsStorage origin_trials_settings_storage_;
 };
 
 }  // namespace
