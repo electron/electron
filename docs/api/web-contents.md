@@ -736,14 +736,16 @@ Returns:
 * `size` [Size](structures/size.md) (optional) - the size of the `image`.
 * `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot.
 
-Emitted when the cursor's type changes. The `type` parameter can be `default`,
-`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
-`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
-`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
-`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
-`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
-`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
-`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing` or `custom`.
+Emitted when the cursor's type changes. The `type` parameter can be `pointer`,
+`crosshair`, `hand`, `text`, `wait`, `help`, `e-resize`, `n-resize`, `ne-resize`,
+`nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`, `ns-resize`, `ew-resize`,
+`nesw-resize`, `nwse-resize`, `col-resize`, `row-resize`, `m-panning`, `m-panning-vertical`,
+`m-panning-horizontal`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`, `s-panning`,
+`se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`, `cell`, `context-menu`,
+`alias`, `progress`, `nodrop`, `copy`, `none`, `not-allowed`, `zoom-in`, `zoom-out`, `grab`,
+`grabbing`, `custom`, `null`, `drag-drop-none`, `drag-drop-move`, `drag-drop-copy`,
+`drag-drop-link`, `ns-no-resize`, `ew-no-resize`, `nesw-no-resize`, `nwse-no-resize`,
+or `default`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
 cursor image in a [`NativeImage`](native-image.md), and `scale`, `size` and `hotspot` will hold
