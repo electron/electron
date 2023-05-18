@@ -1,7 +1,8 @@
-From 6755626950491fac28d6631b19e16a5733435070 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rakina Zata Amni <rakina@chromium.org>
 Date: Mon, 15 May 2023 03:21:49 +0000
-Subject: [PATCH] [M114] Return after ReadyCommitNavigation call in CommitErrorPage if it deletes NavigationRequest
+Subject: Return after ReadyCommitNavigation call in CommitErrorPage if it
+ deletes NavigationRequest
 
 NavigationRequest::ReadyToCommitNavigation() can cause deletion of the
 NavigationRequest, so callers should check for that possibility after
@@ -23,16 +24,19 @@ Commit-Queue: Prudhvikumar Bommana <pbommana@google.com>
 Owners-Override: Prudhvikumar Bommana <pbommana@google.com>
 Cr-Commit-Position: refs/branch-heads/5735@{#607}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index c7cc3b84..a2530d4 100644
+index fd95d91a9a4efbfbbcfb117d9f2129b1b1c95011..75c3b982e05c78b9add439e3abf65a0182c8fe2b 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -5453,7 +5453,13 @@
-     topics_eligible_ = false;
+@@ -5034,7 +5034,17 @@ void NavigationRequest::CommitErrorPage(
+     }
    }
  
++  if (topics_eligible_) {
++    topics_eligible_ = false;
++  }
++
 +  base::WeakPtr<NavigationRequest> weak_self(weak_factory_.GetWeakPtr());
    ReadyToCommitNavigation(true /* is_error */);
 +  // The caller above might result in the deletion of `this`. Return immediately
@@ -44,10 +48,10 @@ index c7cc3b84..a2530d4 100644
    PopulateDocumentTokenForCrossDocumentNavigation();
    // Use a separate cache shard, and no cookies, for error pages.
 diff --git a/content/browser/renderer_host/navigation_request_browsertest.cc b/content/browser/renderer_host/navigation_request_browsertest.cc
-index f55e3f4..58f3526 100644
+index 1213eb485a25a183ca23643941ae97ee6cfb596f..837af410e31d90769cb7e5d0f9c0bb9abf3035df 100644
 --- a/content/browser/renderer_host/navigation_request_browsertest.cc
 +++ b/content/browser/renderer_host/navigation_request_browsertest.cc
-@@ -46,6 +46,7 @@
+@@ -44,6 +44,7 @@
  #include "content/public/test/prerender_test_util.h"
  #include "content/public/test/test_frame_navigation_observer.h"
  #include "content/public/test/test_navigation_observer.h"
@@ -55,7 +59,7 @@ index f55e3f4..58f3526 100644
  #include "content/public/test/test_utils.h"
  #include "content/public/test/url_loader_interceptor.h"
  #include "content/shell/browser/shell.h"
-@@ -4384,4 +4385,84 @@
+@@ -4032,4 +4033,84 @@ IN_PROC_BROWSER_TEST_P(NavigationRequestMPArchBrowserTest,
    }
  }
  
