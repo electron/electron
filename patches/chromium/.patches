@@ -158,3 +158,4 @@ cherry-pick-f098ff0d1230.patch
 cherry-pick-f58218891f8c.patch
 wayland_ensure_dnd_buffer_size_is_a_multiple_of_scale.patch
 m112_cherry_pick_libxml_cve_fix.patch
+m112_fix_scopedobservation_uaf_in.patch

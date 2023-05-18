@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keren Zhu <kerenzhu@chromium.org>
+Date: Mon, 24 Apr 2023 15:36:21 +0000
+Subject: Fix ScopedObservation UaF in
+ BubbleDialogDelegate::AnchorWidgetObserver
+
+A ScopedObservation can outlive the aura::Window it observes, leading to
+a use-after-free error in ~ScopedObservation(). The problem occurs in
+BubbleDialogDelegate::AnchorWidgetObserver. This fix listens for
+OnWindowDestroying() and resets the observation to prevent the UaF.
+
+(cherry picked from commit 72bd6a1018548ee63a2ec06d6c7714d3a8cdf8a8)
+
+Bug: 1423360
+Change-Id: I742b4624b2664dea3fd97db7b399fcd15e45c8fe
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4455016
+Code-Coverage: Findit <findit-for-me@appspot.gserviceaccount.com>
+Reviewed-by: Elly Fong-Jones <ellyjones@chromium.org>
+Commit-Queue: Keren Zhu <kerenzhu@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1133511}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4466947
+Reviewed-by: Allen Bauer <kylixrd@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5615@{#1353}
+Cr-Branched-From: 9c6408ef696e83a9936b82bbead3d41c93c82ee4-refs/heads/main@{#1109224}
+
+diff --git a/ui/views/bubble/bubble_dialog_delegate_view.cc b/ui/views/bubble/bubble_dialog_delegate_view.cc
+index 2a84e8f5a7078e76dd40208c0265df3db06a7621..ad7f33ebcb5a09dc5ca97ddbcd5b8bc21a9fb529 100644
+--- a/ui/views/bubble/bubble_dialog_delegate_view.cc
++++ b/ui/views/bubble/bubble_dialog_delegate_view.cc
+@@ -318,6 +318,13 @@ class BubbleDialogDelegate::AnchorWidgetObserver : public WidgetObserver,
+       owner_->OnAnchorBoundsChanged();
+     }
+   }
++
++  // If the native window is closed by the OS, OnWidgetDestroying() won't
++  // fire. Instead, OnWindowDestroying() will fire before aura::Window
++  // destruction. See //docs/ui/views/widget_destruction.md.
++  void OnWindowDestroying(aura::Window* window) override {
++    window_observation_.Reset();
++  }
+ #endif
+ 
+  private:
