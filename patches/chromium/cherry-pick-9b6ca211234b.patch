@@ -1,7 +1,7 @@
-From 9b6ca211234b057a9ce4184a3315741dc040ecbf Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kevin McNee <mcnee@chromium.org>
 Date: Fri, 12 May 2023 19:53:19 +0000
-Subject: [PATCH] M114: Store BrowserPluginGuestDelegate as a weak ptr
+Subject: M114: Store BrowserPluginGuestDelegate as a weak ptr
 
 Store BrowserPluginGuestDelegate as a weak ptr
 
@@ -28,13 +28,12 @@ Auto-Submit: Kevin McNee <mcnee@chromium.org>
 Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5735@{#540}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
-index 7cd25c75..014e41d1 100644
+index cebe56b9e79cbe0e5a58f73e68faf1b93b17ce5c..11a8f7d8dea4a778055e261823ba368226c17e4f 100644
 --- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
 +++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
-@@ -48,6 +48,7 @@
+@@ -47,6 +47,7 @@
  #include "chrome/common/chrome_switches.h"
  #include "chrome/common/pref_names.h"
  #include "chrome/common/webui_url_constants.h"
@@ -42,7 +41,7 @@ index 7cd25c75..014e41d1 100644
  #include "chrome/test/base/ui_test_utils.h"
  #include "components/download/public/common/download_task_runner.h"
  #include "components/find_in_page/find_tab_helper.h"
-@@ -5554,6 +5555,63 @@
+@@ -5563,6 +5564,63 @@ IN_PROC_BROWSER_TEST_P(WebViewTest, LoadDisallowedExtensionURLInSubframe) {
              entry->metrics.begin()->second);
  }
  
@@ -103,14 +102,14 @@ index 7cd25c75..014e41d1 100644
 +  CloseAppWindow(GetFirstAppWindow());
 +}
 +
- IN_PROC_BROWSER_TEST_F(WebViewTest, InsertIntoDetachedIframe) {
+ IN_PROC_BROWSER_TEST_P(WebViewTest, InsertIntoDetachedIframe) {
    TestHelper("testInsertIntoDetachedIframe", "web_view/shim",
               NEEDS_TEST_SERVER);
 diff --git a/components/guest_view/browser/guest_view_base.cc b/components/guest_view/browser/guest_view_base.cc
-index 4ef55d1c..ba2fac2 100644
+index dde53982ebf9d473d84aea70815bd7380d147ded..00842575d3cd9eab6bd92020b6bd991b4f97a21f 100644
 --- a/components/guest_view/browser/guest_view_base.cc
 +++ b/components/guest_view/browser/guest_view_base.cc
-@@ -124,6 +124,9 @@
+@@ -128,6 +128,9 @@ class GuestViewBase::OpenerLifetimeObserver : public WebContentsObserver {
    void WebContentsDestroyed() override {
      // If the opener is destroyed and the guest has not been attached, then
      // destroy the guest.
@@ -120,7 +119,7 @@ index 4ef55d1c..ba2fac2 100644
      // Destroys `this`.
      DestroyGuestIfUnattached(guest_);
    }
-@@ -915,4 +918,9 @@
+@@ -881,4 +884,9 @@ content::RenderFrameHost* GuestViewBase::GetGuestMainFrame() const {
    return web_contents()->GetPrimaryMainFrame();
  }
  
@@ -131,10 +130,10 @@ index 4ef55d1c..ba2fac2 100644
 +
  }  // namespace guest_view
 diff --git a/components/guest_view/browser/guest_view_base.h b/components/guest_view/browser/guest_view_base.h
-index dccb7fcf..a15c73f 100644
+index 954fad802b0d90a3829109714601d1667c463eb7..a9e3cdc786cae5aef4d5464639dfc9a2593b6420 100644
 --- a/components/guest_view/browser/guest_view_base.h
 +++ b/components/guest_view/browser/guest_view_base.h
-@@ -353,6 +353,8 @@
+@@ -333,6 +333,8 @@ class GuestViewBase : public content::BrowserPluginGuestDelegate,
    std::unique_ptr<content::WebContents> CreateNewGuestWindow(
        const content::WebContents::CreateParams& create_params) final;
    content::WebContents* GetOwnerWebContents() final;
@@ -144,10 +143,10 @@ index dccb7fcf..a15c73f 100644
    // WebContentsDelegate implementation.
    void ActivateContents(content::WebContents* contents) final;
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
-index a7501a5..2e47c12 100644
+index a731c5ef5b7143e5e5cbff3d1404d22a72563d9f..2e47c128f4d5c0fa2f22f98340f2ba1863d36fad 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.cc
 +++ b/content/browser/browser_plugin/browser_plugin_guest.cc
-@@ -25,9 +25,10 @@
+@@ -25,9 +25,10 @@ namespace content {
  
  BrowserPluginGuest::BrowserPluginGuest(WebContentsImpl* web_contents,
                                         BrowserPluginGuestDelegate* delegate)
@@ -161,20 +160,25 @@ index a7501a5..2e47c12 100644
    RecordAction(base::UserMetricsAction("BrowserPlugin.Guest.Create"));
  }
  
-@@ -97,6 +98,11 @@
+@@ -96,6 +97,16 @@ WebContentsImpl* BrowserPluginGuest::GetWebContents() const {
+   return static_cast<WebContentsImpl*>(web_contents());
  }
  
- RenderFrameHostImpl* BrowserPluginGuest::GetProspectiveOuterDocument() {
++RenderFrameHostImpl* BrowserPluginGuest::GetProspectiveOuterDocument() {
 +  if (!delegate_) {
 +    // The guest delegate may only be null during some destruction scenarios.
 +    CHECK(web_contents()->IsBeingDestroyed());
 +    return nullptr;
 +  }
-   return static_cast<RenderFrameHostImpl*>(
-       delegate_->GetProspectiveOuterDocument());
- }
++  return static_cast<RenderFrameHostImpl*>(
++      delegate_->GetProspectiveOuterDocument());
++}
++
+ void BrowserPluginGuest::DidStartNavigation(
+     NavigationHandle* navigation_handle) {
+   // Originally added to suppress the error page when a navigation is blocked
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.h b/content/browser/browser_plugin/browser_plugin_guest.h
-index 17e98b6..7f308302 100644
+index aec6a0eb9cbd0bd8b4f8171bce042eb564923a80..d294289245d5f39220371beaf2b76f10d5b97809 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.h
 +++ b/content/browser/browser_plugin/browser_plugin_guest.h
 @@ -7,7 +7,7 @@
@@ -186,7 +190,7 @@ index 17e98b6..7f308302 100644
  #include "build/build_config.h"
  #include "content/public/browser/browser_plugin_guest_delegate.h"
  #include "content/public/browser/web_contents_observer.h"
-@@ -78,7 +78,8 @@
+@@ -76,7 +76,8 @@ class BrowserPluginGuest : public WebContentsObserver {
  
    void InitInternal(WebContentsImpl* owner_web_contents);
  
@@ -197,13 +201,17 @@ index 17e98b6..7f308302 100644
  
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.cc b/content/public/browser/browser_plugin_guest_delegate.cc
-index 62cbad1..040d36a 100644
+index 2bccdb7104fed7546871c2ece9c84cd86b8d2f4a..040d36ae694412f06243581984d048a877cfd59b 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.cc
 +++ b/content/public/browser/browser_plugin_guest_delegate.cc
-@@ -20,4 +20,10 @@
+@@ -16,4 +16,14 @@ WebContents* BrowserPluginGuestDelegate::GetOwnerWebContents() {
    return nullptr;
  }
  
++RenderFrameHost* BrowserPluginGuestDelegate::GetProspectiveOuterDocument() {
++  return nullptr;
++}
++
 +base::WeakPtr<BrowserPluginGuestDelegate>
 +BrowserPluginGuestDelegate::GetGuestDelegateWeakPtr() {
 +  NOTREACHED();
@@ -212,7 +220,7 @@ index 62cbad1..040d36a 100644
 +
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.h b/content/public/browser/browser_plugin_guest_delegate.h
-index 51a4efa8..d588b4d3 100644
+index c63a2ddbb0c0d6846896a6628a39aee3fd79bbd6..2be188ca98083cca2d648794aaffa1505708a7dd 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.h
 +++ b/content/public/browser/browser_plugin_guest_delegate.h
 @@ -5,6 +5,7 @@
@@ -223,10 +231,16 @@ index 51a4efa8..d588b4d3 100644
  #include "content/common/content_export.h"
  #include "content/public/browser/web_contents.h"
  
-@@ -28,6 +29,8 @@
-   // TODO(crbug.com/769461): Have all guest types return the specific owner
-   // RenderFrameHost and not assume it's the owner's main frame.
-   virtual RenderFrameHost* GetProspectiveOuterDocument();
+@@ -21,6 +22,14 @@ class CONTENT_EXPORT BrowserPluginGuestDelegate {
+ 
+   // Returns the WebContents that currently owns this guest.
+   virtual WebContents* GetOwnerWebContents();
++
++  // Returns the RenderFrameHost that owns this guest, but has not yet attached
++  // it.
++  // TODO(crbug.com/769461): Have all guest types return the specific owner
++  // RenderFrameHost and not assume it's the owner's main frame.
++  virtual RenderFrameHost* GetProspectiveOuterDocument();
 +
 +  virtual base::WeakPtr<BrowserPluginGuestDelegate> GetGuestDelegateWeakPtr();
  };

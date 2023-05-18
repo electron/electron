@@ -1,7 +1,10 @@
-From 48785f698b1cefcd0cf265001cd36a564abacf07 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Arthur Sonzogni <arthursonzogni@chromium.org>
-Date: Tue, 02 May 2023 09:40:37 +0000
-Subject: [PATCH] Avoid buffer overflow read in HFSReadNextNonIgnorableCodePoint
+Date: Tue, 2 May 2023 09:40:37 +0000
+Subject: Avoid buffer overflow read in HFSReadNextNonIgnorableCodePoint
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Unicode codepoints goes beyond 0xFFFF.
 
@@ -19,13 +22,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4481260
 Reviewed-by: Alexander Timin <altimin@chromium.org>
 Commit-Queue: Arthur Sonzogni <arthursonzogni@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#1138234}
----
 
 diff --git a/base/files/file_path.cc b/base/files/file_path.cc
-index 12c684b..59bbc6e 100644
+index a43c09317da96332584286fdb67284b2bedd753f..3a7cca6fad051816d6d018857c8039594c51ec65 100644
 --- a/base/files/file_path.cc
 +++ b/base/files/file_path.cc
-@@ -789,7 +789,7 @@
+@@ -775,7 +775,7 @@ int FilePath::CompareIgnoreCase(StringPieceType string1,
  #elif BUILDFLAG(IS_APPLE)
  // Mac OS X specific implementation of file string comparisons.
  
@@ -34,7 +36,7 @@ index 12c684b..59bbc6e 100644
  //
  // "When using CreateTextEncoding to create a text encoding, you should set
  // the TextEncodingBase to kTextEncodingUnicodeV2_0, set the
-@@ -815,11 +815,12 @@
+@@ -801,11 +801,12 @@ int FilePath::CompareIgnoreCase(StringPieceType string1,
  // Ignored characters are mapped to zero.
  //
  // cf. downloadable file linked in
@@ -49,7 +51,7 @@ index 12c684b..59bbc6e 100644
    // High-byte indices ( == 0 iff no case mapping and no ignorables )
  
    /* 0 */ 0x0100, 0x0200, 0x0000, 0x0300, 0x0400, 0x0500, 0x0000, 0x0000,
-@@ -1205,11 +1206,12 @@
+@@ -1191,11 +1192,12 @@ const UInt16 lower_case_table[] = {
    /* F */ 0xFFF0, 0xFFF1, 0xFFF2, 0xFFF3, 0xFFF4, 0xFFF5, 0xFFF6, 0xFFF7,
            0xFFF8, 0xFFF9, 0xFFFA, 0xFFFB, 0xFFFC, 0xFFFD, 0xFFFE, 0xFFFF,
  };
@@ -66,7 +68,7 @@ index 12c684b..59bbc6e 100644
  inline base_icu::UChar32 HFSReadNextNonIgnorableCodepoint(const char* string,
                                                            size_t length,
                                                            size_t* index) {
-@@ -1220,12 +1222,16 @@
+@@ -1206,12 +1208,16 @@ inline base_icu::UChar32 HFSReadNextNonIgnorableCodepoint(const char* string,
      CBU8_NEXT(reinterpret_cast<const uint8_t*>(string), *index, length,
                codepoint);
      DCHECK_GT(codepoint, 0);
@@ -86,10 +88,10 @@ index 12c684b..59bbc6e 100644
      }
    }
 diff --git a/base/files/file_path_unittest.cc b/base/files/file_path_unittest.cc
-index 7b30b15..9673a48 100644
+index 3cfdcbe445c1f6e0d66e3798927131f94759fb3c..08c3e75b7e1ad55f5f81aed80f80081115f8f49c 100644
 --- a/base/files/file_path_unittest.cc
 +++ b/base/files/file_path_unittest.cc
-@@ -1203,6 +1203,13 @@
+@@ -1195,6 +1195,13 @@ TEST_F(FilePathTest, CompareIgnoreCase) {
      {{FPL("K\u0301U\u032DO\u0304\u0301N"), FPL("\u1E31\u1E77\u1E53n")}, 0},
      {{FPL("k\u0301u\u032Do\u0304\u0301n"), FPL("\u1E30\u1E76\u1E52n")}, 0},
      {{FPL("k\u0301u\u032Do\u0304\u0302n"), FPL("\u1E30\u1E76\u1E52n")}, 1},

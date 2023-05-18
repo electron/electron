@@ -1,7 +1,7 @@
-From 91fce33456683ec1d132c645ce927f9bdf92637e Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: pthier <pthier@chromium.org>
 Date: Tue, 25 Apr 2023 11:00:10 +0200
-Subject: [PATCH] [regexp] Handle empty ranges in unicode sets
+Subject: Handle empty ranges in unicode sets
 
 If a unicode set operation contains only an empty range, we generated a
 set expression without operands. However the expression should match
@@ -13,13 +13,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4474547
 Commit-Queue: Patrick Thier <pthier@chromium.org>
 Reviewed-by: Jakob Linke <jgruber@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#87257}
----
 
 diff --git a/src/regexp/regexp-parser.cc b/src/regexp/regexp-parser.cc
-index ef7ae24..8d27289 100644
+index f420b2eec42d413941751e0d2831689fa820e260..0ba51712c8efb758d5081e790d52eb16a01b2366 100644
 --- a/src/regexp/regexp-parser.cc
 +++ b/src/regexp/regexp-parser.cc
-@@ -2774,6 +2774,14 @@
+@@ -2792,6 +2792,14 @@ RegExpTree* RegExpParserImpl<CharT>::ParseClassUnion(
      return ReportError(RegExpError::kNegatedCharacterClassWithStrings);
    }
  
@@ -36,7 +35,7 @@ index ef7ae24..8d27289 100644
        may_contain_strings, operands);
 diff --git a/test/mjsunit/regress/regress-crbug-1437346.js b/test/mjsunit/regress/regress-crbug-1437346.js
 new file mode 100644
-index 0000000..d94789c
+index 0000000000000000000000000000000000000000..d94789c0e5fdf4c5e30ac39e31a9cca62a731657
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1437346.js
 @@ -0,0 +1,5 @@

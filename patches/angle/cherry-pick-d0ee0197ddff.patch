@@ -1,7 +1,7 @@
-From d0ee0197ddff25fe1a9876511c07542ac483702d Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
-Date: Wed, 03 May 2023 13:41:36 -0400
-Subject: [PATCH] WebGL: Limit total size of private data
+Date: Wed, 3 May 2023 13:41:36 -0400
+Subject: WebGL: Limit total size of private data
 
 ... not just individual arrays.
 
@@ -10,13 +10,12 @@ Change-Id: I721e29aeceeaf12c3f6a67b668abffb8dfbc89b0
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4503753
 Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
----
 
 diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-index 6097b6d..2a033ad 100644
+index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93d82ee083 100644
 --- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 +++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-@@ -35,7 +35,9 @@
+@@ -31,7 +31,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  {
    public:
      ValidateTypeSizeLimitationsTraverser(TSymbolTable *symbolTable, TDiagnostics *diagnostics)
@@ -27,17 +26,16 @@ index 6097b6d..2a033ad 100644
      {
          ASSERT(diagnostics);
      }
-@@ -93,18 +95,33 @@
-             const bool isPrivate = variableType.getQualifier() == EvqTemporary ||
-                                    variableType.getQualifier() == EvqGlobal ||
-                                    variableType.getQualifier() == EvqConst;
--            if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes && isPrivate)
+@@ -85,11 +87,37 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+                       asSymbol->getName());
+                 return false;
+             }
++
++            const bool isPrivate = variableType.getQualifier() == EvqTemporary ||
++                                   variableType.getQualifier() == EvqGlobal ||
++                                   variableType.getQualifier() == EvqConst;
 +            if (isPrivate)
-             {
--                error(asSymbol->getLine(),
--                      "Size of declared private variable exceeds implementation-defined limit",
--                      asSymbol->getName());
--                return false;
++            {
 +                if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes)
 +                {
 +                    error(asSymbol->getLine(),
@@ -46,7 +44,7 @@ index 6097b6d..2a033ad 100644
 +                    return false;
 +                }
 +                mTotalPrivateVariablesSize += layoutEncoder.getCurrentOffset();
-             }
++            }
          }
  
          return true;
@@ -66,7 +64,7 @@ index 6097b6d..2a033ad 100644
    private:
      void error(TSourceLoc loc, const char *reason, const ImmutableString &token)
      {
-@@ -213,6 +230,8 @@
+@@ -198,6 +226,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  
      TDiagnostics *mDiagnostics;
      std::vector<int> mLoopSymbolIds;
@@ -75,7 +73,7 @@ index 6097b6d..2a033ad 100644
  };
  
  }  // namespace
-@@ -223,6 +242,7 @@
+@@ -208,6 +238,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
  {
      ValidateTypeSizeLimitationsTraverser validate(symbolTable, diagnostics);
      root->traverse(&validate);
@@ -84,10 +82,10 @@ index 6097b6d..2a033ad 100644
  }
  
 diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-index e62c8fb..996bad1 100644
+index 7dc56cddbc63add1aca6fca3bfd031f3da8d04fc..64287af5834607f6819f1197e2eed1a56f712ffe 100644
 --- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 +++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-@@ -5271,11 +5271,12 @@
+@@ -5271,11 +5271,12 @@ TEST_P(WebGLCompatibilityTest, ValidateArraySizes)
      // fairly small array.
      constexpr char kVSArrayOK[] =
          R"(varying vec4 color;
@@ -102,7 +100,7 @@ index e62c8fb..996bad1 100644
          color = vec4(0.0, 1.0, 0.0, 1.0);
      else
          color = vec4(1.0, 0.0, 0.0, 1.0);
-@@ -5353,6 +5354,103 @@
+@@ -5353,6 +5354,103 @@ void main()
      EXPECT_EQ(0u, program);
  }
  
