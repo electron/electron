@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 1a6fffdde4d08..1b8e42cfa16f6 100644
+index 4925a756be531..b7596e0d06f07 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1032,6 +1032,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -55,18 +55,18 @@ index 0625f07f317de..5897820839d6d 100644
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 91427ef347d6e..05a27c11e0f6f 100644
+index 9551e3ea2e5f3..e8c192bfbe5a2 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -322,6 +322,7 @@ viz_component("service") {
- 
-       frameworks += [ "CoreGraphics.framework" ]
+@@ -332,6 +332,7 @@ viz_component("service") {
+         "frame_sinks/external_begin_frame_source_mac.h",
+       ]
      }
 +    configs = ["//electron/build/config:mas_build"]
    }
  
    if (is_android || use_ozone) {
-@@ -576,6 +577,8 @@ viz_source_set("unit_tests") {
+@@ -588,6 +589,8 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -76,7 +76,7 @@ index 91427ef347d6e..05a27c11e0f6f 100644
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 89bcf4fa812c1..8d10d1b0422f2 100644
+index 555b34f960bd8..6f3453fd0b9a8 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -136,10 +136,10 @@ index 1e7a52437d36b..dee8f9a33ed80 100644
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8aaf3f77faa5b..b557f0edfe8bf 100644
+index 52aa99a86190c..ed1b037074149 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -197,6 +197,7 @@ source_set("audio") {
+@@ -199,6 +199,7 @@ source_set("audio") {
        "mac/coreaudio_dispatch_override.h",
      ]
      frameworks += [ "AudioUnit.framework" ]
@@ -189,7 +189,7 @@ index 5e9fc18352d1b..69dcc2cafa27b 100644
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c0c09f37b3332..946684da59507 100644
+index 2c9080001cf8e..e08a38e5f9ea9 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -304,6 +304,7 @@ component("core") {
@@ -226,10 +226,10 @@ index c9777e07fdd31..76a7ca0545b69 100644
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 95087a5fa21c1..3379d86814fc9 100644
+index 9ffa8129d29ec..5ebf5ea4db7c6 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -353,6 +353,7 @@ component("base") {
+@@ -359,6 +359,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
