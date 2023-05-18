@@ -23,7 +23,7 @@ Cr-Branched-From: 755511a138609ac5939449a8ac615c15603a4454-refs/heads/11.2.214@{
 Cr-Branched-From: e6b1ccefb0f0f1ff8d310578878130dc53d73749-refs/heads/main@{#86014}
 
 diff --git a/include/v8-object.h b/include/v8-object.h
-index d7332ba0c88d12e8086f56117631dfb3e1e514b4..dfeda2d39431d481dbeab6698c3d3e7f02a1b19c 100644
+index 6f3025e3adf2298ae966c9c2f23f8893097a2807..4c78060c1322e435b42ab3dc74b931e306ce5f4c 100644
 --- a/include/v8-object.h
 +++ b/include/v8-object.h
 @@ -247,13 +247,16 @@ class V8_EXPORT Object : public Value {
@@ -134,11 +134,11 @@ index d7332ba0c88d12e8086f56117631dfb3e1e514b4..dfeda2d39431d481dbeab6698c3d3e7f
  
    /**
 diff --git a/src/api/api-natives.cc b/src/api/api-natives.cc
-index d0b298723423e9ad4d151c463dcdde09d2400336..9f664a755e4b04d935d29b1be796a81ac3fe0c07 100644
+index 05a883f2d560e360b6933639dab3ec956464cb1a..905f29bf253c443204f3f9f36fd4c948ed434f15 100644
 --- a/src/api/api-natives.cc
 +++ b/src/api/api-natives.cc
 @@ -96,10 +96,10 @@ MaybeHandle<Object> DefineAccessorProperty(Isolate* isolate,
-     Handle<CodeT> trampoline = BUILTIN_CODE(isolate, DebugBreakTrampoline);
+     Handle<Code> trampoline = BUILTIN_CODE(isolate, DebugBreakTrampoline);
      Handle<JSFunction>::cast(setter)->set_code(*trampoline);
    }
 -  RETURN_ON_EXCEPTION(
@@ -153,10 +153,10 @@ index d0b298723423e9ad4d151c463dcdde09d2400336..9f664a755e4b04d935d29b1be796a81a
  }
  
 diff --git a/src/api/api.cc b/src/api/api.cc
-index d790bc0fd1b42a6b8107712d5c171751f83e5727..fbdbe4b5c7166e4dc1b2ad7b01aa911beed7f69c 100644
+index 5449ae36c6f001114f0d5bf1bba8038b483d1e50..3827b8795e6c16c79bd87885570026444d98335d 100644
 --- a/src/api/api.cc
 +++ b/src/api/api.cc
-@@ -5061,7 +5061,7 @@ Maybe<bool> Object::SetAccessor(Local<Context> context, Local<Name> name,
+@@ -5060,7 +5060,7 @@ Maybe<bool> Object::SetAccessor(Local<Context> context, Local<Name> name,
  
  void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
                                   Local<Function> setter,
@@ -165,7 +165,7 @@ index d790bc0fd1b42a6b8107712d5c171751f83e5727..fbdbe4b5c7166e4dc1b2ad7b01aa911b
                                   AccessControl settings) {
    // TODO(verwaest): Remove |settings|.
    DCHECK_EQ(v8::DEFAULT, settings);
-@@ -5073,9 +5073,20 @@ void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
+@@ -5072,9 +5072,20 @@ void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
    i::Handle<i::Object> getter_i = v8::Utils::OpenHandle(*getter);
    i::Handle<i::Object> setter_i = v8::Utils::OpenHandle(*setter, true);
    if (setter_i.is_null()) setter_i = i_isolate->factory()->null_value();
@@ -190,10 +190,10 @@ index d790bc0fd1b42a6b8107712d5c171751f83e5727..fbdbe4b5c7166e4dc1b2ad7b01aa911b
  
  Maybe<bool> Object::SetNativeDataProperty(
 diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
-index 3f5050e824c09ee2577dbd8471ac6b1bcc20755e..f7fdf90f0baeb3dd3516c565bb5e05fc7e8da550 100644
+index 4c5e30a26dc073b536e2c26cf24b984d290d9f28..86be77e485efc8350bccc6df8106653c1a250f11 100644
 --- a/src/init/bootstrapper.cc
 +++ b/src/init/bootstrapper.cc
-@@ -631,7 +631,9 @@ V8_NOINLINE void SimpleInstallGetterSetter(Isolate* isolate,
+@@ -632,7 +632,9 @@ V8_NOINLINE void SimpleInstallGetterSetter(Isolate* isolate,
    Handle<JSFunction> setter =
        SimpleCreateFunction(isolate, setter_name, call_setter, 1, true);
  
@@ -204,7 +204,7 @@ index 3f5050e824c09ee2577dbd8471ac6b1bcc20755e..f7fdf90f0baeb3dd3516c565bb5e05fc
  }
  
  void SimpleInstallGetterSetter(Isolate* isolate, Handle<JSObject> base,
-@@ -655,7 +657,8 @@ V8_NOINLINE Handle<JSFunction> SimpleInstallGetter(Isolate* isolate,
+@@ -656,7 +658,8 @@ V8_NOINLINE Handle<JSFunction> SimpleInstallGetter(Isolate* isolate,
  
    Handle<Object> setter = isolate->factory()->undefined_value();
  
@@ -215,10 +215,10 @@ index 3f5050e824c09ee2577dbd8471ac6b1bcc20755e..f7fdf90f0baeb3dd3516c565bb5e05fc
  
    return getter;
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..39cc83aacb5caf0791ce70212695f5016a22f274 100644
+index 7bb2558cec6f4bff172109fc09095cf30d2c3c7d..8e11fb4ac241f1995aab7b4722822a352654108e 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -1519,7 +1519,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
+@@ -1531,7 +1531,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
                  ? desc->set()
                  : Handle<Object>::cast(isolate->factory()->null_value()));
          MaybeHandle<Object> result =
@@ -228,7 +228,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..39cc83aacb5caf0791ce70212695f501
          if (result.is_null()) return Nothing<bool>();
        }
      }
-@@ -1703,8 +1704,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
+@@ -1715,8 +1716,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
                : current->has_set()
                      ? current->set()
                      : Handle<Object>::cast(isolate->factory()->null_value()));
@@ -239,7 +239,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..39cc83aacb5caf0791ce70212695f501
        if (result.is_null()) return Nothing<bool>();
      }
    }
-@@ -4638,22 +4639,19 @@ bool JSObject::HasEnumerableElements() {
+@@ -4683,22 +4684,19 @@ bool JSObject::HasEnumerableElements() {
    UNREACHABLE();
  }
  
@@ -270,10 +270,10 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..39cc83aacb5caf0791ce70212695f501
  
    it->UpdateProtector();
 diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
-index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..ff96bd4be2ff8d2fe03f75b6bca35a744e2084af 100644
+index f83083cdbc9a5df48c49defba4922635c4dc5571..db154b56e2c5bc157345afed8d1a1fad35d56eae 100644
 --- a/src/objects/js-objects.h
 +++ b/src/objects/js-objects.h
-@@ -531,13 +531,14 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
+@@ -536,13 +536,14 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
    GetPropertyAttributesWithFailedAccessCheck(LookupIterator* it);
  
    // Defines an AccessorPair property on the given object.
@@ -296,10 +296,10 @@ index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..ff96bd4be2ff8d2fe03f75b6bca35a74
    // Defines an AccessorInfo property on the given object.
    V8_WARN_UNUSED_RESULT static MaybeHandle<Object> SetAccessor(
 diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
-index 5255ee26807ab13e93935b6c6d513184a12da7cd..f10e4649c6d078c3120063d53e54f4126b2d2fd5 100644
+index ff1f1d0c9a5c6fe61c88b27bc7a2cae94565f1f3..2d4965549b2159b854e72c392050fd2b5127c440 100644
 --- a/src/runtime/runtime-object.cc
 +++ b/src/runtime/runtime-object.cc
-@@ -1109,7 +1109,8 @@ RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
+@@ -1086,7 +1086,8 @@ RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
    auto attrs = PropertyAttributesFromInt(args.smi_value_at(4));
  
    RETURN_FAILURE_ON_EXCEPTION(
@@ -309,7 +309,7 @@ index 5255ee26807ab13e93935b6c6d513184a12da7cd..f10e4649c6d078c3120063d53e54f412
    return ReadOnlyRoots(isolate).undefined_value();
  }
  
-@@ -1215,8 +1216,8 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
+@@ -1213,8 +1214,8 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
  
    RETURN_FAILURE_ON_EXCEPTION(
        isolate,
@@ -320,7 +320,7 @@ index 5255ee26807ab13e93935b6c6d513184a12da7cd..f10e4649c6d078c3120063d53e54f412
    return ReadOnlyRoots(isolate).undefined_value();
  }
  
-@@ -1360,8 +1361,8 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
+@@ -1358,8 +1359,8 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
  
    RETURN_FAILURE_ON_EXCEPTION(
        isolate,

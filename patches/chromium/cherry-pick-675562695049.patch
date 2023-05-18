@@ -26,10 +26,10 @@ Cr-Commit-Position: refs/branch-heads/5735@{#607}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index fd95d91a9a4efbfbbcfb117d9f2129b1b1c95011..75c3b982e05c78b9add439e3abf65a0182c8fe2b 100644
+index aac2bf5c5bd372f8d38e0f89e0ef3ed9f057ac4d..32ff3794ef508b782b209687befa4ceca843b528 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -5034,7 +5034,17 @@ void NavigationRequest::CommitErrorPage(
+@@ -5174,7 +5174,17 @@ void NavigationRequest::CommitErrorPage(
      }
    }
  
@@ -48,10 +48,10 @@ index fd95d91a9a4efbfbbcfb117d9f2129b1b1c95011..75c3b982e05c78b9add439e3abf65a01
    PopulateDocumentTokenForCrossDocumentNavigation();
    // Use a separate cache shard, and no cookies, for error pages.
 diff --git a/content/browser/renderer_host/navigation_request_browsertest.cc b/content/browser/renderer_host/navigation_request_browsertest.cc
-index 1213eb485a25a183ca23643941ae97ee6cfb596f..837af410e31d90769cb7e5d0f9c0bb9abf3035df 100644
+index 931a901a0dc9bb4defeae65dd92441a8408b1628..db355a727d4d8f03e5b4e2dbed09c6ffd6ad80cd 100644
 --- a/content/browser/renderer_host/navigation_request_browsertest.cc
 +++ b/content/browser/renderer_host/navigation_request_browsertest.cc
-@@ -44,6 +44,7 @@
+@@ -45,6 +45,7 @@
  #include "content/public/test/prerender_test_util.h"
  #include "content/public/test/test_frame_navigation_observer.h"
  #include "content/public/test/test_navigation_observer.h"
@@ -59,7 +59,7 @@ index 1213eb485a25a183ca23643941ae97ee6cfb596f..837af410e31d90769cb7e5d0f9c0bb9a
  #include "content/public/test/test_utils.h"
  #include "content/public/test/url_loader_interceptor.h"
  #include "content/shell/browser/shell.h"
-@@ -4032,4 +4033,84 @@ IN_PROC_BROWSER_TEST_P(NavigationRequestMPArchBrowserTest,
+@@ -4309,4 +4310,84 @@ IN_PROC_BROWSER_TEST_P(NavigationRequestMPArchBrowserTest,
    }
  }
  

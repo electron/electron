@@ -12,10 +12,10 @@ Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93d82ee083 100644
+index 6097b6d236b547710aeaf37a6fb45df97d621ca0..3652c8708fc90744d4636cef5d3a583935739293 100644
 --- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 +++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-@@ -31,7 +31,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -35,7 +35,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  {
    public:
      ValidateTypeSizeLimitationsTraverser(TSymbolTable *symbolTable, TDiagnostics *diagnostics)
@@ -26,7 +26,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
      {
          ASSERT(diagnostics);
      }
-@@ -85,11 +87,37 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -100,11 +102,37 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
                        asSymbol->getName());
                  return false;
              }
@@ -64,7 +64,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
    private:
      void error(TSourceLoc loc, const char *reason, const ImmutableString &token)
      {
-@@ -198,6 +226,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -213,6 +241,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  
      TDiagnostics *mDiagnostics;
      std::vector<int> mLoopSymbolIds;
@@ -73,7 +73,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
  };
  
  }  // namespace
-@@ -208,6 +238,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
+@@ -223,6 +253,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
  {
      ValidateTypeSizeLimitationsTraverser validate(symbolTable, diagnostics);
      root->traverse(&validate);
@@ -82,7 +82,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
  }
  
 diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-index 7dc56cddbc63add1aca6fca3bfd031f3da8d04fc..64287af5834607f6819f1197e2eed1a56f712ffe 100644
+index f4bd19baf3582c0b4a840d73a57ea6fc385159a6..1b265568fc8a87280cc192fbd573a8b11dfb29ec 100644
 --- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 +++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 @@ -5271,11 +5271,12 @@ TEST_P(WebGLCompatibilityTest, ValidateArraySizes)
