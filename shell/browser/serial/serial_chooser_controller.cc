@@ -156,11 +156,10 @@ void SerialChooserController::OnGetDevices(
   bool prevent_default = false;
   api::Session* session = GetSession();
   if (session) {
-    prevent_default =
-        session->Emit("select-serial-port", ports_, web_contents(),
-                      base::AdaptCallbackForRepeating(base::BindOnce(
-                          &SerialChooserController::OnDeviceChosen,
-                          weak_factory_.GetWeakPtr())));
+    prevent_default = session->Emit(
+        "select-serial-port", ports_, web_contents(),
+        base::BindRepeating(&SerialChooserController::OnDeviceChosen,
+                            weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback(/*port=*/nullptr);
