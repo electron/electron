@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4925a756be531..b7596e0d06f07 100644
+index 4925a756be531749e3fe1fd6f1c081b060c28a4f..b7596e0d06f07bcb950fadb0775cec5479af4c0e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -18,7 +18,7 @@ index 4925a756be531..b7596e0d06f07 100644
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 63b32e52a11af..fc6ed0cdbe211 100644
+index 63b32e52a11af599dbc5154ed353e2bf7250e9d3..fc6ed0cdbe211cb29dd5a1dded36b3b0a6912ce9 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -30,7 +30,7 @@ index 63b32e52a11af..fc6ed0cdbe211 100644
  
  if (is_win) {
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index a20e1b68ebd11..65c7170d1c2db 100644
+index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7ff8efb27 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -71,6 +71,8 @@ component("os_crypt") {
@@ -43,7 +43,7 @@ index a20e1b68ebd11..65c7170d1c2db 100644
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 0625f07f317de..5897820839d6d 100644
+index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -55,7 +55,7 @@ index 0625f07f317de..5897820839d6d 100644
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 9551e3ea2e5f3..e8c192bfbe5a2 100644
+index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb573ed509 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -332,6 +332,7 @@ viz_component("service") {
@@ -76,7 +76,7 @@ index 9551e3ea2e5f3..e8c192bfbe5a2 100644
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 555b34f960bd8..6f3453fd0b9a8 100644
+index 555b34f960bd873e49fca21dc4de5b692cbc4211..6f3453fd0b9a8aa812ae8785be257e772474017b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index 555b34f960bd8..6f3453fd0b9a8 100644
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 0b8f31f43621b..23e22dcc61c35 100644
+index 0b8f31f43621bb1fd85f5847821592f0319f9823..23e22dcc61c355ae773bcc03ff8b169779f4c27d 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -171,6 +171,7 @@ source_set("common") {
+@@ -170,6 +170,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -100,7 +100,7 @@ index 0b8f31f43621b..23e22dcc61c35 100644
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 34636a58846e2..899b75f2be91e 100644
+index 34636a58846e2b250e423dde76e4e6ea1f686676..899b75f2be91e86c526f550718e22221eea604f3 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
@@ -112,7 +112,7 @@ index 34636a58846e2..899b75f2be91e 100644
  
    public_deps = [
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 642afd72cc0f9..894769a5de698 100644
+index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942d1a20b90 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -240,6 +240,7 @@ component("bluetooth") {
@@ -124,7 +124,7 @@ index 642afd72cc0f9..894769a5de698 100644
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 1e7a52437d36b..dee8f9a33ed80 100644
+index 1e7a52437d36b3e55eb45f546c8449b98533ad73..dee8f9a33ed80ad52122c967c35674954ba39560 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
 @@ -129,6 +129,7 @@ component("service") {
@@ -136,7 +136,7 @@ index 1e7a52437d36b..dee8f9a33ed80 100644
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 52aa99a86190c..ed1b037074149 100644
+index 52aa99a86190c8b77c957ef8e8495ff6e42720bb..ed1b0370741491fc5465bb8f0e0038f4f97246c2 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -199,6 +199,7 @@ source_set("audio") {
@@ -148,7 +148,7 @@ index 52aa99a86190c..ed1b037074149 100644
  
    if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index a8193d411da14..94c410b59ab7b 100644
+index a8193d411da14f4ff0087fba81e63809832d1806..94c410b59ab7b40654fb214a6a9d828170fe2095 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -173,6 +173,8 @@ source_set("dns") {
@@ -161,7 +161,7 @@ index a8193d411da14..94c410b59ab7b 100644
  
  # The standard API of net/dns.
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index 5e9fc18352d1b..69dcc2cafa27b 100644
+index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a98050bb3cc6 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
 @@ -37,6 +37,7 @@ component("seatbelt") {
@@ -189,7 +189,7 @@ index 5e9fc18352d1b..69dcc2cafa27b 100644
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 2c9080001cf8e..e08a38e5f9ea9 100644
+index 2c9080001cf8e8b4da54a4744f6754e3d5aac5a0..e08a38e5f9ea9c15fc5ceba1a38af682055389b7 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -304,6 +304,7 @@ component("core") {
@@ -201,7 +201,7 @@ index 2c9080001cf8e..e08a38e5f9ea9 100644
    public_deps = [
      ":core_generated",
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index 7637db0ce03b9..e66fdb98adb03 100644
+index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfaff19e471 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
 @@ -32,6 +32,8 @@ component("accelerated_widget_mac") {
@@ -214,7 +214,7 @@ index 7637db0ce03b9..e66fdb98adb03 100644
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index c9777e07fdd31..76a7ca0545b69 100644
+index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb277468cb424d 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
 @@ -250,6 +250,7 @@ component("platform") {
@@ -226,7 +226,7 @@ index c9777e07fdd31..76a7ca0545b69 100644
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 9ffa8129d29ec..5ebf5ea4db7c6 100644
+index 9ffa8129d29ecda50f91355ffd01ce9926a70b11..5ebf5ea4db7c692b3288110945d470831e7797e2 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -359,6 +359,7 @@ component("base") {
@@ -238,7 +238,7 @@ index 9ffa8129d29ec..5ebf5ea4db7c6 100644
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 4fb4a862d285f..fa71bc8234241 100644
+index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecbfd9da778 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -253,7 +253,7 @@ index 4fb4a862d285f..fa71bc8234241 100644
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 4022d71750b5e..a35349465915d 100644
+index 4022d71750b5ea69b4aa81bc1d021a8597da7b27..a35349465915d2e21529989622fb52c5c968013d 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -192,6 +192,7 @@ component("gfx") {
@@ -265,7 +265,7 @@ index 4022d71750b5e..a35349465915d 100644
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 01bbf457bc079..0718cc10706de 100644
+index 01bbf457bc079c266e6110f7ad7c1ba701343312..0718cc10706de5e4b12a891eff696c80352fb9cd 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -675,6 +675,7 @@ component("views") {
@@ -277,7 +277,7 @@ index 01bbf457bc079..0718cc10706de 100644
  
    if (is_win) {
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index f37a5a881ac6a..1764117f539c2 100644
+index f37a5a881ac6ac432a4672c5738b7f49b75b5523..1764117f539c2423ebe8bb4c3fe70afcdd0883e8 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
 @@ -19,6 +19,7 @@ component("webview") {

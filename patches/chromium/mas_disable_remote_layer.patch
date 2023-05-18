@@ -41,7 +41,7 @@ index 6c0ab25b4faeee4095beaa10a57932021d690785..09fa4b7fb10790c2349edab7108e9d21
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 7ecc5ff37d7a6c156f432e9968bcce340a38b533..f5de541a91c72ef80941434b6cb55b298d8744f7 100644
+index 8c2c3758cdd7fb194db1360b98b59a08c781fc7b..bc05822738f3984b8c116fac9c152de3d1bee6d3 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -55,7 +55,9 @@
@@ -73,7 +73,7 @@ index 7ecc5ff37d7a6c156f432e9968bcce340a38b533..f5de541a91c72ef80941434b6cb55b29
  
  #if BUILDFLAG(IS_MAC)
    if (features::UseGpuVsync()) {
-@@ -175,9 +182,13 @@
+@@ -177,9 +184,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());

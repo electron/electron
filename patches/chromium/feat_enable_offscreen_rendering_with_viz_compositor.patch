@@ -87,10 +87,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index f2fe76f53dac7380cbd5d3d42a630efbb55af173..06e4c47bd5f37c041d93808cf712e9eb028ff1b2 100644
+index 5583233391b2133acd30d76ce4c3c5d87e0ffbc8..9551e3ea2e5f3de9bff158fc0f443df69a27f93a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -139,6 +139,8 @@ viz_component("service") {
+@@ -141,6 +141,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -513,10 +513,10 @@ index d4d4c1444e7a169d154bb9062f09f2270e7e9734..01943e14de567afd7b14f6a92eec651d
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 0c438dbab1340ccc06c112d5dbc9e8f44bcb920b..13962687d262434de77f76c1c5a0f39f0fd9fb43 100644
+index f7979fc2a094e85bdd4172fe802ac0eab55ac981..4d07b897a158bf39d9b29e3ac90920aee3050ce0 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -90,7 +90,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -94,7 +94,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -527,10 +527,10 @@ index 0c438dbab1340ccc06c112d5dbc9e8f44bcb920b..13962687d262434de77f76c1c5a0f39f
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index a45fa7c141777bc6ebc5c34ba73c2e6cc602c2b0..a4bbec572b63a22e2b920e7b139c0c9b6ec34e0c 100644
+index 22de40bbf7114fcdbcf838171a57fb0016e70614..dcf80e7d1fd4a50f05f596d1d4325c2a32727004 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -397,8 +397,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -402,8 +402,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

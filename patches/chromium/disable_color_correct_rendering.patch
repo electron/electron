@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 5dcd0601a0505..e615dc2249cf6 100644
+index 7fe522215517ed9ac20f9895992b0b6bd1e1352c..58718799cc95768b897d94e12a4022c78ef84b54 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1919,6 +1919,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -35,7 +35,7 @@ index 5dcd0601a0505..e615dc2249cf6 100644
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index b85b3251a752a..e24eefabacf2f 100644
+index b85b3251a752afc1305108ad370bbe8453e4f789..e24eefabacf2fcdbd15b26e0c696579cca909dd8 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -48,7 +48,7 @@ index b85b3251a752a..e24eefabacf2f 100644
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index a398a5d597946..621d08a28c5f1 100644
+index a398a5d597946d804fff199859f85e03ff9960fc..621d08a28c5f1967343669bc805f7fb8a0ffb24d 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
 @@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
@@ -60,7 +60,7 @@ index a398a5d597946..621d08a28c5f1 100644
    bool force_antialiasing = false;
    bool force_blending_with_shaders = false;
 diff --git a/components/viz/host/renderer_settings_creation.cc b/components/viz/host/renderer_settings_creation.cc
-index c7ca2458708dd..c4a1f1368ef05 100644
+index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ced31730d3 100644
 --- a/components/viz/host/renderer_settings_creation.cc
 +++ b/components/viz/host/renderer_settings_creation.cc
 @@ -17,6 +17,7 @@
@@ -81,7 +81,7 @@ index c7ca2458708dd..c4a1f1368ef05 100644
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 110f05ece2064..49bf6c8f4e0f1 100644
+index 110f05ece2064a253683cf0bf52e554788c9c660..49bf6c8f4e0f198b2c7b2b1d7cf04bcb67b62db1 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -226,6 +226,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,10 +93,10 @@ index 110f05ece2064..49bf6c8f4e0f1 100644
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 5514c2dc6c65d..1b94997a8f0b1 100644
+index 772aaef22d38380524bd457c1069e2a227616fa7..759eee084fc831a651263ab7f4564d923bb2d972 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3350,6 +3350,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3354,6 +3354,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -105,7 +105,7 @@ index 5514c2dc6c65d..1b94997a8f0b1 100644
      sandbox::policy::switches::kDisableSeccompFilterSandbox,
      sandbox::policy::switches::kNoSandbox,
 diff --git a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
-index 318005b66e04e..0d622fddb9572 100644
+index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace47142060c9d1 100644
 --- a/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 +++ b/third_party/blink/renderer/platform/graphics/canvas_color_params.cc
 @@ -4,6 +4,7 @@
@@ -148,7 +148,7 @@ index 318005b66e04e..0d622fddb9572 100644
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 3ebaee0026aff..0a38a4a281b5b 100644
+index 3ebaee0026affd8a9eb4cf36432cbefc13db8f3b..0a38a4a281b5b90fea38b6a2662ec5da0087f134 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@
@@ -170,7 +170,7 @@ index 3ebaee0026aff..0a38a4a281b5b 100644
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 95d74c90b3247..cb138579bdb5b 100644
+index 95d74c90b324760a0fafcf92fe3f40071ffa0187..cb138579bdb5b552a198d47fde220d8148e67d12 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -213,7 +213,7 @@ index 95d74c90b3247..cb138579bdb5b 100644
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index df3caf8fab7a1..ac254ec131745 100644
+index df3caf8fab7a1c1f6bc0efa4fd3dd60b9de66e63..ac254ec1317450a9809da5d244c42fa11a3a4f98 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
@@ -226,7 +226,7 @@ index df3caf8fab7a1..ac254ec131745 100644
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index ebeb73e7f6792..79ec8deb0cab7 100644
+index ebeb73e7f679280297a09332612a83181e24a4e1..79ec8deb0cab719b344a4964221c10725bd066e7 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -13,6 +13,7 @@

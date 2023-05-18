@@ -30,7 +30,7 @@ index a58ddcc8f6e79d3288d0c645875c8b1bbdaaf209..1283bd18cce78bc5eaad71b3fad01031
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/exported/web_message_port_converter.cc b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
-index f440ee59be4ed14760f2948751f31f7ea3d42e2a..654fbb2d12c9fe7cb362d792ede64c9d1f8c099f 100644
+index 6a6cb3d4ef0e454d18cf47cd971240d0dabea9fb..10ea1b43e5caa7c6c0f6c9ff5182a712ca422f9b 100644
 --- a/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 +++ b/third_party/blink/renderer/core/exported/web_message_port_converter.cc
 @@ -6,6 +6,7 @@
