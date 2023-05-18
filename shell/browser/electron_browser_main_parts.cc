@@ -23,6 +23,7 @@
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
+#include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/os_crypt/sync/key_storage_config_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
@@ -190,6 +191,20 @@ void UpdateDarkThemeSetting() {
 }
 #endif
 
+// A fake BrowserProcess object that used to feed the source code from chrome.
+class FakeBrowserProcessImpl : public BrowserProcessImpl {
+ public:
+  embedder_support::OriginTrialsSettingsStorage*
+  GetOriginTrialsSettingsStorage() override {
+    return origin_trials_settings_storage_.get();
+  }
+
+ private:
+  std::unique_ptr<embedder_support::OriginTrialsSettingsStorage>
+      origin_trials_settings_storage_ =
+          std::make_unique<embedder_support::OriginTrialsSettingsStorage>();
+};
+
 }  // namespace
 
 #if BUILDFLAG(IS_LINUX)
@@ -208,7 +223,7 @@ class DarkThemeObserver : public ui::NativeThemeObserver {
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts()
-    : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
+    : fake_browser_process_{std::make_unique<FakeBrowserProcessImpl>()},
       browser_(std::make_unique<Browser>()),
       node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
