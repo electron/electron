@@ -184,6 +184,8 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 A `boolean`. When this attribute is present the guest page will have web security disabled.
 Web security is enabled by default.
 
+This value can only be modified before the first navigation.
+
 ### `partition`
 
 ```html
