@@ -190,6 +190,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool IsVisibleOnAllWorkspaces();
   void SetAutoHideCursor(bool auto_hide);
   virtual void SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value);
+  void SetBackgroundMaterial(const std::string& vibrancy);
 
 #if BUILDFLAG(IS_MAC)
   std::string GetAlwaysOnTopLevel();

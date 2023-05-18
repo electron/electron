@@ -262,6 +262,9 @@ It creates a new `BrowserWindow` with native properties as set by the `options`.
     `tooltip`, `content`, `under-window`, or `under-page`. Please note that
     `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
     deprecated and have been removed in macOS Catalina (10.15).
+  * `backgroundMaterial` string (optional) _Windows_ - Set the window's
+    system-drawn background material, including behind the non-client area.
+    Can be `auto`, `none`, `mica`, `acrylic` or `tabbed`. See [win.setBackgroundMaterial](#winsetbackgroundmaterialmaterial-windows) for more information.
   * `zoomToPageWidth` boolean (optional) _macOS_ - Controls the behavior on
     macOS when option-clicking the green stoplight button on the toolbar or by
     clicking the Window > Zoom menu item. If `true`, the window will grow to
@@ -1854,6 +1857,21 @@ Set a custom position for the traffic light buttons in frameless window.
 
 Returns `Point` - The custom position for the traffic light buttons in
 frameless window.
+
+#### `win.setBackgroundMaterial(material)` _Windows_
+
+* `material` string
+  * `auto` - Let the Desktop Window Manager (DWM) automatically decide the system-drawn backdrop material for this window. This is the default.
+  * `none` - Don't draw any system backdrop.
+  * `mica` - Draw the backdrop material effect corresponding to a long-lived window.
+  * `acrylic` - Draw the backdrop material effect corresponding to a transient window.
+  * `tabbed` - Draw the backdrop material effect corresponding to a window with a tabbed title bar.
+
+This method sets the browser window's system-drawn background material, including behind the non-client area.
+
+See the [Windows documentation](https://learn.microsoft.com/en-us/windows/win32/api/dwmapi/ne-dwmapi-dwm_systembackdrop_type) for more details.
+
+**Note:** This method is only supported on Windows 11 22H2 and up.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 
