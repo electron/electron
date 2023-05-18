@@ -4,7 +4,6 @@
 
 #include "shell/common/gin_helper/callback.h"
 
-#include "base/cxx17_backports.h"
 #include "content/public/browser/browser_thread.h"
 #include "gin/dictionary.h"
 #include "shell/common/process_util.h"

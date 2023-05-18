@@ -6,7 +6,6 @@
 
 #include <propkey.h>  // for PKEY_* constants
 
-#include "base/cxx17_backports.h"
 #include "base/logging.h"
 #include "base/win/scoped_co_mem.h"
 #include "base/win/scoped_propvariant.h"
