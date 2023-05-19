@@ -560,17 +560,18 @@ index 350fa67c492490bbd5e8d13ea4368df798261071..d5718735b288d27055af05411a160377
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index b8037d39c0d763b25d3db09f73b1819a0907904d..2ecad8b7bda880b6aceb316e17a05a99575285b7 100644
+index f4c967e69e91a..9e77a04c3014f 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {
-   bool send_swap_size_notifications = false;
-   // Disables begin frame rate limiting for the display compositor.
+@@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
    bool disable_frame_rate_limit = false;
+   // Whether to use variable refresh rates when generating begin frames.
+   bool enable_variable_refresh_rate = false;
 +  bool offscreen = false;
  
    [EnableIf=is_android]
    float refresh_rate;
+
 diff --git a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom b/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
 index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05456071f3 100644
 --- a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
