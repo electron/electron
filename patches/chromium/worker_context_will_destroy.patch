@@ -26,10 +26,10 @@ index 834a07bb92d77eceb37d0378e9fe2bf13a74a64d..13815369562c1f78c2411cde8e14d9e8
    // An empty URL is returned if the URL is not overriden.
    virtual GURL OverrideFlashEmbedWithHTML(const GURL& url);
 diff --git a/content/renderer/renderer_blink_platform_impl.cc b/content/renderer/renderer_blink_platform_impl.cc
-index ba4012029a68c0fe511ec54098886d49a6cb1226..b21f5d072cb0345c74b383cc3a8a266702a1a776 100644
+index 58caad274969fd4d5aa95b4a3c34d16a50aa0f5c..ef5350399cd32f72601be7256f94018b84b8ef29 100644
 --- a/content/renderer/renderer_blink_platform_impl.cc
 +++ b/content/renderer/renderer_blink_platform_impl.cc
-@@ -814,6 +814,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
+@@ -813,6 +813,12 @@ void RendererBlinkPlatformImpl::WillStopWorkerThread() {
    WorkerThreadRegistry::Instance()->WillStopCurrentWorkerThread();
  }
  
@@ -43,7 +43,7 @@ index ba4012029a68c0fe511ec54098886d49a6cb1226..b21f5d072cb0345c74b383cc3a8a2667
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 47979123ac089d5b14103fca854fa4876ec0f926..f1f809a4269b9da974fa03ccb20aa5c2ff1671b5 100644
+index 2a01122b6219089aef3d1992a76a056d99f2f993..b4c7fbebb3751d5c749da0d228989df27e93c01b 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
 @@ -175,6 +175,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
@@ -55,7 +55,7 @@ index 47979123ac089d5b14103fca854fa4876ec0f926..f1f809a4269b9da974fa03ccb20aa5c2
        const blink::WebSecurityOrigin& script_origin) override;
    blink::ProtocolHandlerSecurityLevel GetProtocolHandlerSecurityLevel()
 diff --git a/third_party/blink/public/platform/platform.h b/third_party/blink/public/platform/platform.h
-index 6315984ca73a3454c36a8a66b4a4e5b4183c84b5..64235bc077f34c6b41812e35b9a839411a239a3b 100644
+index 1620ec518a7ef7f1421a84d66ae14761262524e3..030151f6c2617cd90ba953fc900e6918f0eb22ea 100644
 --- a/third_party/blink/public/platform/platform.h
 +++ b/third_party/blink/public/platform/platform.h
 @@ -622,6 +622,7 @@ class BLINK_PLATFORM_EXPORT Platform {

@@ -76,7 +76,7 @@ index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 555b34f960bd873e49fca21dc4de5b692cbc4211..6f3453fd0b9a8aa812ae8785be257e772474017b 100644
+index 119234fec83095a1fe98e83a9c05e25767394050..f917c9cacffc22c09ce2c7d01d0f5bd23fd5d08f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,7 +88,7 @@ index 555b34f960bd873e49fca21dc4de5b692cbc4211..6f3453fd0b9a8aa812ae8785be257e77
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 0b8f31f43621bb1fd85f5847821592f0319f9823..23e22dcc61c355ae773bcc03ff8b169779f4c27d 100644
+index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d635e5a20 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -170,6 +170,7 @@ source_set("common") {
@@ -124,10 +124,10 @@ index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 1e7a52437d36b3e55eb45f546c8449b98533ad73..dee8f9a33ed80ad52122c967c35674954ba39560 100644
+index ed977f540a2920858a05292f823bf49c669aa6d2..9acd66a086654d77f2a2f84b917795197ac12810 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -129,6 +129,7 @@ component("service") {
+@@ -130,6 +130,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -253,7 +253,7 @@ index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecb
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 4022d71750b5ea69b4aa81bc1d021a8597da7b27..a35349465915d2e21529989622fb52c5c968013d 100644
+index c7a777df6803678108952185a40b590bbf419859..76303e25a06ed2123bf9ac6b93b8a1e0a91273e9 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -192,6 +192,7 @@ component("gfx") {

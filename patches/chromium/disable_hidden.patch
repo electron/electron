@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 48e6fa3d8447e..90c6a5b699957 100644
+index 48e6fa3d8447e87ab2a729aa950cc5029c875673..90c6a5b6999571819ef71f859767cccf635ea883 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -812,6 +812,9 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -20,7 +20,7 @@ index 48e6fa3d8447e..90c6a5b699957 100644
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index fd91b2f251938..0fac80ecc97cb 100644
+index fd91b2f2519383ca39342937e7c89ce35ce363a7..0fac80ecc97cb6c7ff3942a311983baa397fee0d 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -900,6 +900,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -33,7 +33,7 @@ index fd91b2f251938..0fac80ecc97cb 100644
   protected:
    // |routing_id| must not be MSG_ROUTING_NONE.
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 4e1a287c5fe17..2d6cf992a9c26 100644
+index 4e1a287c5fe17a1c04afe7d58aded36efb9120a6..2d6cf992a9c262914279c942ebe3e1769a62c010 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -607,7 +607,7 @@ void RenderWidgetHostViewAura::HideImpl() {

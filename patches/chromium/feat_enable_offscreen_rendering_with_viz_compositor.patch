@@ -513,7 +513,7 @@ index d4d4c1444e7a169d154bb9062f09f2270e7e9734..01943e14de567afd7b14f6a92eec651d
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index f7979fc2a094e85bdd4172fe802ac0eab55ac981..4d07b897a158bf39d9b29e3ac90920aee3050ce0 100644
+index 36673e93a8380d4e6d086fe3029a53fa483ccddb..ad91be73ec89f45c2ce083eaa3a8aba6b6f53877 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -94,7 +94,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -527,7 +527,7 @@ index f7979fc2a094e85bdd4172fe802ac0eab55ac981..4d07b897a158bf39d9b29e3ac90920ae
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 22de40bbf7114fcdbcf838171a57fb0016e70614..dcf80e7d1fd4a50f05f596d1d4325c2a32727004 100644
+index 1aae81c4b1d540fa54e4e8dd5642089369fef14e..6bfc201e9e38dc945875b74a851ce460a68d76f8 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
 @@ -402,8 +402,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
@@ -560,7 +560,7 @@ index 350fa67c492490bbd5e8d13ea4368df798261071..d5718735b288d27055af05411a160377
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index f4c967e69e91a..9e77a04c3014f 100644
+index f4c967e69e91a09c3cdb3295f353939e77ae1afb..eb87b444ec2f3142e19765f5a27c2cbe76141f5b 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 @@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
@@ -571,7 +571,6 @@ index f4c967e69e91a..9e77a04c3014f 100644
  
    [EnableIf=is_android]
    float refresh_rate;
-
 diff --git a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom b/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
 index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05456071f3 100644
 --- a/services/viz/privileged/mojom/compositing/layered_window_updater.mojom
