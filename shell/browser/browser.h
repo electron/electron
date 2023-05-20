@@ -27,6 +27,7 @@
 #if BUILDFLAG(IS_MAC)
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/cocoa/secure_password_input.h"
+#include "ui/gfx/image/image.h"
 #endif
 
 namespace base {
