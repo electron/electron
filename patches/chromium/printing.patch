@@ -34,7 +34,7 @@ index ea3d57d0937407a40e3c78bdffa18bb46a92300f..48e582b206dd31014f7e61f15725a267
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..82eb3ad50b7c7c29223342d0b16a7a85e0d3f1ba 100644
+index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..facaa6fbca8ee7c04f83607e62b81b9594727ada 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -93,6 +93,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -53,7 +53,20 @@ index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..82eb3ad50b7c7c29223342d0b16a7a85
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -374,8 +376,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -147,10 +149,8 @@ void PrintJob::Initialize(std::unique_ptr<PrinterQuery> query,
+ 
+ #if BUILDFLAG(IS_WIN)
+   pdf_page_mapping_ = PageNumber::GetPages(settings->ranges(), page_count);
+-  PrefService* prefs = GetPrefsForWebContents(GetWebContents(rfh_id_));
+-  if (prefs && prefs->IsManagedPreference(prefs::kPdfUseSkiaRendererEnabled)) {
+-    use_skia_ = prefs->GetBoolean(prefs::kPdfUseSkiaRendererEnabled);
+-  }
++  // TODO(codebytere): should we enable this later?
++  use_skia_ = false;
+ #endif
+ 
+   auto new_doc = base::MakeRefCounted<PrintedDocument>(std::move(settings),
+@@ -374,8 +374,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -65,7 +78,7 @@ index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..82eb3ad50b7c7c29223342d0b16a7a85
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -465,8 +469,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -465,8 +467,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
