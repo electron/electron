@@ -1476,6 +1476,23 @@ describe('BrowserWindow module', () => {
           expect(w.isFullScreen()).to.equal(true);
         });
 
+        it('checks normal bounds for maximized transparent window', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            transparent: true,
+            show: false
+          });
+          w.show();
+
+          const bounds = w.getNormalBounds();
+
+          const maximize = emittedOnce(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
+
         it('does not change size for a frameless window with min size', async () => {
           w.destroy();
           w = new BrowserWindow({
