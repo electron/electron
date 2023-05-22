@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 3a8fbcc775d03097591ac3f2c500e72336682f09..97da5f8a59a04b71585ef57cbb17d25a66efd89f 100644
+index 112fccec57bdeb25857516c70f984d31bcc3cbeb..fdb578b491dc7cc431319b20eec483131ca4096b 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -359,6 +359,10 @@
@@ -19,10 +19,10 @@ index 3a8fbcc775d03097591ac3f2c500e72336682f09..97da5f8a59a04b71585ef57cbb17d25a
 +  E_CPONLY(kColorResultsTableHoveredBackground) \
 +  E_CPONLY(kColorResultsTableNormalText) \
 +  E_CPONLY(kColorResultsTableDimmedText) \
-   E_CPONLY(kColorSeparator) \
-   E_CPONLY(kColorShadowBase) \
-   E_CPONLY(kColorShadowValueAmbientShadowElevationSixteen) \
-@@ -432,6 +436,7 @@
+   E_CPONLY(kColorSegmentedButtonBorder) \
+   E_CPONLY(kColorSegmentedButtonFocus) \
+   E_CPONLY(kColorSegmentedButtonForegroundChecked) \
+@@ -445,6 +449,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
