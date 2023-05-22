@@ -34,10 +34,10 @@ index ea3d57d0937407a40e3c78bdffa18bb46a92300f..48e582b206dd31014f7e61f15725a267
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index b496ff49232f449fd6cea9dc1927b833c049497b..4c12ca65c1f800ddbbb792716f09f63fff8fa7d4 100644
+index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..82eb3ad50b7c7c29223342d0b16a7a85e0d3f1ba 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
-@@ -91,6 +91,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
+@@ -93,6 +93,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
    return base::FeatureList::IsEnabled(features::kPrintWithReducedRasterization);
  }
  
@@ -45,7 +45,7 @@ index b496ff49232f449fd6cea9dc1927b833c049497b..4c12ca65c1f800ddbbb792716f09f63f
  PrefService* GetPrefsForWebContents(content::WebContents* web_contents) {
    // TODO(thestig): Figure out why crbug.com/1083911 occurred, which is likely
    // because `web_contents` was null. As a result, this section has many more
-@@ -105,6 +106,7 @@ content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
+@@ -107,6 +108,7 @@ content::WebContents* GetWebContents(content::GlobalRenderFrameHostId rfh_id) {
    auto* rfh = content::RenderFrameHost::FromID(rfh_id);
    return rfh ? content::WebContents::FromRenderFrameHost(rfh) : nullptr;
  }
@@ -53,7 +53,7 @@ index b496ff49232f449fd6cea9dc1927b833c049497b..4c12ca65c1f800ddbbb792716f09f63f
  
  #endif  // BUILDFLAG(IS_WIN)
  
-@@ -363,8 +365,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -374,8 +376,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -65,7 +65,7 @@ index b496ff49232f449fd6cea9dc1927b833c049497b..4c12ca65c1f800ddbbb792716f09f63f
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -454,8 +458,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -465,8 +469,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
@@ -834,10 +834,10 @@ index 9376c3f858bea408d07ba09d988eaa300b4f550b..d62e09ca4ace8fe094a6b71c05e4ced1
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 86220552af743f4f64e9ebd89e9d49cc6e10b87d..119234fec83095a1fe98e83a9c05e25767394050 100644
+index 7f8aea52f3aa4e3538125de9faa9215a9bb19af5..6c5c6f0771c72ac300e07398d4ed9bd3ce9a6ae3 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2878,8 +2878,9 @@ source_set("browser") {
+@@ -2881,8 +2881,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

@@ -76,7 +76,7 @@ index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 119234fec83095a1fe98e83a9c05e25767394050..f917c9cacffc22c09ce2c7d01d0f5bd23fd5d08f 100644
+index 6c5c6f0771c72ac300e07398d4ed9bd3ce9a6ae3..49b290aef900e270b5d682e0a0d9dcebb9e0414c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -136,7 +136,7 @@ index ed977f540a2920858a05292f823bf49c669aa6d2..9acd66a086654d77f2a2f84b91779519
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 52aa99a86190c8b77c957ef8e8495ff6e42720bb..ed1b0370741491fc5465bb8f0e0038f4f97246c2 100644
+index a828562c1da7aecc5b7e5888b25d8a3454628074..6926d5ca4c860d8754298948097dc1b63d2688a2 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -199,6 +199,7 @@ source_set("audio") {
