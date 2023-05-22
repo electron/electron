@@ -12,7 +12,7 @@ Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-index 6097b6d236b547710aeaf37a6fb45df97d621ca0..3652c8708fc90744d4636cef5d3a583935739293 100644
+index 6097b6d236b547710aeaf37a6fb45df97d621ca0..2a033ad9d9422349865a9f2af7084bbf1c2c23d9 100644
 --- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 +++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 @@ -35,7 +35,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
@@ -26,16 +26,17 @@ index 6097b6d236b547710aeaf37a6fb45df97d621ca0..3652c8708fc90744d4636cef5d3a5839
      {
          ASSERT(diagnostics);
      }
-@@ -100,11 +102,37 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
-                       asSymbol->getName());
-                 return false;
-             }
-+
-+            const bool isPrivate = variableType.getQualifier() == EvqTemporary ||
-+                                   variableType.getQualifier() == EvqGlobal ||
-+                                   variableType.getQualifier() == EvqConst;
+@@ -93,18 +95,33 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+             const bool isPrivate = variableType.getQualifier() == EvqTemporary ||
+                                    variableType.getQualifier() == EvqGlobal ||
+                                    variableType.getQualifier() == EvqConst;
+-            if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes && isPrivate)
 +            if (isPrivate)
-+            {
+             {
+-                error(asSymbol->getLine(),
+-                      "Size of declared private variable exceeds implementation-defined limit",
+-                      asSymbol->getName());
+-                return false;
 +                if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes)
 +                {
 +                    error(asSymbol->getLine(),
@@ -44,7 +45,7 @@ index 6097b6d236b547710aeaf37a6fb45df97d621ca0..3652c8708fc90744d4636cef5d3a5839
 +                    return false;
 +                }
 +                mTotalPrivateVariablesSize += layoutEncoder.getCurrentOffset();
-+            }
+             }
          }
  
          return true;
@@ -64,7 +65,7 @@ index 6097b6d236b547710aeaf37a6fb45df97d621ca0..3652c8708fc90744d4636cef5d3a5839
    private:
      void error(TSourceLoc loc, const char *reason, const ImmutableString &token)
      {
-@@ -213,6 +241,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -213,6 +230,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  
      TDiagnostics *mDiagnostics;
      std::vector<int> mLoopSymbolIds;
@@ -73,7 +74,7 @@ index 6097b6d236b547710aeaf37a6fb45df97d621ca0..3652c8708fc90744d4636cef5d3a5839
  };
  
  }  // namespace
-@@ -223,6 +253,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
+@@ -223,6 +242,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
  {
      ValidateTypeSizeLimitationsTraverser validate(symbolTable, diagnostics);
      root->traverse(&validate);
