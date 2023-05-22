@@ -223,10 +223,10 @@ expanding and collapsing the dialog.
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `message` string - Content of the message box.
-  * `type` string (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
-  `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
-  you set an icon using the `"icon"` option. On macOS, both `"warning"` and
-  `"error"` display the same warning icon.
+  * `type` string (optional) - Can be `none`, `info`, `error`, `question` or
+  `warning`. On Windows, `question` displays the same icon as `info`, unless
+  you set an icon using the `icon` option. On macOS, both `warning` and
+  `error` display the same warning icon.
   * `buttons` string[]&#32;(optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
@@ -266,10 +266,10 @@ If `browserWindow` is not shown dialog will not be attached to it. In such case 
 * `browserWindow` [BrowserWindow](browser-window.md) (optional)
 * `options` Object
   * `message` string - Content of the message box.
-  * `type` string (optional) - Can be `"none"`, `"info"`, `"error"`, `"question"` or
-  `"warning"`. On Windows, `"question"` displays the same icon as `"info"`, unless
-  you set an icon using the `"icon"` option. On macOS, both `"warning"` and
-  `"error"` display the same warning icon.
+  * `type` string (optional) - Can be `none`, `info`, `error`, `question` or
+  `warning`. On Windows, `question` displays the same icon as `info`, unless
+  you set an icon using the `icon` option. On macOS, both `warning` and
+  `error` display the same warning icon.
   * `buttons` string[]&#32;(optional) - Array of texts for buttons. On Windows, an empty array
     will result in one button labeled "OK".
   * `defaultId` Integer (optional) - Index of the button in the buttons array which will
