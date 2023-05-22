@@ -54,7 +54,7 @@ base::FilePath GetHelperAppPath(const base::FilePath& frameworks_path,
 }  // namespace
 
 void ElectronMainDelegate::OverrideFrameworkBundlePath() {
-  base::mac::SetOverrideFrameworkBundlePath(
+  base::apple::SetOverrideFrameworkBundlePath(
       GetFrameworksPath().Append(ELECTRON_PRODUCT_NAME " Framework.framework"));
 }
 

@@ -23,7 +23,7 @@ namespace asar {
 
 absl::optional<base::FilePath> Archive::RelativePath() const {
   base::FilePath bundle_path = base::MakeAbsoluteFilePath(
-      base::mac::MainBundlePath().Append("Contents"));
+      base::apple::MainBundlePath().Append("Contents"));
 
   base::FilePath relative_path;
   if (!bundle_path.AppendRelativePath(path_, &relative_path))

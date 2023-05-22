@@ -73,7 +73,7 @@ void ElectronBrowserMainParts::InitializeMainNib() {
 
     NSData* data = [NSData dataWithContentsOfFile:nibPath];
     mainNib = [[NSNib alloc] initWithNibData:data
-                                      bundle:apple::FrameworkBundle()];
+                                      bundle:base::apple::FrameworkBundle()];
   }
 
   [mainNib instantiateWithOwner:application topLevelObjects:nil];

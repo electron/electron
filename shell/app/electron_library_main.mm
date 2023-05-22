@@ -35,7 +35,7 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
 
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
-  base::mac::SetOverrideFrameworkBundlePath(
+  base::apple::SetOverrideFrameworkBundlePath(
       electron::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
