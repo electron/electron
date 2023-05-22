@@ -163,11 +163,11 @@ index fee8640ccee0a24e1f1e282e9bad3a26bd721df8..4b6a3e7aaf686ea23500b7e051156e59
  }
  
 diff --git a/content/browser/service_process_host_impl.cc b/content/browser/service_process_host_impl.cc
-index 87d865fcf3c713e30d3eda185c46642acc0caeae..922270dd5369cd762c9bcff30501817d93aeb3d7 100644
+index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08cf3c97bf 100644
 --- a/content/browser/service_process_host_impl.cc
 +++ b/content/browser/service_process_host_impl.cc
-@@ -205,6 +205,15 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
-     host->SetPreloadLibraries(options.preload_libraries);
+@@ -208,6 +208,15 @@ void LaunchServiceProcess(mojo::GenericPendingReceiver receiver,
+     host->SetPinUser32();
    }
  #endif  // BUILDFLAG(IS_WIN)
 +#if BUILDFLAG(IS_WIN)
@@ -183,7 +183,7 @@ index 87d865fcf3c713e30d3eda185c46642acc0caeae..922270dd5369cd762c9bcff30501817d
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 26e3644fe0df219e6a8c1a5ff5ce64e6bf8f81b5..610df5341d620d459193e867d79be7855b176d51 100644
+index c223138472a6d4f64c65e645bb842a6be876e6b4..255ed2faa4b7b9d97800f34d1bd921a8b5925861 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -156,11 +156,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -202,7 +202,7 @@ index 26e3644fe0df219e6a8c1a5ff5ce64e6bf8f81b5..610df5341d620d459193e867d79be785
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -223,6 +225,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -226,6 +228,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -227,7 +227,7 @@ index 26e3644fe0df219e6a8c1a5ff5ce64e6bf8f81b5..610df5341d620d459193e867d79be785
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -438,9 +458,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -441,9 +461,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX)
  
@@ -252,7 +252,7 @@ index 26e3644fe0df219e6a8c1a5ff5ce64e6bf8f81b5..610df5341d620d459193e867d79be785
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 3aafcc1faff75f79b9bcb3b3d9498144eb2307b5..0d81b2d66854318f14da27e88995e3bab99fcf1d 100644
+index 45b85c90b5d01a0b1311e15705794ab4c9369fa1..d13dbd7a917e53a4dbee21ad0f98a5bd2ab1d1b9 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@
@@ -282,7 +282,7 @@ index 3aafcc1faff75f79b9bcb3b3d9498144eb2307b5..0d81b2d66854318f14da27e88995e3ba
  
    // Starts the utility process.
    bool Start();
-@@ -152,6 +160,16 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -154,6 +162,16 @@ class CONTENT_EXPORT UtilityProcessHost
    void SetZygoteForTesting(ZygoteCommunication* handle);
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -299,7 +299,7 @@ index 3aafcc1faff75f79b9bcb3b3d9498144eb2307b5..0d81b2d66854318f14da27e88995e3ba
    // Returns a control interface for the running child process.
    mojom::ChildProcess* GetChildProcess();
  
-@@ -205,6 +223,22 @@ class CONTENT_EXPORT UtilityProcessHost
+@@ -209,6 +227,22 @@ class CONTENT_EXPORT UtilityProcessHost
    absl::optional<raw_ptr<ZygoteCommunication>> zygote_for_testing_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -323,7 +323,7 @@ index 3aafcc1faff75f79b9bcb3b3d9498144eb2307b5..0d81b2d66854318f14da27e88995e3ba
    // launch failed.
    enum class LaunchState {
 diff --git a/content/browser/utility_sandbox_delegate.cc b/content/browser/utility_sandbox_delegate.cc
-index 5a8f79cce1e6635e4656383cea8ab8763d09aa59..665904af73916b269adfb2b793c5792bbb26e862 100644
+index 1caf159300af5f8910d0c691c6eb5b2475d9f9a0..d3e4adfad23176d6e7989eb20d1f08d780d8831b 100644
 --- a/content/browser/utility_sandbox_delegate.cc
 +++ b/content/browser/utility_sandbox_delegate.cc
 @@ -29,13 +29,15 @@ UtilitySandboxedProcessLauncherDelegate::
@@ -346,7 +346,7 @@ index 5a8f79cce1e6635e4656383cea8ab8763d09aa59..665904af73916b269adfb2b793c5792b
  #if DCHECK_IS_ON()
    bool supported_sandbox_type =
        sandbox_type_ == sandbox::mojom::Sandbox::kNoSandbox ||
-@@ -97,11 +99,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
+@@ -96,11 +98,17 @@ UtilitySandboxedProcessLauncherDelegate::GetSandboxType() {
    return sandbox_type_;
  }
  
@@ -367,7 +367,7 @@ index 5a8f79cce1e6635e4656383cea8ab8763d09aa59..665904af73916b269adfb2b793c5792b
  #if BUILDFLAG(USE_ZYGOTE)
  ZygoteCommunication* UtilitySandboxedProcessLauncherDelegate::GetZygote() {
 diff --git a/content/browser/utility_sandbox_delegate.h b/content/browser/utility_sandbox_delegate.h
-index 24538d821bb4b30e21944ec256731567410f815e..c1f032a57397e8c573e34d9eb22028dcaf914436 100644
+index 49b9f8429ebdd238e0e9ffb00cdf1848bda898a8..f79c7f0298ee76b2faaead195990925350306e49 100644
 --- a/content/browser/utility_sandbox_delegate.h
 +++ b/content/browser/utility_sandbox_delegate.h
 @@ -27,7 +27,9 @@ class UtilitySandboxedProcessLauncherDelegate
@@ -381,7 +381,7 @@ index 24538d821bb4b30e21944ec256731567410f815e..c1f032a57397e8c573e34d9eb22028dc
    ~UtilitySandboxedProcessLauncherDelegate() override;
  
    sandbox::mojom::Sandbox GetSandboxType() override;
-@@ -53,18 +55,16 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -54,18 +56,16 @@ class UtilitySandboxedProcessLauncherDelegate
    ZygoteCommunication* GetZygote() override;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -402,7 +402,7 @@ index 24538d821bb4b30e21944ec256731567410f815e..c1f032a57397e8c573e34d9eb22028dc
  
  #if BUILDFLAG(IS_WIN)
    std::vector<base::FilePath> preload_libraries_;
-@@ -74,8 +74,10 @@ class UtilitySandboxedProcessLauncherDelegate
+@@ -76,8 +76,10 @@ class UtilitySandboxedProcessLauncherDelegate
    absl::optional<raw_ptr<ZygoteCommunication>> zygote_;
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -436,7 +436,7 @@ index 498f60227d13eb2e476413f88eaa58cc0babf461..619639ad5d22a1121b0e0d5f2c9e3c10
  
  }  // namespace content
 diff --git a/content/public/browser/service_process_host.cc b/content/public/browser/service_process_host.cc
-index 9535af0748a2c7f5c57aaad5391169d7c2eb2d37..6dc8e117f392f0669fd29e005afc28d905c8498c 100644
+index e6bd27288a8d29dcf263a0677d2629d0aa7cf7c4..24d5acf41ea3fb825d813a040644aef1c9d6d4ee 100644
 --- a/content/public/browser/service_process_host.cc
 +++ b/content/public/browser/service_process_host.cc
 @@ -52,12 +52,45 @@ ServiceProcessHost::Options::WithExtraCommandLineSwitches(
@@ -486,7 +486,7 @@ index 9535af0748a2c7f5c57aaad5391169d7c2eb2d37..6dc8e117f392f0669fd29e005afc28d9
  ServiceProcessHost::Options&
  ServiceProcessHost::Options::WithPreloadedLibraries(
 diff --git a/content/public/browser/service_process_host.h b/content/public/browser/service_process_host.h
-index 8610aee7463fc9716edaad92d7cb8d0d3415df45..2a4a768e28df4e5bef6e8be561b421e4eed6d3de 100644
+index 32fad70cbdf15d587eb32fa74b2995d30b27f694..2df65c405acdf896c5a66dcd3d0aaf44031bc2f7 100644
 --- a/content/public/browser/service_process_host.h
 +++ b/content/public/browser/service_process_host.h
 @@ -13,6 +13,7 @@
@@ -508,7 +508,7 @@ index 8610aee7463fc9716edaad92d7cb8d0d3415df45..2a4a768e28df4e5bef6e8be561b421e4
  namespace base {
  class Process;
  }  // namespace base
-@@ -99,11 +104,30 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -100,11 +105,30 @@ class CONTENT_EXPORT ServiceProcessHost {
      // Specifies extra command line switches to append before launch.
      Options& WithExtraCommandLineSwitches(std::vector<std::string> switches);
  
@@ -539,7 +539,7 @@ index 8610aee7463fc9716edaad92d7cb8d0d3415df45..2a4a768e28df4e5bef6e8be561b421e4
  #if BUILDFLAG(IS_WIN)
      // Specifies libraries to preload before the sandbox is locked down. Paths
      // should be absolute paths. Libraries will be preloaded before sandbox
-@@ -126,10 +150,19 @@ class CONTENT_EXPORT ServiceProcessHost {
+@@ -131,11 +155,20 @@ class CONTENT_EXPORT ServiceProcessHost {
      absl::optional<GURL> site;
      absl::optional<int> child_flags;
      std::vector<std::string> extra_switches;
@@ -552,6 +552,7 @@ index 8610aee7463fc9716edaad92d7cb8d0d3415df45..2a4a768e28df4e5bef6e8be561b421e4
      base::OnceCallback<void(const base::Process&)> process_callback;
  #if BUILDFLAG(IS_WIN)
      std::vector<base::FilePath> preload_libraries;
+     bool pin_user32;
  #endif  // BUILDFLAG(IS_WIN)
 +    base::FilePath current_directory;
 +    base::EnvironmentMap environment;
@@ -626,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 9e7ae58cdbb2e2d00e946ef528f1759826c2b07c..48ce8a3fa674e6c5c288d0bf64856b1fbc01a2d8 100644
+index 4d566d8c23762d0310b4973a1ebfbdf8c4bc4cea..0efa9564bab43c7b2e29db193bc84a47c43d2fde 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -689,11 +689,9 @@ ResultCode GenerateConfigForSandboxedProcess(const base::CommandLine& cmd_line,
