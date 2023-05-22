@@ -20,10 +20,10 @@ static auto constexpr ClassMapping =
     std::array<std::pair<uint8_t, std::string_view>, 7>{
         {{device::mojom::kUsbAudioClass, "audio"},
          {device::mojom::kUsbHidClass, "hid"},
-         {device::mojom::kUsbMassStorageClass, "mass_storage"},
-         {device::mojom::kUsbSmartCardClass, "smart_card"},
+         {device::mojom::kUsbMassStorageClass, "mass-storage"},
+         {device::mojom::kUsbSmartCardClass, "smart-card"},
          {device::mojom::kUsbVideoClass, "video"},
-         {device::mojom::kUsbAudioVideoClass, "audio_video"},
+         {device::mojom::kUsbAudioVideoClass, "audio-video"},
          {device::mojom::kUsbWirelessClass, "wireless"}}};
 
 template <>

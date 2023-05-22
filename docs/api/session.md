@@ -1097,10 +1097,10 @@ app.whenReady().then(() => {
   * `details` Object
     * `protectedClasses` string[] - The current list of protected USB classes. Possible class values are:
       * `audio`
-      * `audio_video`
+      * `audio-video`
       * `hid`
-      * `mass_storage`
-      * `smart_card`
+      * `mass-storage`
+      * `smart-card`
       * `video`
       * `wireless`
 
@@ -1108,10 +1108,10 @@ Sets the handler which can be used to override which [USB classes are protected]
 The return value for the handler is a string array of USB classes which should be considered protected (eg not available in the renderer).  Valid values for the array are:
 
 * `audio`
-* `audio_video`
+* `audio-video`
 * `hid`
-* `mass_storage`
-* `smart_card`
+* `mass-storage`
+* `smart-card`
 * `video`
 * `wireless`
 
