@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 425cb0ab0af169222d29794310167557dbbc8da2..2cec28651ee9e0a70ddf5a785f2259abedbb7f52 100644
+index 8417fcda40d49733b5fa6cac56e6caf623efc237..ff3d085f931ae822b2fe8d0eb2c822f0e9ac0d95 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1032,6 +1032,7 @@ component("base") {
@@ -88,10 +88,10 @@ index ab9889dc4d631df1ddc61565eb0fe35c06e45b72..416b801add9b122a0c8d9747bf46f009
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 90e39f11ef8d0755a1d9823a7783cd7124819e91..53994eaa27dbcf7b4ee9d60056db737cd2db6fd7 100644
+index a164080599beb28449c6bda91a0f7373c6434019..44750c770ff445cf1b38da27922caa94357baac0 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -171,6 +171,7 @@ source_set("common") {
+@@ -170,6 +170,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
