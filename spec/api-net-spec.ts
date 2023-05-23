@@ -1336,7 +1336,6 @@ describe('net module', () => {
           (details, callback) => {
             if (details.url === `${serverUrl}${requestUrl}`) {
               requestIsIntercepted = true;
-              // Disabled due to false positive in StandardJS
               callback({
                 redirectURL: `${serverUrl}${redirectUrl}`
               });
@@ -1374,7 +1373,6 @@ describe('net module', () => {
         customSession.webRequest.onBeforeRequest((details, callback) => {
           if (details.url === `${serverUrl}${requestUrl}`) {
             requestIsIntercepted = true;
-            // Disabled due to false positive in StandardJS
             callback({
               redirectURL: `${serverUrl}${redirectUrl}`
             });
@@ -1414,7 +1412,6 @@ describe('net module', () => {
         customSession.webRequest.onBeforeRequest((details, callback) => {
           if (details.url === `${serverUrl}${requestUrl}`) {
             requestIsIntercepted = true;
-            // Disabled due to false positive in StandardJS
             callback({
               redirectURL: `${serverUrl}${redirectUrl}`
             });
