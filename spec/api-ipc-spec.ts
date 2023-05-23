@@ -113,8 +113,7 @@ describe('ipc module', () => {
     });
 
     it('throws an error in the renderer if the reply callback is dropped', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      ipcMain.handleOnce('test', () => new Promise(resolve => {
+      ipcMain.handleOnce('test', () => new Promise(() => {
         setTimeout(() => v8Util.requestGarbageCollectionForTesting());
         /* never resolve */
       }));

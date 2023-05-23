@@ -84,7 +84,6 @@ describe('BrowserWindow module', () => {
     it('window does not get garbage collected when opened', async () => {
       const w = new BrowserWindow({ show: false });
       // Keep a weak reference to the window.
-      // eslint-disable-next-line no-undef
       const wr = new WeakRef(w);
       await setTimeout();
       // Do garbage collection, since |w| is not referenced in this closure
@@ -3158,15 +3157,15 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can be set on a window', () => {
       expect(() => {
-        /* eslint-disable no-new */
+        /* eslint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group1'
         });
+        /* eslint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group2',
           frame: false
         });
-        /* eslint-enable no-new */
       }).not.to.throw();
     });
   });

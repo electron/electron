@@ -238,7 +238,6 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
 };
 
 // eat dirt, eslint
-/* eslint-disable import/export */
 export function showOpenDialog(window: BrowserWindow, options: OpenDialogOptions): OpenDialogReturnValue;
 export function showOpenDialog(options: OpenDialogOptions): OpenDialogReturnValue;
 export function showOpenDialog (windowOrOptions: BrowserWindow | OpenDialogOptions, maybeOptions?: OpenDialogOptions): OpenDialogReturnValue {

@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 const { BlobServiceClient } = require('@azure/storage-blob');
 const fs = require('fs');
 const path = require('path');
@@ -7,13 +6,13 @@ const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.ELE
 
 const args = require('minimist')(process.argv.slice(2));
 
-let { prefix = '/', key_prefix = '', _: files } = args;
+let { prefix = '/', keyPrefix = '', _: files } = args;
 if (prefix && !prefix.endsWith(path.sep)) prefix = path.resolve(prefix) + path.sep;
 
 function filenameToKey (file) {
   file = path.resolve(file);
   if (file.startsWith(prefix)) file = file.substr(prefix.length - 1);
-  return key_prefix + (path.sep === '\\' ? file.replace(/\\/g, '/') : file);
+  return keyPrefix + (path.sep === '\\' ? file.replace(/\\/g, '/') : file);
 }
 
 let anErrorOccurred = false;

@@ -141,7 +141,6 @@ describe('powerMonitor', () => {
   });
 
   describe('when powerMonitor module is loaded', () => {
-    // eslint-disable-next-line no-undef
     let powerMonitor: typeof Electron.powerMonitor;
     before(() => {
       powerMonitor = require('electron').powerMonitor;

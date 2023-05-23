@@ -200,7 +200,6 @@ describe('node feature', () => {
           emitter.on(eventName, listener);
         });
 
-        // eslint-disable-next-line standard/no-callback-literal
         callback(...args);
       });
     };
@@ -422,9 +421,7 @@ describe('node feature', () => {
 
       // Needed to test specific DiffieHellman ctors.
 
-      // eslint-disable-next-line no-octal
       crypto.createDiffieHellman('abc', Buffer.from([2]));
-      // eslint-disable-next-line no-octal
       crypto.createDiffieHellman('abc', '123');
     });
 
