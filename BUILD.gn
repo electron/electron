@@ -555,6 +555,7 @@ source_set("electron_lib") {
     }
 
     frameworks = [
+      "AuthenticationServices.framework",
       "AVFoundation.framework",
       "Carbon.framework",
       "LocalAuthentication.framework",

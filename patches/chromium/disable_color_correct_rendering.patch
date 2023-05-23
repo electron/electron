@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 16117d0b40245282ed59a8b9c0cebddc3b2e288c..dd03e12e2b2069e426401ec91a3070e0a2dc0de7 100644
+index 7fe522215517ed9ac20f9895992b0b6bd1e1352c..58718799cc95768b897d94e12a4022c78ef84b54 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1919,6 +1919,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -35,7 +35,7 @@ index 16117d0b40245282ed59a8b9c0cebddc3b2e288c..dd03e12e2b2069e426401ec91a3070e0
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index b85b3251a752afc1305108ad370bbe8453e4f789..e24eefabacf2fcdbd15b26e0c696579cca909dd8 100644
+index 0d966e045669ee0423d6a486fa8e619938a32de2..1e46ecc1aa8447b3fd0f4e5a66f92ca5ef148887 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -93,10 +93,10 @@ index 110f05ece2064a253683cf0bf52e554788c9c660..49bf6c8f4e0f198b2c7b2b1d7cf04bcb
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 88492051b80ed4a989cb9fdf8231a38534ea4c7e..58996935d6c62bec7e090e7bed50fc870bdb46fd 100644
+index 15effd78c0a10f13dbd17b18daa12456a6bc19ae..bd563e0b55f707f1c72c221257e968320302895e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3350,6 +3350,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3392,6 +3392,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace4714
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 3ebaee0026affd8a9eb4cf36432cbefc13db8f3b..0a38a4a281b5b90fea38b6a2662ec5da0087f134 100644
+index 2a31606b1f5814d57ffe59026cc5735fa7cee597..272ae9f414f8d0873e30479b5bfd237c13a69dd9 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@
@@ -213,7 +213,7 @@ index 95d74c90b324760a0fafcf92fe3f40071ffa0187..cb138579bdb5b552a198d47fde220d81
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index cbdfb60d42cb16848847eba67937b95b3504bedf..16c8ff102070ce75c518f8d444cae1e51580d0b4 100644
+index df3caf8fab7a1c1f6bc0efa4fd3dd60b9de66e63..ac254ec1317450a9809da5d244c42fa11a3a4f98 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
@@ -226,7 +226,7 @@ index cbdfb60d42cb16848847eba67937b95b3504bedf..16c8ff102070ce75c518f8d444cae1e5
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index df3520997950911ab8dcd81f654016b2f726ce7d..ac38f23312eef89fb9e2614744c7226fc7091bad 100644
+index ebeb73e7f679280297a09332612a83181e24a4e1..79ec8deb0cab719b344a4964221c10725bd066e7 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -13,6 +13,7 @@
@@ -235,5 +235,5 @@ index df3520997950911ab8dcd81f654016b2f726ce7d..ac38f23312eef89fb9e2614744c7226f
  GFX_SWITCHES_EXPORT extern const char kAnimationDurationScale[];
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
- GFX_SWITCHES_EXPORT extern const char kDisablePPAPISharedImagesSwapChain[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
+ GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];

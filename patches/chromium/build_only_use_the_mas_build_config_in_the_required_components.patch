@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4858b4c2c1b34434db7cf1d6dd2d166cfea9c312..304d704f5115c8f888366c47eda771381212fa5e 100644
+index 4925a756be531749e3fe1fd6f1c081b060c28a4f..b7596e0d06f07bcb950fadb0775cec5479af4c0e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -18,7 +18,7 @@ index 4858b4c2c1b34434db7cf1d6dd2d166cfea9c312..304d704f5115c8f888366c47eda77138
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index b791580cffc200aa161478bf7060156cec5adc0a..253f8bd1e0c6adaca5a7c223eaa031bedd61af08 100644
+index 63b32e52a11af599dbc5154ed353e2bf7250e9d3..fc6ed0cdbe211cb29dd5a1dded36b3b0a6912ce9 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -30,13 +30,13 @@ index b791580cffc200aa161478bf7060156cec5adc0a..253f8bd1e0c6adaca5a7c223eaa031be
  
  if (is_win) {
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 3314c2a5cdcef04d7f1a8bf0e07cafa073f2815e..ef75cef4e449bb5c689f95ab664c19a1c2362b16 100644
+index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7ff8efb27 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -70,6 +70,8 @@ component("os_crypt") {
-       "keychain_password_mac.mm",
+@@ -71,6 +71,8 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
+     configs += [ "//build/config/compiler:enable_arc" ]
 +
 +    configs += ["//electron/build/config:mas_build"]
    }
@@ -55,18 +55,18 @@ index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb88c4c7051 100644
+index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb573ed509 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -322,6 +322,7 @@ viz_component("service") {
- 
-       frameworks += [ "CoreGraphics.framework" ]
+@@ -332,6 +332,7 @@ viz_component("service") {
+         "frame_sinks/external_begin_frame_source_mac.h",
+       ]
      }
 +    configs = ["//electron/build/config:mas_build"]
    }
  
    if (is_android || use_ozone) {
-@@ -576,6 +577,8 @@ viz_source_set("unit_tests") {
+@@ -588,6 +589,8 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -76,7 +76,7 @@ index 06e4c47bd5f37c041d93808cf712e9eb028ff1b2..5b0a12d8b69c0b79fefcb9194e0f3fb8
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index b2f8d8dab348d031510b3ff8a5cf5854feb77282..898525c4ff6517dd1c1341394b248ecbfe6527f3 100644
+index 6c5c6f0771c72ac300e07398d4ed9bd3ce9a6ae3..49b290aef900e270b5d682e0a0d9dcebb9e0414c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index b2f8d8dab348d031510b3ff8a5cf5854feb77282..898525c4ff6517dd1c1341394b248ecb
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 7490e10b3741a0680b0fbe7b069bd5803dccfd42..40d243c84e0336b6f413caf3a8eee96cab62fcf8 100644
+index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d635e5a20 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -171,6 +171,7 @@ source_set("common") {
+@@ -170,6 +170,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -100,7 +100,7 @@ index 7490e10b3741a0680b0fbe7b069bd5803dccfd42..40d243c84e0336b6f413caf3a8eee96c
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 8177e8f11818639b4bafbb860a0f3edd69289465..23e19a8550c20c01e5c04388fe1f0294eae9507e 100644
+index 34636a58846e2b250e423dde76e4e6ea1f686676..899b75f2be91e86c526f550718e22221eea604f3 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
@@ -124,10 +124,10 @@ index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 1e7a52437d36b3e55eb45f546c8449b98533ad73..dee8f9a33ed80ad52122c967c35674954ba39560 100644
+index ed977f540a2920858a05292f823bf49c669aa6d2..9acd66a086654d77f2a2f84b917795197ac12810 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -129,6 +129,7 @@ component("service") {
+@@ -130,6 +130,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -136,10 +136,10 @@ index 1e7a52437d36b3e55eb45f546c8449b98533ad73..dee8f9a33ed80ad52122c967c3567495
    if (is_ios) {
      sources += [
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 8aaf3f77faa5be3078888da392c2e2fb0d1d6959..b557f0edfe8bf4cd8c0185a94c83e53932d064b6 100644
+index a828562c1da7aecc5b7e5888b25d8a3454628074..6926d5ca4c860d8754298948097dc1b63d2688a2 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -197,6 +197,7 @@ source_set("audio") {
+@@ -199,6 +199,7 @@ source_set("audio") {
        "mac/coreaudio_dispatch_override.h",
      ]
      frameworks += [ "AudioUnit.framework" ]
@@ -189,7 +189,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index c0c09f37b3332772dcd71cddb3114c44648ffe06..946684da595074c4b968500594018ae5d316d569 100644
+index 2c9080001cf8e8b4da54a4744f6754e3d5aac5a0..e08a38e5f9ea9c15fc5ceba1a38af682055389b7 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -304,6 +304,7 @@ component("core") {
@@ -226,10 +226,10 @@ index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb2774
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 056a7b1bd399510688841cb68da3985690deb0c7..3c0c0f625156adcc9204ff718703e8314034dba4 100644
+index 9ffa8129d29ecda50f91355ffd01ce9926a70b11..5ebf5ea4db7c692b3288110945d470831e7797e2 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -353,6 +353,7 @@ component("base") {
+@@ -359,6 +359,7 @@ component("base") {
        "l10n/l10n_util_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
@@ -253,10 +253,10 @@ index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecb
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 34a269ee4d47a2597fd098bc9eabe10685f4fc86..8a96f5abc4e0092bca15dbf6e5098a64d81a3ff7 100644
+index c7a777df6803678108952185a40b590bbf419859..76303e25a06ed2123bf9ac6b93b8a1e0a91273e9 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -193,6 +193,7 @@ component("gfx") {
+@@ -192,6 +192,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]
@@ -265,7 +265,7 @@ index 34a269ee4d47a2597fd098bc9eabe10685f4fc86..8a96f5abc4e0092bca15dbf6e5098a64
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 11515d6de3e8b017f03f4d6665f1e57b1f6dceb3..6b5c3d3a9f6cab7dcc97830f2e76c93b3ed79d8d 100644
+index 01bbf457bc079c266e6110f7ad7c1ba701343312..0718cc10706de5e4b12a891eff696c80352fb9cd 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -675,6 +675,7 @@ component("views") {

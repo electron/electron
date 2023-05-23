@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index 45a7f0076b3c39a1f1fb60e6b8b232a0d30f0113..8513e03038912fb57acfe8900bd0ec6b33b5e3f1 100644
+index 36fd6c0ff5673343258fd6eee4a79227aa4e52b5..3c2bfca45ff7012d953fc67f9fb01be67d41b35b 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -239,6 +239,7 @@ vs-chromium-project.txt
+@@ -240,6 +240,7 @@ vs-chromium-project.txt
  /delegate_execute
  /device/serial/device_serial_mojo.xml
  /docs/website
@@ -18,10 +18,10 @@ index 45a7f0076b3c39a1f1fb60e6b8b232a0d30f0113..8513e03038912fb57acfe8900bd0ec6b
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 9978d8b8756ed8557275d2556cdc493eec94c7f1..58a3f97ea420d19c26a4e5e604730f0244e62283 100644
+index 242aa829efed37a00046ba2c72a5511855799cd9..8546bcfa6505686f2699f8c9ff63b4b114eb9831 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -90,6 +90,7 @@
+@@ -92,6 +92,7 @@
  /directxsdk
  /dom_distiller_js/dist
  /eigen3/src
@@ -29,7 +29,7 @@ index 9978d8b8756ed8557275d2556cdc493eec94c7f1..58a3f97ea420d19c26a4e5e604730f02
  /elfutils/src
  /emoji-metadata/src
  /emoji-segmenter/src
-@@ -197,6 +198,7 @@
+@@ -199,6 +200,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -37,7 +37,7 @@ index 9978d8b8756ed8557275d2556cdc493eec94c7f1..58a3f97ea420d19c26a4e5e604730f02
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -264,6 +266,7 @@
+@@ -266,6 +268,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/

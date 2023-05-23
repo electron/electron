@@ -38,6 +38,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   content::WebContents* GetOwnerWebContents() final;
   std::unique_ptr<content::WebContents> CreateNewGuestWindow(
       const content::WebContents::CreateParams& create_params) final;
+  base::WeakPtr<content::BrowserPluginGuestDelegate> GetGuestDelegateWeakPtr()
+      final;
 
   // WebContentsZoomController::Observer:
   void OnZoomLevelChanged(content::WebContents* web_contents,
@@ -56,6 +58,8 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   raw_ptr<WebContentsZoomController> embedder_zoom_controller_ = nullptr;
 
   raw_ptr<api::WebContents> api_web_contents_ = nullptr;
+
+  base::WeakPtrFactory<WebViewGuestDelegate> weak_ptr_factory_{this};
 };
 
 }  // namespace electron

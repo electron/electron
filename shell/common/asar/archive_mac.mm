@@ -11,9 +11,9 @@
 #include <iomanip>
 #include <string>
 
+#include "base/apple/bundle_locations.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/mac/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
@@ -23,7 +23,7 @@ namespace asar {
 
 absl::optional<base::FilePath> Archive::RelativePath() const {
   base::FilePath bundle_path = base::MakeAbsoluteFilePath(
-      base::mac::MainBundlePath().Append("Contents"));
+      base::apple::MainBundlePath().Append("Contents"));
 
   base::FilePath relative_path;
   if (!bundle_path.AppendRelativePath(path_, &relative_path))

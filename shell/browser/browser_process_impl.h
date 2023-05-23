@@ -15,6 +15,7 @@
 
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
+#include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
@@ -68,6 +69,8 @@ class BrowserProcessImpl : public BrowserProcess {
   NotificationPlatformBridge* notification_platform_bridge() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
+  embedder_support::OriginTrialsSettingsStorage*
+  GetOriginTrialsSettingsStorage() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
@@ -117,6 +120,7 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<device::GeolocationManager> geolocation_manager_;
   std::string locale_;
   std::string system_locale_;
+  embedder_support::OriginTrialsSettingsStorage origin_trials_settings_storage_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

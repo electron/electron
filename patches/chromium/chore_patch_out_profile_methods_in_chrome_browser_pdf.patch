@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Wed, 17 May 2023 14:42:09 -0500
+Subject: chore: patch out Profile methods in chrome_browser_pdf
+
+Xref: https://chromium-review.googlesource.com/c/chromium/src/+/4482679
+
+Electron does not support Profiles, so this Profile::FromBrowserContext()
+call is not needed and will not link. This change patches it out.
+
+diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
+index 080e5b64e5fbbe9c126996549dddf7ce312998ee..47a026798a6be7ec8b7cde5b55b29d505d4f2e4c 100644
+--- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
++++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
+@@ -39,6 +39,7 @@ namespace {
+ // hierarchy is: enterprise policy > user choice > finch experiment.
+ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+   CHECK(contents);
++#if 0
+   const PrefService* prefs =
+       Profile::FromBrowserContext(contents->GetBrowserContext())->GetPrefs();
+ 
+@@ -46,6 +47,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+   if (prefs->IsManagedPreference(prefs::kPdfUseSkiaRendererEnabled)) {
+     return prefs->GetBoolean(prefs::kPdfUseSkiaRendererEnabled);
+   }
++#endif
+ 
+   //  When the enterprise policy is not set, use finch/feature flag choice.
+   return base::FeatureList::IsEnabled(
