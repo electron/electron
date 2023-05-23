@@ -50,6 +50,7 @@
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
+  V(electron_browser_desktop_capturer)   \
   V(electron_browser_dialog)             \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
@@ -99,9 +100,6 @@
 
 #define ELECTRON_VIEWS_BINDINGS(V) V(electron_browser_image_view)
 
-#define ELECTRON_DESKTOP_CAPTURER_BINDINGS(V) \
-  V(electron_browser_desktop_capturer)
-
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
 
 // This is used to load built-in bindings. Instead of using
@@ -116,9 +114,6 @@ ELECTRON_RENDERER_BINDINGS(V)
 ELECTRON_UTILITY_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
 ELECTRON_VIEWS_BINDINGS(V)
-#endif
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
 #if DCHECK_IS_ON()
 ELECTRON_TESTING_BINDINGS(V)
@@ -362,9 +357,6 @@ void NodeBindings::RegisterBuiltinBindings() {
     ELECTRON_BROWSER_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
     ELECTRON_VIEWS_BINDINGS(V)
-#endif
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-    ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
   }
   ELECTRON_COMMON_BINDINGS(V)

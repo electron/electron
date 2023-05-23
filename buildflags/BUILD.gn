@@ -9,7 +9,6 @@ buildflag_header("buildflags") {
   header = "buildflags.h"
 
   flags = [
-    "ENABLE_DESKTOP_CAPTURER=$enable_desktop_capturer",
     "ENABLE_RUN_AS_NODE=$enable_run_as_node",
     "ENABLE_OSR=$enable_osr",
     "ENABLE_VIEWS_API=$enable_views_api",

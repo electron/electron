@@ -705,13 +705,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_desktop_capturer) {
-    sources += [
-      "shell/browser/api/electron_api_desktop_capturer.cc",
-      "shell/browser/api/electron_api_desktop_capturer.h",
-    ]
-  }
-
   if (enable_views_api) {
     sources += [
       "shell/browser/api/views/electron_api_image_view.cc",

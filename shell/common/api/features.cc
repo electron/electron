@@ -14,10 +14,6 @@ bool IsBuiltinSpellCheckerEnabled() {
   return BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER);
 }
 
-bool IsDesktopCapturerEnabled() {
-  return BUILDFLAG(ENABLE_DESKTOP_CAPTURER);
-}
-
 bool IsOffscreenRenderingEnabled() {
   return BUILDFLAG(ENABLE_OSR);
 }
@@ -68,7 +64,6 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("isBuiltinSpellCheckerEnabled", &IsBuiltinSpellCheckerEnabled);
-  dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);

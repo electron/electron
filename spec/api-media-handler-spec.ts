@@ -2,11 +2,9 @@ import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import * as http from 'http';
-import { ifdescribe, ifit, listen } from './lib/spec-helpers';
+import { ifit, listen } from './lib/spec-helpers';
 
-const features = process._linkedBinding('electron_common_features');
-
-ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler', () => {
+describe('setDisplayMediaRequestHandler', () => {
   afterEach(closeAllWindows);
   // These tests are done on an http server because navigator.userAgentData
   // requires a secure context.

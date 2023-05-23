@@ -10,13 +10,11 @@ declare var isolatedApi: {
 
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
-declare const ENABLE_DESKTOP_CAPTURER: boolean;
 declare const ENABLE_VIEWS_API: boolean;
 
 declare namespace NodeJS {
   interface FeaturesBinding {
     isBuiltinSpellCheckerEnabled(): boolean;
-    isDesktopCapturerEnabled(): boolean;
     isOffscreenRenderingEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isRunAsNodeEnabled(): boolean;

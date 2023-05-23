@@ -570,12 +570,8 @@ std::vector<int> BaseWindow::GetPosition() {
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   if (!window_->MoveAbove(sourceId))
     args->ThrowError("Invalid media source id");
-#else
-  args->ThrowError("enable_desktop_capturer=true to use this feature");
-#endif
 }
 
 void BaseWindow::MoveTop() {
