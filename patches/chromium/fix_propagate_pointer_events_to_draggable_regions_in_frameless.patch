@@ -1,7 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Gellert Hegyi <gellert.hegyi@around.co>
 Date: Mon, 8 May 2023 08:10:12 +0200
-Subject: propagates pointer events to draggable regions in frameless windows
+Subject: fix: propagate pointer events to draggable regions in frameless
+ windows
 
 This patch changes Chromiums built-in hit testing so in frameless windows pointer events are propagated even in draggable regions.
 
@@ -41,21 +42,8 @@ index fc9c7b30f0353451fdbe4676be5c90c3656b8109..6691609e06786a15afc399c0d8eba9dc
  }
  
  - (void)processCapturedMouseEvent:(NSEvent*)theEvent {
-diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
-index 09b562ff00eb69beeab3332cfa0cd4b2005dda9e..3339187988296c6b03f8ff4aae4389d36a73b430 100644
---- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
-+++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.h
-@@ -208,6 +208,8 @@ struct DidOverscrollParams;
-   base::scoped_nsobject<id> _accessibilityParent;
- 
-   uint64_t popup_parent_ns_view_id_;
-+
-+  BOOL _isDragging;
- }
- 
- @property(nonatomic, assign) NSRange markedRange;
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 949f9a615d1842be4be496a4523411aa4e97a3a6..ad93ea0a2c41176db3f599695d14b0c4163044a5 100644
+index 949f9a615d1842be4be496a4523411aa4e97a3a6..af1ad7892ec460531d4914b12ddfb8d97a9a405d 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -162,6 +162,7 @@ - (BOOL)disableAutoHideCursor;
@@ -66,21 +54,15 @@ index 949f9a615d1842be4be496a4523411aa4e97a3a6..ad93ea0a2c41176db3f599695d14b0c4
  @end
  
  // RenderWidgetHostViewCocoa ---------------------------------------------------
-@@ -785,6 +786,20 @@ - (void)mouseEvent:(NSEvent*)theEvent {
+@@ -785,6 +786,14 @@ - (void)mouseEvent:(NSEvent*)theEvent {
    else if (type == NSEventTypeLeftMouseUp)
      _hasOpenMouseDown = NO;
  
-+  if (type == NSEventTypeLeftMouseDown || type == NSEventTypeMouseMoved) {
++  if (type == NSEventTypeLeftMouseDown) {
 +    NSView* contentView = [self.window contentView];
 +    if ([contentView respondsToSelector:@selector(isDraggableBackgroundAt:)] &&
 +        [contentView isDraggableBackgroundAt:[theEvent locationInWindow]]) {
-+      _isDragging = YES;
 +      [self.window performWindowDragWithEvent:theEvent];
-+    }
-+  } else if (type == NSEventTypeLeftMouseUp) {
-+    if (_isDragging) {
-+      [self.window performWindowDragWithEvent:theEvent];
-+      _isDragging = NO;
 +    }
 +  }
 +
