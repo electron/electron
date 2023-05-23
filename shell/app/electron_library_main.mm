@@ -26,7 +26,6 @@ int ElectronMain(int argc, char* argv[]) {
   return content::ContentMain(std::move(params));
 }
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   if (!electron::fuses::IsRunAsNodeEnabled()) {
     CHECK(false) << "run_as_node fuse is disabled";
@@ -43,4 +42,3 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   base::i18n::InitializeICU();
   return electron::NodeMain(argc, argv);
 }
-#endif

@@ -53,12 +53,10 @@ int main(int argc, char* argv[]) {
   partition_alloc::EarlyMallocZoneRegistration();
   FixStdioStreams();
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   if (electron::fuses::IsRunAsNodeEnabled() &&
       IsEnvSet("ELECTRON_RUN_AS_NODE")) {
     return ElectronInitializeICUandStartNode(argc, argv);
   }
-#endif
 
 #if defined(HELPER_EXECUTABLE) && !IS_MAS_BUILD()
   uint32_t exec_path_size = 0;

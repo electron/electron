@@ -97,14 +97,8 @@ void GetCrashKeys(std::map<std::string, std::string>* keys) {
 
 namespace {
 bool IsRunningAsNode() {
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (!electron::fuses::IsRunAsNodeEnabled())
-    return false;
-
-  return base::Environment::Create()->HasVar(electron::kRunAsNode);
-#else
-  return false;
-#endif
+  return electron::fuses::IsRunAsNodeEnabled() &&
+         base::Environment::Create()->HasVar(electron::kRunAsNode);
 }
 }  // namespace
 

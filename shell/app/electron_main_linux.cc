@@ -21,7 +21,6 @@
 int main(int argc, char* argv[]) {
   FixStdioStreams();
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   char* indicator = getenv(electron::kRunAsNode);
   if (electron::fuses::IsRunAsNodeEnabled() && indicator &&
       indicator[0] != '\0') {
@@ -29,7 +28,6 @@ int main(int argc, char* argv[]) {
     base::AtExitManager atexit_manager;
     return electron::NodeMain(argc, argv);
   }
-#endif
 
   electron::ElectronMainDelegate delegate;
   content::ContentMainParams params(&delegate);

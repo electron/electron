@@ -29,9 +29,7 @@ const char kDeviceVendorIdKey[] = "vendorId";
 const char kDeviceProductIdKey[] = "productId";
 const char kDeviceSerialNumberKey[] = "serialNumber";
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 const char kRunAsNode[] = "ELECTRON_RUN_AS_NODE";
-#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 const char kPDFExtensionPluginName[] = "Chromium PDF Viewer";
