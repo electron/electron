@@ -151,7 +151,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<views::LayoutProvider> layout_provider_;
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
-  std::shared_ptr<BrowserProcessImpl> fake_browser_process_;
+  std::unique_ptr<BrowserProcessImpl> fake_browser_process_;
 
   // A place to remember the exit code once the message loop is ready.
   // Before then, we just exit() without any intermediate steps.
