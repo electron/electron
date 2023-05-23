@@ -3,7 +3,7 @@ import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import { nextVersion } from '../script/release/version-bumper';
 import * as utils from '../script/release/version-utils';
 import * as sinon from 'sinon';
-import { ifdescribe } from './lib/spec-helpers';
+import { ifdescribe } from './lib/spec-conditional';
 
 class GitFake {
   branches: {

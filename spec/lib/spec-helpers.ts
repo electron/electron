@@ -1,25 +1,12 @@
 import * as childProcess from 'child_process';
-import * as path from 'path';
 import * as http from 'http';
 import * as https from 'https';
 import * as net from 'net';
 import * as v8 from 'v8';
 import * as url from 'url';
-import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
-
-const addOnly = <T>(fn: Function): T => {
-  const wrapped = (...args: any[]) => {
-    return fn(...args);
-  };
-  (wrapped as any).only = wrapped;
-  (wrapped as any).skip = wrapped;
-  return wrapped as any;
-};
-
-export const ifit = (condition: boolean) => (condition ? it : addOnly<TestFunction>(it.skip));
-export const ifdescribe = (condition: boolean) => (condition ? describe : addOnly<SuiteFunction>(describe.skip));
+import { fixturePath } from './fixtures';
 
 type CleanupFunction = (() => void) | (() => Promise<void>)
 const cleanupFunctions: CleanupFunction[] = [];
@@ -73,7 +60,7 @@ class RemoteControlApp {
 }
 
 export async function startRemoteControlApp (extraArgs: string[] = [], options?: childProcess.SpawnOptionsWithoutStdio) {
-  const appPath = path.join(__dirname, '..', 'fixtures', 'apps', 'remote-control');
+  const appPath = fixturePath('apps', 'remote-control');
   const appProcess = childProcess.spawn(process.execPath, [appPath, ...extraArgs], options);
   appProcess.stderr.on('data', d => {
     process.stderr.write(d);
@@ -88,65 +75,6 @@ export async function startRemoteControlApp (extraArgs: string[] = [], options?:
   });
   defer(() => { appProcess.kill('SIGINT'); });
   return new RemoteControlApp(appProcess, port);
-}
-
-export function waitUntil (
-  callback: () => boolean,
-  opts: { rate?: number, timeout?: number } = {}
-) {
-  const { rate = 10, timeout = 10000 } = opts;
-  return new Promise<void>((resolve, reject) => {
-    let intervalId: NodeJS.Timeout | undefined; // eslint-disable-line prefer-const
-    let timeoutId: NodeJS.Timeout | undefined;
-
-    const cleanup = () => {
-      if (intervalId) clearInterval(intervalId);
-      if (timeoutId) clearTimeout(timeoutId);
-    };
-
-    const check = () => {
-      let result;
-
-      try {
-        result = callback();
-      } catch (e) {
-        cleanup();
-        reject(e);
-        return;
-      }
-
-      if (result === true) {
-        cleanup();
-        resolve();
-        return true;
-      }
-    };
-
-    if (check()) {
-      return;
-    }
-
-    intervalId = setInterval(check, rate);
-
-    timeoutId = setTimeout(() => {
-      timeoutId = undefined;
-      cleanup();
-      reject(new Error(`waitUntil timed out after ${timeout}ms`));
-    }, timeout);
-  });
-}
-
-export async function repeatedly<T> (
-  fn: () => Promise<T>,
-  opts?: { until?: (x: T) => boolean, timeLimit?: number }
-) {
-  const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
-  const begin = +new Date();
-  while (true) {
-    const ret = await fn();
-    if (until(ret)) { return ret; }
-    if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
-  }
 }
 
 async function makeRemoteContext (opts?: any) {

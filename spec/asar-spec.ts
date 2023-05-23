@@ -4,15 +4,17 @@ import * as url from 'url';
 import { Worker } from 'worker_threads';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
+import { getRemoteContext, itremote, useRemoteContext } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import * as importedFs from 'fs';
 import { once } from 'events';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 const features = process._linkedBinding('electron_common_features');
 
 describe('asar package', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
-  const asarDir = path.join(fixtures, 'test.asar');
+  const asarDir = fixturePath('test.asar');
 
   afterEach(closeAllWindows);
 
@@ -89,26 +91,18 @@ describe('asar package', () => {
   describe('worker', () => {
     it('Worker can load asar file', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'workers', 'load_worker.html'));
+      await w.loadFile(fixturePath('workers', 'load_worker.html'));
 
-      const workerUrl = url.format({
-        pathname: path.resolve(fixtures, 'workers', 'workers.asar', 'worker.js').replace(/\\/g, '/'),
-        protocol: 'file',
-        slashes: true
-      });
+      const workerUrl = fixtureFileURL('workers', 'workers.asar', 'worker.js');
       const result = await w.webContents.executeJavaScript(`loadWorker('${workerUrl}')`);
       expect(result).to.equal('success');
     });
 
     it('SharedWorker can load asar file', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'workers', 'load_shared_worker.html'));
+      await w.loadFile(fixturePath('workers', 'load_shared_worker.html'));
 
-      const workerUrl = url.format({
-        pathname: path.resolve(fixtures, 'workers', 'workers.asar', 'shared_worker.js').replace(/\\/g, '/'),
-        protocol: 'file',
-        slashes: true
-      });
+      const workerUrl = fixtureFileURL('workers', 'workers.asar', 'shared_worker.js');
       const result = await w.webContents.executeJavaScript(`loadSharedWorker('${workerUrl}')`);
       expect(result).to.equal('success');
     });
@@ -142,13 +136,12 @@ function promisify (_f: Function): any {
 }
 
 describe('asar package', function () {
-  const fixtures = path.join(__dirname, 'fixtures');
-  const asarDir = path.join(fixtures, 'test.asar');
+  const asarDir = fixturePath('test.asar');
   const fs = require('fs') as typeof importedFs; // dummy, to fool typescript
 
   useRemoteContext({
-    url: url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')),
-    setup: `
+    url: url.pathToFileURL(fixturePath('pages', 'blank.html')),
+    setup: jsont`
       async function expectToThrowErrorWithCode (func, code) {
         let error;
         try {
@@ -163,7 +156,7 @@ describe('asar package', function () {
 
       fs = require('fs')
       path = require('path')
-      asarDir = ${JSON.stringify(asarDir)}
+      asarDir = ${asarDir}
 
       // This is used instead of util.promisify for some tests to dodge the
       // util.promisify.custom behavior.
@@ -1234,13 +1227,13 @@ describe('asar package', function () {
         expect(msg).to.equal('message');
       });
 
-      itremote('supports asar in the forked js', async function (fixtures: string) {
+      itremote('supports asar in the forked js', async function (fixture: string) {
         const file = path.join(asarDir, 'a.asar', 'file1');
-        const child = require('child_process').fork(path.join(fixtures, 'module', 'asar.js'));
+        const child = require('child_process').fork(fixture);
         child.send(file);
         const content = await new Promise(resolve => child.once('message', resolve));
         expect(content).to.equal(fs.readFileSync(file).toString());
-      }, [fixtures]);
+      }, [fixturePath('module', 'asar.js')]);
     });
 
     describe('child_process.exec', function () {
@@ -1421,7 +1414,7 @@ describe('asar package', function () {
       });
 
       itremote('disables asar support in forked processes', function (done) {
-        const forked = ChildProcess.fork(path.join(__dirname, 'fixtures', 'module', 'no-asar.js'), [], {
+        const forked = ChildProcess.fork(fixturePath('module', 'no-asar.js'), [], {
           env: {
             ELECTRON_NO_ASAR: true
           }
@@ -1438,7 +1431,7 @@ describe('asar package', function () {
       });
 
       itremote('disables asar support in spawned processes', function (done) {
-        const spawned = ChildProcess.spawn(process.execPath, [path.join(__dirname, 'fixtures', 'module', 'no-asar.js')], {
+        const spawned = ChildProcess.spawn(process.execPath, [fixturePath('module', 'no-asar.js')], {
           env: {
             ELECTRON_NO_ASAR: true,
             ELECTRON_RUN_AS_NODE: true
@@ -1514,7 +1507,7 @@ describe('asar package', function () {
 
     /*
     ifit(features.isRunAsNodeEnabled())('is available in forked scripts', async function () {
-      const child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'));
+      const child = ChildProcess.fork(fixturePath('module', 'original-fs.js'));
       const message = once(child, 'message');
       child.send('message');
       const [msg] = await message;

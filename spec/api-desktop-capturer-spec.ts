@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
-import { ifdescribe, ifit } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 
 import { closeAllWindows } from './lib/window-helpers';
 

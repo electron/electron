@@ -1,11 +1,11 @@
 import * as fs from 'fs';
 import * as http from 'http';
-import * as path from 'path';
 import { session, webContents, WebContents } from 'electron/main';
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { listen } from './lib/spec-helpers';
 import { on, once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 const partition = 'service-workers-spec';
 
@@ -30,7 +30,7 @@ describe('session.serviceWorkers', () => {
       if (file.endsWith('.js')) {
         res.setHeader('Content-Type', 'application/javascript');
       }
-      res.end(fs.readFileSync(path.resolve(__dirname, 'fixtures', 'api', 'service-workers', file)));
+      res.end(fs.readFileSync(fixturePath('api', 'service-workers', file)));
     });
     const { port } = await listen(server);
     baseUrl = `http://localhost:${port}/${uuid}`;

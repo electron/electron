@@ -3,11 +3,12 @@ import * as dns from 'dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions, protocol } from 'electron/main';
 import * as http from 'http';
 import * as url from 'url';
-import * as path from 'path';
 import { Socket } from 'net';
 import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');
@@ -277,7 +278,7 @@ describe('net module', () => {
     });
 
     for (const extraOptions of [{}, { credentials: 'include' }, { useSessionCookies: false, credentials: 'include' }] as ClientRequestConstructorOptions[]) {
-      describe(`authentication when ${JSON.stringify(extraOptions)}`, () => {
+      describe(jsont`authentication when ${extraOptions}`, () => {
         it('should emit the login event when 401', async () => {
           const [user, pass] = ['user', 'pass'];
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
@@ -715,8 +716,8 @@ describe('net module', () => {
       expect(response.headers['x-cookie']).to.equal('undefined');
     });
 
-    for (const extraOptions of [{ useSessionCookies: true }, { credentials: 'include' }] as ClientRequestConstructorOptions[]) {
-      describe(`when ${JSON.stringify(extraOptions)}`, () => {
+    for (const extraOptions of [{ useSessionCookies: true }, { credentials: 'include' as const }]) {
+      describe(jsont`when ${extraOptions}`, () => {
         it('should be able to use the sessions cookie store', async () => {
           const serverUrl = await respondOnce.toSingleURL((request, response) => {
             response.statusCode = 200;
@@ -2268,7 +2269,7 @@ describe('net module', () => {
     });
 
     it('can request file:// URLs', async () => {
-      const resp = await net.fetch(url.pathToFileURL(path.join(__dirname, 'fixtures', 'hello.txt')).toString());
+      const resp = await net.fetch(url.pathToFileURL(fixturePath('hello.txt')).toString());
       expect(resp.ok).to.be.true();
       // trimRight instead of asserting the whole string to avoid line ending shenanigans on WOA
       expect((await resp.text()).trimRight()).to.equal('hello world');

@@ -3,13 +3,16 @@ import * as childProcess from 'child_process';
 import * as http from 'http';
 import * as Busboy from 'busboy';
 import * as path from 'path';
-import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
+import { defer, startRemoteControlApp, listen } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
 import { EventEmitter } from 'events';
 import * as fs from 'fs';
 import * as uuid from 'uuid';
 import { setTimeout } from 'timers/promises';
+import { fixturePath } from './lib/fixtures';
+import { pollUntil } from './lib/async-loop';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -104,7 +107,7 @@ function runApp (appPath: string, args: Array<string> = []) {
 }
 
 function runCrashApp (crashType: string, port: number, extraArgs: Array<string> = []) {
-  const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+  const appPath = fixturePath('apps', 'crash');
   return runApp(appPath, [
     `--crash-type=${crashType}`,
     `--crash-reporter-url=http://127.0.0.1:${port}`,
@@ -185,7 +188,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     ifit(process.platform === 'linux')('ensure linux child process args are not modified', async () => {
       const { port, waitForCrash } = await startServer();
       let exitCode: number | null = null;
-      const appPath = path.join(__dirname, 'fixtures', 'apps', 'crash');
+      const appPath = fixturePath('apps', 'crash');
       const crashType = 'node-extra-args';
       const crashProcess = childProcess.spawn(process.execPath, [appPath,
         `--crash-type=${crashType}`,
@@ -421,7 +424,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       });
       await waitForCrash();
       // 3. get the crash from getLastCrashReport.
-      const firstReport = await repeatedly(
+      const firstReport = await pollUntil(
         () => remotely(() => require('electron').crashReporter.getLastCrashReport())
       );
       expect(firstReport).to.not.be.null();
@@ -485,7 +488,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         });
       }
       // TODO(nornagon): how to enable crashpad in a node child process...?
-      const child = childProcess.fork(path.join(__dirname, 'fixtures', 'module', 'print-crash-parameters.js'), [], { silent: true });
+      const child = childProcess.fork(fixturePath('module', 'print-crash-parameters.js'), [], { silent: true });
       const output = await slurp(child.stdout!);
       expect(JSON.parse(output)).to.deep.equal({ hello: 'world' });
     });
@@ -513,14 +516,14 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
           bw.webContents.executeJavaScript('process.crash()');
         });
       } else if (processType === 'sandboxed-renderer') {
-        const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
+        const preloadPath = fixturePath('apps', 'crash', 'sandbox-preload.js');
         return remotely((preload: string) => {
           const { BrowserWindow } = require('electron');
           const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload, contextIsolation: false } });
           bw.loadURL('about:blank');
         }, preloadPath);
       } else if (processType === 'node') {
-        const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
+        const crashScriptPath = fixturePath('apps', 'crash', 'node-crash.js');
         return remotely((crashScriptPath: string) => {
           const { app } = require('electron');
           const childProcess = require('child_process');
@@ -633,7 +636,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
 
   describe('when not started', () => {
     it('does not prevent process from crashing', async () => {
-      const appPath = path.join(__dirname, 'fixtures', 'api', 'cookie-app');
+      const appPath = fixturePath('api', 'cookie-app');
       await runApp(appPath);
     });
   });

@@ -4,14 +4,16 @@ import * as path from 'path';
 import * as url from 'url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { emittedNTimes } from './lib/events-helpers';
-import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { defer, listen } from './lib/spec-helpers';
+import { ifit } from './lib/spec-conditional';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { emittedN } from './lib/events';
+import { fixturePath } from './lib/fixtures';
+import { pollUntil } from './lib/async-loop';
 
 describe('webFrameMain module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
-  const subframesPath = path.join(fixtures, 'sub-frames');
+  const subframesPath = fixturePath('sub-frames');
 
   const fileUrl = (filename: string) => url.pathToFileURL(path.join(subframesPath, filename)).href;
 
@@ -128,7 +130,7 @@ describe('webFrameMain module', () => {
 
     it('should be file:// for file frames', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      await w.loadFile(fixturePath('pages', 'blank.html'));
       expect(w.webContents.mainFrame.origin).to.equal('file://');
     });
 
@@ -142,7 +144,7 @@ describe('webFrameMain module', () => {
 
     it('should show parent origin when child page is about:blank', async () => {
       const w = new BrowserWindow({ show: false });
-      await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
+      await w.loadFile(fixturePath('pages', 'blank.html'));
       const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
       expect(w.webContents.mainFrame.origin).to.equal('file://');
       await w.webContents.executeJavaScript('window.open("", null, "show=false"), null');
@@ -194,7 +196,7 @@ describe('webFrameMain module', () => {
       expect(webFrame.visibilityState).to.equal('visible');
       w.hide();
       await expect(
-        waitUntil(() => webFrame.visibilityState === 'hidden')
+        pollUntil(() => webFrame.visibilityState === 'hidden')
       ).to.eventually.be.fulfilled();
     });
   });
@@ -351,7 +353,7 @@ describe('webFrameMain module', () => {
       const w = new BrowserWindow({ show: false });
 
       // frame-with-frame-container.html, frame-with-frame.html, frame.html
-      const didFrameFinishLoad = emittedNTimes(w.webContents, 'did-frame-finish-load', 3);
+      const didFrameFinishLoad = emittedN(w.webContents, 'did-frame-finish-load', 3);
       w.loadFile(path.join(subframesPath, 'frame-with-frame-container.html'));
 
       for (const [, isMainFrame, frameProcessId, frameRoutingId] of await didFrameFinishLoad) {
@@ -375,7 +377,7 @@ describe('webFrameMain module', () => {
 
     it('emits when nested frames are created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      const promise = emittedN(w.webContents, 'frame-created', 2);
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);

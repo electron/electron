@@ -2,17 +2,16 @@ import { expect } from 'chai';
 import * as http from 'http';
 import * as http2 from 'http2';
 import * as qs from 'querystring';
-import * as path from 'path';
 import * as fs from 'fs';
-import * as url from 'url';
+import * as path from 'path';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
 import { AddressInfo, Socket } from 'net';
 import { listen, defer } from './lib/spec-helpers';
 import { once } from 'events';
 import { ReadableStream } from 'stream/web';
-
-const fixturesPath = path.resolve(__dirname, 'fixtures');
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { jsont } from './lib/json';
 
 describe('webRequest module', () => {
   const ses = session.defaultSession;
@@ -43,7 +42,7 @@ describe('webRequest module', () => {
   let defaultURL: string;
   let http2URL: string;
 
-  const certPath = path.join(fixturesPath, 'certificates');
+  const certPath = fixturePath('certificates');
   const h2server = http2.createSecureServer({
     key: fs.readFileSync(path.join(certPath, 'server.key')),
     cert: fs.readFileSync(path.join(certPath, 'server.pem'))
@@ -77,14 +76,12 @@ describe('webRequest module', () => {
   // NB. sandbox: true is used because it makes navigations much (~8x) faster.
   before(async () => {
     contents = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
-    // const w = new BrowserWindow({webPreferences: {sandbox: true}})
-    // contents = w.webContents
-    await contents.loadFile(path.join(fixturesPath, 'pages', 'fetch.html'));
+    await contents.loadFile(fixturePath('pages', 'fetch.html'));
   });
   after(() => contents.destroy());
 
   async function ajax (url: string, options = {}) {
-    return contents.executeJavaScript(`ajax("${url}", ${JSON.stringify(options)})`);
+    return contents.executeJavaScript(jsont`ajax(${url}, ${options})`);
   }
 
   describe('webRequest.onBeforeRequest', () => {
@@ -183,11 +180,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({ cancel: true });
       });
-      const fileURL = url.format({
-        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
-        protocol: 'file',
-        slashes: true
-      });
+      const fileURL = fixtureFileURL('blank.html');
       await expect(ajax(fileURL)).to.eventually.be.rejected();
     });
 
@@ -325,7 +318,7 @@ describe('webRequest module', () => {
       // Note that we need to do navigation every time after a protocol is
       // registered or unregistered, otherwise the new protocol won't be
       // recognized by current page when NetworkService is used.
-      await contents.loadFile(path.join(__dirname, 'fixtures', 'pages', 'fetch.html'));
+      await contents.loadFile(fixturePath('pages', 'fetch.html'));
 
       try {
         ses.webRequest.onBeforeSendHeaders((details, callback) => {
@@ -397,11 +390,7 @@ describe('webRequest module', () => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
         onSendHeadersCalled = true;
       });
-      await ajax(url.format({
-        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
-        protocol: 'file',
-        slashes: true
-      }));
+      await ajax(fixtureFileURL('blank.html'));
       expect(onSendHeadersCalled).to.be.true();
     });
   });
@@ -671,7 +660,7 @@ describe('webRequest module', () => {
         ses.webRequest.onCompleted(null);
       });
 
-      contents.loadFile(path.join(fixturesPath, 'api', 'webrequest.html'), { query: { port: `${port}` } });
+      contents.loadFile(fixturePath('api', 'webrequest.html'), { query: { port: `${port}` } });
       await once(ipcMain, 'websocket-success');
 
       expect(receivedHeaders['/websocket'].Upgrade[0]).to.equal('websocket');

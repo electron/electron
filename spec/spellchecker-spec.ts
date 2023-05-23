@@ -5,9 +5,11 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as http from 'http';
 import { closeWindow } from './lib/window-helpers';
-import { ifit, ifdescribe, listen } from './lib/spec-helpers';
+import { listen } from './lib/spec-helpers';
+import { ifdescribe, ifit } from './lib/spec-conditional';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
+import { fixturePath } from './lib/fixtures';
 
 const features = process._linkedBinding('electron_common_features');
 const v8Util = process._linkedBinding('electron_common_v8_util');
@@ -63,8 +65,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
   });
   after(() => server.close());
 
-  const fixtures = path.resolve(__dirname, 'fixtures');
-  const preload = path.join(fixtures, 'module', 'preload-electron.js');
+  const preload = fixturePath('module', 'preload-electron.js');
 
   const generateSpecs = (description: string, sandbox: boolean) => {
     describe(description, () => {
@@ -80,7 +81,7 @@ ifdescribe(features.isBuiltinSpellCheckerEnabled())('spellchecker', function () 
         });
         w.webContents.session.setSpellCheckerDictionaryDownloadURL(serverUrl);
         w.webContents.session.setSpellCheckerLanguages(['en-US']);
-        await w.loadFile(path.resolve(__dirname, './fixtures/chromium/spellchecker.html'));
+        await w.loadFile(fixturePath('chromium', 'spellchecker.html'));
       });
 
       afterEach(async () => {

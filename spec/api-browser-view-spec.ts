@@ -1,14 +1,14 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
-import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
-import { areColorsSimilar, captureScreen, getPixelColor } from './lib/screen-helpers';
+import { defer, startRemoteControlApp } from './lib/spec-helpers';
 import { once } from 'events';
+import { captureScreenBitmap } from './lib/screen-capture';
+import { fixtureFileURL, fixturePath } from './lib/fixtures';
+import { ifit } from './lib/spec-conditional';
+import { expectColorsAreSimilar } from './lib/color';
 
 describe('BrowserView module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
-
   let w: BrowserWindow;
   let view: BrowserView;
 
@@ -77,13 +77,13 @@ describe('BrowserView module', () => {
       w.setBrowserView(view);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, WINDOW_BACKGROUND_COLOR)).to.be.true();
+      expectColorsAreSimilar(centerColor, WINDOW_BACKGROUND_COLOR);
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
@@ -103,13 +103,13 @@ describe('BrowserView module', () => {
       w.setBackgroundColor(VIEW_BACKGROUND_COLOR);
       await view.webContents.loadURL('data:text/html,hello there');
 
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
+      const screenCapture = await captureScreenBitmap();
+      const centerColor = screenCapture.colorAt({
         x: display.size.width / 2,
         y: display.size.height / 2
       });
 
-      expect(areColorsSimilar(centerColor, VIEW_BACKGROUND_COLOR)).to.be.true();
+      expectColorsAreSimilar(centerColor, VIEW_BACKGROUND_COLOR);
     });
   });
 
@@ -238,7 +238,7 @@ describe('BrowserView module', () => {
 
       w.close();
 
-      view.webContents.loadURL(`file://${fixtures}/pages/blank.html`);
+      view.webContents.loadURL(fixtureFileURL('pages', 'blank.html'));
       await once(view.webContents, 'did-finish-load');
 
       // Clean up - the afterEach hook assumes the webContents on w is still alive.
@@ -349,7 +349,7 @@ describe('BrowserView module', () => {
     it('emits the destroyed event when webContents.close() is called', async () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await view.webContents.loadFile(fixturePath('pages', 'a.html'));
 
       view.webContents.close();
       await once(view.webContents, 'destroyed');
@@ -358,7 +358,7 @@ describe('BrowserView module', () => {
     it('emits the destroyed event when window.close() is called', async () => {
       view = new BrowserView();
       w.setBrowserView(view);
-      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await view.webContents.loadFile(fixturePath('pages', 'a.html'));
 
       view.webContents.executeJavaScript('window.close()');
       await once(view.webContents, 'destroyed');
@@ -375,7 +375,7 @@ describe('BrowserView module', () => {
         done();
         return { action: 'deny' };
       });
-      view.webContents.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
+      view.webContents.loadFile(fixturePath('pages', 'window-open.html'));
     });
   });
 
@@ -414,7 +414,7 @@ describe('BrowserView module', () => {
         x: 0,
         y: 0
       });
-      await view.webContents.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await view.webContents.loadFile(fixturePath('pages', 'a.html'));
 
       const image = await view.webContents.capturePage();
       expect(image.isEmpty()).to.equal(false);

@@ -1,19 +1,17 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import { BrowserWindow, ipcMain, WebContents } from 'electron/main';
 import { defer } from './lib/spec-helpers';
 import { once } from 'events';
+import { fixturePath } from './lib/fixtures';
 
 describe('webFrame module', () => {
-  const fixtures = path.resolve(__dirname, 'fixtures');
-
   it('can use executeJavaScript', async () => {
     const w = new BrowserWindow({
       show: false,
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: true,
-        preload: path.join(fixtures, 'pages', 'world-safe-preload.js')
+        preload: fixturePath('pages', 'world-safe-preload.js')
       }
     });
     defer(() => w.close());
@@ -29,7 +27,7 @@ describe('webFrame module', () => {
       webPreferences: {
         nodeIntegration: true,
         contextIsolation: true,
-        preload: path.join(fixtures, 'pages', 'world-safe-preload-error.js')
+        preload: fixturePath('pages', 'world-safe-preload-error.js')
       }
     });
     defer(() => w.close());
@@ -49,7 +47,7 @@ describe('webFrame module', () => {
       }
     });
     defer(() => w.close());
-    await w.loadFile(path.join(fixtures, 'pages', 'webframe-spell-check.html'));
+    await w.loadFile(fixturePath('pages', 'webframe-spell-check.html'));
     w.focus();
     await w.webContents.executeJavaScript('document.querySelector("input").focus()', true);
 

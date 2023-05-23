@@ -1,7 +1,7 @@
-import * as path from 'path';
 import { BrowserWindow, TouchBar } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { expect } from 'chai';
+import { fixturePath } from './lib/fixtures';
 
 const { TouchBarButton, TouchBarColorPicker, TouchBarGroup, TouchBarLabel, TouchBarOtherItemsProxy, TouchBarPopover, TouchBarScrubber, TouchBarSegmentedControl, TouchBarSlider, TouchBarSpacer } = TouchBar;
 
@@ -66,7 +66,7 @@ describe('TouchBar module', () => {
         items: [
           new TouchBarButton({ label: 'foo', backgroundColor: '#F00', click: () => { } }),
           new TouchBarButton({
-            icon: path.join(__dirname, 'fixtures', 'assets', 'logo.png'),
+            icon: fixturePath('assets', 'logo.png'),
             iconPosition: 'right',
             click: () => { }
           }),
