@@ -42,7 +42,7 @@ function makeWebPreferences (embedder: Electron.WebContents, params: Record<stri
     ...parsedWebPreferences
   };
 
-  if (params.preload) {
+  if (typeof params.preload === 'string') {
     webPreferences.preload = netBinding.fileURLToFilePath(params.preload);
   }
 
