@@ -1,13 +1,3 @@
-/* eslint-disable no-var */
-declare var internalBinding: any;
-declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
-
-declare var isolatedApi: {
-  guestViewInternal: any;
-  allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
-  setIsWebView: (iframe: HTMLIFrameElement) => void;
-}
-
 declare const BUILDFLAG: (flag: boolean) => boolean;
 
 declare const ENABLE_DESKTOP_CAPTURER: boolean;
