@@ -127,7 +127,7 @@ try {
     authors: 'My App Inc.',
     exe: 'myapp.exe',
     certificateFile: './cert.pfx',
-    certificatePassword: 'this-is-a-secret',
+    certificatePassword: 'this-is-a-secret'
   })
   console.log('It worked!')
 } catch (e) {
@@ -159,7 +159,7 @@ const msiCreator = new MSICreator({
   version: '1.1.2',
   outputDirectory: '/path/to/output/folder',
   certificateFile: './cert.pfx',
-  certificatePassword: 'this-is-a-secret',
+  certificatePassword: 'this-is-a-secret'
 })
 
 // Step 2: Create a .wxs template file

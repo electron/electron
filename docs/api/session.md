@@ -1412,7 +1412,7 @@ app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
   if (!protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback({ path: path.normalize(`${__dirname}/${url}`) })
+    callback({ path: path.normalize(path.join(__dirname, url)) })
   })) {
     console.error('Failed to register protocol')
   }

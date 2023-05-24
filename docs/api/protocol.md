@@ -45,7 +45,7 @@ app.whenReady().then(() => {
 
   ses.protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback({ path: path.normalize(`${__dirname}/${url}`) })
+    callback({ path: path.normalize(path.join(__dirname, url)) })
   })
 
   mainWindow = new BrowserWindow({ webPreferences: { partition } })
