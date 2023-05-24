@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
@@ -757,23 +758,24 @@ void BaseWindow::SetBrowserView(
 }
 
 void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter == browser_views_.end()) {
-    // If we're reparenting a BrowserView, ensure that it's detached from
-    // its previous owner window.
-    BaseWindow* owner_window = browser_view->owner_window();
-    if (owner_window) {
-      // iter == browser_views_.end() should imply owner_window != this.
-      DCHECK_NE(owner_window, this);
-      owner_window->RemoveBrowserView(browser_view);
-      browser_view->SetOwnerWindow(nullptr);
-    }
-
-    window_->AddBrowserView(browser_view->view());
-    window_->AddDraggableRegionProvider(browser_view.get());
-    browser_view->SetOwnerWindow(this);
-    browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
+  auto const key = browser_view->ID();
+  if (!base::Contains(browser_views_, key)) {
+    return;
   }
+
+  // If we're reparenting a BrowserView, ensure that it's detached from
+  // its previous owner window.
+  if (BaseWindow* owner_window = browser_view->owner_window(); owner_window) {
+    // iter == browser_views_.end() should imply owner_window != this.
+    DCHECK_NE(owner_window, this);
+    owner_window->RemoveBrowserView(browser_view);
+    browser_view->SetOwnerWindow(nullptr);
+  }
+
+  window_->AddBrowserView(browser_view->view());
+  window_->AddDraggableRegionProvider(browser_view.get());
+  browser_view->SetOwnerWindow(this);
+  browser_views_.try_emplace(key, isolate(), browser_view.ToV8());
 }
 
 void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
