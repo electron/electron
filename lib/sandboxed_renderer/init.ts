@@ -1,9 +1,14 @@
-/* global binding */
 import * as events from 'events';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
+
+declare const binding: {
+  get: (name: string) => any;
+  process: NodeJS.Process;
+  createPreloadScript: (src: string) => Function
+};
 
 const { EventEmitter } = events;
 
