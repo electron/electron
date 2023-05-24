@@ -84,6 +84,47 @@ ifdescribe(features.isDesktopCapturerEnabled())('setDisplayMediaRequestHandler',
     expect(message).to.equal('Could not start video source');
   });
 
+  it('successfully returns a capture handle', async () => {
+    let w: BrowserWindow | null = null;
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    let mediaRequest: any = null;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      mediaRequest = request;
+      callback({ video: w?.webContents.mainFrame });
+    });
+
+    w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+
+    const { ok, handleID, captureHandle, message } = await w.webContents.executeJavaScript(`
+      const handleID = crypto.randomUUID();
+      navigator.mediaDevices.setCaptureHandleConfig({
+        handle: handleID,
+        exposeOrigin: true,
+        permittedOrigins: ["*"],
+      });
+
+      navigator.mediaDevices.getDisplayMedia({
+        video: true,
+        audio: false
+      }).then(stream => {
+        const [videoTrack] = stream.getVideoTracks();
+        const captureHandle = videoTrack.getCaptureHandle();
+        return { ok: true, handleID, captureHandle, message: null }
+      }, e => ({ ok: false, message: e.message }))
+    `, true);
+
+    expect(requestHandlerCalled).to.be.true();
+    expect(mediaRequest.videoRequested).to.be.true();
+    expect(mediaRequest.audioRequested).to.be.false();
+    expect(ok).to.be.true();
+    expect(captureHandle.handle).to.be.a('string');
+    expect(handleID).to.eq(captureHandle.handle);
+    expect(message).to.be.null();
+  });
+
   it('does not crash when providing only audio for a video request', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
