@@ -86,7 +86,6 @@ const defineWebViewElement = (hooks: WebViewImplHooks) => {
 
 // Register <webview> custom element.
 const registerWebViewElement = (hooks: WebViewImplHooks) => {
-  // I wish eslint wasn't so stupid, but it is
   const WebViewElement = defineWebViewElement(hooks) as unknown as typeof ElectronInternal.WebViewElement;
 
   setupMethods(WebViewElement, hooks);

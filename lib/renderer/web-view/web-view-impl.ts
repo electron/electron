@@ -197,7 +197,6 @@ export class WebViewImpl {
   }
 }
 
-// I wish eslint wasn't so stupid, but it is
 export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement, hooks: WebViewImplHooks) => {
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {
