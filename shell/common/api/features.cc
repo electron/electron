@@ -38,10 +38,6 @@ bool IsViewApiEnabled() {
   return BUILDFLAG(ENABLE_VIEWS_API);
 }
 
-bool IsTtsEnabled() {
-  return BUILDFLAG(ENABLE_TTS);
-}
-
 bool IsPrintingEnabled() {
   return BUILDFLAG(ENABLE_PRINTING);
 }
@@ -75,7 +71,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
-  dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);

@@ -14,7 +14,6 @@ buildflag_header("buildflags") {
     "ENABLE_OSR=$enable_osr",
     "ENABLE_VIEWS_API=$enable_views_api",
     "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
-    "ENABLE_TTS=$enable_tts",
     "ENABLE_COLOR_CHOOSER=$enable_color_chooser",
     "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
     "ENABLE_BUILTIN_SPELLCHECKER=$enable_builtin_spellchecker",
