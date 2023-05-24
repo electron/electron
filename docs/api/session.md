@@ -1127,11 +1127,11 @@ app.whenReady().then(() => {
   win = new BrowserWindow()
 
   win.webContents.session.setUSBProtectedClassesHandler((details) => {
-    // Allow all classes
+    // Allow all classes:
     // return []
-    // Keep the current set of protected classes
+    // Keep the current set of protected classes:
     // return details.protectedClasses
-    // Selectively remove classes
+    // Selectively remove classes:
     return details.protectedClasses.filter((usbClass) => {
       // Exclude classes except for audio classes
       return usbClass.indexOf('audio') === -1
