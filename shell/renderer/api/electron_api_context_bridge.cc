@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/feature_list.h"
 #include "base/no_destructor.h"
 #include "base/strings/string_number_conversions.h"
@@ -63,7 +64,7 @@ bool DeepFreeze(const v8::Local<v8::Object>& object,
                 const v8::Local<v8::Context>& context,
                 std::set<int> frozen = std::set<int>()) {
   int hash = object->GetIdentityHash();
-  if (frozen.find(hash) != frozen.end())
+  if (base::Contains(frozen, hash))
     return true;
   frozen.insert(hash);
 
