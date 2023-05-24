@@ -736,12 +736,6 @@ source_set("electron_lib") {
 
   if (enable_electron_extensions) {
     sources += filenames.lib_sources_extensions
-    if (enable_pdf_viewer) {
-      sources += [
-        "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.cc",
-        "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.h",
-      ]
-    }
     deps += [
       "shell/browser/extensions/api:api_registration",
       "shell/common/extensions/api",
@@ -778,6 +772,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
       "shell/browser/electron_pdf_web_contents_helper_client.h",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.cc",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.h",
     ]
   }
 
