@@ -6,6 +6,7 @@
 
 #include <utility>
 
+#include "base/containers/contains.h"
 #include "base/functional/bind.h"
 #include "build/build_config.h"
 #include "components/printing/browser/print_to_pdf/pdf_print_utils.h"
@@ -98,8 +99,7 @@ void PrintViewManagerElectron::GetDefaultPrintSettings(
 void PrintViewManagerElectron::ScriptedPrint(
     printing::mojom::ScriptedPrintParamsPtr params,
     ScriptedPrintCallback callback) {
-  auto entry = std::find(pdf_jobs_.begin(), pdf_jobs_.end(), params->cookie);
-  if (entry == pdf_jobs_.end()) {
+  if (!base::Contains(pdf_jobs_, params->cookie)) {
     PrintViewManagerBase::ScriptedPrint(std::move(params), std::move(callback));
     return;
   }
