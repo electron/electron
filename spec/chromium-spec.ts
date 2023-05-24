@@ -2225,7 +2225,7 @@ describe('chromium features', () => {
   // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
   // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
   // (null text in SpeechSynthesisUtterance struct).
-  ifdescribe(features.isTtsEnabled())('SpeechSynthesis', () => {
+  describe('SpeechSynthesis', () => {
     itremote('should emit lifecycle events', async () => {
       const sentence = `long sentence which will take at least a few seconds to
           utter so that it's possible to pause and resume before the end`;
