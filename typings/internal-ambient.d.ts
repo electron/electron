@@ -1,7 +1,8 @@
-declare const internalBinding: any;
-declare const binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
+/* eslint-disable no-var */
+declare var internalBinding: any;
+declare var binding: { get: (name: string) => any; process: NodeJS.Process; createPreloadScript: (src: string) => Function };
 
-declare const isolatedApi: {
+declare var isolatedApi: {
   guestViewInternal: any;
   allowGuestViewElementDefinition: NodeJS.InternalWebFrame['allowGuestViewElementDefinition'];
   setIsWebView: (iframe: HTMLIFrameElement) => void;
