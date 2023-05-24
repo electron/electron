@@ -773,6 +773,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
       "shell/browser/electron_pdf_web_contents_helper_client.h",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.cc",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.h",
     ]
   }
 
