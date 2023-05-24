@@ -773,9 +773,6 @@ class WebContents : public ExclusiveAccessContext,
   // Whether the guest view has been attached.
   bool attached_ = false;
 
-  // The zoom controller for this webContents.
-  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
-
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
@@ -819,6 +816,11 @@ class WebContents : public ExclusiveAccessContext,
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
+
+  // The zoom controller for this webContents.
+  // Note: owned by inspectable_web_contents_, so declare this *after*
+  // that field to ensure the dtor destroys them in the right order.
+  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
