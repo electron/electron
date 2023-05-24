@@ -135,8 +135,7 @@ void PrintViewManagerElectron::CheckForCancel(int32_t preview_ui_id,
 
 void PrintViewManagerElectron::DidGetPrintedPagesCount(int32_t cookie,
                                                        uint32_t number_pages) {
-  auto entry = std::find(pdf_jobs_.begin(), pdf_jobs_.end(), cookie);
-  if (entry == pdf_jobs_.end()) {
+  if (!base::Contains(pdf_jobs_, cookie)) {
     PrintViewManagerBase::DidGetPrintedPagesCount(cookie, number_pages);
   }
 }
