@@ -37,7 +37,7 @@ index a2530d474b6061583156ad4323959b8683d20e8e..40c2dd985007a4b4b408814391834eec
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index f76cb6dcdd90d75f2cb64798efce245c65b3f839..c095093cf0e0883205703050ddd68ebc436f963a 100644
+index 0c61e60b8a113742936e899bfda9a517d0f83b0d..c1aee126ccfa1704b6086ed564fbb705f122746b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
 @@ -2911,6 +2911,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
@@ -58,7 +58,7 @@ index f76cb6dcdd90d75f2cb64798efce245c65b3f839..c095093cf0e0883205703050ddd68ebc
    // Sets a ResourceCache in the renderer. `this` must be active and there must
    // be no pending navigation. `remote` must have the same and process
    // isolation policy.
-@@ -3268,17 +3279,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3274,17 +3285,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
