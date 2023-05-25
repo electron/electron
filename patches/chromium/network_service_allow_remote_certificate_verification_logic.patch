@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 660df7d04bff949cf8b46d02b9fbd10aa379448d..a563b5247f45526a1ecc0aa1b96cc8a209c44e5b 100644
+index 23a2133e82bd8e57aac0b3ece83c100c10970233..242417455bdd80bc75ced5b1d97eed66a39f80e3 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -139,6 +139,11 @@
@@ -122,7 +122,7 @@ index 660df7d04bff949cf8b46d02b9fbd10aa379448d..a563b5247f45526a1ecc0aa1b96cc8a2
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::PendingCertVerify::PendingCertVerify() = default;
-@@ -737,6 +835,13 @@ void NetworkContext::SetClient(
+@@ -749,6 +847,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index 660df7d04bff949cf8b46d02b9fbd10aa379448d..a563b5247f45526a1ecc0aa1b96cc8a2
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2268,6 +2373,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2280,6 +2385,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index 660df7d04bff949cf8b46d02b9fbd10aa379448d..a563b5247f45526a1ecc0aa1b96cc8a2
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 9fca958e0b36407379b671282d5abe8ffd3b284d..b4c1f3d3e52cf2ee3bfa7bf08b4f3d1c9d3ceb56 100644
+index 97eabd1d32428a9373ff46baafcfd5cdda6ab385..d4fbbd0c4b32a82026b11d3a29cbaa2e82cbc413 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -158,7 +158,7 @@ index 9fca958e0b36407379b671282d5abe8ffd3b284d..b4c1f3d3e52cf2ee3bfa7bf08b4f3d1c
  class CookieManager;
  class HostResolver;
  class MdnsResponderManager;
-@@ -246,6 +247,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -247,6 +248,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    void CreateURLLoaderFactory(
        mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
        mojom::URLLoaderFactoryParamsPtr params) override;
@@ -167,7 +167,7 @@ index 9fca958e0b36407379b671282d5abe8ffd3b284d..b4c1f3d3e52cf2ee3bfa7bf08b4f3d1c
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -850,6 +853,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -851,6 +854,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,7 +177,7 @@ index 9fca958e0b36407379b671282d5abe8ffd3b284d..b4c1f3d3e52cf2ee3bfa7bf08b4f3d1c
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e11f45e366c8f289cf169811af5d38f2d3c781c1..2818775e83ee8aa6c38958d041cfcaa4f099ac5d 100644
+index f4887884c5853c3d2a605c0a4fe2c3549e88750c..e639d8054ffe09b1789386ee6c8fdb4f9de23672 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -297,6 +297,17 @@ struct NetworkContextFilePaths {
@@ -198,7 +198,7 @@ index e11f45e366c8f289cf169811af5d38f2d3c781c1..2818775e83ee8aa6c38958d041cfcaa4
  // Parameters for constructing a network context.
  struct NetworkContextParams {
    // The user agent string.
-@@ -865,6 +876,9 @@ interface NetworkContext {
+@@ -872,6 +883,9 @@ interface NetworkContext {
    // Sets a client for this network context.
    SetClient(pending_remote<NetworkContextClient> client);
  

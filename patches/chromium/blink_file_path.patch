@@ -32,4 +32,3 @@ index 4339a27e87c12279b2a2f08a7c3d181e7265a986..6aebb1ba4f74a4cfdc546fe5903032f4
      readonly attribute long long lastModified;
  
      // Non-standard APIs
-
