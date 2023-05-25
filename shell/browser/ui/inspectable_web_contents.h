@@ -6,7 +6,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
-#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -42,9 +41,6 @@ class InspectableWebContents
       public content::WebContentsDelegate,
       public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
-  using List = std::list<InspectableWebContents*>;
-
-  static const List& GetAll();
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
   InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,

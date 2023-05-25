@@ -94,9 +94,6 @@ const char kTitleFormat[] = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
-// Stores all instances of InspectableWebContents.
-InspectableWebContents::List g_web_contents_instances_;
-
 base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
   return base::Value::Dict{}
       .Set("x", bounds.x())
@@ -330,10 +327,6 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContents* inspectable_web_contents);
 
 // static
-const InspectableWebContents::List& InspectableWebContents::GetAll() {
-  return g_web_contents_instances_;
-}
-
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
@@ -375,11 +368,9 @@ InspectableWebContents::InspectableWebContents(
           display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
-  g_web_contents_instances_.push_back(this);
 }
 
 InspectableWebContents::~InspectableWebContents() {
-  g_web_contents_instances_.remove(this);
   // Unsubscribe from devtools and Clean up resources.
   if (GetDevToolsWebContents())
     WebContentsDestroyed();
