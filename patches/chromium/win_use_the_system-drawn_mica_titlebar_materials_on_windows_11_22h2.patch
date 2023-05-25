@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jackson Loeffler <j@jloeffler.com>
 Date: Wed, 10 May 2023 22:40:04 +0000
-Subject: [win] Use the system-drawn Mica titlebar materials on Windows 11 22H2
+Subject: Use the system-drawn Mica titlebar materials on Windows 11 22H2
 
 This CL enables the system-drawn titlebar with the Mica material when
 using the default theme in a normal, popup, or devtools browser window.

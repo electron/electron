@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Jackson Loeffler <j@jloeffler.com>
 Date: Thu, 27 Apr 2023 21:13:51 +0000
-Subject: [win] Show the tab search caption button in the system-drawn titlebar
+Subject: Show the tab search caption button in the system-drawn titlebar
 
 This CL enables drawing the custom tab search caption button alongside
 the system-drawn ones when we're using the system-drawn titlebar. The
