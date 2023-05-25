@@ -149,6 +149,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
+  virtual void RemoveChildWindow(NativeWindow* child) = 0;
+  virtual void AttachChildren() = 0;
+  virtual void DetachChildren() = 0;
 #endif
 
   // Ability to augment the window title for the screen readers.
@@ -382,6 +385,10 @@ class NativeWindow : public base::SupportsUserData,
 
   int32_t window_id() const { return next_id_; }
 
+  void add_child_window(NativeWindow* child) {
+    child_windows_.push_back(child);
+  }
+
   int NonClientHitTest(const gfx::Point& point);
   void AddDraggableRegionProvider(DraggableRegionProvider* provider);
   void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
@@ -421,6 +428,8 @@ class NativeWindow : public base::SupportsUserData,
       FullScreenTransitionState::kNone;
   FullScreenTransitionType fullscreen_transition_type_ =
       FullScreenTransitionType::kNone;
+
+  std::list<NativeWindow*> child_windows_;
 
  private:
   std::unique_ptr<views::Widget> widget_;
