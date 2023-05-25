@@ -8,7 +8,7 @@
     "@electron/asar": "^3.2.1",
     "@electron/docs-parser": "^1.1.0",
     "@electron/fiddle-core": "^1.0.4",
-    "@electron/github-app-auth": "^1.5.0",
+    "@electron/github-app-auth": "^2.0.0",
     "@electron/lint-roller": "^1.2.1",
     "@electron/typescript-definitions": "^8.14.0",
     "@octokit/rest": "^19.0.7",
@@ -149,7 +149,6 @@
     ]
   },
   "resolutions": {
-    "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac",
-    "@octokit/request": "6.2.4"
+    "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac"
   }
 }
