@@ -7,10 +7,10 @@ This is used by editors to obtain the filesystem path from a dragged file. See
 documentation at https://electronjs.org/docs/api/file-object
 
 diff --git a/third_party/blink/renderer/core/fileapi/file.h b/third_party/blink/renderer/core/fileapi/file.h
-index 6ad3b117511544ca318dac7a5fdae6edabb5dd25..754d1b5fdb1fb08f119705e0da3def5a49863ebf 100644
+index 2cc436a725f13d3fdf5b5eed6af73695d3c19953..b11c146fc86e55324b61a057d45b96e8c96b304b 100644
 --- a/third_party/blink/renderer/core/fileapi/file.h
 +++ b/third_party/blink/renderer/core/fileapi/file.h
-@@ -211,6 +211,9 @@ class CORE_EXPORT File final : public Blob {
+@@ -206,6 +206,9 @@ class CORE_EXPORT File final : public Blob {
    }
    const String& name() const { return name_; }
  
@@ -19,7 +19,7 @@ index 6ad3b117511544ca318dac7a5fdae6edabb5dd25..754d1b5fdb1fb08f119705e0da3def5a
 +
    // Getter for the lastModified IDL attribute,
    // http://dev.w3.org/2006/webapi/FileAPI/#file-attrs
-   int64_t lastModified() const;
+   // This method calls CaptureSnapshotIfNeeded, and thus can involve synchronous
 diff --git a/third_party/blink/renderer/core/fileapi/file.idl b/third_party/blink/renderer/core/fileapi/file.idl
 index 4339a27e87c12279b2a2f08a7c3d181e7265a986..6aebb1ba4f74a4cfdc546fe5903032f4bc23dd30 100644
 --- a/third_party/blink/renderer/core/fileapi/file.idl
@@ -32,3 +32,4 @@ index 4339a27e87c12279b2a2f08a7c3d181e7265a986..6aebb1ba4f74a4cfdc546fe5903032f4
      readonly attribute long long lastModified;
  
      // Non-standard APIs
+
