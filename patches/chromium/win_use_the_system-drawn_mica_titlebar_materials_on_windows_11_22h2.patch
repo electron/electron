@@ -611,10 +611,10 @@ index 93cd928f6309188af5f71958d7a2ff2871ce9c6a..b60aedfe94b994d00cc23527f8bbf9c8
    // non-opaque layer (the tabstrip's layer), which cannot currently be detected
    // by the subpixel-rendering opacity check.
 diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
-index 34bd783889bcb3c7c54e6bfd805d4e4627f52988..f6c2393e468717ac68563e4a4e14e66010485d6e 100644
+index 34bd783889bcb3c7c54e6bfd805d4e4627f52988..da3e2ac571ef655d766c99ab40cc2b4be802d985 100644
 --- a/chrome/browser/win/titlebar_config.cc
 +++ b/chrome/browser/win/titlebar_config.cc
-@@ -6,16 +6,55 @@
+@@ -6,16 +6,53 @@
  
  #include "base/command_line.h"
  #include "base/win/windows_version.h"
@@ -654,9 +654,7 @@ index 34bd783889bcb3c7c54e6bfd805d4e4627f52988..f6c2393e468717ac68563e4a4e14e660
 +  return ShouldDefaultThemeUseMicaTitlebar() &&
 +         (browser_view->browser()->is_type_normal() ||
 +          browser_view->browser()->is_type_popup() ||
-+          browser_view->browser()->is_type_devtools()) &&
-+         ThemeServiceFactory::GetForProfile(browser_view->GetProfile())
-+             ->UsingSystemTheme();
++          browser_view->browser()->is_type_devtools());
 +}
 +
 +bool ShouldDefaultThemeUseMicaTitlebar() {
