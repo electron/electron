@@ -1336,8 +1336,6 @@ describe('net module', () => {
           (details, callback) => {
             if (details.url === `${serverUrl}${requestUrl}`) {
               requestIsIntercepted = true;
-              // Disabled due to false positive in StandardJS
-              // eslint-disable-next-line standard/no-callback-literal
               callback({
                 redirectURL: `${serverUrl}${redirectUrl}`
               });
@@ -1375,8 +1373,6 @@ describe('net module', () => {
         customSession.webRequest.onBeforeRequest((details, callback) => {
           if (details.url === `${serverUrl}${requestUrl}`) {
             requestIsIntercepted = true;
-            // Disabled due to false positive in StandardJS
-            // eslint-disable-next-line standard/no-callback-literal
             callback({
               redirectURL: `${serverUrl}${redirectUrl}`
             });
@@ -1416,8 +1412,6 @@ describe('net module', () => {
         customSession.webRequest.onBeforeRequest((details, callback) => {
           if (details.url === `${serverUrl}${requestUrl}`) {
             requestIsIntercepted = true;
-            // Disabled due to false positive in StandardJS
-            // eslint-disable-next-line standard/no-callback-literal
             callback({
               redirectURL: `${serverUrl}${redirectUrl}`
             });

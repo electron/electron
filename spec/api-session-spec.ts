@@ -12,9 +12,6 @@ import { defer, listen } from './lib/spec-helpers';
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 
-/* The whole session API doesn't use standard callbacks */
-/* eslint-disable standard/no-callback-literal */
-
 describe('session module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
   const url = 'http://127.0.0.1';

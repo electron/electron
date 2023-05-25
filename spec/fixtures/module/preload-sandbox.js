@@ -52,7 +52,7 @@
       ipcRenderer.on('touch-the-opener', () => {
         let errorMessage = null;
         try {
-          const openerDoc = opener.document; // eslint-disable-line no-unused-vars
+          const openerDoc = opener.document;
         } catch (error) {
           errorMessage = error.message;
         }

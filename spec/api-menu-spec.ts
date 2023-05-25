@@ -859,7 +859,6 @@ describe('Menu module', function () {
       menu.popup({ window: w });
 
       // Keep a weak reference to the menu.
-      // eslint-disable-next-line no-undef
       const wr = new WeakRef(menu);
 
       await setTimeout();

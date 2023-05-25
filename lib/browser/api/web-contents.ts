@@ -14,8 +14,8 @@ import * as deprecate from '@electron/internal/common/deprecate';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
-// eslint-disable-next-line
-session
+// eslint-disable-next-line no-unused-expressions
+session;
 
 const webFrameMainBinding = process._linkedBinding('electron_browser_web_frame_main');
 

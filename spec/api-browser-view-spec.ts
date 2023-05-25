@@ -321,7 +321,8 @@ describe('BrowserView module', () => {
       const rc = await startRemoteControlApp();
       await rc.remotely(() => {
         const { BrowserView, app } = require('electron');
-        new BrowserView({})  // eslint-disable-line
+        // eslint-disable-next-line no-new
+        new BrowserView({});
         setTimeout(() => {
           app.quit();
         });
