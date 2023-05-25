@@ -527,10 +527,10 @@ index 36673e93a8380d4e6d086fe3029a53fa483ccddb..ad91be73ec89f45c2ce083eaa3a8aba6
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index 1aae81c4b1d540fa54e4e8dd5642089369fef14e..6bfc201e9e38dc945875b74a851ce460a68d76f8 100644
+index ea2888e6e6ce03dd1918a6183960d5809a15b59c..68c628ecbe2f596c93b6ac0d6b1c68cbb6b0a508 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -402,8 +402,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -401,8 +401,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

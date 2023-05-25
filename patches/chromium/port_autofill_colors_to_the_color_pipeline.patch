@@ -31,7 +31,7 @@ index 112fccec57bdeb25857516c70f984d31bcc3cbeb..fdb578b491dc7cc431319b20eec48313
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index b98320a87ce8601e28038cc15fd29d442bd57e34..d70fabe9f709ba5af1200db1a953d7ef7b65cffb 100644
+index 41950193957680e7410cf40b2650644e33e6c791..c6c7c8dd56e319ea4859a0529c2ef655557e3ebf 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -207,6 +207,17 @@ void AddUiColorMixer(ColorProvider* provider,
