@@ -13,6 +13,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/memory/raw_ptr.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -1438,8 +1439,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
     std::vector<x11::Atom> wm_states;
     GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                      x11::GetAtom("_NET_WM_STATE"), &wm_states);
-    return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
-           wm_states.end();
+    return base::Contains(wm_states, sticky_atom);
   }
 #endif
   return false;
