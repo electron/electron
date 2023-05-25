@@ -1,0 +1,199 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jackson Loeffler <j@jloeffler.com>
+Date: Thu, 27 Apr 2023 21:13:51 +0000
+Subject: [win] Show the tab search caption button in the system-drawn titlebar
+
+This CL enables drawing the custom tab search caption button alongside
+the system-drawn ones when we're using the system-drawn titlebar. The
+custom caption button container stays visible, but shifts and only shows
+the non-standard tab search caption button.
+
+To simplify layout calculations given two different sets of caption
+buttons, MinimizeButtonX() is replaced by CaptionButtonsRegionWidth()
+to allow the helper to be used even when CaptionButtonsOnLeadingEdge()
+is in effect (RTL).
+
+Bug: 1430505
+Change-Id: I0fb995dedc947685ff95f83450a1dbe11e18d313
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4481068
+Commit-Queue: Peter Kasting <pkasting@chromium.org>
+Reviewed-by: Peter Kasting <pkasting@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1136788}
+(cherry picked from commit c733557d90c07b76a3a091f5d3936fbb110551d0)
+
+diff --git a/chrome/browser/ui/views/frame/browser_caption_button_container_win.cc b/chrome/browser/ui/views/frame/browser_caption_button_container_win.cc
+index 02c3ed94f8ef4183479e0074adf98a70ce0db7e7..b2b14db44d8aab6893385e80459f8a2b0a6b38f7 100644
+--- a/chrome/browser/ui/views/frame/browser_caption_button_container_win.cc
++++ b/chrome/browser/ui/views/frame/browser_caption_button_container_win.cc
+@@ -11,6 +11,7 @@
+ #include "chrome/browser/ui/views/frame/browser_view.h"
+ #include "chrome/browser/ui/views/frame/windows_caption_button.h"
+ #include "chrome/browser/ui/views/frame/windows_tab_search_caption_button.h"
++#include "chrome/browser/win/titlebar_config.h"
+ #include "chrome/grit/generated_resources.h"
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+@@ -195,6 +196,14 @@ void BrowserCaptionButtonContainer::OnWidgetBoundsChanged(
+ }
+ 
+ void BrowserCaptionButtonContainer::UpdateButtons() {
++  if (!ShouldCustomDrawSystemTitlebar()) {
++    minimize_button_->SetVisible(false);
++    maximize_button_->SetVisible(false);
++    restore_button_->SetVisible(false);
++    close_button_->SetVisible(false);
++    return;
++  }
++
+   minimize_button_->SetVisible(frame_view_->browser_view()->CanMinimize());
+ 
+   const bool is_maximized = frame_view_->IsMaximized();
+@@ -202,13 +211,14 @@ void BrowserCaptionButtonContainer::UpdateButtons() {
+   restore_button_->SetVisible(is_maximized && can_maximize);
+   maximize_button_->SetVisible(!is_maximized && can_maximize);
+ 
++  close_button_->SetVisible(true);
++
+   // In touch mode, windows cannot be taken out of fullscreen or tiled mode, so
+   // the maximize/restore button should be disabled, unless the window is not
+   // maximized. TODO(crbug.com/1338572): Also check if the window is tiled.
+   const bool is_touch = ui::TouchUiController::Get()->touch_ui();
+   restore_button_->SetEnabled(!is_touch);
+   maximize_button_->SetEnabled(!is_touch || !is_maximized);
+-  InvalidateLayout();
+ }
+ 
+ void BrowserCaptionButtonContainer::
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_win.cc b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+index 2d8b6d7f40f94c35aa43527d6b13e876b89da194..bb1d0fcfed0fc5db1f034ec700e59ae08f3a9104 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_win.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+@@ -128,12 +128,10 @@ bool BrowserFrameViewWin::CaptionButtonsOnLeadingEdge() const {
+ 
+ gfx::Rect BrowserFrameViewWin::GetBoundsForTabStripRegion(
+     const gfx::Size& tabstrip_minimum_size) const {
+-  const int x = CaptionButtonsOnLeadingEdge()
+-                    ? (width() - frame()->GetMinimizeButtonOffset())
+-                    : 0;
++  const int x = CaptionButtonsOnLeadingEdge() ? CaptionButtonsRegionWidth() : 0;
+   int end_x = width();
+   if (!CaptionButtonsOnLeadingEdge()) {
+-    end_x = std::min(MinimizeButtonX(), end_x);
++    end_x = std::min(width() - CaptionButtonsRegionWidth(), end_x);
+   }
+   return gfx::Rect(x, TopAreaHeight(false), std::max(0, end_x - x),
+                    tabstrip_minimum_size.height());
+@@ -148,7 +146,7 @@ gfx::Rect BrowserFrameViewWin::GetBoundsForWebAppFrameToolbar(
+   if (browser_view()->IsWindowControlsOverlayEnabled()) {
+     x = 0;
+   }
+-  int trailing_x = MinimizeButtonX();
++  int trailing_x = width() - CaptionButtonsRegionWidth();
+   return gfx::Rect(x, WindowTopY(), std::max(0, trailing_x - x),
+                    caption_button_container_->size().height());
+ }
+@@ -225,14 +223,9 @@ gfx::Size BrowserFrameViewWin::GetMinimumSize() const {
+   gfx::Size min_size(browser_view()->GetMinimumSize());
+   min_size.Enlarge(0, GetTopInset(false));
+ 
+-  const int caption_buttons_width =
+-      CaptionButtonsOnLeadingEdge()
+-          ? width() - frame()->GetMinimizeButtonOffset()
+-          : width() - MinimizeButtonX();
+-
+   gfx::Size titlebar_min_size(
+       display::win::ScreenWin::GetSystemMetricsInDIP(SM_CXSIZEFRAME) +
+-          caption_buttons_width,
++          CaptionButtonsRegionWidth(),
+       TitlebarHeight(false));
+   if (ShouldShowWindowIcon(TitlebarType::kAny)) {
+     titlebar_min_size.Enlarge(
+@@ -587,18 +580,16 @@ int BrowserFrameViewWin::WindowTopY() const {
+   return IsWebUITabStrip() ? FrameTopBorderThickness(true) : 1;
+ }
+ 
+-int BrowserFrameViewWin::MinimizeButtonX() const {
+-  // When CaptionButtonsOnLeadingEdge() is true call
+-  // frame()->GetMinimizeButtonOffset() directly, because minimize_button_->x()
+-  // will give the wrong edge of the button.
+-  DCHECK(!CaptionButtonsOnLeadingEdge());
+-  // If we're drawing the button we can query the layout directly, otherwise we
+-  // need to ask Windows where the minimize button is.
+-  // TODO(bsep): Ideally these would always be the same. When we're always
+-  // custom drawing the caption buttons, remove GetMinimizeButtonOffset().
+-  return ShouldCustomDrawSystemTitlebar() && caption_button_container_
+-             ? caption_button_container_->x()
+-             : frame()->GetMinimizeButtonOffset();
++int BrowserFrameViewWin::CaptionButtonsRegionWidth() const {
++  int system_caption_buttons_width =
++      width() - frame()->GetMinimizeButtonOffset();
++
++  int total_width = caption_button_container_->size().width();
++  if (!ShouldCustomDrawSystemTitlebar()) {
++    total_width += system_caption_buttons_width;
++  }
++
++  return total_width;
+ }
+ 
+ bool BrowserFrameViewWin::ShouldShowWindowIcon(TitlebarType type) const {
+@@ -730,7 +721,7 @@ void BrowserFrameViewWin::LayoutTitleBar() {
+   if (IsMaximized()) {
+     next_leading_x += kMaximizedLeftMargin;
+   }
+-  int next_trailing_x = MinimizeButtonX();
++  int next_trailing_x = width() - CaptionButtonsRegionWidth();
+ 
+   const int y = window_top + (titlebar_visual_height - icon_size) / 2;
+   const gfx::Rect window_icon_bounds =
+@@ -757,12 +748,6 @@ void BrowserFrameViewWin::LayoutCaptionButtons() {
+     return;
+   }
+ 
+-  // Non-custom system titlebar already contains caption buttons.
+-  if (!ShouldCustomDrawSystemTitlebar()) {
+-    caption_button_container_->SetVisible(false);
+-    return;
+-  }
+-
+   caption_button_container_->SetVisible(!frame()->IsFullscreen());
+ 
+   const gfx::Size preferred_size =
+@@ -777,9 +762,17 @@ void BrowserFrameViewWin::LayoutCaptionButtons() {
+     height = IsMaximized() ? TitlebarMaximizedVisualHeight()
+                            : TitlebarHeight(false) - WindowTopY();
+   }
+-  caption_button_container_->SetBounds(width() - preferred_size.width(),
+-                                       WindowTopY(), preferred_size.width(),
+-                                       height);
++
++  const int system_caption_buttons_width =
++      ShouldCustomDrawSystemTitlebar()
++          ? 0
++          : width() - frame()->GetMinimizeButtonOffset();
++
++  caption_button_container_->SetBounds(
++      CaptionButtonsOnLeadingEdge()
++          ? system_caption_buttons_width
++          : width() - system_caption_buttons_width - preferred_size.width(),
++      WindowTopY(), preferred_size.width(), height);
+ }
+ 
+ void BrowserFrameViewWin::LayoutClientView() {
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_win.h b/chrome/browser/ui/views/frame/browser_frame_view_win.h
+index 52aa1c53b19f6bb8aa3f1a1ef4b21733f14281e3..dcc674ae4f9519639c44de43687ae43a5cc7bd5a 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_win.h
++++ b/chrome/browser/ui/views/frame/browser_frame_view_win.h
+@@ -127,9 +127,9 @@ class BrowserFrameViewWin : public BrowserNonClientFrameView,
+   // the window to leave room for the visual border that Windows draws.
+   int WindowTopY() const;
+ 
+-  // Returns the distance from the leading edge of the window to the leading
+-  // edge of the caption buttons.
+-  int MinimizeButtonX() const;
++  // Returns the width of the caption buttons region, including visible
++  // system-drawn and custom-drawn caption buttons.
++  int CaptionButtonsRegionWidth() const;
+ 
+   // Returns whether or not the window should display an icon of the specified
+   // |type|.

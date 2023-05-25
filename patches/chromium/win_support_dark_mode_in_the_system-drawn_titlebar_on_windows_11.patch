@@ -1,0 +1,183 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jackson Loeffler <j@jloeffler.com>
+Date: Wed, 3 May 2023 00:55:55 +0000
+Subject: [win] Support dark mode in the system-drawn titlebar on Windows 11
+
+This CL sets DWMWA_USE_IMMERSIVE_DARK_MODE on Windows 11 build 22000 and
+above to make the system-drawn titlebar match Chromium's light/dark
+native theme state.
+
+Bug: 1430505
+Change-Id: I24a4bb8e5924578b99093ee704a0cfac235aa191
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4496887
+Commit-Queue: Peter Kasting <pkasting@chromium.org>
+Reviewed-by: Peter Kasting <pkasting@chromium.org>
+Reviewed-by: Patrick Monette <pmonette@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1138738}
+(cherry picked from commit e83d2312109b55f4d274f0df85c294d32f72c0c3)
+
+diff --git a/chrome/browser/ui/color/win/native_chrome_color_mixer_win.cc b/chrome/browser/ui/color/win/native_chrome_color_mixer_win.cc
+index 5334cf15766c9b668767a41d38f173204001f157..59e833092416d6e2b98748109c96685b65784675 100644
+--- a/chrome/browser/ui/color/win/native_chrome_color_mixer_win.cc
++++ b/chrome/browser/ui/color/win/native_chrome_color_mixer_win.cc
+@@ -27,9 +27,6 @@
+ #include "ui/views/views_features.h"
+ 
+ namespace {
+-
+-const SkColor kDefaultInactiveFrameColor = SK_ColorWHITE;
+-
+ // This class encapsulates much of the same logic from ThemeHelperWin pertaining
+ // to the calculation of frame colors on Windows 8, 10 and up. Once the
+ // ColorProvider is permanently switched on, all the relevant code from
+@@ -91,12 +88,15 @@ void FrameColorHelper::AddNativeChromeColors(
+     ui::ColorMixer& mixer,
+     const ui::ColorProviderManager::Key& key) const {
+   using TP = ThemeProperties;
++  using ColorMode = ui::ColorProviderManager::ColorMode;
++
+   auto get_theme_color = [key](int id) -> absl::optional<SkColor> {
+     SkColor theme_color;
+     if (key.custom_theme && key.custom_theme->GetColor(id, &theme_color))
+       return theme_color;
+     return absl::nullopt;
+   };
++
+   if (DwmColorsAllowed(key)) {
+     // When we're custom-drawing the titlebar we want to use either the colors
+     // we calculated in OnDwmKeyUpdated() or the default colors. When we're not
+@@ -104,19 +104,31 @@ void FrameColorHelper::AddNativeChromeColors(
+     // uses because some things (like the incognito icon) use this color to
+     // decide whether they should draw in light or dark mode. Incognito colors
+     // should be the same as non-incognito in all cases here.
+-    if (auto color = get_theme_color(TP::COLOR_FRAME_ACTIVE))
++
++    constexpr SkColor kSystemLightFrameColor = SK_ColorWHITE;
++
++    constexpr SkColor kSystemDarkActiveFrameColor = SK_ColorBLACK;
++    constexpr SkColor kSystemDarkInactiveFrameColor =
++        SkColorSetRGB(0x2B, 0x2B, 0x2B);
++
++    if (auto color = get_theme_color(TP::COLOR_FRAME_ACTIVE)) {
+       mixer[ui::kColorFrameActive] = {color.value()};
+-    else if (dwm_frame_color_)
++    } else if (dwm_frame_color_) {
+       mixer[ui::kColorFrameActive] = {dwm_frame_color_.value()};
+-    else if (!ShouldCustomDrawSystemTitlebar())
+-      mixer[ui::kColorFrameActive] = {SK_ColorWHITE};
++    } else if (!ShouldCustomDrawSystemTitlebar()) {
++      mixer[ui::kColorFrameActive] = {key.color_mode == ColorMode::kDark
++                                          ? kSystemDarkActiveFrameColor
++                                          : kSystemLightFrameColor};
++    }
+ 
+     if (auto color = get_theme_color(TP::COLOR_FRAME_INACTIVE)) {
+       mixer[ui::kColorFrameInactive] = {color.value()};
+     } else if (dwm_inactive_frame_color_) {
+       mixer[ui::kColorFrameInactive] = {dwm_inactive_frame_color_.value()};
+     } else if (!ShouldCustomDrawSystemTitlebar()) {
+-      mixer[ui::kColorFrameInactive] = {kDefaultInactiveFrameColor};
++      mixer[ui::kColorFrameInactive] = {key.color_mode == ColorMode::kDark
++                                            ? kSystemDarkInactiveFrameColor
++                                            : kSystemLightFrameColor};
+     } else if (dwm_frame_color_) {
+       mixer[ui::kColorFrameInactive] =
+           ui::HSLShift({dwm_frame_color_.value()},
+@@ -183,8 +195,7 @@ void FrameColorHelper::OnAccentColorUpdated() {
+ void FrameColorHelper::FetchAccentColors() {
+   const auto* accent_color_observer = ui::AccentColorObserver::Get();
+   dwm_accent_border_color_ =
+-      accent_color_observer->accent_border_color().value_or(
+-          kDefaultInactiveFrameColor);
++      accent_color_observer->accent_border_color().value_or(SK_ColorWHITE);
+ 
+   dwm_frame_color_ = accent_color_observer->accent_color();
+   dwm_inactive_frame_color_ = accent_color_observer->accent_color_inactive();
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_win.cc b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+index bb1d0fcfed0fc5db1f034ec700e59ae08f3a9104..9ae9633656b486024a2503dfef38825efd4a7489 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_win.cc
++++ b/chrome/browser/ui/views/frame/browser_frame_view_win.cc
+@@ -403,6 +403,13 @@ void BrowserFrameViewWin::ResetWindowControls() {
+   }
+ }
+ 
++void BrowserFrameViewWin::OnThemeChanged() {
++  BrowserNonClientFrameView::OnThemeChanged();
++  if (!ShouldCustomDrawSystemTitlebar()) {
++    SetSystemTitlebarAttributes();
++  }
++}
++
+ bool BrowserFrameViewWin::ShouldTabIconViewAnimate() const {
+   if (!ShouldShowWindowIcon(TitlebarType::kCustom)) {
+     return false;
+@@ -618,6 +625,15 @@ bool BrowserFrameViewWin::ShouldShowWindowTitle(TitlebarType type) const {
+   return browser_view()->ShouldShowWindowTitle();
+ }
+ 
++void BrowserFrameViewWin::SetSystemTitlebarAttributes() {
++  if (SystemTitlebarSupportsDarkMode()) {
++    const BOOL dark_titlebar_enabled = GetNativeTheme()->ShouldUseDarkColors();
++    DwmSetWindowAttribute(views::HWNDForWidget(frame()),
++                          DWMWA_USE_IMMERSIVE_DARK_MODE, &dark_titlebar_enabled,
++                          sizeof(dark_titlebar_enabled));
++  }
++}
++
+ SkColor BrowserFrameViewWin::GetTitlebarColor() const {
+   return GetFrameColor(BrowserFrameActiveState::kUseCurrent);
+ }
+diff --git a/chrome/browser/ui/views/frame/browser_frame_view_win.h b/chrome/browser/ui/views/frame/browser_frame_view_win.h
+index dcc674ae4f9519639c44de43687ae43a5cc7bd5a..77560d26c066b1ed430f7c9a9398b41898ba275a 100644
+--- a/chrome/browser/ui/views/frame/browser_frame_view_win.h
++++ b/chrome/browser/ui/views/frame/browser_frame_view_win.h
+@@ -58,6 +58,7 @@ class BrowserFrameViewWin : public BrowserNonClientFrameView,
+   void GetWindowMask(const gfx::Size& size, SkPath* window_mask) override {}
+   void ResetWindowControls() override;
+   void SizeConstraintsChanged() override {}
++  void OnThemeChanged() override;
+ 
+   // TabIconViewModel:
+   bool ShouldTabIconViewAnimate() const override;
+@@ -139,6 +140,9 @@ class BrowserFrameViewWin : public BrowserNonClientFrameView,
+   // |type|.
+   bool ShouldShowWindowTitle(TitlebarType type) const;
+ 
++  // Sets DWM attributes for rendering the system-drawn titlebar.
++  void SetSystemTitlebarAttributes();
++
+   // Paint various sub-components of this view.
+   void PaintTitlebar(gfx::Canvas* canvas) const;
+ 
+diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
+index 39ad7b2815ce6cc6f71ef72e2748f6c799a1093c..34bd783889bcb3c7c54e6bfd805d4e4627f52988 100644
+--- a/chrome/browser/win/titlebar_config.cc
++++ b/chrome/browser/win/titlebar_config.cc
+@@ -5,6 +5,7 @@
+ #include "chrome/browser/win/titlebar_config.h"
+ 
+ #include "base/command_line.h"
++#include "base/win/windows_version.h"
+ #include "chrome/common/chrome_switches.h"
+ 
+ bool ShouldCustomDrawSystemTitlebar() {
+@@ -16,3 +17,7 @@ bool ShouldCustomDrawSystemTitlebar() {
+ 
+   return !custom_titlebar_disabled;
+ }
++
++bool SystemTitlebarSupportsDarkMode() {
++  return base::win::GetVersion() >= base::win::Version::WIN11;
++}
+diff --git a/chrome/browser/win/titlebar_config.h b/chrome/browser/win/titlebar_config.h
+index b871c7faa8e4a8d6671201c5a90660be8c339b39..fca59ff7ef1e2f2487fb07e7b2916590d4b36a63 100644
+--- a/chrome/browser/win/titlebar_config.h
++++ b/chrome/browser/win/titlebar_config.h
+@@ -13,4 +13,7 @@ BASE_DECLARE_FEATURE(kWindows10CustomTitlebar);
+ // native frame.
+ bool ShouldCustomDrawSystemTitlebar();
+ 
++// Returns whether the system-drawn titlebar can be drawn in dark mode.
++bool SystemTitlebarSupportsDarkMode();
++
+ #endif  // CHROME_BROWSER_WIN_TITLEBAR_CONFIG_H_
