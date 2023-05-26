@@ -37,7 +37,7 @@ index bde59c1329524ab1cd2ea289405acf315ceaa2d2..d4ac36d2778531c4fe2eece66446bd2b
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 617e2ca9866c76095930cdd7fe5f8fbb652ef588..ba83832f9b2b08b0ec17bff50e513bce3fd39cb8 100644
+index f85223c5c5761bee36051986560892a43aca5962..ca34ab013c1211cc90b63ec5534abaafa74e164f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
 @@ -2914,6 +2914,17 @@ class CONTENT_EXPORT RenderFrameHostImpl

@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 112fccec57bdeb25857516c70f984d31bcc3cbeb..fdb578b491dc7cc431319b20eec483131ca4096b 100644
+index 72448b3b5959f82c7d58dc427317f77134170cb4..9cec8cfe48096b839694729b910312ab8b0496f6 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -359,6 +359,10 @@
@@ -22,7 +22,7 @@ index 112fccec57bdeb25857516c70f984d31bcc3cbeb..fdb578b491dc7cc431319b20eec48313
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -445,6 +449,7 @@
+@@ -446,6 +450,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,7 +31,7 @@ index 112fccec57bdeb25857516c70f984d31bcc3cbeb..fdb578b491dc7cc431319b20eec48313
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 41950193957680e7410cf40b2650644e33e6c791..c6c7c8dd56e319ea4859a0529c2ef655557e3ebf 100644
+index 0a787f02646aacbcdf1e59d04edd709205b43b0a..95d5a9f7d38618c81f64cf674b61aa633ee24b43 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -207,6 +207,17 @@ void AddUiColorMixer(ColorProvider* provider,
@@ -52,7 +52,7 @@ index 41950193957680e7410cf40b2650644e33e6c791..c6c7c8dd56e319ea4859a0529c2ef655
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -304,6 +315,7 @@ void AddUiColorMixer(ColorProvider* provider,
+@@ -305,6 +316,7 @@ void AddUiColorMixer(ColorProvider* provider,
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};
