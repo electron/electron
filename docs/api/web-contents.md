@@ -1203,7 +1203,7 @@ contents.on('unresponsive', async () => {
 #### `contents.setUserAgent(options)`
 
 * `options` (Object | string) - If `options` is a string, it is interpreted as
-the user agent stringL.
+the user agent string.
   * `userAgent` string - The user agent string.
   * `userAgentMetadata` [UserAgentMetadata](structures/user-agent-metadata.md) (optional) - The user agent metadata.
 
