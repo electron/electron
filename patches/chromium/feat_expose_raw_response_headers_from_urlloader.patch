@@ -49,10 +49,10 @@ index 185c4ba2dad840a35dd06ab874c8e2b2f5c1730c..9b3107a616d68d02065470a3b8e517b1
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 07fd0387c4b6cf8843c191cd87653921ce291da4..4775f656c09b39fc76d81b75f343377b1d1709a7 100644
+index 5c5632b9563f748f8dfbf1395c06d6692d57be10..aac7abb6613277c27bc4e83202094660f943a80b 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -90,6 +90,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -88,6 +88,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->disable_secure_dns = data.disable_secure_dns();
    out->has_user_activation = data.has_user_activation();
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
@@ -61,7 +61,7 @@ index 07fd0387c4b6cf8843c191cd87653921ce291da4..4775f656c09b39fc76d81b75f343377b
        mojo::PendingRemote<network::mojom::CookieAccessObserver>>();
    out->trust_token_observer = data.TakeTrustTokenObserver<
 diff --git a/services/network/public/cpp/url_request_mojom_traits.h b/services/network/public/cpp/url_request_mojom_traits.h
-index d49c105ec0dde12caadec68fbce9092af43b84aa..7697548be5962e0612b528a924e811f15869a97b 100644
+index 549b0da0d4790e0ced3048e7167fe1a74ab3f78a..71bc5c45d4f2ecf0abb7f6045bd9945e1f4b9b07 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.h
 +++ b/services/network/public/cpp/url_request_mojom_traits.h
 @@ -72,6 +72,10 @@ struct COMPONENT_EXPORT(NETWORK_CPP_BASE)
@@ -76,7 +76,7 @@ index d49c105ec0dde12caadec68fbce9092af43b84aa..7697548be5962e0612b528a924e811f1
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 4767f2af1d737ad23bf58a55ab0b1398c34adf08..a93f194a927a6ab014298af99ea8e06ad2148760 100644
+index 237e3fbfc9aec50dd74bd6a0e1235d2b50ad9fcd..3c81dda1ea478696790b3b4a2a3b7e59acaf70c3 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
 @@ -72,6 +72,9 @@ struct TrustedUrlRequestParams {

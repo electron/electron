@@ -33,10 +33,10 @@ index 884bccba58c66861b43b3b50a7535cba543302e2..82e7bf534aa6b998cee8df53be3ca7db
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 80d38e7310a7b0e1173e75a5f6a7071898465ec7..27f03fb28fc97d6285f55e27a5ceb7fc2282e6d4 100644
+index 1c302baf82a34c5895a381058fb74196ae9d4516..3f44cbcd5b97e5f3787e2435de3b51151fcc54cc 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
-@@ -4640,7 +4640,7 @@ static_library("browser") {
+@@ -4598,7 +4598,7 @@ static_library("browser") {
  
      # On Windows, the hashes are embedded in //chrome:chrome_initial rather
      # than here in :chrome_dll.
@@ -46,7 +46,7 @@ index 80d38e7310a7b0e1173e75a5f6a7071898465ec7..27f03fb28fc97d6285f55e27a5ceb7fc
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index d71a4d1c2251abeb7d389465fc70fd5362c0db85..d1c49a3b5eeb58eeb30961f22b75ae0531917141 100644
+index 6f3baee560e29cbdca7d5899c65b22a0d9ef92b6..9eac35aa24cb32d5ee164af15bc6dce85efa6b4a 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -6589,7 +6589,6 @@ test("unit_tests") {
@@ -68,7 +68,7 @@ index d71a4d1c2251abeb7d389465fc70fd5362c0db85..d1c49a3b5eeb58eeb30961f22b75ae05
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7564,7 +7567,6 @@ test("unit_tests") {
+@@ -7547,7 +7550,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index d71a4d1c2251abeb7d389465fc70fd5362c0db85..d1c49a3b5eeb58eeb30961f22b75ae05
        "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
-@@ -7651,6 +7653,10 @@ test("unit_tests") {
+@@ -7634,6 +7636,10 @@ test("unit_tests") {
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
  

@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 44c4e04a6ce13f1500d939676229f41d03a62cc4..91fa59856d9225cde13e56873c2b0a2c2a91063d 100644
+index 0f331df5ae46cb0d868dc62585158af25691504b..419aa535b303251ea4a877dc07b3b5179804a91d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1043,6 +1043,7 @@ component("base") {
@@ -43,7 +43,7 @@ index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 4aa9876ca290df64da2036a821dfa02fb411676a..fc0a9f2089810de74a9b6d9e08272a5a54c7dee9 100644
+index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -76,7 +76,7 @@ index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index aeb8a7522c543b850898f73439cda49e72633c02..b35e0c4333b4d17df48625c98b6c832bab989a97 100644
+index 67fe81627bd3f3f38932300102bedbfac0e421c7..4024e92d1fbe6b045546f27b7e26f2056622fe11 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -226,7 +226,7 @@ index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb2774
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 1ad648cc23be0339524e696007411e2da20ec41a..250e9cc1cab442430a31ef578dd9e61479eeb750 100644
+index 9ffa8129d29ecda50f91355ffd01ce9926a70b11..5ebf5ea4db7c692b3288110945d470831e7797e2 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -359,6 +359,7 @@ component("base") {
@@ -253,7 +253,7 @@ index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecb
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 80edfe22902d9c93adb369f47e46cb4842c6234e..447a063127e74c72adf0c7a8bc179151d0fa6fb8 100644
+index ffabfa62529bdaef9b72dfda04082851ff7081a1..3542ecd726ffe33bcfdfa0152d48ffd169b41439 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -192,6 +192,7 @@ component("gfx") {
@@ -265,10 +265,10 @@ index 80edfe22902d9c93adb369f47e46cb4842c6234e..447a063127e74c72adf0c7a8bc179151
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index e6ed9c6470e85ca138bc1e53ed581fa5790f47ef..e3fc05bf03da051d3b2b20b5524d58e1ae76e549 100644
+index 3b730a67625145d9062400b80605cb7baf310e8d..e996bc69d1199aa56740267d91b523532ef9d48c 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -676,6 +676,7 @@ component("views") {
+@@ -680,6 +680,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
