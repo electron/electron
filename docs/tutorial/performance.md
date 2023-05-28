@@ -69,6 +69,7 @@ resource-hungry if you attempt these steps.
 5. [Unnecessary polyfills](#5-unnecessary-polyfills)
 6. [Unnecessary or blocking network requests](#6-unnecessary-or-blocking-network-requests)
 7. [Bundle your code](#7-bundle-your-code)
+8. [Call `Menu.setApplicationMenu(null)` when you do not need a default menu](#8-call-menusetapplicationmenunull-when-you-do-not-need-a-default-menu)
 
 ### 1. Carelessly including modules
 
