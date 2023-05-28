@@ -54,7 +54,7 @@ at once, consider the [Chrome Tracing](https://www.chromium.org/developers/how-t
 
 ### Recommended Reading
 
-* [Get Started With Analyzing Runtime Performance][chrome-devtools-tutorial]
+* [Analyze runtime performance][chrome-devtools-tutorial]
 * [Talk: "Visual Studio Code - The First Second"][vscode-first-second]
 
 ## Checklist: Performance recommendations
@@ -432,7 +432,7 @@ If you build your own menu or use a frameless window without native menu, you sh
 Call `Menu.setApplicationMenu(null)` before `app.on("ready")`. This will prevent Electron from setting a default menu. See also https://github.com/electron/electron/issues/35512 for a related discussion.
 
 [security]: ./security.md
-[chrome-devtools-tutorial]: https://developers.google.com/web/tools/chrome-devtools/evaluate-performance/
+[chrome-devtools-tutorial]: https://developer.chrome.com/docs/devtools/performance/
 [worker-threads]: https://nodejs.org/api/worker_threads.html
 [web-workers]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Using_web_workers
 [request-idle-callback]: https://developer.mozilla.org/en-US/docs/Web/API/Window/requestIdleCallback
