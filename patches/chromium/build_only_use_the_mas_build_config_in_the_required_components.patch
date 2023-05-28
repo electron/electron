@@ -43,7 +43,7 @@ index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
+index 4aa9876ca290df64da2036a821dfa02fb411676a..fc0a9f2089810de74a9b6d9e08272a5a54c7dee9 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -226,7 +226,7 @@ index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb2774
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 9ffa8129d29ecda50f91355ffd01ce9926a70b11..5ebf5ea4db7c692b3288110945d470831e7797e2 100644
+index 1ad648cc23be0339524e696007411e2da20ec41a..250e9cc1cab442430a31ef578dd9e61479eeb750 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -359,6 +359,7 @@ component("base") {
@@ -265,10 +265,10 @@ index ffabfa62529bdaef9b72dfda04082851ff7081a1..3542ecd726ffe33bcfdfa0152d48ffd1
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 3b730a67625145d9062400b80605cb7baf310e8d..e996bc69d1199aa56740267d91b523532ef9d48c 100644
+index 561b4a7cc1daa83f1bfb2da239ad1ff5a7e2cb06..e1a5ab67429973e08d12b99344469d337446701e 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -680,6 +680,7 @@ component("views") {
+@@ -681,6 +681,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
