@@ -37,14 +37,6 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
   return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
 }
 
-bool ElectronDesktopWindowTreeHostWin::ShouldPaintAsActive() const {
-  // Tell Chromium to use system default behavior when rendering inactive
-  // titlebar, otherwise it would render inactive titlebar as active under
-  // some cases.
-  // See also https://github.com/electron/electron/issues/24647.
-  return false;
-}
-
 bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
     gfx::Insets* insets) const {
   // Set DWMFrameInsets to prevent maximized frameless window from bleeding
