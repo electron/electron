@@ -14,6 +14,31 @@ Commit-Queue: Patrick Thier <pthier@chromium.org>
 Reviewed-by: Jakob Linke <jgruber@chromium.org>
 Cr-Commit-Position: refs/heads/main@{#87257}
 
+diff --git a/src/regexp/regexp-ast.cc b/src/regexp/regexp-ast.cc
+index ba9c8f0d1f175a7c22648ba7b22741fbb8f39bc8..711093cf8845c7a6ff147d88607cbdb4aa253bd2 100644
+--- a/src/regexp/regexp-ast.cc
++++ b/src/regexp/regexp-ast.cc
+@@ -410,5 +410,20 @@ RegExpClassSetExpression::RegExpClassSetExpression(
+   }
+ }
+ 
++// static
++RegExpClassSetExpression* RegExpClassSetExpression::Empty(Zone* zone,
++                                                          bool is_negated) {
++  ZoneList<CharacterRange>* ranges =
++      zone->template New<ZoneList<CharacterRange>>(0, zone);
++  RegExpClassSetOperand* op =
++      zone->template New<RegExpClassSetOperand>(ranges, nullptr);
++  ZoneList<RegExpTree*>* operands =
++      zone->template New<ZoneList<RegExpTree*>>(1, zone);
++  operands->Add(op, zone);
++  return zone->template New<RegExpClassSetExpression>(
++      RegExpClassSetExpression::OperationType::kUnion, is_negated, false,
++      operands);
++}
++
+ }  // namespace internal
+ }  // namespace v8
 diff --git a/src/regexp/regexp-parser.cc b/src/regexp/regexp-parser.cc
 index f420b2eec42d413941751e0d2831689fa820e260..0ba51712c8efb758d5081e790d52eb16a01b2366 100644
 --- a/src/regexp/regexp-parser.cc
