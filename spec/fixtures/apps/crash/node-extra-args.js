@@ -1,5 +1,5 @@
-const path = require('path');
-const childProcess = require('child_process');
+const path = require('node:path');
+const childProcess = require('node:child_process');
 
 process.on('message', function () {
   process.send(process.argv);

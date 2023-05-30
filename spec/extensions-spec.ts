@@ -1,13 +1,13 @@
 import { expect } from 'chai';
 import { app, session, BrowserWindow, ipcMain, WebContents, Extension, Session } from 'electron/main';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
-import * as http from 'http';
-import * as path from 'path';
-import * as fs from 'fs';
+import * as http from 'node:http';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
 import * as WebSocket from 'ws';
 import { emittedNTimes, emittedUntil } from './lib/events-helpers';
 import { ifit, listen } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 const uuid = require('uuid');
 

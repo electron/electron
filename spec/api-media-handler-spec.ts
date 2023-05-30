@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import * as http from 'http';
+import * as http from 'node:http';
 import { ifit, listen } from './lib/spec-helpers';
 
 describe('setDisplayMediaRequestHandler', () => {

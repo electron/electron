@@ -1,15 +1,15 @@
 import { assert, expect } from 'chai';
-import * as cp from 'child_process';
-import * as https from 'https';
-import * as http from 'http';
-import * as net from 'net';
+import * as cp from 'node:child_process';
+import * as https from 'node:https';
+import * as http from 'node:http';
+import * as net from 'node:net';
 import * as fs from 'fs-extra';
-import * as path from 'path';
-import { promisify } from 'util';
+import * as path from 'node:path';
+import { promisify } from 'node:util';
 import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');

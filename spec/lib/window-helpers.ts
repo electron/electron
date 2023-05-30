@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron/main';
-import { once } from 'events';
+import { once } from 'node:events';
 
 async function ensureWindowIsClosed (window: BrowserWindow | null) {
   if (window && !window.isDestroyed()) {

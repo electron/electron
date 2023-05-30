@@ -1,13 +1,13 @@
 import { expect } from 'chai';
-import { AddressInfo } from 'net';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as http from 'http';
+import { AddressInfo } from 'node:net';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as http from 'node:http';
 import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 const pdfjs = require('pdfjs-dist');
 const fixturesPath = path.resolve(__dirname, 'fixtures');

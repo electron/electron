@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import * as cp from 'child_process';
-import * as http from 'http';
+import * as cp from 'node:child_process';
+import * as http from 'node:http';
 import * as express from 'express';
 import * as fs from 'fs-extra';
-import * as os from 'os';
-import * as path from 'path';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as psList from 'ps-list';
-import { AddressInfo } from 'net';
+import { AddressInfo } from 'node:net';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import * as uuid from 'uuid';
 import { systemPreferences } from 'electron';

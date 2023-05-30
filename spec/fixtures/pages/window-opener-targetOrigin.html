@@ -1,7 +1,7 @@
 <html>
 <body>
 <script type="text/javascript" charset="utf-8">
-  const url = require('url')
+  const url = require('node:url')
   function tryPostMessage(...args) {
     try {
       window.opener.postMessage(...args)

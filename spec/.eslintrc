@@ -11,9 +11,11 @@
     "WebView": true
   },
   "plugins": [
-    "mocha"
+    "mocha",
+    "unicorn"
   ],
   "rules": {
-    "mocha/no-exclusive-tests": "error"
+    "mocha/no-exclusive-tests": "error",
+    "unicorn/prefer-node-protocol": "error"
   }
 }

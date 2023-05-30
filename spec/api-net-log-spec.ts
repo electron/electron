@@ -1,13 +1,13 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
-import * as ChildProcess from 'child_process';
+import * as http from 'node:http';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import * as ChildProcess from 'node:child_process';
 import { session, net } from 'electron/main';
-import { Socket } from 'net';
+import { Socket } from 'node:net';
 import { ifit, listen } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 const appPath = path.join(__dirname, 'fixtures', 'api', 'net-log');
 const dumpFile = path.join(os.tmpdir(), 'net_log.json');

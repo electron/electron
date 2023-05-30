@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import { BrowserWindow, WebContents, webFrameMain, session, ipcMain, app, protocol, webContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import * as https from 'https';
-import * as http from 'http';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as url from 'url';
-import * as ChildProcess from 'child_process';
-import { EventEmitter, once } from 'events';
-import { promisify } from 'util';
+import * as https from 'node:https';
+import * as http from 'node:http';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as url from 'node:url';
+import * as ChildProcess from 'node:child_process';
+import { EventEmitter, once } from 'node:events';
+import { promisify } from 'node:util';
 import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -1028,7 +1028,7 @@ describe('chromium features', () => {
     ifit(process.platform !== 'win32' || process.arch !== 'arm64')('disables JavaScript when it is disabled on the parent window', async () => {
       const w = new BrowserWindow({ show: true, webPreferences: { nodeIntegration: true } });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
-      const windowUrl = require('url').format({
+      const windowUrl = require('node:url').format({
         pathname: `${fixturesPath}/pages/window-no-javascript.html`,
         protocol: 'file',
         slashes: true
