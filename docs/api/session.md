@@ -1104,7 +1104,17 @@ app.whenReady().then(() => {
       * `video`
       * `wireless`
 
-Sets the handler which can be used to override which USB classes are protected.
+Sets the handler which can be used to override which [USB classes are protected](https://wicg.github.io/webusb/#usbinterface-interface).
+The return value for the handler is a string array of USB classes which should be considered protected (eg not available in the renderer).  Valid values for the array are:
+
+* `audio`
+* `audio_video`
+* `hid`
+* `mass_storage`
+* `smart_card`
+* `video`
+* `wireless`
+
 Returning an empty string array from the handler will allow all USB classes; returning the passed in array will maintain the default list of protected USB classes (this is also the default behavior if a handler is not defined).
 To clear the handler, call `setUSBProtectedClassesHandler(null)`.
 
