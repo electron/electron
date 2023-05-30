@@ -74,6 +74,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -699,6 +700,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   permission_manager->SetDevicePermissionHandler(handler);
 }
 
+void Session::SetUSBProtectedClassesHandler(v8::Local<v8::Value> val,
+                                            gin::Arguments* args) {
+  ElectronPermissionManager::ProtectedUSBHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetProtectedUSBHandler(handler);
+}
+
 void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
                                          gin::Arguments* args) {
   ElectronPermissionManager::BluetoothPairingHandler handler;
@@ -1294,6 +1307,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setUSBProtectedClassesHandler",
+                 &Session::SetUSBProtectedClassesHandler)
       .SetMethod("setBluetoothPairingHandler",
                  &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
