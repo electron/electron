@@ -10,10 +10,10 @@ This patch makes the mksnapshot fix available sooner.
 This patch can be removed when v8 reaches version 11.6.21
 
 diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
-index e6142845b35fcdcdb664b375376a58177c93fdfc..2fcdfc850fa53ddad22514eb582b284adaa5d752 100644
+index 40d1b394ef30c7cdf1d5aa05a051d3a497abf28e..9b646b1527e9e6595cc2530983feb0279452c7dc 100644
 --- a/src/execution/isolate.cc
 +++ b/src/execution/isolate.cc
-@@ -3890,14 +3890,16 @@ void FinalizeBuiltinCodeObjects(Isolate* isolate) {
+@@ -3904,14 +3904,16 @@ void FinalizeBuiltinCodeObjects(Isolate* isolate) {
    DCHECK_NOT_NULL(isolate->embedded_blob_data());
    DCHECK_NE(0, isolate->embedded_blob_data_size());
 
