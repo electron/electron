@@ -62,8 +62,7 @@ GlobalShortcut::~GlobalShortcut() {
 }
 
 void GlobalShortcut::OnKeyPressed(const ui::Accelerator& accelerator) {
-  if (accelerator_callback_map_.find(accelerator) ==
-      accelerator_callback_map_.end()) {
+  if (!base::Contains(accelerator_callback_map_, accelerator)) {
     // This should never occur, because if it does, GlobalShortcutListener
     // notifies us with wrong accelerator.
     NOTREACHED();
