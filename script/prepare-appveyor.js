@@ -182,8 +182,7 @@ async function prepareAppVeyorImage (opts) {
   if (ROLLER_BRANCH_PATTERN.test(branch)) {
     useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
   } else {
-    // eslint-disable-next-line no-control-regex
-    const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
+    const versionRegex = /chromium_version':\n +'(.+?)',/m;
     const deps = fs.readFileSync(path.resolve(__dirname, '..', 'DEPS'), 'utf8');
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 
