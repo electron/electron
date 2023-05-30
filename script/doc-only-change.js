@@ -5,6 +5,7 @@ const octokit = new Octokit();
 async function checkIfDocOnlyChange () {
   let { prNumber, prURL } = args;
 
+  console.log(`In checkIfDocOnlyChange, prNumber is: ${prNumber}, prUrl is : ${prURL}`);
   if (prNumber || prURL) {
     try {
       // CircleCI doesn't provide the PR number except on forked PRs,
