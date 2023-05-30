@@ -66,7 +66,7 @@ for:
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
             Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
           }
@@ -220,7 +220,7 @@ for:
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
             Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
           }
