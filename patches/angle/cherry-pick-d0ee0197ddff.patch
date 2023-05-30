@@ -12,10 +12,18 @@ Reviewed-by: Kenneth Russell <kbr@chromium.org>
 Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
 
 diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93d82ee083 100644
+index c9607db74b53487950d31f6a56d55f3e834556a0..a05e857d7111528ad7f21799e3825b9d3f488dd3 100644
 --- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 +++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-@@ -31,7 +31,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -23,6 +23,7 @@ namespace
+ // Arbitrarily enforce that types - even local variables' - declared
+ // with a size in bytes of over 2 GB will cause compilation failure.
+ constexpr size_t kMaxTypeSizeInBytes = static_cast<size_t>(2) * 1024 * 1024 * 1024;
++constexpr size_t kMaxPrivateVariableSizeInBytes = static_cast<size_t>(1) * 1024 * 1024;
+ 
+ // Traverses intermediate tree to ensure that the shader does not
+ // exceed certain implementation-defined limits on the sizes of types.
+@@ -31,7 +32,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  {
    public:
      ValidateTypeSizeLimitationsTraverser(TSymbolTable *symbolTable, TDiagnostics *diagnostics)
@@ -26,7 +34,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
      {
          ASSERT(diagnostics);
      }
-@@ -85,11 +87,37 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -85,11 +88,37 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
                        asSymbol->getName());
                  return false;
              }
@@ -64,7 +72,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
    private:
      void error(TSourceLoc loc, const char *reason, const ImmutableString &token)
      {
-@@ -198,6 +226,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+@@ -198,6 +227,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  
      TDiagnostics *mDiagnostics;
      std::vector<int> mLoopSymbolIds;
@@ -73,7 +81,7 @@ index c9607db74b53487950d31f6a56d55f3e834556a0..05f9f5444999e0b95aeb68be4a3ecc93
  };
  
  }  // namespace
-@@ -208,6 +238,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
+@@ -208,6 +239,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
  {
      ValidateTypeSizeLimitationsTraverser validate(symbolTable, diagnostics);
      root->traverse(&validate);
