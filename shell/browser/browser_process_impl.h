@@ -18,7 +18,6 @@
 #include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
-#include "content/public/browser/network_quality_observer_factory.h"
 #include "printing/buildflags/buildflags.h"
 #include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
@@ -114,10 +113,11 @@ class BrowserProcessImpl : public BrowserProcess {
   device::GeolocationManager* geolocation_manager() override;
   void SetGeolocationManager(
       std::unique_ptr<device::GeolocationManager> geolocation_manager) override;
-  network::NetworkQualityTracker* GetNetworkQualityTracker();
-  void CreateNetworkQualityObserver();
 
  private:
+  void CreateNetworkQualityObserver();
+  network::NetworkQualityTracker* GetNetworkQualityTracker();
+
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
