@@ -273,9 +273,7 @@ std::string WebFrameMain::Name() const {
 base::ProcessId WebFrameMain::OSProcessID() const {
   if (!CheckRenderFrame())
     return -1;
-  base::ProcessHandle process_handle =
-      render_frame_->GetProcess()->GetProcess().Handle();
-  return base::GetProcId(process_handle);
+  return render_frame_->GetProcess()->GetProcess().Pid();
 }
 
 int WebFrameMain::ProcessID() const {
