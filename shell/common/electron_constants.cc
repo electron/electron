@@ -9,11 +9,6 @@ namespace electron {
 const char kBrowserForward[] = "browser-forward";
 const char kBrowserBackward[] = "browser-backward";
 
-const char kSecureProtocol[] = "Secure TLS connection";
-const char kSecureProtocolDescription[] =
-    "The connection to this site is using a strong protocol version "
-    "and cipher suite.";
-
 const char kDeviceVendorIdKey[] = "vendorId";
 const char kDeviceProductIdKey[] = "productId";
 const char kDeviceSerialNumberKey[] = "serialNumber";
