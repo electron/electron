@@ -56,6 +56,39 @@ webContents.setWindowOpenHandler((details) => {
 })
 ```
 
+### Removed: `<webview>` `new-window` event
+
+The `new-window` event of `<webview>` has been removed. There is no direct replacement.
+
+```js
+// Removed in Electron 22
+webview.addEventListener('new-window', (event) => {})
+```
+
+```javascript fiddle='docs/fiddles/ipc/webview-new-window'
+// Replace with
+
+// main.js
+mainWindow.webContents.on('did-attach-webview', (event, wc) => {
+  wc.setWindowOpenHandler((details) => {
+    mainWindow.webContents.send('webview-new-window', wc.id, details)
+    return { action: 'deny' }
+  })
+})
+
+// preload.js
+const { ipcRenderer } = require('electron')
+ipcRenderer.on('webview-new-window', (e, webContentsId, details) => {
+  console.log('webview-new-window', webContentsId, details)
+  document.getElementById('webview').dispatchEvent(new Event('new-window'))
+})
+
+// renderer.js
+document.getElementById('webview').addEventListener('new-window', () => {
+  console.log('got new-window event')
+})
+```
+
 ### Deprecated: BrowserWindow `scroll-touch-*` events
 
 The `scroll-touch-begin`, `scroll-touch-end` and `scroll-touch-edge` events on
