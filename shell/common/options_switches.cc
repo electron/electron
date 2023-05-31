@@ -123,8 +123,6 @@ const char kZoomFactor[] = "zoomFactor";
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
 
-const char kPreloadScripts[] = "preloadScripts";
-
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
