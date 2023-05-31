@@ -10,3 +10,4 @@ force_cppheapcreateparams_to_be_noncopyable.patch
 chore_allow_customizing_microtask_policy_per_context.patch
 cherry-pick-c605df24af3c.patch
 cherry-pick-f4b66ae451c2.patch
+fix_set_proper_instruction_start_for_builtin.patch
