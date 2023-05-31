@@ -13,6 +13,7 @@
 #include <string>
 
 #include "base/compiler_specific.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
@@ -76,7 +77,7 @@ class NotifyIcon : public TrayIcon {
   void InitIconData(NOTIFYICONDATA* icon_data);
 
   // The tray that owns us.  Weak.
-  NotifyIconHost* host_;
+  raw_ptr<NotifyIconHost> host_;
 
   // The unique ID corresponding to this icon.
   UINT icon_id_;
@@ -91,7 +92,7 @@ class NotifyIcon : public TrayIcon {
   base::win::ScopedHICON icon_;
 
   // The context menu.
-  ElectronMenuModel* menu_model_ = nullptr;
+  RAW_PTR_EXCLUSION ElectronMenuModel* menu_model_ = nullptr;
 
   // An optional GUID used for identifying tray entries on Windows
   GUID guid_ = GUID_DEFAULT;
