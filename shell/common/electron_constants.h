@@ -16,7 +16,6 @@ extern const char kBrowserForward[];
 extern const char kBrowserBackward[];
 
 // Strings describing Chrome security policy for DevTools security panel.
-extern const char kSHA1Certificate[];
 extern const char kSHA1MajorDescription[];
 extern const char kSHA1MinorDescription[];
 extern const char kCertificateError[];
