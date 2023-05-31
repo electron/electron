@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: mjhenkes <mjhenkes@gmail.com>
+Date: Mon, 22 May 2023 15:52:36 -0500
+Subject: Fix: Set proper instruction start for builtin
+
+Added in this CL: https://chromium-review.googlesource.com/c/v8/v8/+/4547712
+
+This patch makes the mksnapshot fix available sooner.
+
+This patch can be removed when v8 reaches version 11.6.21
+
+diff --git a/src/execution/isolate.cc b/src/execution/isolate.cc
+index e6514136101ecbe430693d423d1b92c683e6eb15..1dcc61de1ceae9754cb5e867a04a0721d6aefcb8 100644
+--- a/src/execution/isolate.cc
++++ b/src/execution/isolate.cc
+@@ -3872,14 +3872,16 @@ void FinalizeBuiltinCodeObjects(Isolate* isolate) {
+   DCHECK_NOT_NULL(isolate->embedded_blob_data());
+   DCHECK_NE(0, isolate->embedded_blob_data_size());
+ 
++  EmbeddedData d = EmbeddedData::FromBlob(isolate);
+   HandleScope scope(isolate);
+   static_assert(Builtins::kAllBuiltinsAreIsolateIndependent);
+   for (Builtin builtin = Builtins::kFirst; builtin <= Builtins::kLast;
+        ++builtin) {
+     Handle<Code> old_code = isolate->builtins()->code_handle(builtin);
+-    // Note we use `instruction_start` as given by the old code object (instead
+-    // of asking EmbeddedData) due to MaybeRemapEmbeddedBuiltinsIntoCodeRange.
+-    Address instruction_start = old_code->instruction_start();
++    // Note that `old_code.instruction_start` might point to `old_code`'s
++    // InstructionStream which might be GCed once we replace the old code
++    // with the new code.
++    Address instruction_start = d.InstructionStartOf(builtin);
+     Handle<Code> new_code = isolate->factory()->NewCodeObjectForEmbeddedBuiltin(
+         old_code, instruction_start);
+ 
