@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0f331df5ae46cb0d868dc62585158af25691504b..419aa535b303251ea4a877dc07b3b5179804a91d 100644
+index b36e345ee578870ba520710ad13a45651ffd3b20..452ffc2fbaea3b35ece9ae7cf5ec3dfeadebb5b9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1043,6 +1043,7 @@ component("base") {
+@@ -1057,6 +1057,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 67fe81627bd3f3f38932300102bedbfac0e421c7..4024e92d1fbe6b045546f27b7e26f2056622fe11 100644
+index f8e13af6b4d466f17fbffcfe52176b602ceca90c..d0e445c497b1010049da2ce7eb984284a74fa4a9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -100,7 +100,7 @@ index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 34636a58846e2b250e423dde76e4e6ea1f686676..899b75f2be91e86c526f550718e22221eea604f3 100644
+index 0260ae6a0ea57b98be5d76db3ca6edf55037520d..0f99caed553a062c1871099217f02cfc02623d26 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
@@ -253,7 +253,7 @@ index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecb
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index ffabfa62529bdaef9b72dfda04082851ff7081a1..3542ecd726ffe33bcfdfa0152d48ffd169b41439 100644
+index f8dfc00b61d67aec62f26b57636b28dcfca8f989..bf067319394717738f5281a28bcbdaab8d8f3ead 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -192,6 +192,7 @@ component("gfx") {
