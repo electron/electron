@@ -16,7 +16,7 @@ index 40d1b394ef30c7cdf1d5aa05a051d3a497abf28e..9b646b1527e9e6595cc2530983feb027
 @@ -3904,14 +3904,16 @@ void FinalizeBuiltinCodeObjects(Isolate* isolate) {
    DCHECK_NOT_NULL(isolate->embedded_blob_data());
    DCHECK_NE(0, isolate->embedded_blob_data_size());
-
+ 
 +  EmbeddedData d = EmbeddedData::FromBlob(isolate);
    HandleScope scope(isolate);
    static_assert(Builtins::kAllBuiltinsAreIsolateIndependent);
@@ -32,4 +32,4 @@ index 40d1b394ef30c7cdf1d5aa05a051d3a497abf28e..9b646b1527e9e6595cc2530983feb027
 +    Address instruction_start = d.InstructionStartOf(builtin);
      Handle<Code> new_code = isolate->factory()->NewCodeObjectForEmbeddedBuiltin(
          old_code, instruction_start);
-
+ 
