@@ -28,8 +28,8 @@ jobs:
 
             # Create new labels
             gh label create $MAJOR-x-y --color 8d9ee8 || true
-            gh label create target/$MAJOR-x-y --color ad244f || true
-            gh label create merged/$MAJOR-x-y --color 61a3c6 || true
+            gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
+            gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
             gh label create in-flight/$MAJOR-x-y --color db69a6 || true
             gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
 
