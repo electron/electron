@@ -77,15 +77,20 @@ void StopTracing(gin_helper::Promise<base::FilePath> promise,
         }
       },
       std::move(promise), *file_path);
-  if (file_path) {
+
+  auto* instance = TracingController::GetInstance();
+  if (!instance->IsTracing()) {
+    std::move(resolve_or_reject)
+        .Run(absl::make_optional(
+            "Failed to stop tracing - no trace in progress"));
+  } else if (file_path) {
     auto split_callback = base::SplitOnceCallback(std::move(resolve_or_reject));
     auto endpoint = TracingController::CreateFileEndpoint(
         *file_path,
         base::BindOnce(std::move(split_callback.first), absl::nullopt));
-    if (!TracingController::GetInstance()->StopTracing(endpoint)) {
+    if (!instance->StopTracing(endpoint)) {
       std::move(split_callback.second)
-          .Run(absl::make_optional(
-              "Failed to stop tracing (was a trace in progress?)"));
+          .Run(absl::make_optional("Failed to stop tracing"));
     }
   } else {
     std::move(resolve_or_reject)
