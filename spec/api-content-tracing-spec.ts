@@ -113,7 +113,7 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
     });
 
     it('rejects if no trace is happening', async () => {
-      await expect(contentTracing.stopRecording()).to.be.rejected();
+      await expect(contentTracing.stopRecording()).to.be.rejectedWith('Failed to stop tracing - no trace in progress');
     });
   });
 
