@@ -9,7 +9,6 @@ namespace electron {
 const char kBrowserForward[] = "browser-forward";
 const char kBrowserBackward[] = "browser-backward";
 
-const char kCertificateError[] = "Certificate Error";
 const char kValidCertificate[] = "Valid Certificate";
 const char kValidCertificateDescription[] =
     "The connection to this site is using a valid, trusted server certificate.";
