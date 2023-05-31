@@ -4659,11 +4659,13 @@ describe('BrowserWindow module', () => {
         const c = new BrowserWindow({ show: false, parent: w });
         expect(c.getParentWindow()).to.equal(w);
       });
+
       it('adds window to child windows of parent', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
         expect(w.getChildWindows()).to.deep.equal([c]);
       });
+
       it('removes from child windows of parent when window is closed', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
@@ -4673,6 +4675,59 @@ describe('BrowserWindow module', () => {
         // The child window list is not immediately cleared, so wait a tick until it's ready.
         await setTimeout();
         expect(w.getChildWindows().length).to.equal(0);
+      });
+
+      ifit(process.platform === 'darwin')('child window matches visibility when visibility changes', async () => {
+        const w = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false, parent: w });
+
+        const wShow = once(w, 'show');
+        const cShow = once(c, 'show');
+
+        w.show();
+        c.show();
+
+        await Promise.all([wShow, cShow]);
+
+        const minimized = once(w, 'minimize');
+        w.minimize();
+        await minimized;
+
+        expect(w.isVisible()).to.be.false('parent is visible');
+        expect(c.isVisible()).to.be.false('child is visible');
+
+        const restored = once(w, 'restore');
+        w.restore();
+        await restored;
+
+        expect(w.isVisible()).to.be.true('parent is visible');
+        expect(c.isVisible()).to.be.true('child is visible');
+      });
+
+      ifit(process.platform === 'darwin')('matches child window visibility when visibility changes', async () => {
+        const w = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false, parent: w });
+
+        const wShow = once(w, 'show');
+        const cShow = once(c, 'show');
+
+        w.show();
+        c.show();
+
+        await Promise.all([wShow, cShow]);
+
+        const minimized = once(c, 'minimize');
+        c.minimize();
+        await minimized;
+
+        expect(c.isVisible()).to.be.false('child is visible');
+
+        const restored = once(c, 'restore');
+        c.restore();
+        await restored;
+
+        expect(w.isVisible()).to.be.true('parent is visible');
+        expect(c.isVisible()).to.be.true('child is visible');
       });
 
       it('closes a grandchild window when a middle child window is destroyed', (done) => {

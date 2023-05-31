@@ -472,14 +472,7 @@ void NativeWindowMac::Hide() {
     return;
   }
 
-  // Hide all children of the current window before hiding the window.
-  // components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-  // expects this when window visibility changes.
-  if ([window_ childWindows]) {
-    for (NSWindow* child in [window_ childWindows]) {
-      [child orderOut:nil];
-    }
-  }
+  DetachChildren();
 
   // Detach the window from the parent before.
   if (parent())
@@ -597,6 +590,37 @@ bool NativeWindowMac::HandleDeferredClose() {
     return true;
   }
   return false;
+}
+
+void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
+  child_windows_.remove_if([&child](NativeWindow* w) { return (w == child); });
+
+  [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
+}
+
+void NativeWindowMac::AttachChildren() {
+  for (auto* child : child_windows_) {
+    auto* child_nswindow = child->GetNativeWindow().GetNativeNSWindow();
+    if ([child_nswindow parentWindow] == window_)
+      continue;
+
+    // Attaching a window as a child window resets its window level, so
+    // save and restore it afterwards.
+    NSInteger level = window_.level;
+    [window_ addChildWindow:child_nswindow ordered:NSWindowAbove];
+    [window_ setLevel:level];
+  }
+}
+
+void NativeWindowMac::DetachChildren() {
+  DCHECK(child_windows_.size() == [[window_ childWindows] count]);
+
+  // Hide all children before hiding/minimizing the window.
+  // NativeWidgetNSWindowBridge::NotifyVisibilityChangeDown()
+  // will DCHECK otherwise.
+  for (auto* child : child_windows_) {
+    [child->GetNativeWindow().GetNativeNSWindow() orderOut:nil];
+  }
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
@@ -1771,18 +1795,12 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
   // Remove current parent window.
   if ([window_ parentWindow])
-    [[window_ parentWindow] removeChildWindow:window_];
+    parent->RemoveChildWindow(this);
 
   // Set new parent window.
-  // Note that this method will force the window to become visible.
   if (parent && attach) {
-    // Attaching a window as a child window resets its window level, so
-    // save and restore it afterwards.
-    NSInteger level = window_.level;
-    [parent->GetNativeWindow().GetNativeNSWindow()
-        addChildWindow:window_
-               ordered:NSWindowAbove];
-    [window_ setLevel:level];
+    parent->add_child_window(this);
+    parent->AttachChildren();
   }
 }
 
