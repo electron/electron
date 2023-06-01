@@ -46,10 +46,10 @@ index 6817db3c9d735bab65cb9ec3f09b70105c3bc65f..4fd6752c418ad116653aba7320cb7208
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 9c9e6e87062536d645f4ccbf76189812c7da23b1..715e1234ae7aa135fcd11a7fdcf209f8030421c0 100644
+index 1ffe8c7b5ad411e04d683433a0d9833078d3cfbc..cd745c9bf4b0a958a6b48a454b04f6d53e6ef33e 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6599,7 +6599,6 @@ test("unit_tests") {
+@@ -6596,7 +6596,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 9c9e6e87062536d645f4ccbf76189812c7da23b1..715e1234ae7aa135fcd11a7fdcf209f8
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -6625,6 +6624,10 @@ test("unit_tests") {
+@@ -6622,6 +6621,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 9c9e6e87062536d645f4ccbf76189812c7da23b1..715e1234ae7aa135fcd11a7fdcf209f8
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7546,7 +7549,6 @@ test("unit_tests") {
+@@ -7544,7 +7547,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 9c9e6e87062536d645f4ccbf76189812c7da23b1..715e1234ae7aa135fcd11a7fdcf209f8
        "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
-@@ -7634,6 +7636,10 @@ test("unit_tests") {
+@@ -7632,6 +7634,10 @@ test("unit_tests") {
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
  

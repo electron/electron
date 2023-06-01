@@ -10,10 +10,10 @@ them should they exist.
 This will be upstreamed.
 
 diff --git a/printing/printing_context_mac.h b/printing/printing_context_mac.h
-index 53b106a1522a04d596d6ec833b00aa2170c760d9..3b5ca717d48cdade667fda8ce113f3f64bdaa063 100644
+index 59c6989be366c6b22bda20b9c438f1f233a68fae..f75b3ee45dfbda693204c74af31f942ae540a478 100644
 --- a/printing/printing_context_mac.h
 +++ b/printing/printing_context_mac.h
-@@ -83,6 +83,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
+@@ -84,6 +84,10 @@ class COMPONENT_EXPORT(PRINTING) PrintingContextMac : public PrintingContext {
    // Returns true if the orientation was set.
    bool SetOrientationIsLandscape(bool landscape);
  

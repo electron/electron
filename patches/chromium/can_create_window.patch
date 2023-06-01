@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 498b27ccc197f0296b802c11e7f8c1e1c15edd2b..f789a661e8671d1c7b405d62396423e4efd565b5 100644
+index 397755779ab8a8374a871caa20eac34524b8da79..01ca41916867c51a75fe45b0e2aad7d212b9865b 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7823,6 +7823,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -148,10 +148,10 @@ index 5da6f93293bc5ddae88c17ac2dd8d7037ba8e8f3..76d699790fb7d92587293b14332f696d
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 2728cdd273f66b02f0c97fb15e2d5b803c3d3b8d..b07862a697c4a69777963c6888803d33d2374606 100644
+index df937423fc86c5a72128c6f9bb9bc4ae8cc4c031..adc28726547d4d4d99f3802f546d9c32a5644cb6 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6293,6 +6293,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6298,6 +6298,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
        blink::GetNavigationInitiatorActivationAndAdStatus(
            request.HasUserGesture(), GetWebFrame()->IsAdScriptInStack());
  
@@ -210,7 +210,7 @@ index bef5a989bac50c177f15f52fe87ac3790d553e85..65dcd2e3b51929400c8bfb6a98a4fb59
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 0fe13a68578656da5bd511ce7ea2339150080044..cd6f197dcfdd797c0cffe1194a949c8c095c20ae 100644
+index d4b693833254a9cb294c98c14cc5b0c00f7e678e..884635d65add468cfd896db7e8d8d001e79833fe 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2202,6 +2202,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,

@@ -43,10 +43,10 @@ index 58caad274969fd4d5aa95b4a3c34d16a50aa0f5c..ef5350399cd32f72601be7256f94018b
      const v8::Local<v8::Context>& worker) {
    GetContentClient()->renderer()->DidInitializeWorkerContextOnWorkerThread(
 diff --git a/content/renderer/renderer_blink_platform_impl.h b/content/renderer/renderer_blink_platform_impl.h
-index 2a01122b6219089aef3d1992a76a056d99f2f993..b4c7fbebb3751d5c749da0d228989df27e93c01b 100644
+index c8fc41a186e3596ec2ef1f39ea1c557465c28338..d9b9d00e7f53796d8b158a19543c543a4c1002cc 100644
 --- a/content/renderer/renderer_blink_platform_impl.h
 +++ b/content/renderer/renderer_blink_platform_impl.h
-@@ -175,6 +175,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
+@@ -176,6 +176,7 @@ class CONTENT_EXPORT RendererBlinkPlatformImpl : public BlinkPlatformImpl {
    void DidStartWorkerThread() override;
    void WillStopWorkerThread() override;
    void WorkerContextCreated(const v8::Local<v8::Context>& worker) override;

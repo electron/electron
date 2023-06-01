@@ -10,10 +10,10 @@ DidCreateScriptContext is called, not all JS APIs are available in the
 context, which can cause some preload scripts to trip.
 
 diff --git a/content/public/renderer/render_frame_observer.h b/content/public/renderer/render_frame_observer.h
-index 5c08d822aaba3978dddb931ad9fe1bddfaede261..b2b0c21a79e2cc42215ba4a02145427ec16e65be 100644
+index 6e73e686738a21b82b7ccabae1b892a3ed2abbd9..4f5fb153d99c3c3c3323ff34da63f63d5100d021 100644
 --- a/content/public/renderer/render_frame_observer.h
 +++ b/content/public/renderer/render_frame_observer.h
-@@ -138,6 +138,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
+@@ -139,6 +139,8 @@ class CONTENT_EXPORT RenderFrameObserver : public IPC::Listener,
    virtual void DidHandleOnloadEvents() {}
    virtual void DidCreateScriptContext(v8::Local<v8::Context> context,
                                        int32_t world_id) {}
@@ -23,10 +23,10 @@ index 5c08d822aaba3978dddb931ad9fe1bddfaede261..b2b0c21a79e2cc42215ba4a02145427e
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index b07862a697c4a69777963c6888803d33d2374606..c0fd406ee366372eb5580c4b81d375984c4f19de 100644
+index adc28726547d4d4d99f3802f546d9c32a5644cb6..ffe1916f104a69cfde849bdbe9eb7baa344f3fd5 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4415,6 +4415,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4420,6 +4420,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index b07862a697c4a69777963c6888803d33d2374606..c0fd406ee366372eb5580c4b81d37598
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index 9ea70ed720f30513989213338858814684c17113..c37611d08839e550b4c1cc90bf97979a39426cd2 100644
+index 360c55008e97fd0c2bafb91e61891d0bf5b84b56..53b9c7acca7fe810c94f923b35c0929b7b4e63c9 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -609,6 +609,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -611,6 +611,8 @@ class CONTENT_EXPORT RenderFrameImpl
    void DidObserveLayoutShift(double score, bool after_input_or_scroll) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;
