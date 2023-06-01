@@ -128,3 +128,5 @@ fix_x11_window_restore_minimized_maximized_window.patch
 chore_defer_usb_service_getdevices_request_until_usb_service_is.patch
 revert_x11_keep_windowcache_alive_for_a_time_interval.patch
 cherry-pick-ec53103cc72d.patch
+cherry-pick-e6b75a8b4900.patch
+cherry-pick-ea1cd76358e0.patch
