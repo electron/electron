@@ -26,17 +26,13 @@ Cr-Commit-Position: refs/branch-heads/5735@{#607}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index fd95d91a9a4efbfbbcfb117d9f2129b1b1c95011..75c3b982e05c78b9add439e3abf65a0182c8fe2b 100644
+index fd95d91a9a4efbfbbcfb117d9f2129b1b1c95011..c3f1bb989c30bf00750404995d080c3b8ee0e1c6 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -5034,7 +5034,17 @@ void NavigationRequest::CommitErrorPage(
+@@ -5034,7 +5034,13 @@ void NavigationRequest::CommitErrorPage(
      }
    }
  
-+  if (topics_eligible_) {
-+    topics_eligible_ = false;
-+  }
-+
 +  base::WeakPtr<NavigationRequest> weak_self(weak_factory_.GetWeakPtr());
    ReadyToCommitNavigation(true /* is_error */);
 +  // The caller above might result in the deletion of `this`. Return immediately

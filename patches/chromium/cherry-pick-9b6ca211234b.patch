@@ -143,7 +143,7 @@ index 954fad802b0d90a3829109714601d1667c463eb7..a9e3cdc786cae5aef4d5464639dfc9a2
    // WebContentsDelegate implementation.
    void ActivateContents(content::WebContents* contents) final;
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.cc b/content/browser/browser_plugin/browser_plugin_guest.cc
-index a731c5ef5b7143e5e5cbff3d1404d22a72563d9f..2e47c128f4d5c0fa2f22f98340f2ba1863d36fad 100644
+index a731c5ef5b7143e5e5cbff3d1404d22a72563d9f..768f1a7054f7c127c7a5c670ed92880d0c1af4f6 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.cc
 +++ b/content/browser/browser_plugin/browser_plugin_guest.cc
 @@ -25,9 +25,10 @@ namespace content {
@@ -160,23 +160,6 @@ index a731c5ef5b7143e5e5cbff3d1404d22a72563d9f..2e47c128f4d5c0fa2f22f98340f2ba18
    RecordAction(base::UserMetricsAction("BrowserPlugin.Guest.Create"));
  }
  
-@@ -96,6 +97,16 @@ WebContentsImpl* BrowserPluginGuest::GetWebContents() const {
-   return static_cast<WebContentsImpl*>(web_contents());
- }
- 
-+RenderFrameHostImpl* BrowserPluginGuest::GetProspectiveOuterDocument() {
-+  if (!delegate_) {
-+    // The guest delegate may only be null during some destruction scenarios.
-+    CHECK(web_contents()->IsBeingDestroyed());
-+    return nullptr;
-+  }
-+  return static_cast<RenderFrameHostImpl*>(
-+      delegate_->GetProspectiveOuterDocument());
-+}
-+
- void BrowserPluginGuest::DidStartNavigation(
-     NavigationHandle* navigation_handle) {
-   // Originally added to suppress the error page when a navigation is blocked
 diff --git a/content/browser/browser_plugin/browser_plugin_guest.h b/content/browser/browser_plugin/browser_plugin_guest.h
 index aec6a0eb9cbd0bd8b4f8171bce042eb564923a80..d294289245d5f39220371beaf2b76f10d5b97809 100644
 --- a/content/browser/browser_plugin/browser_plugin_guest.h
@@ -201,17 +184,13 @@ index aec6a0eb9cbd0bd8b4f8171bce042eb564923a80..d294289245d5f39220371beaf2b76f10
  
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.cc b/content/public/browser/browser_plugin_guest_delegate.cc
-index 2bccdb7104fed7546871c2ece9c84cd86b8d2f4a..040d36ae694412f06243581984d048a877cfd59b 100644
+index 2bccdb7104fed7546871c2ece9c84cd86b8d2f4a..81478f329b336ddcce16fb1b19552734b8c416a1 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.cc
 +++ b/content/public/browser/browser_plugin_guest_delegate.cc
-@@ -16,4 +16,14 @@ WebContents* BrowserPluginGuestDelegate::GetOwnerWebContents() {
+@@ -16,4 +16,10 @@ WebContents* BrowserPluginGuestDelegate::GetOwnerWebContents() {
    return nullptr;
  }
  
-+RenderFrameHost* BrowserPluginGuestDelegate::GetProspectiveOuterDocument() {
-+  return nullptr;
-+}
-+
 +base::WeakPtr<BrowserPluginGuestDelegate>
 +BrowserPluginGuestDelegate::GetGuestDelegateWeakPtr() {
 +  NOTREACHED();
@@ -220,7 +199,7 @@ index 2bccdb7104fed7546871c2ece9c84cd86b8d2f4a..040d36ae694412f06243581984d048a8
 +
  }  // namespace content
 diff --git a/content/public/browser/browser_plugin_guest_delegate.h b/content/public/browser/browser_plugin_guest_delegate.h
-index c63a2ddbb0c0d6846896a6628a39aee3fd79bbd6..2be188ca98083cca2d648794aaffa1505708a7dd 100644
+index c63a2ddbb0c0d6846896a6628a39aee3fd79bbd6..eb1cae57b5c4e2efa5eb4e384adb10fabe2902f5 100644
 --- a/content/public/browser/browser_plugin_guest_delegate.h
 +++ b/content/public/browser/browser_plugin_guest_delegate.h
 @@ -5,6 +5,7 @@
@@ -231,16 +210,10 @@ index c63a2ddbb0c0d6846896a6628a39aee3fd79bbd6..2be188ca98083cca2d648794aaffa150
  #include "content/common/content_export.h"
  #include "content/public/browser/web_contents.h"
  
-@@ -21,6 +22,14 @@ class CONTENT_EXPORT BrowserPluginGuestDelegate {
+@@ -21,6 +22,8 @@ class CONTENT_EXPORT BrowserPluginGuestDelegate {
  
    // Returns the WebContents that currently owns this guest.
    virtual WebContents* GetOwnerWebContents();
-+
-+  // Returns the RenderFrameHost that owns this guest, but has not yet attached
-+  // it.
-+  // TODO(crbug.com/769461): Have all guest types return the specific owner
-+  // RenderFrameHost and not assume it's the owner's main frame.
-+  virtual RenderFrameHost* GetProspectiveOuterDocument();
 +
 +  virtual base::WeakPtr<BrowserPluginGuestDelegate> GetGuestDelegateWeakPtr();
  };
