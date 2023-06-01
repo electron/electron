@@ -67,7 +67,6 @@ extern const char kOverlayHeight[];
 // WebPreferences.
 extern const char kZoomFactor[];
 extern const char kPreloadScript[];
-extern const char kPreloadScripts[];
 extern const char kNodeIntegration[];
 extern const char kContextIsolation[];
 extern const char kExperimentalFeatures[];
@@ -86,7 +85,6 @@ extern const char kNodeIntegrationInSubFrames[];
 extern const char kDisableHtmlFullscreenWindowResize[];
 extern const char kJavaScript[];
 extern const char kImages[];
-extern const char kImageAnimationPolicy[];
 extern const char kTextAreasAreResizable[];
 extern const char kWebGL[];
 extern const char kNavigateOnDragDrop[];
