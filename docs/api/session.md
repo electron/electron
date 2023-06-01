@@ -1091,6 +1091,55 @@ app.whenReady().then(() => {
 })
 ```
 
+#### `ses.setUSBProtectedClassesHandler(handler)`
+
+* `handler` Function\<string[]> | null
+  * `details` Object
+    * `protectedClasses` string[] - The current list of protected USB classes. Possible class values are:
+      * `audio`
+      * `audio-video`
+      * `hid`
+      * `mass-storage`
+      * `smart-card`
+      * `video`
+      * `wireless`
+
+Sets the handler which can be used to override which [USB classes are protected](https://wicg.github.io/webusb/#usbinterface-interface).
+The return value for the handler is a string array of USB classes which should be considered protected (eg not available in the renderer).  Valid values for the array are:
+
+* `audio`
+* `audio-video`
+* `hid`
+* `mass-storage`
+* `smart-card`
+* `video`
+* `wireless`
+
+Returning an empty string array from the handler will allow all USB classes; returning the passed in array will maintain the default list of protected USB classes (this is also the default behavior if a handler is not defined).
+To clear the handler, call `setUSBProtectedClassesHandler(null)`.
+
+```javascript
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+
+app.whenReady().then(() => {
+  win = new BrowserWindow()
+
+  win.webContents.session.setUSBProtectedClassesHandler((details) => {
+    // Allow all classes:
+    // return []
+    // Keep the current set of protected classes:
+    // return details.protectedClasses
+    // Selectively remove classes:
+    return details.protectedClasses.filter((usbClass) => {
+      // Exclude classes except for audio classes
+      return usbClass.indexOf('audio') === -1
+    })
+  })
+})
+```
+
 #### `ses.setBluetoothPairingHandler(handler)` _Windows_ _Linux_
 
 * `handler` Function | null

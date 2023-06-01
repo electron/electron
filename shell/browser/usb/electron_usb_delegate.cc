@@ -152,37 +152,9 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
     const url::Origin& origin,
     content::RenderFrameHost* frame,
     std::vector<uint8_t>& classes) {
-  // Isolated Apps have unrestricted access to any USB interface class.
-  if (frame &&
-      frame->GetWebExposedIsolationLevel() >=
-          content::WebExposedIsolationLevel::kMaybeIsolatedApplication) {
-    // TODO(https://crbug.com/1236706): Should the list of interface classes the
-    // app expects to claim be encoded in the Web App Manifest?
-    classes.clear();
-    return;
-  }
-
-#if BUILDFLAG(ENABLE_EXTENSIONS)
-  // Don't enforce protected interface classes for Chrome Apps since the
-  // chrome.usb API has no such restriction.
-  if (origin.scheme() == extensions::kExtensionScheme) {
-    auto* extension_registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    if (extension_registry) {
-      const extensions::Extension* extension =
-          extension_registry->enabled_extensions().GetByID(origin.host());
-      if (extension && extension->is_platform_app()) {
-        classes.clear();
-        return;
-      }
-    }
-  }
-
-  if (origin.scheme() == extensions::kExtensionScheme &&
-      base::Contains(kSmartCardPrivilegedExtensionIds, origin.host())) {
-    base::Erase(classes, device::mojom::kUsbSmartCardClass);
-  }
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context->GetPermissionControllerDelegate());
+  classes = permission_manager->CheckProtectedUSBClasses(classes);
 }
 
 std::unique_ptr<UsbChooser> ElectronUsbDelegate::RunChooser(
