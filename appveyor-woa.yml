@@ -68,9 +68,11 @@ for:
           node script/yarn.js install --frozen-lockfile
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"
+            Exit-AppveyorBuild
+          } else {
+            $global:LASTEXITCODE = 0
           }
-          $global:LASTEXITCODE = 0
       - cd ..
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
@@ -222,9 +224,11 @@ for:
           node script/yarn.js install --frozen-lockfile
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"
+            Exit-AppveyorBuild
+          } else {
+            $global:LASTEXITCODE = 0
           }
-          $global:LASTEXITCODE = 0
       - cd ..
       - mkdir out\Default
       - cd ..
