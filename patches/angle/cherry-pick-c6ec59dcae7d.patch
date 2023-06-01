@@ -1,0 +1,594 @@
+From c6ec59dcae7d56c93afddc764aa7979b23d53dac Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Mon, 27 Mar 2023 11:15:48 -0400
+Subject: [PATCH] Explicitly pass the extended dirty bits to syncState.
+
+Add a the extended dirty bits and bit mask to syncState instead of
+calling gl::State::getAndResetExtendedDirtyBits when encountering
+DIRTY_BIT_EXTENDED. It disallowed us from masking the extended dirty
+bits and feels like an anti-pattern to modify the extended dirty bits
+in gl::State from the backend.
+
+This is a refactor only.
+
+Bug: chromium:1410191
+Change-Id: I66fdec3eb57e3426cf0fda9ccb759700eafdda14
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4374100
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+Reviewed-by: Yuxin Hu <yuxinhu@google.com>
+---
+
+diff --git a/src/libANGLE/Context.cpp b/src/libANGLE/Context.cpp
+index 01b2739..8500801 100644
+--- a/src/libANGLE/Context.cpp
++++ b/src/libANGLE/Context.cpp
+@@ -685,6 +685,7 @@
+ 
+     // Initialize dirty bit masks
+     mAllDirtyBits.set();
++    mAllExtendedDirtyBits.set();
+ 
+     mDrawDirtyObjects.set(State::DIRTY_OBJECT_ACTIVE_TEXTURES);
+     mDrawDirtyObjects.set(State::DIRTY_OBJECT_DRAW_FRAMEBUFFER);
+@@ -698,6 +699,7 @@
+     mTexImageDirtyBits.set(State::DIRTY_BIT_UNPACK_STATE);
+     mTexImageDirtyBits.set(State::DIRTY_BIT_UNPACK_BUFFER_BINDING);
+     mTexImageDirtyBits.set(State::DIRTY_BIT_EXTENDED);
++    mTexImageExtendedDirtyBits.set();
+     // No dirty objects.
+ 
+     // Readpixels uses the pack state and read FBO
+@@ -4526,7 +4528,7 @@
+ ANGLE_INLINE angle::Result Context::prepareForCopyImage()
+ {
+     ANGLE_TRY(syncDirtyObjects(mCopyImageDirtyObjects, Command::CopyImage));
+-    return syncDirtyBits(mCopyImageDirtyBits, Command::CopyImage);
++    return syncDirtyBits(mCopyImageDirtyBits, mCopyImageExtendedDirtyBits, Command::CopyImage);
+ }
+ 
+ ANGLE_INLINE angle::Result Context::prepareForDispatch()
+@@ -4548,7 +4550,7 @@
+     }
+ 
+     ANGLE_TRY(syncDirtyObjects(mComputeDirtyObjects, Command::Dispatch));
+-    return syncDirtyBits(mComputeDirtyBits, Command::Dispatch);
++    return syncDirtyBits(mComputeDirtyBits, mComputeExtendedDirtyBits, Command::Dispatch);
+ }
+ 
+ angle::Result Context::prepareForInvalidate(GLenum target)
+@@ -4561,17 +4563,22 @@
+         effectiveTarget = GL_DRAW_FRAMEBUFFER;
+     }
+     ANGLE_TRY(mState.syncDirtyObject(this, effectiveTarget));
+-    return syncDirtyBits(effectiveTarget == GL_READ_FRAMEBUFFER ? mReadInvalidateDirtyBits
+-                                                                : mDrawInvalidateDirtyBits,
+-                         Command::Invalidate);
++    const State::DirtyBits &dirtyBits                 = effectiveTarget == GL_READ_FRAMEBUFFER
++                                                            ? mReadInvalidateDirtyBits
++                                                            : mDrawInvalidateDirtyBits;
++    const State::ExtendedDirtyBits &extendedDirtyBits = effectiveTarget == GL_READ_FRAMEBUFFER
++                                                            ? mReadInvalidateExtendedDirtyBits
++                                                            : mDrawInvalidateExtendedDirtyBits;
++    return syncDirtyBits(dirtyBits, extendedDirtyBits, Command::Invalidate);
+ }
+ 
+ angle::Result Context::syncState(const State::DirtyBits &bitMask,
++                                 const State::ExtendedDirtyBits &extendedBitMask,
+                                  const State::DirtyObjects &objectMask,
+                                  Command command)
+ {
+     ANGLE_TRY(syncDirtyObjects(objectMask, command));
+-    ANGLE_TRY(syncDirtyBits(bitMask, command));
++    ANGLE_TRY(syncDirtyBits(bitMask, extendedBitMask, command));
+     return angle::Result::Continue;
+ }
+ 
+@@ -5767,12 +5774,14 @@
+ 
+ angle::Result Context::syncStateForReadPixels()
+ {
+-    return syncState(mReadPixelsDirtyBits, mReadPixelsDirtyObjects, Command::ReadPixels);
++    return syncState(mReadPixelsDirtyBits, mReadPixelsExtendedDirtyBits, mReadPixelsDirtyObjects,
++                     Command::ReadPixels);
+ }
+ 
+ angle::Result Context::syncStateForTexImage()
+ {
+-    return syncState(mTexImageDirtyBits, mTexImageDirtyObjects, Command::TexImage);
++    return syncState(mTexImageDirtyBits, mTexImageExtendedDirtyBits, mTexImageDirtyObjects,
++                     Command::TexImage);
+ }
+ 
+ angle::Result Context::syncStateForBlit(GLbitfield mask)
+@@ -5793,12 +5802,12 @@
+ 
+     Command command = static_cast<Command>(static_cast<uint32_t>(Command::Blit) + commandMask);
+ 
+-    return syncState(mBlitDirtyBits, mBlitDirtyObjects, command);
++    return syncState(mBlitDirtyBits, mBlitExtendedDirtyBits, mBlitDirtyObjects, command);
+ }
+ 
+ angle::Result Context::syncStateForClear()
+ {
+-    return syncState(mClearDirtyBits, mClearDirtyObjects, Command::Clear);
++    return syncState(mClearDirtyBits, mClearExtendedDirtyBits, mClearDirtyObjects, Command::Clear);
+ }
+ 
+ angle::Result Context::syncTextureForCopy(Texture *texture)
+@@ -10195,6 +10204,7 @@
+     ASSERT(mImplementation->getNativePixelLocalStorageOptions().type ==
+            ShPixelLocalStorageType::PixelLocalStorageEXT);
+     ANGLE_CONTEXT_TRY(syncState(mPixelLocalStorageEXTEnableDisableDirtyBits,
++                                mPixelLocalStorageEXTEnableDisableExtendedDirtyBits,
+                                 mPixelLocalStorageEXTEnableDisableDirtyObjects, Command::Draw));
+     ANGLE_CONTEXT_TRY(mImplementation->drawPixelLocalStorageEXTEnable(this, n, planes, loadops));
+ }
+@@ -10205,6 +10215,7 @@
+     ASSERT(mImplementation->getNativePixelLocalStorageOptions().type ==
+            ShPixelLocalStorageType::PixelLocalStorageEXT);
+     ANGLE_CONTEXT_TRY(syncState(mPixelLocalStorageEXTEnableDisableDirtyBits,
++                                mPixelLocalStorageEXTEnableDisableExtendedDirtyBits,
+                                 mPixelLocalStorageEXTEnableDisableDirtyObjects, Command::Draw));
+     ANGLE_CONTEXT_TRY(mImplementation->drawPixelLocalStorageEXTDisable(this, planes, storeops));
+ }
+diff --git a/src/libANGLE/Context.h b/src/libANGLE/Context.h
+index 9350bda..b83977c 100644
+--- a/src/libANGLE/Context.h
++++ b/src/libANGLE/Context.h
+@@ -697,10 +697,13 @@
+     angle::Result prepareForClear(GLbitfield mask);
+     angle::Result prepareForClearBuffer(GLenum buffer, GLint drawbuffer);
+     angle::Result syncState(const State::DirtyBits &bitMask,
++                            const State::ExtendedDirtyBits &extendedBitMask,
+                             const State::DirtyObjects &objectMask,
+                             Command command);
+     angle::Result syncDirtyBits(Command command);
+-    angle::Result syncDirtyBits(const State::DirtyBits &bitMask, Command command);
++    angle::Result syncDirtyBits(const State::DirtyBits &bitMask,
++                                const State::ExtendedDirtyBits &extendedBitMask,
++                                Command command);
+     angle::Result syncDirtyObjects(const State::DirtyObjects &objectMask, Command command);
+     angle::Result syncStateForReadPixels();
+     angle::Result syncStateForTexImage();
+@@ -818,21 +821,31 @@
+     StateCache mStateCache;
+ 
+     State::DirtyBits mAllDirtyBits;
++    State::ExtendedDirtyBits mAllExtendedDirtyBits;
+     State::DirtyBits mTexImageDirtyBits;
++    State::ExtendedDirtyBits mTexImageExtendedDirtyBits;
+     State::DirtyObjects mTexImageDirtyObjects;
+     State::DirtyBits mReadPixelsDirtyBits;
++    State::ExtendedDirtyBits mReadPixelsExtendedDirtyBits;
+     State::DirtyObjects mReadPixelsDirtyObjects;
+     State::DirtyBits mClearDirtyBits;
++    State::ExtendedDirtyBits mClearExtendedDirtyBits;
+     State::DirtyObjects mClearDirtyObjects;
+     State::DirtyBits mBlitDirtyBits;
++    State::ExtendedDirtyBits mBlitExtendedDirtyBits;
+     State::DirtyObjects mBlitDirtyObjects;
+     State::DirtyBits mComputeDirtyBits;
++    State::ExtendedDirtyBits mComputeExtendedDirtyBits;
+     State::DirtyObjects mComputeDirtyObjects;
+     State::DirtyBits mCopyImageDirtyBits;
++    State::ExtendedDirtyBits mCopyImageExtendedDirtyBits;
+     State::DirtyObjects mCopyImageDirtyObjects;
+     State::DirtyBits mReadInvalidateDirtyBits;
++    State::ExtendedDirtyBits mReadInvalidateExtendedDirtyBits;
+     State::DirtyBits mDrawInvalidateDirtyBits;
++    State::ExtendedDirtyBits mDrawInvalidateExtendedDirtyBits;
+     State::DirtyBits mPixelLocalStorageEXTEnableDisableDirtyBits;
++    State::ExtendedDirtyBits mPixelLocalStorageEXTEnableDisableExtendedDirtyBits;
+     State::DirtyObjects mPixelLocalStorageEXTEnableDisableDirtyObjects;
+ 
+     // Binding to container objects that use dependent state updates.
+diff --git a/src/libANGLE/Context.inl.h b/src/libANGLE/Context.inl.h
+index b7c8ed9..f43cb23 100644
+--- a/src/libANGLE/Context.inl.h
++++ b/src/libANGLE/Context.inl.h
+@@ -92,17 +92,25 @@
+ 
+ ANGLE_INLINE angle::Result Context::syncDirtyBits(Command command)
+ {
+-    const State::DirtyBits &dirtyBits = mState.getDirtyBits();
+-    ANGLE_TRY(mImplementation->syncState(this, dirtyBits, mAllDirtyBits, command));
++    const State::DirtyBits &dirtyBits                 = mState.getDirtyBits();
++    const State::ExtendedDirtyBits &extendedDirtyBits = mState.getExtendedDirtyBits();
++    ANGLE_TRY(mImplementation->syncState(this, dirtyBits, mAllDirtyBits, extendedDirtyBits,
++                                         mAllExtendedDirtyBits, command));
+     mState.clearDirtyBits();
+     return angle::Result::Continue;
+ }
+ 
+-ANGLE_INLINE angle::Result Context::syncDirtyBits(const State::DirtyBits &bitMask, Command command)
++ANGLE_INLINE angle::Result Context::syncDirtyBits(const State::DirtyBits &bitMask,
++                                                  const State::ExtendedDirtyBits &extendedBitMask,
++                                                  Command command)
+ {
+     const State::DirtyBits &dirtyBits = (mState.getDirtyBits() & bitMask);
+-    ANGLE_TRY(mImplementation->syncState(this, dirtyBits, bitMask, command));
++    const State::ExtendedDirtyBits &extendedDirtyBits =
++        (mState.getExtendedDirtyBits() & extendedBitMask);
++    ANGLE_TRY(mImplementation->syncState(this, dirtyBits, bitMask, extendedDirtyBits,
++                                         extendedBitMask, command));
+     mState.clearDirtyBits(dirtyBits);
++    mState.clearExtendedDirtyBits(extendedDirtyBits);
+     return angle::Result::Continue;
+ }
+ 
+diff --git a/src/libANGLE/State.cpp b/src/libANGLE/State.cpp
+index 74064f8..19ce708 100644
+--- a/src/libANGLE/State.cpp
++++ b/src/libANGLE/State.cpp
+@@ -3863,13 +3863,6 @@
+     return retVal;
+ }
+ 
+-State::ExtendedDirtyBits State::getAndResetExtendedDirtyBits() const
+-{
+-    ExtendedDirtyBits retVal = mExtendedDirtyBits;
+-    mExtendedDirtyBits.reset();
+-    return retVal;
+-}
+-
+ void State::initializeForCapture(const Context *context)
+ {
+     mCaps       = context->getCaps();
+diff --git a/src/libANGLE/State.h b/src/libANGLE/State.h
+index cbb4bd1..3bf46b8 100644
+--- a/src/libANGLE/State.h
++++ b/src/libANGLE/State.h
+@@ -490,13 +490,13 @@
+     {
+         return mBoundUniformBuffersMask;
+     }
+-    const angle::BitSet<gl::IMPLEMENTATION_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS>
+-        &getAtomicCounterBuffersMask() const
++    const angle::BitSet<gl::IMPLEMENTATION_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS> &
++    getAtomicCounterBuffersMask() const
+     {
+         return mBoundAtomicCounterBuffersMask;
+     }
+-    const angle::BitSet<gl::IMPLEMENTATION_MAX_SHADER_STORAGE_BUFFER_BINDINGS>
+-        &getShaderStorageBuffersMask() const
++    const angle::BitSet<gl::IMPLEMENTATION_MAX_SHADER_STORAGE_BUFFER_BINDINGS> &
++    getShaderStorageBuffersMask() const
+     {
+         return mBoundShaderStorageBuffersMask;
+     }
+@@ -773,9 +773,8 @@
+ 
+     using ExtendedDirtyBits = angle::BitSet32<EXTENDED_DIRTY_BIT_MAX>;
+     const ExtendedDirtyBits &getExtendedDirtyBits() const { return mExtendedDirtyBits; }
+-    // TODO(https://anglebug.com/5631): Handle extended dirty bits on non-vulkan backends
+-    ExtendedDirtyBits getAndResetExtendedDirtyBits() const;
+     void clearExtendedDirtyBits() { mExtendedDirtyBits.reset(); }
++    void clearExtendedDirtyBits(const ExtendedDirtyBits &bitset) { mExtendedDirtyBits &= ~bitset; }
+ 
+     using DirtyObjects = angle::BitSet<DIRTY_OBJECT_MAX>;
+     void clearDirtyObjects() { mDirtyObjects.reset(); }
+diff --git a/src/libANGLE/renderer/ContextImpl.h b/src/libANGLE/renderer/ContextImpl.h
+index 825ea29..5b79760 100644
+--- a/src/libANGLE/renderer/ContextImpl.h
++++ b/src/libANGLE/renderer/ContextImpl.h
+@@ -202,6 +202,8 @@
+     virtual angle::Result syncState(const gl::Context *context,
+                                     const gl::State::DirtyBits &dirtyBits,
+                                     const gl::State::DirtyBits &bitMask,
++                                    const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                    const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                     gl::Command command) = 0;
+ 
+     // Disjoint timer queries
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Context11.cpp b/src/libANGLE/renderer/d3d/d3d11/Context11.cpp
+index ad36489..dc112f5 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Context11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/Context11.cpp
+@@ -798,9 +798,11 @@
+ angle::Result Context11::syncState(const gl::Context *context,
+                                    const gl::State::DirtyBits &dirtyBits,
+                                    const gl::State::DirtyBits &bitMask,
++                                   const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                   const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                    gl::Command command)
+ {
+-    mRenderer->getStateManager()->syncState(context, dirtyBits, command);
++    mRenderer->getStateManager()->syncState(context, dirtyBits, extendedDirtyBits, command);
+     return angle::Result::Continue;
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d11/Context11.h b/src/libANGLE/renderer/d3d/d3d11/Context11.h
+index 9bbcd11..776cac2 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/Context11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/Context11.h
+@@ -219,6 +219,8 @@
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &dirtyBits,
+                             const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask,
+                             gl::Command command) override;
+ 
+     // Disjoint timer queries
+diff --git a/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp b/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp
+index 0b91d54..484182c 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp
++++ b/src/libANGLE/renderer/d3d/d3d11/StateManager11.cpp
+@@ -927,6 +927,7 @@
+ 
+ void StateManager11::syncState(const gl::Context *context,
+                                const gl::State::DirtyBits &dirtyBits,
++                               const gl::State::ExtendedDirtyBits &extendedDirtyBits,
+                                gl::Command command)
+ {
+     if (!dirtyBits.any())
+@@ -1194,9 +1195,6 @@
+                 break;
+             case gl::State::DIRTY_BIT_EXTENDED:
+             {
+-                gl::State::ExtendedDirtyBits extendedDirtyBits =
+-                    state.getAndResetExtendedDirtyBits();
+-
+                 for (size_t extendedDirtyBit : extendedDirtyBits)
+                 {
+                     switch (extendedDirtyBit)
+diff --git a/src/libANGLE/renderer/d3d/d3d11/StateManager11.h b/src/libANGLE/renderer/d3d/d3d11/StateManager11.h
+index e3bb56c..bfb5c41 100644
+--- a/src/libANGLE/renderer/d3d/d3d11/StateManager11.h
++++ b/src/libANGLE/renderer/d3d/d3d11/StateManager11.h
+@@ -195,6 +195,7 @@
+ 
+     void syncState(const gl::Context *context,
+                    const gl::State::DirtyBits &dirtyBits,
++                   const gl::State::ExtendedDirtyBits &extendedDirtyBits,
+                    gl::Command command);
+ 
+     angle::Result updateStateForCompute(const gl::Context *context,
+diff --git a/src/libANGLE/renderer/d3d/d3d9/Context9.cpp b/src/libANGLE/renderer/d3d/d3d9/Context9.cpp
+index 50719b7..dbf046c 100644
+--- a/src/libANGLE/renderer/d3d/d3d9/Context9.cpp
++++ b/src/libANGLE/renderer/d3d/d3d9/Context9.cpp
+@@ -425,9 +425,11 @@
+ angle::Result Context9::syncState(const gl::Context *context,
+                                   const gl::State::DirtyBits &dirtyBits,
+                                   const gl::State::DirtyBits &bitMask,
++                                  const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                  const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                   gl::Command command)
+ {
+-    mRenderer->getStateManager()->syncState(mState, dirtyBits);
++    mRenderer->getStateManager()->syncState(mState, dirtyBits, extendedDirtyBits);
+     return angle::Result::Continue;
+ }
+ 
+diff --git a/src/libANGLE/renderer/d3d/d3d9/Context9.h b/src/libANGLE/renderer/d3d/d3d9/Context9.h
+index 008e84a..058dd38 100644
+--- a/src/libANGLE/renderer/d3d/d3d9/Context9.h
++++ b/src/libANGLE/renderer/d3d/d3d9/Context9.h
+@@ -217,6 +217,8 @@
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &dirtyBits,
+                             const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask,
+                             gl::Command command) override;
+ 
+     // Disjoint timer queries
+diff --git a/src/libANGLE/renderer/d3d/d3d9/StateManager9.cpp b/src/libANGLE/renderer/d3d/d3d9/StateManager9.cpp
+index cad011b..f215acd 100644
+--- a/src/libANGLE/renderer/d3d/d3d9/StateManager9.cpp
++++ b/src/libANGLE/renderer/d3d/d3d9/StateManager9.cpp
+@@ -112,7 +112,9 @@
+     }
+ }
+ 
+-void StateManager9::syncState(const gl::State &state, const gl::State::DirtyBits &dirtyBits)
++void StateManager9::syncState(const gl::State &state,
++                              const gl::State::DirtyBits &dirtyBits,
++                              const gl::State::ExtendedDirtyBits &extendedDirtyBits)
+ {
+     if (!dirtyBits.any())
+     {
+diff --git a/src/libANGLE/renderer/d3d/d3d9/StateManager9.h b/src/libANGLE/renderer/d3d/d3d9/StateManager9.h
+index b047b69..2fc7cb2 100644
+--- a/src/libANGLE/renderer/d3d/d3d9/StateManager9.h
++++ b/src/libANGLE/renderer/d3d/d3d9/StateManager9.h
+@@ -40,7 +40,9 @@
+ 
+     void initialize();
+ 
+-    void syncState(const gl::State &state, const gl::State::DirtyBits &dirtyBits);
++    void syncState(const gl::State &state,
++                   const gl::State::DirtyBits &dirtyBits,
++                   const gl::State::ExtendedDirtyBits &extendedDirtyBits);
+ 
+     void setBlendDepthRasterStates(const gl::State &glState, unsigned int sampleMask);
+     void setScissorState(const gl::Rectangle &scissor, bool enabled);
+diff --git a/src/libANGLE/renderer/gl/ContextGL.cpp b/src/libANGLE/renderer/gl/ContextGL.cpp
+index 63fdd9e..29b9ec7 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.cpp
++++ b/src/libANGLE/renderer/gl/ContextGL.cpp
+@@ -886,9 +886,12 @@
+ angle::Result ContextGL::syncState(const gl::Context *context,
+                                    const gl::State::DirtyBits &dirtyBits,
+                                    const gl::State::DirtyBits &bitMask,
++                                   const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                   const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                    gl::Command command)
+ {
+-    return mRenderer->getStateManager()->syncState(context, dirtyBits, bitMask);
++    return mRenderer->getStateManager()->syncState(context, dirtyBits, bitMask, extendedDirtyBits,
++                                                   extendedBitMask);
+ }
+ 
+ GLint ContextGL::getGPUDisjoint()
+diff --git a/src/libANGLE/renderer/gl/ContextGL.h b/src/libANGLE/renderer/gl/ContextGL.h
+index 8aa2609..7b5faf3 100644
+--- a/src/libANGLE/renderer/gl/ContextGL.h
++++ b/src/libANGLE/renderer/gl/ContextGL.h
+@@ -239,6 +239,8 @@
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &dirtyBits,
+                             const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask,
+                             gl::Command command) override;
+ 
+     // Disjoint timer queries
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.cpp b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+index 91ac604..03e37fb 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.cpp
++++ b/src/libANGLE/renderer/gl/StateManagerGL.cpp
+@@ -1866,7 +1866,9 @@
+ 
+ angle::Result StateManagerGL::syncState(const gl::Context *context,
+                                         const gl::State::DirtyBits &glDirtyBits,
+-                                        const gl::State::DirtyBits &bitMask)
++                                        const gl::State::DirtyBits &bitMask,
++                                        const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                        const gl::State::ExtendedDirtyBits &extendedBitMask)
+ {
+     const gl::State &state = context->getState();
+ 
+@@ -2254,8 +2256,6 @@
+                 break;
+             case gl::State::DIRTY_BIT_EXTENDED:
+             {
+-                const gl::State::ExtendedDirtyBits extendedDirtyBits =
+-                    state.getAndResetExtendedDirtyBits();
+                 const gl::State::ExtendedDirtyBits glAndLocalExtendedDirtyBits =
+                     extendedDirtyBits | mLocalExtendedDirtyBits;
+                 for (size_t extendedDirtyBit : glAndLocalExtendedDirtyBits)
+diff --git a/src/libANGLE/renderer/gl/StateManagerGL.h b/src/libANGLE/renderer/gl/StateManagerGL.h
+index 9ef348c..aac1a3f 100644
+--- a/src/libANGLE/renderer/gl/StateManagerGL.h
++++ b/src/libANGLE/renderer/gl/StateManagerGL.h
+@@ -279,7 +279,9 @@
+ 
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &glDirtyBits,
+-                            const gl::State::DirtyBits &bitMask);
++                            const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask);
+ 
+     ANGLE_INLINE void updateMultiviewBaseViewLayerIndexUniform(
+         const gl::Program *program,
+diff --git a/src/libANGLE/renderer/metal/ContextMtl.h b/src/libANGLE/renderer/metal/ContextMtl.h
+index 0f157b8..3e06039 100644
+--- a/src/libANGLE/renderer/metal/ContextMtl.h
++++ b/src/libANGLE/renderer/metal/ContextMtl.h
+@@ -192,6 +192,8 @@
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &dirtyBits,
+                             const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask,
+                             gl::Command command) override;
+ 
+     // Disjoint timer queries
+@@ -482,7 +484,8 @@
+                                    GLint baseVertex,
+                                    GLuint baseInstance);
+     void flushCommandBufferIfNeeded();
+-    void updateExtendedState(const gl::State &glState);
++    void updateExtendedState(const gl::State &glState,
++                             const gl::State::ExtendedDirtyBits &extendedDirtyBits);
+ 
+     void updateViewport(FramebufferMtl *framebufferMtl,
+                         const gl::Rectangle &viewport,
+diff --git a/src/libANGLE/renderer/metal/ContextMtl.mm b/src/libANGLE/renderer/metal/ContextMtl.mm
+index 6369831..64952d9 100644
+--- a/src/libANGLE/renderer/metal/ContextMtl.mm
++++ b/src/libANGLE/renderer/metal/ContextMtl.mm
+@@ -1133,6 +1133,8 @@
+ angle::Result ContextMtl::syncState(const gl::Context *context,
+                                     const gl::State::DirtyBits &dirtyBits,
+                                     const gl::State::DirtyBits &bitMask,
++                                    const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                    const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                     gl::Command command)
+ {
+     const gl::State &glState = context->getState();
+@@ -1361,7 +1363,7 @@
+             case gl::State::DIRTY_BIT_PROVOKING_VERTEX:
+                 break;
+             case gl::State::DIRTY_BIT_EXTENDED:
+-                updateExtendedState(glState);
++                updateExtendedState(glState, extendedDirtyBits);
+                 break;
+             case gl::State::DIRTY_BIT_SAMPLE_SHADING:
+                 // Nothing to do until OES_sample_shading is implemented.
+@@ -1378,9 +1380,9 @@
+     return angle::Result::Continue;
+ }
+ 
+-void ContextMtl::updateExtendedState(const gl::State &glState)
++void ContextMtl::updateExtendedState(const gl::State &glState,
++                                     const gl::State::ExtendedDirtyBits &extendedDirtyBits)
+ {
+-    gl::State::ExtendedDirtyBits extendedDirtyBits = glState.getAndResetExtendedDirtyBits();
+     for (size_t extendedDirtyBit : extendedDirtyBits)
+     {
+         switch (extendedDirtyBit)
+diff --git a/src/libANGLE/renderer/null/ContextNULL.cpp b/src/libANGLE/renderer/null/ContextNULL.cpp
+index 6978e6f..bbcf00c 100644
+--- a/src/libANGLE/renderer/null/ContextNULL.cpp
++++ b/src/libANGLE/renderer/null/ContextNULL.cpp
+@@ -374,6 +374,8 @@
+ angle::Result ContextNULL::syncState(const gl::Context *context,
+                                      const gl::State::DirtyBits &dirtyBits,
+                                      const gl::State::DirtyBits &bitMask,
++                                     const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                     const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                      gl::Command command)
+ {
+     return angle::Result::Continue;
+diff --git a/src/libANGLE/renderer/null/ContextNULL.h b/src/libANGLE/renderer/null/ContextNULL.h
+index 1fb3cb8..0ab4f05 100644
+--- a/src/libANGLE/renderer/null/ContextNULL.h
++++ b/src/libANGLE/renderer/null/ContextNULL.h
+@@ -187,6 +187,8 @@
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &dirtyBits,
+                             const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask,
+                             gl::Command command) override;
+ 
+     // Disjoint timer queries
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.cpp b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+index 921f7ef..be821bc 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.cpp
++++ b/src/libANGLE/renderer/vulkan/ContextVk.cpp
+@@ -5116,6 +5116,8 @@
+ angle::Result ContextVk::syncState(const gl::Context *context,
+                                    const gl::State::DirtyBits &dirtyBits,
+                                    const gl::State::DirtyBits &bitMask,
++                                   const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                                   const gl::State::ExtendedDirtyBits &extendedBitMask,
+                                    gl::Command command)
+ {
+     const gl::State &glState                       = context->getState();
+@@ -5535,8 +5537,6 @@
+                 break;
+             case gl::State::DIRTY_BIT_EXTENDED:
+             {
+-                gl::State::ExtendedDirtyBits extendedDirtyBits =
+-                    glState.getAndResetExtendedDirtyBits();
+                 for (size_t extendedDirtyBit : extendedDirtyBits)
+                 {
+                     switch (extendedDirtyBit)
+diff --git a/src/libANGLE/renderer/vulkan/ContextVk.h b/src/libANGLE/renderer/vulkan/ContextVk.h
+index 0c617bc..c817914 100644
+--- a/src/libANGLE/renderer/vulkan/ContextVk.h
++++ b/src/libANGLE/renderer/vulkan/ContextVk.h
+@@ -278,6 +278,8 @@
+     angle::Result syncState(const gl::Context *context,
+                             const gl::State::DirtyBits &dirtyBits,
+                             const gl::State::DirtyBits &bitMask,
++                            const gl::State::ExtendedDirtyBits &extendedDirtyBits,
++                            const gl::State::ExtendedDirtyBits &extendedBitMask,
+                             gl::Command command) override;
+ 
+     // Disjoint timer queries

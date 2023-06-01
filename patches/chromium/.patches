@@ -141,3 +141,6 @@ merge_m112_check_spdyproxyclientsocket_is_alive_after_write.patch
 check_callback_availability_in.patch
 m112_cherry_pick_libxml_cve_fix.patch
 m112_fix_scopedobservation_uaf_in.patch
+cherry-pick-93c6be3a42e7.patch
+cherry-pick-e6b75a8b4900.patch
+cherry-pick-ea1cd76358e0.patch
