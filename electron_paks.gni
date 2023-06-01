@@ -52,6 +52,7 @@ template("electron_extra_paks") {
                            ])
     output = "${invoker.output_dir}/resources.pak"
     sources = [
+      "$root_gen_dir/chrome/accessibility_resources.pak",
       "$root_gen_dir/chrome/browser_resources.pak",
       "$root_gen_dir/chrome/common_resources.pak",
       "$root_gen_dir/chrome/dev_ui_browser_resources.pak",
@@ -69,6 +70,7 @@ template("electron_extra_paks") {
     deps = [
       "//chrome/browser:dev_ui_browser_resources",
       "//chrome/browser:resources",
+      "//chrome/browser/resources/accessibility:resources",
       "//chrome/common:resources",
       "//components/resources",
       "//content:content_resources",
