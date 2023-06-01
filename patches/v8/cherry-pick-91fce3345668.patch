@@ -39,6 +39,21 @@ index ba9c8f0d1f175a7c22648ba7b22741fbb8f39bc8..711093cf8845c7a6ff147d88607cbdb4
 +
  }  // namespace internal
  }  // namespace v8
+diff --git a/src/regexp/regexp-ast.h b/src/regexp/regexp-ast.h
+index 6939fde07f1a71019e984f90238848868ebc222a..6b60ca93ab5d51eeaed14e8481ca53f6e31394ab 100644
+--- a/src/regexp/regexp-ast.h
++++ b/src/regexp/regexp-ast.h
+@@ -434,6 +434,10 @@ class RegExpClassSetExpression final : public RegExpTree {
+ 
+   DECL_BOILERPLATE(ClassSetExpression);
+ 
++  // Create an empty class set expression (matches everything if |is_negated|,
++  // nothing otherwise).
++  static RegExpClassSetExpression* Empty(Zone* zone, bool is_negated);
++
+   bool IsTextElement() override { return true; }
+   int min_match() override { return 0; }
+   int max_match() override { return max_match_; }
 diff --git a/src/regexp/regexp-parser.cc b/src/regexp/regexp-parser.cc
 index f420b2eec42d413941751e0d2831689fa820e260..0ba51712c8efb758d5081e790d52eb16a01b2366 100644
 --- a/src/regexp/regexp-parser.cc
