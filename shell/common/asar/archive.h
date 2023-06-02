@@ -20,9 +20,9 @@ namespace asar {
 
 class ScopedTemporaryFile;
 
-enum HashAlgorithm {
-  SHA256,
-  NONE,
+enum class HashAlgorithm {
+  kSHA256,
+  kNone,
 };
 
 struct IntegrityPayload {

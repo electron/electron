@@ -1,1 +1,1 @@
-nonExistingFunc(); // eslint-disable-line
+nonExistingFunc(); // eslint-disable-line no-undef

@@ -155,6 +155,12 @@ class NativeWindowMac : public NativeWindow,
   void NotifyWindowLeaveFullScreen() override;
   void SetActive(bool is_key) override;
   bool IsActive() const override;
+  // Remove the specified child window without closing it.
+  void RemoveChildWindow(NativeWindow* child) override;
+  // Attach child windows, if the window is visible.
+  void AttachChildren() override;
+  // Detach window from parent without destroying it.
+  void DetachChildren() override;
 
   void NotifyWindowWillEnterFullScreen();
   void NotifyWindowWillLeaveFullScreen();
@@ -234,6 +240,7 @@ class NativeWindowMac : public NativeWindow,
   // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
 
+  bool fullscreen_before_kiosk_ = false;
   bool is_kiosk_ = false;
   bool zoom_to_page_width_ = false;
   absl::optional<gfx::Point> traffic_light_position_;

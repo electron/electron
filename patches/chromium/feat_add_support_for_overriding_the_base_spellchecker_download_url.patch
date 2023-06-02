@@ -9,7 +9,7 @@ production use cases.  This is unlikely to be upstreamed as the change
 is entirely in //chrome.
 
 diff --git a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
-index 8302d03e58eede9376d399eaf5f5de166bea9b20..1ee63c9349f8c6e12e3b3f483bb2a7d14dae9676 100644
+index 48b7a20c212578ba9055b781b5c05b312fa7e974..3ae8136e5c938be80df141f7ca582d974fb08eed 100644
 --- a/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 +++ b/chrome/browser/spellchecker/spellcheck_hunspell_dictionary.cc
 @@ -49,6 +49,9 @@ namespace {
@@ -22,7 +22,7 @@ index 8302d03e58eede9376d399eaf5f5de166bea9b20..1ee63c9349f8c6e12e3b3f483bb2a7d1
  // Close the file.
  void CloseDictionary(base::File file) {
    base::ScopedBlockingCall scoped_blocking_call(FROM_HERE,
-@@ -266,6 +269,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
+@@ -265,6 +268,10 @@ void SpellcheckHunspellDictionary::SetDownloadURLForTesting(const GURL url) {
    g_download_url_for_testing.Get() = url;
  }
  
@@ -33,7 +33,7 @@ index 8302d03e58eede9376d399eaf5f5de166bea9b20..1ee63c9349f8c6e12e3b3f483bb2a7d1
  GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    if (g_download_url_for_testing.Get() != GURL())
      return g_download_url_for_testing.Get();
-@@ -273,6 +280,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
+@@ -272,6 +279,9 @@ GURL SpellcheckHunspellDictionary::GetDictionaryURL() {
    std::string bdict_file = dictionary_file_.path.BaseName().MaybeAsASCII();
    DCHECK(!bdict_file.empty());
  

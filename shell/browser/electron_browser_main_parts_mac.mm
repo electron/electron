@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "base/mac/bundle_locations.h"
+#include "base/apple/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "services/device/public/cpp/geolocation/system_geolocation_source_mac.h"
@@ -49,7 +49,7 @@ void ElectronBrowserMainParts::RegisterURLHandler() {
 
 // Replicates NSApplicationMain, but doesn't start a run loop.
 void ElectronBrowserMainParts::InitializeMainNib() {
-  auto infoDictionary = base::mac::OuterBundle().infoDictionary;
+  auto infoDictionary = base::apple::OuterBundle().infoDictionary;
 
   auto principalClass =
       NSClassFromString([infoDictionary objectForKey:@"NSPrincipalClass"]);
@@ -61,19 +61,19 @@ void ElectronBrowserMainParts::InitializeMainNib() {
 
   @try {
     mainNib = [[NSNib alloc] initWithNibNamed:mainNibName
-                                       bundle:base::mac::FrameworkBundle()];
+                                       bundle:base::apple::FrameworkBundle()];
     // Handle failure of initWithNibNamed on SMB shares
     // TODO(codebytere): Remove when
     // https://bugs.chromium.org/p/chromium/issues/detail?id=932935 is fixed
   } @catch (NSException* exception) {
     NSString* nibPath =
         [NSString stringWithFormat:@"Resources/%@.nib", mainNibName];
-    nibPath = [base::mac::FrameworkBundle().bundlePath
+    nibPath = [base::apple::FrameworkBundle().bundlePath
         stringByAppendingPathComponent:nibPath];
 
     NSData* data = [NSData dataWithContentsOfFile:nibPath];
     mainNib = [[NSNib alloc] initWithNibData:data
-                                      bundle:base::mac::FrameworkBundle()];
+                                      bundle:base::apple::FrameworkBundle()];
   }
 
   [mainNib instantiateWithOwner:application topLevelObjects:nil];

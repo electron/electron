@@ -11,6 +11,8 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
@@ -245,11 +247,15 @@ class WebContents : public ExclusiveAccessContext,
   void Redo();
   void Cut();
   void Copy();
+  void CenterSelection();
   void Paste();
   void PasteAndMatchStyle();
   void Delete();
   void SelectAll();
   void Unselect();
+  void ScrollToTopOfDocument();
+  void ScrollToBottomOfDocument();
+  void AdjustSelectionByCharacterOffset(gin::Arguments* args);
   void Replace(const std::u16string& word);
   void ReplaceMisspelling(const std::u16string& word);
   uint32_t FindInPage(gin::Arguments* args);
@@ -329,6 +335,9 @@ class WebContents : public ExclusiveAccessContext,
   v8::Local<v8::Promise> TakeHeapSnapshot(v8::Isolate* isolate,
                                           const base::FilePath& file_path);
   v8::Local<v8::Promise> GetProcessMemoryInfo(v8::Isolate* isolate);
+
+  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
+                         const content::ContextMenuParams& params) override;
 
   // Properties.
   int32_t ID() const { return id_; }
@@ -555,8 +564,6 @@ class WebContents : public ExclusiveAccessContext,
   void RendererResponsive(
       content::WebContents* source,
       content::RenderWidgetHost* render_widget_host) override;
-  bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
-                         const content::ContextMenuParams& params) override;
   void FindReply(content::WebContents* web_contents,
                  int request_id,
                  int number_of_matches,
@@ -693,7 +700,10 @@ class WebContents : public ExclusiveAccessContext,
   bool CanUserExitFullscreen() const override;
   bool IsExclusiveAccessBubbleDisplayed() const override;
 
+  // content::WebContentsDelegate
   bool IsFullscreenForTabOrPending(const content::WebContents* source) override;
+  content::FullscreenState GetFullscreenState(
+      const content::WebContents* web_contents) const override;
   bool TakeFocus(content::WebContents* source, bool reverse) override;
   content::PictureInPictureResult EnterPictureInPicture(
       content::WebContents* web_contents) override;
@@ -762,13 +772,10 @@ class WebContents : public ExclusiveAccessContext,
 #endif
 
   // The host webcontents that may contain this webcontents.
-  WebContents* embedder_ = nullptr;
+  RAW_PTR_EXCLUSION WebContents* embedder_ = nullptr;
 
   // Whether the guest view has been attached.
   bool attached_ = false;
-
-  // The zoom controller for this webContents.
-  WebContentsZoomController* zoom_controller_ = nullptr;
 
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
@@ -806,13 +813,18 @@ class WebContents : public ExclusiveAccessContext,
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   // The stored InspectableWebContents object.
   // Notice that inspectable_web_contents_ must be placed after
   // dialog_manager_, so we can make sure inspectable_web_contents_ is
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
+
+  // The zoom controller for this webContents.
+  // Note: owned by inspectable_web_contents_, so declare this *after*
+  // that field to ensure the dtor destroys them in the right order.
+  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
 
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
@@ -831,7 +843,7 @@ class WebContents : public ExclusiveAccessContext,
 #endif
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
-  content::RenderFrameHost* fullscreen_frame_ = nullptr;
+  raw_ptr<content::RenderFrameHost> fullscreen_frame_ = nullptr;
 
   std::unique_ptr<SkRegion> draggable_region_;
 

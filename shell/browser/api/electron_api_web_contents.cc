@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -118,7 +119,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/language_util.h"
-#include "shell/common/mouse_util.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/process_util.h"
@@ -382,6 +382,123 @@ namespace electron::api {
 
 namespace {
 
+std::string CursorTypeToString(const ui::Cursor& cursor) {
+  switch (cursor.type()) {
+    case ui::mojom::CursorType::kPointer:
+      return "pointer";
+    case ui::mojom::CursorType::kCross:
+      return "crosshair";
+    case ui::mojom::CursorType::kHand:
+      return "hand";
+    case ui::mojom::CursorType::kIBeam:
+      return "text";
+    case ui::mojom::CursorType::kWait:
+      return "wait";
+    case ui::mojom::CursorType::kHelp:
+      return "help";
+    case ui::mojom::CursorType::kEastResize:
+      return "e-resize";
+    case ui::mojom::CursorType::kNorthResize:
+      return "n-resize";
+    case ui::mojom::CursorType::kNorthEastResize:
+      return "ne-resize";
+    case ui::mojom::CursorType::kNorthWestResize:
+      return "nw-resize";
+    case ui::mojom::CursorType::kSouthResize:
+      return "s-resize";
+    case ui::mojom::CursorType::kSouthEastResize:
+      return "se-resize";
+    case ui::mojom::CursorType::kSouthWestResize:
+      return "sw-resize";
+    case ui::mojom::CursorType::kWestResize:
+      return "w-resize";
+    case ui::mojom::CursorType::kNorthSouthResize:
+      return "ns-resize";
+    case ui::mojom::CursorType::kEastWestResize:
+      return "ew-resize";
+    case ui::mojom::CursorType::kNorthEastSouthWestResize:
+      return "nesw-resize";
+    case ui::mojom::CursorType::kNorthWestSouthEastResize:
+      return "nwse-resize";
+    case ui::mojom::CursorType::kColumnResize:
+      return "col-resize";
+    case ui::mojom::CursorType::kRowResize:
+      return "row-resize";
+    case ui::mojom::CursorType::kMiddlePanning:
+      return "m-panning";
+    case ui::mojom::CursorType::kMiddlePanningVertical:
+      return "m-panning-vertical";
+    case ui::mojom::CursorType::kMiddlePanningHorizontal:
+      return "m-panning-horizontal";
+    case ui::mojom::CursorType::kEastPanning:
+      return "e-panning";
+    case ui::mojom::CursorType::kNorthPanning:
+      return "n-panning";
+    case ui::mojom::CursorType::kNorthEastPanning:
+      return "ne-panning";
+    case ui::mojom::CursorType::kNorthWestPanning:
+      return "nw-panning";
+    case ui::mojom::CursorType::kSouthPanning:
+      return "s-panning";
+    case ui::mojom::CursorType::kSouthEastPanning:
+      return "se-panning";
+    case ui::mojom::CursorType::kSouthWestPanning:
+      return "sw-panning";
+    case ui::mojom::CursorType::kWestPanning:
+      return "w-panning";
+    case ui::mojom::CursorType::kMove:
+      return "move";
+    case ui::mojom::CursorType::kVerticalText:
+      return "vertical-text";
+    case ui::mojom::CursorType::kCell:
+      return "cell";
+    case ui::mojom::CursorType::kContextMenu:
+      return "context-menu";
+    case ui::mojom::CursorType::kAlias:
+      return "alias";
+    case ui::mojom::CursorType::kProgress:
+      return "progress";
+    case ui::mojom::CursorType::kNoDrop:
+      return "nodrop";
+    case ui::mojom::CursorType::kCopy:
+      return "copy";
+    case ui::mojom::CursorType::kNone:
+      return "none";
+    case ui::mojom::CursorType::kNotAllowed:
+      return "not-allowed";
+    case ui::mojom::CursorType::kZoomIn:
+      return "zoom-in";
+    case ui::mojom::CursorType::kZoomOut:
+      return "zoom-out";
+    case ui::mojom::CursorType::kGrab:
+      return "grab";
+    case ui::mojom::CursorType::kGrabbing:
+      return "grabbing";
+    case ui::mojom::CursorType::kCustom:
+      return "custom";
+    case ui::mojom::CursorType::kNull:
+      return "null";
+    case ui::mojom::CursorType::kDndNone:
+      return "drag-drop-none";
+    case ui::mojom::CursorType::kDndMove:
+      return "drag-drop-move";
+    case ui::mojom::CursorType::kDndCopy:
+      return "drag-drop-copy";
+    case ui::mojom::CursorType::kDndLink:
+      return "drag-drop-link";
+    case ui::mojom::CursorType::kNorthSouthNoResize:
+      return "ns-no-resize";
+    case ui::mojom::CursorType::kEastWestNoResize:
+      return "ew-no-resize";
+    case ui::mojom::CursorType::kNorthEastSouthWestNoResize:
+      return "nesw-no-resize";
+    case ui::mojom::CursorType::kNorthWestSouthEastNoResize:
+      return "nwse-no-resize";
+    default:
+      return "default";
+  }
+}
+
 base::IDMap<WebContents*>& GetAllWebContents() {
   static base::NoDestructor<base::IDMap<WebContents*>> s_all_web_contents;
   return *s_all_web_contents;
@@ -613,8 +730,8 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                                const std::string& file_system_path) {
-  auto file_system_paths = GetAddedFileSystemPaths(web_contents);
-  return file_system_paths.find(file_system_path) != file_system_paths.end();
+  return base::Contains(GetAddedFileSystemPaths(web_contents),
+                        file_system_path);
 }
 
 void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {
@@ -1384,7 +1501,7 @@ void WebContents::OnEnterFullscreenModeForTab(
   }
 
   owner_window()->set_fullscreen_transition_type(
-      NativeWindow::FullScreenTransitionType::HTML);
+      NativeWindow::FullScreenTransitionType::kHTML);
   exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
       requesting_frame, options.display_id);
 
@@ -2506,7 +2623,7 @@ std::string WebContents::GetMediaSourceID(
           request_frame_host->GetRoutingID(),
           url::Origin::Create(request_frame_host->GetLastCommittedURL()
                                   .DeprecatedGetOriginAsURL()),
-          media_id, "", content::kRegistryStreamTypeTab);
+          media_id, content::kRegistryStreamTypeTab);
 
   return id;
 }
@@ -3130,6 +3247,10 @@ void WebContents::Copy() {
   web_contents()->Copy();
 }
 
+void WebContents::CenterSelection() {
+  web_contents()->CenterSelection();
+}
+
 void WebContents::Paste() {
   web_contents()->Paste();
 }
@@ -3148,6 +3269,30 @@ void WebContents::SelectAll() {
 
 void WebContents::Unselect() {
   web_contents()->CollapseSelection();
+}
+
+void WebContents::ScrollToTopOfDocument() {
+  web_contents()->ScrollToTopOfDocument();
+}
+
+void WebContents::ScrollToBottomOfDocument() {
+  web_contents()->ScrollToBottomOfDocument();
+}
+
+void WebContents::AdjustSelectionByCharacterOffset(gin::Arguments* args) {
+  int start_adjust = 0;
+  int end_adjust = 0;
+
+  gin_helper::Dictionary dict;
+  if (args->GetNext(&dict)) {
+    dict.Get("start", &start_adjust);
+    dict.Get("matchCase", &end_adjust);
+  }
+
+  // The selection menu is a Chrome-specific piece of UI.
+  // TODO(codebytere): maybe surface as an event in the future?
+  web_contents()->AdjustSelectionByCharacterOffset(
+      start_adjust, end_adjust, false /* show_selection_menu */);
 }
 
 void WebContents::Replace(const std::u16string& word) {
@@ -3759,11 +3904,17 @@ bool WebContents::IsFullscreenForTabOrPending(
     return is_html_fullscreen();
 
   bool in_transition = owner_window()->fullscreen_transition_state() !=
-                       NativeWindow::FullScreenTransitionState::NONE;
+                       NativeWindow::FullScreenTransitionState::kNone;
   bool is_html_transition = owner_window()->fullscreen_transition_type() ==
-                            NativeWindow::FullScreenTransitionType::HTML;
+                            NativeWindow::FullScreenTransitionType::kHTML;
 
   return is_html_fullscreen() || (in_transition && is_html_transition);
+}
+
+content::FullscreenState WebContents::GetFullscreenState(
+    const content::WebContents* source) const {
+  return exclusive_access_manager_->fullscreen_controller()->GetFullscreenState(
+      source);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
@@ -4184,11 +4335,16 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("redo", &WebContents::Redo)
       .SetMethod("cut", &WebContents::Cut)
       .SetMethod("copy", &WebContents::Copy)
+      .SetMethod("centerSelection", &WebContents::CenterSelection)
       .SetMethod("paste", &WebContents::Paste)
       .SetMethod("pasteAndMatchStyle", &WebContents::PasteAndMatchStyle)
       .SetMethod("delete", &WebContents::Delete)
       .SetMethod("selectAll", &WebContents::SelectAll)
       .SetMethod("unselect", &WebContents::Unselect)
+      .SetMethod("scrollToTop", &WebContents::ScrollToTopOfDocument)
+      .SetMethod("scrollToBottom", &WebContents::ScrollToBottomOfDocument)
+      .SetMethod("adjustSelection",
+                 &WebContents::AdjustSelectionByCharacterOffset)
       .SetMethod("replace", &WebContents::Replace)
       .SetMethod("replaceMisspelling", &WebContents::ReplaceMisspelling)
       .SetMethod("findInPage", &WebContents::FindInPage)

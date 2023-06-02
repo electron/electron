@@ -283,7 +283,7 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
   NSArray* urls = [dialog URLs];
   for (NSURL* url in urls)
     if ([url isFileURL]) {
-      paths->push_back(base::FilePath(base::SysNSStringToUTF8([url path])));
+      paths->emplace_back(base::SysNSStringToUTF8([url path]));
       bookmarks->push_back(GetBookmarkDataFromNSURL(url));
     }
 }

@@ -41,7 +41,7 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
                 \"electron\": {
                     \"origin\": \"https://github.com/electron/electron.git\"
                 }
-            }
+            },
             \"gen\": {
                 \"args\": [
                     \"import(\\\"//electron/build/args/testing.gn\\\")\",

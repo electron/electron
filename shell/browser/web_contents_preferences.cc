@@ -226,7 +226,7 @@ void WebContentsPreferences::SetFromDictionary(
   // preferences don't save a transparency option,
   // apply any existing transparency setting to background_color_
   bool transparent;
-  if (web_preferences.Get(options::kTransparent, &transparent)) {
+  if (web_preferences.Get(options::kTransparent, &transparent) && transparent) {
     background_color_ = SK_ColorTRANSPARENT;
   }
   std::string background_color;

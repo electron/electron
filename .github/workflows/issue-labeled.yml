@@ -9,12 +9,13 @@ permissions:  # added using https://github.com/step-security/secure-workflows
 
 jobs:
   issue-labeled:
+    name: blocked/need-repro label added
+    if: github.event.label.name == 'blocked/need-repro'
     permissions:
       issues: write  # for actions-cool/issues-helper to update issues
     runs-on: ubuntu-latest
     steps:
-      - name: blocked/need-repro label added
-        if: github.event.label.name == 'blocked/need-repro'
+      - name: Create comment
         uses: actions-cool/issues-helper@dad28fdb88da5f082c04659b7373d85790f9b135 # v3.3.0
         with:
           actions: 'create-comment'

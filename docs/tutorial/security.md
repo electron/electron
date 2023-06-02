@@ -9,7 +9,7 @@ toc_max_heading_level: 3
 
 :::info Reporting security issues
 For information on how to properly disclose an Electron vulnerability,
-see [SECURITY.md](https://github.com/electron/electron/tree/main/SECURITY.md).
+see [SECURITY.md](https://github.com/electron/electron/blob/main/SECURITY.md).
 
 For upstream Chromium vulnerabilities: Electron keeps up to date with alternating
 Chromium releases. For more information, see the
@@ -742,19 +742,19 @@ You should be validating the `sender` of **all** IPC messages by default.
 ```js title='main.js (Main Process)'
 // Bad
 ipcMain.handle('get-secrets', () => {
-  return getSecrets();
-});
+  return getSecrets()
+})
 
 // Good
 ipcMain.handle('get-secrets', (e) => {
-  if (!validateSender(e.senderFrame)) return null;
-  return getSecrets();
-});
+  if (!validateSender(e.senderFrame)) return null
+  return getSecrets()
+})
 
-function validateSender(frame) {
+function validateSender (frame) {
   // Value the host of the URL using an actual URL parser and an allowlist
-  if ((new URL(frame.url)).host === 'electronjs.org') return true;
-  return false;
+  if ((new URL(frame.url)).host === 'electronjs.org') return true
+  return false
 }
 ```
 

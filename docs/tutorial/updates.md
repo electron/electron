@@ -104,8 +104,7 @@ setInterval(() => {
 ```
 
 Once your application is [packaged](./application-distribution.md),
-it will receive an update for each new
-[GitHub Release](https://help.github.com/articles/creating-releases/) that you
+it will receive an update for each new [GitHub Release][gh-releases] that you
 publish.
 
 ### Step 3: Notifying users when updates are available
@@ -122,7 +121,7 @@ autoUpdater.on('update-downloaded', (event, releaseNotes, releaseName) => {
     title: 'Application Update',
     message: process.platform === 'win32' ? releaseNotes : releaseName,
     detail:
-      'A new version has been downloaded. Restart the application to apply the updates.',
+      'A new version has been downloaded. Restart the application to apply the updates.'
   }
 
   dialog.showMessageBox(dialogOpts).then((returnValue) => {
@@ -155,7 +154,7 @@ server-communication aspect of the process by loading your update from a local d
 [vercel]: https://vercel.com
 [hazel]: https://github.com/vercel/hazel
 [nuts]: https://github.com/GitbookIO/nuts
-[gh-releases]: https://help.github.com/articles/creating-releases/
+[gh-releases]: https://docs.github.com/en/repositories/releasing-projects-on-github/managing-releases-in-a-repository#creating-a-release
 [electron-release-server]: https://github.com/ArekSredzki/electron-release-server
 [nucleus]: https://github.com/atlassian/nucleus
 [update.electronjs.org]: https://github.com/electron/update.electronjs.org

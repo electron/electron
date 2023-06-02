@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "base/functional/callback_forward.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/image/image_skia.h"
 
@@ -25,7 +26,7 @@ enum class MessageBoxType {
 };
 
 struct MessageBoxSettings {
-  electron::NativeWindow* parent_window = nullptr;
+  RAW_PTR_EXCLUSION electron::NativeWindow* parent_window = nullptr;
   MessageBoxType type = electron::MessageBoxType::kNone;
   std::vector<std::string> buttons;
   absl::optional<int> id;

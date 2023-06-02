@@ -6,15 +6,7 @@ import { ifdescribe, ifit } from './lib/spec-helpers';
 
 import { closeAllWindows } from './lib/window-helpers';
 
-const features = process._linkedBinding('electron_common_features');
-
 ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('desktopCapturer', () => {
-  if (!features.isDesktopCapturerEnabled()) {
-    // This condition can't go the `ifdescribe` call because its inner code
-    // it still executed, and if the feature is disabled some function calls here fail.
-    return;
-  }
-
   let w: BrowserWindow;
 
   before(async () => {

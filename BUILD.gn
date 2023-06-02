@@ -555,6 +555,7 @@ source_set("electron_lib") {
     }
 
     frameworks = [
+      "AuthenticationServices.framework",
       "AVFoundation.framework",
       "Carbon.framework",
       "LocalAuthentication.framework",
@@ -704,13 +705,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_desktop_capturer) {
-    sources += [
-      "shell/browser/api/electron_api_desktop_capturer.cc",
-      "shell/browser/api/electron_api_desktop_capturer.h",
-    ]
-  }
-
   if (enable_views_api) {
     sources += [
       "shell/browser/api/views/electron_api_image_view.cc",
@@ -772,6 +766,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
       "shell/browser/electron_pdf_web_contents_helper_client.h",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.cc",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.h",
     ]
   }
 

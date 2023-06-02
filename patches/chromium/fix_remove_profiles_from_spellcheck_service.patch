@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Calvin Watford <watfordcalvin@gmail.com>
+Date: Fri, 28 Apr 2023 17:06:30 -0600
+Subject: fix: remove profiles from spellcheck_service
+
+Electron doesn't support profiles.
+
+diff --git a/chrome/browser/spellchecker/spellcheck_service.cc b/chrome/browser/spellchecker/spellcheck_service.cc
+index 69c82dd102e7e746db68c6ab4768a40a5aeeff6e..7c37977249d465767c4fea5818c510f6b23571b1 100644
+--- a/chrome/browser/spellchecker/spellcheck_service.cc
++++ b/chrome/browser/spellchecker/spellcheck_service.cc
+@@ -21,7 +21,6 @@
+ #include "base/values.h"
+ #include "build/build_config.h"
+ #include "build/chromeos_buildflags.h"
+-#include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/spellchecker/spellcheck_factory.h"
+ #include "chrome/browser/spellchecker/spellcheck_hunspell_dictionary.h"
+ #include "components/language/core/browser/pref_names.h"
+@@ -67,6 +66,7 @@ SpellcheckService::SpellCheckerBinder& GetSpellCheckerBinderOverride() {
+ // Only record spelling-configuration metrics for profiles in which the user
+ // can configure spelling.
+ bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
++#if 0
+   Profile* profile = Profile::FromBrowserContext(context);
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+   // ChromeOS creates various unusual profiles (login, lock screen...) which
+@@ -77,6 +77,8 @@ bool RecordSpellingConfigurationMetrics(content::BrowserContext* context) {
+   }
+ #endif
+   return profile->IsRegularProfile();
++#endif
++  return true;
+ }
+ 
+ }  // namespace

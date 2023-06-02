@@ -141,7 +141,6 @@ describe('powerMonitor', () => {
   });
 
   describe('when powerMonitor module is loaded', () => {
-    // eslint-disable-next-line no-undef
     let powerMonitor: typeof Electron.powerMonitor;
     before(() => {
       powerMonitor = require('electron').powerMonitor;
@@ -175,6 +174,12 @@ describe('powerMonitor', () => {
       it('returns current system idle time', () => {
         const idleTime = powerMonitor.getSystemIdleTime();
         expect(idleTime).to.be.at.least(0);
+      });
+    });
+
+    describe('powerMonitor.getCurrentThermalState', () => {
+      it('returns a valid state', () => {
+        expect(powerMonitor.getCurrentThermalState()).to.be.oneOf(['unknown', 'nominal', 'fair', 'serious', 'critical']);
       });
     });
 

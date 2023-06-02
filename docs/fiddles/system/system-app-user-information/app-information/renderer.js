@@ -1,7 +1,7 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer, shell } = require('electron')
 
 const appInfoBtn = document.getElementById('app-info')
-const electron_doc_link = document.querySelectorAll('a[href]')
+const electronDocLink = document.querySelectorAll('a[href]')
 
 appInfoBtn.addEventListener('click', () => {
   ipcRenderer.send('get-app-path')
@@ -12,7 +12,8 @@ ipcRenderer.on('got-app-path', (event, path) => {
   document.getElementById('got-app-info').innerHTML = message
 })
 
-electron_doc_link.addEventListener('click', (e) => {
+electronDocLink.addEventListener('click', (e) => {
   e.preventDefault()
+  const url = e.target.getAttribute('href')
   shell.openExternal(url)
 })

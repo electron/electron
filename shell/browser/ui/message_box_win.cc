@@ -242,7 +242,7 @@ DialogResult ShowTaskDialogWstr(gfx::AcceleratedWidget parent,
   TaskDialogIndirect(&config, &id, nullptr, &verification_flag_checked);
 
   int button_id;
-  if (id_map.find(id) != id_map.end())  // common button.
+  if (base::Contains(id_map, id))  // common button.
     button_id = id_map[id];
   else if (id >= kIDStart)  // custom button.
     button_id = id - kIDStart;

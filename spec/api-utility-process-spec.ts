@@ -13,41 +13,33 @@ describe('utilityProcess module', () => {
   describe('UtilityProcess constructor', () => {
     it('throws when empty script path is provided', async () => {
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork('');
-        /* eslint-disable no-new */
       }).to.throw();
     });
 
     it('throws when options.stdio is not valid', async () => {
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: 'ipc'
         });
-        /* eslint-disable no-new */
       }).to.throw(/stdio must be of the following values: inherit, pipe, ignore/);
 
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['ignore', 'ignore']
         });
-        /* eslint-disable no-new */
       }).to.throw(/configuration missing for stdin, stdout or stderr/);
 
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['pipe', 'inherit', 'inherit']
         });
-        /* eslint-disable no-new */
       }).to.throw(/stdin value other than ignore is not supported/);
     });
   });
@@ -359,6 +351,20 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'exit');
       expect(log).to.equal('hello\n');
+    });
+
+    it('does not crash when running eval', async () => {
+      const child = utilityProcess.fork('./eval.js', [], {
+        cwd: fixturesPath,
+        stdio: 'ignore'
+      });
+      await once(child, 'spawn');
+      const [data] = await once(child, 'message');
+      expect(data).to.equal(42);
+      // Cleanup.
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
     });
   });
 });

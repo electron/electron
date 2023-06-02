@@ -25,6 +25,7 @@
 #include "shell/browser/web_contents_preferences.h"
 #include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/frame_converter.h"
+#include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
@@ -130,6 +131,11 @@ void ElectronPermissionManager::SetDevicePermissionHandler(
   device_permission_handler_ = handler;
 }
 
+void ElectronPermissionManager::SetProtectedUSBHandler(
+    const ProtectedUSBHandler& handler) {
+  protected_usb_handler_ = handler;
+}
+
 void ElectronPermissionManager::SetBluetoothPairingHandler(
     const BluetoothPairingHandler& handler) {
   bluetooth_pairing_handler_ = handler;
@@ -203,16 +209,16 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
   int request_id = pending_requests_.Add(std::make_unique<PendingRequest>(
       render_frame_host, permissions, std::move(response_callback)));
 
+  details.Set("requestingUrl", render_frame_host->GetLastCommittedURL().spec());
+  details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
+  base::Value dict_value(std::move(details));
+
   for (size_t i = 0; i < permissions.size(); ++i) {
     auto permission = permissions[i];
     const auto callback =
         base::BindRepeating(&ElectronPermissionManager::OnPermissionResponse,
                             base::Unretained(this), request_id, i);
-    details.Set("requestingUrl",
-                render_frame_host->GetLastCommittedURL().spec());
-    details.Set("isMainFrame", render_frame_host->GetParent() == nullptr);
-    request_handler_.Run(web_contents, permission, callback,
-                         base::Value(std::move(details)));
+    request_handler_.Run(web_contents, permission, callback, dict_value);
   }
 }
 
@@ -360,6 +366,21 @@ void ElectronPermissionManager::RevokeDevicePermission(
     const base::Value& device,
     ElectronBrowserContext* browser_context) const {
   browser_context->RevokeDevicePermission(origin, device, permission);
+}
+
+ElectronPermissionManager::USBProtectedClasses
+ElectronPermissionManager::CheckProtectedUSBClasses(
+    const USBProtectedClasses& classes) const {
+  if (protected_usb_handler_.is_null()) {
+    return classes;
+  } else {
+    v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+    v8::HandleScope scope(isolate);
+    v8::Local<v8::Object> details = gin::DataObjectBuilder(isolate)
+                                        .Set("protectedClasses", classes)
+                                        .Build();
+    return protected_usb_handler_.Run(details);
+  }
 }
 
 blink::mojom::PermissionStatus

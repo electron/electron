@@ -184,6 +184,8 @@ page is loaded, use the `setUserAgent` method to change the user agent.
 A `boolean`. When this attribute is present the guest page will have web security disabled.
 Web security is enabled by default.
 
+This value can only be modified before the first navigation.
+
 ### `partition`
 
 ```html
@@ -464,6 +466,10 @@ Executes editing command `cut` in page.
 
 Executes editing command `copy` in page.
 
+#### `<webview>.centerSelection()`
+
+Centers the current text selection in page.
+
 ### `<webview>.paste()`
 
 Executes editing command `paste` in page.
@@ -483,6 +489,25 @@ Executes editing command `selectAll` in page.
 ### `<webview>.unselect()`
 
 Executes editing command `unselect` in page.
+
+#### `<webview>.scrollToTop()`
+
+Scrolls to the top of the current `<webview>`.
+
+#### `<webview>.scrollToBottom()`
+
+Scrolls to the bottom of the current `<webview>`.
+
+#### `<webview>.adjustSelection(options)`
+
+* `options` Object
+  * `start` Number (optional) - Amount to shift the start index of the current selection.
+  * `end` Number (optional) - Amount to shift the end index of the current selection.
+
+Adjusts the current text selection starting and ending points in the focused frame by the given amounts. A negative amount moves the selection towards the beginning of the document, and a positive amount moves the selection towards the end of the document.
+
+See [`webContents.adjustSelection`](web-contents.md#contentsadjustselectionoptions) for
+examples.
 
 ### `<webview>.replace(text)`
 

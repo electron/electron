@@ -13,7 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/cxx17_backports.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
@@ -384,7 +383,7 @@ void NativeWindowMac::Close() {
     return;
   }
 
-  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
     SetHasDeferredWindowClose(true);
     return;
   }
@@ -473,14 +472,7 @@ void NativeWindowMac::Hide() {
     return;
   }
 
-  // Hide all children of the current window before hiding the window.
-  // components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-  // expects this when window visibility changes.
-  if ([window_ childWindows]) {
-    for (NSWindow* child in [window_ childWindows]) {
-      [child orderOut:nil];
-    }
-  }
+  DetachChildren();
 
   // Detach the window from the parent before.
   if (parent())
@@ -491,10 +483,6 @@ void NativeWindowMac::Hide() {
 
 bool NativeWindowMac::IsVisible() {
   bool occluded = [window_ occlusionState] == NSWindowOcclusionStateVisible;
-
-  // For a window to be visible, it must be visible to the user in the
-  // foreground of the app, which means that it should not be minimized or
-  // occluded
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
@@ -562,6 +550,11 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
+  // It's possible for [window_ isZoomed] to be true
+  // when the window is minimized or fullscreened.
+  if (IsMinimized() || IsFullscreen())
+    return false;
+
   if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
@@ -599,6 +592,37 @@ bool NativeWindowMac::HandleDeferredClose() {
   return false;
 }
 
+void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
+  child_windows_.remove_if([&child](NativeWindow* w) { return (w == child); });
+
+  [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
+}
+
+void NativeWindowMac::AttachChildren() {
+  for (auto* child : child_windows_) {
+    auto* child_nswindow = child->GetNativeWindow().GetNativeNSWindow();
+    if ([child_nswindow parentWindow] == window_)
+      continue;
+
+    // Attaching a window as a child window resets its window level, so
+    // save and restore it afterwards.
+    NSInteger level = window_.level;
+    [window_ addChildWindow:child_nswindow ordered:NSWindowAbove];
+    [window_ setLevel:level];
+  }
+}
+
+void NativeWindowMac::DetachChildren() {
+  DCHECK(child_windows_.size() == [[window_ childWindows] count]);
+
+  // Hide all children before hiding/minimizing the window.
+  // NativeWidgetNSWindowBridge::NotifyVisibilityChangeDown()
+  // will DCHECK otherwise.
+  for (auto* child : child_windows_) {
+    [child->GetNativeWindow().GetNativeNSWindow() orderOut:nil];
+  }
+}
+
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
   if (!has_frame() && !HasStyleMask(NSWindowStyleMaskTitled))
     return;
@@ -607,7 +631,7 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
   // so we want to schedule a transition for when the current one has completed.
-  if (fullscreen_transition_state() != FullScreenTransitionState::NONE) {
+  if (fullscreen_transition_state() != FullScreenTransitionState::kNone) {
     if (!pending_transitions_.empty()) {
       bool last_pending = pending_transitions_.back();
       // Only push new transitions if they're different than the last transition
@@ -632,8 +656,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
   // or windowWillExitFullScreen are invoked, and so a potential transition
   // could be dropped.
   fullscreen_transition_state_ = fullscreen
-                                     ? FullScreenTransitionState::ENTERING
-                                     : FullScreenTransitionState::EXITING;
+                                     ? FullScreenTransitionState::kEntering
+                                     : FullScreenTransitionState::kExiting;
 
   [window_ toggleFullScreenMode:nil];
 }
@@ -742,7 +766,7 @@ void NativeWindowMac::SetResizable(bool resizable) {
 
 bool NativeWindowMac::IsResizable() {
   bool in_fs_transition =
-      fullscreen_transition_state() != FullScreenTransitionState::NONE;
+      fullscreen_transition_state() != FullScreenTransitionState::kNone;
   bool has_rs_mask = HasStyleMask(NSWindowStyleMaskResizable);
   return has_rs_mask && !IsFullscreen() && !in_fs_transition;
 }
@@ -1029,10 +1053,13 @@ void NativeWindowMac::SetKiosk(bool kiosk) {
         NSApplicationPresentationDisableHideApplication;
     [NSApp setPresentationOptions:options];
     is_kiosk_ = true;
-    SetFullScreen(true);
+    fullscreen_before_kiosk_ = IsFullscreen();
+    if (!fullscreen_before_kiosk_)
+      SetFullScreen(true);
   } else if (!kiosk && is_kiosk_) {
     is_kiosk_ = false;
-    SetFullScreen(false);
+    if (!fullscreen_before_kiosk_)
+      SetFullScreen(false);
 
     // Set presentation options *after* asynchronously exiting
     // fullscreen to ensure they take effect.
@@ -1070,7 +1097,7 @@ void NativeWindowMac::InvalidateShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
+  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   [window_ setAlphaValue:boundedOpacity];
 }
 
@@ -1768,18 +1795,12 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
 
   // Remove current parent window.
   if ([window_ parentWindow])
-    [[window_ parentWindow] removeChildWindow:window_];
+    parent->RemoveChildWindow(this);
 
   // Set new parent window.
-  // Note that this method will force the window to become visible.
   if (parent && attach) {
-    // Attaching a window as a child window resets its window level, so
-    // save and restore it afterwards.
-    NSInteger level = window_.level;
-    [parent->GetNativeWindow().GetNativeNSWindow()
-        addChildWindow:window_
-               ordered:NSWindowAbove];
-    [window_ setLevel:level];
+    parent->add_child_window(this);
+    parent->AttachChildren();
   }
 }
 

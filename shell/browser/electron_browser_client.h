@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/memory/raw_ptr.h"
 #include "base/synchronization/lock.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_process_host_observer.h"
@@ -170,7 +171,6 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       std::vector<std::string>* additional_schemes) override;
   void GetAdditionalWebUISchemes(
       std::vector<std::string>* additional_schemes) override;
-  void SiteInstanceDeleting(content::SiteInstance* site_instance) override;
   std::unique_ptr<net::ClientCertStore> CreateClientCertStore(
       content::BrowserContext* browser_context) override;
   std::unique_ptr<device::LocationProvider> OverrideSystemLocationProvider()
@@ -316,7 +316,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::unique_ptr<PlatformNotificationService> notification_service_;
   std::unique_ptr<NotificationPresenter> notification_presenter_;
 
-  Delegate* delegate_ = nullptr;
+  raw_ptr<Delegate> delegate_ = nullptr;
 
   std::string user_agent_override_ = "";
   absl::optional<blink::UserAgentMetadata> ua_metadata_override_;

@@ -5,6 +5,7 @@
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <dwmapi.h>
 #include <wrl/client.h>
 #endif
 
@@ -12,7 +13,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/cxx17_backports.h"
+#include "base/containers/contains.h"
+#include "base/memory/raw_ptr.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
@@ -68,6 +70,7 @@
 
 #elif BUILDFLAG(IS_WIN)
 #include "base/win/win_util.h"
+#include "base/win/windows_version.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
@@ -81,6 +84,19 @@
 namespace electron {
 
 #if BUILDFLAG(IS_WIN)
+
+DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
+  if (material == "none") {
+    return DWMSBT_NONE;
+  } else if (material == "acrylic") {
+    return DWMSBT_TRANSIENTWINDOW;
+  } else if (material == "mica") {
+    return DWMSBT_MAINWINDOW;
+  } else if (material == "tabbed") {
+    return DWMSBT_TABBEDWINDOW;
+  }
+  return DWMSBT_AUTO;
+}
 
 // Similar to the ones in display::win::ScreenWin, but with rounded values
 // These help to avoid problems that arise from unresizable windows where the
@@ -163,7 +179,7 @@ class NativeWindowClientView : public views::ClientView {
   }
 
  private:
-  NativeWindowViews* window_;
+  raw_ptr<NativeWindowViews> window_;
 };
 
 }  // namespace
@@ -535,7 +551,17 @@ void NativeWindowViews::Hide() {
 }
 
 bool NativeWindowViews::IsVisible() {
+#if BUILDFLAG(IS_WIN)
+  // widget()->IsVisible() calls ::IsWindowVisible, which returns non-zero if a
+  // window or any of its parent windows are visible. We want to only check the
+  // current window.
+  bool visible =
+      ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_VISIBLE;
+  // WS_VISIBLE is true even if a window is miminized - explicitly check that.
+  return visible && !IsMinimized();
+#else
   return widget()->IsVisible();
+#endif
 }
 
 bool NativeWindowViews::IsEnabled() {
@@ -630,7 +656,7 @@ bool NativeWindowViews::IsMaximized() {
     return true;
   } else {
 #if BUILDFLAG(IS_WIN)
-    if (transparent()) {
+    if (transparent() && !IsMinimized()) {
       // Compare the size of the window with the size of the display
       auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
           GetNativeWindow());
@@ -761,6 +787,10 @@ gfx::Size NativeWindowViews::GetContentSize() {
 }
 
 gfx::Rect NativeWindowViews::GetNormalBounds() {
+#if BUILDFLAG(IS_WIN)
+  if (IsMaximized() && transparent())
+    return restore_bounds_;
+#endif
   return widget()->GetRestoredBounds();
 }
 
@@ -1102,7 +1132,7 @@ bool NativeWindowViews::HasShadow() {
 
 void NativeWindowViews::SetOpacity(const double opacity) {
 #if BUILDFLAG(IS_WIN)
-  const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
+  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   if (!layered_) {
     LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -1378,6 +1408,21 @@ bool NativeWindowViews::IsMenuBarVisible() {
   return root_view_->IsMenuBarVisible();
 }
 
+void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
+#if BUILDFLAG(IS_WIN)
+  // DWMWA_USE_HOSTBACKDROPBRUSH is only supported on Windows 11 22H2 and up.
+  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
+    return;
+
+  DWM_SYSTEMBACKDROP_TYPE backdrop_type = GetBackdropFromString(material);
+  HRESULT result =
+      DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_SYSTEMBACKDROP_TYPE,
+                            &backdrop_type, sizeof(backdrop_type));
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set background material to " << material;
+#endif
+}
+
 void NativeWindowViews::SetVisibleOnAllWorkspaces(
     bool visible,
     bool visibleOnFullScreen,
@@ -1394,8 +1439,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
     std::vector<x11::Atom> wm_states;
     GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                      x11::GetAtom("_NET_WM_STATE"), &wm_states);
-    return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
-           wm_states.end();
+    return base::Contains(wm_states, sticky_atom);
   }
 #endif
   return false;

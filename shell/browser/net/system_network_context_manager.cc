@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/memory/raw_ptr.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/browser/browser_process.h"
@@ -141,7 +142,7 @@ class SystemNetworkContextManager::URLLoaderFactoryForSystem
   ~URLLoaderFactoryForSystem() override = default;
 
   SEQUENCE_CHECKER(sequence_checker_);
-  SystemNetworkContextManager* manager_;
+  raw_ptr<SystemNetworkContextManager> manager_;
 };
 
 network::mojom::NetworkContext* SystemNetworkContextManager::GetContext() {

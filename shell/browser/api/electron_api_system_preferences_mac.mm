@@ -455,6 +455,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                   operation:LAAccessControlOperationUseKeySign
             localizedReason:[NSString stringWithUTF8String:reason.c_str()]
                       reply:^(BOOL success, NSError* error) {
+                        // NOLINTBEGIN(bugprone-use-after-move)
                         if (!success) {
                           std::string err_msg = std::string(
                               [error.localizedDescription UTF8String]);
@@ -470,6 +471,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
                                   gin_helper::Promise<void>::ResolvePromise,
                                   std::move(p)));
                         }
+                        // NOLINTEND(bugprone-use-after-move)
                       }];
 
   return handle;

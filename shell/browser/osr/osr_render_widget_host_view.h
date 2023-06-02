@@ -16,6 +16,7 @@
 #include <windows.h>
 #endif
 
+#include "base/memory/raw_ptr.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
 #include "base/time/time.h"
@@ -243,11 +244,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void UpdateBackgroundColorFromRenderer(SkColor color);
 
   // Weak ptrs.
-  content::RenderWidgetHostImpl* render_widget_host_;
+  raw_ptr<content::RenderWidgetHostImpl> render_widget_host_;
 
-  OffScreenRenderWidgetHostView* parent_host_view_ = nullptr;
-  OffScreenRenderWidgetHostView* popup_host_view_ = nullptr;
-  OffScreenRenderWidgetHostView* child_host_view_ = nullptr;
+  raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
+  raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
+  raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
 
@@ -285,7 +286,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
-  OffScreenHostDisplayClient* host_display_client_;
+  raw_ptr<OffScreenHostDisplayClient> host_display_client_;
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
   std::unique_ptr<ElectronDelegatedFrameHostClient>

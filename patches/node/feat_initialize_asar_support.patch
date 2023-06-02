@@ -6,7 +6,7 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 44a9183d77614c55246a513ec8d47c3f5ec6e41b..158daaf93446d99d21dd001a3ab614b1036c0b02 100644
+index a4cc80d48064fe4f58edf569de4ea962cecb4540..f91a32c0348f805d01d9c198c39cff4c5c72c88b 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
 @@ -118,12 +118,17 @@ function setupUserModules() {

@@ -241,5 +241,5 @@ apps:
 [electron-packager]: https://github.com/electron/electron-packager
 [electron-forge]: https://github.com/electron/forge
 [electron-builder]: https://github.com/electron-userland/electron-builder
-[electron-installer-debian]: https://github.com/unindented/electron-installer-debian
+[electron-installer-debian]: https://github.com/electron-userland/electron-installer-debian
 [electron-winstaller]: https://github.com/electron/windows-installer

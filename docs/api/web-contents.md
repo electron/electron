@@ -65,28 +65,28 @@ for all windows, webviews, opened devtools, and devtools extension background pa
 
 ### `webContents.getFocusedWebContents()`
 
-Returns `WebContents` | null - The web contents that is focused in this application, otherwise
+Returns `WebContents | null` - The web contents that is focused in this application, otherwise
 returns `null`.
 
 ### `webContents.fromId(id)`
 
 * `id` Integer
 
-Returns `WebContents` | undefined - A WebContents instance with the given ID, or
+Returns `WebContents | undefined` - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
 ### `webContents.fromFrame(frame)`
 
 * `frame` WebFrameMain
 
-Returns `WebContents` | undefined - A WebContents instance with the given WebFrameMain, or
+Returns `WebContents | undefined` - A WebContents instance with the given WebFrameMain, or
 `undefined` if there is no WebContents associated with the given WebFrameMain.
 
 ### `webContents.fromDevToolsTargetId(targetId)`
 
 * `targetId` string - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
 
-Returns `WebContents` | undefined - A WebContents instance with the given TargetID, or
+Returns `WebContents | undefined` - A WebContents instance with the given TargetID, or
 `undefined` if there is no WebContents associated with the given TargetID.
 
 When communicating with the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/),
@@ -210,7 +210,7 @@ Returns:
   * `url` string - URL for the created window.
   * `frameName` string - Name given to the created window in the
      `window.open()` call.
-  * `options` BrowserWindowConstructorOptions - The options used to create the
+  * `options` [BrowserWindowConstructorOptions](structures/browser-window-options.md) - The options used to create the
     BrowserWindow. They are merged in increasing precedence: parsed options
     from the `features` string from `window.open()`, security-related
     webPreferences inherited from the parent, and options given by
@@ -601,6 +601,7 @@ window.
 
 Returns:
 
+* `event` Event
 * `url` string - URL of the link that was clicked or selected.
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
@@ -736,14 +737,16 @@ Returns:
 * `size` [Size](structures/size.md) (optional) - the size of the `image`.
 * `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot.
 
-Emitted when the cursor's type changes. The `type` parameter can be `default`,
-`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
-`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
-`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
-`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
-`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
-`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
-`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing` or `custom`.
+Emitted when the cursor's type changes. The `type` parameter can be `pointer`,
+`crosshair`, `hand`, `text`, `wait`, `help`, `e-resize`, `n-resize`, `ne-resize`,
+`nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`, `ns-resize`, `ew-resize`,
+`nesw-resize`, `nwse-resize`, `col-resize`, `row-resize`, `m-panning`, `m-panning-vertical`,
+`m-panning-horizontal`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`, `s-panning`,
+`se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`, `cell`, `context-menu`,
+`alias`, `progress`, `nodrop`, `copy`, `none`, `not-allowed`, `zoom-in`, `zoom-out`, `grab`,
+`grabbing`, `custom`, `null`, `drag-drop-none`, `drag-drop-move`, `drag-drop-copy`,
+`drag-drop-link`, `ns-no-resize`, `ew-no-resize`, `nesw-no-resize`, `nwse-no-resize`,
+or `default`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
 cursor image in a [`NativeImage`](native-image.md), and `scale`, `size` and `hotspot` will hold
@@ -863,7 +866,7 @@ app.whenReady().then(() => {
     })
     if (!result) {
       // The device wasn't found so we need to either wait longer (eg until the
-      // device is turned on) or cancel the request by calling the callback 
+      // device is turned on) or cancel the request by calling the callback
       // with an empty string.
       callback('')
     } else {
@@ -903,7 +906,7 @@ Emitted when the devtools window instructs the webContents to reload
 Returns:
 
 * `event` Event
-* `webPreferences` WebPreferences - The web preferences that will be used by the guest
+* `webPreferences` [WebPreferences](structures/web-preferences.md) - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
 * `params` Record<string, string> - The other `<webview>` parameters such as the `src` URL.
@@ -1393,6 +1396,10 @@ Executes the editing command `cut` in web page.
 
 Executes the editing command `copy` in web page.
 
+#### `contents.centerSelection()`
+
+Centers the current text selection in web page.
+
 #### `contents.copyImageAt(x, y)`
 
 * `x` Integer
@@ -1419,6 +1426,46 @@ Executes the editing command `selectAll` in web page.
 #### `contents.unselect()`
 
 Executes the editing command `unselect` in web page.
+
+#### `contents.scrollToTop()`
+
+Scrolls to the top of the current `webContents`.
+
+#### `contents.scrollToBottom()`
+
+Scrolls to the bottom of the current `webContents`.
+
+#### `contents.adjustSelection(options)`
+
+* `options` Object
+  * `start` Number (optional) - Amount to shift the start index of the current selection.
+  * `end` Number (optional) - Amount to shift the end index of the current selection.
+
+Adjusts the current text selection starting and ending points in the focused frame by the given amounts. A negative amount moves the selection towards the beginning of the document, and a positive amount moves the selection towards the end of the document.
+
+Example:
+
+```js
+const win = new BrowserWindow()
+
+// Adjusts the beginning of the selection 1 letter forward,
+// and the end of the selection 5 letters forward.
+win.webContents.adjustSelection({ start: 1, end: 5 })
+
+// Adjusts the beginning of the selection 2 letters forward,
+// and the end of the selection 3 letters backward.
+win.webContents.adjustSelection({ start: 2, end: -3 })
+```
+
+For a call of `win.webContents.adjustSelection({ start: 1, end: 5 })`
+
+Before:
+
+<img width="487" alt="Image Before Text Selection Adjustment" src="https://user-images.githubusercontent.com/2036040/231761306-cd4e7b15-c2ed-46cf-8e80-10811f6de83e.png">
+
+After:
+
+<img width="487" alt="Image After Text Selection Adjustment" src="https://user-images.githubusercontent.com/2036040/231761169-887eb8ef-06fb-46e4-9efa-898bcb0d6a2b.png">
 
 #### `contents.replace(text)`
 

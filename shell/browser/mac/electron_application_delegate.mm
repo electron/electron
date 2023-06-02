@@ -92,6 +92,10 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
   electron::Browser::Get()->DidBecomeActive();
 }
 
+- (void)applicationDidResignActive:(NSNotification*)notification {
+  electron::Browser::Get()->DidResignActive();
+}
+
 - (NSMenu*)applicationDockMenu:(NSApplication*)sender {
   if (menu_controller_)
     return [menu_controller_ menu];

@@ -23,6 +23,7 @@
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
+#include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/os_crypt/sync/key_storage_config_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
@@ -189,6 +190,18 @@ void UpdateDarkThemeSetting() {
   ui::NativeTheme::GetInstanceForWeb()->set_use_dark_colors(is_dark);
 }
 #endif
+
+// A fake BrowserProcess object that used to feed the source code from chrome.
+class FakeBrowserProcessImpl : public BrowserProcessImpl {
+ public:
+  embedder_support::OriginTrialsSettingsStorage*
+  GetOriginTrialsSettingsStorage() override {
+    return &origin_trials_settings_storage_;
+  }
+
+ private:
+  embedder_support::OriginTrialsSettingsStorage origin_trials_settings_storage_;
+};
 
 }  // namespace
 
@@ -524,6 +537,8 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 
+  fake_browser_process_->PreMainMessageLoopRun();
+
   return GetExitCode();
 }
 
@@ -625,7 +640,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   // invoke Node/V8 APIs inside them.
   node_env_->env()->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
-  node::Stop(node_env_->env(), false);
+  node::Stop(node_env_->env(), node::StopFlags::kDoNotTerminateIsolate);
   node_env_.reset();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);

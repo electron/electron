@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "net/base/address_list.h"
@@ -58,7 +59,7 @@ class ResolveHostFunction
   mojo::Receiver<network::mojom::ResolveHostClient> receiver_{this};
 
   // Weak Ref
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
   std::string host_;
   network::mojom::ResolveHostParametersPtr params_;
   ResolveHostCallback callback_;

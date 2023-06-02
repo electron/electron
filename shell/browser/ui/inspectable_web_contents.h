@@ -6,7 +6,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
-#include <list>
 #include <map>
 #include <memory>
 #include <set>
@@ -15,6 +14,7 @@
 
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
@@ -41,9 +41,6 @@ class InspectableWebContents
       public content::WebContentsDelegate,
       public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
-  using List = std::list<InspectableWebContents*>;
-
-  static const List& GetAll();
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
   InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,
@@ -211,9 +208,10 @@ class InspectableWebContents
   std::string dock_state_;
   bool activate_ = true;
 
-  InspectableWebContentsDelegate* delegate_ = nullptr;  // weak references.
+  raw_ptr<InspectableWebContentsDelegate> delegate_ =
+      nullptr;  // weak references.
 
-  PrefService* pref_service_;  // weak reference.
+  raw_ptr<PrefService> pref_service_;  // weak reference.
 
   std::unique_ptr<content::WebContents> web_contents_;
 
@@ -221,7 +219,7 @@ class InspectableWebContents
   // one assigned by SetDevToolsWebContents.
   std::unique_ptr<content::WebContents> managed_devtools_web_contents_;
   // The external devtools assigned by SetDevToolsWebContents.
-  content::WebContents* external_devtools_web_contents_ = nullptr;
+  raw_ptr<content::WebContents> external_devtools_web_contents_ = nullptr;
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;

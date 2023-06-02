@@ -9,13 +9,13 @@
 #include <string>
 #include <utility>
 
+#include "base/apple/bundle_locations.h"
 #include "base/base_switches.h"
 #include "base/command_line.h"
 #include "base/debug/stack_trace.h"
 #include "base/environment.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/mac/bundle_locations.h"
 #include "base/path_service.h"
 #include "base/strings/string_split.h"
 #include "chrome/common/chrome_paths.h"
@@ -40,6 +40,7 @@
 #include "shell/common/logging.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
+#include "shell/common/process_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "shell/renderer/electron_renderer_client.h"
 #include "shell/renderer/electron_sandboxed_renderer_client.h"
@@ -82,11 +83,6 @@ const char kRelauncherProcess[] = "relauncher";
 constexpr base::StringPiece kElectronDisableSandbox("ELECTRON_DISABLE_SANDBOX");
 constexpr base::StringPiece kElectronEnableStackDumping(
     "ELECTRON_ENABLE_STACK_DUMPING");
-
-bool IsBrowserProcess(base::CommandLine* cmd) {
-  std::string process_type = cmd->GetSwitchValueASCII(::switches::kProcessType);
-  return process_type.empty();
-}
 
 // Returns true if this subprocess type needs the ResourceBundle initialized
 // and resources loaded.
@@ -220,7 +216,7 @@ std::string LoadResourceBundle(const std::string& locale) {
   base::FilePath pak_dir;
 #if BUILDFLAG(IS_MAC)
   pak_dir =
-      base::mac::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
+      base::apple::FrameworkBundlePath().Append(FILE_PATH_LITERAL("Resources"));
 #else
   base::PathService::Get(base::DIR_MODULE, &pak_dir);
 #endif
@@ -250,13 +246,11 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
   // On Windows the terminal returns immediately, so we add a new line to
   // prevent output in the same line as the prompt.
-  if (IsBrowserProcess(command_line))
+  if (IsBrowserProcess())
     std::wcout << std::endl;
 #endif  // !BUILDFLAG(IS_WIN)
 
   auto env = base::Environment::Create();
-
-  gin_helper::Locker::SetIsBrowserProcess(IsBrowserProcess(command_line));
 
   // Enable convenient stack printing. This is enabled by default in
   // non-official builds.
@@ -290,7 +284,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
   // bugs, but no use in Electron.
   base::win::DisableHandleVerifier();
 
-  if (IsBrowserProcess(command_line))
+  if (IsBrowserProcess())
     base::win::PinUser32();
 #endif
 
@@ -386,7 +380,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   crash_keys::SetPlatformCrashKey();
 #endif
 
-  if (IsBrowserProcess(command_line)) {
+  if (IsBrowserProcess()) {
     // Only append arguments for browser process.
 
     // Allow file:// URIs to read other file:// URIs by default.

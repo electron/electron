@@ -7,6 +7,7 @@
 
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/handle.h"
 #include "shell/common/gin_helper/wrappable.h"
@@ -44,7 +45,7 @@ class View : public gin_helper::Wrappable<View> {
   std::vector<v8::Global<v8::Object>> child_views_;
 
   bool delete_view_ = true;
-  views::View* view_ = nullptr;
+  raw_ptr<views::View> view_ = nullptr;
 };
 
 }  // namespace electron::api

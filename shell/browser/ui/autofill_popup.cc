@@ -6,7 +6,6 @@
 #include <memory>
 #include <vector>
 
-#include "base/cxx17_backports.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "components/autofill/core/common/autofill_features.h"
@@ -44,8 +43,8 @@ void CalculatePopupXAndWidthHorizontallyCentered(
   // The preferred horizontal starting point for the pop-up is at the horizontal
   // center of the field.
   int preferred_starting_point =
-      base::clamp(element_bounds.x() + (element_bounds.size().width() / 2),
-                  content_area_bounds.x(), content_area_bounds.right());
+      std::clamp(element_bounds.x() + (element_bounds.size().width() / 2),
+                 content_area_bounds.x(), content_area_bounds.right());
 
   // The space available to the left and to the right.
   int space_to_right = content_area_bounds.right() - preferred_starting_point;
@@ -85,11 +84,11 @@ void CalculatePopupXAndWidth(int popup_preferred_width,
                              const gfx::Rect& element_bounds,
                              bool is_rtl,
                              gfx::Rect* popup_bounds) {
-  int right_growth_start = base::clamp(
+  int right_growth_start = std::clamp(
       element_bounds.x(), content_area_bounds.x(), content_area_bounds.right());
   int left_growth_end =
-      base::clamp(element_bounds.right(), content_area_bounds.x(),
-                  content_area_bounds.right());
+      std::clamp(element_bounds.right(), content_area_bounds.x(),
+                 content_area_bounds.right());
 
   int right_available = content_area_bounds.right() - right_growth_start;
   int left_available = left_growth_end - content_area_bounds.x();
@@ -118,11 +117,11 @@ void CalculatePopupYAndHeight(int popup_preferred_height,
                               const gfx::Rect& content_area_bounds,
                               const gfx::Rect& element_bounds,
                               gfx::Rect* popup_bounds) {
-  int top_growth_end = base::clamp(element_bounds.y(), content_area_bounds.y(),
-                                   content_area_bounds.bottom());
+  int top_growth_end = std::clamp(element_bounds.y(), content_area_bounds.y(),
+                                  content_area_bounds.bottom());
   int bottom_growth_start =
-      base::clamp(element_bounds.bottom(), content_area_bounds.y(),
-                  content_area_bounds.bottom());
+      std::clamp(element_bounds.bottom(), content_area_bounds.y(),
+                 content_area_bounds.bottom());
 
   int top_available = top_growth_end - content_area_bounds.y();
   int bottom_available = content_area_bounds.bottom() - bottom_growth_start;

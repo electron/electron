@@ -84,7 +84,6 @@ describe('BrowserWindow module', () => {
     it('window does not get garbage collected when opened', async () => {
       const w = new BrowserWindow({ show: false });
       // Keep a weak reference to the window.
-      // eslint-disable-next-line no-undef
       const wr = new WeakRef(w);
       await setTimeout();
       // Do garbage collection, since |w| is not referenced in this closure
@@ -124,6 +123,13 @@ describe('BrowserWindow module', () => {
     it('should not crash if called after webContents is destroyed', () => {
       w.webContents.destroy();
       w.webContents.on('destroyed', () => w.close());
+    });
+
+    it('should allow access to id after destruction', async () => {
+      const closed = once(w, 'closed');
+      w.destroy();
+      await closed;
+      expect(w.id).to.be.a('number');
     });
 
     it('should emit unload handler', async () => {
@@ -1088,6 +1094,18 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('BrowserWindow.minimize()', () => {
+      // TODO(codebytere): Enable for Linux once maximize/minimize events work in CI.
+      ifit(process.platform !== 'linux')('should not be visible when the window is minimized', async () => {
+        const minimize = once(w, 'minimize');
+        w.minimize();
+        await minimize;
+
+        expect(w.isMinimized()).to.equal(true);
+        expect(w.isVisible()).to.equal(false);
+      });
+    });
+
     describe('BrowserWindow.showInactive()', () => {
       it('should not focus on window', () => {
         w.showInactive();
@@ -1305,7 +1323,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    ifdescribe(features.isDesktopCapturerEnabled())('BrowserWindow.moveAbove(mediaSourceId)', () => {
+    describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
       it('should throw an exception if wrong formatting', async () => {
         const fakeSourceIds = [
           'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
@@ -1662,6 +1680,59 @@ describe('BrowserWindow module', () => {
           w.show();
           w.maximize();
           await unmaximize;
+          expectBoundsEqual(w.getNormalBounds(), bounds);
+        });
+
+        it('correctly reports maximized state after maximizing then minimizing', async () => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          const maximize = once(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const minimize = once(w, 'minimize');
+          w.minimize();
+          await minimize;
+
+          expect(w.isMaximized()).to.equal(false);
+          expect(w.isMinimized()).to.equal(true);
+        });
+
+        it('correctly reports maximized state after maximizing then fullscreening', async () => {
+          w.destroy();
+          w = new BrowserWindow({ show: false });
+
+          w.show();
+
+          const maximize = once(w, 'maximize');
+          w.maximize();
+          await maximize;
+
+          const enterFS = once(w, 'enter-full-screen');
+          w.setFullScreen(true);
+          await enterFS;
+
+          expect(w.isMaximized()).to.equal(false);
+          expect(w.isFullScreen()).to.equal(true);
+        });
+
+        it('checks normal bounds for maximized transparent window', async () => {
+          w.destroy();
+          w = new BrowserWindow({
+            transparent: true,
+            show: false
+          });
+          w.show();
+
+          const bounds = w.getNormalBounds();
+
+          const maximize = once(w, 'maximize');
+          w.maximize();
+          await maximize;
+
           expectBoundsEqual(w.getNormalBounds(), bounds);
         });
 
@@ -2227,13 +2298,17 @@ describe('BrowserWindow module', () => {
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
 
-    ifit(process.platform === 'darwin')('resets the windows level on minimize', () => {
+    ifit(process.platform === 'darwin')('resets the windows level on minimize', async () => {
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
       w.setAlwaysOnTop(true, 'screen-saver');
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
+      const minimized = once(w, 'minimize');
       w.minimize();
+      await minimized;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
+      const restored = once(w, 'restore');
       w.restore();
+      await restored;
       expect(w.isAlwaysOnTop()).to.be.true('is not alwaysOnTop');
     });
 
@@ -3082,15 +3157,15 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('can be set on a window', () => {
       expect(() => {
-        /* eslint-disable no-new */
+        /* eslint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group1'
         });
+        /* eslint-disable-next-line no-new */
         new BrowserWindow({
           tabbingIdentifier: 'group2',
           frame: false
         });
-        /* eslint-enable no-new */
       }).not.to.throw();
     });
   });
@@ -4584,11 +4659,13 @@ describe('BrowserWindow module', () => {
         const c = new BrowserWindow({ show: false, parent: w });
         expect(c.getParentWindow()).to.equal(w);
       });
+
       it('adds window to child windows of parent', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
         expect(w.getChildWindows()).to.deep.equal([c]);
       });
+
       it('removes from child windows of parent when window is closed', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
@@ -4598,6 +4675,59 @@ describe('BrowserWindow module', () => {
         // The child window list is not immediately cleared, so wait a tick until it's ready.
         await setTimeout();
         expect(w.getChildWindows().length).to.equal(0);
+      });
+
+      ifit(process.platform === 'darwin')('child window matches visibility when visibility changes', async () => {
+        const w = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false, parent: w });
+
+        const wShow = once(w, 'show');
+        const cShow = once(c, 'show');
+
+        w.show();
+        c.show();
+
+        await Promise.all([wShow, cShow]);
+
+        const minimized = once(w, 'minimize');
+        w.minimize();
+        await minimized;
+
+        expect(w.isVisible()).to.be.false('parent is visible');
+        expect(c.isVisible()).to.be.false('child is visible');
+
+        const restored = once(w, 'restore');
+        w.restore();
+        await restored;
+
+        expect(w.isVisible()).to.be.true('parent is visible');
+        expect(c.isVisible()).to.be.true('child is visible');
+      });
+
+      ifit(process.platform === 'darwin')('matches child window visibility when visibility changes', async () => {
+        const w = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false, parent: w });
+
+        const wShow = once(w, 'show');
+        const cShow = once(c, 'show');
+
+        w.show();
+        c.show();
+
+        await Promise.all([wShow, cShow]);
+
+        const minimized = once(c, 'minimize');
+        c.minimize();
+        await minimized;
+
+        expect(c.isVisible()).to.be.false('child is visible');
+
+        const restored = once(c, 'restore');
+        c.restore();
+        await restored;
+
+        expect(w.isVisible()).to.be.true('parent is visible');
+        expect(c.isVisible()).to.be.true('child is visible');
       });
 
       it('closes a grandchild window when a middle child window is destroyed', (done) => {
@@ -5521,29 +5651,41 @@ describe('BrowserWindow module', () => {
 
       it('should not be changed by setKiosk method', async () => {
         const w = new BrowserWindow();
+
         const enterFullScreen = once(w, 'enter-full-screen');
-        w.setFullScreen(true);
+        w.setKiosk(true);
         await enterFullScreen;
         expect(w.isFullScreen()).to.be.true('isFullScreen');
-        await setTimeout();
-        w.setKiosk(true);
-        await setTimeout();
-        w.setKiosk(false);
-        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
         const leaveFullScreen = once(w, 'leave-full-screen');
-        w.setFullScreen(false);
+        w.setKiosk(false);
         await leaveFullScreen;
         expect(w.isFullScreen()).to.be.false('isFullScreen');
       });
 
-      // FIXME: https://github.com/electron/electron/issues/30140
-      xit('multiple windows inherit correct fullscreen state', async () => {
+      it('should stay fullscreen if fullscreen before kiosk', async () => {
+        const w = new BrowserWindow();
+
+        const enterFullScreen = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFullScreen;
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+
+        w.setKiosk(true);
+
+        w.setKiosk(false);
+        // Wait enough time for a fullscreen change to take effect.
+        await setTimeout(2000);
+        expect(w.isFullScreen()).to.be.true('isFullScreen');
+      });
+
+      it('multiple windows inherit correct fullscreen state', async () => {
         const w = new BrowserWindow();
         const enterFullScreen = once(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFullScreen;
         expect(w.isFullScreen()).to.be.true('isFullScreen');
-        await setTimeout();
+        await setTimeout(1000);
         const w2 = new BrowserWindow({ show: false });
         const enterFullScreen2 = once(w2, 'enter-full-screen');
         w2.show();
@@ -5988,6 +6130,24 @@ describe('BrowserWindow module', () => {
   describe('"transparent" option', () => {
     afterEach(closeAllWindows);
 
+    ifit(process.platform !== 'linux')('correctly returns isMaximized() when the window is maximized then minimized', async () => {
+      const w = new BrowserWindow({
+        frame: false,
+        transparent: true
+      });
+
+      const maximize = once(w, 'maximize');
+      w.maximize();
+      await maximize;
+
+      const minimize = once(w, 'minimize');
+      w.minimize();
+      await minimize;
+
+      expect(w.isMaximized()).to.be.false();
+      expect(w.isMinimized()).to.be.true();
+    });
+
     // Only applicable on Windows where transparent windows can't be maximized.
     ifit(process.platform === 'win32')('can show maximized frameless window', async () => {
       const display = screen.getPrimaryDisplay();
@@ -6013,7 +6173,7 @@ describe('BrowserWindow module', () => {
     });
 
     // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-    ifit(process.platform === 'darwin' && process.arch !== 'x64')('should not display a visible background', async () => {
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not display a visible background', async () => {
       const display = screen.getPrimaryDisplay();
 
       const backgroundWindow = new BrowserWindow({
@@ -6085,6 +6245,32 @@ describe('BrowserWindow module', () => {
       });
 
       expect(areColorsSimilar(centerColor, HexColors.PURPLE)).to.be.true();
+    });
+
+    // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
+    ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make background transparent if falsy', async () => {
+      const display = screen.getPrimaryDisplay();
+
+      for (const transparent of [false, undefined]) {
+        const window = new BrowserWindow({
+          ...display.bounds,
+          transparent
+        });
+
+        await once(window, 'show');
+        await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
+
+        await setTimeout(500);
+        const screenCapture = await captureScreen();
+        const centerColor = getPixelColor(screenCapture, {
+          x: display.size.width / 2,
+          y: display.size.height / 2
+        });
+        window.close();
+
+        // color-scheme is set to dark so background should not be white
+        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
+      }
     });
   });
 

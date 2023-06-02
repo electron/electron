@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "gin/handle.h"
 #include "gin/object_template_builder.h"
@@ -312,7 +313,7 @@ class JSChunkedDataPipeGetter : public gin::Wrappable<JSChunkedDataPipeGetter>,
   bool is_writing_ = false;
   uint64_t bytes_written_ = 0;
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   v8::Global<v8::Function> body_func_;
 };
 

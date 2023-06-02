@@ -9,7 +9,6 @@
 
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
-#include "chrome/browser/pdf/pdf_extension_util.h"
 #include "chrome/common/extensions/api/resources_private.h"
 #include "chrome/grit/generated_resources.h"
 #include "components/strings/grit/components_strings.h"
@@ -20,12 +19,13 @@
 #include "ui/base/webui/web_ui_util.h"
 
 #if BUILDFLAG(ENABLE_PDF)
+#include "chrome/browser/pdf/pdf_extension_util.h"
 #include "pdf/pdf_features.h"
 #endif  // BUILDFLAG(ENABLE_PDF)
 
 // To add a new component to this API, simply:
 // 1. Add your component to the Component enum in
-//      chrome/common/extensions/api/resources_private.idl
+//      shell/common/extensions/api/resources_private.idl
 // 2. Create an AddStringsForMyComponent(base::Value::Dict* dict) method.
 // 3. Tie in that method to the switch statement in Run()
 

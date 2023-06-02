@@ -11,6 +11,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/supports_user_data.h"
@@ -148,6 +149,9 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
+  virtual void RemoveChildWindow(NativeWindow* child) = 0;
+  virtual void AttachChildren() = 0;
+  virtual void DetachChildren() = 0;
 #endif
 
   // Ability to augment the window title for the screen readers.
@@ -214,6 +218,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Vibrancy API
   virtual void SetVibrancy(const std::string& type);
+
+  virtual void SetBackgroundMaterial(const std::string& type);
 
   // Traffic Light API
 #if BUILDFLAG(IS_MAC)
@@ -331,7 +337,7 @@ class NativeWindow : public base::SupportsUserData,
   // Handle fullscreen transitions.
   void HandlePendingFullscreenTransitions();
 
-  enum class FullScreenTransitionState { ENTERING, EXITING, NONE };
+  enum class FullScreenTransitionState { kEntering, kExiting, kNone };
 
   void set_fullscreen_transition_state(FullScreenTransitionState state) {
     fullscreen_transition_state_ = state;
@@ -340,7 +346,7 @@ class NativeWindow : public base::SupportsUserData,
     return fullscreen_transition_state_;
   }
 
-  enum class FullScreenTransitionType { HTML, NATIVE, NONE };
+  enum class FullScreenTransitionType { kHTML, kNative, kNone };
 
   void set_fullscreen_transition_type(FullScreenTransitionType type) {
     fullscreen_transition_type_ = type;
@@ -379,6 +385,10 @@ class NativeWindow : public base::SupportsUserData,
 
   int32_t window_id() const { return next_id_; }
 
+  void add_child_window(NativeWindow* child) {
+    child_windows_.push_back(child);
+  }
+
   int NonClientHitTest(const gfx::Point& point);
   void AddDraggableRegionProvider(DraggableRegionProvider* provider);
   void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
@@ -415,9 +425,11 @@ class NativeWindow : public base::SupportsUserData,
 
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state_ =
-      FullScreenTransitionState::NONE;
+      FullScreenTransitionState::kNone;
   FullScreenTransitionType fullscreen_transition_type_ =
-      FullScreenTransitionType::NONE;
+      FullScreenTransitionType::kNone;
+
+  std::list<NativeWindow*> child_windows_;
 
  private:
   std::unique_ptr<views::Widget> widget_;
@@ -425,7 +437,7 @@ class NativeWindow : public base::SupportsUserData,
   static int32_t next_id_;
 
   // The content view, weak ref.
-  views::View* content_view_ = nullptr;
+  raw_ptr<views::View> content_view_ = nullptr;
 
   // Whether window has standard frame.
   bool has_frame_ = true;
@@ -458,7 +470,7 @@ class NativeWindow : public base::SupportsUserData,
   gfx::Size aspect_ratio_extraSize_;
 
   // The parent window, it is guaranteed to be valid during this window's life.
-  NativeWindow* parent_ = nullptr;
+  raw_ptr<NativeWindow> parent_ = nullptr;
 
   // Is this a modal window.
   bool is_modal_ = false;

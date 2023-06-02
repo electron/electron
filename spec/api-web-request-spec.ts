@@ -22,7 +22,10 @@ describe('webRequest module', () => {
       res.setHeader('Location', 'http://' + req.rawHeaders[1]);
       res.end();
     } else if (req.url === '/contentDisposition') {
-      res.setHeader('content-disposition', [' attachment; filename=aa%E4%B8%ADaa.txt']);
+      res.writeHead(200, [
+        'content-disposition',
+        Buffer.from('attachment; filename=aa中aa.txt').toString('binary')
+      ]);
       const content = req.url;
       res.end(content);
     } else {
@@ -478,7 +481,8 @@ describe('webRequest module', () => {
         callback({});
       });
       const { data, headers } = await ajax(defaultURL + 'contentDisposition');
-      expect(headers).to.to.have.property('content-disposition', 'attachment; filename=aa%E4%B8%ADaa.txt');
+      const disposition = Buffer.from('attachment; filename=aa中aa.txt').toString('binary');
+      expect(headers).to.to.have.property('content-disposition', disposition);
       expect(data).to.equal('/contentDisposition');
     });
 

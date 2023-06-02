@@ -10,12 +10,13 @@ permissions:
 
 jobs:
   issue-commented:
+    name: Remove blocked/need-repro on comment
+    if: ${{ contains(github.event.issue.labels.*.name, 'blocked/need-repro') && !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.comment.author_association) }}
     permissions:
       issues: write
     runs-on: ubuntu-latest
     steps:
-      - name: Remove blocked/need-repro on comment
-        if: ${{ contains(github.event.issue.labels.*.name, 'blocked/need-repro') && !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.comment.author_association) }}
+      - name: Remove label
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ISSUE_URL: ${{ github.event.issue.html_url }}

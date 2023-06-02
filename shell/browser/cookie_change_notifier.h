@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_BROWSER_COOKIE_CHANGE_NOTIFIER_H_
 
 #include "base/callback_list.h"
+#include "base/memory/raw_ptr.h"
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "net/cookies/cookie_change_dispatcher.h"
 #include "services/network/public/mojom/cookie_manager.mojom.h"
@@ -36,7 +37,7 @@ class CookieChangeNotifier : public network::mojom::CookieChangeListener {
   // network::mojom::CookieChangeListener implementation.
   void OnCookieChange(const net::CookieChangeInfo& change) override;
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
   base::RepeatingCallbackList<void(const net::CookieChangeInfo& change)>
       cookie_change_sub_list_;
 

@@ -46,11 +46,11 @@ void AsarFileValidator::OnRead(base::span<char> buffer,
     if (!current_hash_) {
       current_hash_byte_count_ = 0;
       switch (integrity_.algorithm) {
-        case HashAlgorithm::SHA256:
+        case HashAlgorithm::kSHA256:
           current_hash_ =
               crypto::SecureHash::Create(crypto::SecureHash::SHA256);
           break;
-        case HashAlgorithm::NONE:
+        case HashAlgorithm::kNone:
           CHECK(false);
           break;
       }

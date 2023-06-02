@@ -3,6 +3,9 @@
   "productName": "Electron Test Main",
   "main": "index.js",
   "version": "0.1.0",
+  "scripts": {
+    "node-gyp-install": "node-gyp install"
+  },
   "devDependencies": {
     "@electron-ci/echo": "file:./fixtures/native-addon/echo",
     "@electron-ci/uv-dlopen": "file:./fixtures/native-addon/uv-dlopen/",
@@ -37,6 +40,7 @@
   },
   "resolutions": {
     "nan": "github:jkleinsc/nan#remove_accessor_signature",
-    "dbus-native/optimist/minimist": "1.2.7"
+    "dbus-native/optimist/minimist": "1.2.7",
+    "dbus-native/xml2js": "0.5.0"
   }
 }

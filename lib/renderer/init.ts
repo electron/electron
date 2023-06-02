@@ -57,7 +57,7 @@ require('@electron/internal/renderer/common-init');
 
 if (nodeIntegration) {
   // Export node bindings to global.
-  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
+  const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers');
   global.module = new Module('electron/js2c/renderer_init');
   global.require = makeRequireFunction(global.module);
 

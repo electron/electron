@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
@@ -249,6 +250,11 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kVibrancyType, &type)) {
     SetVibrancy(type);
   }
+#elif BUILDFLAG(IS_WIN)
+  std::string material;
+  if (options.Get(options::kBackgroundMaterial, &material)) {
+    SetBackgroundMaterial(material);
+  }
 #endif
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
@@ -444,6 +450,8 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
 }
 
 void NativeWindow::SetVibrancy(const std::string& type) {}
+
+void NativeWindow::SetBackgroundMaterial(const std::string& type) {}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
@@ -718,9 +726,7 @@ int NativeWindow::NonClientHitTest(const gfx::Point& point) {
 
 void NativeWindow::AddDraggableRegionProvider(
     DraggableRegionProvider* provider) {
-  if (std::find(draggable_region_providers_.begin(),
-                draggable_region_providers_.end(),
-                provider) == draggable_region_providers_.end()) {
+  if (!base::Contains(draggable_region_providers_, provider)) {
     draggable_region_providers_.push_back(provider);
   }
 }
@@ -757,7 +763,7 @@ std::string NativeWindow::GetAccessibleTitle() {
 
 void NativeWindow::HandlePendingFullscreenTransitions() {
   if (pending_transitions_.empty()) {
-    set_fullscreen_transition_type(FullScreenTransitionType::NONE);
+    set_fullscreen_transition_type(FullScreenTransitionType::kNone);
     return;
   }
 

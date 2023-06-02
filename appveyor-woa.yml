@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-114.0.5684.0
+image: e-116.0.5791.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -66,11 +66,13 @@ for:
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"
+            Exit-AppveyorBuild
+          } else {
+            $global:LASTEXITCODE = 0
           }
-          $global:LASTEXITCODE = 0
       - cd ..
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
@@ -220,11 +222,13 @@ for:
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"
+            Exit-AppveyorBuild
+          } else {
+            $global:LASTEXITCODE = 0
           }
-          $global:LASTEXITCODE = 0
       - cd ..
       - mkdir out\Default
       - cd ..

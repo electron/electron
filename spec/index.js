@@ -107,6 +107,11 @@ app.whenReady().then(async () => {
   if (argv.grep) mocha.grep(argv.grep);
   if (argv.invert) mocha.invert();
 
+  const baseElectronDir = path.resolve(__dirname, '..');
+  const validTestPaths = argv.files && argv.files.map(file =>
+    path.isAbsolute(file)
+      ? path.relative(baseElectronDir, file)
+      : file);
   const filter = (file) => {
     if (!/-spec\.[tj]s$/.test(file)) {
       return false;
@@ -121,8 +126,7 @@ app.whenReady().then(async () => {
       return false;
     }
 
-    const baseElectronDir = path.resolve(__dirname, '..');
-    if (argv.files && !argv.files.includes(path.relative(baseElectronDir, file))) {
+    if (validTestPaths && !validTestPaths.includes(path.relative(baseElectronDir, file))) {
       return false;
     }
 
@@ -134,6 +138,12 @@ app.whenReady().then(async () => {
   testFiles.sort().forEach((file) => {
     mocha.addFile(file);
   });
+
+  if (validTestPaths && validTestPaths.length > 0 && testFiles.length === 0) {
+    console.error('Test files were provided, but they did not match any searched files');
+    console.error('provided file paths (relative to electron/):', validTestPaths);
+    process.exit(1);
+  }
 
   const cb = () => {
     // Ensure the callback is called after runner is defined

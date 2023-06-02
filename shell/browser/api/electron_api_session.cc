@@ -16,6 +16,7 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/guid.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
@@ -75,6 +76,7 @@
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/optional_converter.h"
+#include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -330,7 +332,7 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 struct UserDataLink : base::SupportsUserData::Data {
   explicit UserDataLink(Session* ses) : session(ses) {}
 
-  Session* session;
+  raw_ptr<Session> session;
 };
 
 const void* kElectronApiSessionKey = &kElectronApiSessionKey;
@@ -655,8 +657,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
-        handler->Run(web_contents, permission_type,
-                     base::AdaptCallbackForRepeating(std::move(callback)),
+        handler->Run(web_contents, permission_type, std::move(callback),
                      details);
       },
       base::Owned(std::move(handler))));
@@ -700,6 +701,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetDevicePermissionHandler(handler);
+}
+
+void Session::SetUSBProtectedClassesHandler(v8::Local<v8::Value> val,
+                                            gin::Arguments* args) {
+  ElectronPermissionManager::ProtectedUSBHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetProtectedUSBHandler(handler);
 }
 
 void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
@@ -1331,6 +1344,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setUSBProtectedClassesHandler",
+                 &Session::SetUSBProtectedClassesHandler)
       .SetMethod("setBluetoothPairingHandler",
                  &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

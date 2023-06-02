@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/containers/span.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -475,10 +476,10 @@ class ChunkedDataPipeReadableStream
       OnSizeReceived(net::ERR_FAILED, 0);
   }
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   int status_ = net::OK;
   scoped_refptr<network::ResourceRequestBody> resource_request_body_;
-  network::DataElementChunkedDataPipe* data_element_;
+  raw_ptr<network::DataElementChunkedDataPipe> data_element_;
   mojo::Remote<network::mojom::ChunkedDataPipeGetter> chunked_data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
   mojo::SimpleWatcher handle_watcher_;

@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/containers/queue.h"
+#include "base/memory/raw_ptr.h"
 #include "base/observer_list.h"
 #include "base/values.h"
 #include "build/build_config.h"
@@ -112,7 +113,7 @@ class UsbChooserContext : public KeyedService,
       client_receiver_{this};
   base::ObserverList<DeviceObserver> device_observer_list_;
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   base::WeakPtrFactory<UsbChooserContext> weak_factory_{this};
 };

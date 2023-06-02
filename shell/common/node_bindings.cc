@@ -50,6 +50,7 @@
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
+  V(electron_browser_desktop_capturer)   \
   V(electron_browser_dialog)             \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
@@ -99,9 +100,6 @@
 
 #define ELECTRON_VIEWS_BINDINGS(V) V(electron_browser_image_view)
 
-#define ELECTRON_DESKTOP_CAPTURER_BINDINGS(V) \
-  V(electron_browser_desktop_capturer)
-
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
 
 // This is used to load built-in bindings. Instead of using
@@ -116,9 +114,6 @@ ELECTRON_RENDERER_BINDINGS(V)
 ELECTRON_UTILITY_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
 ELECTRON_VIEWS_BINDINGS(V)
-#endif
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
 #if DCHECK_IS_ON()
 ELECTRON_TESTING_BINDINGS(V)
@@ -171,7 +166,7 @@ bool AllowWasmCodeGenerationCallback(v8::Local<v8::Context> context,
   // If we're running with contextIsolation enabled in the renderer process,
   // fall back to Blink's logic.
   if (node::Environment::GetCurrent(context) == nullptr) {
-    if (gin_helper::Locker::IsBrowserProcess())
+    if (!electron::IsRendererProcess())
       return false;
     return blink::V8Initializer::WasmCodeGenerationCheckCallbackInMainThread(
         context, source);
@@ -188,7 +183,7 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
     // No node environment means we're in the renderer process, either in a
     // sandboxed renderer or in an unsandboxed renderer with context isolation
     // enabled.
-    if (gin_helper::Locker::IsBrowserProcess()) {
+    if (!electron::IsRendererProcess()) {
       NOTREACHED();
       return {false, {}};
     }
@@ -197,21 +192,20 @@ v8::ModifyCodeGenerationFromStringsResult ModifyCodeGenerationFromStrings(
   }
 
   // If we get here then we have a node environment, so either a) we're in the
-  // main process, or b) we're in the renderer process in a context that has
-  // both node and blink, i.e. contextIsolation disabled.
-
-  // If we're in the main process, delegate to node.
-  if (gin_helper::Locker::IsBrowserProcess()) {
-    return node::ModifyCodeGenerationFromStrings(context, source, is_code_like);
-  }
+  // non-rendrer process, or b) we're in the renderer process in a context that
+  // has both node and blink, i.e. contextIsolation disabled.
 
   // If we're in the renderer with contextIsolation disabled, ask blink first
   // (for CSP), and iff that allows codegen, delegate to node.
-  v8::ModifyCodeGenerationFromStringsResult result =
-      blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
-          context, source, is_code_like);
-  if (!result.codegen_allowed)
-    return result;
+  if (electron::IsRendererProcess()) {
+    v8::ModifyCodeGenerationFromStringsResult result =
+        blink::V8Initializer::CodeGenerationCheckCallbackInMainThread(
+            context, source, is_code_like);
+    if (!result.codegen_allowed)
+      return result;
+  }
+
+  // If we're in the main process or utility process, delegate to node.
   return node::ModifyCodeGenerationFromStrings(context, source, is_code_like);
 }
 
@@ -363,9 +357,6 @@ void NodeBindings::RegisterBuiltinBindings() {
     ELECTRON_BROWSER_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
     ELECTRON_VIEWS_BINDINGS(V)
-#endif
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-    ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
   }
   ELECTRON_COMMON_BINDINGS(V)
@@ -599,6 +590,8 @@ node::Environment* NodeBindings::CreateEnvironment(
   // Use a custom callback here to allow us to leverage Blink's logic in the
   // renderer process.
   is.allow_wasm_code_generation_callback = AllowWasmCodeGenerationCallback;
+  is.flags |= node::IsolateSettingsFlags::
+      ALLOW_MODIFY_CODE_GENERATION_FROM_STRINGS_CALLBACK;
   is.modify_code_generation_from_strings_callback =
       ModifyCodeGenerationFromStrings;
 

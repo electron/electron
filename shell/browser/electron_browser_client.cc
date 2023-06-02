@@ -158,7 +158,6 @@
 #include "extensions/browser/extensions_browser_client.h"
 #include "extensions/browser/guest_view/extensions_guest_view.h"
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
-#include "extensions/browser/info_map.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
 #include "extensions/browser/url_loader_factory_manager.h"
@@ -725,8 +724,7 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
       return;
 
     extensions::ProcessMap::Get(browser_context)
-        ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
-                 site_instance->GetId());
+        ->Insert(extension->id(), site_instance->GetProcess()->GetID());
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
@@ -776,32 +774,6 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
 base::FilePath ElectronBrowserClient::GetLoggingFileName(
     const base::CommandLine& cmd_line) {
   return logging::GetLogFileName(cmd_line);
-}
-
-void ElectronBrowserClient::SiteInstanceDeleting(
-    content::SiteInstance* site_instance) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // Don't do anything if we're shutting down.
-  if (content::BrowserMainRunner::ExitedMainMessageLoop())
-    return;
-
-  auto* browser_context =
-      static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  if (!browser_context->IsOffTheRecord()) {
-    // If this isn't an extension renderer there's nothing to do.
-    extensions::ExtensionRegistry* registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    const extensions::Extension* extension =
-        registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSiteURL());
-    if (!extension)
-      return;
-
-    extensions::ProcessMap::Get(browser_context)
-        ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
-                 site_instance->GetId());
-  }
-#endif
 }
 
 std::unique_ptr<net::ClientCertStore>

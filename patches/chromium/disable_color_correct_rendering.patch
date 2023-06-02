@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index ffaf89466d29864bd1bb91565c16303b097e4e5d..56fe848755bc56ddb5b5893476ba82ed185774c0 100644
+index 1f9966eb7564b867c9bd4399f2543f9230df371b..c058bfcfe4cd6738f50ada6ffc8972c5f6a32b32 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1915,6 +1915,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1914,6 +1914,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -35,7 +35,7 @@ index ffaf89466d29864bd1bb91565c16303b097e4e5d..56fe848755bc56ddb5b5893476ba82ed
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index d67c103a301f6398084f8db8a7d559981f3c669c..ccec09bdde3b107b0260ec9d26f5db20e023ce89 100644
+index 0d966e045669ee0423d6a486fa8e619938a32de2..1e46ecc1aa8447b3fd0f4e5a66f92ca5ef148887 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -81,10 +81,10 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 9e53989c27763d082dabbaee2149206906977d10..7f6698c75db98e0a239a9144c73362f5ec2b38bd 100644
+index 110f05ece2064a253683cf0bf52e554788c9c660..49bf6c8f4e0f198b2c7b2b1d7cf04bcb67b62db1 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -226,6 +226,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -93,10 +93,10 @@ index 9e53989c27763d082dabbaee2149206906977d10..7f6698c75db98e0a239a9144c73362f5
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index da3254d252dabca7593eb46c461ce4063137d957..cd0bd70cbefa80246fc4624a718585cf63c13e96 100644
+index 15effd78c0a10f13dbd17b18daa12456a6bc19ae..bd563e0b55f707f1c72c221257e968320302895e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3333,6 +3333,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3392,6 +3392,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 318005b66e04ed03ce6d44931d9360c0e009cb94..0d622fddb95720141ccf8a285ace4714
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 77624a8b54b6e05da79bd913aa3d25187118090c..0057d51aebaf7530cc91e87fc826dd70c49c1df4 100644
+index 2a31606b1f5814d57ffe59026cc5735fa7cee597..272ae9f414f8d0873e30479b5bfd237c13a69dd9 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -25,6 +25,7 @@
@@ -159,7 +159,7 @@ index 77624a8b54b6e05da79bd913aa3d25187118090c..0057d51aebaf7530cc91e87fc826dd70
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -214,6 +215,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -210,6 +211,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -213,7 +213,7 @@ index 95d74c90b324760a0fafcf92fe3f40071ffa0187..cb138579bdb5b552a198d47fde220d81
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index cbdfb60d42cb16848847eba67937b95b3504bedf..16c8ff102070ce75c518f8d444cae1e51580d0b4 100644
+index df3caf8fab7a1c1f6bc0efa4fd3dd60b9de66e63..ac254ec1317450a9809da5d244c42fa11a3a4f98 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
@@ -226,7 +226,7 @@ index cbdfb60d42cb16848847eba67937b95b3504bedf..16c8ff102070ce75c518f8d444cae1e5
  // sharpness, kerning, hinting and layout.
  const char kDisableFontSubpixelPositioning[] =
 diff --git a/ui/gfx/switches.h b/ui/gfx/switches.h
-index df3520997950911ab8dcd81f654016b2f726ce7d..ac38f23312eef89fb9e2614744c7226fc7091bad 100644
+index ebeb73e7f679280297a09332612a83181e24a4e1..79ec8deb0cab719b344a4964221c10725bd066e7 100644
 --- a/ui/gfx/switches.h
 +++ b/ui/gfx/switches.h
 @@ -13,6 +13,7 @@
@@ -235,5 +235,5 @@ index df3520997950911ab8dcd81f654016b2f726ce7d..ac38f23312eef89fb9e2614744c7226f
  GFX_SWITCHES_EXPORT extern const char kAnimationDurationScale[];
 +GFX_SWITCHES_EXPORT extern const char kDisableColorCorrectRendering[];
  GFX_SWITCHES_EXPORT extern const char kDisableFontSubpixelPositioning[];
- GFX_SWITCHES_EXPORT extern const char kDisablePPAPISharedImagesSwapChain[];
  GFX_SWITCHES_EXPORT extern const char kEnableNativeGpuMemoryBuffers[];
+ GFX_SWITCHES_EXPORT extern const char kForcePrefersReducedMotion[];

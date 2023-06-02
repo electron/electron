@@ -13,6 +13,7 @@
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/json/string_escape.h"
+#include "base/memory/raw_ptr.h"
 #include "base/metrics/histogram.h"
 #include "base/stl_util.h"
 #include "base/strings/pattern.h"
@@ -93,16 +94,12 @@ const char kTitleFormat[] = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
-// Stores all instances of InspectableWebContents.
-InspectableWebContents::List g_web_contents_instances_;
-
-base::Value RectToDictionary(const gfx::Rect& bounds) {
-  base::Value::Dict dict;
-  dict.Set("x", bounds.x());
-  dict.Set("y", bounds.y());
-  dict.Set("width", bounds.width());
-  dict.Set("height", bounds.height());
-  return base::Value(std::move(dict));
+base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
+  return base::Value::Dict{}
+      .Set("x", bounds.x())
+      .Set("y", bounds.y())
+      .Set("width", bounds.width())
+      .Set("height", bounds.height());
 }
 
 gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
@@ -314,7 +311,7 @@ class InspectableWebContents::NetworkResourceLoader
   void OnRetry(base::OnceClosure start_retry) override {}
 
   const int stream_id_;
-  InspectableWebContents* const bindings_;
+  raw_ptr<InspectableWebContents> const bindings_;
   const network::ResourceRequest resource_request_;
   const net::NetworkTrafficAnnotationTag traffic_annotation_;
   std::unique_ptr<network::SimpleURLLoader> loader_;
@@ -330,14 +327,10 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContents* inspectable_web_contents);
 
 // static
-const InspectableWebContents::List& InspectableWebContents::GetAll() {
-  return g_web_contents_instances_;
-}
-
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
-                                   RectToDictionary(gfx::Rect(0, 0, 800, 600)));
+                                   RectToDictionary(gfx::Rect{0, 0, 800, 600}));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
@@ -375,11 +368,9 @@ InspectableWebContents::InspectableWebContents(
           display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
-  g_web_contents_instances_.push_back(this);
 }
 
 InspectableWebContents::~InspectableWebContents() {
-  g_web_contents_instances_.remove(this);
   // Unsubscribe from devtools and Clean up resources.
   if (GetDevToolsWebContents())
     WebContentsDestroyed();
@@ -543,7 +534,8 @@ gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
 }
 
 void InspectableWebContents::SaveDevToolsBounds(const gfx::Rect& bounds) {
-  pref_service_->Set(kDevToolsBoundsPref, RectToDictionary(bounds));
+  pref_service_->Set(kDevToolsBoundsPref,
+                     base::Value{RectToDictionary(bounds)});
   devtools_bounds_ = bounds;
 }
 

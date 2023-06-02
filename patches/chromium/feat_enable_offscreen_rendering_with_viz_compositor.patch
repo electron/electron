@@ -87,11 +87,11 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 395917cde8db720a3f246f41c174ff45506cf24a..6926bd6766603f8de2237447c0a8fde2d09b67b4 100644
+index 5583233391b2133acd30d76ce4c3c5d87e0ffbc8..9551e3ea2e5f3de9bff158fc0f443df69a27f93a 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -137,6 +137,8 @@ viz_component("service") {
-     "display_embedder/skia_output_surface_impl_on_gpu.h",
+@@ -141,6 +141,8 @@ viz_component("service") {
+     "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
 +    "display_embedder/software_output_device_proxy.cc",
@@ -513,10 +513,10 @@ index d4d4c1444e7a169d154bb9062f09f2270e7e9734..01943e14de567afd7b14f6a92eec651d
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index 84ab6b2b44c612cc15b7a2eb9493d2e143fe1d77..2c69746cc1a680ecbf4ee646022e0cc50d65fc1e 100644
+index 36673e93a8380d4e6d086fe3029a53fa483ccddb..ad91be73ec89f45c2ce083eaa3a8aba6b6f53877 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -89,7 +89,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -94,7 +94,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -527,10 +527,10 @@ index 84ab6b2b44c612cc15b7a2eb9493d2e143fe1d77..2c69746cc1a680ecbf4ee646022e0cc5
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index a45fa7c141777bc6ebc5c34ba73c2e6cc602c2b0..a4bbec572b63a22e2b920e7b139c0c9b6ec34e0c 100644
+index ea2888e6e6ce03dd1918a6183960d5809a15b59c..68c628ecbe2f596c93b6ac0d6b1c68cbb6b0a508 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -397,8 +397,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -401,8 +401,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
@@ -548,10 +548,10 @@ index a45fa7c141777bc6ebc5c34ba73c2e6cc602c2b0..a4bbec572b63a22e2b920e7b139c0c9b
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index c286482bc7ddb16cc0b755262006971f564bd54c..71914284f2ff078e949d300d4a19a18c73330d50 100644
+index 350fa67c492490bbd5e8d13ea4368df798261071..d5718735b288d27055af05411a160377c473d27b 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
-@@ -109,7 +109,6 @@ interface DisplayClient {
+@@ -114,7 +114,6 @@ interface DisplayClient {
  
    // Creates a LayeredWindowUpdater implementation to draw into a layered
    // window.
@@ -560,13 +560,13 @@ index c286482bc7ddb16cc0b755262006971f564bd54c..71914284f2ff078e949d300d4a19a18c
  
    // Sends the created child window to the browser process so that it can be
 diff --git a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-index b8037d39c0d763b25d3db09f73b1819a0907904d..2ecad8b7bda880b6aceb316e17a05a99575285b7 100644
+index f4c967e69e91a09c3cdb3295f353939e77ae1afb..eb87b444ec2f3142e19765f5a27c2cbe76141f5b 100644
 --- a/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
 +++ b/services/viz/privileged/mojom/compositing/frame_sink_manager.mojom
-@@ -30,6 +30,7 @@ struct RootCompositorFrameSinkParams {
-   bool send_swap_size_notifications = false;
-   // Disables begin frame rate limiting for the display compositor.
+@@ -32,6 +32,7 @@ struct RootCompositorFrameSinkParams {
    bool disable_frame_rate_limit = false;
+   // Whether to use variable refresh rates when generating begin frames.
+   bool enable_variable_refresh_rate = false;
 +  bool offscreen = false;
  
    [EnableIf=is_android]
@@ -583,7 +583,7 @@ index 2f462f0deb5fc8a637457243fb5d5849fc214d14..695869b83cefaa24af93a2e11b39de05
 +  Draw(gfx.mojom.Rect damage_rect) => ();
  };
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index 2c587c7d2f7e91adcd4bf37c617eb6f919fed838..964b5ebb5ffb6276a1d558447a5eaf4f5b7dc629 100644
+index c9f14ed6547ba1f5cdaade063452036ac402885a..ddb28fd6f7549759df7e3b7d6b309cd982e199af 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
 @@ -89,6 +89,7 @@ class DisplayPrivate;
@@ -621,11 +621,11 @@ index 2c587c7d2f7e91adcd4bf37c617eb6f919fed838..964b5ebb5ffb6276a1d558447a5eaf4f
    // Sets the root of the layer tree drawn by this Compositor. The root layer
    // must have no parent. The compositor's root layer is reset if the root layer
    // is destroyed. NULL can be passed to reset the root layer, in which case the
-@@ -519,6 +533,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -525,6 +539,8 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    std::unique_ptr<PendingBeginFrameArgs> pending_begin_frame_args_;
  
-+  CompositorDelegate* delegate_ = nullptr;
++  raw_ptr<CompositorDelegate> delegate_ = nullptr;
 +
    // The root of the Layer tree drawn by this compositor.
    raw_ptr<Layer> root_layer_ = nullptr;

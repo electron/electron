@@ -25,7 +25,9 @@
 #endif
 
 #if BUILDFLAG(IS_MAC)
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/cocoa/secure_password_input.h"
+#include "ui/gfx/image/image.h"
 #endif
 
 namespace base {
@@ -278,8 +280,11 @@ class Browser : public WindowListObserver {
   // Tell the application to create a new window for a tab.
   void NewWindowForTab();
 
-  // Tell the application that application did become active
+  // Indicate that the app is now active.
   void DidBecomeActive();
+  // Indicate that the app is no longer active and doesn’t have focus.
+  void DidResignActive();
+
 #endif  // BUILDFLAG(IS_MAC)
 
   // Tell the application that application is activated with visible/invisible
@@ -336,6 +341,10 @@ class Browser : public WindowListObserver {
   void OnWindowCloseCancelled(NativeWindow* window) override;
   void OnWindowAllClosed() override;
 
+#if BUILDFLAG(IS_MAC)
+  void DockSetIconImage(gfx::Image const& icon);
+#endif
+
   // Observers of the browser.
   base::ObserverList<BrowserObserver> observers_;
 
@@ -361,6 +370,10 @@ class Browser : public WindowListObserver {
 #if BUILDFLAG(IS_MAC)
   std::unique_ptr<ui::ScopedPasswordInputEnabler> password_input_enabler_;
   base::Time last_dock_show_;
+
+  // DockSetIcon() can't set the icon if is_ready_ is false.
+  // This field caches it until the browser is ready. (#26604)
+  absl::optional<gfx::Image> dock_icon_;
 #endif
 
   base::Value::Dict about_panel_options_;

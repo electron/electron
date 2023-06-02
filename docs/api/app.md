@@ -7,7 +7,7 @@ Process: [Main](../glossary.md#main-process)
 The following example shows how to quit the application when the last window is
 closed:
 
-```javascript
+```js
 const { app } = require('electron')
 app.on('window-all-closed', () => {
   app.quit()
@@ -150,9 +150,20 @@ Returns:
 
 * `event` Event
 
-Emitted when mac application become active. Difference from `activate` event is
+Emitted when the application becomes active. This differs from the `activate` event in
 that `did-become-active` is emitted every time the app becomes active, not only
-when Dock icon is clicked or application is re-launched.
+when Dock icon is clicked or application is re-launched. It is also emitted when a user
+switches to the app via the macOS App Switcher.
+
+### Event: 'did-resign-active' _macOS_
+
+Returns:
+
+* `event` Event
+
+Emitted when the app is no longer active and doesn’t have focus. This can be triggered,
+for example, by clicking on another application or by using the macOS App Switcher to
+switch to another application.
 
 ### Event: 'continue-activity' _macOS_
 
@@ -285,7 +296,7 @@ Emitted when failed to verify the `certificate` for `url`, to trust the
 certificate you should prevent the default behavior with
 `event.preventDefault()` and call `callback(true)`.
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
@@ -317,7 +328,7 @@ and `callback` can be called with an entry filtered from the list. Using
 `event.preventDefault()` prevents the application from using the first
 certificate from the store.
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.on('select-client-certificate', (event, webContents, url, list, callback) => {
@@ -350,7 +361,7 @@ The default behavior is to cancel all authentications. To override this you
 should prevent the default behavior with `event.preventDefault()` and call
 `callback(username, password)` with the credentials.
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.on('login', (event, webContents, details, authInfo, callback) => {
@@ -470,7 +481,7 @@ Returns:
 
 Emitted when Electron has created a new `session`.
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.on('session-created', (session) => {
@@ -555,7 +566,7 @@ started after current instance exited.
 An example of restarting current instance immediately and adding a new command
 line argument to the new instance:
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) })
@@ -940,7 +951,7 @@ List, nor will it be displayed.
 
 Here's a very simple example of creating a custom Jump List:
 
-```javascript
+```js
 const { app } = require('electron')
 
 app.setJumpList([
@@ -1023,8 +1034,8 @@ use this method to ensure single instance.
 An example of activating the window of primary instance when a second instance
 starts:
 
-```javascript
-const { app } = require('electron')
+```js
+const { app, BrowserWindow } = require('electron')
 let myWindow = null
 
 const additionalData = { myKey: 'myValue' }
@@ -1044,9 +1055,9 @@ if (!gotTheLock) {
     }
   })
 
-  // Create myWindow, load the rest of the app, etc...
   app.whenReady().then(() => {
-    myWindow = createWindow()
+    myWindow = new BrowserWindow({})
+    myWindow.loadURL('https://electronjs.org')
   })
 }
 ```
@@ -1169,11 +1180,15 @@ case the user's DNS configuration does not include a provider that supports
 DoH.
 
 ```js
-app.configureHostResolver({
-  secureDnsMode: 'secure',
-  secureDnsServers: [
-    'https://cloudflare-dns.com/dns-query'
-  ]
+const { app } = require('electron')
+
+app.whenReady().then(() => {
+  app.configureHostResolver({
+    secureDnsMode: 'secure',
+    secureDnsServers: [
+      'https://cloudflare-dns.com/dns-query'
+    ]
+  })
 })
 ```
 
@@ -1325,7 +1340,10 @@ To work with Electron's `autoUpdater` on Windows, which uses [Squirrel][Squirrel
 you'll want to set the launch path to Update.exe, and pass arguments that specify your
 application name. For example:
 
-``` javascript
+``` js
+const { app } = require('electron')
+const path = require('path')
+
 const appFolder = path.dirname(process.execPath)
 const updateExe = path.resolve(appFolder, '..', 'Update.exe')
 const exeName = path.basename(process.execPath)
@@ -1335,7 +1353,7 @@ app.setLoginItemSettings({
   path: updateExe,
   args: [
     '--processStart', `"${exeName}"`,
-    '--process-start-args', `"--hidden"`
+    '--process-start-args', '"--hidden"'
   ]
 })
 ```
@@ -1394,11 +1412,22 @@ Show the platform's native emoji picker.
 Returns `Function` - This function **must** be called once you have finished accessing the security scoped file. If you do not remember to stop accessing the bookmark, [kernel resources will be leaked](https://developer.apple.com/reference/foundation/nsurl/1417051-startaccessingsecurityscopedreso?language=objc) and your app will lose its ability to reach outside the sandbox completely, until your app is restarted.
 
 ```js
-// Start accessing the file.
-const stopAccessingSecurityScopedResource = app.startAccessingSecurityScopedResource(data)
-// You can now access the file outside of the sandbox 🎉
+const { app, dialog } = require('electron')
+const fs = require('fs')
 
-// Remember to stop accessing the file once you've finished with it.
+let filepath
+let bookmark
+
+dialog.showOpenDialog(null, { securityScopedBookmarks: true }, (filepaths, bookmarks) => {
+  filepath = filepaths[0]
+  bookmark = bookmarks[0]
+  fs.readFileSync(filepath)
+})
+
+// ... restart app ...
+
+const stopAccessingSecurityScopedResource = app.startAccessingSecurityScopedResource(bookmark)
+fs.readFileSync(filepath)
 stopAccessingSecurityScopedResource()
 ```
 
@@ -1406,7 +1435,7 @@ Start accessing a security scoped resource. With this method Electron applicatio
 
 ### `app.enableSandbox()`
 
-Enables full sandbox mode on the app. This means that all renderers will be launched sandboxed, regardless of the value of the `sandbox` flag in WebPreferences.
+Enables full sandbox mode on the app. This means that all renderers will be launched sandboxed, regardless of the value of the `sandbox` flag in [`WebPreferences`](structures/web-preferences.md).
 
 This method can only be called before app is ready.
 
@@ -1451,6 +1480,8 @@ By default, if an app of the same name as the one being moved exists in the Appl
 For example:
 
 ```js
+const { app, dialog } = require('electron')
+
 app.moveToApplicationsFolder({
   conflictHandler: (conflictType) => {
     if (conflictType === 'exists') {

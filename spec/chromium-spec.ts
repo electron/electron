@@ -17,19 +17,18 @@ import { setTimeout } from 'timers/promises';
 const features = process._linkedBinding('electron_common_features');
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
+const certPath = path.join(fixturesPath, 'certificates');
 
 describe('reporting api', () => {
-  // FIXME(nornagon): this started failing a lot on CI. Figure out why and fix
-  // it.
-  it('sends a report for a deprecation', async () => {
-    const reports = new EventEmitter();
+  it('sends a report for an intervention', async () => {
+    const reporting = new EventEmitter();
 
     // The Reporting API only works on https with valid certs. To dodge having
     // to set up a trusted certificate, hack the validator.
     session.defaultSession.setCertificateVerifyProc((req, cb) => {
       cb(0);
     });
-    const certPath = path.join(fixturesPath, 'certificates');
+
     const options = {
       key: fs.readFileSync(path.join(certPath, 'server.key')),
       cert: fs.readFileSync(path.join(certPath, 'server.pem')),
@@ -42,35 +41,35 @@ describe('reporting api', () => {
     };
 
     const server = https.createServer(options, (req, res) => {
-      if (req.url === '/report') {
+      if (req.url?.endsWith('report')) {
         let data = '';
         req.on('data', (d) => { data += d.toString('utf-8'); });
         req.on('end', () => {
-          reports.emit('report', JSON.parse(data));
+          reporting.emit('report', JSON.parse(data));
         });
       }
-      res.setHeader('Report-To', JSON.stringify({
-        group: 'default',
-        max_age: 120,
-        endpoints: [{ url: `https://localhost:${(server.address() as any).port}/report` }]
-      }));
+
+      const { port } = server.address() as any;
+      res.setHeader('Reporting-Endpoints', `default="https://localhost:${port}/report"`);
       res.setHeader('Content-Type', 'text/html');
-      // using the deprecated `webkitRequestAnimationFrame` will trigger a
-      // "deprecation" report.
-      res.end('<script>webkitRequestAnimationFrame(() => {})</script>');
+
+      res.end('<script>window.navigator.vibrate(1)</script>');
     });
-    const { url } = await listen(server);
-    const bw = new BrowserWindow({
-      show: false
-    });
+
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    const bw = new BrowserWindow({ show: false });
+
     try {
-      const reportGenerated = once(reports, 'report');
-      await bw.loadURL(url);
-      const [report] = await reportGenerated;
-      expect(report).to.be.an('array');
-      expect(report[0].type).to.equal('deprecation');
-      expect(report[0].url).to.equal(`${url}/a`);
-      expect(report[0].body.id).to.equal('PrefixedRequestAnimationFrame');
+      const reportGenerated = once(reporting, 'report');
+      await bw.loadURL(`https://localhost:${(server.address() as any).port}/a`);
+
+      const [reports] = await reportGenerated;
+      expect(reports).to.be.an('array').with.lengthOf(1);
+      const { type, url, body } = reports[0];
+      expect(type).to.equal('intervention');
+      expect(url).to.equal(url);
+      expect(body.id).to.equal('NavigatorVibrate');
+      expect(body.message).to.match(/Blocked call to navigator.vibrate because user hasn't tapped on the frame or any embedded frame yet/);
     } finally {
       bw.destroy();
       server.close();
@@ -747,8 +746,8 @@ describe('chromium features', () => {
     });
   });
 
-  ifdescribe(features.isFakeLocationProviderEnabled())('navigator.geolocation', () => {
-    it('returns error when permission is denied', async () => {
+  describe('navigator.geolocation', () => {
+    ifit(features.isFakeLocationProviderEnabled())('returns error when permission is denied', async () => {
       const w = new BrowserWindow({
         show: false,
         webPreferences: {
@@ -770,13 +769,21 @@ describe('chromium features', () => {
       expect(channel).to.equal('success', 'unexpected response from geolocation api');
     });
 
-    it('returns position when permission is granted', async () => {
-      const w = new BrowserWindow({ show: false });
+    ifit(!features.isFakeLocationProviderEnabled())('returns position when permission is granted', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          partition: 'geolocation-spec'
+        }
+      });
+      w.webContents.session.setPermissionRequestHandler((_wc, _permission, callback) => {
+        callback(true);
+      });
       await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
       const position = await w.webContents.executeJavaScript(`new Promise((resolve, reject) =>
         navigator.geolocation.getCurrentPosition(
           x => resolve({coords: x.coords, timestamp: x.timestamp}),
-          reject))`);
+          err => reject(new Error(err.message))))`);
       expect(position).to.have.property('coords');
       expect(position).to.have.property('timestamp');
     });
@@ -1946,7 +1953,7 @@ describe('chromium features', () => {
       await w1.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       await w2.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
       await w3.loadFile(path.join(__dirname, 'fixtures', 'blank.html'));
-      expect(webContents.getFocusedWebContents().id).to.equal(w2.webContents.id);
+      expect(webContents.getFocusedWebContents()?.id).to.equal(w2.webContents.id);
       let focus = false;
       focus = await w1.webContents.executeJavaScript(
         'document.hasFocus()'
@@ -1960,6 +1967,30 @@ describe('chromium features', () => {
         'document.hasFocus()'
       );
       expect(focus).to.be.false();
+    });
+  });
+
+  // https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation
+  describe('navigator.connection', () => {
+    it('returns the correct value', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.session.enableNetworkEmulation({
+        latency: 500,
+        downloadThroughput: 6400,
+        uploadThroughput: 6400
+      });
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const rtt = await w.webContents.executeJavaScript('navigator.connection.rtt');
+      expect(rtt).to.be.a('number');
+
+      const downlink = await w.webContents.executeJavaScript('navigator.connection.downlink');
+      expect(downlink).to.be.a('number');
+
+      const effectiveTypes = ['slow-2g', '2g', '3g', '4g'];
+      const effectiveType = await w.webContents.executeJavaScript('navigator.connection.effectiveType');
+      expect(effectiveTypes).to.include(effectiveType);
     });
   });
 
@@ -2286,7 +2317,7 @@ describe('chromium features', () => {
   // [FATAL:speech_synthesis.mojom-shared.h(237)] The outgoing message will
   // trigger VALIDATION_ERROR_UNEXPECTED_NULL_POINTER at the receiving side
   // (null text in SpeechSynthesisUtterance struct).
-  ifdescribe(features.isTtsEnabled())('SpeechSynthesis', () => {
+  describe('SpeechSynthesis', () => {
     itremote('should emit lifecycle events', async () => {
       const sentence = `long sentence which will take at least a few seconds to
           utter so that it's possible to pause and resume before the end`;

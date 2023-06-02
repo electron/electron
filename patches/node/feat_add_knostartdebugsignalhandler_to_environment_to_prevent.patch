@@ -22,7 +22,7 @@ index bea695bd8c92d44cb9526f347a9464549155ed85..0cbd1b25c107b5deba5fdd14551cc641
    // configure --no-browser-globals
  #ifdef NODE_NO_BROWSER_GLOBALS
 diff --git a/src/env.h b/src/env.h
-index 673581fd0e2ef91886fa5e6be6523a2394df6db1..562610e6827d8302f146b81d599dd366ba25cd74 100644
+index 82f2dd1689114ec9c89fa32130985f0e9e78cc5f..4cb02112598459ea78a4b7b683ddd57e21ecb4c4 100644
 --- a/src/env.h
 +++ b/src/env.h
 @@ -767,6 +767,7 @@ class Environment : public MemoryRetainer {
@@ -34,10 +34,10 @@ index 673581fd0e2ef91886fa5e6be6523a2394df6db1..562610e6827d8302f146b81d599dd366
    inline uint64_t thread_id() const;
    inline worker::Worker* worker_context() const;
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index 91e7beeaa0976059e6dac239e489d10ada558db4..1abf6801e0544b14dd26f0b96536bd78c5b01679 100644
+index 214f992c9d015593ccdecd6eff0af4d960eccfbb..e5307b529c88d0e4db7fd7c6bd1b032d219b8c31 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
-@@ -692,8 +692,10 @@ bool Agent::Start(const std::string& path,
+@@ -693,8 +693,10 @@ bool Agent::Start(const std::string& path,
                                StartIoThreadAsyncCallback));
      uv_unref(reinterpret_cast<uv_handle_t*>(&start_io_thread_async));
      start_io_thread_async.data = this;
@@ -51,10 +51,10 @@ index 91e7beeaa0976059e6dac239e489d10ada558db4..1abf6801e0544b14dd26f0b96536bd78
      parent_env_->AddCleanupHook([](void* data) {
        Environment* env = static_cast<Environment*>(data);
 diff --git a/src/node.h b/src/node.h
-index 9579b04472350fca5b5dbce354d373b50f873972..173e0bc669a2fd90e764da72e09003f4c7311fd7 100644
+index 8314edbc82971148310c5c99e5a4b18dffa14e51..4b9b416e77b07407eae7b9587705b74ad3e6f211 100644
 --- a/src/node.h
 +++ b/src/node.h
-@@ -546,7 +546,11 @@ enum Flags : uint64_t {
+@@ -559,7 +559,11 @@ enum Flags : uint64_t {
    // This control is needed by embedders who may not want to initialize the V8
    // inspector in situations where one has already been created,
    // e.g. Blink's in Chromium.

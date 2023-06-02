@@ -76,9 +76,8 @@ gin::WrapperInfo BrowserView::kWrapperInfo = {gin::kEmbedderNativeGin};
 BrowserView::BrowserView(gin::Arguments* args,
                          const gin_helper::Dictionary& options)
     : id_(GetNextId()) {
-  v8::Isolate* isolate = args->isolate();
   gin_helper::Dictionary web_preferences =
-      gin::Dictionary::CreateEmpty(isolate);
+      gin::Dictionary::CreateEmpty(args->isolate());
   options.Get(options::kWebPreferences, &web_preferences);
   web_preferences.Set("type", "browserView");
 
@@ -92,7 +91,7 @@ BrowserView::BrowserView(gin::Arguments* args,
   auto web_contents =
       WebContents::CreateFromWebPreferences(args->isolate(), web_preferences);
 
-  web_contents_.Reset(isolate, web_contents.ToV8());
+  web_contents_.Reset(args->isolate(), web_contents.ToV8());
   api_web_contents_ = web_contents.get();
   api_web_contents_->AddObserver(this);
   Observe(web_contents->web_contents());

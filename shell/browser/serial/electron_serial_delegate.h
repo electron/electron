@@ -83,9 +83,8 @@ class ElectronSerialDelegate : public content::SerialDelegate,
 namespace base {
 
 template <>
-struct base::ScopedObservationTraits<
-    electron::SerialChooserContext,
-    electron::SerialChooserContext::PortObserver> {
+struct ScopedObservationTraits<electron::SerialChooserContext,
+                               electron::SerialChooserContext::PortObserver> {
   static void AddObserver(
       electron::SerialChooserContext* source,
       electron::SerialChooserContext::PortObserver* observer) {

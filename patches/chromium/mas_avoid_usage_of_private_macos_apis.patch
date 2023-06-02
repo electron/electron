@@ -39,7 +39,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
  }  // namespace base
 diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index d2b217adce962850647ddfd7898414c86b90baa4..45c81cebf3e776f2ca9de34252971ad5e959d915 100644
+index be594941e41d59cfc6bc34ce1fc21ca1b2d399c0..f46b0979f66fdb77bfdbd22358f306c6cf505816 100644
 --- a/base/mac/foundation_util.mm
 +++ b/base/mac/foundation_util.mm
 @@ -28,12 +28,6 @@

@@ -14,10 +14,6 @@ bool IsBuiltinSpellCheckerEnabled() {
   return BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER);
 }
 
-bool IsDesktopCapturerEnabled() {
-  return BUILDFLAG(ENABLE_DESKTOP_CAPTURER);
-}
-
 bool IsOffscreenRenderingEnabled() {
   return BUILDFLAG(ENABLE_OSR);
 }
@@ -36,10 +32,6 @@ bool IsFakeLocationProviderEnabled() {
 
 bool IsViewApiEnabled() {
   return BUILDFLAG(ENABLE_VIEWS_API);
-}
-
-bool IsTtsEnabled() {
-  return BUILDFLAG(ENABLE_TTS);
 }
 
 bool IsPrintingEnabled() {
@@ -68,14 +60,12 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   gin_helper::Dictionary dict(context->GetIsolate(), exports);
   dict.SetMethod("isBuiltinSpellCheckerEnabled", &IsBuiltinSpellCheckerEnabled);
-  dict.SetMethod("isDesktopCapturerEnabled", &IsDesktopCapturerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
   dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);
-  dict.SetMethod("isTtsEnabled", &IsTtsEnabled);
   dict.SetMethod("isPrintingEnabled", &IsPrintingEnabled);
   dict.SetMethod("isPictureInPictureEnabled", &IsPictureInPictureEnabled);
   dict.SetMethod("isComponentBuild", &IsComponentBuild);

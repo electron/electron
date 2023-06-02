@@ -25,6 +25,8 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/network_quality_observer_factory.h"
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
 #include "electron/fuses.h"
 #include "extensions/common/constants.h"
@@ -125,6 +127,10 @@ void BrowserProcessImpl::PreCreateThreads() {
     SystemNetworkContextManager::CreateInstance(local_state_.get());
 }
 
+void BrowserProcessImpl::PreMainMessageLoopRun() {
+  CreateNetworkQualityObserver();
+}
+
 void BrowserProcessImpl::PostMainMessageLoopRun() {
   if (local_state_)
     local_state_->CommitPendingWrite();
@@ -189,6 +195,11 @@ BrowserProcessImpl::system_network_context_manager() {
 
 network::NetworkQualityTracker* BrowserProcessImpl::network_quality_tracker() {
   return nullptr;
+}
+
+embedder_support::OriginTrialsSettingsStorage*
+BrowserProcessImpl::GetOriginTrialsSettingsStorage() {
+  return &origin_trials_settings_storage_;
 }
 
 policy::ChromeBrowserPolicyConnector*
@@ -327,4 +338,19 @@ device::GeolocationManager* BrowserProcessImpl::geolocation_manager() {
 void BrowserProcessImpl::SetGeolocationManager(
     std::unique_ptr<device::GeolocationManager> geolocation_manager) {
   geolocation_manager_ = std::move(geolocation_manager);
+}
+
+network::NetworkQualityTracker* BrowserProcessImpl::GetNetworkQualityTracker() {
+  if (!network_quality_tracker_) {
+    network_quality_tracker_ = std::make_unique<network::NetworkQualityTracker>(
+        base::BindRepeating(&content::GetNetworkService));
+  }
+  return network_quality_tracker_.get();
+}
+
+void BrowserProcessImpl::CreateNetworkQualityObserver() {
+  DCHECK(!network_quality_observer_);
+  network_quality_observer_ =
+      content::CreateNetworkQualityObserver(GetNetworkQualityTracker());
+  DCHECK(network_quality_observer_);
 }

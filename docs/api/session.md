@@ -519,9 +519,8 @@ app.whenReady().then(() => {
 Returns:
 
 * `event` Event
-* `details` Object
-  * `device` [USBDevice](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+* `device` [USBDevice](structures/usb-device.md)
+* `webContents` [WebContents](web-contents.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a new device becomes available before
@@ -534,9 +533,8 @@ with the newly added device.
 Returns:
 
 * `event` Event
-* `details` Object
-  * `device` [USBDevice](structures/usb-device.md)
-  * `frame` [WebFrameMain](web-frame-main.md)
+* `device` [USBDevice](structures/usb-device.md)
+* `webContents` [WebContents](web-contents.md)
 
 Emitted after `navigator.usb.requestDevice` has been called and
 `select-usb-device` has fired if a device has been removed before the callback
@@ -550,7 +548,7 @@ Returns:
 
 * `event` Event
 * `details` Object
-  * `device` [USBDevice[]](structures/usb-device.md)
+  * `device` [USBDevice](structures/usb-device.md)
   * `origin` string (optional) - The origin that the device has been revoked from.
 
 Emitted after `USBDevice.forget()` has been called.  This event can be used
@@ -1026,7 +1024,7 @@ Passing `null` instead of a function resets the handler to its default state.
   * `details` Object
     * `deviceType` string - The type of device that permission is being requested on, can be `hid`, `serial`, or `usb`.
     * `origin` string - The origin URL of the device permission check.
-    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md)- the device that permission is being requested for.
+    * `device` [HIDDevice](structures/hid-device.md) | [SerialPort](structures/serial-port.md) | [USBDevice](structures/usb-device.md) - the device that permission is being requested for.
 
 Sets the handler which can be used to respond to device permission checks for the `session`.
 Returning `true` will allow the device to be permitted and `false` will reject it.
@@ -1089,6 +1087,55 @@ app.whenReady().then(() => {
       return device.vendorId === '9025' && device.productId === '67'
     })
     callback(selectedPort?.deviceId)
+  })
+})
+```
+
+#### `ses.setUSBProtectedClassesHandler(handler)`
+
+* `handler` Function\<string[]> | null
+  * `details` Object
+    * `protectedClasses` string[] - The current list of protected USB classes. Possible class values are:
+      * `audio`
+      * `audio-video`
+      * `hid`
+      * `mass-storage`
+      * `smart-card`
+      * `video`
+      * `wireless`
+
+Sets the handler which can be used to override which [USB classes are protected](https://wicg.github.io/webusb/#usbinterface-interface).
+The return value for the handler is a string array of USB classes which should be considered protected (eg not available in the renderer).  Valid values for the array are:
+
+* `audio`
+* `audio-video`
+* `hid`
+* `mass-storage`
+* `smart-card`
+* `video`
+* `wireless`
+
+Returning an empty string array from the handler will allow all USB classes; returning the passed in array will maintain the default list of protected USB classes (this is also the default behavior if a handler is not defined).
+To clear the handler, call `setUSBProtectedClassesHandler(null)`.
+
+```javascript
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+
+app.whenReady().then(() => {
+  win = new BrowserWindow()
+
+  win.webContents.session.setUSBProtectedClassesHandler((details) => {
+    // Allow all classes:
+    // return []
+    // Keep the current set of protected classes:
+    // return details.protectedClasses
+    // Selectively remove classes:
+    return details.protectedClasses.filter((usbClass) => {
+      // Exclude classes except for audio classes
+      return usbClass.indexOf('audio') === -1
+    })
   })
 })
 ```
@@ -1408,7 +1455,7 @@ extension to be loaded.
 const { app, session } = require('electron')
 const path = require('path')
 
-app.on('ready', async () => {
+app.whenReady().then(async () => {
   await session.defaultSession.loadExtension(
     path.join(__dirname, 'react-devtools'),
     // allowFileAccess is required to load the devtools extension on file:// URLs.
@@ -1499,7 +1546,7 @@ app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol
   if (!protocol.registerFileProtocol('atom', (request, callback) => {
     const url = request.url.substr(7)
-    callback({ path: path.normalize(`${__dirname}/${url}`) })
+    callback({ path: path.normalize(path.join(__dirname, url)) })
   })) {
     console.error('Failed to register protocol')
   }

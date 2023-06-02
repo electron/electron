@@ -282,18 +282,6 @@ describe('protocol module', () => {
         ipcMain.once('loaded-iframe-custom-protocol', () => done());
       });
 
-      // DISABLED-FIXME
-      it('throws an error when custom headers are invalid', (done) => {
-        registerFileProtocol(protocolName, (request, callback) => {
-          expect(() => callback({
-            path: filePath,
-            headers: { 'X-Great-Header': (42 as any) }
-          })).to.throw(Error, 'Value of \'X-Great-Header\' header has to be a string');
-          done();
-        });
-        ajax(protocolName + '://fake-host').catch(() => {});
-      });
-
       it('sends object as response', async () => {
         registerFileProtocol(protocolName, (request, callback) => callback({ path: filePath }));
         const r = await ajax(protocolName + '://fake-host');
@@ -880,7 +868,6 @@ describe('protocol module', () => {
       await requestReceived;
     });
 
-    // DISABLED-FIXME
     it('can access files through the FileSystem API', (done) => {
       const filePath = path.join(fixturesPath, 'pages', 'filesystem.html');
       protocol.registerFileProtocol(standardScheme, (request, callback) => callback({ path: filePath }));

@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -66,9 +67,9 @@ class DevToolsWindowDelegate : public views::ClientView,
   }
 
  private:
-  InspectableWebContentsViewViews* shell_;
-  views::View* view_;
-  views::Widget* widget_;
+  raw_ptr<InspectableWebContentsViewViews> shell_;
+  raw_ptr<views::View> view_;
+  raw_ptr<views::Widget> widget_;
   ui::ImageModel icon_;
 };
 
@@ -95,8 +96,8 @@ InspectableWebContentsViewViews::InspectableWebContentsViewViews(
   }
 
   devtools_web_view_->SetVisible(false);
-  AddChildView(devtools_web_view_);
-  AddChildView(contents_web_view_);
+  AddChildView(devtools_web_view_.get());
+  AddChildView(contents_web_view_.get());
 }
 
 InspectableWebContentsViewViews::~InspectableWebContentsViewViews() {

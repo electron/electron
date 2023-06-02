@@ -12,6 +12,7 @@
 #include "base/functional/callback_helpers.h"
 #include "base/location.h"
 #include "base/memory/ptr_util.h"
+#include "base/memory/raw_ptr.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/time/time.h"
 #include "components/viz/common/features.h"
@@ -167,7 +168,7 @@ class ElectronDelegatedFrameHostClient
   void InvalidateLocalSurfaceIdOnEviction() override {}
 
  private:
-  OffScreenRenderWidgetHostView* const view_;
+  const raw_ptr<OffScreenRenderWidgetHostView> view_;
 };
 
 OffScreenRenderWidgetHostView::OffScreenRenderWidgetHostView(
@@ -388,7 +389,6 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
     GetDelegatedFrameHost()->TakeFallbackContentFrom(
         view_osr->GetDelegatedFrameHost());
   }
-  host()->GetContentRenderingTimeoutFrom(view_osr->host());
 }
 
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
@@ -636,7 +636,7 @@ OffScreenRenderWidgetHostView::CreateHostDisplayClient(
       base::BindRepeating(&OffScreenRenderWidgetHostView::OnPaint,
                           weak_ptr_factory_.GetWeakPtr()));
   host_display_client_->SetActive(IsPainting());
-  return base::WrapUnique(host_display_client_);
+  return base::WrapUnique(host_display_client_.get());
 }
 
 bool OffScreenRenderWidgetHostView::InstallTransparency() {

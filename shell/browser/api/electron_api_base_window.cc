@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
@@ -570,12 +571,8 @@ std::vector<int> BaseWindow::GetPosition() {
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   if (!window_->MoveAbove(sourceId))
     args->ThrowError("Invalid media source id");
-#else
-  args->ThrowError("enable_desktop_capturer=true to use this feature");
-#endif
 }
 
 void BaseWindow::MoveTop() {
@@ -761,8 +758,7 @@ void BaseWindow::SetBrowserView(
 }
 
 void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter == browser_views_.end()) {
+  if (!base::Contains(browser_views_, browser_view->ID())) {
     // If we're reparenting a BrowserView, ensure that it's detached from
     // its previous owner window.
     BaseWindow* owner_window = browser_view->owner_window();
@@ -862,6 +858,10 @@ void BaseWindow::SetAutoHideCursor(bool auto_hide) {
 void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   std::string type = gin::V8ToString(isolate, value);
   window_->SetVibrancy(type);
+}
+
+void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
+  window_->SetBackgroundMaterial(material_type);
 }
 
 #if BUILDFLAG(IS_MAC)
@@ -1267,6 +1267,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
+      .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
 
 #if BUILDFLAG(IS_MAC)
       .SetMethod("isHiddenInMissionControl",
