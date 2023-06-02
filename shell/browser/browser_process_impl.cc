@@ -331,15 +331,6 @@ StartupData* BrowserProcessImpl::startup_data() {
   return nullptr;
 }
 
-device::GeolocationManager* BrowserProcessImpl::geolocation_manager() {
-  return geolocation_manager_.get();
-}
-
-void BrowserProcessImpl::SetGeolocationManager(
-    std::unique_ptr<device::GeolocationManager> geolocation_manager) {
-  geolocation_manager_ = std::move(geolocation_manager);
-}
-
 network::NetworkQualityTracker* BrowserProcessImpl::GetNetworkQualityTracker() {
   if (!network_quality_tracker_) {
     network_quality_tracker_ = std::make_unique<network::NetworkQualityTracker>(
