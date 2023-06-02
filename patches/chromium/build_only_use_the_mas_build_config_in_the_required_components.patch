@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index b36e345ee578870ba520710ad13a45651ffd3b20..452ffc2fbaea3b35ece9ae7cf5ec3dfeadebb5b9 100644
+index df2bd3fbde693a521b748396249af2b38d675526..073a4cab50f515dbb2d43644ee7f3579b355a7ab 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1057,6 +1057,7 @@ component("base") {
@@ -76,7 +76,7 @@ index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 051fa3b71597ca77f35ce77892fd1fb5d49c4e1a..5d6da11f31738f2701e1cfa76b27be9014d4acc5 100644
+index 854a27260ff4f9217b529f79f5346894f3d6d35e..8b9cf3adb8a6f5ad521c379704d508144f31ede6 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,7 +88,7 @@ index 051fa3b71597ca77f35ce77892fd1fb5d49c4e1a..5d6da11f31738f2701e1cfa76b27be90
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d635e5a20 100644
+index ee7dd3e5fe431e34c41c8b5c0e1c22cbbe34ca13..b15d8b86a4652893e7ad1ffb4a368ba7be0e4bc9 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -170,6 +170,7 @@ source_set("common") {
@@ -100,7 +100,7 @@ index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 0260ae6a0ea57b98be5d76db3ca6edf55037520d..0f99caed553a062c1871099217f02cfc02623d26 100644
+index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade263e798478 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
@@ -148,10 +148,10 @@ index 93cf87a37792691f41d7c611104a378d9af45195..2d3a0f923f4991be41534e7f951fe5df
  
    if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 2b01bb9a0a16796a125cfaf8bc0e1c20089f15e4..c5ab042cbcdd8b4f7a90341f5332d7d94bba4930 100644
+index 6eb142954e6a9b2a3937dbf3ae733f330865c9da..f4061586471b23762ba898766ae16b6c46b5a90e 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -175,6 +175,8 @@ source_set("dns") {
+@@ -177,6 +177,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]

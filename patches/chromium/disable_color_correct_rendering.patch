@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 3324e9f42874b6166121298a6771724a3d7cc430..8c254ee0dca2c31b5712e0ea5886203a03762f28 100644
+index 5c6be39a80cf8762f3fea0e3381295853e305e1d..2d3e51bc7a286afe7ca0368434ce94670bc9f9e4 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1903,6 +1903,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1905,6 +1905,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -93,10 +93,10 @@ index 72b7f5be1422c286140962febc87b0f66f743690..5fea5c6a18fdbdb769bd35f3e701266f
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 357cd4ad9350906731bfa995fd6479aabfa83819..207025b06a62c6c33245f6facd004c1648126644 100644
+index 2fe11fd6f014cb5b415efe2ae1ba97efa94281c4..b96f01c161cd71e16e3c203a19a6715a33cae2e2 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3393,6 +3393,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3476,6 +3476,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {

@@ -18,10 +18,10 @@ index 36fd6c0ff5673343258fd6eee4a79227aa4e52b5..3c2bfca45ff7012d953fc67f9fb01be6
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 4bcd71606a4101b5d7364c10736da3e7969a01a2..9c0bd03f69a4cfdf887138ead05a98f1f217eba6 100644
+index a1dd3deb87cfe5dbd451f2a1cdab576e3152535b..d3f626cee6998992f67b14108090acea17eccaf1 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -95,6 +95,7 @@
+@@ -94,6 +94,7 @@
  /directxsdk
  /dom_distiller_js/dist
  /eigen3/src

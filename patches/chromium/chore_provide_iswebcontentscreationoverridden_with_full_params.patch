@@ -99,7 +99,7 @@ index 71297e151bb627819fda507a4d28488d93216e7e..76948a3c16a107c7455e97f787393ad8
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 23a838ba30c6890b66d301c90ece2dd3eafac8c7..f660378323bb9d3004b967689bf3bbb56ace198c 100644
+index 0908c1224213715b9892e870658b7576cd2531cd..c9e7ae7d97de8ddb22f117c6e3c254977e581896 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -862,8 +862,7 @@ class Browser : public TabStripModelObserver,
