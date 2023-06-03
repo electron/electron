@@ -51,6 +51,12 @@ but can only import a subset of Electron and Node's built-in modules:
 * [`timers`](https://nodejs.org/api/timers.html)
 * [`url`](https://nodejs.org/api/url.html)
 
+[node: imports](https://nodejs.org/api/esm.html#node-imports) are supported as well:
+
+* [`node:events`](https://nodejs.org/api/events.html)
+* [`node:timers`](https://nodejs.org/api/timers.html)
+* [`node:url`](https://nodejs.org/api/url.html)
+
 In addition, the preload script also polyfills certain Node.js primitives as globals:
 
 * [`Buffer`](https://nodejs.org/api/buffer.html)
