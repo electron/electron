@@ -73,8 +73,8 @@ Protocol.prototype.handle = function (this: Electron.Protocol, scheme: string, h
         duplex: body instanceof ReadableStream ? 'half' : undefined
       } as any);
       const res = await handler(req);
-      if (!res || typeof res !== 'object') {
-        return cb({ error: ERR_UNEXPECTED });
+      if (!res || typeof res !== 'object' || !(res instanceof Response)) {
+        throw new Error('protocol response must be of type Response');
       }
       if (res.type === 'error') { cb({ error: ERR_FAILED }); } else {
         cb({

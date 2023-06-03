@@ -1211,6 +1211,12 @@ describe('protocol module', () => {
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith('net::ERR_FAILED');
     });
 
+    it('handles an invalid response', async () => {
+      protocol.handle('test-scheme', () => ({}));
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith('net::ERR_FAILED');
+    });
+
     it('handles a synchronous error in the handler', async () => {
       protocol.handle('test-scheme', () => { throw new Error('test'); });
       defer(() => { protocol.unhandle('test-scheme'); });
