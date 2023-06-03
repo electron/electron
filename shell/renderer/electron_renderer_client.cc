@@ -86,7 +86,9 @@ void ElectronRendererClient::DidCreateScriptContext(
 
   if (!node_integration_initialized_) {
     node_integration_initialized_ = true;
-    node_bindings_->Initialize(renderer_context);
+    node_bindings_->Initialize(
+        renderer_context,
+        render_frame->GetBlinkPreferences().frozen_intrinsics);
     node_bindings_->PrepareEmbedThread();
   }
 

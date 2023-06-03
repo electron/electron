@@ -87,7 +87,8 @@ class NodeBindings {
   virtual ~NodeBindings();
 
   // Setup V8, libuv.
-  void Initialize(v8::Local<v8::Context> context);
+  void Initialize(v8::Local<v8::Context> context,
+                  bool frozen_intrinsics = false);
 
   std::vector<std::string> ParseNodeCliFlags();
 

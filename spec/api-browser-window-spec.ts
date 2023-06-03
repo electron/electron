@@ -3442,6 +3442,22 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('"frozenIntrinsics" option', () => {
+      it('freezes intrinsics like Array and Object', async () => {
+        const w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            contextIsolation: false,
+            sandbox: false,
+            frozenIntrinsics: true
+          }
+        });
+        w.loadURL('about:blank');
+        expect(await w.webContents.executeJavaScript('Object.isFrozen(Array)')).to.be.true();
+        expect(await w.webContents.executeJavaScript('Object.isFrozen(Object)')).to.be.true();
+      });
+    });
+
     describe('"sandbox" option', () => {
       const preload = path.join(path.resolve(__dirname, 'fixtures'), 'module', 'preload-sandbox.js');
 

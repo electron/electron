@@ -496,7 +496,8 @@ std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
   return args;
 }
 
-void NodeBindings::Initialize(v8::Local<v8::Context> context) {
+void NodeBindings::Initialize(v8::Local<v8::Context> context,
+                              bool frozen_intrinsics) {
   TRACE_EVENT0("electron", "NodeBindings::Initialize");
   // Open node's error reporting system for browser process.
 
@@ -530,6 +531,10 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
 
   if (!fuses::IsNodeOptionsEnabled())
     process_flags |= node::ProcessInitializationFlags::kDisableNodeOptionsEnv;
+
+  if (frozen_intrinsics) {
+    args.push_back("--frozen-intrinsics");
+  }
 
   std::unique_ptr<node::InitializationResult> result =
       node::InitializeOncePerProcess(

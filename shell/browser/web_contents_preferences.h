@@ -102,6 +102,7 @@ class WebContentsPreferences
   bool node_integration_;
   bool node_integration_in_sub_frames_;
   bool node_integration_in_worker_;
+  bool frozen_intrinsics_;
   bool disable_html_fullscreen_window_resize_;
   bool webview_tag_;
   absl::optional<bool> sandbox_;
