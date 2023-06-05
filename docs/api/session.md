@@ -214,7 +214,7 @@ cancel the request.  Additionally, permissioning on `navigator.hid` can
 be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -320,7 +320,7 @@ cancel the request.  Additionally, permissioning on `navigator.serial` can
 be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
 with the `serial` permission.
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -463,7 +463,7 @@ cancel the request.  Additionally, permissioning on `navigator.usb` can
 be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)} @ts-type={updateGrantedDevices:(devices:Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)=>void}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1038,7 +1038,7 @@ Additionally, the default behavior of Electron is to store granted device permis
 If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
