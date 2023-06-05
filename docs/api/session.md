@@ -98,7 +98,7 @@ Emitted when Electron is about to download `item` in `webContents`.
 Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
 
-```javascript
+```javascript @ts-expect-error=[4]
 const { session } = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()

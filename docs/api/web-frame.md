@@ -96,7 +96,7 @@ with an array of misspelt words when complete.
 
 An example of using [node-spellchecker][spellchecker] as provider:
 
-```javascript
+```javascript @ts-expect-error=[2,6]
 const { webFrame } = require('electron')
 const spellChecker = require('spellchecker')
 webFrame.setSpellCheckProvider('en-US', {

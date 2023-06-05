@@ -118,7 +118,7 @@ information in the window. This variable can be accessed via `window.versions` o
 `versions`. Create a `renderer.js` script that uses the [`document.getElementById`][]
 DOM API to replace the displayed text for the HTML element with `info` as its `id` property.
 
-```js title="renderer.js"
+```js title="renderer.js" @ts-nocheck
 const information = document.getElementById('info')
 information.innerText = `This app is using Chrome (v${versions.chrome()}), Node.js (v${versions.node()}), and Electron (v${versions.electron()})`
 ```
@@ -225,7 +225,7 @@ app.whenReady().then(() => {
 Once you have the sender and receiver set up, you can now send messages from the renderer
 to the main process through the `'ping'` channel you just defined.
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-expect-error=[2]
 const func = async () => {
   const response = await window.versions.ping()
   console.log(response) // prints out 'pong'

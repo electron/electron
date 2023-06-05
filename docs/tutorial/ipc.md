@@ -138,7 +138,7 @@ To make these elements interactive, we'll be adding a few lines of code in the i
 `renderer.js` file that leverages the `window.electronAPI` functionality exposed from the preload
 script:
 
-```javascript title='renderer.js (Renderer Process)'
+```javascript title='renderer.js (Renderer Process)' @ts-expect-error=[4,5]
 const setButton = document.getElementById('btn')
 const titleInput = document.getElementById('title')
 setButton.addEventListener('click', () => {
@@ -263,7 +263,7 @@ The UI consists of a single `#btn` button element that will be used to trigger o
 a `#filePath` element that will be used to display the path of the selected file. Making these
 pieces work will take a few lines of code in the renderer process script:
 
-```javascript title='renderer.js (Renderer Process)'
+```javascript title='renderer.js (Renderer Process)' @ts-expect-error=[5]
 const btn = document.getElementById('btn')
 const filePathElement = document.getElementById('filePath')
 
@@ -412,7 +412,7 @@ function createWindow () {
 For the purposes of the tutorial, it's important to note that the `click` handler
 sends a message (either `1` or `-1`) to the renderer process through the `update-counter` channel.
 
-```javascript
+```javascript @ts-nocheck
 click: () => mainWindow.webContents.send('update-counter', -1)
 ```
 
@@ -486,7 +486,7 @@ To tie it all together, we'll create an interface in the loaded HTML file that c
 Finally, to make the values update in the HTML document, we'll add a few lines of DOM manipulation
 so that the value of the `#counter` element is updated whenever we fire an `update-counter` event.
 
-```javascript title='renderer.js (Renderer Process)'
+```javascript title='renderer.js (Renderer Process)' @ts-nocheck
 const counter = document.getElementById('counter')
 
 window.electronAPI.onUpdateCounter((_event, value) => {
@@ -509,7 +509,7 @@ We can demonstrate this with slight modifications to the code from the previous 
 renderer process, use the `event` parameter to send a reply back to the main process through the
 `counter-value` channel.
 
-```javascript title='renderer.js (Renderer Process)'
+```javascript title='renderer.js (Renderer Process)' @ts-nocheck
 const counter = document.getElementById('counter')
 
 window.electronAPI.onUpdateCounter((event, value) => {
