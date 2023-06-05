@@ -83,14 +83,14 @@ If `listener` returns a Promise, the eventual result of the promise will be
 returned as a reply to the remote caller. Otherwise, the return value of the
 listener will be used as the value of the reply.
 
-```js title='Main Process'
+```js title='Main Process' @ts-type={somePromise:(...args:unknown[])=>Promise<unknown>}
 ipcMain.handle('my-invokable-ipc', async (event, ...args) => {
   const result = await somePromise(...args)
   return result
 })
 ```
 
-```js title='Renderer Process'
+```js title='Renderer Process' @ts-type={arg1:unknown} @ts-type={arg2:unknown}
 async () => {
   const result = await ipcRenderer.invoke('my-invokable-ipc', arg1, arg2)
   // ...

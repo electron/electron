@@ -72,7 +72,7 @@ npx electron-installer-snap --src=out/myappname-linux-x64
 If you have an existing build pipeline, you can use `electron-installer-snap`
 programmatically. For more information, see the [Snapcraft API docs][snapcraft-syntax].
 
-```js
+```js @ts-nocheck
 const snap = require('electron-installer-snap')
 
 snap(options)
