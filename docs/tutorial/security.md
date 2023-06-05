@@ -278,7 +278,7 @@ security-conscious developers might want to assume the very opposite.
 
 ```js title='main.js (Main Process)'
 const { session } = require('electron')
-const URL = require('url').URL
+const { URL } = require('url')
 
 session
   .fromPartition('some-partition')
@@ -608,7 +608,8 @@ sometimes be fooled - a `startsWith('https://example.com')` test would let
 `https://example.com.attacker.com` through.
 
 ```js title='main.js (Main Process)'
-const URL = require('url').URL
+const { URL } = require('url')
+const { app } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
   contents.on('will-navigate', (event, navigationUrl) => {
@@ -648,7 +649,7 @@ and the options used to create it. We recommend that you register a handler to
 monitor the creation of windows, and deny any unexpected window creation.
 
 ```js title='main.js (Main Process)'
-const { shell } = require('electron')
+const { app, shell } = require('electron')
 
 app.on('web-contents-created', (event, contents) => {
   contents.setWindowOpenHandler(({ url }) => {

@@ -98,7 +98,7 @@ async function lookupTargetId (browserWindow) {
   await wc.debugger.attach('1.3')
   const { targetInfo } = await wc.debugger.sendCommand('Target.getTargetInfo')
   const { targetId } = targetInfo
-  const targetWebContents = await webContents.fromDevToolsTargetId(targetId)
+  const targetWebContents = await wc.fromDevToolsTargetId(targetId)
 }
 ```
 
@@ -1020,9 +1020,9 @@ e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
 ```javascript
-const { webContents } = require('electron')
+const win = new BrowserWindow()
 const options = { extraHeaders: 'pragma: no-cache\n' }
-webContents.loadURL('https://github.com', options)
+win.webContents.loadURL('https://github.com', options)
 ```
 
 #### `contents.loadFile(filePath[, options])`
@@ -1052,6 +1052,7 @@ an app structure like this:
 Would require code like this
 
 ```js
+const win = new BrowserWindow()
 win.loadFile('src/index.html')
 ```
 
@@ -1188,7 +1189,9 @@ when this process is unstable or unusable, for instance in order to recover
 from the `unresponsive` event.
 
 ```js
-contents.on('unresponsive', async () => {
+const win = new BrowserWindow()
+
+win.webContents.on('unresponsive', async () => {
   const { response } = await dialog.showMessageBox({
     message: 'App X has become unresponsive',
     title: 'Do you want to try forcefully reloading the app?',
@@ -1196,8 +1199,8 @@ contents.on('unresponsive', async () => {
     cancelId: 1
   })
   if (response === 0) {
-    contents.forcefullyCrashRenderer()
-    contents.reload()
+    win.webContents.forcefullyCrashRenderer()
+    win.webContents.reload()
   }
 })
 ```
@@ -1224,8 +1227,9 @@ Injects CSS into the current web page and returns a unique key for the inserted
 stylesheet.
 
 ```js
-contents.on('did-finish-load', () => {
-  contents.insertCSS('html, body { background-color: #f00; }')
+const win = new BrowserWindow()
+win.webContents.on('did-finish-load', () => {
+  win.webContents.insertCSS('html, body { background-color: #f00; }')
 })
 ```
 
@@ -1239,9 +1243,11 @@ Removes the inserted CSS from the current web page. The stylesheet is identified
 by its key, which is returned from `contents.insertCSS(css)`.
 
 ```js
-contents.on('did-finish-load', async () => {
-  const key = await contents.insertCSS('html, body { background-color: #f00; }')
-  contents.removeInsertedCSS(key)
+const win = new BrowserWindow()
+
+win.webContents.on('did-finish-load', async () => {
+  const key = await win.webContents.insertCSS('html, body { background-color: #f00; }')
+  win.webContents.removeInsertedCSS(key)
 })
 ```
 
@@ -1262,7 +1268,9 @@ this limitation.
 Code execution will be suspended until web page stop loading.
 
 ```js
-contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+const win = new BrowserWindow()
+
+win.webContents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
   .then((result) => {
     console.log(result) // Will be the JSON object from the fetch call
   })
@@ -1373,7 +1381,8 @@ Sets the maximum and minimum pinch-to-zoom level.
 > **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
 >
 > ```js
-> contents.setVisualZoomLevelLimits(1, 3)
+> const win = new BrowserWindow()
+> win.webContents.setVisualZoomLevelLimits(1, 3)
 > ```
 
 #### `contents.undo()`
@@ -1508,12 +1517,12 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
 ```javascript
-const { webContents } = require('electron')
-webContents.on('found-in-page', (event, result) => {
-  if (result.finalUpdate) webContents.stopFindInPage('clearSelection')
+const win = new BrowserWindow()
+win.webContents.on('found-in-page', (event, result) => {
+  if (result.finalUpdate) win.webContents.stopFindInPage('clearSelection')
 })
 
-const requestId = webContents.findInPage('api')
+const requestId = win.webContents.findInPage('api')
 console.log(requestId)
 ```
 
@@ -1593,6 +1602,7 @@ Use `page-break-before: always;` CSS style to force to print to a new page.
 Example usage:
 
 ```js
+const win = new BrowserWindow()
 const options = {
   silent: true,
   deviceName: 'My-Printer',
@@ -1889,8 +1899,9 @@ For example:
 
 ```js
 // Main process
+const win = new BrowserWindow()
 const { port1, port2 } = new MessageChannelMain()
-webContents.postMessage('port', { message: 'hello' }, [port1])
+win.webContents.postMessage('port', { message: 'hello' }, [port1])
 
 // Renderer process
 ipcRenderer.on('port', (e, msg) => {
