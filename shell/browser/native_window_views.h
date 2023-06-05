@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "shell/browser/ui/views/root_view.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(USE_OZONE)
@@ -35,7 +36,6 @@ class UnhandledKeyboardEventHandler;
 namespace electron {
 
 class GlobalMenuBarX11;
-class RootView;
 class WindowStateWatcher;
 
 #if defined(USE_OZONE_PLATFORM_X11)
@@ -251,7 +251,7 @@ class NativeWindowViews : public NativeWindow,
   // Maintain window placement.
   void MoveBehindTaskBarIfNeeded();
 
-  std::unique_ptr<RootView> root_view_;
+  RootView root_view_{this};
 
   // The view should be focused by default.
   raw_ptr<views::View> focused_view_ = nullptr;
