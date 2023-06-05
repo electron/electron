@@ -81,10 +81,10 @@ index 33ca7a53dfb6d2c9e3a33f0065a3acd806e82e01..9fdf2e8ff0056ff407015b914c6b03eb
    const Source& GetSource(int index) const override;
    DesktopMediaList::Type GetMediaListType() const override;
 diff --git a/chrome/browser/media/webrtc/native_desktop_media_list.cc b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-index b548c9fbd3c0bf425447b29dcd866cd27e96b14c..f994ac6086c7b4cd3e8534f34691189d78a21601 100644
+index b548c9fbd3c0bf425447b29dcd866cd27e96b14c..1e4c572deb0b20416f3fa65f7fe6d33612e3b691 100644
 --- a/chrome/browser/media/webrtc/native_desktop_media_list.cc
 +++ b/chrome/browser/media/webrtc/native_desktop_media_list.cc
-@@ -451,6 +451,9 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
+@@ -457,6 +457,9 @@ void NativeDesktopMediaList::Worker::RefreshNextThumbnail() {
        FROM_HERE,
        base::BindOnce(&NativeDesktopMediaList::UpdateNativeThumbnailsFinished,
                       media_list_));
