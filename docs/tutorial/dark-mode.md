@@ -116,7 +116,7 @@ Now the renderer process can communicate with the main process securely and perf
 
 The `renderer.js` file is responsible for controlling the `<button>` functionality.
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-expect-error=[2,7]
 document.getElementById('toggle-dark-mode').addEventListener('click', async () => {
   const isDarkMode = await window.darkMode.toggle()
   document.getElementById('theme-source').innerHTML = isDarkMode ? 'Dark' : 'Light'

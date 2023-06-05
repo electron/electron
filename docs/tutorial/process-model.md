@@ -175,13 +175,13 @@ Although preload scripts share a `window` global with the renderer they're attac
 you cannot directly attach any variables from the preload script to `window` because of
 the [`contextIsolation`][context-isolation] default.
 
-```js title='preload.js'
+```js title='preload.js' @ts-nocheck
 window.myAPI = {
   desktop: true
 }
 ```
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-nocheck
 console.log(window.myAPI)
 // => undefined
 ```
@@ -200,7 +200,7 @@ contextBridge.exposeInMainWorld('myAPI', {
 })
 ```
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-nocheck
 console.log(window.myAPI)
 // => { desktop: true }
 ```
