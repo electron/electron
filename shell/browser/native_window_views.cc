@@ -36,7 +36,6 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/background.h"
-#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
@@ -186,9 +185,7 @@ class NativeWindowClientView : public views::ClientView {
 
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
-    : NativeWindow(options, parent),
-      keyboard_event_handler_(
-          std::make_unique<views::UnhandledKeyboardEventHandler>()) {
+    : NativeWindow(options, parent) {
   options.Get(options::kTitle, &title_);
 
   bool menu_bar_autohide;
@@ -1678,8 +1675,8 @@ void NativeWindowViews::HandleKeyboardEvent(
     NotifyWindowExecuteAppCommand(kBrowserForward);
 #endif
 
-  keyboard_event_handler_->HandleKeyboardEvent(event,
-                                               root_view_.GetFocusManager());
+  keyboard_event_handler_.HandleKeyboardEvent(event,
+                                              root_view_.GetFocusManager());
   root_view_.HandleKeyEvent(event);
 }
 
