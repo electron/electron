@@ -81,7 +81,7 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 0ac40834a8de153f237424884b4a66b705af5866..56d6023e5d21614b299a1986487e70db8bd5f800 100644
+index b7df289e4546fd5d33266223f4b678c1ab0e26e2..af4fdec439ebe630d43a60cfa53d3addfca052bd 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
