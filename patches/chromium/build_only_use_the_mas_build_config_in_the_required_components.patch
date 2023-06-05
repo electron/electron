@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index df2bd3fbde693a521b748396249af2b38d675526..073a4cab50f515dbb2d43644ee7f3579b355a7ab 100644
+index 8cd7358cd054324b2527da4d3928e88db4498952..6d98aa0990f66a07be975f29b58b7b4de68edca3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1057,6 +1057,7 @@ component("base") {
+@@ -1059,6 +1059,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -88,10 +88,10 @@ index 854a27260ff4f9217b529f79f5346894f3d6d35e..8b9cf3adb8a6f5ad521c379704d50814
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index ee7dd3e5fe431e34c41c8b5c0e1c22cbbe34ca13..b15d8b86a4652893e7ad1ffb4a368ba7be0e4bc9 100644
+index 9e9a06ef58e9aeff8193df7b198ee69939c2dd8f..fcf5e3f5403c6dfe7fcd6da243695d378e0d21fb 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -170,6 +170,7 @@ source_set("common") {
+@@ -172,6 +172,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -214,10 +214,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb277468cb424d 100644
+index 7b3d41de1be2425929df590526082a5f45aaba9a..500b59ba38ef1dda1851443b774fa9c375aabcef 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -250,6 +250,7 @@ component("platform") {
+@@ -252,6 +252,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
@@ -226,11 +226,11 @@ index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb2774
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 1ad648cc23be0339524e696007411e2da20ec41a..250e9cc1cab442430a31ef578dd9e61479eeb750 100644
+index 260725d466d890dfec29d423700510f55caa7a52..f98598cf97a740b39016b35ca12825eefd1c1a07 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -359,6 +359,7 @@ component("base") {
-       "l10n/l10n_util_mac.mm",
+@@ -355,6 +355,7 @@ component("base") {
+       "interaction/element_tracker_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
 +    configs += ["//electron/build/config:mas_build"]
@@ -265,7 +265,7 @@ index f8dfc00b61d67aec62f26b57636b28dcfca8f989..bf067319394717738f5281a28bcbdaab
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index be0ebe3e2da944969831281e9f2c9106e690b03d..98eef7db6a8c61d644f1b6e7bd1d654ce90147fc 100644
+index 416497c77970e1c15ebecc27af59cf50112a6441..69e1a93f21bc3ea5760db1150b7fba3695fdca33 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -681,6 +681,7 @@ component("views") {

@@ -90,7 +90,7 @@ index 237e3fbfc9aec50dd74bd6a0e1235d2b50ad9fcd..3c81dda1ea478696790b3b4a2a3b7e59
    // a cookie. If this is set to non-null, the observer passed to
    // URLLoaderFactory will be ignored.
 diff --git a/services/network/public/mojom/url_response_head.mojom b/services/network/public/mojom/url_response_head.mojom
-index cbaf4911df0aab662fb26fb1ca73b7f638d8790d..f8bf9984f6824458712761301d965ab6681befcc 100644
+index 3464dcf4713762ede8ca5ef4918c935c0c1ae1d1..b47cc49c8691acbe03fd23a773e23ffe921b42d2 100644
 --- a/services/network/public/mojom/url_response_head.mojom
 +++ b/services/network/public/mojom/url_response_head.mojom
 @@ -12,6 +12,7 @@ import "services/network/public/mojom/encoded_body_length.mojom";
