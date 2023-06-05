@@ -22,8 +22,8 @@
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/webui_url_constants.h"
-#include "chrome/grit/accessibility_resources.h" // nogncheck
-#include "chrome/grit/accessibility_resources_map.h" // nogncheck
+#include "chrome/grit/accessibility_resources.h"      // nogncheck
+#include "chrome/grit/accessibility_resources_map.h"  // nogncheck
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/ax_event_notification_details.h"

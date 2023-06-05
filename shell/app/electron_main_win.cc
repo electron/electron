@@ -129,7 +129,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   struct Arguments {
     int argc = 0;
-    RAW_PTR_EXCLUSION wchar_t** argv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+    RAW_PTR_EXCLUSION wchar_t** argv =
+        ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
     ~Arguments() { LocalFree(argv); }
   } arguments;
