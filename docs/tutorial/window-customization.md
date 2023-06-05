@@ -196,9 +196,9 @@ const win = new BrowserWindow({
   }
 })
 
-ipcMain.on('set-ignore-mouse-events', (event, ...args) => {
+ipcMain.on('set-ignore-mouse-events', (event, ignore, options) => {
   const win = BrowserWindow.fromWebContents(event.sender)
-  win.setIgnoreMouseEvents(...args)
+  win.setIgnoreMouseEvents(ignore, options)
 })
 ```
 

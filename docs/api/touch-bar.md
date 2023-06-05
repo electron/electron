@@ -87,12 +87,12 @@ const { TouchBarLabel, TouchBarButton, TouchBarSpacer } = TouchBar
 let spinning = false
 
 // Reel labels
-const reel1 = new TouchBarLabel()
-const reel2 = new TouchBarLabel()
-const reel3 = new TouchBarLabel()
+const reel1 = new TouchBarLabel({ label: '' })
+const reel2 = new TouchBarLabel({ label: '' })
+const reel3 = new TouchBarLabel({ label: '' })
 
 // Spin result label
-const result = new TouchBarLabel()
+const result = new TouchBarLabel({ label: '' })
 
 // Spin button
 const spin = new TouchBarButton({

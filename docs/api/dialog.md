@@ -72,7 +72,7 @@ and a directory selector, so if you set `properties` to
 `['openFile', 'openDirectory']` on these platforms, a directory selector will be
 shown.
 
-```js
+```js @ts-type={mainWindow:Electron.BrowserWindow}
 dialog.showOpenDialogSync(mainWindow, {
   properties: ['openFile', 'openDirectory']
 })
@@ -139,7 +139,7 @@ and a directory selector, so if you set `properties` to
 `['openFile', 'openDirectory']` on these platforms, a directory selector will be
 shown.
 
-```js
+```js @ts-type={mainWindow:Electron.BrowserWindow}
 dialog.showOpenDialog(mainWindow, {
   properties: ['openFile', 'openDirectory']
 }).then(result => {

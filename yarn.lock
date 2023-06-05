@@ -187,10 +187,10 @@
     "@octokit/auth-app" "^4.0.13"
     "@octokit/rest" "^19.0.11"
 
-"@electron/lint-roller@^1.2.1":
-  version "1.2.1"
-  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.2.1.tgz#9f9d99b0a8975646e0a0131ab1b21a2ec62e80d8"
-  integrity sha512-w9PelpTBX8ClAv2iVa8fYqK77dnN0zWiHW98Utf8D83nmxkCMQNrKdRupSyiuIttbic1Nao8FhTScppmzOz0gw==
+"@electron/lint-roller@^1.5.0":
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.5.0.tgz#9b743979e1b03327e475fa696bb781eb2ea05ef2"
+  integrity sha512-205UxwJEx8zv5wLwPq4wMA0OYrJ7d1GuqOhPav0Uy2HWe4K+DZbSP50safCvZCSpI6Op3DMo79tp5i8VppuPWA==
   dependencies:
     "@dsanders11/vscode-markdown-languageservice" "^0.3.0"
     glob "^8.1.0"
@@ -199,6 +199,7 @@
     mdast-util-from-markdown "^1.3.0"
     minimist "^1.2.8"
     node-fetch "^2.6.9"
+    rimraf "^4.4.1"
     standard "^17.0.0"
     unist-util-visit "^4.1.2"
     vscode-languageserver "^8.1.0"
@@ -1048,6 +1049,11 @@
   integrity sha512-cCdlC/1kGEZdEglzOieLDYBxHsvEOIg7kp/2FYyVR9Pxakq+Qf/inL3RKQ+PA8gOlI/NnL+fXmQH12nwcGzsHw==
   dependencies:
     "@types/node" "*"
+
+"@types/w3c-web-serial@^1.0.3":
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/@types/w3c-web-serial/-/w3c-web-serial-1.0.3.tgz#9fd5e8542f74e464bb1715b384b5c0dcbf2fb2c3"
+  integrity sha512-R4J/OjqKAUFQoXVIkaUTfzb/sl6hLh/ZhDTfowJTRMa7LhgEmI/jXV4zsL1u8HpNa853BxwNmDIr0pauizzwSQ==
 
 "@types/webpack-env@^1.17.0":
   version "1.17.0"
@@ -3336,6 +3342,16 @@ glob@^8.1.0:
     minimatch "^5.0.1"
     once "^1.3.0"
 
+glob@^9.2.0:
+  version "9.3.5"
+  resolved "https://registry.yarnpkg.com/glob/-/glob-9.3.5.tgz#ca2ed8ca452781a3009685607fdf025a899dfe21"
+  integrity sha512-e1LleDykUz2Iu+MTYdkSsuWX8lvAjAcs0Xef0lNIu0S2wOAzuTxCJtcd9S3cijlwYF18EsU3rzb8jPVobxDh9Q==
+  dependencies:
+    fs.realpath "^1.0.0"
+    minimatch "^8.0.2"
+    minipass "^4.2.4"
+    path-scurry "^1.6.1"
+
 glob@~8.0.3:
   version "8.0.3"
   resolved "https://registry.yarnpkg.com/glob/-/glob-8.0.3.tgz#415c6eb2deed9e502c68fa44a272e6da6eeca42e"
@@ -4340,7 +4356,7 @@ lru-cache@^6.0.0:
   dependencies:
     yallist "^4.0.0"
 
-lru-cache@^9.0.0:
+lru-cache@^9.0.0, lru-cache@^9.1.1:
   version "9.1.1"
   resolved "https://registry.yarnpkg.com/lru-cache/-/lru-cache-9.1.1.tgz#c58a93de58630b688de39ad04ef02ef26f1902f1"
   integrity sha512-65/Jky17UwSb0BuB9V+MyDpsOtXKmYwzhyl+cOa9XUiI4uV2Ouy/2voFP3+al0BjZbJgMBD8FojMpAf+Z+qn4A==
@@ -4768,6 +4784,13 @@ minimatch@^5.0.1:
   dependencies:
     brace-expansion "^2.0.1"
 
+minimatch@^8.0.2:
+  version "8.0.4"
+  resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-8.0.4.tgz#847c1b25c014d4e9a7f68aaf63dedd668a626229"
+  integrity sha512-W0Wvr9HyFXZRGIDgCicunpQ299OKXs9RgZfaukz4qAW/pJhcpUfupc9c+OObPOFueNy8VSrZgEmDtk6Kh4WzDA==
+  dependencies:
+    brace-expansion "^2.0.1"
+
 minimatch@~5.1.2:
   version "5.1.2"
   resolved "https://registry.yarnpkg.com/minimatch/-/minimatch-5.1.2.tgz#0939d7d6f0898acbd1508abe534d1929368a8fff"
@@ -4801,6 +4824,16 @@ minipass@^4.0.0:
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/minipass/-/minipass-4.0.1.tgz#2b9408c6e81bb8b338d600fb3685e375a370a057"
   integrity sha512-V9esFpNbK0arbN3fm2sxDKqMYgIp7XtVdE4Esj+PE4Qaaxdg1wIw48ITQIOn1sc8xXSmUviVL3cyjMqPlrVkiA==
+
+minipass@^4.2.4:
+  version "4.2.8"
+  resolved "https://registry.yarnpkg.com/minipass/-/minipass-4.2.8.tgz#f0010f64393ecfc1d1ccb5f582bcaf45f48e1a3a"
+  integrity sha512-fNzuVyifolSLFL4NzpF+wEF4qrgqaaKX0haXPQEdQ7NKAN+WecoKMHV09YcuL/DHxrUsYQOK3MiuDf7Ip2OXfQ==
+
+"minipass@^5.0.0 || ^6.0.2":
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/minipass/-/minipass-6.0.2.tgz#542844b6c4ce95b202c0995b0a471f1229de4c81"
+  integrity sha512-MzWSV5nYVT7mVyWCwn2o7JH13w2TBRmmSqSRCKzTw+lmft9X4z+3wjvs06Tzijo5z4W/kahUCDpRXTF+ZrmF/w==
 
 minizlib@^2.1.1:
   version "2.1.2"
@@ -5247,6 +5280,14 @@ path-parse@^1.0.6, path-parse@^1.0.7:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/path-parse/-/path-parse-1.0.7.tgz#fbc114b60ca42b30d9daf5858e4bd68bbedb6735"
   integrity sha512-LDJzPVEEEPR+y48z93A0Ed0yXb8pAByGWo/k5YYdYgpY2/2EsOsksJrq7lOHxryrVOn1ejG6oAp8ahvOIQD8sw==
+
+path-scurry@^1.6.1:
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/path-scurry/-/path-scurry-1.9.2.tgz#90f9d296ac5e37e608028e28a447b11d385b3f63"
+  integrity sha512-qSDLy2aGFPm8i4rsbHd4MNyTcrzHFsLQykrtbuGRknZZCBBVXSv2tSCDN2Cg6Rt/GFRw8GoW9y9Ecw5rIPG1sg==
+  dependencies:
+    lru-cache "^9.1.1"
+    minipass "^5.0.0 || ^6.0.2"
 
 path-to-regexp@0.1.7:
   version "0.1.7"
@@ -6209,6 +6250,13 @@ rimraf@^3.0.2:
   integrity sha512-JZkJMZkAGFFPP2YqXZXPbMlMBgsxzE8ILs4lMIX/2o0L9UBw9O/Y3o6wFw/i9YLapcUJWwqbi3kdxIPdC62TIA==
   dependencies:
     glob "^7.1.3"
+
+rimraf@^4.4.1:
+  version "4.4.1"
+  resolved "https://registry.yarnpkg.com/rimraf/-/rimraf-4.4.1.tgz#bd33364f67021c5b79e93d7f4fa0568c7c21b755"
+  integrity sha512-Gk8NlF062+T9CqNGn6h4tls3k6T1+/nXdOcSZVikNVtlRdYpA7wRJJMoXmuvOnLW844rPjdQ7JgXCYM6PPC/og==
+  dependencies:
+    glob "^9.2.0"
 
 rimraf@~2.2.6:
   version "2.2.8"

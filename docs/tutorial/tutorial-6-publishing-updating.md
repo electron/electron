@@ -188,7 +188,7 @@ npm install update-electron-app
 
 Then, import the module and call it immediately in the main process.
 
-```js title='main.js'
+```js title='main.js' @ts-nocheck
 require('update-electron-app')()
 ```
 
