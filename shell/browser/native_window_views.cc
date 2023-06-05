@@ -164,8 +164,8 @@ class NativeWindowClientView : public views::ClientView {
  public:
   NativeWindowClientView(views::Widget* widget,
                          views::View* root_view,
-                         NativeWindowViews* window)
-      : views::ClientView(widget, root_view), window_(window) {}
+                         NativeWindowViews& window)
+      : views::ClientView{widget, root_view}, window_{window} {}
   ~NativeWindowClientView() override = default;
 
   // disable copy
@@ -178,7 +178,7 @@ class NativeWindowClientView : public views::ClientView {
   }
 
  private:
-  raw_ptr<NativeWindowViews> window_;
+  const raw_ref<NativeWindowViews> window_;
 };
 
 }  // namespace
@@ -1636,7 +1636,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView{widget, GetContentsView(), this};
+  return new NativeWindowClientView{widget, GetContentsView(), *this};
 }
 
 std::unique_ptr<views::NonClientFrameView>
