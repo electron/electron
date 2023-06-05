@@ -305,8 +305,10 @@ Returns `NativeImage` - The cropped image.
 * `options` Object
   * `width` Integer (optional) - Defaults to the image's width.
   * `height` Integer (optional) - Defaults to the image's height.
-  * `quality` string (optional) - The desired quality of the resize image.
-    Possible values are `good`, `better`, or `best`. The default is `best`.
+  ** `quality` `"good" | "better" | "best"` (optional) - The desired quality of the resize image. The default is `"best"`.
+// @ts-expect-error Invalid quality value
+const quality = "invalidValue";
+
     These values express a desired quality/speed tradeoff. They are translated
     into an algorithm-specific method that depends on the capabilities
     (CPU, GPU) of the underlying platform. It is possible for all three methods

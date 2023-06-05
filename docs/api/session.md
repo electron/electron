@@ -574,18 +574,14 @@ Clears the session’s HTTP cache.
 * `options` Object (optional)
   * `origin` string (optional) - Should follow `window.location.origin`’s representation
     `scheme://host:port`.
-  * `storages` string[] (optional) - The types of storages to clear, can contain:
-    `cookies`, `filesystem`, `indexdb`, `localstorage`,
-    `shadercache`, `websql`, `serviceworkers`, `cachestorage`. If not
-    specified, clear all storage types.
-  * `quotas` string[] (optional) - The types of quotas to clear, can contain:
-    `temporary`, `syncable`. If not specified, clear all quotas.
+* `storages` `("cookies" | "filesystem" | "indexdb" | "localstorage" | "shadercache" | "websql" | "serviceworkers" | "cachestorage")[]` (optional) - The types of storages to clear. If not specified, clear all storage types.
+// @ts-expect-error Invalid storage type
+const storages = ["invalidType"];
 
-Returns `Promise<void>` - resolves when the storage data has been cleared.
+* `quotas` `("temporary" | "syncable")[]` (optional) - The types of quotas to clear. If not specified, clear all quotas.
+// @ts-expect-error Invalid quota type
+const quotas = ["invalidType"];
 
-#### `ses.flushStorageData()`
-
-Writes any unwritten DOMStorage data to disk.
 
 #### `ses.setProxy(config)`
 

@@ -1090,9 +1090,8 @@ Returns:
     word and spellchecker is enabled.
   * `frameCharset` string - The character encoding of the frame on which the
     menu was invoked.
-  * `inputFieldType` string - If the context menu was invoked on an input
-    field, the type of that field. Possible values are `none`, `plainText`,
-    `password`, `other`.
+  ** `inputFieldType` `"none" | "plainText" | "password" | "other"` - If the context menu was invoked on an input field, the type of that field.
+
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
