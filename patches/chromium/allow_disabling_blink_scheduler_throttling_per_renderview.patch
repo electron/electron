@@ -34,7 +34,7 @@ index 180abdc9f983887c83fd9d4a596472222e9ab472..00842717a7570561ee9e3eca11190ab5
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
-index 9979c25ecd57e68331b628a518368635db5c2027..32733bf951af3eff7da5fd5758bbcbaa49ff0e3c 100644
+index 9979c25ecd57e68331b628a518368635db5c2027..f65bfbbb663a5bb0511ffa389d3163e0fdeb4d1f 100644
 --- a/content/public/browser/render_view_host.h
 +++ b/content/public/browser/render_view_host.h
 @@ -76,6 +76,9 @@ class CONTENT_EXPORT RenderViewHost {
@@ -42,11 +42,23 @@ index 9979c25ecd57e68331b628a518368635db5c2027..32733bf951af3eff7da5fd5758bbcbaa
        perfetto::TracedProto<TraceProto> context) const = 0;
  
 +  // Disable/Enable scheduler throttling.
-+  virtual void SetSchedulerThrottling(bool allowed) = 0;
++  virtual void SetSchedulerThrottling(bool allowed) {}
 +
   private:
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
+diff --git a/content/test/test_page_broadcast.h b/content/test/test_page_broadcast.h
+index 3f4396e50b419cd6a16f34036f4a0a1113109c55..60e038413369ea1021bcad86f9398c9964140652 100644
+--- a/content/test/test_page_broadcast.h
++++ b/content/test/test_page_broadcast.h
+@@ -43,6 +43,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
+       blink::mojom::RemoteFrameInterfacesFromBrowserPtr remote_frame_interfaces,
+       blink::mojom::RemoteMainFrameInterfacesPtr remote_main_frame_interfaces)
+       override;
++  void SetSchedulerThrottling(bool allowed) override {}
+ 
+   mojo::AssociatedReceiver<blink::mojom::PageBroadcast> receiver_;
+ };
 diff --git a/third_party/blink/public/mojom/page/page.mojom b/third_party/blink/public/mojom/page/page.mojom
 index d18c66114870de83c7eef21578e9e2b8d5606a8b..e1defb3992289427df85963f44a705e3d9257342 100644
 --- a/third_party/blink/public/mojom/page/page.mojom
@@ -60,14 +72,14 @@ index d18c66114870de83c7eef21578e9e2b8d5606a8b..e1defb3992289427df85963f44a705e3
 +  SetSchedulerThrottling(bool allowed);
  };
 diff --git a/third_party/blink/public/web/web_view.h b/third_party/blink/public/web/web_view.h
-index 8a18ecf567cd3a6a2fb1627083a5544a93198bf4..8b6436f3ba6c8bfc2cba054e77ab888625ae668d 100644
+index 8a18ecf567cd3a6a2fb1627083a5544a93198bf4..6bb4074e033e045de164bc776f75f152ea7be16f 100644
 --- a/third_party/blink/public/web/web_view.h
 +++ b/third_party/blink/public/web/web_view.h
 @@ -371,6 +371,7 @@ class BLINK_EXPORT WebView {
    // Scheduling -----------------------------------------------------------
  
    virtual PageScheduler* Scheduler() const = 0;
-+  virtual void SetSchedulerThrottling(bool allowed) = 0;
++  virtual void SetSchedulerThrottling(bool allowed) {}
  
    // Visibility -----------------------------------------------------------
  

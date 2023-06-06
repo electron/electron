@@ -111,6 +111,31 @@ index 34636a58846e2b250e423dde76e4e6ea1f686676..899b75f2be91e86c526f550718e22221
    defines = []
  
    public_deps = [
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index c304b8d9052fe705e22a047546fb6a7eb4977575..b30bf15dba88b47074d951793530b4afc473a442 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -470,6 +470,7 @@ static_library("test_support") {
+   configs += [
+     "//build/config:precompiled_headers",
+     "//v8:external_startup_data",
++    "//electron/build/config:mas_build",
+   ]
+ 
+   public_deps = [
+diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
+index 9d47887dd255187ffe49f5d9dbd01aff5b1de15e..7cde88462e0fc57f9f19badbf1042153708ed423 100644
+--- a/content/web_test/BUILD.gn
++++ b/content/web_test/BUILD.gn
+@@ -143,6 +143,8 @@ static_library("web_test_browser") {
+     "browser/web_test_tts_platform.h",
+   ]
+ 
++  configs += ["//electron/build/config:mas_build"]
++
+   if (is_apple) {
+     configs += [ "//build/config/compiler:enable_arc" ]
+   }
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
 index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942d1a20b90 100644
 --- a/device/bluetooth/BUILD.gn
@@ -265,7 +290,7 @@ index c7a777df6803678108952185a40b590bbf419859..76303e25a06ed2123bf9ac6b93b8a1e0
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 01bbf457bc079c266e6110f7ad7c1ba701343312..0718cc10706de5e4b12a891eff696c80352fb9cd 100644
+index 01bbf457bc079c266e6110f7ad7c1ba701343312..fefd00a2f13018adf054284e10c1d4169c32c220 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -675,6 +675,7 @@ component("views") {
@@ -276,6 +301,15 @@ index 01bbf457bc079c266e6110f7ad7c1ba701343312..0718cc10706de5e4b12a891eff696c80
    }
  
    if (is_win) {
+@@ -1089,6 +1090,8 @@ source_set("test_support") {
+     "//testing/gtest",
+   ]
+ 
++  configs += ["//electron/build/config:mas_build"]
++
+   if (is_win) {
+     sources += [
+       "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
 index f37a5a881ac6ac432a4672c5738b7f49b75b5523..1764117f539c2423ebe8bb4c3fe70afcdd0883e8 100644
 --- a/ui/views/controls/webview/BUILD.gn
