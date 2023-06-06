@@ -80,8 +80,6 @@ class Menu : public gin::Wrappable<Menu>,
   virtual void ClosePopupAt(int32_t window_id) = 0;
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
 
-  ElectronMenuModel model_{this};
-
   // Observable:
   void OnMenuWillClose() override;
   void OnMenuWillShow() override;
@@ -115,6 +113,8 @@ class Menu : public gin::Wrappable<Menu>,
   bool IsEnabledAt(int index) const;
   bool IsVisibleAt(int index) const;
   bool WorksWhenHiddenAt(int index) const;
+
+  ElectronMenuModel model_{this};
 };
 
 }  // namespace electron::api
