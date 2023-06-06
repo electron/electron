@@ -48,23 +48,22 @@ namespace electron::api {
 
 gin::WrapperInfo Menu::kWrapperInfo = {gin::kEmbedderNativeGin};
 
-Menu::Menu(gin::Arguments* args)
-    : model_(std::make_unique<ElectronMenuModel>(this)) {
-  model_->AddObserver(this);
+Menu::Menu(gin::Arguments* args) {
+  model_.AddObserver(this);
 
 #if BUILDFLAG(IS_MAC)
   gin_helper::Dictionary options;
   if (args->GetNext(&options)) {
     ElectronMenuModel::SharingItem item;
     if (options.Get("sharingItem", &item))
-      model_->SetSharingItem(std::move(item));
+      model_.SetSharingItem(std::move(item));
   }
 #endif
 }
 
 Menu::~Menu() {
   if (model_) {
-    model_->RemoveObserver(this);
+    model_.RemoveObserver(this);
   }
 }
 
@@ -161,97 +160,97 @@ base::OnceClosure Menu::BindSelfToClosure(base::OnceClosure callback) {
 void Menu::InsertItemAt(int index,
                         int command_id,
                         const std::u16string& label) {
-  model_->InsertItemAt(index, command_id, label);
+  model_.InsertItemAt(index, command_id, label);
 }
 
 void Menu::InsertSeparatorAt(int index) {
-  model_->InsertSeparatorAt(index, ui::NORMAL_SEPARATOR);
+  model_.InsertSeparatorAt(index, ui::NORMAL_SEPARATOR);
 }
 
 void Menu::InsertCheckItemAt(int index,
                              int command_id,
                              const std::u16string& label) {
-  model_->InsertCheckItemAt(index, command_id, label);
+  model_.InsertCheckItemAt(index, command_id, label);
 }
 
 void Menu::InsertRadioItemAt(int index,
                              int command_id,
                              const std::u16string& label,
                              int group_id) {
-  model_->InsertRadioItemAt(index, command_id, label, group_id);
+  model_.InsertRadioItemAt(index, command_id, label, group_id);
 }
 
 void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const std::u16string& label,
                            Menu* menu) {
-  model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
+  model_.InsertSubMenuAt(index, command_id, label, menu->model_.get());
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {
-  model_->SetIcon(index, ui::ImageModel::FromImage(image));
+  model_.SetIcon(index, ui::ImageModel::FromImage(image));
 }
 
 void Menu::SetSublabel(int index, const std::u16string& sublabel) {
-  model_->SetSecondaryLabel(index, sublabel);
+  model_.SetSecondaryLabel(index, sublabel);
 }
 
 void Menu::SetToolTip(int index, const std::u16string& toolTip) {
-  model_->SetToolTip(index, toolTip);
+  model_.SetToolTip(index, toolTip);
 }
 
 void Menu::SetRole(int index, const std::u16string& role) {
-  model_->SetRole(index, role);
+  model_.SetRole(index, role);
 }
 
 void Menu::Clear() {
-  model_->Clear();
+  model_.Clear();
 }
 
 int Menu::GetIndexOfCommandId(int command_id) const {
-  return model_->GetIndexOfCommandId(command_id).value_or(-1);
+  return model_.GetIndexOfCommandId(command_id).value_or(-1);
 }
 
 int Menu::GetItemCount() const {
-  return model_->GetItemCount();
+  return model_.GetItemCount();
 }
 
 int Menu::GetCommandIdAt(int index) const {
-  return model_->GetCommandIdAt(index);
+  return model_.GetCommandIdAt(index);
 }
 
 std::u16string Menu::GetLabelAt(int index) const {
-  return model_->GetLabelAt(index);
+  return model_.GetLabelAt(index);
 }
 
 std::u16string Menu::GetSublabelAt(int index) const {
-  return model_->GetSecondaryLabelAt(index);
+  return model_.GetSecondaryLabelAt(index);
 }
 
 std::u16string Menu::GetToolTipAt(int index) const {
-  return model_->GetToolTipAt(index);
+  return model_.GetToolTipAt(index);
 }
 
 std::u16string Menu::GetAcceleratorTextAtForTesting(int index) const {
   ui::Accelerator accelerator;
-  model_->GetAcceleratorAtWithParams(index, true, &accelerator);
+  model_.GetAcceleratorAtWithParams(index, true, &accelerator);
   return accelerator.GetShortcutText();
 }
 
 bool Menu::IsItemCheckedAt(int index) const {
-  return model_->IsItemCheckedAt(index);
+  return model_.IsItemCheckedAt(index);
 }
 
 bool Menu::IsEnabledAt(int index) const {
-  return model_->IsEnabledAt(index);
+  return model_.IsEnabledAt(index);
 }
 
 bool Menu::IsVisibleAt(int index) const {
-  return model_->IsVisibleAt(index);
+  return model_.IsVisibleAt(index);
 }
 
 bool Menu::WorksWhenHiddenAt(int index) const {
-  return model_->WorksWhenHiddenAt(index);
+  return model_.WorksWhenHiddenAt(index);
 }
 
 void Menu::OnMenuWillClose() {

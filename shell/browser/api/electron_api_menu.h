@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_MENU_H_
 
-#include <memory>
 #include <string>
 
 #include "base/functional/callback.h"
@@ -40,7 +39,7 @@ class Menu : public gin::Wrappable<Menu>,
   static void SendActionToFirstResponder(const std::string& action);
 #endif
 
-  ElectronMenuModel* model() const { return model_.get(); }
+  constexpr ElectronMenuModel* model() { return &model_; }
 
   // disable copy
   Menu(const Menu&) = delete;
@@ -81,7 +80,7 @@ class Menu : public gin::Wrappable<Menu>,
   virtual void ClosePopupAt(int32_t window_id) = 0;
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
 
-  std::unique_ptr<ElectronMenuModel> model_;
+  ElectronMenuModel model_{this};
 
   // Observable:
   void OnMenuWillClose() override;
