@@ -123,8 +123,6 @@ const char kZoomFactor[] = "zoomFactor";
 // Script that will be loaded by guest WebContents before other scripts.
 const char kPreloadScript[] = "preload";
 
-const char kPreloadScripts[] = "preloadScripts";
-
 // Enable the node integration.
 const char kNodeIntegration[] = "nodeIntegration";
 
@@ -172,9 +170,6 @@ const char kJavaScript[] = "javascript";
 
 // Enables image support.
 const char kImages[] = "images";
-
-// Image animation policy.
-const char kImageAnimationPolicy[] = "imageAnimationPolicy";
 
 // Make TextArea elements resizable.
 const char kTextAreasAreResizable[] = "textAreasAreResizable";
