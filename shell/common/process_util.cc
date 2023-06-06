@@ -26,18 +26,29 @@ void EmitWarning(node::Environment* env,
   emit_warning.Run(warning_msg, warning_type, "");
 }
 
-bool IsBrowserProcess() {
+std::string GetProcessType() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(switches::kProcessType);
-  return process_type.empty();
+  return command_line->GetSwitchValueASCII(switches::kProcessType);
+}
+
+bool IsBrowserProcess() {
+  static bool result = GetProcessType().empty();
+  return result;
 }
 
 bool IsRendererProcess() {
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(switches::kProcessType);
-  return process_type == switches::kRendererProcess;
+  static bool result = GetProcessType() == switches::kRendererProcess;
+  return result;
+}
+
+bool IsUtilityProcess() {
+  static bool result = GetProcessType() == switches::kUtilityProcess;
+  return result;
+}
+
+bool IsZygoteProcess() {
+  static bool result = GetProcessType() == switches::kZygoteProcess;
+  return result;
 }
 
 }  // namespace electron
