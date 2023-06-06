@@ -16,7 +16,6 @@
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
 #include "base/memory/weak_ptr.h"
-#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
 #include "chrome/browser/devtools/devtools_settings.h"
 #include "content/public/browser/devtools_agent_host.h"
@@ -205,7 +204,6 @@ class InspectableWebContents
   void AddDevToolsExtensionsToClient();
 #endif
 
-  DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_ = true;
   std::string dock_state_;
