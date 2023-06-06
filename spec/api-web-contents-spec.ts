@@ -2065,8 +2065,7 @@ describe('webContents module', () => {
 
       await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')', true);
 
-      const result = await w.webContents.executeJavaScript(
-        `runTest(${features.isPictureInPictureEnabled()})`, true);
+      const result = await w.webContents.executeJavaScript('runTest(true)', true);
       expect(result).to.be.true();
     });
   });

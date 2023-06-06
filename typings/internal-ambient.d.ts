@@ -11,7 +11,6 @@ declare namespace NodeJS {
     isFakeLocationProviderEnabled(): boolean;
     isViewApiEnabled(): boolean;
     isPrintingEnabled(): boolean;
-    isPictureInPictureEnabled(): boolean;
     isExtensionsEnabled(): boolean;
     isComponentBuild(): boolean;
   }
