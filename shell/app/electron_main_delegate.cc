@@ -316,9 +316,7 @@ absl::optional<int> ElectronMainDelegate::BasicStartupComplete() {
 
 void ElectronMainDelegate::PreSandboxStartup() {
   auto* command_line = base::CommandLine::ForCurrentProcess();
-
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
+  std::string process_type = GetProcessType();
 
   base::FilePath user_data_dir =
       command_line->GetSwitchValuePath(::switches::kUserDataDir);
@@ -335,9 +333,9 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // know the correct user-data directory. (And, further, accessing the
   // application name on Linux can cause glib calls that end up spawning
   // threads, which if done before the zygote is booted, causes a CHECK().)
-  logging::InitElectronLogging(*command_line,
-                               /* is_preinit = */ process_type.empty() ||
-                                   process_type == ::switches::kZygoteProcess);
+  logging::InitElectronLogging(
+      *command_line,
+      /* is_preinit = */ IsBrowserProcess() || IsZygoteProcess());
 #endif
 
 #if !IS_MAS_BUILD()
@@ -356,7 +354,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
   // In the main process, we wait for JS to call crashReporter.start() before
   // initializing crashpad. If we're in the renderer, we want to initialize it
   // immediately at boot.
-  if (!process_type.empty()) {
+  if (!IsBrowserProcess()) {
     ElectronCrashReporterClient::Create();
     crash_reporter::InitializeCrashpad(false, process_type);
   }
@@ -364,7 +362,7 @@ void ElectronMainDelegate::PreSandboxStartup() {
 
 #if BUILDFLAG(IS_LINUX)
   // Zygote needs to call InitCrashReporter() in RunZygote().
-  if (process_type != ::switches::kZygoteProcess && !process_type.empty()) {
+  if (!IsZygoteProcess() && !IsBrowserProcess()) {
     ElectronCrashReporterClient::Create();
     if (command_line->HasSwitch(
             crash_reporter::switches::kCrashpadHandlerPid)) {
@@ -414,12 +412,8 @@ absl::optional<int> ElectronMainDelegate::PreBrowserMain() {
 }
 
 base::StringPiece ElectronMainDelegate::GetBrowserV8SnapshotFilename() {
-  const base::CommandLine* command_line =
-      base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
   bool load_browser_process_specific_v8_snapshot =
-      process_type.empty() &&
+      IsBrowserProcess() &&
       electron::fuses::IsLoadBrowserProcessSpecificV8SnapshotEnabled();
   if (load_browser_process_specific_v8_snapshot) {
     return "browser_v8_context_snapshot.bin";
