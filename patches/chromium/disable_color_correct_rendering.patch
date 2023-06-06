@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index bb988d6673b28bd7825a66138878d1d380f9654f..7b950669c1700385d9e0ecb8c9fda5d7c9a48d87 100644
+index 5bfae3cc8319e455cab3b1e3283dd26f056e6827..38e027307c5ca9d08c4dd8e3ce6667e4eaf803b5 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1905,6 +1905,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -213,7 +213,7 @@ index 8ca1f2220032401f7d63a52c563b526cc3f5200c..c006ccccc9717f8811b8ad43171fe24c
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index df3caf8fab7a1c1f6bc0efa4fd3dd60b9de66e63..ac254ec1317450a9809da5d244c42fa11a3a4f98 100644
+index 7639d05f73b27a65b8c7cd41b526bc9308a98a31..f377eca18f90b1ae4aa85471a63f8e726f979ffb 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
