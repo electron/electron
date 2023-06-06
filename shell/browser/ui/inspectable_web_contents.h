@@ -11,7 +11,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
