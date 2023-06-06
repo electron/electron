@@ -83,9 +83,9 @@ class ElectronMenuModel : public ui::SimpleMenuModel {
   void RemoveObserver(Observer* obs) { observers_.RemoveObserver(obs); }
 
   void SetToolTip(size_t index, const std::u16string& toolTip);
-  std::u16string GetToolTipAt(size_t index);
+  std::u16string GetToolTipAt(size_t index) const;
   void SetRole(size_t index, const std::u16string& role);
-  std::u16string GetRoleAt(size_t index);
+  std::u16string GetRoleAt(size_t index) const;
   void SetSecondaryLabel(size_t index, const std::u16string& sublabel);
   std::u16string GetSecondaryLabelAt(size_t index) const override;
   bool GetAcceleratorAtWithParams(size_t index,

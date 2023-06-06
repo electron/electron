@@ -33,7 +33,7 @@ void ElectronMenuModel::SetToolTip(size_t index,
   toolTips_[command_id] = toolTip;
 }
 
-std::u16string ElectronMenuModel::GetToolTipAt(size_t index) {
+std::u16string ElectronMenuModel::GetToolTipAt(size_t index) const {
   const int command_id = GetCommandIdAt(index);
   const auto iter = toolTips_.find(command_id);
   return iter == std::end(toolTips_) ? std::u16string() : iter->second;
@@ -44,7 +44,7 @@ void ElectronMenuModel::SetRole(size_t index, const std::u16string& role) {
   roles_[command_id] = role;
 }
 
-std::u16string ElectronMenuModel::GetRoleAt(size_t index) {
+std::u16string ElectronMenuModel::GetRoleAt(size_t index) const {
   const int command_id = GetCommandIdAt(index);
   const auto iter = roles_.find(command_id);
   return iter == std::end(roles_) ? std::u16string() : iter->second;
