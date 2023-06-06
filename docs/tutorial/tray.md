@@ -51,7 +51,7 @@ app.whenReady().then(() => {
 
 Great! Now we can start attaching a context menu to our Tray, like so:
 
-```js
+```js @ts-expect-error=[8]
 const contextMenu = Menu.buildFromTemplate([
   { label: 'Item1', type: 'radio' },
   { label: 'Item2', type: 'radio' },
@@ -68,7 +68,7 @@ To read more about constructing native menus, click
 
 Finally, let's give our tray a tooltip and a title.
 
-```js
+```js @ts-type={tray:Electron.Tray}
 tray.setToolTip('This is my application')
 tray.setTitle('This is my title')
 ```
