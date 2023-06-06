@@ -20,6 +20,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -632,13 +633,8 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 #endif
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
-  DevToolsContentsResizingStrategy strategy(rect);
-  if (contents_resizing_strategy_.Equals(strategy))
-    return;
-
-  contents_resizing_strategy_.CopyFrom(strategy);
   if (managed_devtools_web_contents_)
-    view_->SetContentsResizingStrategy(contents_resizing_strategy_);
+    view_->SetContentsResizingStrategy(DevToolsContentsResizingStrategy{rect});
 }
 
 void InspectableWebContents::InspectElementCompleted() {}
