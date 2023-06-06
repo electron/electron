@@ -35,7 +35,6 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/background.h"
-#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
@@ -165,7 +164,8 @@ class NativeWindowClientView : public views::ClientView {
   NativeWindowClientView(views::Widget* widget,
                          views::View* root_view,
                          NativeWindowViews* window)
-      : views::ClientView(widget, root_view), window_(window) {}
+      : views::ClientView{widget, root_view},
+        window_{raw_ref<NativeWindowViews>::from_ptr(window)} {}
   ~NativeWindowClientView() override = default;
 
   // disable copy
@@ -178,22 +178,19 @@ class NativeWindowClientView : public views::ClientView {
   }
 
  private:
-  NativeWindowViews* window_;
+  const raw_ref<NativeWindowViews> window_;
 };
 
 }  // namespace
 
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
-    : NativeWindow(options, parent),
-      root_view_(std::make_unique<RootView>(this)),
-      keyboard_event_handler_(
-          std::make_unique<views::UnhandledKeyboardEventHandler>()) {
+    : NativeWindow(options, parent) {
   options.Get(options::kTitle, &title_);
 
   bool menu_bar_autohide;
   if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
-    root_view_->SetAutoHideMenuBar(menu_bar_autohide);
+    root_view_.SetAutoHideMenuBar(menu_bar_autohide);
 
 #if BUILDFLAG(IS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -454,12 +451,12 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 
 void NativeWindowViews::SetContentView(views::View* view) {
   if (content_view()) {
-    root_view_->RemoveChildView(content_view());
+    root_view_.RemoveChildView(content_view());
   }
   set_content_view(view);
   focused_view_ = view;
-  root_view_->AddChildView(content_view());
-  root_view_->Layout();
+  root_view_.AddChildView(content_view());
+  root_view_.Layout();
 }
 
 void NativeWindowViews::Close() {
@@ -1096,7 +1093,7 @@ bool NativeWindowViews::IsTabletMode() const {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() {
-  auto* background = root_view_->background();
+  auto* background = root_view_.background();
   if (!background)
     return SK_ColorTRANSPARENT;
   return background->get_color();
@@ -1104,7 +1101,7 @@ SkColor NativeWindowViews::GetBackgroundColor() {
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
-  root_view_->SetBackground(views::CreateSolidBackground(background_color));
+  root_view_.SetBackground(views::CreateSolidBackground(background_color));
 
 #if BUILDFLAG(IS_WIN)
   // Set the background color of native window.
@@ -1239,7 +1236,7 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   // Remove global menu bar.
   if (global_menu_bar_ && menu_model == nullptr) {
     global_menu_bar_.reset();
-    root_view_->UnregisterAcceleratorsWithFocusManager();
+    root_view_.UnregisterAcceleratorsWithFocusManager();
     return;
   }
 
@@ -1248,7 +1245,7 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
     if (global_menu_bar_->IsServerStarted()) {
-      root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
+      root_view_.RegisterAcceleratorsWithFocusManager(menu_model);
       global_menu_bar_->SetMenu(menu_model);
       return;
     }
@@ -1259,13 +1256,13 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   gfx::Size content_size = GetContentSize();
   bool should_reset_size = use_content_size_ && has_frame() &&
                            !IsMenuBarAutoHide() &&
-                           ((!!menu_model) != root_view_->HasMenu());
+                           ((!!menu_model) != root_view_.HasMenu());
 
-  root_view_->SetMenu(menu_model);
+  root_view_.SetMenu(menu_model);
 
   if (should_reset_size) {
     // Enlarge the size constraints for the menu.
-    int menu_bar_height = root_view_->GetMenuBarHeight();
+    int menu_bar_height = root_view_.GetMenuBarHeight();
     extensions::SizeConstraints constraints = GetContentSizeConstraints();
     if (constraints.HasMinimumSize()) {
       gfx::Size min_size = constraints.GetMinimumSize();
@@ -1392,19 +1389,19 @@ void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
-  root_view_->SetAutoHideMenuBar(auto_hide);
+  root_view_.SetAutoHideMenuBar(auto_hide);
 }
 
 bool NativeWindowViews::IsMenuBarAutoHide() {
-  return root_view_->IsMenuBarAutoHide();
+  return root_view_.IsMenuBarAutoHide();
 }
 
 void NativeWindowViews::SetMenuBarVisibility(bool visible) {
-  root_view_->SetMenuBarVisibility(visible);
+  root_view_.SetMenuBarVisibility(visible);
 }
 
 bool NativeWindowViews::IsMenuBarVisible() {
-  return root_view_->IsMenuBarVisible();
+  return root_view_.IsMenuBarVisible();
 }
 
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
@@ -1503,8 +1500,8 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   }
 #endif
 
-  if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
-    int menu_bar_height = root_view_->GetMenuBarHeight();
+  if (root_view_.HasMenu() && root_view_.IsMenuBarVisible()) {
+    int menu_bar_height = root_view_.GetMenuBarHeight();
     window_bounds.set_y(window_bounds.y() - menu_bar_height);
     window_bounds.set_height(window_bounds.height() + menu_bar_height);
   }
@@ -1530,8 +1527,8 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   content_bounds.set_size(ScreenToDIPRect(hwnd, content_bounds).size());
 #endif
 
-  if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
-    int menu_bar_height = root_view_->GetMenuBarHeight();
+  if (root_view_.HasMenu() && root_view_.IsMenuBarVisible()) {
+    int menu_bar_height = root_view_.GetMenuBarHeight();
     content_bounds.set_y(content_bounds.y() + menu_bar_height);
     content_bounds.set_height(content_bounds.height() - menu_bar_height);
   }
@@ -1574,7 +1571,7 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
     SetMenuBarVisibility(false);
 
-  root_view_->ResetAltState();
+  root_view_.ResetAltState();
 }
 
 void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
@@ -1630,7 +1627,7 @@ std::u16string NativeWindowViews::GetWindowTitle() const {
 }
 
 views::View* NativeWindowViews::GetContentsView() {
-  return root_view_.get();
+  return &root_view_;
 }
 
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
@@ -1640,7 +1637,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView(widget, root_view_.get(), this);
+  return new NativeWindowClientView{widget, GetContentsView(), this};
 }
 
 std::unique_ptr<views::NonClientFrameView>
@@ -1679,9 +1676,9 @@ void NativeWindowViews::HandleKeyboardEvent(
     NotifyWindowExecuteAppCommand(kBrowserForward);
 #endif
 
-  keyboard_event_handler_->HandleKeyboardEvent(event,
-                                               root_view_->GetFocusManager());
-  root_view_->HandleKeyEvent(event);
+  keyboard_event_handler_.HandleKeyboardEvent(event,
+                                              root_view_.GetFocusManager());
+  root_view_.HandleKeyEvent(event);
 }
 
 void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
@@ -1689,7 +1686,7 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
     return;
 
   // Alt+Click should not toggle menu bar.
-  root_view_->ResetAltState();
+  root_view_.ResetAltState();
 
 #if BUILDFLAG(IS_LINUX)
   if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)
