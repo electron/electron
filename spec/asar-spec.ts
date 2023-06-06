@@ -8,8 +8,6 @@ import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from '
 import * as importedFs from 'fs';
 import { once } from 'events';
 
-const features = process._linkedBinding('electron_common_features');
-
 describe('asar package', () => {
   const fixtures = path.join(__dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
@@ -1222,7 +1220,7 @@ describe('asar package', function () {
       });
     });
 
-    ifdescribe(features.isRunAsNodeEnabled())('child_process.fork', function () {
+    describe('child_process.fork', function () {
       itremote('opens a normal js file', async function () {
         const child = require('child_process').fork(path.join(asarDir, 'a.asar', 'ping.js'));
         child.send('message');
@@ -1410,12 +1408,6 @@ describe('asar package', function () {
 
     /*
     describe('process.env.ELECTRON_NO_ASAR', function () {
-      before(function () {
-        if (!features.isRunAsNodeEnabled()) {
-          this.skip();
-        }
-      });
-
       itremote('disables asar support in forked processes', function (done) {
         const forked = ChildProcess.fork(path.join(__dirname, 'fixtures', 'module', 'no-asar.js'), [], {
           env: {
@@ -1509,7 +1501,7 @@ describe('asar package', function () {
     });
 
     /*
-    ifit(features.isRunAsNodeEnabled())('is available in forked scripts', async function () {
+    it('is available in forked scripts', async function () {
       const child = ChildProcess.fork(path.join(fixtures, 'module', 'original-fs.js'));
       const message = once(child, 'message');
       child.send('message');

@@ -7,7 +7,6 @@ declare namespace NodeJS {
     isBuiltinSpellCheckerEnabled(): boolean;
     isOffscreenRenderingEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
-    isRunAsNodeEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
     isViewApiEnabled(): boolean;
     isPrintingEnabled(): boolean;
