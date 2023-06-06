@@ -179,4 +179,11 @@ void AutoUpdater::QuitAndInstall() {
   }
 }
 
+bool AutoUpdater::IsVersionAllowedForUpdate(const std::string& current_version,
+                                            const std::string& target_version) {
+  return [SQRLUpdater
+      isVersionAllowedForUpdate:base::SysUTF8ToNSString(target_version)
+                           from:base::SysUTF8ToNSString(current_version)];
+}
+
 }  // namespace auto_updater
