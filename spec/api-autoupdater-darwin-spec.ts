@@ -335,6 +335,82 @@ ifdescribe(process.platform === 'darwin' && !(process.env.CI && process.arch ===
       });
     });
 
+    it('should hit the download endpoint when an update is available and update successfully when the zip is provided even after a different update was staged', async () => {
+      await withUpdatableApp({
+        nextVersion: '2.0.0',
+        startFixture: 'update-stack',
+        endFixture: 'update-stack'
+      }, async (appPath, updateZipPath2) => {
+        await withUpdatableApp({
+          nextVersion: '3.0.0',
+          startFixture: 'update-stack',
+          endFixture: 'update-stack'
+        }, async (_, updateZipPath3) => {
+          let updateCount = 0;
+          server.get('/update-file', (req, res) => {
+            res.download(updateCount > 1 ? updateZipPath3 : updateZipPath2);
+          });
+          server.get('/update-check', (req, res) => {
+            updateCount++;
+            res.json({
+              url: `http://localhost:${port}/update-file`,
+              name: 'My Release Name',
+              notes: 'Theses are some release notes innit',
+              pub_date: (new Date()).toString()
+            });
+          });
+          const relaunchPromise = new Promise<void>((resolve) => {
+            server.get('/update-check/updated/:version', (req, res) => {
+              res.status(204).send();
+              resolve();
+            });
+          });
+          const launchResult = await launchApp(appPath, [`http://localhost:${port}/update-check`]);
+          logOnError(launchResult, () => {
+            expect(launchResult).to.have.property('code', 0);
+            expect(launchResult.out).to.include('Update Downloaded');
+            expect(requests).to.have.lengthOf(4);
+            expect(requests[0]).to.have.property('url', '/update-check');
+            expect(requests[1]).to.have.property('url', '/update-file');
+            expect(requests[0].header('user-agent')).to.include('Electron/');
+            expect(requests[1].header('user-agent')).to.include('Electron/');
+            expect(requests[2]).to.have.property('url', '/update-check');
+            expect(requests[3]).to.have.property('url', '/update-file');
+            expect(requests[2].header('user-agent')).to.include('Electron/');
+            expect(requests[3].header('user-agent')).to.include('Electron/');
+          });
+
+          await relaunchPromise;
+          expect(requests).to.have.lengthOf(5);
+          expect(requests[4].url).to.equal('/update-check/updated/3.0.0');
+          expect(requests[4].header('user-agent')).to.include('Electron/');
+        });
+      });
+    });
+
+    it('should update to lower version numbers', () => {
+
+    });
+
+    describe('with ElectronSquirrelPreventDowngrades enabled', () => {
+      it('should not update to lower version numbers', () => {
+
+      });
+
+      it('should not update to version strings that are not simple Major.Minor.Patch', () => {
+
+      });
+
+      it('should still update to higher version numbers', () => {
+
+      });
+
+      it('should compare version numbers correctly', () => {
+        // Expose validUpgrade as a native binding
+        // expect(validUpgrade('1.0.0', '2.0.0')).to.equal(true);
+      });
+    });
+
     it('should abort the update if the application is still running when ShipIt kicks off', async () => {
       await withUpdatableApp({
         nextVersion: '2.0.0',
