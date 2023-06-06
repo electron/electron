@@ -148,10 +148,7 @@ clipboard.
 ```js
 const { clipboard } = require('electron')
 
-clipboard.writeBookmark({
-  text: 'https://electronjs.org',
-  bookmark: 'Electron Homepage'
-})
+clipboard.writeBookmark('Electron Homepage', 'https://electronjs.org')
 ```
 
 ### `clipboard.readFindText()` _macOS_
@@ -226,7 +223,7 @@ clipboard.writeBuffer('public/utf8-plain-text', buffer)
 
 const ret = clipboard.readBuffer('public/utf8-plain-text')
 
-console.log(buffer.equals(out))
+console.log(buffer.equals(ret))
 // true
 ```
 
