@@ -182,7 +182,7 @@ void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const std::u16string& label,
                            Menu* menu) {
-  model_.InsertSubMenuAt(index, command_id, label, model());
+  model_.InsertSubMenuAt(index, command_id, label, menu->model());
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {
