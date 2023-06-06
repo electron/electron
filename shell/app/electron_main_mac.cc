@@ -28,7 +28,7 @@ void abort_report_np(const char* fmt, ...);
 
 namespace {
 
-[[maybe_unused]] bool IsEnvSet(const char* name) {
+bool IsEnvSet(const char* name) {
   char* indicator = getenv(name);
   return indicator && indicator[0] != '\0';
 }
