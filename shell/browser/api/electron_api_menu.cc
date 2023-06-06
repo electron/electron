@@ -62,9 +62,7 @@ Menu::Menu(gin::Arguments* args) {
 }
 
 Menu::~Menu() {
-  if (model_) {
-    model_.RemoveObserver(this);
-  }
+  model_.RemoveObserver(this);
 }
 
 bool InvokeBoolMethod(const Menu* menu,
@@ -184,7 +182,7 @@ void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const std::u16string& label,
                            Menu* menu) {
-  model_.InsertSubMenuAt(index, command_id, label, menu->model_.get());
+  model_.InsertSubMenuAt(index, command_id, label, model());
 }
 
 void Menu::SetIcon(int index, const gfx::Image& image) {
