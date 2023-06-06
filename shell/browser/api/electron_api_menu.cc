@@ -185,7 +185,6 @@ void Menu::InsertSubMenuAt(int index,
                            int command_id,
                            const std::u16string& label,
                            Menu* menu) {
-  menu->parent_ = this;
   model_->InsertSubMenuAt(index, command_id, label, menu->model_.get());
 }
 

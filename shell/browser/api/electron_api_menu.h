@@ -9,7 +9,6 @@
 #include <string>
 
 #include "base/functional/callback.h"
-#include "base/memory/raw_ptr.h"
 #include "gin/arguments.h"
 #include "shell/browser/api/electron_api_base_window.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -83,7 +82,6 @@ class Menu : public gin::Wrappable<Menu>,
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;
 
   std::unique_ptr<ElectronMenuModel> model_;
-  raw_ptr<Menu> parent_ = nullptr;
 
   // Observable:
   void OnMenuWillClose() override;
