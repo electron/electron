@@ -909,11 +909,7 @@ describe('BrowserWindow module', () => {
             'did-navigate'
           ];
           const allEvents = Promise.all(navigationEvents.map(event =>
-            // once(w.webContents, event).then(() => firedEvents.push(event))
-            once(w.webContents, event).then(() => {
-              console.log('Fired Event (1st): ', event);
-              firedEvents.push(event);
-            })
+            once(w.webContents, event).then(() => firedEvents.push(event))
           ));
           const timeout = setTimeout(1000);
           w.loadURL(url);
@@ -932,13 +928,9 @@ describe('BrowserWindow module', () => {
           ];
           w.loadURL(`${url}navigate`);
           await once(w.webContents, 'did-navigate');
-          await setTimeout(1000);
+          await setTimeout(2000);
           Promise.all(navigationEvents.map(event =>
-            // once(w.webContents, event).then(() => firedEvents.push(event))
-            once(w.webContents, event).then(() => {
-              console.log('Fired Event (2nd): ', event);
-              firedEvents.push(event);
-            })
+            once(w.webContents, event).then(() => firedEvents.push(event))
           ));
           const navigationFinished = once(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
@@ -979,13 +971,9 @@ describe('BrowserWindow module', () => {
           ];
           w.loadURL(`${url}redirect`);
           await once(w.webContents, 'did-navigate');
-          await setTimeout(1000);
+          await setTimeout(2000);
           Promise.all(navigationEvents.map(event =>
-            // once(w.webContents, event).then(() => firedEvents.push(event))
-            once(w.webContents, event).then(() => {
-              console.log('Fired Event (redirection): ', event);
-              firedEvents.push(event);
-            })
+            once(w.webContents, event).then(() => firedEvents.push(event))
           ));
           const navigationFinished = once(w.webContents, 'did-navigate');
           w.webContents.debugger.attach('1.1');
@@ -1021,13 +1009,9 @@ describe('BrowserWindow module', () => {
           ];
           w.loadURL(`${url}in-page`);
           await once(w.webContents, 'did-navigate');
-          await setTimeout(1000);
+          await setTimeout(2000);
           Promise.all(navigationEvents.map(event =>
-            // once(w.webContents, event).then(() => firedEvents.push(event))
-            once(w.webContents, event).then(() => {
-              console.log('Fired Event (in-page): ', event);
-              firedEvents.push(event);
-            })
+            once(w.webContents, event).then(() => firedEvents.push(event))
           ));
           const navigationFinished = once(w.webContents, 'did-navigate-in-page');
           w.webContents.debugger.attach('1.1');
