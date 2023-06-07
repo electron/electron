@@ -1276,6 +1276,9 @@ On macOS, it shows on the dock icon. On Linux, it only works for Unity launcher.
 **Note:** Unity launcher requires a `.desktop` file to work. For more information,
 please read the [Unity integration documentation][unity-requirement].
 
+**Note:** On macOS, you need to ensure that your application has the permission
+to display notifications for this method to work.
+
 ### `app.getBadgeCount()` _Linux_ _macOS_
 
 Returns `Integer` - The current value displayed in the counter badge.
