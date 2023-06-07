@@ -27,6 +27,32 @@ const IGNORELIST = new Set([
 
 const IS_WINDOWS = process.platform === 'win32';
 
+const CPPLINT_FILTERS = [
+  // from presubmit_canned_checks.py OFF_BY_DEFAULT_LINT_FILTERS
+  '-build/include',
+  '-build/include_order',
+  '-build/namespaces',
+  '-readability/casting',
+  '-runtime/int',
+  '-whitespace/braces',
+  // from presubmit_canned_checks.py OFF_UNLESS_MANUALLY_ENABLED_LINT_FILTERS
+  '-build/c++11',
+  '-build/header_guard',
+  '-readability/todo',
+  '-runtime/references',
+  '-whitespace/braces',
+  '-whitespace/comma',
+  '-whitespace/end_of_line',
+  '-whitespace/forcolon',
+  '-whitespace/indent',
+  '-whitespace/line_length',
+  '-whitespace/newline',
+  '-whitespace/operators',
+  '-whitespace/parens',
+  '-whitespace/semicolon',
+  '-whitespace/tab'
+];
+
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = { stdio: 'inherit', ...opts };
   const { error, status, signal } = childProcess.spawnSync(cmd, args, opts);
@@ -75,7 +101,7 @@ const LINTERS = [{
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     for (const chunk of chunkFilenames(filenames)) {
       spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
-      cpplint(chunk);
+      cpplint([`--filter=${CPPLINT_FILTERS.join(',')}`, ...chunk]);
     }
   }
 }, {
@@ -85,31 +111,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
-    const filter = [
-      // from presubmit_canned_checks.py OFF_BY_DEFAULT_LINT_FILTERS
-      '-build/include',
-      '-build/include_order',
-      '-build/namespaces',
-      '-readability/casting',
-      '-runtime/int',
-      '-whitespace/braces',
-      // from presubmit_canned_checks.py OFF_UNLESS_MANUALLY_ENABLED_LINT_FILTERS
-      '-build/c++11',
-      '-build/header_guard',
-      '-readability/todo',
-      '-runtime/references',
-      '-whitespace/braces',
-      '-whitespace/comma',
-      '-whitespace/end_of_line',
-      '-whitespace/forcolon',
-      '-whitespace/indent',
-      '-whitespace/line_length',
-      '-whitespace/newline',
-      '-whitespace/operators',
-      '-whitespace/parens',
-      '-whitespace/semicolon',
-      '-whitespace/tab'
-    ];
+    const filter = [...CPPLINT_FILTERS, '-readability/braces'];
     cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
   }
 }, {
