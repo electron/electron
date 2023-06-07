@@ -345,7 +345,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
-  new SessionPreferences(browser_context);
+  SessionPreferences::CreateForBrowserContext(browser_context);
 
   protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
 
