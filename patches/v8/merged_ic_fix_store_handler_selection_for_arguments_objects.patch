@@ -17,7 +17,7 @@ Cr-Branched-From: 8ade6bf1fa237ad30dd9a05cc6ffe548131699e8-refs/heads/10.9.194@{
 Cr-Branched-From: 9ff2515271f11cab783f0e82678ae0b925d77dd0-refs/heads/main@{#84164}
 
 diff --git a/src/diagnostics/objects-printer.cc b/src/diagnostics/objects-printer.cc
-index ce4d15b2c27e145be7e8dd2b98f1519ed11ce2f6..6063de51c2e4920f354ab55f53fe2f87f15ab369 100644
+index 71604afa7a067e14a891057de4011416f45f4f19..3f94e8aa7701eef49d5a35fd552742279b5e8586 100644
 --- a/src/diagnostics/objects-printer.cc
 +++ b/src/diagnostics/objects-printer.cc
 @@ -1308,8 +1308,18 @@ void FeedbackNexus::Print(std::ostream& os) {
@@ -59,10 +59,10 @@ index 43511407e0eb54e2ce22ee132d8a4d37c52b13a7..cd6d834d6b7ec84c1d46105449ca775c
  }
  
 diff --git a/src/ic/ic.cc b/src/ic/ic.cc
-index ae1dde1a8c587dfc80a0a62e96b7bbfe6ba5eea5..78a38c5d5332af5ae0b7caa945c6d69667278703 100644
+index fff21e90bad3451e2d942ec327cb02f394fecc46..f86d9acf9073aba1662de103c5dd5d6056df19bf 100644
 --- a/src/ic/ic.cc
 +++ b/src/ic/ic.cc
-@@ -2291,10 +2291,18 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
+@@ -2296,10 +2296,18 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
               receiver_map->has_sealed_elements() ||
               receiver_map->has_nonextensible_elements() ||
               receiver_map->has_typed_array_or_rab_gsab_typed_array_elements()) {
@@ -84,7 +84,7 @@ index ae1dde1a8c587dfc80a0a62e96b7bbfe6ba5eea5..78a38c5d5332af5ae0b7caa945c6d696
      }
    } else if (IsStoreInArrayLiteralIC()) {
      // TODO(jgruber): Update counter name.
-@@ -2305,7 +2313,7 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
+@@ -2310,7 +2318,7 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
      TRACE_HANDLER_STATS(isolate(), KeyedStoreIC_StoreElementStub);
      DCHECK(DICTIONARY_ELEMENTS == receiver_map->elements_kind() ||
             receiver_map->has_frozen_elements());
