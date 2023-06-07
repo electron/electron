@@ -1,7 +1,7 @@
-From 73af1a19a9015ce9e82ab7c4a7d220b659a04d68 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
-Date: Thu, 01 Jun 2023 10:59:39 +0200
-Subject: [PATCH] Merged: [lookup] Robustify LookupIterator against own lookups
+Date: Thu, 1 Jun 2023 10:59:39 +0200
+Subject: Merged: [lookup] Robustify LookupIterator against own lookups
 
 ... on non-JSReceiver objects.
 
@@ -15,13 +15,12 @@ Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/branch-heads/11.4@{#35}
 Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
----
 
 diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
-index 00c95e0..8b57170 100644
+index d34f710147ea799bcc8a89b4b58e176918071bf6..474ade673c10c1d23a643bde876158723e6cff80 100644
 --- a/src/objects/lookup-inl.h
 +++ b/src/objects/lookup-inl.h
-@@ -190,7 +190,7 @@
+@@ -167,7 +167,7 @@ Handle<Name> PropertyKey::GetName(Isolate* isolate) {
  }
  
  Handle<Name> LookupIterator::name() const {
@@ -30,7 +29,7 @@ index 00c95e0..8b57170 100644
    return name_;
  }
  
-@@ -285,6 +285,7 @@
+@@ -258,6 +258,7 @@ void LookupIterator::UpdateProtector() {
  }
  
  InternalIndex LookupIterator::descriptor_number() const {
@@ -38,7 +37,7 @@ index 00c95e0..8b57170 100644
    DCHECK(!IsElement(*holder_));
    DCHECK(has_property_);
    DCHECK(holder_->HasFastProperties(isolate_));
-@@ -292,6 +293,7 @@
+@@ -265,6 +266,7 @@ InternalIndex LookupIterator::descriptor_number() const {
  }
  
  InternalIndex LookupIterator::dictionary_entry() const {
@@ -46,7 +45,7 @@ index 00c95e0..8b57170 100644
    DCHECK(!IsElement(*holder_));
    DCHECK(has_property_);
    DCHECK(!holder_->HasFastProperties(isolate_));
-@@ -306,13 +308,14 @@
+@@ -279,13 +281,14 @@ LookupIterator::Configuration LookupIterator::ComputeConfiguration(
  }
  
  // static
@@ -66,10 +65,10 @@ index 00c95e0..8b57170 100644
  
  template <class T>
 diff --git a/src/objects/lookup.cc b/src/objects/lookup.cc
-index 8fceef1..78c509b 100644
+index e3bf4794e88e7c3ae5d4028b16eeadf282d9c410..149149beba8d6e62dd5d821f7017b18e08445bd8 100644
 --- a/src/objects/lookup.cc
 +++ b/src/objects/lookup.cc
-@@ -42,27 +42,20 @@
+@@ -42,27 +42,20 @@ PropertyKey::PropertyKey(Isolate* isolate, Handle<Object> key, bool* success) {
    }
  }
  
@@ -108,7 +107,7 @@ index 8fceef1..78c509b 100644
  
    {
      DisallowGarbageCollection no_gc;
-@@ -135,19 +128,27 @@
+@@ -135,19 +128,27 @@ template void LookupIterator::RestartInternal<true>(InterceptorState);
  template void LookupIterator::RestartInternal<false>(InterceptorState);
  
  // static
@@ -149,7 +148,7 @@ index 8fceef1..78c509b 100644
    }
    Handle<HeapObject> root(
        lookup_start_object->GetPrototypeChainRootMap(isolate).prototype(isolate),
-@@ -918,6 +919,7 @@
+@@ -918,6 +919,7 @@ Handle<Object> LookupIterator::FetchValue(
  }
  
  bool LookupIterator::CanStayConst(Object value) const {
@@ -157,7 +156,7 @@ index 8fceef1..78c509b 100644
    DCHECK(!IsElement(*holder_));
    DCHECK(holder_->HasFastProperties(isolate_));
    DCHECK_EQ(PropertyLocation::kField, property_details_.location());
-@@ -951,6 +953,7 @@
+@@ -951,6 +953,7 @@ bool LookupIterator::CanStayConst(Object value) const {
  }
  
  bool LookupIterator::DictCanStayConst(Object value) const {
@@ -165,7 +164,7 @@ index 8fceef1..78c509b 100644
    DCHECK(!IsElement(*holder_));
    DCHECK(!holder_->HasFastProperties(isolate_));
    DCHECK(!holder_->IsJSGlobalObject());
-@@ -997,6 +1000,7 @@
+@@ -997,6 +1000,7 @@ int LookupIterator::GetAccessorIndex() const {
  
  FieldIndex LookupIterator::GetFieldIndex() const {
    DCHECK(has_property_);
@@ -173,7 +172,7 @@ index 8fceef1..78c509b 100644
    DCHECK(holder_->HasFastProperties(isolate_));
    DCHECK_EQ(PropertyLocation::kField, property_details_.location());
    DCHECK(!IsElement(*holder_));
-@@ -1004,6 +1008,7 @@
+@@ -1004,6 +1008,7 @@ FieldIndex LookupIterator::GetFieldIndex() const {
  }
  
  Handle<PropertyCell> LookupIterator::GetPropertyCell() const {
@@ -182,10 +181,10 @@ index 8fceef1..78c509b 100644
    Handle<JSGlobalObject> holder = GetHolder<JSGlobalObject>();
    return handle(holder->global_dictionary(isolate_, kAcquireLoad)
 diff --git a/src/objects/lookup.h b/src/objects/lookup.h
-index 06ed50e..5d2d926 100644
+index 9adee79b3028c53e6481a07316d74aed616f01bd..ef90316295c98d51b61c118cf331731f991d93d0 100644
 --- a/src/objects/lookup.h
 +++ b/src/objects/lookup.h
-@@ -222,11 +222,6 @@
+@@ -214,11 +214,6 @@ class V8_EXPORT_PRIVATE LookupIterator final {
                          Handle<Object> lookup_start_object,
                          Configuration configuration);
  
@@ -197,7 +196,7 @@ index 06ed50e..5d2d926 100644
    static void InternalUpdateProtector(Isolate* isolate, Handle<Object> receiver,
                                        Handle<Name> name);
  
-@@ -286,12 +281,12 @@
+@@ -278,12 +273,12 @@ class V8_EXPORT_PRIVATE LookupIterator final {
                                                     Configuration configuration,
                                                     Handle<Name> name);
  
@@ -218,7 +217,7 @@ index 06ed50e..5d2d926 100644
  
 diff --git a/test/mjsunit/regress/regress-crbug-1447430.js b/test/mjsunit/regress/regress-crbug-1447430.js
 new file mode 100644
-index 0000000..c7bb3e7
+index 0000000000000000000000000000000000000000..c7bb3e72e3af1b9f8c2fa82faeeb2d813fe6ab3c
 --- /dev/null
 +++ b/test/mjsunit/regress/regress-crbug-1447430.js
 @@ -0,0 +1,34 @@
