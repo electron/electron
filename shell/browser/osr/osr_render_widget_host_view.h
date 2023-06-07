@@ -258,7 +258,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;
 
-  gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
   bool painting_;
 
