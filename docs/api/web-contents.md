@@ -1457,11 +1457,11 @@ For a call of `win.webContents.adjustSelection({ start: 1, end: 5 })`
 
 Before:
 
-<img width="487" alt="Image Before Text Selection Adjustment" src="https://user-images.githubusercontent.com/2036040/231761306-cd4e7b15-c2ed-46cf-8e80-10811f6de83e.png">
+<img width="487" alt="Image Before Text Selection Adjustment" src="https://user-images.githubusercontent.com/2036040/231761306-cd4e7b15-c2ed-46cf-8e80-10811f6de83e.png"/>
 
 After:
 
-<img width="487" alt="Image After Text Selection Adjustment" src="https://user-images.githubusercontent.com/2036040/231761169-887eb8ef-06fb-46e4-9efa-898bcb0d6a2b.png">
+<img width="487" alt="Image After Text Selection Adjustment" src="https://user-images.githubusercontent.com/2036040/231761169-887eb8ef-06fb-46e4-9efa-898bcb0d6a2b.png"/>
 
 #### `contents.replace(text)`
 
