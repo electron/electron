@@ -21,20 +21,6 @@ View::~View() {
     delete view_;
 }
 
-#if BUILDFLAG(ENABLE_VIEWS_API)
-void View::AddChildView(gin::Handle<View> child) {
-  AddChildViewAt(child, child_views_.size());
-}
-
-void View::AddChildViewAt(gin::Handle<View> child, size_t index) {
-  if (index > child_views_.size())
-    return;
-  child_views_.emplace(child_views_.begin() + index,     // index
-                       isolate(), child->GetWrapper());  // v8::Global(args...)
-  view()->AddChildViewAt(child->view(), index);
-}
-#endif
-
 // static
 gin_helper::WrappableBase* View::New(gin::Arguments* args) {
   auto* view = new View();
@@ -46,11 +32,6 @@ gin_helper::WrappableBase* View::New(gin::Arguments* args) {
 void View::BuildPrototype(v8::Isolate* isolate,
                           v8::Local<v8::FunctionTemplate> prototype) {
   prototype->SetClassName(gin::StringToV8(isolate, "View"));
-#if BUILDFLAG(ENABLE_VIEWS_API)
-  gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("addChildView", &View::AddChildView)
-      .SetMethod("addChildViewAt", &View::AddChildViewAt);
-#endif
 }
 
 }  // namespace electron::api

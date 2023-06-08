@@ -187,7 +187,7 @@
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
@@ -423,9 +423,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
-#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-  prefs->picture_in_picture_enabled = false;
-#endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->preferred_color_scheme =
@@ -675,7 +672,6 @@ bool ElectronBrowserClient::CanCreateWindow(
   return false;
 }
 
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 std::unique_ptr<content::VideoOverlayWindow>
 ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
     content::VideoPictureInPictureWindowController* controller) {
@@ -693,7 +689,6 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
 #endif
   return overlay_window;
 }
-#endif
 
 void ElectronBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {

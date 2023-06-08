@@ -1211,6 +1211,42 @@ describe('protocol module', () => {
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith('net::ERR_FAILED');
     });
 
+    it('handles invalid protocol response status', async () => {
+      protocol.handle('test-scheme', () => {
+        return { status: [] } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
+    it('handles invalid protocol response statusText', async () => {
+      protocol.handle('test-scheme', () => {
+        return { statusText: false } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
+    it('handles invalid protocol response header parameters', async () => {
+      protocol.handle('test-scheme', () => {
+        return { headers: false } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
+    it('handles invalid protocol response body parameters', async () => {
+      protocol.handle('test-scheme', () => {
+        return { body: false } as any;
+      });
+
+      defer(() => { protocol.unhandle('test-scheme'); });
+      await expect(net.fetch('test-scheme://foo')).to.be.rejectedWith('net::ERR_UNEXPECTED');
+    });
+
     it('handles a synchronous error in the handler', async () => {
       protocol.handle('test-scheme', () => { throw new Error('test'); });
       defer(() => { protocol.unhandle('test-scheme'); });

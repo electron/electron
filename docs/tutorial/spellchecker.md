@@ -20,12 +20,12 @@ On macOS as we use the native APIs there is no way to set the language that the 
 
 For Windows and Linux there are a few Electron APIs you should use to set the languages for the spellchecker.
 
-```js
+```js @ts-type={myWindow:Electron.BrowserWindow}
 // Sets the spellchecker to check English US and French
-myWindow.session.setSpellCheckerLanguages(['en-US', 'fr'])
+myWindow.webContents.session.setSpellCheckerLanguages(['en-US', 'fr'])
 
 // An array of all available language codes
-const possibleLanguages = myWindow.session.availableSpellCheckerLanguages
+const possibleLanguages = myWindow.webContents.session.availableSpellCheckerLanguages
 ```
 
 By default the spellchecker will enable the language matching the current OS locale.
@@ -35,7 +35,7 @@ By default the spellchecker will enable the language matching the current OS loc
 All the required information to generate a context menu is provided in the [`context-menu`](../api/web-contents.md#event-context-menu) event on each `webContents` instance.  A small example
 of how to make a context menu with this information is provided below.
 
-```js
+```js @ts-type={myWindow:Electron.BrowserWindow}
 const { Menu, MenuItem } = require('electron')
 
 myWindow.webContents.on('context-menu', (event, params) => {
@@ -45,7 +45,7 @@ myWindow.webContents.on('context-menu', (event, params) => {
   for (const suggestion of params.dictionarySuggestions) {
     menu.append(new MenuItem({
       label: suggestion,
-      click: () => mainWindow.webContents.replaceMisspelling(suggestion)
+      click: () => myWindow.webContents.replaceMisspelling(suggestion)
     }))
   }
 
@@ -54,7 +54,7 @@ myWindow.webContents.on('context-menu', (event, params) => {
     menu.append(
       new MenuItem({
         label: 'Add to dictionary',
-        click: () => mainWindow.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
+        click: () => myWindow.webContents.session.addWordToSpellCheckerDictionary(params.misspelledWord)
       })
     )
   }
@@ -67,8 +67,8 @@ myWindow.webContents.on('context-menu', (event, params) => {
 
 Although the spellchecker itself does not send any typings, words or user input to Google services the hunspell dictionary files are downloaded from a Google CDN by default.  If you want to avoid this you can provide an alternative URL to download the dictionaries from.
 
-```js
-myWindow.session.setSpellCheckerDictionaryDownloadURL('https://example.com/dictionaries/')
+```js @ts-type={myWindow:Electron.BrowserWindow}
+myWindow.webContents.session.setSpellCheckerDictionaryDownloadURL('https://example.com/dictionaries/')
 ```
 
 Check out the docs for [`session.setSpellCheckerDictionaryDownloadURL`](../api/session.md#sessetspellcheckerdictionarydownloadurlurl) for more information on where to get the dictionary files from and how you need to host them.

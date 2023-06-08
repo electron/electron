@@ -23,6 +23,7 @@
 #include "base/threading/scoped_blocking_call.h"
 #include "base/values.h"
 #include "chrome/browser/browser_process.h"
+#include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "chrome/browser/ui/views/eye_dropper/eye_dropper.h"
 #include "chrome/common/pref_names.h"
@@ -183,10 +184,6 @@
 #include "printing/backend/win_helper.h"
 #endif
 #endif  // BUILDFLAG(ENABLE_PRINTING)
-
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-#include "chrome/browser/picture_in_picture/picture_in_picture_window_manager.h"
-#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
@@ -3896,18 +3893,12 @@ bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
 
 content::PictureInPictureResult WebContents::EnterPictureInPicture(
     content::WebContents* web_contents) {
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   return PictureInPictureWindowManager::GetInstance()
       ->EnterVideoPictureInPicture(web_contents);
-#else
-  return content::PictureInPictureResult::kNotSupported;
-#endif
 }
 
 void WebContents::ExitPictureInPicture() {
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
   PictureInPictureWindowManager::GetInstance()->ExitPictureInPicture();
-#endif
 }
 
 void WebContents::DevToolsSaveToFile(const std::string& url,

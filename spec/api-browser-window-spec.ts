@@ -4677,6 +4677,21 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
+      it('can handle child window close and reparent multiple times', async () => {
+        const w = new BrowserWindow({ show: false });
+        let c: BrowserWindow | null;
+
+        for (let i = 0; i < 5; i++) {
+          c = new BrowserWindow({ show: false, parent: w });
+          const closed = once(c, 'closed');
+          c.close();
+          await closed;
+        }
+
+        await setTimeout();
+        expect(w.getChildWindows().length).to.equal(0);
+      });
+
       ifit(process.platform === 'darwin')('child window matches visibility when visibility changes', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
@@ -5335,6 +5350,48 @@ describe('BrowserWindow module', () => {
           w.setMenuBarVisibility(true);
           expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
         });
+      });
+    });
+
+    ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', () => {
+      it('correctly remembers state prior to fullscreen change', async () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+        expect(w.fullScreen).to.be.true('not fullscreen');
+
+        const exitFS = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await exitFS;
+        expect(w.fullScreen).to.be.false('not fullscreen');
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+      });
+
+      it('correctly remembers state prior to fullscreen change with autoHide', async () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar');
+        w.autoHideMenuBar = true;
+        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar');
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+        expect(w.fullScreen).to.be.true('not fullscreen');
+
+        const exitFS = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await exitFS;
+        expect(w.fullScreen).to.be.false('not fullscreen');
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
       });
     });
 

@@ -36,10 +36,6 @@ void InitializeFeatureList() {
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
 
-#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-  disable_features += std::string(",") + media::kPictureInPicture.name;
-#endif
-
 #if BUILDFLAG(IS_WIN)
   disable_features +=
       // Disable async spellchecker suggestions for Windows, which causes

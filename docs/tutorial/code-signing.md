@@ -67,7 +67,7 @@ are likely using [`electron-packager`][], which includes [`@electron/osx-sign`][
 If you're using Packager's API, you can pass [in configuration that both signs
 and notarizes your application](https://electron.github.io/electron-packager/main/interfaces/electronpackager.options.html).
 
-```js
+```js @ts-nocheck
 const packager = require('electron-packager')
 
 packager({
@@ -116,7 +116,7 @@ Electron app. This is the tool used under the hood by Electron Forge's
 `electron-winstaller` directly, use the `certificateFile` and `certificatePassword` configuration
 options when creating your installer.
 
-```js {10-11}
+```js {10-11} @ts-nocheck
 const electronInstaller = require('electron-winstaller')
 // NB: Use this syntax within an async function, Node does not have support for
 //     top-level await as of Node 12.
@@ -146,7 +146,7 @@ If you're not using Electron Forge and want to use `electron-wix-msi` directly, 
 `certificateFile` and `certificatePassword` configuration options
 or pass in parameters directly to [SignTool.exe][] with the `signWithParams` option.
 
-```js {12-13}
+```js {12-13} @ts-nocheck
 import { MSICreator } from 'electron-wix-msi'
 
 // Step 1: Instantiate the MSICreator

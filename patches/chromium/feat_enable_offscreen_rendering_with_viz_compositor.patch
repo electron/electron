@@ -526,6 +526,34 @@ index 36673e93a8380d4e6d086fe3029a53fa483ccddb..ad91be73ec89f45c2ce083eaa3a8aba6
  
    // Creating output surface failed. The host can send a new request, possibly
    // with a different compositing mode.
+diff --git a/components/viz/test/test_output_surface_provider.cc b/components/viz/test/test_output_surface_provider.cc
+index 59dd80087ada03e57c4b993dc887f75726789188..f42321d0cc1370d2828550c9899112dad5c0a505 100644
+--- a/components/viz/test/test_output_surface_provider.cc
++++ b/components/viz/test/test_output_surface_provider.cc
+@@ -30,7 +30,8 @@ std::unique_ptr<OutputSurface> TestOutputSurfaceProvider::CreateOutputSurface(
+     mojom::DisplayClient* display_client,
+     DisplayCompositorMemoryAndTaskController* display_controller,
+     const RendererSettings& renderer_settings,
+-    const DebugRendererSettings* debug_settings) {
++    const DebugRendererSettings* debug_settings,
++    bool offscreen) {
+   if (gpu_compositing) {
+     return FakeSkiaOutputSurface::Create3d();
+   } else {
+diff --git a/components/viz/test/test_output_surface_provider.h b/components/viz/test/test_output_surface_provider.h
+index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8fdf4d95b 100644
+--- a/components/viz/test/test_output_surface_provider.h
++++ b/components/viz/test/test_output_surface_provider.h
+@@ -32,7 +32,8 @@ class TestOutputSurfaceProvider : public OutputSurfaceProvider {
+       mojom::DisplayClient* display_client,
+       DisplayCompositorMemoryAndTaskController* display_controller,
+       const RendererSettings& renderer_settings,
+-      const DebugRendererSettings* debug_settings) override;
++      const DebugRendererSettings* debug_settings,
++      bool offscreen) override;
+ };
+ 
+ }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
 index ea2888e6e6ce03dd1918a6183960d5809a15b59c..68c628ecbe2f596c93b6ac0d6b1c68cbb6b0a508 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc

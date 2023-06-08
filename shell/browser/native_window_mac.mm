@@ -388,6 +388,9 @@ void NativeWindowMac::Close() {
     return;
   }
 
+  // Ensure we're detached from the parent window before closing.
+  RemoveChildFromParentWindow(this);
+
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
@@ -405,6 +408,8 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
+  RemoveChildFromParentWindow(this);
+
   // Retain the child window before closing it. If the last reference to the
   // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
   // See e.g. http://crbug.com/616701.
@@ -596,6 +601,11 @@ void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
   child_windows_.remove_if([&child](NativeWindow* w) { return (w == child); });
 
   [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
+}
+
+void NativeWindowMac::RemoveChildFromParentWindow(NativeWindow* child) {
+  if (parent())
+    parent()->RemoveChildWindow(child);
 }
 
 void NativeWindowMac::AttachChildren() {
@@ -1781,27 +1791,27 @@ void NativeWindowMac::InternalSetWindowButtonVisibility(bool visible) {
   [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
 }
 
-void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
+void NativeWindowMac::InternalSetParentWindow(NativeWindow* new_parent,
                                               bool attach) {
   if (is_modal())
     return;
 
-  NativeWindow::SetParentWindow(parent);
-
   // Do not remove/add if we are already properly attached.
-  if (attach && parent &&
-      [window_ parentWindow] == parent->GetNativeWindow().GetNativeNSWindow())
+  if (attach && new_parent &&
+      [window_ parentWindow] ==
+          new_parent->GetNativeWindow().GetNativeNSWindow())
     return;
 
   // Remove current parent window.
-  if ([window_ parentWindow])
-    parent->RemoveChildWindow(this);
+  RemoveChildFromParentWindow(this);
 
   // Set new parent window.
-  if (parent && attach) {
-    parent->add_child_window(this);
-    parent->AttachChildren();
+  if (new_parent && attach) {
+    new_parent->add_child_window(this);
+    new_parent->AttachChildren();
   }
+
+  NativeWindow::SetParentWindow(new_parent);
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {

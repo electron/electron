@@ -23,7 +23,6 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
-#include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -350,20 +349,17 @@ NodeBindings::~NodeBindings() {
 
 void NodeBindings::RegisterBuiltinBindings() {
 #define V(modname) _register_##modname();
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (process_type.empty()) {
+  if (IsBrowserProcess()) {
     ELECTRON_BROWSER_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
     ELECTRON_VIEWS_BINDINGS(V)
 #endif
   }
   ELECTRON_COMMON_BINDINGS(V)
-  if (process_type == ::switches::kRendererProcess) {
+  if (IsRendererProcess()) {
     ELECTRON_RENDERER_BINDINGS(V)
   }
-  if (process_type == ::switches::kUtilityProcess) {
+  if (IsUtilityProcess()) {
     ELECTRON_UTILITY_BINDINGS(V)
   }
 #if DCHECK_IS_ON()

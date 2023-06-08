@@ -51,6 +51,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
+    "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
     "//chrome/browser/platform_util.cc",
     "//chrome/browser/platform_util.h",
     "//chrome/browser/predictors/preconnect_manager.cc",
@@ -94,6 +96,28 @@ static_library("chrome") {
     "//chrome/browser/ui/views/eye_dropper/eye_dropper.h",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.cc",
     "//chrome/browser/ui/views/eye_dropper/eye_dropper_view.h",
+    "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
+    "//chrome/browser/ui/views/overlay/close_image_button.cc",
+    "//chrome/browser/ui/views/overlay/close_image_button.h",
+    "//chrome/browser/ui/views/overlay/constants.h",
+    "//chrome/browser/ui/views/overlay/hang_up_button.cc",
+    "//chrome/browser/ui/views/overlay/hang_up_button.h",
+    "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
+    "//chrome/browser/ui/views/overlay/overlay_window_image_button.h",
+    "//chrome/browser/ui/views/overlay/playback_image_button.cc",
+    "//chrome/browser/ui/views/overlay/playback_image_button.h",
+    "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
+    "//chrome/browser/ui/views/overlay/resize_handle_button.h",
+    "//chrome/browser/ui/views/overlay/simple_overlay_window_image_button.cc",
+    "//chrome/browser/ui/views/overlay/simple_overlay_window_image_button.h",
+    "//chrome/browser/ui/views/overlay/skip_ad_label_button.cc",
+    "//chrome/browser/ui/views/overlay/skip_ad_label_button.h",
+    "//chrome/browser/ui/views/overlay/toggle_camera_button.cc",
+    "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
+    "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
+    "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
+    "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
+    "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
     "//extensions/browser/app_window/size_constraints.cc",
     "//extensions/browser/app_window/size_constraints.h",
     "//ui/views/native_window_tracker.h",
@@ -167,9 +191,12 @@ static_library("chrome") {
   ]
 
   deps = [
+    "//chrome/app/vector_icons",
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//chrome/browser/resource_coordinator:mojo_bindings",
+    "//components/vector_icons:vector_icons",
     "//ui/snapshot",
+    "//ui/views/controls/webview",
   ]
 
   if (is_linux) {
@@ -270,41 +297,6 @@ static_library("chrome") {
       ]
       deps += [ "//printing:printing_base" ]
     }
-  }
-
-  if (enable_picture_in_picture) {
-    sources += [
-      "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
-      "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
-      "//chrome/browser/ui/views/overlay/back_to_tab_label_button.cc",
-      "//chrome/browser/ui/views/overlay/close_image_button.cc",
-      "//chrome/browser/ui/views/overlay/close_image_button.h",
-      "//chrome/browser/ui/views/overlay/constants.h",
-      "//chrome/browser/ui/views/overlay/hang_up_button.cc",
-      "//chrome/browser/ui/views/overlay/hang_up_button.h",
-      "//chrome/browser/ui/views/overlay/overlay_window_image_button.cc",
-      "//chrome/browser/ui/views/overlay/overlay_window_image_button.h",
-      "//chrome/browser/ui/views/overlay/playback_image_button.cc",
-      "//chrome/browser/ui/views/overlay/playback_image_button.h",
-      "//chrome/browser/ui/views/overlay/resize_handle_button.cc",
-      "//chrome/browser/ui/views/overlay/resize_handle_button.h",
-      "//chrome/browser/ui/views/overlay/simple_overlay_window_image_button.cc",
-      "//chrome/browser/ui/views/overlay/simple_overlay_window_image_button.h",
-      "//chrome/browser/ui/views/overlay/skip_ad_label_button.cc",
-      "//chrome/browser/ui/views/overlay/skip_ad_label_button.h",
-      "//chrome/browser/ui/views/overlay/toggle_camera_button.cc",
-      "//chrome/browser/ui/views/overlay/toggle_camera_button.h",
-      "//chrome/browser/ui/views/overlay/toggle_microphone_button.cc",
-      "//chrome/browser/ui/views/overlay/toggle_microphone_button.h",
-      "//chrome/browser/ui/views/overlay/video_overlay_window_views.cc",
-      "//chrome/browser/ui/views/overlay/video_overlay_window_views.h",
-    ]
-
-    deps += [
-      "//chrome/app/vector_icons",
-      "//components/vector_icons:vector_icons",
-      "//ui/views/controls/webview",
-    ]
   }
 
   if (enable_electron_extensions) {

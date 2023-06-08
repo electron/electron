@@ -42,10 +42,18 @@ class Screen : public gin::Wrappable<Screen>,
   ~Screen() override;
 
   gfx::Point GetCursorScreenPoint(v8::Isolate* isolate);
-  display::Display GetPrimaryDisplay();
-  std::vector<display::Display> GetAllDisplays();
-  display::Display GetDisplayNearestPoint(const gfx::Point& point);
-  display::Display GetDisplayMatching(const gfx::Rect& match_rect);
+  display::Display GetPrimaryDisplay() const {
+    return screen_->GetPrimaryDisplay();
+  }
+  const std::vector<display::Display>& GetAllDisplays() const {
+    return screen_->GetAllDisplays();
+  }
+  display::Display GetDisplayNearestPoint(const gfx::Point& point) const {
+    return screen_->GetDisplayNearestPoint(point);
+  }
+  display::Display GetDisplayMatching(const gfx::Rect& match_rect) const {
+    return screen_->GetDisplayMatching(match_rect);
+  }
 
   // display::DisplayObserver:
   void OnDisplayAdded(const display::Display& new_display) override;

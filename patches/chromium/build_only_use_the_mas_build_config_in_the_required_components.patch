@@ -111,6 +111,31 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
    defines = []
  
    public_deps = [
+diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
+index c304b8d9052fe705e22a047546fb6a7eb4977575..b30bf15dba88b47074d951793530b4afc473a442 100644
+--- a/content/test/BUILD.gn
++++ b/content/test/BUILD.gn
+@@ -470,6 +470,7 @@ static_library("test_support") {
+   configs += [
+     "//build/config:precompiled_headers",
+     "//v8:external_startup_data",
++    "//electron/build/config:mas_build",
+   ]
+ 
+   public_deps = [
+diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
+index 9d47887dd255187ffe49f5d9dbd01aff5b1de15e..7cde88462e0fc57f9f19badbf1042153708ed423 100644
+--- a/content/web_test/BUILD.gn
++++ b/content/web_test/BUILD.gn
+@@ -143,6 +143,8 @@ static_library("web_test_browser") {
+     "browser/web_test_tts_platform.h",
+   ]
+ 
++  configs += ["//electron/build/config:mas_build"]
++
+   if (is_apple) {
+     configs += [ "//build/config/compiler:enable_arc" ]
+   }
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
 index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942d1a20b90 100644
 --- a/device/bluetooth/BUILD.gn
@@ -276,6 +301,15 @@ index 416497c77970e1c15ebecc27af59cf50112a6441..69e1a93f21bc3ea5760db1150b7fba36
    }
  
    if (is_win) {
+@@ -1089,6 +1090,8 @@ source_set("test_support") {
+     "//testing/gtest",
+   ]
+ 
++  configs += ["//electron/build/config:mas_build"]
++
+   if (is_win) {
+     sources += [
+       "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
 index 7462baf7cfae6859a821b71501b60015ff2c4ed7..1eeacfc6bf7fd3a42a06198045260519bf606a48 100644
 --- a/ui/views/controls/webview/BUILD.gn
