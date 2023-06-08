@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Brandon Jones <brandon1.jones@intel.com>
+Date: Fri, 5 May 2023 18:02:42 +0000
+Subject: Change D3D12 Descriptor Allocator To Invalidate Submitted Descriptors
+
+Changes D3D12 descriptor allocator to invalidate existing descriptors
+after the descriptor heap was submitted for use. This fixes a
+synchonization issue where stale descriptors were seen as valid because
+command list execution ran long.
+
+Bug: dawn:1701
+Bug: chromium:1442263
+No-Try: true
+Change-Id: Ibfd450b3be6cf91d66e8dce4ffd19ecf1a37f7f5
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/129920
+Kokoro: Kokoro <noreply+kokoro@google.com>
+Reviewed-by: Corentin Wallez <cwallez@chromium.org>
+Commit-Queue: Brandon1 Jones <brandon1.jones@intel.com>
+(cherry picked from commit df6cb236493da101dad79fe50d4e6df0d5d1e915)
+Reviewed-on: https://dawn-review.googlesource.com/c/dawn/+/131508
+Kokoro: Austin Eng <enga@chromium.org>
+Reviewed-by: Austin Eng <enga@chromium.org>
+
+diff --git a/src/dawn/native/d3d12/ShaderVisibleDescriptorAllocatorD3D12.cpp b/src/dawn/native/d3d12/ShaderVisibleDescriptorAllocatorD3D12.cpp
+index fe99a63ac9d2d082c2c23eb7940a733a9d13846a..aedb28ad58a0a972879f07a6037499f901fcf04a 100644
+--- a/src/dawn/native/d3d12/ShaderVisibleDescriptorAllocatorD3D12.cpp
++++ b/src/dawn/native/d3d12/ShaderVisibleDescriptorAllocatorD3D12.cpp
+@@ -237,9 +237,11 @@ bool ShaderVisibleDescriptorAllocator::IsLastShaderVisibleHeapInLRUForTesting()
+ 
+ bool ShaderVisibleDescriptorAllocator::IsAllocationStillValid(
+     const GPUDescriptorHeapAllocation& allocation) const {
+-    // Consider valid if allocated for the pending submit and the shader visible heaps
+-    // have not switched over.
+-    return (allocation.GetLastUsageSerial() > mDevice->GetCompletedCommandSerial() &&
++    // Descriptor allocations are only valid for the serial they were created for and are
++    // re-allocated every submit. For this reason, we view any descriptors allocated prior to the
++    // pending submit as invalid. We must also verify the descriptor heap has not switched (because
++    // a larger descriptor heap was needed).
++    return (allocation.GetLastUsageSerial() == mDevice->GetPendingCommandSerial() &&
+             allocation.GetHeapSerial() == mHeapSerial);
+ }
+ 
