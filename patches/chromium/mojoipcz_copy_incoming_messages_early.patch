@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Mon, 3 Apr 2023 19:43:13 +0000
+Subject: MojoIpcz: Copy incoming messages early
+
+Fixed: 1429720
+Change-Id: Id6cb7269d3a3e9118cc6ff1579b56e18bf911c07
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4390758
+Commit-Queue: Ken Rockot <rockot@google.com>
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1125510}
+
+diff --git a/mojo/core/ipcz_driver/mojo_message.cc b/mojo/core/ipcz_driver/mojo_message.cc
+index da073af255795b37418b5030bf2f1cc2c0c0c7d1..e362f3db6003c9f75701b657fe32b7e65cd82661 100644
+--- a/mojo/core/ipcz_driver/mojo_message.cc
++++ b/mojo/core/ipcz_driver/mojo_message.cc
+@@ -109,23 +109,20 @@ void MojoMessage::SetParcel(ScopedIpczHandle parcel) {
+ 
+   // We always pass a parcel object in, so Begin/EndGet() must always succeed.
+   DCHECK_EQ(result, IPCZ_RESULT_OK);
++  if (num_bytes > 0) {
++    data_storage_.reset(
++        static_cast<uint8_t*>(base::AllocNonScannable(num_bytes)));
++    memcpy(data_storage_.get(), data, num_bytes);
++  } else {
++    data_storage_.reset();
++  }
++  data_ = {data_storage_.get(), num_bytes};
++  data_storage_size_ = num_bytes;
+ 
+-  // Grab only the handles.
+   handles_.resize(num_handles);
+-  result = GetIpczAPI().EndGet(parcel_.get(), 0, num_handles, IPCZ_NO_FLAGS,
+-                               nullptr, handles_.data());
+-  DCHECK_EQ(result, IPCZ_RESULT_OK);
+-
+-  // Now start a new two-phase get, which we'll leave active indefinitely for
+-  // `data_` to reference.
+-  result = GetIpczAPI().BeginGet(parcel_.get(), IPCZ_NO_FLAGS, nullptr, &data,
+-                                 &num_bytes, &num_handles);
++  result = GetIpczAPI().EndGet(parcel_.get(), num_bytes, num_handles,
++                               IPCZ_NO_FLAGS, nullptr, handles_.data());
+   DCHECK_EQ(result, IPCZ_RESULT_OK);
+-
+-  DCHECK_EQ(0u, num_handles);
+-  data_ = base::make_span(static_cast<uint8_t*>(const_cast<void*>(data)),
+-                          num_bytes);
+-
+   if (!FixUpDataPipeHandles(handles_)) {
+     // The handle list was malformed. Although this is a validation error, it
+     // is not safe to trigger MojoNotifyBadMessage from within MojoReadMessage,
