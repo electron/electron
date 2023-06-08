@@ -1,7 +1,7 @@
-From ea1cd76358e00e30e48c2fbf6dc2d324b7012949 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Kevin McNee <mcnee@chromium.org>
 Date: Tue, 23 May 2023 15:46:16 +0000
-Subject: [PATCH] M114: Compute all webview find options before cloning them
+Subject: M114: Compute all webview find options before cloning them
 
 Compute all webview find options before cloning them
 
@@ -28,13 +28,12 @@ Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/5735@{#941}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
-index 014e41d1..37464dd 100644
+index 7762464ba5eb84702021f8328e455e0d05e87b46..c5167c135a7e41705ac018d3aec568c65fdcb0dc 100644
 --- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
 +++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
-@@ -3874,6 +3874,11 @@
+@@ -3983,6 +3983,11 @@ IN_PROC_BROWSER_TEST_P(WebViewTest, Shim_testFindInMultipleWebViews) {
    TestHelper("testFindInMultipleWebViews", "web_view/shim", NO_TEST_SERVER);
  }
  
@@ -43,14 +42,14 @@ index 014e41d1..37464dd 100644
 +  TestHelper("testFindAfterTerminate", "web_view/shim", NO_TEST_SERVER);
 +}
 +
- IN_PROC_BROWSER_TEST_F(WebViewTest, Shim_TestLoadDataAPI) {
+ IN_PROC_BROWSER_TEST_P(WebViewTest, Shim_TestLoadDataAPI) {
    TestHelper("testLoadDataAPI", "web_view/shim", NEEDS_TEST_SERVER);
  
 diff --git a/chrome/test/data/extensions/platform_apps/web_view/shim/main.js b/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
-index 8cef7cbd6..16c4295 100644
+index 12c29cc718765d0f04b81430011569786587f677..c252e13563dff2660af1187ce3a16d5997f0679d 100644
 --- a/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
 +++ b/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
-@@ -2868,6 +2868,20 @@
+@@ -2868,6 +2868,20 @@ function testFindInMultipleWebViews() {
        });
  }
  
@@ -71,7 +70,7 @@ index 8cef7cbd6..16c4295 100644
  function testLoadDataAPI() {
    var webview = new WebView();
    webview.src = 'about:blank';
-@@ -3644,6 +3658,7 @@
+@@ -3644,6 +3658,7 @@ embedder.test.testList = {
    'testFindAPI': testFindAPI,
    'testFindAPI_findupdate': testFindAPI_findupdate,
    'testFindInMultipleWebViews': testFindInMultipleWebViews,
@@ -80,10 +79,10 @@ index 8cef7cbd6..16c4295 100644
    'testLoadDataAPIAccessibleResources': testLoadDataAPIAccessibleResources,
    'testResizeEvents': testResizeEvents,
 diff --git a/extensions/browser/guest_view/web_view/web_view_find_helper.cc b/extensions/browser/guest_view/web_view/web_view_find_helper.cc
-index 0913a8f..3e70549 100644
+index 0913a8f3da48420c6b0fd328d37268ca5b0e6e63..3e70549084be8537198996c07d2f61c6308ad893 100644
 --- a/extensions/browser/guest_view/web_view/web_view_find_helper.cc
 +++ b/extensions/browser/guest_view/web_view/web_view_find_helper.cc
-@@ -36,12 +36,12 @@
+@@ -36,12 +36,12 @@ void WebViewFindHelper::CancelAllFindSessions() {
  
  void WebViewFindHelper::DispatchFindUpdateEvent(bool canceled,
                                                  bool final_update) {
@@ -98,7 +97,7 @@ index 0913a8f..3e70549 100644
    webview_guest_->DispatchEventToView(std::make_unique<GuestViewEvent>(
        webview::kEventFindReply, std::move(args)));
  }
-@@ -94,6 +94,17 @@
+@@ -94,6 +94,17 @@ void WebViewFindHelper::Find(
    // Need a new request_id for each new find request.
    ++current_find_request_id_;
  
@@ -116,7 +115,7 @@ index 0913a8f..3e70549 100644
    // Stores the find request information by request_id so that its callback
    // function can be called when the find results are available.
    std::pair<FindInfoMap::iterator, bool> insert_result =
-@@ -102,32 +113,19 @@
+@@ -102,32 +113,19 @@ void WebViewFindHelper::Find(
            base::MakeRefCounted<FindInfo>(current_find_request_id_, search_text,
                                           options.Clone(), find_function)));
    // No duplicate insertions.
@@ -154,7 +153,7 @@ index 0913a8f..3e70549 100644
  
    // Handle the empty |search_text| case internally.
    if (search_text.empty()) {
-@@ -137,7 +135,7 @@
+@@ -137,7 +135,7 @@ void WebViewFindHelper::Find(
    }
  
    guest_web_contents->Find(current_find_request_id_, search_text,
@@ -163,7 +162,7 @@ index 0913a8f..3e70549 100644
  }
  
  void WebViewFindHelper::FindReply(int request_id,
-@@ -152,14 +150,14 @@
+@@ -152,14 +150,14 @@ void WebViewFindHelper::FindReply(int request_id,
      return;
  
    // This find request must be a part of an existing find session.
@@ -181,7 +180,7 @@ index 0913a8f..3e70549 100644
      if (find_update_event_)
        DispatchFindUpdateEvent(true /* canceled */, true /* final_update */);
      EndFindSession(find_info_map_.begin()->first, true /* canceled */);
-@@ -174,11 +172,12 @@
+@@ -174,11 +172,12 @@ void WebViewFindHelper::FindReply(int request_id,
    // Aggregate the find results.
    find_info->AggregateResults(number_of_matches, selection_rect,
                                active_match_ordinal, final_update);
