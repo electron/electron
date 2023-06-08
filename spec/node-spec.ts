@@ -8,7 +8,6 @@ import { webContents } from 'electron/main';
 import { EventEmitter } from 'stream';
 import { once } from 'events';
 
-const features = process._linkedBinding('electron_common_features');
 const mainFixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('node feature', () => {
@@ -26,7 +25,7 @@ describe('node feature', () => {
     });
   });
 
-  ifdescribe(features.isRunAsNodeEnabled())('child_process in renderer', () => {
+  describe('child_process in renderer', () => {
     useRemoteContext();
 
     describe('child_process.fork', () => {
@@ -360,7 +359,7 @@ describe('node feature', () => {
     });
   });
 
-  ifdescribe(features.isRunAsNodeEnabled() && process.platform === 'darwin')('net.connect', () => {
+  ifdescribe(process.platform === 'darwin')('net.connect', () => {
     itremote('emit error when connect to a socket path without listeners', async (fixtures: string) => {
       const socketPath = require('path').join(require('os').tmpdir(), 'electron-test.sock');
       const script = require('path').join(fixtures, 'module', 'create_socket.js');
@@ -660,7 +659,7 @@ describe('node feature', () => {
     });
   });
 
-  ifdescribe(features.isRunAsNodeEnabled())('Node.js cli flags', () => {
+  describe('Node.js cli flags', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]>;
 
@@ -713,7 +712,7 @@ describe('node feature', () => {
     });
   });
 
-  ifdescribe(features.isRunAsNodeEnabled())('inspector', () => {
+  describe('inspector', () => {
     let child: childProcess.ChildProcessWithoutNullStreams;
     let exitPromise: Promise<any[]> | null;
 
@@ -856,7 +855,7 @@ describe('node feature', () => {
     expect(result.status).to.equal(0);
   });
 
-  ifit(features.isRunAsNodeEnabled())('handles Promise timeouts correctly', async () => {
+  it('handles Promise timeouts correctly', async () => {
     const scriptPath = path.join(fixtures, 'module', 'node-promise-timer.js');
     const child = childProcess.spawn(process.execPath, [scriptPath], {
       env: { ELECTRON_RUN_AS_NODE: 'true' }

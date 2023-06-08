@@ -175,9 +175,6 @@ env-mac-large-release: &env-mac-large-release
 env-ninja-status: &env-ninja-status
   NINJA_STATUS: "[%r processes, %f/%t @ %o/s : %es] "
 
-env-disable-run-as-node: &env-disable-run-as-node
-  GN_BUILDFLAG_ARGS: 'enable_run_as_node = false'
-
 env-32bit-release: &env-32bit-release
   # Set symbol level to 1 for 32 bit releases because of https://crbug.com/648948
   GN_BUILDFLAG_ARGS: 'symbol_level = 1'
@@ -254,7 +251,7 @@ step-depot-tools-get: &step-depot-tools-get
       --- a/gclient.py
       +++ b/gclient.py
       @@ -712,7 +712,8 @@ class Dependency(gclient_utils.WorkItem, DependencySettings):
-      
+
              if dep_type == 'cipd':
                cipd_root = self.GetCipdRoot()
       -        for package in dep_value.get('packages', []):
@@ -1058,7 +1055,7 @@ commands:
       artifact-key:
         type: string
       build-type:
-        type: string      
+        type: string
       build-nonproprietary-ffmpeg:
         type: boolean
         default: true
@@ -1276,7 +1273,7 @@ commands:
       artifact-key:
         type: string
       build-type:
-        type: string        
+        type: string
       after-build-and-save:
         type: steps
         default: []
@@ -1728,23 +1725,6 @@ jobs:
           checkout: true
           build-nonproprietary-ffmpeg: false
           artifact-key: 'linux-x64-asan'
-          build-type: 'Linux'
-
-  linux-x64-testing-no-run-as-node:
-    executor:
-      name: linux-docker
-      size: xlarge
-    environment:
-      <<: *env-linux-2xlarge
-      <<: *env-testing-build
-      <<: *env-ninja-status
-      <<: *env-disable-run-as-node
-      GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    steps:
-      - electron-build:
-          persist: false
-          checkout: true
-          artifact-key: 'linux-x64-no-run-as-node'
           build-type: 'Linux'
 
   linux-x64-testing-gn-check:
@@ -2228,9 +2208,6 @@ workflows:
           requires:
             - linux-make-src-cache
       - linux-x64-testing-asan:
-          requires:
-            - linux-make-src-cache
-      - linux-x64-testing-no-run-as-node:
           requires:
             - linux-make-src-cache
       - linux-x64-testing-gn-check:

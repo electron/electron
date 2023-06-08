@@ -20,9 +20,7 @@ extern const char kDeviceVendorIdKey[];
 extern const char kDeviceProductIdKey[];
 extern const char kDeviceSerialNumberKey[];
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 extern const char kRunAsNode[];
-#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 extern const char kPDFExtensionPluginName[];

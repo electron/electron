@@ -237,6 +237,8 @@ filenames = {
     "shell/app/electron_crash_reporter_client.h",
     "shell/app/electron_main_delegate.cc",
     "shell/app/electron_main_delegate.h",
+    "shell/app/node_main.cc",
+    "shell/app/node_main.h",
     "shell/app/uv_task_runner.cc",
     "shell/app/uv_task_runner.h",
     "shell/browser/api/electron_api_app.cc",

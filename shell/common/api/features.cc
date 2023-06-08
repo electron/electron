@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "electron/buildflags/buildflags.h"
-#include "electron/fuses.h"
 #include "printing/buildflags/buildflags.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -20,10 +19,6 @@ bool IsOffscreenRenderingEnabled() {
 
 bool IsPDFViewerEnabled() {
   return BUILDFLAG(ENABLE_PDF_VIEWER);
-}
-
-bool IsRunAsNodeEnabled() {
-  return electron::fuses::IsRunAsNodeEnabled() && BUILDFLAG(ENABLE_RUN_AS_NODE);
 }
 
 bool IsFakeLocationProviderEnabled() {
@@ -58,7 +53,6 @@ void Initialize(v8::Local<v8::Object> exports,
   dict.SetMethod("isBuiltinSpellCheckerEnabled", &IsBuiltinSpellCheckerEnabled);
   dict.SetMethod("isOffscreenRenderingEnabled", &IsOffscreenRenderingEnabled);
   dict.SetMethod("isPDFViewerEnabled", &IsPDFViewerEnabled);
-  dict.SetMethod("isRunAsNodeEnabled", &IsRunAsNodeEnabled);
   dict.SetMethod("isFakeLocationProviderEnabled",
                  &IsFakeLocationProviderEnabled);
   dict.SetMethod("isViewApiEnabled", &IsViewApiEnabled);

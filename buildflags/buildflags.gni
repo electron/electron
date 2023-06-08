@@ -3,9 +3,6 @@
 # found in the LICENSE file.
 
 declare_args() {
-  # Allow running Electron as a node binary.
-  enable_run_as_node = true
-
   enable_osr = true
 
   enable_views_api = true

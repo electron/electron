@@ -45,7 +45,7 @@ namespace {
 const char kUserDataDir[] = "user-data-dir";
 const char kProcessType[] = "type";
 
-[[maybe_unused]] bool IsEnvSet(const char* name) {
+bool IsEnvSet(const char* name) {
   size_t required_size;
   getenv_s(&required_size, nullptr, 0, name);
   return required_size != 0;
@@ -150,12 +150,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   }
 #endif
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
   bool run_as_node =
       electron::fuses::IsRunAsNodeEnabled() && IsEnvSet(electron::kRunAsNode);
-#else
-  bool run_as_node = false;
-#endif
 
   // Make sure the output is printed to console.
   if (run_as_node || !IsEnvSet("ELECTRON_NO_ATTACH_CONSOLE"))
@@ -164,15 +160,13 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
   std::vector<char*> argv(arguments.argc);
   std::transform(arguments.argv, arguments.argv + arguments.argc, argv.begin(),
                  [](auto& a) { return _strdup(base::WideToUTF8(a).c_str()); });
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
-  if (electron::fuses::IsRunAsNodeEnabled() && run_as_node) {
+  if (run_as_node) {
     base::AtExitManager atexit_manager;
     base::i18n::InitializeICU();
     auto ret = electron::NodeMain(argv.size(), argv.data());
     std::for_each(argv.begin(), argv.end(), free);
     return ret;
   }
-#endif
 
   base::CommandLine::Init(argv.size(), argv.data());
   const base::CommandLine* command_line =

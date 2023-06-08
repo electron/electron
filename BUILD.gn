@@ -669,13 +669,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_run_as_node) {
-    sources += [
-      "shell/app/node_main.cc",
-      "shell/app/node_main.h",
-    ]
-  }
-
   if (enable_osr) {
     sources += [
       "shell/browser/osr/osr_host_display_client.cc",
