@@ -112,10 +112,10 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c304b8d9052fe705e22a047546fb6a7eb4977575..b30bf15dba88b47074d951793530b4afc473a442 100644
+index b55ea68805100e3926785e10532f27c45c13270a..34afde50788ff285b74c51eb6f5607417fe43407 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -470,6 +470,7 @@ static_library("test_support") {
+@@ -474,6 +474,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -290,7 +290,7 @@ index f8dfc00b61d67aec62f26b57636b28dcfca8f989..bf067319394717738f5281a28bcbdaab
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 416497c77970e1c15ebecc27af59cf50112a6441..69e1a93f21bc3ea5760db1150b7fba3695fdca33 100644
+index 416497c77970e1c15ebecc27af59cf50112a6441..b366bbb8d84c6c7fb1a3b9b1b1e022d5de077b2d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -681,6 +681,7 @@ component("views") {
@@ -301,7 +301,7 @@ index 416497c77970e1c15ebecc27af59cf50112a6441..69e1a93f21bc3ea5760db1150b7fba36
    }
  
    if (is_win) {
-@@ -1089,6 +1090,8 @@ source_set("test_support") {
+@@ -1097,6 +1098,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

@@ -48,13 +48,13 @@ index 9979c25ecd57e68331b628a518368635db5c2027..f65bfbbb663a5bb0511ffa389d3163e0
    // This interface should only be implemented inside content.
    friend class RenderViewHostImpl;
 diff --git a/content/test/test_page_broadcast.h b/content/test/test_page_broadcast.h
-index 3f4396e50b419cd6a16f34036f4a0a1113109c55..60e038413369ea1021bcad86f9398c9964140652 100644
+index 73c0f64aa84061381a98ba60906835258f881468..41bdf7e231eca4617dbe53737a3925039bf77c4f 100644
 --- a/content/test/test_page_broadcast.h
 +++ b/content/test/test_page_broadcast.h
-@@ -43,6 +43,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
-       blink::mojom::RemoteFrameInterfacesFromBrowserPtr remote_frame_interfaces,
-       blink::mojom::RemoteMainFrameInterfacesPtr remote_main_frame_interfaces)
+@@ -45,6 +45,7 @@ class TestPageBroadcast : public blink::mojom::PageBroadcast {
        override;
+   void UpdatePageBrowsingContextGroup(const blink::BrowsingContextGroupInfo&
+                                           browsing_context_group_info) override;
 +  void SetSchedulerThrottling(bool allowed) override {}
  
    mojo::AssociatedReceiver<blink::mojom::PageBroadcast> receiver_;
