@@ -802,7 +802,8 @@ class WebContents : public ExclusiveAccessContext,
   // Whether window is fullscreened by window api.
   bool native_fullscreen_ = false;
 
-  scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+  const scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_ =
+      base::MakeRefCounted<DevToolsFileSystemIndexer>();
 
   ExclusiveAccessManager exclusive_access_manager_{this};
 
