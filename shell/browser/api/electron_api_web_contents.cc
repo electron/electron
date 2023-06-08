@@ -783,9 +783,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(Type::kRemote),
-      id_(GetAllWebContents().Add(this)),
-      file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+      id_(GetAllWebContents().Add(this))
 #if BUILDFLAG(ENABLE_PRINTING)
       ,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
@@ -818,9 +816,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          Type type)
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
-      id_(GetAllWebContents().Add(this)),
-      file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+      id_(GetAllWebContents().Add(this))
 #if BUILDFLAG(ENABLE_PRINTING)
       ,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
@@ -836,9 +832,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
-    : id_(GetAllWebContents().Add(this)),
-      file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+    : id_(GetAllWebContents().Add(this))
 #if BUILDFLAG(ENABLE_PRINTING)
       ,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
