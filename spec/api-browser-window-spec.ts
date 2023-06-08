@@ -4953,7 +4953,7 @@ describe('BrowserWindow module', () => {
       it('correctly remembers state prior to fullscreen change with autoHide', async () => {
         const w = new BrowserWindow({ show: false });
         expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar');
-        w.autoHideMenuBar = ture;
+        w.autoHideMenuBar = true;
         expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar');
         w.setMenuBarVisibility(false);
         expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
