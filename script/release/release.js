@@ -354,14 +354,18 @@ async function makeRelease (releaseToValidate) {
     await validateReleaseAssets(release, true);
   } else {
     let draftRelease = await getDraftRelease();
-    uploadNodeShasums();
-    uploadIndexJson();
-
     await createReleaseShasums(draftRelease);
 
     // Fetch latest version of release before verifying
     draftRelease = await getDraftRelease(pkgVersion, true);
     await validateReleaseAssets(draftRelease);
+    // index.json goes live once uploaded so do these uploads as
+    // late as possible to reduce the chances it contains a release
+    // which fails to publish. It has to be done before the final
+    // publish to ensure there aren't published releases not contained
+    // in index.json, which causes other problems in downstream projects
+    uploadNodeShasums();
+    uploadIndexJson();
     await publishRelease(draftRelease);
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
       '"npm run publish-to-npm" to publish release to npm.');
