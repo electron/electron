@@ -540,6 +540,7 @@ source_set("electron_lib") {
 
   if (is_mac) {
     deps += [
+      ":electron_lib_arc",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
@@ -771,6 +772,27 @@ source_set("electron_lib") {
 
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
+  }
+}
+
+if (is_mac) {
+  source_set("electron_lib_arc") {
+    include_dirs = [ "." ]
+    sources = [
+      "shell/browser/mac/dict_util.h",
+      "shell/browser/mac/dict_util.mm",
+      "shell/browser/mac/electron_application_delegate.h",
+      "shell/browser/mac/electron_application_delegate.mm",
+    ]
+
+    deps = [
+      "//base",
+      "//skia",
+      "//third_party/electron_node:node_lib",
+      "//v8",
+    ]
+
+    configs += [ "//build/config/compiler:enable_arc" ]
   }
 }
 
