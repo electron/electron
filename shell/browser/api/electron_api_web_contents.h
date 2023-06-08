@@ -837,7 +837,7 @@ class WebContents : public ExclusiveAccessContext,
       base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  scoped_refptr<base::TaskRunner> print_task_runner_;
+  const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
