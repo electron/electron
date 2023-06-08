@@ -730,12 +730,12 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
                                             gfx::Rect());
 
   // Auto-hide menubar when in fullscreen.
-  if (fullscreen){
+  if (fullscreen) {
     menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
     SetMenuBarVisibility(false);
-  }
-  else{
-    SetMenuBarVisibility(!IsMenuBarAutoHide() && menu_bar_visible_before_fullscreen_);
+  } else {
+    SetMenuBarVisibility(!IsMenuBarAutoHide() &&
+                         menu_bar_visible_before_fullscreen_);
     menu_bar_visible_before_fullscreen_ = false;
   }
 #endif
