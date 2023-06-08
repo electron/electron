@@ -1,0 +1,257 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Thu, 1 Jun 2023 10:59:39 +0200
+Subject: Merged: [lookup] Robustify LookupIterator against own lookups
+
+... on non-JSReceiver objects.
+
+Bug: chromium:1447430
+(cherry picked from commit 515f187ba067ee4a99fdf5198cca2c97abd342fd)
+
+Change-Id: Ib9382d90ce19d6b55ee0b236dd299ded03ade04d
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4575069
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.4@{#35}
+Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
+Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
+
+diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
+index 44b8f9502e32a9a6fbbe60ebc5f8e0d184411b8f..782698bd7c488f5570288119e49784e16a93ddd2 100644
+--- a/src/objects/lookup-inl.h
++++ b/src/objects/lookup-inl.h
+@@ -167,7 +167,7 @@ Handle<Name> PropertyKey::GetName(Isolate* isolate) {
+ }
+ 
+ Handle<Name> LookupIterator::name() const {
+-  DCHECK(!IsElement(*holder_));
++  DCHECK_IMPLIES(!holder_.is_null(), !IsElement(*holder_));
+   return name_;
+ }
+ 
+@@ -257,6 +257,7 @@ void LookupIterator::UpdateProtector() {
+ }
+ 
+ InternalIndex LookupIterator::descriptor_number() const {
++  DCHECK(!holder_.is_null());
+   DCHECK(!IsElement(*holder_));
+   DCHECK(has_property_);
+   DCHECK(holder_->HasFastProperties(isolate_));
+@@ -264,6 +265,7 @@ InternalIndex LookupIterator::descriptor_number() const {
+ }
+ 
+ InternalIndex LookupIterator::dictionary_entry() const {
++  DCHECK(!holder_.is_null());
+   DCHECK(!IsElement(*holder_));
+   DCHECK(has_property_);
+   DCHECK(!holder_->HasFastProperties(isolate_));
+@@ -278,13 +280,14 @@ LookupIterator::Configuration LookupIterator::ComputeConfiguration(
+ }
+ 
+ // static
+-Handle<JSReceiver> LookupIterator::GetRoot(Isolate* isolate,
+-                                           Handle<Object> lookup_start_object,
+-                                           size_t index) {
++MaybeHandle<JSReceiver> LookupIterator::GetRoot(
++    Isolate* isolate, Handle<Object> lookup_start_object, size_t index,
++    Configuration configuration) {
+   if (lookup_start_object->IsJSReceiver(isolate)) {
+     return Handle<JSReceiver>::cast(lookup_start_object);
+   }
+-  return GetRootForNonJSReceiver(isolate, lookup_start_object, index);
++  return GetRootForNonJSReceiver(isolate, lookup_start_object, index,
++                                 configuration);
+ }
+ 
+ template <class T>
+diff --git a/src/objects/lookup.cc b/src/objects/lookup.cc
+index 7c6f6c4a350fec92a3cc0a48a14c0b92f8d6021d..ce1502b859c0cce77fc054488e401ac82a073a7d 100644
+--- a/src/objects/lookup.cc
++++ b/src/objects/lookup.cc
+@@ -42,27 +42,20 @@ PropertyKey::PropertyKey(Isolate* isolate, Handle<Object> key, bool* success) {
+   }
+ }
+ 
+-LookupIterator::LookupIterator(Isolate* isolate, Handle<Object> receiver,
+-                               Handle<Name> name, Handle<Map> transition_map,
+-                               PropertyDetails details, bool has_property)
+-    : configuration_(DEFAULT),
+-      state_(TRANSITION),
+-      has_property_(has_property),
+-      interceptor_state_(InterceptorState::kUninitialized),
+-      property_details_(details),
+-      isolate_(isolate),
+-      name_(name),
+-      transition_(transition_map),
+-      receiver_(receiver),
+-      lookup_start_object_(receiver),
+-      index_(kInvalidIndex) {
+-  holder_ = GetRoot(isolate, lookup_start_object_);
+-}
+-
+ template <bool is_element>
+ void LookupIterator::Start() {
+   // GetRoot might allocate if lookup_start_object_ is a string.
+-  holder_ = GetRoot(isolate_, lookup_start_object_, index_);
++  MaybeHandle<JSReceiver> maybe_holder =
++      GetRoot(isolate_, lookup_start_object_, index_, configuration_);
++  if (!maybe_holder.ToHandle(&holder_)) {
++    // This is an attempt to perform an own property lookup on a non-JSReceiver
++    // that doesn't have any properties.
++    DCHECK(!lookup_start_object_->IsJSReceiver());
++    DCHECK(!check_prototype_chain());
++    has_property_ = false;
++    state_ = NOT_FOUND;
++    return;
++  }
+ 
+   {
+     DisallowGarbageCollection no_gc;
+@@ -135,19 +128,27 @@ template void LookupIterator::RestartInternal<true>(InterceptorState);
+ template void LookupIterator::RestartInternal<false>(InterceptorState);
+ 
+ // static
+-Handle<JSReceiver> LookupIterator::GetRootForNonJSReceiver(
+-    Isolate* isolate, Handle<Object> lookup_start_object, size_t index) {
+-  // Strings are the only objects with properties (only elements) directly on
+-  // the wrapper. Hence we can skip generating the wrapper for all other cases.
+-  if (lookup_start_object->IsString(isolate) &&
+-      index <
+-          static_cast<size_t>(String::cast(*lookup_start_object).length())) {
+-    // TODO(verwaest): Speed this up. Perhaps use a cached wrapper on the native
+-    // context, ensuring that we don't leak it into JS?
+-    Handle<JSFunction> constructor = isolate->string_function();
+-    Handle<JSObject> result = isolate->factory()->NewJSObject(constructor);
+-    Handle<JSPrimitiveWrapper>::cast(result)->set_value(*lookup_start_object);
+-    return result;
++MaybeHandle<JSReceiver> LookupIterator::GetRootForNonJSReceiver(
++    Isolate* isolate, Handle<Object> lookup_start_object, size_t index,
++    Configuration configuration) {
++  // Strings are the only non-JSReceiver objects with properties (only elements
++  // and 'length') directly on the wrapper. Hence we can skip generating
++  // the wrapper for all other cases.
++  bool own_property_lookup = (configuration & kPrototypeChain) == 0;
++  if (lookup_start_object->IsString(isolate)) {
++    if (own_property_lookup ||
++        index <
++            static_cast<size_t>(String::cast(*lookup_start_object).length())) {
++      // TODO(verwaest): Speed this up. Perhaps use a cached wrapper on the
++      // native context, ensuring that we don't leak it into JS?
++      Handle<JSFunction> constructor = isolate->string_function();
++      Handle<JSObject> result = isolate->factory()->NewJSObject(constructor);
++      Handle<JSPrimitiveWrapper>::cast(result)->set_value(*lookup_start_object);
++      return result;
++    }
++  } else if (own_property_lookup) {
++    // Signal that the lookup will not find anything.
++    return {};
+   }
+   Handle<HeapObject> root(
+       lookup_start_object->GetPrototypeChainRootMap(isolate).prototype(isolate),
+@@ -901,6 +902,7 @@ Handle<Object> LookupIterator::FetchValue(
+ }
+ 
+ bool LookupIterator::CanStayConst(Object value) const {
++  DCHECK(!holder_.is_null());
+   DCHECK(!IsElement(*holder_));
+   DCHECK(holder_->HasFastProperties(isolate_));
+   DCHECK_EQ(PropertyLocation::kField, property_details_.location());
+@@ -934,6 +936,7 @@ bool LookupIterator::CanStayConst(Object value) const {
+ }
+ 
+ bool LookupIterator::DictCanStayConst(Object value) const {
++  DCHECK(!holder_.is_null());
+   DCHECK(!IsElement(*holder_));
+   DCHECK(!holder_->HasFastProperties(isolate_));
+   DCHECK(!holder_->IsJSGlobalObject());
+@@ -980,6 +983,7 @@ int LookupIterator::GetAccessorIndex() const {
+ 
+ FieldIndex LookupIterator::GetFieldIndex() const {
+   DCHECK(has_property_);
++  DCHECK(!holder_.is_null());
+   DCHECK(holder_->HasFastProperties(isolate_));
+   DCHECK_EQ(PropertyLocation::kField, property_details_.location());
+   DCHECK(!IsElement(*holder_));
+@@ -987,6 +991,7 @@ FieldIndex LookupIterator::GetFieldIndex() const {
+ }
+ 
+ Handle<PropertyCell> LookupIterator::GetPropertyCell() const {
++  DCHECK(!holder_.is_null());
+   DCHECK(!IsElement(*holder_));
+   Handle<JSGlobalObject> holder = GetHolder<JSGlobalObject>();
+   return handle(holder->global_dictionary(isolate_, kAcquireLoad)
+diff --git a/src/objects/lookup.h b/src/objects/lookup.h
+index 9adee79b3028c53e6481a07316d74aed616f01bd..ef90316295c98d51b61c118cf331731f991d93d0 100644
+--- a/src/objects/lookup.h
++++ b/src/objects/lookup.h
+@@ -214,11 +214,6 @@ class V8_EXPORT_PRIVATE LookupIterator final {
+                         Handle<Object> lookup_start_object,
+                         Configuration configuration);
+ 
+-  // For |ForTransitionHandler|.
+-  LookupIterator(Isolate* isolate, Handle<Object> receiver, Handle<Name> name,
+-                 Handle<Map> transition_map, PropertyDetails details,
+-                 bool has_property);
+-
+   static void InternalUpdateProtector(Isolate* isolate, Handle<Object> receiver,
+                                       Handle<Name> name);
+ 
+@@ -278,12 +273,12 @@ class V8_EXPORT_PRIVATE LookupIterator final {
+                                                    Configuration configuration,
+                                                    Handle<Name> name);
+ 
+-  static Handle<JSReceiver> GetRootForNonJSReceiver(
+-      Isolate* isolate, Handle<Object> lookup_start_object,
+-      size_t index = kInvalidIndex);
+-  static inline Handle<JSReceiver> GetRoot(Isolate* isolate,
+-                                           Handle<Object> lookup_start_object,
+-                                           size_t index = kInvalidIndex);
++  static MaybeHandle<JSReceiver> GetRootForNonJSReceiver(
++      Isolate* isolate, Handle<Object> lookup_start_object, size_t index,
++      Configuration configuration);
++  static inline MaybeHandle<JSReceiver> GetRoot(
++      Isolate* isolate, Handle<Object> lookup_start_object, size_t index,
++      Configuration configuration);
+ 
+   State NotFound(JSReceiver const holder) const;
+ 
+diff --git a/test/mjsunit/regress/regress-crbug-1447430.js b/test/mjsunit/regress/regress-crbug-1447430.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..c7bb3e72e3af1b9f8c2fa82faeeb2d813fe6ab3c
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1447430.js
+@@ -0,0 +1,34 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --allow-natives-syntax
++
++var s = %CreatePrivateSymbol('x');
++
++(function TestSmi() {
++  function f(o, p) {
++    o[p] = 153;
++  }
++  (1).__proto__[s] = 42;
++  %PrepareFunctionForOptimization(f);
++  assertEquals(f(42, s), undefined);
++}());
++
++(function TestString() {
++  function f(o, p) {
++    o[p] = 153;
++  }
++  ('xyz').__proto__[s] = 42;
++  %PrepareFunctionForOptimization(f);
++  assertEquals(f('abc', s), undefined);
++}());
++
++(function TestSymbol() {
++  function f(o, p) {
++    o[p] = 153;
++  }
++  Symbol('xyz').__proto__[s] = 42;
++  %PrepareFunctionForOptimization(f);
++  assertEquals(f(Symbol('abc'), s), undefined);
++}());

@@ -239,6 +239,7 @@ using FullScreenTransitionState =
   level_ = [window level];
   shell_->SetWindowLevel(NSNormalWindowLevel);
   shell_->UpdateWindowOriginalFrame();
+  shell_->DetachChildren();
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
@@ -248,6 +249,7 @@ using FullScreenTransitionState =
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
   [super windowDidDeminiaturize:notification];
+  shell_->AttachChildren();
   shell_->SetWindowLevel(level_);
   shell_->NotifyWindowRestore();
 }

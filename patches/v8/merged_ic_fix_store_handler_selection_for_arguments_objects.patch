@@ -1,0 +1,122 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Fri, 2 Jun 2023 18:13:01 +0200
+Subject: Merged: [ic] Fix store handler selection for arguments objects
+
+Drive-by: fix printing of handlers in --trace-feedback-updates mode.
+
+(cherry picked from commit e144f3b71e64e01d6ffd247eb15ca1ff56f6287b)
+
+Bug: chromium:1450481
+Change-Id: Ifbb97d694b8520584df0610aad30805713b29c00
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4584889
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/10.9@{#32}
+Cr-Branched-From: 8ade6bf1fa237ad30dd9a05cc6ffe548131699e8-refs/heads/10.9.194@{#1}
+Cr-Branched-From: 9ff2515271f11cab783f0e82678ae0b925d77dd0-refs/heads/main@{#84164}
+
+diff --git a/src/diagnostics/objects-printer.cc b/src/diagnostics/objects-printer.cc
+index b763468f58f8f0be294af50188dd69b99c9428dc..e4e206f2b52095c95ac4c667f32f0620c753967c 100644
+--- a/src/diagnostics/objects-printer.cc
++++ b/src/diagnostics/objects-printer.cc
+@@ -1324,8 +1324,18 @@ void FeedbackNexus::Print(std::ostream& os) {
+     case FeedbackSlotKind::kSetKeyedStrict: {
+       os << InlineCacheState2String(ic_state());
+       if (ic_state() == InlineCacheState::MONOMORPHIC) {
+-        os << "\n   " << Brief(GetFeedback()) << ": ";
+-        StoreHandler::PrintHandler(GetFeedbackExtra().GetHeapObjectOrSmi(), os);
++        HeapObject feedback = GetFeedback().GetHeapObject();
++        HeapObject feedback_extra = GetFeedbackExtra().GetHeapObject();
++        if (feedback.IsName()) {
++          os << " with name " << Brief(feedback);
++          WeakFixedArray array = WeakFixedArray::cast(feedback_extra);
++          os << "\n   " << Brief(array.Get(0)) << ": ";
++          Object handler = array.Get(1).GetHeapObjectOrSmi();
++          StoreHandler::PrintHandler(handler, os);
++        } else {
++          os << "\n   " << Brief(feedback) << ": ";
++          StoreHandler::PrintHandler(feedback_extra, os);
++        }
+       } else if (ic_state() == InlineCacheState::POLYMORPHIC) {
+         WeakFixedArray array =
+             WeakFixedArray::cast(GetFeedback().GetHeapObject());
+diff --git a/src/ic/handler-configuration.cc b/src/ic/handler-configuration.cc
+index ece15ff24b9066158c85524ed0087f6804feb61c..ca49ed91db7b667fe3154a309e78130a9efe6d99 100644
+--- a/src/ic/handler-configuration.cc
++++ b/src/ic/handler-configuration.cc
+@@ -593,8 +593,11 @@ void StoreHandler::PrintHandler(Object handler, std::ostream& os) {
+     os << ", validity cell = ";
+     store_handler.validity_cell().ShortPrint(os);
+     os << ")" << std::endl;
++  } else if (handler.IsMap()) {
++    os << "StoreHandler(field transition to " << Brief(handler) << ")"
++       << std::endl;
+   } else {
+-    os << "StoreHandler(<unexpected>)(" << Brief(handler) << ")";
++    os << "StoreHandler(<unexpected>)(" << Brief(handler) << ")" << std::endl;
+   }
+ }
+ 
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index 0447e017fbedae66eac2ad9637d53121a008f5b0..93939fa4702922f58e8e5bcc019e569f42ab198e 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -2300,10 +2300,18 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
+              receiver_map->has_sealed_elements() ||
+              receiver_map->has_nonextensible_elements() ||
+              receiver_map->has_typed_array_or_rab_gsab_typed_array_elements()) {
++    // TODO(jgruber): Update counter name.
+     TRACE_HANDLER_STATS(isolate(), KeyedStoreIC_StoreFastElementStub);
+-    code = StoreHandler::StoreFastElementBuiltin(isolate(), store_mode);
+-    if (receiver_map->has_typed_array_or_rab_gsab_typed_array_elements()) {
+-      return code;
++    if (receiver_map->IsJSArgumentsObjectMap() &&
++        receiver_map->has_fast_packed_elements()) {
++      // Allow fast behaviour for in-bounds stores while making it miss and
++      // properly handle the out of bounds store case.
++      code = StoreHandler::StoreFastElementBuiltin(isolate(), STANDARD_STORE);
++    } else {
++      code = StoreHandler::StoreFastElementBuiltin(isolate(), store_mode);
++      if (receiver_map->has_typed_array_or_rab_gsab_typed_array_elements()) {
++        return code;
++      }
+     }
+   } else if (IsStoreInArrayLiteralIC()) {
+     // TODO(jgruber): Update counter name.
+@@ -2314,7 +2322,7 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
+     TRACE_HANDLER_STATS(isolate(), KeyedStoreIC_StoreElementStub);
+     DCHECK(DICTIONARY_ELEMENTS == receiver_map->elements_kind() ||
+            receiver_map->has_frozen_elements());
+-    code = StoreHandler::StoreSlow(isolate(), store_mode);
++    return StoreHandler::StoreSlow(isolate(), store_mode);
+   }
+ 
+   if (IsAnyDefineOwn() || IsStoreInArrayLiteralIC()) return code;
+diff --git a/src/objects/map-inl.h b/src/objects/map-inl.h
+index a83a060337739878f258c50d8013d5ba6c2262d8..723a961521f26cdad66a484f39037f94109e2cac 100644
+--- a/src/objects/map-inl.h
++++ b/src/objects/map-inl.h
+@@ -590,6 +590,10 @@ bool Map::has_fast_elements() const {
+   return IsFastElementsKind(elements_kind());
+ }
+ 
++bool Map::has_fast_packed_elements() const {
++  return IsFastPackedElementsKind(elements_kind());
++}
++
+ bool Map::has_sloppy_arguments_elements() const {
+   return IsSloppyArgumentsElementsKind(elements_kind());
+ }
+diff --git a/src/objects/map.h b/src/objects/map.h
+index 6914a51150f4235386f5dca7af0d8103bc64f9e2..8311850f82bc32b794873689789c510376f67233 100644
+--- a/src/objects/map.h
++++ b/src/objects/map.h
+@@ -422,6 +422,7 @@ class Map : public TorqueGeneratedMap<Map, HeapObject> {
+   inline bool has_fast_smi_or_object_elements() const;
+   inline bool has_fast_double_elements() const;
+   inline bool has_fast_elements() const;
++  inline bool has_fast_packed_elements() const;
+   inline bool has_sloppy_arguments_elements() const;
+   inline bool has_fast_sloppy_arguments_elements() const;
+   inline bool has_fast_string_wrapper_elements() const;
