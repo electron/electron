@@ -726,10 +726,8 @@ void OffScreenRenderWidgetHostView::CompositeFrame(
     }
   }
 
-  paint_callback_running_ = true;
   callback_.Run(gfx::IntersectRects(gfx::Rect(size_in_pixels), damage_rect),
                 frame);
-  paint_callback_running_ = false;
 
   ReleaseResize();
 }

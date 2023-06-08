@@ -11,3 +11,5 @@ chore_allow_customizing_microtask_policy_per_context.patch
 store_the_thread_stack_start_in_tls.patch
 cherry-pick-3b0607d14060.patch
 cherry-pick-9c6dfc733fce.patch
+cherry-pick-73af1a19a901.patch
+cherry-pick-0035a4a8dac2.patch

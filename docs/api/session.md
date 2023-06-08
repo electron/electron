@@ -82,7 +82,7 @@ Emitted when Electron is about to download `item` in `webContents`.
 Calling `event.preventDefault()` will cancel the download and `item` will not be
 available from next tick of the process.
 
-```javascript
+```javascript @ts-expect-error=[4]
 const { session } = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
@@ -198,7 +198,7 @@ cancel the request.  Additionally, permissioning on `navigator.hid` can
 be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -237,7 +237,7 @@ app.whenReady().then(() => {
   win.webContents.session.on('select-hid-device', (event, details, callback) => {
     event.preventDefault()
     const selectedDevice = details.deviceList.find((device) => {
-      return device.vendorId === '9025' && device.productId === '67'
+      return device.vendorId === 9025 && device.productId === 67
     })
     callback(selectedDevice?.deviceId)
   })
@@ -304,7 +304,7 @@ cancel the request.  Additionally, permissioning on `navigator.serial` can
 be managed by using [ses.setPermissionCheckHandler(handler)](#sessetpermissioncheckhandlerhandler)
 with the `serial` permission.
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -447,7 +447,7 @@ cancel the request.  Additionally, permissioning on `navigator.usb` can
 be further managed by using [`ses.setPermissionCheckHandler(handler)`](#sessetpermissioncheckhandlerhandler)
 and [`ses.setDevicePermissionHandler(handler)`](#sessetdevicepermissionhandlerhandler).
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)} @ts-type={updateGrantedDevices:(devices:Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)=>void}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -486,7 +486,7 @@ app.whenReady().then(() => {
   win.webContents.session.on('select-usb-device', (event, details, callback) => {
     event.preventDefault()
     const selectedDevice = details.deviceList.find((device) => {
-      return device.vendorId === '9025' && device.productId === '67'
+      return device.vendorId === 9025 && device.productId === 67
     })
     if (selectedDevice) {
       // Optionally, add this to the persisted devices (updateGrantedDevices needs to be implemented by developer to persist permissions)
@@ -741,15 +741,17 @@ Sets download saving directory. By default, the download directory will be the
 Emulates network with the given configuration for the `session`.
 
 ```javascript
+const win = new BrowserWindow()
+
 // To emulate a GPRS connection with 50kbps throughput and 500 ms latency.
-window.webContents.session.enableNetworkEmulation({
+win.webContents.session.enableNetworkEmulation({
   latency: 500,
   downloadThroughput: 6400,
   uploadThroughput: 6400
 })
 
 // To emulate a network outage.
-window.webContents.session.enableNetworkEmulation({ offline: true })
+win.webContents.session.enableNetworkEmulation({ offline: true })
 ```
 
 #### `ses.preconnect(options)`
@@ -967,7 +969,7 @@ Additionally, the default behavior of Electron is to store granted device permis
 If longer term storage is needed, a developer can store granted device
 permissions (eg when handling the `select-hid-device` event) and then read from that storage with `setDevicePermissionHandler`.
 
-```javascript
+```javascript @ts-type={fetchGrantedDevices:()=>(Array<Electron.DevicePermissionHandlerHandlerDetails['device']>)}
 const { app, BrowserWindow } = require('electron')
 
 let win = null
@@ -1015,9 +1017,58 @@ app.whenReady().then(() => {
   win.webContents.session.on('select-hid-device', (event, details, callback) => {
     event.preventDefault()
     const selectedDevice = details.deviceList.find((device) => {
-      return device.vendorId === '9025' && device.productId === '67'
+      return device.vendorId === 9025 && device.productId === 67
     })
-    callback(selectedPort?.deviceId)
+    callback(selectedDevice?.deviceId)
+  })
+})
+```
+
+#### `ses.setUSBProtectedClassesHandler(handler)`
+
+* `handler` Function\<string[]> | null
+  * `details` Object
+    * `protectedClasses` string[] - The current list of protected USB classes. Possible class values are:
+      * `audio`
+      * `audio-video`
+      * `hid`
+      * `mass-storage`
+      * `smart-card`
+      * `video`
+      * `wireless`
+
+Sets the handler which can be used to override which [USB classes are protected](https://wicg.github.io/webusb/#usbinterface-interface).
+The return value for the handler is a string array of USB classes which should be considered protected (eg not available in the renderer).  Valid values for the array are:
+
+* `audio`
+* `audio-video`
+* `hid`
+* `mass-storage`
+* `smart-card`
+* `video`
+* `wireless`
+
+Returning an empty string array from the handler will allow all USB classes; returning the passed in array will maintain the default list of protected USB classes (this is also the default behavior if a handler is not defined).
+To clear the handler, call `setUSBProtectedClassesHandler(null)`.
+
+```javascript
+const { app, BrowserWindow } = require('electron')
+
+let win = null
+
+app.whenReady().then(() => {
+  win = new BrowserWindow()
+
+  win.webContents.session.setUSBProtectedClassesHandler((details) => {
+    // Allow all classes:
+    // return []
+    // Keep the current set of protected classes:
+    // return details.protectedClasses
+    // Selectively remove classes:
+    return details.protectedClasses.filter((usbClass) => {
+      // Exclude classes except for audio classes
+      return usbClass.indexOf('audio') === -1
+    })
   })
 })
 ```
@@ -1056,31 +1107,31 @@ macOS does not require a handler because macOS handles the pairing
 automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```javascript
-
-const { app, BrowserWindow, ipcMain, session } = require('electron')
-
-let bluetoothPinCallback = null
+const { app, BrowserWindow, session } = require('electron')
+const path = require('path')
 
 function createWindow () {
+  let bluetoothPinCallback = null
+
   const mainWindow = new BrowserWindow({
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
   })
+
+  mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
+    bluetoothPinCallback = callback
+    // Send a IPC message to the renderer to prompt the user to confirm the pairing.
+    // Note that this will require logic in the renderer to handle this message and
+    // display a prompt to the user.
+    mainWindow.webContents.send('bluetooth-pairing-request', details)
+  })
+
+  // Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
+  mainWindow.webContents.ipc.on('bluetooth-pairing-response', (event, response) => {
+    bluetoothPinCallback(response)
+  })
 }
-
-// Listen for an IPC message from the renderer to get the response for the Bluetooth pairing.
-ipcMain.on('bluetooth-pairing-response', (event, response) => {
-  bluetoothPinCallback(response)
-})
-
-mainWindow.webContents.session.setBluetoothPairingHandler((details, callback) => {
-  bluetoothPinCallback = callback
-  // Send a IPC message to the renderer to prompt the user to confirm the pairing.
-  // Note that this will require logic in the renderer to handle this message and
-  // display a prompt to the user.
-  mainWindow.webContents.send('bluetooth-pairing-request', details)
-})
 
 app.whenReady().then(() => {
   createWindow()

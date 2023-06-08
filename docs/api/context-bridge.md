@@ -18,7 +18,7 @@ contextBridge.exposeInMainWorld(
 )
 ```
 
-```javascript
+```javascript @ts-nocheck
 // Renderer (Main World)
 
 window.electron.doThing()
@@ -104,7 +104,7 @@ contextBridge.exposeInIsolatedWorld(
 )
 ```
 
-```javascript
+```javascript @ts-nocheck
 // Renderer (In isolated world id1004)
 
 window.electron.doThing()

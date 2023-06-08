@@ -12,6 +12,8 @@
 #include <string>
 #include <vector>
 
+#include "shell/browser/ui/views/root_view.h"
+#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(USE_OZONE)
@@ -27,14 +29,9 @@
 
 #endif
 
-namespace views {
-class UnhandledKeyboardEventHandler;
-}
-
 namespace electron {
 
 class GlobalMenuBarX11;
-class RootView;
 class WindowStateWatcher;
 
 #if defined(USE_OZONE_PLATFORM_X11)
@@ -250,7 +247,7 @@ class NativeWindowViews : public NativeWindow,
   // Maintain window placement.
   void MoveBehindTaskBarIfNeeded();
 
-  std::unique_ptr<RootView> root_view_;
+  RootView root_view_{this};
 
   // The view should be focused by default.
   views::View* focused_view_ = nullptr;
@@ -321,7 +318,7 @@ class NativeWindowViews : public NativeWindow,
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
-  std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
+  views::UnhandledKeyboardEventHandler keyboard_event_handler_;
 
   // Whether the window should be enabled based on user calls to SetEnabled()
   bool is_enabled_ = true;

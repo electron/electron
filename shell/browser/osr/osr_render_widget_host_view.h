@@ -18,7 +18,6 @@
 
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
-#include "base/time/time.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
@@ -258,9 +257,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;
 
-  base::Time last_time_ = base::Time::Now();
-
-  gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
   bool painting_;
 
@@ -270,8 +266,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool hold_resize_ = false;
   bool pending_resize_ = false;
-
-  bool paint_callback_running_ = false;
 
   viz::LocalSurfaceId delegated_frame_host_surface_id_;
   viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
