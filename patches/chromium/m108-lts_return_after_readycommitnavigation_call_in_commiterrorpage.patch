@@ -1,8 +1,8 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Rakina Zata Amni <rakina@chromium.org>
 Date: Tue, 30 May 2023 16:24:26 +0000
-Subject: [M108-LTS] Return after ReadyCommitNavigation call in CommitErrorPage
- if it deletes NavigationRequest
+Subject: Return after ReadyCommitNavigation call in CommitErrorPage if it
+ deletes NavigationRequest
 
 M108 merge issue:
   content/browser/renderer_host/navigation_request.cc:

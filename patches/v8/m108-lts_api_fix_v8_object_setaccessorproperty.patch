@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Thu, 27 Apr 2023 11:11:32 +0200
-Subject: [M108-LTS][api] Fix v8::Object::SetAccessorProperty
+Subject: Fix v8::Object::SetAccessorProperty
 
 ... by using JavaScript spec compliant JSReceiver::DefineOwnProperty.
 
