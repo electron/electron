@@ -1,7 +1,7 @@
-From 3b0607d140608339255e574471a78165c54404d5 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Wed, 17 May 2023 13:47:36 +0200
-Subject: [PATCH] Merged: [runtime] Remove redundant calls to GetPropertyAttributes
+Subject: Merged: [runtime] Remove redundant calls to GetPropertyAttributes
 
 ... when defining properties in favour of CheckIfCanDefine.
 
@@ -19,13 +19,12 @@ Reviewed-by: Toon Verwaest <verwaest@chromium.org>
 Cr-Commit-Position: refs/branch-heads/11.4@{#22}
 Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
----
 
 diff --git a/src/ic/ic.cc b/src/ic/ic.cc
-index bf25f6b..d548bbd 100644
+index 93939fa4702922f58e8e5bcc019e569f42ab198e..1190b3dedfabee414fb49038e31b3cf2bbce68ee 100644
 --- a/src/ic/ic.cc
 +++ b/src/ic/ic.cc
-@@ -1790,14 +1790,14 @@
+@@ -1816,14 +1816,14 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
    // been thrown if the private field already exists in the object.
    if (IsAnyDefineOwn() && !name->IsPrivateName() && !object->IsJSProxy() &&
        !Handle<JSObject>::cast(object)->HasNamedInterceptor()) {
@@ -44,10 +43,10 @@ index bf25f6b..d548bbd 100644
        it.Restart();
      }
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index f3a45f1..5df6e2a 100644
+index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..d5e4aaa3b98b65c644d9556f483bccec008a9a1f 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -250,27 +250,6 @@
+@@ -243,27 +243,6 @@ Maybe<bool> JSReceiver::CheckPrivateNameStore(LookupIterator* it,
    return Just(true);
  }
  
@@ -64,7 +63,7 @@ index f3a45f1..5df6e2a 100644
 -          NewTypeError(MessageTemplate::kRedefineDisallowed, it->GetName()));
 -    }
 -  } else if (!JSObject::IsExtensible(
--                 isolate, Handle<JSObject>::cast(it->GetReceiver()))) {
+-                 Handle<JSObject>::cast(it->GetReceiver()))) {
 -    RETURN_FAILURE(
 -        isolate, GetShouldThrow(isolate, should_throw),
 -        NewTypeError(MessageTemplate::kDefineDisallowed, it->GetName()));
@@ -75,7 +74,7 @@ index f3a45f1..5df6e2a 100644
  namespace {
  
  bool HasExcludedProperty(
-@@ -3699,7 +3678,7 @@
+@@ -3642,7 +3621,7 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
  
          if (semantics == EnforceDefineSemantics::kDefine) {
            it->Restart();
@@ -84,12 +83,13 @@ index f3a45f1..5df6e2a 100644
                it->isolate(), it, value, should_throw);
            if (can_define.IsNothing() || !can_define.FromJust()) {
              return can_define;
-@@ -4128,16 +4107,15 @@
+@@ -4071,17 +4050,16 @@ Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
                                           Handle<Object> value,
                                           Maybe<ShouldThrow> should_throw) {
    DCHECK(it->GetReceiver()->IsJSObject());
 -  MAYBE_RETURN(JSReceiver::GetPropertyAttributes(it), Nothing<bool>());
-   Isolate* isolate = it->isolate();
+   Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
+   Isolate* isolate = receiver->GetIsolate();
  
 -  Maybe<bool> can_define =
 -      JSReceiver::CheckIfCanDefine(isolate, it, value, should_throw);
@@ -104,7 +104,7 @@ index f3a45f1..5df6e2a 100644
                              DefineOwnPropertyIgnoreAttributes(it, value, NONE),
                              Nothing<bool>());
  
-@@ -4773,19 +4751,43 @@
+@@ -4710,19 +4688,43 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
      return it.factory()->undefined_value();
    }
  
@@ -156,10 +156,10 @@ index f3a45f1..5df6e2a 100644
    if (HasFastProperties()) {
      DescriptorArray descs = map().instance_descriptors();
 diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
-index 870eb81..4b79f67 100644
+index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..f663af6ed8a445f8ef30a67bac176a1abe6c85f8 100644
 --- a/src/objects/js-objects.h
 +++ b/src/objects/js-objects.h
-@@ -168,12 +168,6 @@
+@@ -167,12 +167,6 @@ class JSReceiver : public TorqueGeneratedJSReceiver<JSReceiver, HeapObject> {
    V8_WARN_UNUSED_RESULT static Maybe<bool> CheckPrivateNameStore(
        LookupIterator* it, bool is_define);
  
@@ -172,7 +172,7 @@ index 870eb81..4b79f67 100644
    // ES6 7.3.4 (when passed kDontThrow)
    V8_WARN_UNUSED_RESULT static Maybe<bool> CreateDataProperty(
        Isolate* isolate, Handle<JSReceiver> object, Handle<Name> key,
-@@ -552,6 +546,12 @@
+@@ -544,6 +538,12 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
        Handle<JSObject> object, Handle<Name> name, Handle<AccessorInfo> info,
        PropertyAttributes attributes);
  
