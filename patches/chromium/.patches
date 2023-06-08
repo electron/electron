@@ -142,5 +142,4 @@ check_callback_availability_in.patch
 m112_cherry_pick_libxml_cve_fix.patch
 m112_fix_scopedobservation_uaf_in.patch
 cherry-pick-48785f698b1c.patch
-cherry-pick-9b6ca211234b.patch
 cherry-pick-675562695049.patch
