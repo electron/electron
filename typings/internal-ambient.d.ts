@@ -5,7 +5,6 @@ declare const ENABLE_VIEWS_API: boolean;
 declare namespace NodeJS {
   interface FeaturesBinding {
     isBuiltinSpellCheckerEnabled(): boolean;
-    isOffscreenRenderingEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
     isViewApiEnabled(): boolean;

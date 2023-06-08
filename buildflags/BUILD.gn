@@ -9,7 +9,6 @@ buildflag_header("buildflags") {
   header = "buildflags.h"
 
   flags = [
-    "ENABLE_OSR=$enable_osr",
     "ENABLE_VIEWS_API=$enable_views_api",
     "ENABLE_PDF_VIEWER=$enable_pdf_viewer",
     "ENABLE_ELECTRON_EXTENSIONS=$enable_electron_extensions",
