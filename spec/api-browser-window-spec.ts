@@ -5338,6 +5338,48 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('when fullscreen state is changed', () => {
+      it('correctly remembers state prior to fullscreen change', async () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+    
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+        expect(w.fullScreen).to.be.true('not fullscreen');
+
+        const exitFS = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await exitFS;
+        expect(w.fullScreen).to.be.false('not fullscreen');
+    
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+      });
+
+      it('correctly remembers state prior to fullscreen change with autoHide', async () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.autoHideMenuBar).to.be.false('autoHideMenuBar');
+        w.autoHideMenuBar = ture;
+        expect(w.autoHideMenuBar).to.be.true('autoHideMenuBar');
+        w.setMenuBarVisibility(false);
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+        expect(w.fullScreen).to.be.true('not fullscreen');
+
+        const exitFS = once(w, 'leave-full-screen');
+        w.setFullScreen(false);
+        await exitFS;
+        expect(w.fullScreen).to.be.false('not fullscreen');
+
+        expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
+      });
+    });
+
     ifdescribe(process.platform === 'darwin')('fullscreenable state', () => {
       it('with functions', () => {
         it('can be set with fullscreenable constructor option', () => {
