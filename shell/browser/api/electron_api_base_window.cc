@@ -708,8 +708,6 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
-    menu_.Reset(isolate, menu.ToV8());
-
     // We only want to update the menu if the menu has a non-zero item count,
     // or we risk crashes.
     if (menu->model()->GetItemCount() == 0) {
@@ -717,6 +715,8 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     } else {
       window_->SetMenu(menu->model());
     }
+
+    menu_.Reset(isolate, menu.ToV8());
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
