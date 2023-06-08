@@ -335,36 +335,34 @@ WebContents.prototype.printToPDF = async function (options) {
   }
 };
 
-WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
-  // TODO(codebytere): deduplicate argument sanitization by moving rest of
-  // print param logic into new file shared between printToPDF and print
-  if (typeof options === 'object') {
-    // Optionally set size for PDF.
-    if (options.pageSize !== undefined) {
-      const pageSize = options.pageSize;
-      if (typeof pageSize === 'object') {
-        if (!pageSize.height || !pageSize.width) {
-          throw new Error('height and width properties are required for pageSize');
-        }
-
-        // Dimensions in Microns - 1 meter = 10^6 microns
-        const height = Math.ceil(pageSize.height);
-        const width = Math.ceil(pageSize.width);
-        if (!isValidCustomPageSize(width, height)) {
-          throw new Error('height and width properties must be minimum 352 microns.');
-        }
-
-        options.mediaSize = {
-          name: 'CUSTOM',
-          custom_display_name: 'Custom',
-          height_microns: height,
-          width_microns: width
-        };
-      } else if (PDFPageSizes[pageSize]) {
-        options.mediaSize = PDFPageSizes[pageSize];
-      } else {
-        throw new Error(`Unsupported pageSize: ${pageSize}`);
+// TODO(codebytere): deduplicate argument sanitization by moving rest of
+// print param logic into new file shared between printToPDF and print
+WebContents.prototype.print = function (printOptions: ElectronInternal.WebContentsPrintOptions, callback) {
+  const options = printOptions ?? {};
+  if (options.pageSize) {
+    const pageSize = options.pageSize;
+    if (typeof pageSize === 'object') {
+      if (!pageSize.height || !pageSize.width) {
+        throw new Error('height and width properties are required for pageSize');
       }
+
+      // Dimensions in Microns - 1 meter = 10^6 microns
+      const height = Math.ceil(pageSize.height);
+      const width = Math.ceil(pageSize.width);
+      if (!isValidCustomPageSize(width, height)) {
+        throw new Error('height and width properties must be minimum 352 microns.');
+      }
+
+      options.mediaSize = {
+        name: 'CUSTOM',
+        custom_display_name: 'Custom',
+        height_microns: height,
+        width_microns: width
+      };
+    } else if (PDFPageSizes[pageSize]) {
+      options.mediaSize = PDFPageSizes[pageSize];
+    } else {
+      throw new Error(`Unsupported pageSize: ${pageSize}`);
     }
   }
 
