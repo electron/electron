@@ -1,0 +1,304 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Wed, 26 Apr 2023 10:56:03 -0700
+Subject: Merged: [regexp] Fix clobbered register in global Unicode special
+ case
+
+Bug: chromium:1439691
+(cherry picked from commit 2c8a019f39d29b403f881d9b5932e3219fdcc832)
+
+Change-Id: Ia418ae04bf4352e3618700c55ecd37447023e6eb
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4503810
+Reviewed-by: Jakob Linke <jgruber@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.2@{#43}
+Cr-Branched-From: 755511a138609ac5939449a8ac615c15603a4454-refs/heads/11.2.214@{#1}
+Cr-Branched-From: e6b1ccefb0f0f1ff8d310578878130dc53d73749-refs/heads/main@{#86014}
+
+diff --git a/src/regexp/arm/regexp-macro-assembler-arm.cc b/src/regexp/arm/regexp-macro-assembler-arm.cc
+index 2658068b6f94b97f024b1400c8c0b20eefdc5143..5de110c8495ef5bd261df92ca8f459c5f0cc7e5b 100644
+--- a/src/regexp/arm/regexp-macro-assembler-arm.cc
++++ b/src/regexp/arm/regexp-macro-assembler-arm.cc
+@@ -877,19 +877,18 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+       __ add(r2, r2, Operand(num_saved_registers_ * kPointerSize));
+       __ str(r2, MemOperand(frame_pointer(), kRegisterOutput));
+ 
+-      // Prepare r0 to initialize registers with its value in the next run.
+-      __ ldr(r0, MemOperand(frame_pointer(), kStringStartMinusOne));
+-
+       // Restore the original regexp stack pointer value (effectively, pop the
+       // stored base pointer).
+       PopRegExpBasePointer(backtrack_stackpointer(), r2);
+ 
++      Label reload_string_start_minus_one;
++
+       if (global_with_zero_length_check()) {
+         // Special case for zero-length matches.
+         // r4: capture start index
+         __ cmp(current_input_offset(), r4);
+         // Not a zero-length match, restart.
+-        __ b(ne, &load_char_start_regexp);
++        __ b(ne, &reload_string_start_minus_one);
+         // Offset from the end is zero if we already reached the end.
+         __ cmp(current_input_offset(), Operand::Zero());
+         __ b(eq, &exit_label_);
+@@ -901,6 +900,11 @@ Handle<HeapObject> RegExpMacroAssemblerARM::GetCode(Handle<String> source) {
+         if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+       }
+ 
++      __ bind(&reload_string_start_minus_one);
++      // Prepare r0 to initialize registers with its value in the next run.
++      // Must be immediately before the jump to avoid clobbering.
++      __ ldr(r0, MemOperand(frame_pointer(), kStringStartMinusOne));
++
+       __ b(&load_char_start_regexp);
+     } else {
+       __ mov(r0, Operand(SUCCESS));
+diff --git a/src/regexp/ia32/regexp-macro-assembler-ia32.cc b/src/regexp/ia32/regexp-macro-assembler-ia32.cc
+index 600234542042ce9a06ceb3b415fece83f6f271bf..6c3df5da7d6c28619902b20419c9cf437325c1d1 100644
+--- a/src/regexp/ia32/regexp-macro-assembler-ia32.cc
++++ b/src/regexp/ia32/regexp-macro-assembler-ia32.cc
+@@ -915,19 +915,18 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+       __ add(Operand(ebp, kRegisterOutput),
+              Immediate(num_saved_registers_ * kSystemPointerSize));
+ 
+-      // Prepare eax to initialize registers with its value in the next run.
+-      __ mov(eax, Operand(ebp, kStringStartMinusOne));
+-
+       // Restore the original regexp stack pointer value (effectively, pop the
+       // stored base pointer).
+       PopRegExpBasePointer(backtrack_stackpointer(), ebx);
+ 
++      Label reload_string_start_minus_one;
++
+       if (global_with_zero_length_check()) {
+         // Special case for zero-length matches.
+         // edx: capture start index
+         __ cmp(edi, edx);
+         // Not a zero-length match, restart.
+-        __ j(not_equal, &load_char_start_regexp);
++        __ j(not_equal, &reload_string_start_minus_one);
+         // edi (offset from the end) is zero if we already reached the end.
+         __ test(edi, edi);
+         __ j(zero, &exit_label_, Label::kNear);
+@@ -941,6 +940,12 @@ Handle<HeapObject> RegExpMacroAssemblerIA32::GetCode(Handle<String> source) {
+         }
+         if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+       }
++
++      __ bind(&reload_string_start_minus_one);
++      // Prepare eax to initialize registers with its value in the next run.
++      // Must be immediately before the jump to avoid clobbering.
++      __ mov(eax, Operand(ebp, kStringStartMinusOne));
++
+       __ jmp(&load_char_start_regexp);
+     } else {
+       __ mov(eax, Immediate(SUCCESS));
+diff --git a/src/regexp/loong64/regexp-macro-assembler-loong64.cc b/src/regexp/loong64/regexp-macro-assembler-loong64.cc
+index 35fd95bd0f2d210419b4057ced6e16ffd5aec051..d5c52b4134ccbfecef85328e181dae1bbda7bf63 100644
+--- a/src/regexp/loong64/regexp-macro-assembler-loong64.cc
++++ b/src/regexp/loong64/regexp-macro-assembler-loong64.cc
+@@ -850,18 +850,17 @@ Handle<HeapObject> RegExpMacroAssemblerLOONG64::GetCode(Handle<String> source) {
+         __ Add_d(a2, a2, num_saved_registers_ * kIntSize);
+         __ St_d(a2, MemOperand(frame_pointer(), kRegisterOutput));
+ 
+-        // Prepare a0 to initialize registers with its value in the next run.
+-        __ Ld_d(a0, MemOperand(frame_pointer(), kStringStartMinusOne));
+-
+         // Restore the original regexp stack pointer value (effectively, pop the
+         // stored base pointer).
+         PopRegExpBasePointer(backtrack_stackpointer(), a2);
+ 
++        Label reload_string_start_minus_one;
++
+         if (global_with_zero_length_check()) {
+           // Special case for zero-length matches.
+           // t3: capture start index
+           // Not a zero-length match, restart.
+-          __ Branch(&load_char_start_regexp, ne, current_input_offset(),
++          __ Branch(&reload_string_start_minus_one, ne, current_input_offset(),
+                     Operand(t3));
+           // Offset from the end is zero if we already reached the end.
+           __ Branch(&exit_label_, eq, current_input_offset(),
+@@ -874,6 +873,11 @@ Handle<HeapObject> RegExpMacroAssemblerLOONG64::GetCode(Handle<String> source) {
+           if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+         }
+ 
++        __ bind(&reload_string_start_minus_one);
++        // Prepare a0 to initialize registers with its value in the next run.
++        // Must be immediately before the jump to avoid clobbering.
++        __ Ld_d(a0, MemOperand(frame_pointer(), kStringStartMinusOne));
++
+         __ Branch(&load_char_start_regexp);
+       } else {
+         __ li(a0, Operand(SUCCESS));
+diff --git a/src/regexp/mips64/regexp-macro-assembler-mips64.cc b/src/regexp/mips64/regexp-macro-assembler-mips64.cc
+index 456e166adefc72b7bcaa9245798f3885c2a4c2e7..6ee4c709cf96f68a32a0b3c1ebdc42817293bf29 100644
+--- a/src/regexp/mips64/regexp-macro-assembler-mips64.cc
++++ b/src/regexp/mips64/regexp-macro-assembler-mips64.cc
+@@ -898,19 +898,18 @@ Handle<HeapObject> RegExpMacroAssemblerMIPS::GetCode(Handle<String> source) {
+         __ Daddu(a2, a2, num_saved_registers_ * kIntSize);
+         __ Sd(a2, MemOperand(frame_pointer(), kRegisterOutput));
+ 
+-        // Prepare a0 to initialize registers with its value in the next run.
+-        __ Ld(a0, MemOperand(frame_pointer(), kStringStartMinusOne));
+-
+         // Restore the original regexp stack pointer value (effectively, pop the
+         // stored base pointer).
+         PopRegExpBasePointer(backtrack_stackpointer(), a2);
+ 
++        Label reload_string_start_minus_one;
++
+         if (global_with_zero_length_check()) {
+           // Special case for zero-length matches.
+           // t3: capture start index
+           // Not a zero-length match, restart.
+-          __ Branch(
+-              &load_char_start_regexp, ne, current_input_offset(), Operand(t3));
++          __ Branch(&reload_string_start_minus_one, ne, current_input_offset(),
++                    Operand(t3));
+           // Offset from the end is zero if we already reached the end.
+           __ Branch(&exit_label_, eq, current_input_offset(),
+                     Operand(zero_reg));
+@@ -922,6 +921,11 @@ Handle<HeapObject> RegExpMacroAssemblerMIPS::GetCode(Handle<String> source) {
+           if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+         }
+ 
++        __ bind(&reload_string_start_minus_one);
++        // Prepare a0 to initialize registers with its value in the next run.
++        // Must be immediately before the jump to avoid clobbering.
++        __ Ld(a0, MemOperand(frame_pointer(), kStringStartMinusOne));
++
+         __ Branch(&load_char_start_regexp);
+       } else {
+         __ li(v0, Operand(SUCCESS));
+diff --git a/src/regexp/riscv/regexp-macro-assembler-riscv.cc b/src/regexp/riscv/regexp-macro-assembler-riscv.cc
+index c8f3eb551e05805003d30a1786acdd9aab96d906..c03be100849c50f471d6839d4cd960e5a78d67d3 100644
+--- a/src/regexp/riscv/regexp-macro-assembler-riscv.cc
++++ b/src/regexp/riscv/regexp-macro-assembler-riscv.cc
+@@ -869,18 +869,17 @@ Handle<HeapObject> RegExpMacroAssemblerRISCV::GetCode(Handle<String> source) {
+         __ AddWord(a2, a2, num_saved_registers_ * kIntSize);
+         __ StoreWord(a2, MemOperand(frame_pointer(), kRegisterOutput));
+ 
+-        // Prepare a0 to initialize registers with its value in the next run.
+-        __ LoadWord(a0, MemOperand(frame_pointer(), kStringStartMinusOne));
+-
+         // Restore the original regexp stack pointer value (effectively, pop the
+         // stored base pointer).
+         PopRegExpBasePointer(backtrack_stackpointer(), a2);
+ 
++        Label reload_string_start_minus_one;
++
+         if (global_with_zero_length_check()) {
+           // Special case for zero-length matches.
+           // s3: capture start index
+           // Not a zero-length match, restart.
+-          __ Branch(&load_char_start_regexp, ne, current_input_offset(),
++          __ Branch(&reload_string_start_minus_one, ne, current_input_offset(),
+                     Operand(s3));
+           // Offset from the end is zero if we already reached the end.
+           __ Branch(&exit_label_, eq, current_input_offset(),
+@@ -893,6 +892,12 @@ Handle<HeapObject> RegExpMacroAssemblerRISCV::GetCode(Handle<String> source) {
+           if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+         }
+ 
++        __ bind(&reload_string_start_minus_one);
++        // Prepare a0 to initialize registers with its value in the next run.
++        // Must be immediately before the jump to avoid clobbering.
++        __ LoadWord(a0,
++                    MemOperand(frame_pointer(), kStringStartMinusOne));
++
+         __ Branch(&load_char_start_regexp);
+       } else {
+         __ li(a0, Operand(SUCCESS));
+diff --git a/src/regexp/s390/regexp-macro-assembler-s390.cc b/src/regexp/s390/regexp-macro-assembler-s390.cc
+index a61bc379ba6c265ecb0c5cd7aa8d7a2e35ca6c1e..de184b95862e7f2e64d69cff6b60d866eb212f36 100644
+--- a/src/regexp/s390/regexp-macro-assembler-s390.cc
++++ b/src/regexp/s390/regexp-macro-assembler-s390.cc
+@@ -947,19 +947,18 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
+       __ AddS64(r4, Operand(num_saved_registers_ * kIntSize));
+       __ StoreU64(r4, MemOperand(frame_pointer(), kRegisterOutput));
+ 
+-      // Prepare r2 to initialize registers with its value in the next run.
+-      __ LoadU64(r2, MemOperand(frame_pointer(), kStringStartMinusOne));
+-
+       // Restore the original regexp stack pointer value (effectively, pop the
+       // stored base pointer).
+       PopRegExpBasePointer(backtrack_stackpointer(), r4);
+ 
++      Label reload_string_start_minus_one;
++
+       if (global_with_zero_length_check()) {
+         // Special case for zero-length matches.
+         // r6: capture start index
+         __ CmpS64(current_input_offset(), r6);
+         // Not a zero-length match, restart.
+-        __ bne(&load_char_start_regexp);
++        __ bne(&reload_string_start_minus_one);
+         // Offset from the end is zero if we already reached the end.
+         __ CmpS64(current_input_offset(), Operand::Zero());
+         __ beq(&exit_label_);
+@@ -970,6 +969,11 @@ Handle<HeapObject> RegExpMacroAssemblerS390::GetCode(Handle<String> source) {
+         if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+       }
+ 
++      __ bind(&reload_string_start_minus_one);
++      // Prepare r2 to initialize registers with its value in the next run.
++      // Must be immediately before the jump to avoid clobbering.
++      __ LoadU64(r2, MemOperand(frame_pointer(), kStringStartMinusOne));
++
+       __ b(&load_char_start_regexp);
+     } else {
+       __ mov(r2, Operand(SUCCESS));
+diff --git a/src/regexp/x64/regexp-macro-assembler-x64.cc b/src/regexp/x64/regexp-macro-assembler-x64.cc
+index 89fd2e34f1296113c43f16896d8f35d741782709..7c59534aa46c4c1c6fed151d7dad13070d133f47 100644
+--- a/src/regexp/x64/regexp-macro-assembler-x64.cc
++++ b/src/regexp/x64/regexp-macro-assembler-x64.cc
+@@ -951,19 +951,18 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+       __ addq(Operand(rbp, kRegisterOutput),
+               Immediate(num_saved_registers_ * kIntSize));
+ 
+-      // Prepare rax to initialize registers with its value in the next run.
+-      __ movq(rax, Operand(rbp, kStringStartMinusOne));
+-
+       // Restore the original regexp stack pointer value (effectively, pop the
+       // stored base pointer).
+       PopRegExpBasePointer(backtrack_stackpointer(), kScratchRegister);
+ 
++      Label reload_string_start_minus_one;
++
+       if (global_with_zero_length_check()) {
+         // Special case for zero-length matches.
+         // rdx: capture start index
+         __ cmpq(rdi, rdx);
+         // Not a zero-length match, restart.
+-        __ j(not_equal, &load_char_start_regexp);
++        __ j(not_equal, &reload_string_start_minus_one);
+         // rdi (offset from the end) is zero if we already reached the end.
+         __ testq(rdi, rdi);
+         __ j(zero, &exit_label_, Label::kNear);
+@@ -978,6 +977,11 @@ Handle<HeapObject> RegExpMacroAssemblerX64::GetCode(Handle<String> source) {
+         if (global_unicode()) CheckNotInSurrogatePair(0, &advance);
+       }
+ 
++      __ bind(&reload_string_start_minus_one);
++      // Prepare rax to initialize registers with its value in the next run.
++      // Must be immediately before the jump to avoid clobbering.
++      __ movq(rax, Operand(rbp, kStringStartMinusOne));
++
+       __ jmp(&load_char_start_regexp);
+     } else {
+       __ Move(rax, SUCCESS);
+diff --git a/test/mjsunit/regress/regress-crbug-1439691.js b/test/mjsunit/regress/regress-crbug-1439691.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..6c55835535ab4f42ef0446abf863986962df9e9b
+--- /dev/null
++++ b/test/mjsunit/regress/regress-crbug-1439691.js
+@@ -0,0 +1,7 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++function f0() {
++}
++/(?!(a))\1/gudyi[Symbol.replace]("f\uD83D\uDCA9ba\u2603", f0);
