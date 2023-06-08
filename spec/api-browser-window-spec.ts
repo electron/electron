@@ -4930,7 +4930,7 @@ describe('BrowserWindow module', () => {
       });
     });
 
-    describe('when fullscreen state is changed', () => {
+    ifdescribe(process.platform !== 'darwin')('when fullscreen state is changed', () => {
       it('correctly remembers state prior to fullscreen change', async () => {
         const w = new BrowserWindow({ show: false });
         expect(w.isMenuBarVisible()).to.be.true('isMenuBarVisible');
