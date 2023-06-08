@@ -77,7 +77,7 @@ async function validateReleaseAssets (release, validatingRelease) {
     } else {
       await verifyShasumsForRemoteFiles(downloadUrls)
         .catch(err => {
-          console.log(`${fail} error verifyingShasums`, err);
+          console.error(`${fail} error verifyingShasums`, err);
         });
     }
     const azRemoteFiles = azRemoteFilesForVersion(release.tag_name);
@@ -90,7 +90,7 @@ function check (condition, statement, exitIfFail = false) {
     console.log(`${pass} ${statement}`);
   } else {
     failureCount++;
-    console.log(`${fail} ${statement}`);
+    console.error(`${fail} ${statement}`);
     if (exitIfFail) process.exit(1);
   }
 }
@@ -212,7 +212,7 @@ function runScript (scriptName, scriptArgs, cwd) {
   try {
     return execSync(scriptCommand, scriptOptions);
   } catch (err) {
-    console.log(`${fail} Error running ${scriptName}`, err);
+    console.error(`${fail} Error running ${scriptName}`, err);
     process.exit(1);
   }
 }
@@ -266,7 +266,8 @@ async function createReleaseShasums (release) {
       repo: targetRepo,
       asset_id: existingAssets[0].id
     }).catch(err => {
-      console.log(`${fail} Error deleting ${fileName} on GitHub:`, err);
+      console.error(`${fail} Error deleting ${fileName} on GitHub:`, err);
+      process.exit(1);
     });
   }
   console.log(`Creating and uploading the release ${fileName}.`);
@@ -292,7 +293,7 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
     data: fs.createReadStream(filePath),
     name: fileName
   }).catch(err => {
-    console.log(`${fail} Error uploading ${filePath} to GitHub:`, err);
+    console.error(`${fail} Error uploading ${filePath} to GitHub:`, err);
     process.exit(1);
   });
 }
@@ -301,13 +302,13 @@ function saveShaSumFile (checksums, fileName) {
   return new Promise((resolve, reject) => {
     temp.open(fileName, (err, info) => {
       if (err) {
-        console.log(`${fail} Could not create ${fileName} file`);
+        console.error(`${fail} Could not create ${fileName} file`);
         process.exit(1);
       } else {
         fs.writeFileSync(info.fd, checksums);
         fs.close(info.fd, (err) => {
           if (err) {
-            console.log(`${fail} Could close ${fileName} file`);
+            console.error(`${fail} Could close ${fileName} file`);
             process.exit(1);
           }
           resolve(info.path);
@@ -336,7 +337,7 @@ async function publishRelease (release) {
     draft: false,
     make_latest: makeLatest ? 'true' : 'false'
   }).catch(err => {
-    console.log(`${fail} Error publishing release:`, err);
+    console.error(`${fail} Error publishing release:`, err);
     process.exit(1);
   });
 }
@@ -406,7 +407,7 @@ async function verifyDraftGitHubReleaseAssets (release) {
 
     return { url: response.headers.location, file: asset.name };
   })).catch(err => {
-    console.log(`${fail} Error downloading files from GitHub`, err);
+    console.error(`${fail} Error downloading files from GitHub`, err);
     process.exit(1);
   });
 
