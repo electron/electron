@@ -89,11 +89,29 @@ const LINTERS = [{
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
     const filter = [
-      '-readability/braces',
+      // from presubmit_canned_checks.py OFF_BY_DEFAULT_LINT_FILTERS
+      '-build/include',
+      '-build/include_order',
+      '-build/namespaces',
       '-readability/casting',
+      '-runtime/int',
       '-whitespace/braces',
+      // from presubmit_canned_checks.py OFF_UNLESS_MANUALLY_ENABLED_LINT_FILTERS
+      '-build/c++11',
+      '-build/header_guard',
+      '-readability/todo',
+      '-runtime/references',
+      '-whitespace/braces',
+      '-whitespace/comma',
+      '-whitespace/end_of_line',
+      '-whitespace/forcolon',
       '-whitespace/indent',
-      '-whitespace/parens'
+      '-whitespace/line_length',
+      '-whitespace/newline',
+      '-whitespace/operators',
+      '-whitespace/parens',
+      '-whitespace/semicolon',
+      '-whitespace/tab'
     ];
     cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
   }
