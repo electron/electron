@@ -321,7 +321,7 @@ class NativeWindowViews : public NativeWindow,
   // Handles unhandled keyboard messages coming back from the renderer process.
   views::UnhandledKeyboardEventHandler keyboard_event_handler_;
 
-  // Whether the menubar is visible before fullscreen entered
+  // Whether the menubar is visible before the window enters fullscreen
   bool menu_bar_visible_before_fullscreen_ = false;
 
   // Whether the window should be enabled based on user calls to SetEnabled()
