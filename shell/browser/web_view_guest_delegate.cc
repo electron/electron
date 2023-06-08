@@ -124,9 +124,4 @@ WebViewGuestDelegate::CreateNewGuestWindow(
   return guest_contents;
 }
 
-base::WeakPtr<content::BrowserPluginGuestDelegate>
-WebViewGuestDelegate::GetGuestDelegateWeakPtr() {
-  return weak_ptr_factory_.GetWeakPtr();
-}
-
 }  // namespace electron
