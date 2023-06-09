@@ -2,3 +2,5 @@ fix_rename_webswapcgllayer_to_webswapcgllayerchromium.patch
 cherry-pick-55e2b6daba9d.patch
 cherry-pick-ce029c91a662.patch
 cherry-pick-aed05b609629.patch
+translator_limit_the_size_of_private_variables_in_webgl_shaders.patch
+webgl_limit_total_size_of_private_data.patch

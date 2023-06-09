@@ -1,0 +1,207 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Wed, 3 May 2023 13:41:36 -0400
+Subject: WebGL: Limit total size of private data
+
+... not just individual arrays.
+
+Bug: chromium:1431761
+Change-Id: I721e29aeceeaf12c3f6a67b668abffb8dfbc89b0
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4503753
+Reviewed-by: Kenneth Russell <kbr@chromium.org>
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+
+diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+index 6097b6d236b547710aeaf37a6fb45df97d621ca0..2a033ad9d9422349865a9f2af7084bbf1c2c23d9 100644
+--- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
++++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+@@ -35,7 +35,9 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+ {
+   public:
+     ValidateTypeSizeLimitationsTraverser(TSymbolTable *symbolTable, TDiagnostics *diagnostics)
+-        : TIntermTraverser(true, false, false, symbolTable), mDiagnostics(diagnostics)
++        : TIntermTraverser(true, false, false, symbolTable),
++          mDiagnostics(diagnostics),
++          mTotalPrivateVariablesSize(0)
+     {
+         ASSERT(diagnostics);
+     }
+@@ -93,18 +95,33 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+             const bool isPrivate = variableType.getQualifier() == EvqTemporary ||
+                                    variableType.getQualifier() == EvqGlobal ||
+                                    variableType.getQualifier() == EvqConst;
+-            if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes && isPrivate)
++            if (isPrivate)
+             {
+-                error(asSymbol->getLine(),
+-                      "Size of declared private variable exceeds implementation-defined limit",
+-                      asSymbol->getName());
+-                return false;
++                if (layoutEncoder.getCurrentOffset() > kMaxPrivateVariableSizeInBytes)
++                {
++                    error(asSymbol->getLine(),
++                          "Size of declared private variable exceeds implementation-defined limit",
++                          asSymbol->getName());
++                    return false;
++                }
++                mTotalPrivateVariablesSize += layoutEncoder.getCurrentOffset();
+             }
+         }
+ 
+         return true;
+     }
+ 
++    void validateTotalPrivateVariableSize()
++    {
++        if (mTotalPrivateVariablesSize > kMaxPrivateVariableSizeInBytes)
++        {
++            mDiagnostics->error(
++                TSourceLoc{},
++                "Total size of declared private variables exceeds implementation-defined limit",
++                "");
++        }
++    }
++
+   private:
+     void error(TSourceLoc loc, const char *reason, const ImmutableString &token)
+     {
+@@ -213,6 +230,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
+ 
+     TDiagnostics *mDiagnostics;
+     std::vector<int> mLoopSymbolIds;
++
++    size_t mTotalPrivateVariablesSize;
+ };
+ 
+ }  // namespace
+@@ -223,6 +242,7 @@ bool ValidateTypeSizeLimitations(TIntermNode *root,
+ {
+     ValidateTypeSizeLimitationsTraverser validate(symbolTable, diagnostics);
+     root->traverse(&validate);
++    validate.validateTotalPrivateVariableSize();
+     return diagnostics->numErrors() == 0;
+ }
+ 
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index f4bd19baf3582c0b4a840d73a57ea6fc385159a6..1b265568fc8a87280cc192fbd573a8b11dfb29ec 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -5271,11 +5271,12 @@ TEST_P(WebGLCompatibilityTest, ValidateArraySizes)
+     // fairly small array.
+     constexpr char kVSArrayOK[] =
+         R"(varying vec4 color;
+-const int array_size = 1000;
++const int array_size = 500;
+ void main()
+ {
+     mat2 array[array_size];
+-    if (array[0][0][0] == 2.0)
++    mat2 array2[array_size];
++    if (array[0][0][0] + array2[0][0][0] == 2.0)
+         color = vec4(0.0, 1.0, 0.0, 1.0);
+     else
+         color = vec4(1.0, 0.0, 0.0, 1.0);
+@@ -5353,6 +5354,103 @@ void main()
+     EXPECT_EQ(0u, program);
+ }
+ 
++// Reject attempts to allocate too much private memory.
++// This is an implementation-defined limit - crbug.com/1431761.
++TEST_P(WebGLCompatibilityTest, ValidateTotalPrivateSize)
++{
++    constexpr char kTooLargeGlobalMemory1[] =
++        R"(precision mediump float;
++
++// 1 MB / 16 bytes per vec4 = 65536
++vec4 array[32768];
++vec4 array2[32769];
++
++void main()
++{
++    if (array[0].x + array[1].x == 0.)
++        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
++    else
++        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    constexpr char kTooLargeGlobalMemory2[] =
++        R"(precision mediump float;
++
++// 1 MB / 16 bytes per vec4 = 65536
++vec4 array[32767];
++vec4 array2[32767];
++vec4 x, y, z;
++
++void main()
++{
++    if (array[0].x + array[1].x == x.w + y.w + z.w)
++        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
++    else
++        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    constexpr char kTooLargeGlobalAndLocalMemory1[] =
++        R"(precision mediump float;
++
++// 1 MB / 16 bytes per vec4 = 65536
++vec4 array[32768];
++
++void main()
++{
++    vec4 array2[32769];
++    if (array[0].x + array[1].x == 2.0)
++        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
++    else
++        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    // Note: The call stack is not taken into account for the purposes of total memory calculation.
++    constexpr char kTooLargeGlobalAndLocalMemory2[] =
++        R"(precision mediump float;
++
++// 1 MB / 16 bytes per vec4 = 65536
++vec4 array[32768];
++
++float f()
++{
++    vec4 array2[16384];
++    return array2[0].x;
++}
++
++float g()
++{
++    vec4 array3[16383];
++    return array3[0].x;
++}
++
++float h()
++{
++    vec4 value;
++    float value2
++    return value.x + value2;
++}
++
++void main()
++{
++    if (array[0].x + f() + g() + h() == 2.0)
++        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
++    else
++        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
++    GLuint program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalMemory1);
++    EXPECT_EQ(0u, program);
++
++    program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalMemory2);
++    EXPECT_EQ(0u, program);
++
++    program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalAndLocalMemory1);
++    EXPECT_EQ(0u, program);
++
++    program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalAndLocalMemory2);
++    EXPECT_EQ(0u, program);
++}
++
+ // Linking should fail when corresponding vertex/fragment uniform blocks have different precision
+ // qualifiers.
+ TEST_P(WebGL2CompatibilityTest, UniformBlockPrecisionMismatch)

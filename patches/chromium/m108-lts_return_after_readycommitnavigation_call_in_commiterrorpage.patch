@@ -1,0 +1,142 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rakina Zata Amni <rakina@chromium.org>
+Date: Tue, 30 May 2023 16:24:26 +0000
+Subject: Return after ReadyCommitNavigation call in CommitErrorPage if it
+ deletes NavigationRequest
+
+M108 merge issue:
+  content/browser/renderer_host/navigation_request.cc:
+    topics_eligible_ isn't present in M108
+
+NavigationRequest::ReadyToCommitNavigation() can cause deletion of the
+NavigationRequest, so callers should check for that possibility after
+calling the function. A caller in CommitErrorPage is missing that
+check, which this CL adds, along with a regression test.
+
+(cherry picked from commit 42db806805ef2be64ee92803d3a784631b2a7df0)
+
+Bug: 1444360
+Change-Id: I3964da4909a6709b7730d25d6497b19c098f4f21
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4520493
+Commit-Queue: Charlie Reis <creis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1143298}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4567848
+Reviewed-by: Rakina Zata Amni <rakina@chromium.org>
+Commit-Queue: Roger Felipe Zanoni da Silva <rzanoni@google.com>
+Cr-Commit-Position: refs/branch-heads/5359@{#1460}
+Cr-Branched-From: 27d3765d341b09369006d030f83f582a29eb57ae-refs/heads/main@{#1058933}
+
+diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
+index f6f25544bd36fceb60ada013178cc8fb67e7b10a..ebc0a0c57fb78b3f0044979cca115c78f98f8c2d 100644
+--- a/content/browser/renderer_host/navigation_request.cc
++++ b/content/browser/renderer_host/navigation_request.cc
+@@ -4913,7 +4913,13 @@ void NavigationRequest::CommitErrorPage(
+     }
+   }
+ 
++  base::WeakPtr<NavigationRequest> weak_self(weak_factory_.GetWeakPtr());
+   ReadyToCommitNavigation(true /* is_error */);
++  // The caller above might result in the deletion of `this`. Return immediately
++  // if so.
++  if (!weak_self) {
++    return;
++  }
+ 
+   PopulateDocumentTokenForCrossDocumentNavigation();
+   // Use a separate cache shard, and no cookies, for error pages.
+diff --git a/content/browser/renderer_host/navigation_request_browsertest.cc b/content/browser/renderer_host/navigation_request_browsertest.cc
+index 486a6871d9ff5256123c47accf9f714b67bc30fc..cc4f9acf9e5ec5f8c8dfa8a812a2cc6fb4505526 100644
+--- a/content/browser/renderer_host/navigation_request_browsertest.cc
++++ b/content/browser/renderer_host/navigation_request_browsertest.cc
+@@ -43,6 +43,7 @@
+ #include "content/public/test/prerender_test_util.h"
+ #include "content/public/test/test_frame_navigation_observer.h"
+ #include "content/public/test/test_navigation_observer.h"
++#include "content/public/test/test_service.mojom.h"
+ #include "content/public/test/test_utils.h"
+ #include "content/public/test/url_loader_interceptor.h"
+ #include "content/shell/browser/shell.h"
+@@ -3850,4 +3851,83 @@ IN_PROC_BROWSER_TEST_P(NavigationRequestMPArchBrowserTest,
+   }
+ }
+ 
++// Tests that when trying to commit an error page for a failed navigation, but
++// the renderer process of the, the navigation won't commit and won't crash.
++// Regression test for https://crbug.com/1444360.
++IN_PROC_BROWSER_TEST_F(NavigationRequestBrowserTest,
++                       RendererCrashedBeforeCommitErrorPage) {
++  // Navigate to `url_a` first.
++  GURL url_a(embedded_test_server()->GetURL("a.com", "/title1.html"));
++  ASSERT_TRUE(NavigateToURL(shell(), url_a));
++
++  // Set up an URLLoaderInterceptor which will cause future navigations to fail.
++  auto url_loader_interceptor = std::make_unique<URLLoaderInterceptor>(
++      base::BindRepeating([](URLLoaderInterceptor::RequestParams* params) {
++        network::URLLoaderCompletionStatus status;
++        status.error_code = net::ERR_NOT_IMPLEMENTED;
++        params->client->OnComplete(status);
++        return true;
++      }));
++
++  // Do a navigation to `url_b1` that will fail and commit an error page. This
++  // is important so that the next error page navigation won't need to create a
++  // speculative RenderFrameHost (unless RenderDocument is enabled) and won't
++  // get cancelled earlier than commit time due to speculative RFH deletion.
++  GURL url_b1(embedded_test_server()->GetURL("b.com", "/title1.html"));
++  EXPECT_FALSE(NavigateToURL(shell(), url_b1));
++  EXPECT_EQ(shell()->web_contents()->GetLastCommittedURL(), url_b1);
++  EXPECT_TRUE(
++      shell()->web_contents()->GetPrimaryMainFrame()->IsErrorDocument());
++
++  // For the next navigation, set up a throttle that will be used to wait for
++  // WillFailRequest() and then defer the navigation, so that we can crash the
++  // error page process first.
++  TestNavigationThrottleInstaller installer(
++      shell()->web_contents(),
++      NavigationThrottle::PROCEED /* will_start_result */,
++      NavigationThrottle::PROCEED /* will_redirect_result */,
++      NavigationThrottle::DEFER /* will_fail_result */,
++      NavigationThrottle::PROCEED /* will_process_result */);
++
++  // Start a navigation to `url_b2` that will also fail, but before it commits
++  // an error page, cause the error page process to crash.
++  GURL url_b2(embedded_test_server()->GetURL("b.com", "/title2.html"));
++  TestNavigationManager manager(shell()->web_contents(), url_b2);
++  shell()->LoadURL(url_b2);
++  EXPECT_TRUE(manager.WaitForRequestStart());
++
++  // Resume the navigation and wait for WillFailRequest(). After this point, we
++  // will have picked the final RenderFrameHost & RenderProcessHost for the
++  // failed navigation.
++  manager.ResumeNavigation();
++  installer.WaitForThrottleWillFail();
++
++  // Kill the error page process. This will cause for the navigation to `url_b2`
++  // to return early in `NavigationRequest::ReadyToCommitNavigation()` and not
++  // commit a new error page.
++  RenderProcessHost* process_to_kill =
++      manager.GetNavigationHandle()->GetRenderFrameHost()->GetProcess();
++  ASSERT_TRUE(process_to_kill->IsInitializedAndNotDead());
++  {
++    // Trigger a renderer kill by calling DoSomething() which will cause a bad
++    // message to be reported.
++    RenderProcessHostBadIpcMessageWaiter kill_waiter(process_to_kill);
++    mojo::Remote<mojom::TestService> service;
++    process_to_kill->BindReceiver(service.BindNewPipeAndPassReceiver());
++    service->DoSomething(base::DoNothing());
++    EXPECT_EQ(bad_message::RPH_MOJO_PROCESS_ERROR, kill_waiter.Wait());
++  }
++  ASSERT_FALSE(process_to_kill->IsInitializedAndNotDead());
++
++  // Resume the navigation, which won't commit.
++  if (!ShouldCreateNewHostForAllFrames()) {
++    installer.navigation_throttle()->ResumeNavigation();
++  }
++  manager.WaitForNavigationFinished();
++  EXPECT_FALSE(WaitForLoadStop(shell()->web_contents()));
++
++  // The tab stayed at `url_b1` as the `url_b2` navigation didn't commit.
++  EXPECT_EQ(shell()->web_contents()->GetLastCommittedURL(), url_b1);
++}
++
+ }  // namespace content

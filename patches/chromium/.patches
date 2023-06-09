@@ -161,3 +161,5 @@ m112_cherry_pick_libxml_cve_fix.patch
 m112_fix_scopedobservation_uaf_in.patch
 cherry-pick-93c6be3a42e7.patch
 cherry-pick-ea1cd76358e0.patch
+cherry-pick-48785f698b1c.patch
+m108-lts_return_after_readycommitnavigation_call_in_commiterrorpage.patch
