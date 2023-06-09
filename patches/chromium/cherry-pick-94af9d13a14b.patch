@@ -1,7 +1,7 @@
-From 94af9d13a14b2dbfecb1f5de52969ef023c218a6 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Ivan Pavlotsky <ivan.pavlotsky@lge.com>
-Date: Mon, 01 May 2023 07:48:23 +0000
-Subject: [PATCH] Check nullptr in ZWPTextInputWrapperV1::Activate()
+Date: Mon, 1 May 2023 07:48:23 +0000
+Subject: Check nullptr in ZWPTextInputWrapperV1::Activate()
 
 After the CL https://crrev.com/c/4160118 a crash occurres on the
 wl::get_version_of_object() call in ZWPTextInputWrapperV1::Activate()
@@ -16,13 +16,12 @@ Reviewed-by: Hidehiko Abe <hidehiko@chromium.org>
 Reviewed-by: Maksim Sisov <msisov@igalia.com>
 Commit-Queue: Maksim Sisov <msisov@igalia.com>
 Cr-Commit-Position: refs/heads/main@{#1137771}
----
 
 diff --git a/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc b/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc
-index ec2f3d4..a2f0ead 100644
+index d577ac4f822901340281c48bc754425484f28f48..b9e508824c7cb17c0673007532f88242a99fa5df 100644
 --- a/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc
 +++ b/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc
-@@ -156,8 +156,9 @@
+@@ -156,8 +156,9 @@ void ZWPTextInputWrapperV1::Reset() {
  void ZWPTextInputWrapperV1::Activate(WaylandWindow* window,
                                       TextInputClient::FocusReason reason) {
    DCHECK(connection_->seat());
