@@ -130,13 +130,7 @@ void WinCaptionButtonContainer::AddedToWidget() {
   UpdateButtons();
 
   if (frame_view_->window()->IsWindowControlsOverlayEnabled()) {
-    const SkColor bg_color = frame_view_->window()->overlay_button_color();
-    const SkAlpha theme_alpha = SkColorGetA(bg_color);
-    SetBackground(views::CreateSolidBackground(bg_color));
-    SetPaintToLayer();
-
-    if (theme_alpha < SK_AlphaOPAQUE)
-      layer()->SetFillsBoundsOpaquely(false);
+    UpdateBackground();
   }
 }
 
@@ -149,6 +143,16 @@ void WinCaptionButtonContainer::OnWidgetBoundsChanged(
     views::Widget* widget,
     const gfx::Rect& new_bounds) {
   UpdateButtons();
+}
+
+void WinCaptionButtonContainer::UpdateBackground() {
+  const SkColor bg_color = frame_view_->window()->overlay_button_color();
+  const SkAlpha theme_alpha = SkColorGetA(bg_color);
+  SetBackground(views::CreateSolidBackground(bg_color));
+  SetPaintToLayer();
+
+  if (theme_alpha < SK_AlphaOPAQUE)
+    layer()->SetFillsBoundsOpaquely(false);
 }
 
 void WinCaptionButtonContainer::UpdateButtons() {
