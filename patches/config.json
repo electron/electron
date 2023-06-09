@@ -25,5 +25,7 @@
 
   "src/electron/patches/webrtc": "src/third_party/webrtc",
 
-  "src/electron/patches/skia": "src/third_party/skia"
+  "src/electron/patches/skia": "src/third_party/skia",
+
+  "src/electron/patches/pdfium": "src/third_party/pdfium"
 }
