@@ -200,7 +200,7 @@ For example, these invocations are equivalent:
   }
 }
 
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((err) => {
     console.error('Error Occurred:', err);
     process.exit(1);

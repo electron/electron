@@ -109,7 +109,7 @@ function isMajorNightly (version, currentVersion) {
   return false;
 }
 
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((error) => {
     console.error(error);
     process.exit(1);

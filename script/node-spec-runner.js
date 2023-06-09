@@ -15,7 +15,7 @@ const TAP_FILE_NAME = 'test.tap';
 
 const utils = require('./lib/utils');
 
-if (!process.mainModule) {
+if (!require.main) {
   throw new Error('Must call the node spec runner directly');
 }
 
