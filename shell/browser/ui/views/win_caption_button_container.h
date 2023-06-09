@@ -8,6 +8,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_WIN_CAPTION_BUTTON_CONTAINER_H_
 
+#include "base/memory/raw_ptr.h"
 #include "base/scoped_observation.h"
 #include "ui/base/metadata/metadata_header_macros.h"
 #include "ui/base/pointer/touch_ui_controller.h"
@@ -61,11 +62,11 @@ class WinCaptionButtonContainer : public views::View,
   void OnWidgetBoundsChanged(views::Widget* widget,
                              const gfx::Rect& new_bounds) override;
 
-  WinFrameView* const frame_view_;
-  WinCaptionButton* const minimize_button_;
-  WinCaptionButton* const maximize_button_;
-  WinCaptionButton* const restore_button_;
-  WinCaptionButton* const close_button_;
+  raw_ptr<WinFrameView> const frame_view_;
+  raw_ptr<WinCaptionButton> const minimize_button_;
+  raw_ptr<WinCaptionButton> const maximize_button_;
+  raw_ptr<WinCaptionButton> const restore_button_;
+  raw_ptr<WinCaptionButton> const close_button_;
 
   base::ScopedObservation<views::Widget, views::WidgetObserver>
       widget_observation_{this};

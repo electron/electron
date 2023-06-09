@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 4925a756be531749e3fe1fd6f1c081b060c28a4f..b7596e0d06f07bcb950fadb0775cec5479af4c0e 100644
+index 8cd7358cd054324b2527da4d3928e88db4498952..6d98aa0990f66a07be975f29b58b7b4de68edca3 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1059,6 +1059,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -43,7 +43,7 @@ index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
+index 4aa9876ca290df64da2036a821dfa02fb411676a..fc0a9f2089810de74a9b6d9e08272a5a54c7dee9 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -76,7 +76,7 @@ index 9551e3ea2e5f3de9bff158fc0f443df69a27f93a..e8c192bfbe5a2688e8c767443edbe7fb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index caf1b4ee59a75c3ea1363b592e12b6b58d637c01..b554ce1be61de41088c21fced4b9b2dd01e9dc7a 100644
+index 1af36377e3841270ddb5db056b17710aa890a3c8..8c84f972e413911bc9f4c907619d4c1599b782d2 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,10 +88,10 @@ index caf1b4ee59a75c3ea1363b592e12b6b58d637c01..b554ce1be61de41088c21fced4b9b2dd
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d635e5a20 100644
+index 9e9a06ef58e9aeff8193df7b198ee69939c2dd8f..fcf5e3f5403c6dfe7fcd6da243695d378e0d21fb 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -170,6 +170,7 @@ source_set("common") {
+@@ -172,6 +172,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -100,7 +100,7 @@ index d38bd551f8bafbc3be22ca0bedb508e4a74ffbb5..9e17dd2484a633301e684dc091b4800d
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 34636a58846e2b250e423dde76e4e6ea1f686676..899b75f2be91e86c526f550718e22221eea604f3 100644
+index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade263e798478 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
@@ -112,10 +112,10 @@ index 34636a58846e2b250e423dde76e4e6ea1f686676..899b75f2be91e86c526f550718e22221
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c304b8d9052fe705e22a047546fb6a7eb4977575..b30bf15dba88b47074d951793530b4afc473a442 100644
+index b55ea68805100e3926785e10532f27c45c13270a..34afde50788ff285b74c51eb6f5607417fe43407 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -470,6 +470,7 @@ static_library("test_support") {
+@@ -474,6 +474,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -173,10 +173,10 @@ index 93cf87a37792691f41d7c611104a378d9af45195..2d3a0f923f4991be41534e7f951fe5df
  
    if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index a8193d411da14f4ff0087fba81e63809832d1806..94c410b59ab7b40654fb214a6a9d828170fe2095 100644
+index 6eb142954e6a9b2a3937dbf3ae733f330865c9da..f4061586471b23762ba898766ae16b6c46b5a90e 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
-@@ -173,6 +173,8 @@ source_set("dns") {
+@@ -177,6 +177,8 @@ source_set("dns") {
      ":host_resolver_manager",
      ":mdns_client",
    ]
@@ -239,10 +239,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb277468cb424d 100644
+index 7b3d41de1be2425929df590526082a5f45aaba9a..500b59ba38ef1dda1851443b774fa9c375aabcef 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -250,6 +250,7 @@ component("platform") {
+@@ -252,6 +252,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
@@ -251,11 +251,11 @@ index c9777e07fdd311213db325da44573ed09080856e..76a7ca0545b69baf19c6c89088fb2774
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 9ffa8129d29ecda50f91355ffd01ce9926a70b11..5ebf5ea4db7c692b3288110945d470831e7797e2 100644
+index 260725d466d890dfec29d423700510f55caa7a52..f98598cf97a740b39016b35ca12825eefd1c1a07 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -359,6 +359,7 @@ component("base") {
-       "l10n/l10n_util_mac.mm",
+@@ -355,6 +355,7 @@ component("base") {
+       "interaction/element_tracker_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
 +    configs += ["//electron/build/config:mas_build"]
@@ -278,7 +278,7 @@ index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecb
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index c7a777df6803678108952185a40b590bbf419859..76303e25a06ed2123bf9ac6b93b8a1e0a91273e9 100644
+index f8dfc00b61d67aec62f26b57636b28dcfca8f989..bf067319394717738f5281a28bcbdaab8d8f3ead 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -192,6 +192,7 @@ component("gfx") {
@@ -290,10 +290,10 @@ index c7a777df6803678108952185a40b590bbf419859..76303e25a06ed2123bf9ac6b93b8a1e0
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 01bbf457bc079c266e6110f7ad7c1ba701343312..fefd00a2f13018adf054284e10c1d4169c32c220 100644
+index 416497c77970e1c15ebecc27af59cf50112a6441..b366bbb8d84c6c7fb1a3b9b1b1e022d5de077b2d 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -675,6 +675,7 @@ component("views") {
+@@ -681,6 +681,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -301,7 +301,7 @@ index 01bbf457bc079c266e6110f7ad7c1ba701343312..fefd00a2f13018adf054284e10c1d416
    }
  
    if (is_win) {
-@@ -1089,6 +1090,8 @@ source_set("test_support") {
+@@ -1097,6 +1098,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
@@ -311,7 +311,7 @@ index 01bbf457bc079c266e6110f7ad7c1ba701343312..fefd00a2f13018adf054284e10c1d416
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index f37a5a881ac6ac432a4672c5738b7f49b75b5523..1764117f539c2423ebe8bb4c3fe70afcdd0883e8 100644
+index 7462baf7cfae6859a821b71501b60015ff2c4ed7..1eeacfc6bf7fd3a42a06198045260519bf606a48 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
 @@ -19,6 +19,7 @@ component("webview") {

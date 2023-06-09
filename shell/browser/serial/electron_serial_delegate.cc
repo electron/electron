@@ -29,6 +29,7 @@ ElectronSerialDelegate::~ElectronSerialDelegate() = default;
 std::unique_ptr<content::SerialChooser> ElectronSerialDelegate::RunChooser(
     content::RenderFrameHost* frame,
     std::vector<blink::mojom::SerialPortFilterPtr> filters,
+    std::vector<device::BluetoothUUID> allowed_bluetooth_service_class_ids,
     content::SerialChooser::Callback callback) {
   SerialChooserController* controller = ControllerForFrame(frame);
   if (controller) {

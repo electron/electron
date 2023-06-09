@@ -9,6 +9,7 @@
 #include "base/apple/bundle_locations.h"
 #include "base/mac/foundation_util.h"
 #include "base/path_service.h"
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "services/device/public/cpp/geolocation/system_geolocation_source_mac.h"
 #include "shell/browser/browser_process_impl.h"
 #import "shell/browser/mac/electron_application.h"
@@ -32,8 +33,8 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
       setObject:@"NO"
          forKey:@"NSTreatUnknownArgumentsAsOpen"];
 
-  if (!g_browser_process->geolocation_manager()) {
-    g_browser_process->SetGeolocationManager(
+  if (!device::GeolocationManager::GetInstance()) {
+    device::GeolocationManager::SetInstance(
         device::SystemGeolocationSourceMac::CreateGeolocationManagerOnMac());
   }
 }

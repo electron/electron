@@ -20,7 +20,7 @@ index 48e6fa3d8447e87ab2a729aa950cc5029c875673..90c6a5b6999571819ef71f859767cccf
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index fd91b2f2519383ca39342937e7c89ce35ce363a7..0fac80ecc97cb6c7ff3942a311983baa397fee0d 100644
+index e987d9316f9b5335a9c94a2dfe1f84498d9f704b..b0eb03c065753fe3bc8756d565fc17fbdaa5ad2b 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
 @@ -900,6 +900,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
@@ -33,7 +33,7 @@ index fd91b2f2519383ca39342937e7c89ce35ce363a7..0fac80ecc97cb6c7ff3942a311983baa
   protected:
    // |routing_id| must not be MSG_ROUTING_NONE.
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 680ac2d851294bffa8af216568421a4dd5c01750..82e59b02f6e54f9101e3b9ea5ca0f5b21ce16095 100644
+index a122bd2170bbb543641454d39789d7f5f0500fc3..3d87288585c03cc9f7bb257823ff7359049d88ee 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -607,7 +607,7 @@ void RenderWidgetHostViewAura::HideImpl() {

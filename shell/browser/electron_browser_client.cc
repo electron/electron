@@ -63,6 +63,7 @@
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
@@ -1301,7 +1302,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
         header_client,
     bool* bypass_redirect_checks,
     bool* disable_secure_dns,
-    network::mojom::URLLoaderFactoryOverridePtr* factory_override) {
+    network::mojom::URLLoaderFactoryOverridePtr* factory_override,
+    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
@@ -1316,7 +1318,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool use_proxy_for_web_request =
         web_request_api->MaybeProxyURLLoaderFactory(
             browser_context, frame_host, render_process_id, type, navigation_id,
-            ukm_source_id, factory_receiver, header_client);
+            ukm_source_id, factory_receiver, header_client,
+            navigation_response_task_runner);
 
     if (bypass_redirect_checks)
       *bypass_redirect_checks = use_proxy_for_web_request;
@@ -1684,7 +1687,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 
 #if BUILDFLAG(IS_MAC)
 device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
-  return g_browser_process->geolocation_manager();
+  return device::GeolocationManager::GetInstance();
 }
 #endif
 

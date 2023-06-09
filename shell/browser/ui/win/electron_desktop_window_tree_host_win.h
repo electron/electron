@@ -40,7 +40,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
  private:
-  NativeWindowViews* native_window_view_;  // weak ref
+  raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 };
 
 }  // namespace electron

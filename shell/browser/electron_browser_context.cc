@@ -446,7 +446,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
-          &factory_receiver, &header_client, nullptr, nullptr, nullptr);
+          &factory_receiver, &header_client, nullptr, nullptr, nullptr,
+          nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();

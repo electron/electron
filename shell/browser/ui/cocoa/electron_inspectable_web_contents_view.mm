@@ -275,10 +275,10 @@
     [self notifyDevToolsFocused];
 }
 
-- (void)redispatchContextMenuEvent:(NSEvent*)event {
-  DCHECK(event.type == NSEventTypeRightMouseDown ||
-         (event.type == NSEventTypeLeftMouseDown &&
-          (event.modifierFlags & NSEventModifierFlagControl)));
+- (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)event {
+  DCHECK(event.Get().type == NSEventTypeRightMouseDown ||
+         (event.Get().type == NSEventTypeLeftMouseDown &&
+          (event.Get().modifierFlags & NSEventModifierFlagControl)));
   content::WebContents* contents =
       inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   electron::api::WebContents* api_contents =
@@ -292,7 +292,7 @@
       api_contents->SetForceNonDraggable(true);
       BaseView* contentsView =
           (BaseView*)rwhv->GetNativeView().GetNativeNSView();
-      [contentsView mouseEvent:event];
+      [contentsView mouseEvent:event.Get()];
       api_contents->SetForceNonDraggable(false);
     }
   }

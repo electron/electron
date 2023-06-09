@@ -129,16 +129,6 @@ static_library("chrome") {
 
   if (is_mac) {
     sources += [
-      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
-      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
-      "//chrome/browser/icon_loader_mac.mm",
-      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
-      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
-      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
-      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
-      "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
-      "//chrome/browser/platform_util_mac.mm",
-      "//chrome/browser/process_singleton_mac.mm",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
       "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
     ]
@@ -178,6 +168,7 @@ static_library("chrome") {
 
   public_deps = [
     "//chrome/browser:dev_ui_browser_resources",
+    "//chrome/browser/resources/accessibility:resources",
     "//chrome/browser/ui/color:mixers",
     "//chrome/common",
     "//chrome/common:version_header",

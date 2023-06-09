@@ -76,10 +76,10 @@ index be594941e41d59cfc6bc34ce1fc21ca1b2d399c0..f46b0979f66fdb77bfdbd22358f306c6
    if ([ns_val isKindOfClass:[NSFont class]]) {
      return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index b9f62726f3808636bdb513ad10d89277b7837b82..eada168aff54aebf84e80a2df5363fe77311347e 100644
+index de77363ffcb89e0b8c7b7033d973b89eb0dd28ae..fc02c33ccd023c366c73a21b87711a61b0b6eb10 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -20,14 +20,19 @@
+@@ -21,14 +21,19 @@
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/base_tracing.h"
@@ -99,7 +99,7 @@ index b9f62726f3808636bdb513ad10d89277b7837b82..eada168aff54aebf84e80a2df5363fe7
  
  int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
      API_AVAILABLE(macosx(10.14));
-@@ -98,13 +103,27 @@ class PosixSpawnFileActions {
+@@ -99,13 +104,27 @@ class PosixSpawnFileActions {
  };
  
  int ChangeCurrentThreadDirectory(const char* path) {
@@ -127,7 +127,7 @@ index b9f62726f3808636bdb513ad10d89277b7837b82..eada168aff54aebf84e80a2df5363fe7
  }
  
  struct GetAppOutputOptions {
-@@ -224,7 +243,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -225,7 +244,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  

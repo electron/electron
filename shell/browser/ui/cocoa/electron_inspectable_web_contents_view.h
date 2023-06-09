@@ -7,6 +7,7 @@
 
 #import <AppKit/AppKit.h>
 
+#include "base/apple/owned_objc.h"
 #include "base/mac/scoped_nsobject.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/base/cocoa/base_view.h"
@@ -46,7 +47,7 @@ using electron::InspectableWebContentsViewMac;
     (const DevToolsContentsResizingStrategy&)strategy;
 - (void)setTitle:(NSString*)title;
 
-- (void)redispatchContextMenuEvent:(NSEvent*)theEvent;
+- (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)theEvent;
 
 @end
 

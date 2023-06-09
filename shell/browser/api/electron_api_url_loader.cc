@@ -469,6 +469,13 @@ void SimpleURLLoaderWrapper::OnLoadingStateUpdate(
   std::move(callback).Run();
 }
 
+void SimpleURLLoaderWrapper::OnSharedStorageHeaderReceived(
+    const url::Origin& request_origin,
+    std::vector<network::mojom::SharedStorageOperationPtr> operations,
+    OnSharedStorageHeaderReceivedCallback callback) {
+  std::move(callback).Run();
+}
+
 void SimpleURLLoaderWrapper::Clone(
     mojo::PendingReceiver<network::mojom::URLLoaderNetworkServiceObserver>
         observer) {
