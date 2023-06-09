@@ -52,7 +52,7 @@ executors:
       size:
         description: "macOS executor size"
         type: enum
-        enum: ["macos.x86.medium.gen2", "macos.m1.medium.gen1"]
+        enum: ["macos.x86.medium.gen2", "macos.m1.large.gen1", "macos.m1.medium.gen1"]
       version:
         description: "xcode version"
         type: enum
@@ -1930,7 +1930,7 @@ jobs:
   osx-publish-arm64:
     executor:
       name: macos
-      size: macos.m1.medium.gen1
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large-release
       <<: *env-release-build
@@ -2011,7 +2011,7 @@ jobs:
   mas-publish-arm64:
     executor:
       name: macos
-      size: macos.m1.medium.gen1
+      size: macos.m1.large.gen1
     environment:
       <<: *env-mac-large-release
       <<: *env-mas-apple-silicon
