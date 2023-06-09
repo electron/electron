@@ -13,10 +13,15 @@ namespace electron {
 // static
 int SessionPreferences::kLocatorKey = 0;
 
-SessionPreferences::SessionPreferences(content::BrowserContext* context) {
-  context->SetUserData(&kLocatorKey, base::WrapUnique(this));
+// static
+void SessionPreferences::CreateForBrowserContext(
+    content::BrowserContext* context) {
+  DCHECK(context);
+  context->SetUserData(&kLocatorKey,
+                       base::WrapUnique(new SessionPreferences{}));
 }
 
+SessionPreferences::SessionPreferences() = default;
 SessionPreferences::~SessionPreferences() = default;
 
 // static
