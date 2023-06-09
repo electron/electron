@@ -19,6 +19,7 @@
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
+#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
@@ -76,8 +77,6 @@ class ResourceRequestBody;
 namespace gin {
 class Arguments;
 }
-
-class ExclusiveAccessManager;
 
 class SkRegion;
 
@@ -805,7 +804,7 @@ class WebContents : public ExclusiveAccessContext,
 
   scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
 
-  std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_;
+  ExclusiveAccessManager exclusive_access_manager_{this};
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
