@@ -13,7 +13,6 @@
 #include <string>
 
 #include "base/compiler_specific.h"
-#include "base/memory/raw_ptr_exclusion.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
@@ -66,9 +65,9 @@ class NotifyIcon : public TrayIcon {
   void RemoveBalloon() override;
   void Focus() override;
   void PopUpContextMenu(const gfx::Point& pos,
-                        ElectronMenuModel* menu_model) override;
+                        raw_ptr<ElectronMenuModel> menu_model) override;
   void CloseContextMenu() override;
-  void SetContextMenu(ElectronMenuModel* menu_model) override;
+  void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
   gfx::Rect GetBounds() override;
 
   base::WeakPtr<NotifyIcon> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
@@ -92,7 +91,7 @@ class NotifyIcon : public TrayIcon {
   base::win::ScopedHICON icon_;
 
   // The context menu.
-  RAW_PTR_EXCLUSION ElectronMenuModel* menu_model_ = nullptr;
+  raw_ptr<ElectronMenuModel> menu_model_ = nullptr;
 
   // An optional GUID used for identifying tray entries on Windows
   GUID guid_ = GUID_DEFAULT;
