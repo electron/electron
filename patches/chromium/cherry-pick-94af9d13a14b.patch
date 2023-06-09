@@ -1,0 +1,35 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ivan Pavlotsky <ivan.pavlotsky@lge.com>
+Date: Mon, 1 May 2023 07:48:23 +0000
+Subject: Check nullptr in ZWPTextInputWrapperV1::Activate()
+
+After the CL https://crrev.com/c/4160118 a crash occurres on the
+wl::get_version_of_object() call in ZWPTextInputWrapperV1::Activate()
+when |ZWPTextInputWrapperV1::extended_obj_| is not set.
+
+Added nullptr check to fix it.
+
+Bug: b:251677220, 1431532
+Change-Id: Ia5606f1c0d08f552f1091b2a9350655f4bdac939
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4423030
+Reviewed-by: Hidehiko Abe <hidehiko@chromium.org>
+Reviewed-by: Maksim Sisov <msisov@igalia.com>
+Commit-Queue: Maksim Sisov <msisov@igalia.com>
+Cr-Commit-Position: refs/heads/main@{#1137771}
+
+diff --git a/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc b/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc
+index d577ac4f822901340281c48bc754425484f28f48..b9e508824c7cb17c0673007532f88242a99fa5df 100644
+--- a/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc
++++ b/ui/ozone/platform/wayland/host/zwp_text_input_wrapper_v1.cc
+@@ -156,8 +156,9 @@ void ZWPTextInputWrapperV1::Reset() {
+ void ZWPTextInputWrapperV1::Activate(WaylandWindow* window,
+                                      TextInputClient::FocusReason reason) {
+   DCHECK(connection_->seat());
+-  if (wl::get_version_of_object(extended_obj_.get()) >=
+-      ZCR_EXTENDED_TEXT_INPUT_V1_SET_FOCUS_REASON_SINCE_VERSION) {
++  if (extended_obj_.get() &&
++      wl::get_version_of_object(extended_obj_.get()) >=
++          ZCR_EXTENDED_TEXT_INPUT_V1_SET_FOCUS_REASON_SINCE_VERSION) {
+     absl::optional<uint32_t> wayland_focus_reason;
+     switch (reason) {
+       case ui::TextInputClient::FocusReason::FOCUS_REASON_NONE:
