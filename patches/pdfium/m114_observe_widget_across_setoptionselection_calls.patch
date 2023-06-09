@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tom Sepez <tsepez@chromium.org>
 Date: Thu, 18 May 2023 18:37:17 +0000
-Subject: [M114] Observe widget across SetOptionSelection() calls.
+Subject: Observe widget across SetOptionSelection() calls.
 
 Call may re-enter JavaScript.
 
