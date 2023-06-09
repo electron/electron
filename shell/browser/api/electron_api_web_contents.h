@@ -16,9 +16,11 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "base/task/thread_pool.h"
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
+#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
@@ -76,8 +78,6 @@ class ResourceRequestBody;
 namespace gin {
 class Arguments;
 }
-
-class ExclusiveAccessManager;
 
 class SkRegion;
 
@@ -803,9 +803,10 @@ class WebContents : public ExclusiveAccessContext,
   // Whether window is fullscreened by window api.
   bool native_fullscreen_ = false;
 
-  scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+  const scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_ =
+      base::MakeRefCounted<DevToolsFileSystemIndexer>();
 
-  std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_;
+  ExclusiveAccessManager exclusive_access_manager_{this};
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
@@ -832,10 +833,11 @@ class WebContents : public ExclusiveAccessContext,
           DevToolsIndexingJobsMap;
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
-  scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+  const scoped_refptr<base::SequencedTaskRunner> file_task_runner_ =
+      base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  scoped_refptr<base::TaskRunner> print_task_runner_;
+  const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.
