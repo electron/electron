@@ -354,6 +354,7 @@ async function makeRelease (releaseToValidate) {
     await validateReleaseAssets(release, true);
   } else {
     let draftRelease = await getDraftRelease();
+    uploadNodeShasums();
     await createReleaseShasums(draftRelease);
 
     // Fetch latest version of release before verifying
@@ -364,7 +365,6 @@ async function makeRelease (releaseToValidate) {
     // which fails to publish. It has to be done before the final
     // publish to ensure there aren't published releases not contained
     // in index.json, which causes other problems in downstream projects
-    uploadNodeShasums();
     uploadIndexJson();
     await publishRelease(draftRelease);
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
