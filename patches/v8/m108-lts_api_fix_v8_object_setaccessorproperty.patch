@@ -219,10 +219,10 @@ index fc7b17d582e79b956362e0db46a7aefebd594ed0..8a81c4acda9a92b1d25491aa00278a0e
  
    return getter;
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 15356b6c58d2f7355fa8b0dce4d3ea779a2884f9..834f83c0b0e68b9dcbe3fd0595dc2861cdd2c017 100644
+index b938d82667498d4ff3505d455a7ed3a299cd5247..e51264eef22c9fc91c89ef6fe0d223c97ccf7fa9 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -1519,7 +1519,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
+@@ -1498,7 +1498,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
                  ? desc->set()
                  : Handle<Object>::cast(isolate->factory()->null_value()));
          MaybeHandle<Object> result =
@@ -232,7 +232,7 @@ index 15356b6c58d2f7355fa8b0dce4d3ea779a2884f9..834f83c0b0e68b9dcbe3fd0595dc2861
          if (result.is_null()) return Nothing<bool>();
        }
      }
-@@ -1700,8 +1701,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
+@@ -1679,8 +1680,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
                : current->has_set()
                      ? current->set()
                      : Handle<Object>::cast(isolate->factory()->null_value()));
@@ -243,7 +243,7 @@ index 15356b6c58d2f7355fa8b0dce4d3ea779a2884f9..834f83c0b0e68b9dcbe3fd0595dc2861
        if (result.is_null()) return Nothing<bool>();
      }
    }
-@@ -4635,22 +4636,19 @@ bool JSObject::HasEnumerableElements() {
+@@ -4611,22 +4612,19 @@ bool JSObject::HasEnumerableElements() {
    UNREACHABLE();
  }
  
@@ -274,10 +274,10 @@ index 15356b6c58d2f7355fa8b0dce4d3ea779a2884f9..834f83c0b0e68b9dcbe3fd0595dc2861
  
    it->UpdateProtector();
 diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
-index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..ff96bd4be2ff8d2fe03f75b6bca35a744e2084af 100644
+index f663af6ed8a445f8ef30a67bac176a1abe6c85f8..5e7326eb1c99115829c358cd4069e1f6835f972b 100644
 --- a/src/objects/js-objects.h
 +++ b/src/objects/js-objects.h
-@@ -531,13 +531,14 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
+@@ -525,13 +525,14 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
    GetPropertyAttributesWithFailedAccessCheck(LookupIterator* it);
  
    // Defines an AccessorPair property on the given object.

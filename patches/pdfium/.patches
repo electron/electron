@@ -1,1 +1,4 @@
 cherry-pick-a0d16d18d072.patch
+m114_observe_cpwl_combobox_across_all_on_methods.patch
+m114_observe_widget_across_setoptionselection_calls.patch
+m114_always_check_return_code_from_cpwl_combobox_setpopup.patch

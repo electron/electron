@@ -1,0 +1,186 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Wed, 17 May 2023 13:47:36 +0200
+Subject: Merged: [runtime] Remove redundant calls to GetPropertyAttributes
+
+... when defining properties in favour of CheckIfCanDefine.
+
+Drive-by: move JSReceiver::CheckIfCanDefine to
+JSObject::CheckIfCanDefineAsConfigurable and fix handling of
+absent properties.
+
+Bug: chromium:1443452
+(cherry picked from commit e98baa3526426c0219bb0474028ca301b8bd0677)
+
+Change-Id: Ia1fd617778be608accee99dcee37f7d1ce3460b8
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4545762
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.4@{#22}
+Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
+Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
+
+diff --git a/src/ic/ic.cc b/src/ic/ic.cc
+index fff21e90bad3451e2d942ec327cb02f394fecc46..32039f9888d3cb54699c6aefd0bcc3573044995e 100644
+--- a/src/ic/ic.cc
++++ b/src/ic/ic.cc
+@@ -1812,14 +1812,14 @@ MaybeHandle<Object> StoreIC::Store(Handle<Object> object, Handle<Name> name,
+   // been thrown if the private field already exists in the object.
+   if (IsAnyDefineOwn() && !name->IsPrivateName() && !object->IsJSProxy() &&
+       !Handle<JSObject>::cast(object)->HasNamedInterceptor()) {
+-    Maybe<bool> can_define = JSReceiver::CheckIfCanDefine(
++    Maybe<bool> can_define = JSObject::CheckIfCanDefineAsConfigurable(
+         isolate(), &it, value, Nothing<ShouldThrow>());
+     MAYBE_RETURN_NULL(can_define);
+     if (!can_define.FromJust()) {
+       return isolate()->factory()->undefined_value();
+     }
+-    // Restart the lookup iterator updated by CheckIfCanDefine() for
+-    // UpdateCaches() to handle access checks.
++    // Restart the lookup iterator updated by CheckIfCanDefineAsConfigurable()
++    // for UpdateCaches() to handle access checks.
+     if (use_ic && object->IsAccessCheckNeeded()) {
+       it.Restart();
+     }
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index 15356b6c58d2f7355fa8b0dce4d3ea779a2884f9..e86fdec6a57e08bbcd229b7866f22ba3441f608c 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -243,27 +243,6 @@ Maybe<bool> JSReceiver::CheckPrivateNameStore(LookupIterator* it,
+   return Just(true);
+ }
+ 
+-// static
+-Maybe<bool> JSReceiver::CheckIfCanDefine(Isolate* isolate, LookupIterator* it,
+-                                         Handle<Object> value,
+-                                         Maybe<ShouldThrow> should_throw) {
+-  if (it->IsFound()) {
+-    Maybe<PropertyAttributes> attributes = GetPropertyAttributes(it);
+-    MAYBE_RETURN(attributes, Nothing<bool>());
+-    if ((attributes.FromJust() & DONT_DELETE) != 0) {
+-      RETURN_FAILURE(
+-          isolate, GetShouldThrow(isolate, should_throw),
+-          NewTypeError(MessageTemplate::kRedefineDisallowed, it->GetName()));
+-    }
+-  } else if (!JSObject::IsExtensible(
+-                 Handle<JSObject>::cast(it->GetReceiver()))) {
+-    RETURN_FAILURE(
+-        isolate, GetShouldThrow(isolate, should_throw),
+-        NewTypeError(MessageTemplate::kDefineDisallowed, it->GetName()));
+-  }
+-  return Just(true);
+-}
+-
+ namespace {
+ 
+ bool HasExcludedProperty(
+@@ -3639,7 +3618,7 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
+ 
+         if (semantics == EnforceDefineSemantics::kDefine) {
+           it->Restart();
+-          Maybe<bool> can_define = JSReceiver::CheckIfCanDefine(
++          Maybe<bool> can_define = JSObject::CheckIfCanDefineAsConfigurable(
+               it->isolate(), it, value, should_throw);
+           if (can_define.IsNothing() || !can_define.FromJust()) {
+             return can_define;
+@@ -4068,17 +4047,16 @@ Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
+                                          Handle<Object> value,
+                                          Maybe<ShouldThrow> should_throw) {
+   DCHECK(it->GetReceiver()->IsJSObject());
+-  MAYBE_RETURN(JSReceiver::GetPropertyAttributes(it), Nothing<bool>());
+   Handle<JSReceiver> receiver = Handle<JSReceiver>::cast(it->GetReceiver());
+   Isolate* isolate = receiver->GetIsolate();
+ 
+-  Maybe<bool> can_define =
+-      JSReceiver::CheckIfCanDefine(isolate, it, value, should_throw);
++  Maybe<bool> can_define = JSObject::CheckIfCanDefineAsConfigurable(
++      isolate, it, value, should_throw);
+   if (can_define.IsNothing() || !can_define.FromJust()) {
+     return can_define;
+   }
+ 
+-  RETURN_ON_EXCEPTION_VALUE(it->isolate(),
++  RETURN_ON_EXCEPTION_VALUE(isolate,
+                             DefineOwnPropertyIgnoreAttributes(it, value, NONE),
+                             Nothing<bool>());
+ 
+@@ -4707,19 +4685,42 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
+     return it.factory()->undefined_value();
+   }
+ 
+-  CHECK(GetPropertyAttributes(&it).IsJust());
+-
+-  // ES5 forbids turning a property into an accessor if it's not
+-  // configurable. See 8.6.1 (Table 5).
+-  if (it.IsFound() && !it.IsConfigurable()) {
+-    return it.factory()->undefined_value();
+-  }
++  Maybe<bool> can_define = JSObject::CheckIfCanDefineAsConfigurable(
++      isolate, &it, info, Nothing<ShouldThrow>());
++  MAYBE_RETURN_NULL(can_define);
++  if (!can_define.FromJust()) return it.factory()->undefined_value();
+ 
+   it.TransitionToAccessorPair(info, attributes);
+ 
+   return object;
+ }
+ 
++// static
++Maybe<bool> JSObject::CheckIfCanDefineAsConfigurable(
++    Isolate* isolate, LookupIterator* it, Handle<Object> value,
++    Maybe<ShouldThrow> should_throw) {
++  DCHECK(it->GetReceiver()->IsJSObject());
++  if (it->IsFound()) {
++    Maybe<PropertyAttributes> attributes = GetPropertyAttributes(it);
++    MAYBE_RETURN(attributes, Nothing<bool>());
++    if (attributes.FromJust() != ABSENT) {
++      if ((attributes.FromJust() & DONT_DELETE) != 0) {
++        RETURN_FAILURE(
++            isolate, GetShouldThrow(isolate, should_throw),
++            NewTypeError(MessageTemplate::kRedefineDisallowed, it->GetName()));
++      }
++      return Just(true);
++    }
++    // Property does not exist, check object extensibility.
++  }
++  if (!JSObject::IsExtensible(Handle<JSObject>::cast(it->GetReceiver()))) {
++    RETURN_FAILURE(
++        isolate, GetShouldThrow(isolate, should_throw),
++        NewTypeError(MessageTemplate::kDefineDisallowed, it->GetName()));
++  }
++  return Just(true);
++}
++
+ Object JSObject::SlowReverseLookup(Object value) {
+   if (HasFastProperties()) {
+     DescriptorArray descs = map().instance_descriptors();
+diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
+index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..f663af6ed8a445f8ef30a67bac176a1abe6c85f8 100644
+--- a/src/objects/js-objects.h
++++ b/src/objects/js-objects.h
+@@ -167,12 +167,6 @@ class JSReceiver : public TorqueGeneratedJSReceiver<JSReceiver, HeapObject> {
+   V8_WARN_UNUSED_RESULT static Maybe<bool> CheckPrivateNameStore(
+       LookupIterator* it, bool is_define);
+ 
+-  // Check if a data property can be created on the object. It will fail with
+-  // an error when it cannot.
+-  V8_WARN_UNUSED_RESULT static Maybe<bool> CheckIfCanDefine(
+-      Isolate* isolate, LookupIterator* it, Handle<Object> value,
+-      Maybe<ShouldThrow> should_throw);
+-
+   // ES6 7.3.4 (when passed kDontThrow)
+   V8_WARN_UNUSED_RESULT static Maybe<bool> CreateDataProperty(
+       Isolate* isolate, Handle<JSReceiver> object, Handle<Name> key,
+@@ -544,6 +538,12 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
+       Handle<JSObject> object, Handle<Name> name, Handle<AccessorInfo> info,
+       PropertyAttributes attributes);
+ 
++  // Check if a data property can be created on the object. It will fail with
++  // an error when it cannot.
++  V8_WARN_UNUSED_RESULT static Maybe<bool> CheckIfCanDefineAsConfigurable(
++      Isolate* isolate, LookupIterator* it, Handle<Object> value,
++      Maybe<ShouldThrow> should_throw);
++
+   // The result must be checked first for exceptions. If there's no exception,
+   // the output parameter |done| indicates whether the interceptor has a result
+   // or not.

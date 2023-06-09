@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Thu, 18 May 2023 18:37:17 +0000
+Subject: Observe widget across SetOptionSelection() calls.
+
+Call may re-enter JavaScript.
+
+Bug: chromium:1444581
+Change-Id: Id7a2f17b3b81f822ca8f4496ac08c19b7794c48a
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/107394
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+(cherry picked from commit a9ff918a86d700c3bdf9b5820faed35490c0cd25)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/107735
+Auto-Submit: Tom Sepez <tsepez@chromium.org>
+
+diff --git a/fpdfsdk/formfiller/cffl_listbox.cpp b/fpdfsdk/formfiller/cffl_listbox.cpp
+index 4bb100014c804adcfc7f1f2023cd1870f81c85e8..6fe5d91a2472a7aaadf13399b4e6075c2a9617c7 100644
+--- a/fpdfsdk/formfiller/cffl_listbox.cpp
++++ b/fpdfsdk/formfiller/cffl_listbox.cpp
+@@ -116,11 +116,18 @@ void CFFL_ListBox::SaveData(const CPDFSDK_PageView* pPageView) {
+   }
+   if (m_pWidget->GetFieldFlags() & pdfium::form_flags::kChoiceMultiSelect) {
+     for (int32_t i = 0, sz = pListBox->GetCount(); i < sz; i++) {
+-      if (pListBox->IsItemSelected(i))
++      if (pListBox->IsItemSelected(i)) {
+         m_pWidget->SetOptionSelection(i);
++        if (!observed_box) {
++          return;
++        }
++      }
+     }
+   } else {
+     m_pWidget->SetOptionSelection(pListBox->GetCurSel());
++    if (!observed_box) {
++      return;
++    }
+   }
+   ObservedPtr<CPDFSDK_Widget> observed_widget(m_pWidget.Get());
+   ObservedPtr<CFFL_ListBox> observed_this(this);

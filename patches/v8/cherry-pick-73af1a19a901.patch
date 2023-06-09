@@ -17,10 +17,10 @@ Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
 
 diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
-index ff30fcc4f211f49d244e8431cfdb5cba29484329..579a195f06beec657271b8f84b5d92bc8c908d55 100644
+index 642d83ff070d6b631a755af78627989878f685a2..22960729c64062b9e8a4abaf6b5ed8d44ccaa2de 100644
 --- a/src/objects/lookup-inl.h
 +++ b/src/objects/lookup-inl.h
-@@ -167,7 +167,7 @@ Handle<Name> PropertyKey::GetName(Isolate* isolate) {
+@@ -190,7 +190,7 @@ Handle<Name> PropertyKey::GetName(Isolate* isolate) {
  }
  
  Handle<Name> LookupIterator::name() const {
@@ -29,7 +29,7 @@ index ff30fcc4f211f49d244e8431cfdb5cba29484329..579a195f06beec657271b8f84b5d92bc
    return name_;
  }
  
-@@ -254,6 +254,7 @@ void LookupIterator::UpdateProtector() {
+@@ -281,6 +281,7 @@ void LookupIterator::UpdateProtector() {
  }
  
  InternalIndex LookupIterator::descriptor_number() const {
@@ -37,7 +37,7 @@ index ff30fcc4f211f49d244e8431cfdb5cba29484329..579a195f06beec657271b8f84b5d92bc
    DCHECK(!IsElement(*holder_));
    DCHECK(has_property_);
    DCHECK(holder_->HasFastProperties(isolate_));
-@@ -261,6 +262,7 @@ InternalIndex LookupIterator::descriptor_number() const {
+@@ -288,6 +289,7 @@ InternalIndex LookupIterator::descriptor_number() const {
  }
  
  InternalIndex LookupIterator::dictionary_entry() const {
@@ -45,7 +45,7 @@ index ff30fcc4f211f49d244e8431cfdb5cba29484329..579a195f06beec657271b8f84b5d92bc
    DCHECK(!IsElement(*holder_));
    DCHECK(has_property_);
    DCHECK(!holder_->HasFastProperties(isolate_));
-@@ -275,13 +277,14 @@ LookupIterator::Configuration LookupIterator::ComputeConfiguration(
+@@ -302,13 +304,14 @@ LookupIterator::Configuration LookupIterator::ComputeConfiguration(
  }
  
  // static
@@ -181,10 +181,10 @@ index e08ebaff089f8ab0a1b347f9eb5befd85e3c115b..920d28ffa81798c2e5fe9e15db016501
    Handle<JSGlobalObject> holder = GetHolder<JSGlobalObject>();
    return handle(holder->global_dictionary(isolate_, kAcquireLoad)
 diff --git a/src/objects/lookup.h b/src/objects/lookup.h
-index 782a09225c17a92ee8f08d20ede0902613158c27..15bcda75f2493bf4800d250e37f4273de36a6334 100644
+index 67a8bac22e6e29df2d7df36937565e4cc0acde45..78a00d7ca0fab1ab8b2b1e49e3ffb92473b21cc9 100644
 --- a/src/objects/lookup.h
 +++ b/src/objects/lookup.h
-@@ -214,11 +214,6 @@ class V8_EXPORT_PRIVATE LookupIterator final {
+@@ -222,11 +222,6 @@ class V8_EXPORT_PRIVATE LookupIterator final {
                          Handle<Object> lookup_start_object,
                          Configuration configuration);
  
@@ -196,7 +196,7 @@ index 782a09225c17a92ee8f08d20ede0902613158c27..15bcda75f2493bf4800d250e37f4273d
    static void InternalUpdateProtector(Isolate* isolate, Handle<Object> receiver,
                                        Handle<Name> name);
  
-@@ -278,12 +273,12 @@ class V8_EXPORT_PRIVATE LookupIterator final {
+@@ -286,12 +281,12 @@ class V8_EXPORT_PRIVATE LookupIterator final {
                                                     Configuration configuration,
                                                     Handle<Name> name);
  

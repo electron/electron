@@ -1,0 +1,38 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Maggie Chen <magchen@chromium.org>
+Date: Thu, 18 May 2023 00:20:34 +0000
+Subject: Fix a crash caused by calling TRACE_EVENT
+
+Now use literal constant for TRACE_EVENT. Passing a pointer instead of
+string content to TRACE_EVENT causes a crash in ScopedTracer.
+
+(cherry picked from commit 6f2e587807aff2306309025db1c15fc59290eb6f)
+
+Bug: 1444195
+Change-Id: I02aa1148d61e7596e9293ffc866135e99991e42e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4522164
+Reviewed-by: Sunny Sachanandani <sunnyps@chromium.org>
+Commit-Queue: Maggie Chen <magchen@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1144352}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4544885
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5735@{#749}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+
+diff --git a/ui/gl/swap_chain_presenter.cc b/ui/gl/swap_chain_presenter.cc
+index 31deec1168cd438c0a37edc9230484ba2181b525..5cf91faf97a2a6f4f130d9e62678d972f55756ec 100644
+--- a/ui/gl/swap_chain_presenter.cc
++++ b/ui/gl/swap_chain_presenter.cc
+@@ -1635,10 +1635,8 @@ bool SwapChainPresenter::ReallocateSwapChain(
+     }
+   }
+   if (!use_yuv_swap_chain) {
+-    std::ostringstream trace_event_stream;
+-    trace_event_stream << "SwapChainPresenter::ReallocateSwapChain::"
+-                       << DxgiFormatToString(swap_chain_format);
+-    TRACE_EVENT0("gpu", trace_event_stream.str().c_str());
++    TRACE_EVENT1("gpu", "SwapChainPresenter::ReallocateSwapChain::BGRA",
++                 "format", DxgiFormatToString(swap_chain_format));
+ 
+     desc.Format = swap_chain_format;
+     desc.Flags = DXGI_SWAP_CHAIN_FLAG_FULLSCREEN_VIDEO;

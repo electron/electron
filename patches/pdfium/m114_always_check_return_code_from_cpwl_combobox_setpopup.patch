@@ -1,0 +1,236 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tom Sepez <tsepez@chromium.org>
+Date: Fri, 19 May 2023 18:41:31 +0000
+Subject: Always check return code from CPWL_ComboBox::SetPopup().
+
+Operation must not continue when false is returned.
+
+Bug: chromium:1444238
+Change-Id: Ic8c29653ac185ac80b6248203649ce05d0e10f06
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/107390
+Commit-Queue: Tom Sepez <tsepez@chromium.org>
+Reviewed-by: Lei Zhang <thestig@chromium.org>
+(cherry picked from commit 3eb3c4d77d4f9372f77aa4895b85a1d4e4755c89)
+Reviewed-on: https://pdfium-review.googlesource.com/c/pdfium/+/107812
+
+diff --git a/fpdfsdk/pwl/cpwl_combo_box.cpp b/fpdfsdk/pwl/cpwl_combo_box.cpp
+index 4d834e698ee1b08bcc81d20e062e029620438b7e..fdcc2ef1b2fba4257aab3835f58c5ec0913663cf 100644
+--- a/fpdfsdk/pwl/cpwl_combo_box.cpp
++++ b/fpdfsdk/pwl/cpwl_combo_box.cpp
+@@ -400,7 +400,9 @@ bool CPWL_ComboBox::OnChar(uint16_t nChar, Mask<FWL_EVENTFLAG> nFlag) {
+   // options.
+   switch (nChar) {
+     case pdfium::ascii::kReturn:
+-      SetPopup(!IsPopup());
++      if (!SetPopup(!IsPopup())) {
++        return false;
++      }
+       SetSelectText();
+       return true;
+     case pdfium::ascii::kSpace:
+@@ -408,7 +410,9 @@ bool CPWL_ComboBox::OnChar(uint16_t nChar, Mask<FWL_EVENTFLAG> nFlag) {
+       // editable
+       if (!HasFlag(PCBS_ALLOWCUSTOMTEXT)) {
+         if (!IsPopup()) {
+-          SetPopup(/*bPopUp=*/true);
++          if (!SetPopup(/*bPopUp=*/true)) {
++            return false;
++          }
+           SetSelectText();
+         }
+         return true;
+@@ -438,7 +442,7 @@ bool CPWL_ComboBox::OnChar(uint16_t nChar, Mask<FWL_EVENTFLAG> nFlag) {
+ 
+ void CPWL_ComboBox::NotifyLButtonDown(CPWL_Wnd* child, const CFX_PointF& pos) {
+   if (child == m_pButton) {
+-    SetPopup(!m_bPopup);
++    (void)SetPopup(!m_bPopup);
+     // Note, |this| may no longer be viable at this point. If more work needs to
+     // be done, check the return value of SetPopup().
+   }
+@@ -451,7 +455,7 @@ void CPWL_ComboBox::NotifyLButtonUp(CPWL_Wnd* child, const CFX_PointF& pos) {
+   SetSelectText();
+   SelectAllText();
+   m_pEdit->SetFocus();
+-  SetPopup(false);
++  (void)SetPopup(false);
+   // Note, |this| may no longer be viable at this point. If more work needs to
+   // be done, check the return value of SetPopup().
+ }
+diff --git a/fpdfsdk/pwl/cpwl_combo_box.h b/fpdfsdk/pwl/cpwl_combo_box.h
+index 0d13b40b7a1fa1410070a14a3f9f4ef5ad625181..4b97394996d0fb1212e8f7e54f3513e1e93b6b80 100644
+--- a/fpdfsdk/pwl/cpwl_combo_box.h
++++ b/fpdfsdk/pwl/cpwl_combo_box.h
+@@ -64,7 +64,7 @@ class CPWL_ComboBox final : public CPWL_Wnd {
+   void CreateListBox(const CreateParams& cp);
+ 
+   // Returns |true| iff this instance is still allocated.
+-  bool SetPopup(bool bPopup);
++  [[nodiscard]] bool SetPopup(bool bPopup);
+ 
+   UnownedPtr<CPWL_Edit> m_pEdit;
+   UnownedPtr<CPWL_CBButton> m_pButton;
+diff --git a/testing/resources/javascript/xfa_specific/bug_1444238.evt b/testing/resources/javascript/xfa_specific/bug_1444238.evt
+new file mode 100644
+index 0000000000000000000000000000000000000000..adca35aa0d756e76eb395c5d60ba41b86c3d0090
+--- /dev/null
++++ b/testing/resources/javascript/xfa_specific/bug_1444238.evt
+@@ -0,0 +1,3 @@
++mousedown,left,91,539
++mouseup,left,91,539
++charcode,32
+diff --git a/testing/resources/javascript/xfa_specific/bug_1444238.in b/testing/resources/javascript/xfa_specific/bug_1444238.in
+new file mode 100644
+index 0000000000000000000000000000000000000000..675178c9446b0181c3633a4b5c9bc664bb4c127d
+--- /dev/null
++++ b/testing/resources/javascript/xfa_specific/bug_1444238.in
+@@ -0,0 +1,149 @@
++{{header}}
++{{object 1 0}} <<
++  /Type /Catalog
++  /Pages 2 0 R
++  /AcroForm 4 0 R
++  /OpenAction 40 0 R
++>>
++endobj
++{{object 2 0}} <<
++  /Type /Pages
++  /Count 2
++  /Kids [
++    32 0 R
++    34 0 R
++  ]
++>>
++endobj
++% Forms
++{{object 4 0}} <<
++  /XFA 43 0 R
++  /Fields [
++    10 0 R
++    11 0 R
++  ]
++>>
++endobj
++% Fields
++{{object 10 0}} <<
++  /Type /Annot
++  /Subtype /Widget
++  /FT /Tx
++  /T (MyField5)
++  /V (myfield_5)
++  /Rect [0 500 600 600]
++>>
++% Fields
++{{object 11 0}} <<
++  /T (MyField3)
++  /Parent 4 0 R
++  /Kids [12 0 R]
++  /Opt [(a) (b) (c) (d)]
++  /V [(a) (b) (c)]
++>>
++endobj
++% Fields
++{{object 12 0}} <<
++  /Type /Annot
++  /Subtype /Widget
++  /FT /Ch
++  /Ff 131072
++  /Parent 11 0 R
++  /Kids [13 0 R]
++>>
++endobj
++% Fields
++{{object 13 0}} <<
++  /Type /Annot
++  /Subtype /Widget
++  /Parent 12 0 R
++  /Rect [0 400 600 600]
++>>
++endobj
++% Fields
++{{object 14 0}} <<
++  /Type /Annot
++  /Subtype /Widget
++  /Parent 12 0 R
++  /Rect [100 400 500 500]
++>>
++endobj
++% Page number 2.
++{{object 32 0}} <<
++  /Type /Page
++  /Parent 2 0 R
++  /MediaBox [0 0 612 792]
++  /Annots [13 0 R]
++
++>>
++endobj
++{{object 34 0}} <<
++  /Type /Page
++  /Parent 2 0 R
++  /MediaBox [0 0 612 792]
++  /Annots [10 0 R]
++>>
++endobj
++% Document JS Action
++{{object 40 0}} <<
++  /Type /Action
++  /S /JavaScript
++  /JS 41 0 R
++>>
++endobj
++% JS program to exexute
++{{object 41 0}} <<
++>>
++stream
++var f5 = this.getField("MyField5");
++var f3 = this.getField("MyField3");
++f3.setFocus();
++this.__defineGetter__("pageNum",function o(){f5.setFocus(); f3.borderStyle="dashed"; f3.setFocus();});
++endstream
++endobj
++{{object 43 0}} <<
++  {{streamlen}}
++>>
++stream
++<?xml version="1.0" encoding="UTF-8"?>
++<xdp:xdp xmlns:xdp="http://ns.adobe.com/xdp/">
++<config></config>
++<template xmlns="http://www.xfa.org/schema/xfa-template/2.8/">
++  <subform layout="tb" locale="en_US">
++    <pageSet>
++      <pageArea id="Page1" name="Page1">
++        <contentArea h="268.939mm" w="203.2mm" x="6.35mm" y="6.35mm"/>
++        <medium long="792pt" short="612pt" stock="default"/>
++      </pageArea>
++    </pageSet>
++    <field h="9.0001mm" name="MyField3" w="47.625mm" x="120mm" y="120mm">
++      <ui>
++        <choiceList open="onEntry">
++          <border>
++            <edge/>
++          </border>
++        </choiceList>
++      </ui>
++      <items save="1">
++        <text>apples</text>
++        <text>bananas</text>
++        <text>pears</text>
++      </items>
++      <value>
++        <text>apples</text>
++      </value>
++      <event activity="preOpen">
++        <script contentType="application/x-javascript">
++            var aa = this.pageNum;
++        </script>
++      </event>
++    </field>
++  </subform>
++</template>
++</xdp:xdp>
++endstream
++endobj
++{{xref}}
++{{trailer}}
++{{startxref}}
++%%EOF

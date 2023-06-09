@@ -15,6 +15,8 @@ cherry-pick-546e00df97ac.patch
 cherry-pick-f6ddbf42b1ea.patch
 cherry-pick-c605df24af3c.patch
 cherry-pick-f4b66ae451c2.patch
+cherry-pick-3b0607d14060.patch
+cherry-pick-9c6dfc733fce.patch
 merged_ic_fix_store_handler_selection_for_arguments_objects.patch
 cherry-pick-73af1a19a901.patch
 merged_regexp_fix_clobbered_register_in_global_unicode_special.patch

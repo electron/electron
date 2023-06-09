@@ -1,0 +1,200 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin McNee <mcnee@chromium.org>
+Date: Tue, 23 May 2023 15:46:16 +0000
+Subject: M114: Compute all webview find options before cloning them
+
+Compute all webview find options before cloning them
+
+In WebViewFindHelper::Find, we're cloning the find options before we've
+set the value for `new_session`. For requests that are part of the same
+session, in WebViewFindHelper::FindReply, we're using the incorrect
+value for `new_session` and we're destroying the FindInfo for what we
+think is a previous session but is actually for the request we're
+currently processing.
+
+We now fully compute the options before cloning them.
+
+(cherry picked from commit bb8e17b942b8b1de0a58b2dce34197e00a3b6525)
+
+Bug: 1443401
+Change-Id: Ife6747aedabaf74f9a4855a173349ffe612b6f95
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4533923
+Reviewed-by: James Maclean <wjmaclean@chromium.org>
+Commit-Queue: James Maclean <wjmaclean@chromium.org>
+Auto-Submit: Kevin McNee <mcnee@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1145265}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4556646
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5735@{#941}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+
+diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+index 4e6212397a183fdf494f271a255eaf2d536587e6..7159cf6af5cfd0ad5b9e5ba526043a4407a5399d 100644
+--- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
++++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+@@ -3851,6 +3851,11 @@ IN_PROC_BROWSER_TEST_P(WebViewTest, Shim_testFindInMultipleWebViews) {
+   TestHelper("testFindInMultipleWebViews", "web_view/shim", NO_TEST_SERVER);
+ }
+ 
++IN_PROC_BROWSER_TEST_F(WebViewTest, Shim_TestFindAfterTerminate) {
++  content::ScopedAllowRendererCrashes scoped_allow_renderer_crashes;
++  TestHelper("testFindAfterTerminate", "web_view/shim", NO_TEST_SERVER);
++}
++
+ IN_PROC_BROWSER_TEST_P(WebViewTest, Shim_TestLoadDataAPI) {
+   TestHelper("testLoadDataAPI", "web_view/shim", NEEDS_TEST_SERVER);
+ 
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/shim/main.js b/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
+index 5ed4f0223346b01d83cc04c8cda6c0e92e1a72e3..4a1543d1751cc817a511594d0123deacc0e61ebb 100644
+--- a/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
++++ b/chrome/test/data/extensions/platform_apps/web_view/shim/main.js
+@@ -2859,6 +2859,20 @@ function testFindInMultipleWebViews() {
+       });
+ }
+ 
++function testFindAfterTerminate() {
++  let webview = new WebView();
++  webview.src = 'data:text/html,<body><iframe></iframe></body>';
++  webview.addEventListener('loadstop', () => {
++    webview.find('A');
++    webview.terminate();
++    webview.find('B', {'backward': true});
++    webview.find('B', {'backward': true}, (results) => {
++      embedder.test.succeed();
++    });
++  });
++  document.body.appendChild(webview);
++}
++
+ function testLoadDataAPI() {
+   var webview = new WebView();
+   webview.src = 'about:blank';
+@@ -3600,6 +3614,7 @@ embedder.test.testList = {
+   'testFindAPI': testFindAPI,
+   'testFindAPI_findupdate': testFindAPI_findupdate,
+   'testFindInMultipleWebViews': testFindInMultipleWebViews,
++  'testFindAfterTerminate': testFindAfterTerminate,
+   'testLoadDataAPI': testLoadDataAPI,
+   'testLoadDataAPIAccessibleResources': testLoadDataAPIAccessibleResources,
+   'testResizeEvents': testResizeEvents,
+diff --git a/extensions/browser/guest_view/web_view/web_view_find_helper.cc b/extensions/browser/guest_view/web_view/web_view_find_helper.cc
+index 07b8a6975907190741267e3f92c2e9bde5d9c5d6..f7e5c7c6ece05fa59374735cb1757d1918d1597c 100644
+--- a/extensions/browser/guest_view/web_view/web_view_find_helper.cc
++++ b/extensions/browser/guest_view/web_view/web_view_find_helper.cc
+@@ -36,12 +36,12 @@ void WebViewFindHelper::CancelAllFindSessions() {
+ 
+ void WebViewFindHelper::DispatchFindUpdateEvent(bool canceled,
+                                                 bool final_update) {
+-  DCHECK(find_update_event_.get());
++  CHECK(find_update_event_);
+   std::unique_ptr<base::DictionaryValue> args(new base::DictionaryValue());
+   find_update_event_->PrepareResults(args.get());
+   args->SetBoolKey(webview::kFindCanceled, canceled);
+   args->SetBoolKey(webview::kFindFinalUpdate, final_update);
+-  DCHECK(webview_guest_);
++  CHECK(webview_guest_);
+   webview_guest_->DispatchEventToView(std::make_unique<GuestViewEvent>(
+       webview::kEventFindReply, std::move(args)));
+ }
+@@ -94,6 +94,17 @@ void WebViewFindHelper::Find(
+   // Need a new request_id for each new find request.
+   ++current_find_request_id_;
+ 
++  if (current_find_session_) {
++    const std::u16string& current_search_text =
++        current_find_session_->search_text();
++    bool current_match_case = current_find_session_->options()->match_case;
++    options->new_session = current_search_text.empty() ||
++                           current_search_text != search_text ||
++                           current_match_case != options->match_case;
++  } else {
++    options->new_session = true;
++  }
++
+   // Stores the find request information by request_id so that its callback
+   // function can be called when the find results are available.
+   std::pair<FindInfoMap::iterator, bool> insert_result =
+@@ -102,32 +113,19 @@ void WebViewFindHelper::Find(
+           base::MakeRefCounted<FindInfo>(current_find_request_id_, search_text,
+                                          options.Clone(), find_function)));
+   // No duplicate insertions.
+-  DCHECK(insert_result.second);
+-
+-  blink::mojom::FindOptionsPtr full_options =
+-      insert_result.first->second->options().Clone();
+-
+-  if (current_find_session_) {
+-    const std::u16string& current_search_text =
+-        current_find_session_->search_text();
+-    bool current_match_case = current_find_session_->options()->match_case;
+-    full_options->new_session = current_search_text.empty() ||
+-                                current_search_text != search_text ||
+-                                current_match_case != options->match_case;
+-  } else {
+-    full_options->new_session = true;
+-  }
++  CHECK(insert_result.second);
+ 
+   // Link find requests that are a part of the same find session.
+-  if (!full_options->new_session && current_find_session_) {
+-    DCHECK(current_find_request_id_ != current_find_session_->request_id());
++  if (!options->new_session && current_find_session_) {
++    CHECK(current_find_request_id_ != current_find_session_->request_id());
+     current_find_session_->AddFindNextRequest(
+         insert_result.first->second->AsWeakPtr());
+   }
+ 
+   // Update the current find session, if necessary.
+-  if (full_options->new_session)
++  if (options->new_session) {
+     current_find_session_ = insert_result.first->second;
++  }
+ 
+   // Handle the empty |search_text| case internally.
+   if (search_text.empty()) {
+@@ -137,7 +135,7 @@ void WebViewFindHelper::Find(
+   }
+ 
+   guest_web_contents->Find(current_find_request_id_, search_text,
+-                           std::move(full_options), /*skip_delay=*/true);
++                           std::move(options), /*skip_delay=*/true);
+ }
+ 
+ void WebViewFindHelper::FindReply(int request_id,
+@@ -152,14 +150,14 @@ void WebViewFindHelper::FindReply(int request_id,
+     return;
+ 
+   // This find request must be a part of an existing find session.
+-  DCHECK(current_find_session_);
++  CHECK(current_find_session_);
+ 
+   WebViewFindHelper::FindInfo* find_info = find_iterator->second.get();
+   // Handle canceled find requests.
+   if (find_info->options()->new_session &&
+       find_info_map_.begin()->first < request_id) {
+-    DCHECK_NE(current_find_session_->request_id(),
+-              find_info_map_.begin()->first);
++    CHECK_NE(current_find_session_->request_id(),
++             find_info_map_.begin()->first);
+     if (find_update_event_)
+       DispatchFindUpdateEvent(true /* canceled */, true /* final_update */);
+     EndFindSession(find_info_map_.begin()->first, true /* canceled */);
+@@ -174,11 +172,12 @@ void WebViewFindHelper::FindReply(int request_id,
+   // Aggregate the find results.
+   find_info->AggregateResults(number_of_matches, selection_rect,
+                               active_match_ordinal, final_update);
+-  find_update_event_->AggregateResults(number_of_matches, selection_rect,
+-                                      active_match_ordinal, final_update);
+-
+-  // Propagate incremental results to the |findupdate| event.
+-  DispatchFindUpdateEvent(false /* canceled */, final_update);
++  if (find_update_event_) {
++    find_update_event_->AggregateResults(number_of_matches, selection_rect,
++                                         active_match_ordinal, final_update);
++    // Propagate incremental results to the |findupdate| event.
++    DispatchFindUpdateEvent(false /* canceled */, final_update);
++  }
+ 
+   // Call the callback functions of completed find requests.
+   if (final_update)
