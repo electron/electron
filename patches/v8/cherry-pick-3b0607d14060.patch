@@ -43,7 +43,7 @@ index 93939fa4702922f58e8e5bcc019e569f42ab198e..1190b3dedfabee414fb49038e31b3cf2
        it.Restart();
      }
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..d5e4aaa3b98b65c644d9556f483bccec008a9a1f 100644
+index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..3abfd10ee4ad64c67c490d3f9d24f8e6efe08a1f 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
 @@ -243,27 +243,6 @@ Maybe<bool> JSReceiver::CheckPrivateNameStore(LookupIterator* it,
@@ -104,7 +104,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..d5e4aaa3b98b65c644d9556f483bccec
                              DefineOwnPropertyIgnoreAttributes(it, value, NONE),
                              Nothing<bool>());
  
-@@ -4710,19 +4688,43 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
+@@ -4710,19 +4688,42 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
      return it.factory()->undefined_value();
    }
  
@@ -143,8 +143,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..d5e4aaa3b98b65c644d9556f483bccec
 +    }
 +    // Property does not exist, check object extensibility.
 +  }
-+  if (!JSObject::IsExtensible(isolate,
-+                              Handle<JSObject>::cast(it->GetReceiver()))) {
++  if (!JSObject::IsExtensible(Handle<JSObject>::cast(it->GetReceiver()))) {
 +    RETURN_FAILURE(
 +        isolate, GetShouldThrow(isolate, should_throw),
 +        NewTypeError(MessageTemplate::kDefineDisallowed, it->GetName()));

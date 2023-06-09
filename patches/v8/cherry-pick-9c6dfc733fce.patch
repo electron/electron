@@ -1,7 +1,7 @@
-From 9c6dfc733fcecf588736ef0c92a7dc781c546395 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Igor Sheludko <ishell@chromium.org>
 Date: Tue, 16 May 2023 16:01:49 +0200
-Subject: [PATCH] Merged: [runtime] Fix handling of interceptors
+Subject: Merged: [runtime] Fix handling of interceptors
 
 Drive-by: simplify creation of LookupIterator copies.
 
@@ -15,13 +15,12 @@ Commit-Queue: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/branch-heads/11.4@{#23}
 Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
----
 
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 5df6e2a..7ccb954 100644
+index 3abfd10ee4ad64c67c490d3f9d24f8e6efe08a1f..4046b3d1d1e4a36a15c7f0e859c4e51cd29185e4 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -3689,10 +3689,8 @@
+@@ -3632,10 +3632,8 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
          // own property without the interceptor.
          Isolate* isolate = it->isolate();
          Handle<Object> receiver = it->GetReceiver();
@@ -35,10 +34,10 @@ index 5df6e2a..7ccb954 100644
              &own_lookup, value, attributes, should_throw, handling, semantics,
              store_origin);
 diff --git a/src/objects/lookup-inl.h b/src/objects/lookup-inl.h
-index d34f710..00c95e0 100644
+index 782698bd7c488f5570288119e49784e16a93ddd2..35eaed8ffbc23248c33230868f428bc192c5b790 100644
 --- a/src/objects/lookup-inl.h
 +++ b/src/objects/lookup-inl.h
-@@ -130,6 +130,29 @@
+@@ -130,6 +130,29 @@ PropertyKey::PropertyKey(Isolate* isolate, double index) {
  #endif
  }
  
@@ -68,7 +67,7 @@ index d34f710..00c95e0 100644
  PropertyKey::PropertyKey(Isolate* isolate, Handle<Name> name) {
    if (name->AsIntegerIndex(&index_)) {
      name_ = name;
-@@ -179,6 +202,10 @@
+@@ -179,6 +202,10 @@ Handle<Name> LookupIterator::GetName() {
    return name_;
  }
  
@@ -80,10 +79,10 @@ index d34f710..00c95e0 100644
    return index_ <= JSObject::kMaxElementIndex ||
           (index_ != kInvalidIndex &&
 diff --git a/src/objects/lookup.h b/src/objects/lookup.h
-index 9adee79..06ed50e 100644
+index ef90316295c98d51b61c118cf331731f991d93d0..5d2d926b7e3dcecf8529f7d1c1e919033d9faa7f 100644
 --- a/src/objects/lookup.h
 +++ b/src/objects/lookup.h
-@@ -36,6 +36,11 @@
+@@ -36,6 +36,11 @@ class PropertyKey {
    inline Handle<Name> GetName(Isolate* isolate);
  
   private:
@@ -95,7 +94,7 @@ index 9adee79..06ed50e 100644
    Handle<Name> name_;
    size_t index_;
  };
-@@ -108,6 +113,9 @@
+@@ -108,6 +113,9 @@ class V8_EXPORT_PRIVATE LookupIterator final {
      return static_cast<uint32_t>(index_);
    }
  
@@ -106,10 +105,10 @@ index 9adee79..06ed50e 100644
    // [0, size_t::max).
    bool IsElement() const { return index_ != kInvalidIndex; }
 diff --git a/src/objects/objects.cc b/src/objects/objects.cc
-index 16e7f9c..e13773d 100644
+index 01d826c43bf9ec8bb28aba0e59fd3fa8f5700bac..b57c68073e401bb34796689013213791d40af10a 100644
 --- a/src/objects/objects.cc
 +++ b/src/objects/objects.cc
-@@ -2686,11 +2686,8 @@
+@@ -2668,11 +2668,8 @@ Maybe<bool> Object::SetSuperProperty(LookupIterator* it, Handle<Object> value,
  
    // Note, the callers rely on the fact that this code is redoing the full own
    // lookup from scratch.
@@ -123,7 +122,7 @@ index 16e7f9c..e13773d 100644
    for (; own_lookup.IsFound(); own_lookup.Next()) {
      switch (own_lookup.state()) {
        case LookupIterator::ACCESS_CHECK:
-@@ -2727,6 +2724,8 @@
+@@ -2709,6 +2706,8 @@ Maybe<bool> Object::SetSuperProperty(LookupIterator* it, Handle<Object> value,
              JSReceiver::GetOwnPropertyDescriptor(&own_lookup, &desc);
          MAYBE_RETURN(owned, Nothing<bool>());
          if (!owned.FromJust()) {
@@ -133,10 +132,10 @@ index 16e7f9c..e13773d 100644
                                                      should_throw)) {
              return Nothing<bool>();
 diff --git a/test/unittests/api/interceptor-unittest.cc b/test/unittests/api/interceptor-unittest.cc
-index 635bf6a..416f9bd 100644
+index 635bf6a0b72f8d49591be333b1314846c9c47269..416f9bd1eb4c59160eb03031e6011ae02dcf021e 100644
 --- a/test/unittests/api/interceptor-unittest.cc
 +++ b/test/unittests/api/interceptor-unittest.cc
-@@ -174,8 +174,10 @@
+@@ -174,8 +174,10 @@ TEST_F(InterceptorLoggingTest, DispatchTest) {
    EXPECT_EQ(Run("obj.foo"), "named getter");
    EXPECT_EQ(Run("obj[42]"), "indexed getter");
  
