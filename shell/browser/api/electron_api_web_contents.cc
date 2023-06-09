@@ -783,12 +783,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          content::WebContents* web_contents)
     : content::WebContentsObserver(web_contents),
       type_(Type::kRemote),
-      id_(GetAllWebContents().Add(this)),
-      devtools_file_system_indexer_(
-          base::MakeRefCounted<DevToolsFileSystemIndexer>()),
-      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
-      file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+      id_(GetAllWebContents().Add(this))
 #if BUILDFLAG(ENABLE_PRINTING)
       ,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
@@ -821,12 +816,7 @@ WebContents::WebContents(v8::Isolate* isolate,
                          Type type)
     : content::WebContentsObserver(web_contents.get()),
       type_(type),
-      id_(GetAllWebContents().Add(this)),
-      devtools_file_system_indexer_(
-          base::MakeRefCounted<DevToolsFileSystemIndexer>()),
-      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
-      file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+      id_(GetAllWebContents().Add(this))
 #if BUILDFLAG(ENABLE_PRINTING)
       ,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
@@ -842,12 +832,7 @@ WebContents::WebContents(v8::Isolate* isolate,
 
 WebContents::WebContents(v8::Isolate* isolate,
                          const gin_helper::Dictionary& options)
-    : id_(GetAllWebContents().Add(this)),
-      devtools_file_system_indexer_(
-          base::MakeRefCounted<DevToolsFileSystemIndexer>()),
-      exclusive_access_manager_(std::make_unique<ExclusiveAccessManager>(this)),
-      file_task_runner_(
-          base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()}))
+    : id_(GetAllWebContents().Add(this))
 #if BUILDFLAG(ENABLE_PRINTING)
       ,
       print_task_runner_(CreatePrinterHandlerTaskRunner())
@@ -1409,7 +1394,7 @@ bool WebContents::PlatformHandleKeyboardEvent(
 content::KeyboardEventProcessingResult WebContents::PreHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (exclusive_access_manager_->HandleUserKeyEvent(event))
+  if (exclusive_access_manager_.HandleUserKeyEvent(event))
     return content::KeyboardEventProcessingResult::HANDLED;
 
   if (event.GetType() == blink::WebInputEvent::Type::kRawKeyDown ||
@@ -1497,7 +1482,7 @@ void WebContents::OnEnterFullscreenModeForTab(
 
   owner_window()->set_fullscreen_transition_type(
       NativeWindow::FullScreenTransitionType::kHTML);
-  exclusive_access_manager_->fullscreen_controller()->EnterFullscreenModeForTab(
+  exclusive_access_manager_.fullscreen_controller()->EnterFullscreenModeForTab(
       requesting_frame, options.display_id);
 
   SetHtmlApiFullscreen(true);
@@ -1515,7 +1500,7 @@ void WebContents::ExitFullscreenModeForTab(content::WebContents* source) {
 
   // This needs to be called before we exit fullscreen on the native window,
   // or the controller will incorrectly think we weren't fullscreen and bail.
-  exclusive_access_manager_->fullscreen_controller()->ExitFullscreenModeForTab(
+  exclusive_access_manager_.fullscreen_controller()->ExitFullscreenModeForTab(
       source);
 
   SetHtmlApiFullscreen(false);
@@ -1574,7 +1559,7 @@ void WebContents::RequestExclusivePointerAccess(
     bool last_unlocked_by_target,
     bool allowed) {
   if (allowed) {
-    exclusive_access_manager_->mouse_lock_controller()->RequestToLockMouse(
+    exclusive_access_manager_.mouse_lock_controller()->RequestToLockMouse(
         web_contents, user_gesture, last_unlocked_by_target);
   } else {
     web_contents->GotResponseToLockMouseRequest(
@@ -1594,18 +1579,18 @@ void WebContents::RequestToLockMouse(content::WebContents* web_contents,
 }
 
 void WebContents::LostMouseLock() {
-  exclusive_access_manager_->mouse_lock_controller()->LostMouseLock();
+  exclusive_access_manager_.mouse_lock_controller()->LostMouseLock();
 }
 
 void WebContents::RequestKeyboardLock(content::WebContents* web_contents,
                                       bool esc_key_locked) {
-  exclusive_access_manager_->keyboard_lock_controller()->RequestKeyboardLock(
+  exclusive_access_manager_.keyboard_lock_controller()->RequestKeyboardLock(
       web_contents, esc_key_locked);
 }
 
 void WebContents::CancelKeyboardLockRequest(
     content::WebContents* web_contents) {
-  exclusive_access_manager_->keyboard_lock_controller()
+  exclusive_access_manager_.keyboard_lock_controller()
       ->CancelKeyboardLockRequest(web_contents);
 }
 
@@ -3875,8 +3860,10 @@ bool WebContents::IsFullscreenForTabOrPending(
 
 content::FullscreenState WebContents::GetFullscreenState(
     const content::WebContents* source) const {
-  return exclusive_access_manager_->fullscreen_controller()->GetFullscreenState(
-      source);
+  // `const_cast` here because EAM does not have const getters
+  return const_cast<ExclusiveAccessManager*>(&exclusive_access_manager_)
+      ->fullscreen_controller()
+      ->GetFullscreenState(source);
 }
 
 bool WebContents::TakeFocus(content::WebContents* source, bool reverse) {
