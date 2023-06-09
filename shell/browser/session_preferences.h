@@ -23,7 +23,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
   static std::vector<base::FilePath> GetValidPreloads(
       content::BrowserContext* context);
 
-  explicit SessionPreferences(content::BrowserContext* context);
+  static void CreateForBrowserContext(content::BrowserContext* context);
+
   ~SessionPreferences() override;
 
   void set_preloads(const std::vector<base::FilePath>& preloads) {
@@ -32,6 +33,8 @@ class SessionPreferences : public base::SupportsUserData::Data {
   const std::vector<base::FilePath>& preloads() const { return preloads_; }
 
  private:
+  SessionPreferences();
+
   // The user data key.
   static int kLocatorKey;
 
