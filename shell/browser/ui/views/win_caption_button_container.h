@@ -41,6 +41,9 @@ class WinCaptionButtonContainer : public views::View,
   gfx::Size GetButtonSize() const;
   void SetButtonSize(gfx::Size size);
 
+  // Sets caption button container background color.
+  void UpdateBackground();
+
   // Sets caption button visibility and enabled state based on window state.
   // Only one of maximize or restore button should ever be visible at the same
   // time, and both are disabled in tablet UI mode.
