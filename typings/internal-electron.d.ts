@@ -242,6 +242,10 @@ declare namespace ElectronInternal {
     custom_display_name: string,
     height_microns: number,
     width_microns: number,
+    imageable_area_left_microns?: number,
+    imageable_area_bottom_microns?: number,
+    imageable_area_right_microns?: number,
+    imageable_area_top_microns?: number,
     is_default?: 'true',
   }
 
