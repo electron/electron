@@ -218,6 +218,10 @@ static_library("chrome") {
     public_deps += [ "//chrome/services/util_win:lib" ]
   }
 
+  if (is_mac) {
+    public_deps += [ ":chrome_lib_arc" ]
+  }
+
   if (enable_widevine) {
     sources += [
       "//chrome/renderer/media/chrome_key_systems.cc",
@@ -328,6 +332,34 @@ static_library("chrome") {
     } else {
       sources += [ "//chrome/browser/hang_monitor/hang_crash_dump.cc" ]
     }
+  }
+}
+
+if (is_mac) {
+  source_set("chrome_lib_arc") {
+    include_dirs = [ "." ]
+    sources = [
+      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
+      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
+      "//chrome/browser/icon_loader_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
+      "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/platform_util_mac.mm",
+      "//chrome/browser/process_singleton_mac.mm",
+    ]
+
+    deps = [
+      "//base",
+      "//skia",
+      "//third_party/electron_node:node_lib",
+      "//third_party/webrtc_overrides:webrtc_component",
+      "//v8",
+    ]
+
+    configs += [ "//build/config/compiler:enable_arc" ]
   }
 }
 
