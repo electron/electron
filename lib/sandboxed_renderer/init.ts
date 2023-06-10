@@ -38,12 +38,15 @@ const loadedModules = new Map<string, any>([
   ['electron', electron],
   ['electron/common', electron],
   ['electron/renderer', electron],
-  ['events', events]
+  ['events', events],
+  ['node:events', events]
 ]);
 
 const loadableModules = new Map<string, Function>([
   ['timers', () => require('timers')],
-  ['url', () => require('url')]
+  ['node:timers', () => require('timers')],
+  ['url', () => require('url')],
+  ['node:url', () => require('url')]
 ]);
 
 // Pass different process object to the preload script.
