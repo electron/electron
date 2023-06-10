@@ -62,7 +62,7 @@ index 51c25e40dc0162d9b6bced1db712e42dae02d466..0eed4713837d7e683df8c021de10d0d0
  }
  
 diff --git a/src/ic/ic.cc b/src/ic/ic.cc
-index 55aa9d2c989f3fc846f0523ce5bd6a1483d448fa..ea879a1cf3bc303d482d795349bc9bbdfb46a3ec 100644
+index 8754a849636826a0eef18381773b7a2a8a0a4edc..51371baa30b6465e46a51f540ffaba98251ebf67 100644
 --- a/src/ic/ic.cc
 +++ b/src/ic/ic.cc
 @@ -2308,10 +2308,18 @@ Handle<Object> KeyedStoreIC::StoreElementHandler(
