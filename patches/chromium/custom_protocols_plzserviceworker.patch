@@ -8,7 +8,7 @@ Allow registering custom protocols to handle service worker main script fetching
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
 
 diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
-index 939ea79947c6c1ae2d3d8b2d73226c89cffbdf2d..874a76e34586ab31658bac0f76835598ec003094 100644
+index 698c94642b98b03570fef8f7a5956486eacacbdc..7983abad9a78a115dfd7b9513c6f57be2cd40811 100644
 --- a/content/browser/service_worker/service_worker_context_wrapper.cc
 +++ b/content/browser/service_worker/service_worker_context_wrapper.cc
 @@ -1839,6 +1839,26 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
