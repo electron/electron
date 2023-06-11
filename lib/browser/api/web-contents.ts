@@ -337,10 +337,9 @@ WebContents.prototype.printToPDF = async function (options) {
 
 // TODO(codebytere): deduplicate argument sanitization by moving rest of
 // print param logic into new file shared between printToPDF and print
-WebContents.prototype.print = function (printOptions: ElectronInternal.WebContentsPrintOptions, callback) {
-  const options = printOptions ?? {};
-  if (options.pageSize) {
-    const pageSize = options.pageSize;
+WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions, callback) {
+  if (typeof options === 'object') {
+    const pageSize = options.pageSize ?? 'A4';
     if (typeof pageSize === 'object') {
       if (!pageSize.height || !pageSize.width) {
         throw new Error('height and width properties are required for pageSize');
@@ -357,10 +356,21 @@ WebContents.prototype.print = function (printOptions: ElectronInternal.WebConten
         name: 'CUSTOM',
         custom_display_name: 'Custom',
         height_microns: height,
-        width_microns: width
+        width_microns: width,
+        imageable_area_left_microns: 0,
+        imageable_area_bottom_microns: 0,
+        imageable_area_right_microns: width,
+        imageable_area_top_microns: height
       };
-    } else if (PDFPageSizes[pageSize]) {
-      options.mediaSize = PDFPageSizes[pageSize];
+    } else if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
+      const mediaSize = PDFPageSizes[pageSize];
+      options.mediaSize = {
+        ...mediaSize,
+        imageable_area_left_microns: 0,
+        imageable_area_bottom_microns: 0,
+        imageable_area_right_microns: mediaSize.width_microns,
+        imageable_area_top_microns: mediaSize.height_microns
+      };
     } else {
       throw new Error(`Unsupported pageSize: ${pageSize}`);
     }
