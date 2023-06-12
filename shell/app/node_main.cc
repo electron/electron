@@ -7,12 +7,12 @@
 #include <map>
 #include <memory>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "base/base_switches.h"
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_set.h"
 #include "base/feature_list.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
@@ -54,9 +54,13 @@ namespace {
 // See https://nodejs.org/api/cli.html#cli_options
 int SetNodeCliFlags() {
   // Options that are unilaterally disallowed
-  const std::unordered_set<base::StringPiece, base::StringPieceHash>
-      disallowed = {"--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
-                    "--force-fips", "--enable-fips"};
+  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+      "--enable-fips",
+      "--force-fips",
+      "--openssl-config",
+      "--use-bundled-ca",
+      "--use-openssl-ca",
+  });
 
   const auto argv = base::CommandLine::ForCurrentProcess()->argv();
   std::vector<std::string> args;
@@ -74,7 +78,7 @@ int SetNodeCliFlags() {
     const auto& option = arg;
 #endif
     const auto stripped = base::StringPiece(option).substr(0, option.find('='));
-    if (disallowed.count(stripped) != 0) {
+    if (disallowed.contains(stripped)) {
       LOG(ERROR) << "The Node.js cli flag " << stripped
                  << " is not supported in Electron";
       // Node.js returns 9 from ProcessGlobalArgs for any errors encountered
