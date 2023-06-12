@@ -379,8 +379,9 @@ namespace electron::api {
 
 namespace {
 
-std::string CursorTypeToString(const ui::Cursor& cursor) {
-  switch (cursor.type()) {
+constexpr base::StringPiece CursorTypeToString(
+    ui::mojom::CursorType cursor_type) {
+  switch (cursor_type) {
     case ui::mojom::CursorType::kPointer:
       return "pointer";
     case ui::mojom::CursorType::kCross:
@@ -3500,14 +3501,14 @@ bool WebContents::IsBeingCaptured() {
 
 void WebContents::OnCursorChanged(const ui::Cursor& cursor) {
   if (cursor.type() == ui::mojom::CursorType::kCustom) {
-    Emit("cursor-changed", CursorTypeToString(cursor),
+    Emit("cursor-changed", CursorTypeToString(cursor.type()),
          gfx::Image::CreateFrom1xBitmap(cursor.custom_bitmap()),
          cursor.image_scale_factor(),
          gfx::Size(cursor.custom_bitmap().width(),
                    cursor.custom_bitmap().height()),
          cursor.custom_hotspot());
   } else {
-    Emit("cursor-changed", CursorTypeToString(cursor));
+    Emit("cursor-changed", CursorTypeToString(cursor.type()));
   }
 }
 
