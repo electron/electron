@@ -180,9 +180,9 @@ struct Converter<blink::WebInputEvent::Modifiers> {
   }
 };
 
-std::vector<std::string> ModifiersToArray(int modifiers) {
+std::vector<base::StringPiece> ModifiersToArray(int modifiers) {
   using Modifiers = blink::WebInputEvent::Modifiers;
-  std::vector<std::string> modifier_strings;
+  std::vector<base::StringPiece> modifier_strings;
   if (modifiers & Modifiers::kShiftKey)
     modifier_strings.push_back("shift");
   if (modifiers & Modifiers::kControlKey)

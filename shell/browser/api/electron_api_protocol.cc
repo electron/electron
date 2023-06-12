@@ -167,7 +167,7 @@ const char* const kBuiltinSchemes[] = {
 };
 
 // Convert error code to string.
-std::string ErrorCodeToString(ProtocolError error) {
+constexpr base::StringPiece ErrorCodeToString(ProtocolError error) {
   switch (error) {
     case ProtocolError::kRegistered:
       return "The scheme has been registered";
