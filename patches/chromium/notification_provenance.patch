@@ -59,7 +59,7 @@ index 688c95eeb2a1ea60b004eb643cb5afcff48c11bd..226d1e3f01f976d8b35e6b3fbd332683
  }
  
 diff --git a/content/browser/notifications/blink_notification_service_impl.h b/content/browser/notifications/blink_notification_service_impl.h
-index 1c1a95953c6c216b378c2ab0bfbef6eeb19cc184..2f0ce853dbb28163aa30914b5bc31be7066d60a2 100644
+index e7cc73f375ada7ee8715d331c3d372e0f59a0cdf..c0a142bea4a9a30c10dbb30c72fedce9ab4d1e62 100644
 --- a/content/browser/notifications/blink_notification_service_impl.h
 +++ b/content/browser/notifications/blink_notification_service_impl.h
 @@ -44,6 +44,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
@@ -70,9 +70,9 @@ index 1c1a95953c6c216b378c2ab0bfbef6eeb19cc184..2f0ce853dbb28163aa30914b5bc31be7
        const blink::StorageKey& storage_key,
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
-@@ -112,6 +113,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
-   // The notification context that owns this service instance.
-   raw_ptr<PlatformNotificationContextImpl> notification_context_;
+@@ -113,6 +114,7 @@ class CONTENT_EXPORT BlinkNotificationServiceImpl
+   raw_ptr<PlatformNotificationContextImpl, DanglingUntriaged>
+       notification_context_;
  
 +  raw_ptr<RenderFrameHost> render_frame_host_;
    raw_ptr<BrowserContext> browser_context_;
@@ -133,10 +133,10 @@ index bbd2aa78722fc0a14ac815ca0243b83965ad8d7c..b6e0a2fce3a0fb9c449aa1bef6a0f970
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index da1be3451a2be4a9e02bca28456906e398f2ebd1..2ff019b77e65e7ac2915c83cfc4f467c7789b678 100644
+index d0814b812f4880cd5577a0b95cbc406ae0147f95..17415e1009465f44b606236cd6e525e612d6ebe9 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2148,7 +2148,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2178,7 +2178,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index da1be3451a2be4a9e02bca28456906e398f2ebd1..2ff019b77e65e7ac2915c83cfc4f467c
            creator_type, std::move(receiver));
        break;
      }
-@@ -2156,7 +2156,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2186,7 +2186,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

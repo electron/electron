@@ -363,7 +363,7 @@ void TrayIconCocoa::PopUpOnUI(ElectronMenuModel* menu_model) {
 }
 
 void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     ElectronMenuModel* menu_model) {
+                                     raw_ptr<ElectronMenuModel> menu_model) {
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE,
       base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
@@ -374,7 +374,7 @@ void TrayIconCocoa::CloseContextMenu() {
   [status_item_view_ closeContextMenu];
 }
 
-void TrayIconCocoa::SetContextMenu(ElectronMenuModel* menu_model) {
+void TrayIconCocoa::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
   if (menu_model) {
     // Create native menu.
     menu_.reset([[ElectronMenuController alloc] initWithModel:menu_model

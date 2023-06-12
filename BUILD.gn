@@ -544,6 +544,8 @@ source_set("electron_lib") {
 
   if (is_mac) {
     deps += [
+      ":chrome_lib_arc",
+      ":electron_lib_arc",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
@@ -775,6 +777,53 @@ source_set("electron_lib") {
 
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
+  }
+}
+
+if (is_mac) {
+  source_set("chrome_lib_arc") {
+    include_dirs = [ "." ]
+    sources = [
+      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
+      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
+      "//chrome/browser/icon_loader_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
+      "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/platform_util_mac.mm",
+      "//chrome/browser/process_singleton_mac.mm",
+    ]
+
+    deps = [
+      "//base",
+      "//skia",
+      "//third_party/electron_node:node_lib",
+      "//third_party/webrtc_overrides:webrtc_component",
+      "//v8",
+    ]
+
+    configs += [ "//build/config/compiler:enable_arc" ]
+  }
+
+  source_set("electron_lib_arc") {
+    include_dirs = [ "." ]
+    sources = [
+      "shell/browser/mac/dict_util.h",
+      "shell/browser/mac/dict_util.mm",
+      "shell/browser/mac/electron_application_delegate.h",
+      "shell/browser/mac/electron_application_delegate.mm",
+    ]
+
+    deps = [
+      "//base",
+      "//skia",
+      "//third_party/electron_node:node_lib",
+      "//v8",
+    ]
+
+    configs += [ "//build/config/compiler:enable_arc" ]
   }
 }
 

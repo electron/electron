@@ -31,9 +31,9 @@ class TrayIconCocoa : public TrayIcon {
   bool GetIgnoreDoubleClickEvents() override;
   void PopUpOnUI(ElectronMenuModel* menu_model);
   void PopUpContextMenu(const gfx::Point& pos,
-                        ElectronMenuModel* menu_model) override;
+                        raw_ptr<ElectronMenuModel>) override;
   void CloseContextMenu() override;
-  void SetContextMenu(ElectronMenuModel* menu_model) override;
+  void SetContextMenu(raw_ptr<ElectronMenuModel>) override;
   gfx::Rect GetBounds() override;
 
  private:

@@ -19,6 +19,7 @@
 #include "base/at_exit.h"
 #include "base/environment.h"
 #include "base/i18n/icu_util.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "base/process/launch.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/win/dark_mode_support.h"
@@ -128,7 +129,8 @@ int APIENTRY wWinMain(HINSTANCE instance, HINSTANCE, wchar_t* cmd, int) {
 
   struct Arguments {
     int argc = 0;
-    wchar_t** argv = ::CommandLineToArgvW(::GetCommandLineW(), &argc);
+    RAW_PTR_EXCLUSION wchar_t** argv =
+        ::CommandLineToArgvW(::GetCommandLineW(), &argc);
 
     ~Arguments() { LocalFree(argv); }
   } arguments;
