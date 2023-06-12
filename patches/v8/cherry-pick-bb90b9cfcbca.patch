@@ -1,0 +1,362 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Igor Sheludko <ishell@chromium.org>
+Date: Thu, 27 Apr 2023 11:11:32 +0200
+Subject: Merged: [api] Fix v8::Object::SetAccessorProperty
+
+... by using JavaScript spec compliant JSReceiver::DefineOwnProperty.
+
+Drive-by:
+- cleanup comments in include/v8-object.h, insert links to
+respective pages of https://tc39.es/ecma262/ when referencing spec,
+- rename JSObject::DefineAccessor() to
+  JSObject::DefineOwnAccessorIgnoreAttributes().
+
+Bug: chromium:1433211
+(cherry picked from commit b8020e1973d7d3a50b17c076cd948f079e59f9e5)
+
+Change-Id: Ia4e0389e99b5a79987f59ca2a11ee7867b0c97e2
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4502585
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.2@{#47}
+Cr-Branched-From: 755511a138609ac5939449a8ac615c15603a4454-refs/heads/11.2.214@{#1}
+Cr-Branched-From: e6b1ccefb0f0f1ff8d310578878130dc53d73749-refs/heads/main@{#86014}
+
+diff --git a/include/v8-object.h b/include/v8-object.h
+index d7332ba0c88d12e8086f56117631dfb3e1e514b4..dfeda2d39431d481dbeab6698c3d3e7f02a1b19c 100644
+--- a/include/v8-object.h
++++ b/include/v8-object.h
+@@ -247,13 +247,16 @@ class V8_EXPORT Object : public Value {
+   V8_WARN_UNUSED_RESULT Maybe<bool> Set(Local<Context> context, uint32_t index,
+                                         Local<Value> value);
+ 
+-  // Implements CreateDataProperty (ECMA-262, 7.3.4).
+-  //
+-  // Defines a configurable, writable, enumerable property with the given value
+-  // on the object unless the property already exists and is not configurable
+-  // or the object is not extensible.
+-  //
+-  // Returns true on success.
++  /**
++   * Implements CreateDataProperty(O, P, V), see
++   * https://tc39.es/ecma262/#sec-createdataproperty.
++   *
++   * Defines a configurable, writable, enumerable property with the given value
++   * on the object unless the property already exists and is not configurable
++   * or the object is not extensible.
++   *
++   * Returns true on success.
++   */
+   V8_WARN_UNUSED_RESULT Maybe<bool> CreateDataProperty(Local<Context> context,
+                                                        Local<Name> key,
+                                                        Local<Value> value);
+@@ -261,29 +264,35 @@ class V8_EXPORT Object : public Value {
+                                                        uint32_t index,
+                                                        Local<Value> value);
+ 
+-  // Implements DefineOwnProperty.
+-  //
+-  // In general, CreateDataProperty will be faster, however, does not allow
+-  // for specifying attributes.
+-  //
+-  // Returns true on success.
++  /**
++   * Implements [[DefineOwnProperty]] for data property case, see
++   * https://tc39.es/ecma262/#table-essential-internal-methods.
++   *
++   * In general, CreateDataProperty will be faster, however, does not allow
++   * for specifying attributes.
++   *
++   * Returns true on success.
++   */
+   V8_WARN_UNUSED_RESULT Maybe<bool> DefineOwnProperty(
+       Local<Context> context, Local<Name> key, Local<Value> value,
+       PropertyAttribute attributes = None);
+ 
+-  // Implements Object.DefineProperty(O, P, Attributes), see Ecma-262 19.1.2.4.
+-  //
+-  // The defineProperty function is used to add an own property or
+-  // update the attributes of an existing own property of an object.
+-  //
+-  // Both data and accessor descriptors can be used.
+-  //
+-  // In general, CreateDataProperty is faster, however, does not allow
+-  // for specifying attributes or an accessor descriptor.
+-  //
+-  // The PropertyDescriptor can change when redefining a property.
+-  //
+-  // Returns true on success.
++  /**
++   * Implements Object.defineProperty(O, P, Attributes), see
++   * https://tc39.es/ecma262/#sec-object.defineproperty.
++   *
++   * The defineProperty function is used to add an own property or
++   * update the attributes of an existing own property of an object.
++   *
++   * Both data and accessor descriptors can be used.
++   *
++   * In general, CreateDataProperty is faster, however, does not allow
++   * for specifying attributes or an accessor descriptor.
++   *
++   * The PropertyDescriptor can change when redefining a property.
++   *
++   * Returns true on success.
++   */
+   V8_WARN_UNUSED_RESULT Maybe<bool> DefineProperty(
+       Local<Context> context, Local<Name> key, PropertyDescriptor& descriptor);
+ 
+@@ -302,14 +311,15 @@ class V8_EXPORT Object : public Value {
+       Local<Context> context, Local<Value> key);
+ 
+   /**
+-   * Returns Object.getOwnPropertyDescriptor as per ES2016 section 19.1.2.6.
++   * Implements Object.getOwnPropertyDescriptor(O, P), see
++   * https://tc39.es/ecma262/#sec-object.getownpropertydescriptor.
+    */
+   V8_WARN_UNUSED_RESULT MaybeLocal<Value> GetOwnPropertyDescriptor(
+       Local<Context> context, Local<Name> key);
+ 
+   /**
+-   * Object::Has() calls the abstract operation HasProperty(O, P) described
+-   * in ECMA-262, 7.3.10. Has() returns
++   * Object::Has() calls the abstract operation HasProperty(O, P), see
++   * https://tc39.es/ecma262/#sec-hasproperty. Has() returns
+    * true, if the object has the property, either own or on the prototype chain.
+    * Interceptors, i.e., PropertyQueryCallbacks, are called if present.
+    *
+@@ -347,7 +357,7 @@ class V8_EXPORT Object : public Value {
+ 
+   void SetAccessorProperty(Local<Name> name, Local<Function> getter,
+                            Local<Function> setter = Local<Function>(),
+-                           PropertyAttribute attribute = None,
++                           PropertyAttribute attributes = None,
+                            AccessControl settings = DEFAULT);
+ 
+   /**
+diff --git a/src/api/api-natives.cc b/src/api/api-natives.cc
+index d0b298723423e9ad4d151c463dcdde09d2400336..9f664a755e4b04d935d29b1be796a81ac3fe0c07 100644
+--- a/src/api/api-natives.cc
++++ b/src/api/api-natives.cc
+@@ -96,10 +96,10 @@ MaybeHandle<Object> DefineAccessorProperty(Isolate* isolate,
+     Handle<CodeT> trampoline = BUILTIN_CODE(isolate, DebugBreakTrampoline);
+     Handle<JSFunction>::cast(setter)->set_code(*trampoline);
+   }
+-  RETURN_ON_EXCEPTION(
+-      isolate,
+-      JSObject::DefineAccessor(object, name, getter, setter, attributes),
+-      Object);
++  RETURN_ON_EXCEPTION(isolate,
++                      JSObject::DefineOwnAccessorIgnoreAttributes(
++                          object, name, getter, setter, attributes),
++                      Object);
+   return object;
+ }
+ 
+diff --git a/src/api/api.cc b/src/api/api.cc
+index d790bc0fd1b42a6b8107712d5c171751f83e5727..fbdbe4b5c7166e4dc1b2ad7b01aa911beed7f69c 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -5061,7 +5061,7 @@ Maybe<bool> Object::SetAccessor(Local<Context> context, Local<Name> name,
+ 
+ void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
+                                  Local<Function> setter,
+-                                 PropertyAttribute attribute,
++                                 PropertyAttribute attributes,
+                                  AccessControl settings) {
+   // TODO(verwaest): Remove |settings|.
+   DCHECK_EQ(v8::DEFAULT, settings);
+@@ -5073,9 +5073,20 @@ void Object::SetAccessorProperty(Local<Name> name, Local<Function> getter,
+   i::Handle<i::Object> getter_i = v8::Utils::OpenHandle(*getter);
+   i::Handle<i::Object> setter_i = v8::Utils::OpenHandle(*setter, true);
+   if (setter_i.is_null()) setter_i = i_isolate->factory()->null_value();
+-  i::JSObject::DefineAccessor(i::Handle<i::JSObject>::cast(self),
+-                              v8::Utils::OpenHandle(*name), getter_i, setter_i,
+-                              static_cast<i::PropertyAttributes>(attribute));
++
++  i::PropertyDescriptor desc;
++  desc.set_enumerable(!(attributes & v8::DontEnum));
++  desc.set_configurable(!(attributes & v8::DontDelete));
++  desc.set_get(getter_i);
++  desc.set_set(setter_i);
++
++  i::Handle<i::Name> name_i = v8::Utils::OpenHandle(*name);
++  // DefineOwnProperty might still throw if the receiver is a JSProxy and it
++  // might fail if the receiver is non-extensible or already has this property
++  // as non-configurable.
++  Maybe<bool> success = i::JSReceiver::DefineOwnProperty(
++      i_isolate, self, name_i, &desc, Just(i::kDontThrow));
++  USE(success);
+ }
+ 
+ Maybe<bool> Object::SetNativeDataProperty(
+diff --git a/src/init/bootstrapper.cc b/src/init/bootstrapper.cc
+index 3f5050e824c09ee2577dbd8471ac6b1bcc20755e..f7fdf90f0baeb3dd3516c565bb5e05fc7e8da550 100644
+--- a/src/init/bootstrapper.cc
++++ b/src/init/bootstrapper.cc
+@@ -631,7 +631,9 @@ V8_NOINLINE void SimpleInstallGetterSetter(Isolate* isolate,
+   Handle<JSFunction> setter =
+       SimpleCreateFunction(isolate, setter_name, call_setter, 1, true);
+ 
+-  JSObject::DefineAccessor(base, name, getter, setter, DONT_ENUM).Check();
++  JSObject::DefineOwnAccessorIgnoreAttributes(base, name, getter, setter,
++                                              DONT_ENUM)
++      .Check();
+ }
+ 
+ void SimpleInstallGetterSetter(Isolate* isolate, Handle<JSObject> base,
+@@ -655,7 +657,8 @@ V8_NOINLINE Handle<JSFunction> SimpleInstallGetter(Isolate* isolate,
+ 
+   Handle<Object> setter = isolate->factory()->undefined_value();
+ 
+-  JSObject::DefineAccessor(base, property_name, getter, setter, DONT_ENUM)
++  JSObject::DefineOwnAccessorIgnoreAttributes(base, property_name, getter,
++                                              setter, DONT_ENUM)
+       .Check();
+ 
+   return getter;
+diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
+index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..39cc83aacb5caf0791ce70212695f5016a22f274 100644
+--- a/src/objects/js-objects.cc
++++ b/src/objects/js-objects.cc
+@@ -1519,7 +1519,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
+                 ? desc->set()
+                 : Handle<Object>::cast(isolate->factory()->null_value()));
+         MaybeHandle<Object> result =
+-            JSObject::DefineAccessor(it, getter, setter, desc->ToAttributes());
++            JSObject::DefineOwnAccessorIgnoreAttributes(it, getter, setter,
++                                                        desc->ToAttributes());
+         if (result.is_null()) return Nothing<bool>();
+       }
+     }
+@@ -1703,8 +1704,8 @@ Maybe<bool> JSReceiver::ValidateAndApplyPropertyDescriptor(
+               : current->has_set()
+                     ? current->set()
+                     : Handle<Object>::cast(isolate->factory()->null_value()));
+-      MaybeHandle<Object> result =
+-          JSObject::DefineAccessor(it, getter, setter, attrs);
++      MaybeHandle<Object> result = JSObject::DefineOwnAccessorIgnoreAttributes(
++          it, getter, setter, attrs);
+       if (result.is_null()) return Nothing<bool>();
+     }
+   }
+@@ -4638,22 +4639,19 @@ bool JSObject::HasEnumerableElements() {
+   UNREACHABLE();
+ }
+ 
+-MaybeHandle<Object> JSObject::DefineAccessor(Handle<JSObject> object,
+-                                             Handle<Name> name,
+-                                             Handle<Object> getter,
+-                                             Handle<Object> setter,
+-                                             PropertyAttributes attributes) {
++MaybeHandle<Object> JSObject::DefineOwnAccessorIgnoreAttributes(
++    Handle<JSObject> object, Handle<Name> name, Handle<Object> getter,
++    Handle<Object> setter, PropertyAttributes attributes) {
+   Isolate* isolate = object->GetIsolate();
+ 
+   PropertyKey key(isolate, name);
+   LookupIterator it(isolate, object, key, LookupIterator::OWN_SKIP_INTERCEPTOR);
+-  return DefineAccessor(&it, getter, setter, attributes);
++  return DefineOwnAccessorIgnoreAttributes(&it, getter, setter, attributes);
+ }
+ 
+-MaybeHandle<Object> JSObject::DefineAccessor(LookupIterator* it,
+-                                             Handle<Object> getter,
+-                                             Handle<Object> setter,
+-                                             PropertyAttributes attributes) {
++MaybeHandle<Object> JSObject::DefineOwnAccessorIgnoreAttributes(
++    LookupIterator* it, Handle<Object> getter, Handle<Object> setter,
++    PropertyAttributes attributes) {
+   Isolate* isolate = it->isolate();
+ 
+   it->UpdateProtector();
+diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
+index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..ff96bd4be2ff8d2fe03f75b6bca35a744e2084af 100644
+--- a/src/objects/js-objects.h
++++ b/src/objects/js-objects.h
+@@ -531,13 +531,14 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
+   GetPropertyAttributesWithFailedAccessCheck(LookupIterator* it);
+ 
+   // Defines an AccessorPair property on the given object.
+-  V8_EXPORT_PRIVATE static MaybeHandle<Object> DefineAccessor(
+-      Handle<JSObject> object, Handle<Name> name, Handle<Object> getter,
+-      Handle<Object> setter, PropertyAttributes attributes);
+-  static MaybeHandle<Object> DefineAccessor(LookupIterator* it,
+-                                            Handle<Object> getter,
+-                                            Handle<Object> setter,
+-                                            PropertyAttributes attributes);
++  V8_EXPORT_PRIVATE static MaybeHandle<Object>
++  DefineOwnAccessorIgnoreAttributes(Handle<JSObject> object, Handle<Name> name,
++                                    Handle<Object> getter,
++                                    Handle<Object> setter,
++                                    PropertyAttributes attributes);
++  static MaybeHandle<Object> DefineOwnAccessorIgnoreAttributes(
++      LookupIterator* it, Handle<Object> getter, Handle<Object> setter,
++      PropertyAttributes attributes);
+ 
+   // Defines an AccessorInfo property on the given object.
+   V8_WARN_UNUSED_RESULT static MaybeHandle<Object> SetAccessor(
+diff --git a/src/runtime/runtime-object.cc b/src/runtime/runtime-object.cc
+index 5255ee26807ab13e93935b6c6d513184a12da7cd..f10e4649c6d078c3120063d53e54f4126b2d2fd5 100644
+--- a/src/runtime/runtime-object.cc
++++ b/src/runtime/runtime-object.cc
+@@ -1109,7 +1109,8 @@ RUNTIME_FUNCTION(Runtime_DefineAccessorPropertyUnchecked) {
+   auto attrs = PropertyAttributesFromInt(args.smi_value_at(4));
+ 
+   RETURN_FAILURE_ON_EXCEPTION(
+-      isolate, JSObject::DefineAccessor(obj, name, getter, setter, attrs));
++      isolate, JSObject::DefineOwnAccessorIgnoreAttributes(obj, name, getter,
++                                                           setter, attrs));
+   return ReadOnlyRoots(isolate).undefined_value();
+ }
+ 
+@@ -1215,8 +1216,8 @@ RUNTIME_FUNCTION(Runtime_DefineGetterPropertyUnchecked) {
+ 
+   RETURN_FAILURE_ON_EXCEPTION(
+       isolate,
+-      JSObject::DefineAccessor(object, name, getter,
+-                               isolate->factory()->null_value(), attrs));
++      JSObject::DefineOwnAccessorIgnoreAttributes(
++          object, name, getter, isolate->factory()->null_value(), attrs));
+   return ReadOnlyRoots(isolate).undefined_value();
+ }
+ 
+@@ -1360,8 +1361,8 @@ RUNTIME_FUNCTION(Runtime_DefineSetterPropertyUnchecked) {
+ 
+   RETURN_FAILURE_ON_EXCEPTION(
+       isolate,
+-      JSObject::DefineAccessor(object, name, isolate->factory()->null_value(),
+-                               setter, attrs));
++      JSObject::DefineOwnAccessorIgnoreAttributes(
++          object, name, isolate->factory()->null_value(), setter, attrs));
+   return ReadOnlyRoots(isolate).undefined_value();
+ }
+ 
+diff --git a/src/sandbox/testing.cc b/src/sandbox/testing.cc
+index fead4aa222ceb81d76f6dfec7e7797e337e7ba94..aab72a18015bf7ac1d0949e9497e85d9d089b4b8 100644
+--- a/src/sandbox/testing.cc
++++ b/src/sandbox/testing.cc
+@@ -156,7 +156,8 @@ void InstallGetter(Isolate* isolate, Handle<JSObject> object,
+   Handle<String> property_name = factory->NewStringFromAsciiChecked(name);
+   Handle<JSFunction> getter = CreateFunc(isolate, func, property_name, false);
+   Handle<Object> setter = factory->null_value();
+-  JSObject::DefineAccessor(object, property_name, getter, setter, FROZEN);
++  JSObject::DefineOwnAccessorIgnoreAttributes(object, property_name, getter,
++                                              setter, FROZEN);
+ }
+ 
+ void InstallFunction(Isolate* isolate, Handle<JSObject> holder,
+diff --git a/test/cctest/test-code-stub-assembler.cc b/test/cctest/test-code-stub-assembler.cc
+index c012e62016aca3a83975cd91216860ea9dc3d311..4c3402c7deec768931d07488cbbb79a0a7a7dd23 100644
+--- a/test/cctest/test-code-stub-assembler.cc
++++ b/test/cctest/test-code-stub-assembler.cc
+@@ -1178,7 +1178,9 @@ void AddProperties(Handle<JSObject> object, Handle<Name> names[],
+       Handle<AccessorPair> pair = Handle<AccessorPair>::cast(value);
+       Handle<Object> getter(pair->getter(), isolate);
+       Handle<Object> setter(pair->setter(), isolate);
+-      JSObject::DefineAccessor(object, names[i], getter, setter, NONE).Check();
++      JSObject::DefineOwnAccessorIgnoreAttributes(object, names[i], getter,
++                                                  setter, NONE)
++          .Check();
+     } else {
+       JSObject::AddProperty(isolate, object, names[i], value, NONE);
+     }

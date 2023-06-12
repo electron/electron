@@ -10,6 +10,8 @@ force_cppheapcreateparams_to_be_noncopyable.patch
 chore_allow_customizing_microtask_policy_per_context.patch
 cherry-pick-c605df24af3c.patch
 cherry-pick-f4b66ae451c2.patch
+cherry-pick-2c8a019f39d2.patch
+cherry-pick-bb90b9cfcbca.patch
 merged_ic_fix_store_handler_selection_for_arguments_objects.patch
 cherry-pick-73af1a19a901.patch
 cherry-pick-3b0607d14060.patch

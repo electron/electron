@@ -43,7 +43,7 @@ index 93939fa4702922f58e8e5bcc019e569f42ab198e..1190b3dedfabee414fb49038e31b3cf2
        it.Restart();
      }
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..3abfd10ee4ad64c67c490d3f9d24f8e6efe08a1f 100644
+index 39cc83aacb5caf0791ce70212695f5016a22f274..b3f7db7bd984e8524689c3060bfd0674840fa63b 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
 @@ -243,27 +243,6 @@ Maybe<bool> JSReceiver::CheckPrivateNameStore(LookupIterator* it,
@@ -74,7 +74,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..3abfd10ee4ad64c67c490d3f9d24f8e6
  namespace {
  
  bool HasExcludedProperty(
-@@ -3642,7 +3621,7 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
+@@ -3643,7 +3622,7 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
  
          if (semantics == EnforceDefineSemantics::kDefine) {
            it->Restart();
@@ -83,7 +83,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..3abfd10ee4ad64c67c490d3f9d24f8e6
                it->isolate(), it, value, should_throw);
            if (can_define.IsNothing() || !can_define.FromJust()) {
              return can_define;
-@@ -4071,17 +4050,16 @@ Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
+@@ -4072,17 +4051,16 @@ Maybe<bool> JSObject::CreateDataProperty(LookupIterator* it,
                                           Handle<Object> value,
                                           Maybe<ShouldThrow> should_throw) {
    DCHECK(it->GetReceiver()->IsJSObject());
@@ -104,7 +104,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..3abfd10ee4ad64c67c490d3f9d24f8e6
                              DefineOwnPropertyIgnoreAttributes(it, value, NONE),
                              Nothing<bool>());
  
-@@ -4710,19 +4688,42 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
+@@ -4708,19 +4686,42 @@ MaybeHandle<Object> JSObject::SetAccessor(Handle<JSObject> object,
      return it.factory()->undefined_value();
    }
  
@@ -155,7 +155,7 @@ index 59c9f966036fdd3640b06b2d6962fc9994ab3c31..3abfd10ee4ad64c67c490d3f9d24f8e6
    if (HasFastProperties()) {
      DescriptorArray descs = map().instance_descriptors();
 diff --git a/src/objects/js-objects.h b/src/objects/js-objects.h
-index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..f663af6ed8a445f8ef30a67bac176a1abe6c85f8 100644
+index ff96bd4be2ff8d2fe03f75b6bca35a744e2084af..5e7326eb1c99115829c358cd4069e1f6835f972b 100644
 --- a/src/objects/js-objects.h
 +++ b/src/objects/js-objects.h
 @@ -167,12 +167,6 @@ class JSReceiver : public TorqueGeneratedJSReceiver<JSReceiver, HeapObject> {
@@ -171,7 +171,7 @@ index 06489c2b7bae61ecadbd8f020060e86ef50e11b6..f663af6ed8a445f8ef30a67bac176a1a
    // ES6 7.3.4 (when passed kDontThrow)
    V8_WARN_UNUSED_RESULT static Maybe<bool> CreateDataProperty(
        Isolate* isolate, Handle<JSReceiver> object, Handle<Name> key,
-@@ -544,6 +538,12 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
+@@ -545,6 +539,12 @@ class JSObject : public TorqueGeneratedJSObject<JSObject, JSReceiver> {
        Handle<JSObject> object, Handle<Name> name, Handle<AccessorInfo> info,
        PropertyAttributes attributes);
  

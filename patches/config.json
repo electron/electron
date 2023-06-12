@@ -27,5 +27,7 @@
 
   "src/electron/patches/skia": "src/third_party/skia",
 
+  "src/electron/patches/dawn": "src/third_party/dawn",
+
   "src/electron/patches/pdfium": "src/third_party/pdfium"
 }

@@ -17,10 +17,10 @@ Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
 
 diff --git a/src/objects/js-objects.cc b/src/objects/js-objects.cc
-index 3abfd10ee4ad64c67c490d3f9d24f8e6efe08a1f..4046b3d1d1e4a36a15c7f0e859c4e51cd29185e4 100644
+index b3f7db7bd984e8524689c3060bfd0674840fa63b..8cc8af6c221a90cc6a6201faa46738ec80ffccdb 100644
 --- a/src/objects/js-objects.cc
 +++ b/src/objects/js-objects.cc
-@@ -3632,10 +3632,8 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
+@@ -3633,10 +3633,8 @@ Maybe<bool> JSObject::DefineOwnPropertyIgnoreAttributes(
          // own property without the interceptor.
          Isolate* isolate = it->isolate();
          Handle<Object> receiver = it->GetReceiver();
