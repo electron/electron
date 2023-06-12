@@ -133,6 +133,11 @@ class InspectableWebContents
   void OpenNodeFrontend() override;
   void DispatchProtocolMessageFromDevToolsFrontend(
       const std::string& message) override;
+  void RecordCountHistogram(const std::string& name,
+                            int sample,
+                            int min,
+                            int exclusive_max,
+                            int buckets) override {}
   void SendJsonRequest(DispatchCallback callback,
                        const std::string& browser_id,
                        const std::string& url) override;
