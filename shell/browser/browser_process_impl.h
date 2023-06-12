@@ -15,9 +15,11 @@
 
 #include "base/command_line.h"
 #include "chrome/browser/browser_process.h"
+#include "components/embedder_support/origin_trials/origin_trials_settings_storage.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/value_map_pref_store.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/network/public/cpp/network_quality_tracker.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
@@ -44,6 +46,7 @@ class BrowserProcessImpl : public BrowserProcess {
   BuildState* GetBuildState() override;
   void PostEarlyInitialization();
   void PreCreateThreads();
+  void PreMainMessageLoopRun();
   void PostDestroyThreads() {}
   void PostMainMessageLoopRun();
 
@@ -68,6 +71,8 @@ class BrowserProcessImpl : public BrowserProcess {
   NotificationPlatformBridge* notification_platform_bridge() override;
   SystemNetworkContextManager* system_network_context_manager() override;
   network::NetworkQualityTracker* network_quality_tracker() override;
+  embedder_support::OriginTrialsSettingsStorage*
+  GetOriginTrialsSettingsStorage() override;
   policy::ChromeBrowserPolicyConnector* browser_policy_connector() override;
   policy::PolicyService* policy_service() override;
   IconManager* icon_manager() override;
@@ -105,18 +110,23 @@ class BrowserProcessImpl : public BrowserProcess {
   const std::string& GetApplicationLocale() override;
   printing::PrintJobManager* print_job_manager() override;
   StartupData* startup_data() override;
-  device::GeolocationManager* geolocation_manager() override;
-  void SetGeolocationManager(
-      std::unique_ptr<device::GeolocationManager> geolocation_manager) override;
 
  private:
+  void CreateNetworkQualityObserver();
+  network::NetworkQualityTracker* GetNetworkQualityTracker();
+
 #if BUILDFLAG(ENABLE_PRINTING)
   std::unique_ptr<printing::PrintJobManager> print_job_manager_;
 #endif
   std::unique_ptr<PrefService> local_state_;
-  std::unique_ptr<device::GeolocationManager> geolocation_manager_;
   std::string locale_;
   std::string system_locale_;
+  embedder_support::OriginTrialsSettingsStorage origin_trials_settings_storage_;
+
+  std::unique_ptr<network::NetworkQualityTracker> network_quality_tracker_;
+  std::unique_ptr<
+      network::NetworkQualityTracker::RTTAndThroughputEstimatesObserver>
+      network_quality_observer_;
 };
 
 #endif  // ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_

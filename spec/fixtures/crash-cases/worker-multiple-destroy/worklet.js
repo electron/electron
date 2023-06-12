@@ -1,3 +1,5 @@
+/* global registerPaint */
+
 class CheckerboardPainter {
   paint (ctx, geom, properties) {
     const colors = ['red', 'green', 'blue'];
@@ -14,5 +16,4 @@ class CheckerboardPainter {
   }
 }
 
-// eslint-disable-next-line no-undef
 registerPaint('checkerboard', CheckerboardPainter);

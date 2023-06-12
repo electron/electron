@@ -9,6 +9,7 @@
 
 #include <memory>
 
+#include "base/memory/raw_ptr.h"
 #include "chrome/browser/ui/frame/window_frame_util.h"
 #include "chrome/browser/ui/view_ids.h"
 #include "shell/browser/ui/views/win_icon_painter.h"
@@ -58,7 +59,7 @@ class WinCaptionButton : public views::Button {
   // Paints the minimize/maximize/restore/close icon for the button.
   void PaintSymbol(gfx::Canvas* canvas);
 
-  WinFrameView* frame_view_;
+  raw_ptr<WinFrameView> frame_view_;
   std::unique_ptr<WinIconPainter> icon_painter_;
   ViewID button_type_;
 

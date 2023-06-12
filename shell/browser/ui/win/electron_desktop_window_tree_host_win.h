@@ -31,7 +31,6 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
                     WPARAM w_param,
                     LPARAM l_param,
                     LRESULT* result) override;
-  bool ShouldPaintAsActive() const override;
   bool GetDwmFrameInsetsInPixels(gfx::Insets* insets) const override;
   bool GetClientAreaInsets(gfx::Insets* insets,
                            HMONITOR monitor) const override;
@@ -41,7 +40,7 @@ class ElectronDesktopWindowTreeHostWin : public views::DesktopWindowTreeHostWin,
   void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override;
 
  private:
-  NativeWindowViews* native_window_view_;  // weak ref
+  raw_ptr<NativeWindowViews> native_window_view_;  // weak ref
 };
 
 }  // namespace electron

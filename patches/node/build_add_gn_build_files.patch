@@ -1012,10 +1012,10 @@ index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..d6bed57461820ce08391fc424a1f842bd282fa75
+index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e546b39ef
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,198 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -1085,6 +1085,8 @@ index 0000000000000000000000000000000000000000..d6bed57461820ce08391fc424a1f842b
 +    "src/random.c",
 +    "src/strscpy.c",
 +    "src/strscpy.h",
++    "src/strtok.c",
++    "src/strtok.h",
 +    "src/threadpool.c",
 +    "src/timer.c",
 +    "src/uv-common.c",

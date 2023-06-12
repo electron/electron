@@ -9,7 +9,6 @@ import { once } from 'events';
 
 const Module = require('module');
 
-const features = process._linkedBinding('electron_common_features');
 const nativeModulesEnabled = !process.env.ELECTRON_SKIP_NATIVE_MODULE_TESTS;
 
 describe('modules support', () => {
@@ -28,7 +27,7 @@ describe('modules support', () => {
         ).to.be.fulfilled();
       });
 
-      ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
+      it('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'echo.js'));
         const [msg] = await once(child, 'message');
         expect(msg).to.equal('ok');
@@ -60,7 +59,7 @@ describe('modules support', () => {
         await expect(w.webContents.executeJavaScript('{ require(\'@electron-ci/uv-dlopen\'); null }')).to.be.fulfilled();
       });
 
-      ifit(features.isRunAsNodeEnabled())('can be required in node binary', async function () {
+      it('can be required in node binary', async function () {
         const child = childProcess.fork(path.join(fixtures, 'module', 'uv-dlopen.js'));
         const [exitCode] = await once(child, 'exit');
         expect(exitCode).to.equal(0);

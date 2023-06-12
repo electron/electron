@@ -14,8 +14,8 @@ import * as deprecate from '@electron/internal/common/deprecate';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.
-// eslint-disable-next-line
-session
+// eslint-disable-next-line no-unused-expressions
+session;
 
 const webFrameMainBinding = process._linkedBinding('electron_browser_web_frame_main');
 
@@ -335,36 +335,44 @@ WebContents.prototype.printToPDF = async function (options) {
   }
 };
 
-WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions = {}, callback) {
-  // TODO(codebytere): deduplicate argument sanitization by moving rest of
-  // print param logic into new file shared between printToPDF and print
+// TODO(codebytere): deduplicate argument sanitization by moving rest of
+// print param logic into new file shared between printToPDF and print
+WebContents.prototype.print = function (options: ElectronInternal.WebContentsPrintOptions, callback) {
   if (typeof options === 'object') {
-    // Optionally set size for PDF.
-    if (options.pageSize !== undefined) {
-      const pageSize = options.pageSize;
-      if (typeof pageSize === 'object') {
-        if (!pageSize.height || !pageSize.width) {
-          throw new Error('height and width properties are required for pageSize');
-        }
-
-        // Dimensions in Microns - 1 meter = 10^6 microns
-        const height = Math.ceil(pageSize.height);
-        const width = Math.ceil(pageSize.width);
-        if (!isValidCustomPageSize(width, height)) {
-          throw new Error('height and width properties must be minimum 352 microns.');
-        }
-
-        options.mediaSize = {
-          name: 'CUSTOM',
-          custom_display_name: 'Custom',
-          height_microns: height,
-          width_microns: width
-        };
-      } else if (PDFPageSizes[pageSize]) {
-        options.mediaSize = PDFPageSizes[pageSize];
-      } else {
-        throw new Error(`Unsupported pageSize: ${pageSize}`);
+    const pageSize = options.pageSize ?? 'A4';
+    if (typeof pageSize === 'object') {
+      if (!pageSize.height || !pageSize.width) {
+        throw new Error('height and width properties are required for pageSize');
       }
+
+      // Dimensions in Microns - 1 meter = 10^6 microns
+      const height = Math.ceil(pageSize.height);
+      const width = Math.ceil(pageSize.width);
+      if (!isValidCustomPageSize(width, height)) {
+        throw new Error('height and width properties must be minimum 352 microns.');
+      }
+
+      options.mediaSize = {
+        name: 'CUSTOM',
+        custom_display_name: 'Custom',
+        height_microns: height,
+        width_microns: width,
+        imageable_area_left_microns: 0,
+        imageable_area_bottom_microns: 0,
+        imageable_area_right_microns: width,
+        imageable_area_top_microns: height
+      };
+    } else if (typeof pageSize === 'string' && PDFPageSizes[pageSize]) {
+      const mediaSize = PDFPageSizes[pageSize];
+      options.mediaSize = {
+        ...mediaSize,
+        imageable_area_left_microns: 0,
+        imageable_area_bottom_microns: 0,
+        imageable_area_right_microns: mediaSize.width_microns,
+        imageable_area_top_microns: mediaSize.height_microns
+      };
+    } else {
+      throw new Error(`Unsupported pageSize: ${pageSize}`);
     }
   }
 

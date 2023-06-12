@@ -7,6 +7,7 @@
 #include <string>
 
 #include "base/command_line.h"
+#include "base/containers/contains.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/http/http_request_headers.h"
@@ -210,15 +211,13 @@ void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
 
 node::Environment* ElectronRendererClient::GetEnvironment(
     content::RenderFrame* render_frame) const {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (!base::Contains(injected_frames_, render_frame))
     return nullptr;
   v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
   auto context =
       GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (environments_.find(env) == environments_.end())
-    return nullptr;
-  return env;
+  return base::Contains(environments_, env) ? env : nullptr;
 }
 
 }  // namespace electron

@@ -53,14 +53,6 @@ module.exports = ({
 
     const ignoredModules = [];
 
-    if (defines.ENABLE_DESKTOP_CAPTURER === 'false') {
-      ignoredModules.push(
-        '@electron/internal/browser/desktop-capturer',
-        '@electron/internal/browser/api/desktop-capturer',
-        '@electron/internal/renderer/api/desktop-capturer'
-      );
-    }
-
     if (defines.ENABLE_VIEWS_API === 'false') {
       ignoredModules.push(
         '@electron/internal/browser/api/views/image-view.js'

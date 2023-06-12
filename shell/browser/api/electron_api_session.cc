@@ -74,6 +74,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -344,7 +345,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
-  new SessionPreferences(browser_context);
+  SessionPreferences::CreateForBrowserContext(browser_context);
 
   protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
 
@@ -653,8 +654,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
-        handler->Run(web_contents, permission_type,
-                     base::AdaptCallbackForRepeating(std::move(callback)),
+        handler->Run(web_contents, permission_type, std::move(callback),
                      details);
       },
       base::Owned(std::move(handler))));
@@ -698,6 +698,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetDevicePermissionHandler(handler);
+}
+
+void Session::SetUSBProtectedClassesHandler(v8::Local<v8::Value> val,
+                                            gin::Arguments* args) {
+  ElectronPermissionManager::ProtectedUSBHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetProtectedUSBHandler(handler);
 }
 
 void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
@@ -1295,6 +1307,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setUSBProtectedClassesHandler",
+                 &Session::SetUSBProtectedClassesHandler)
       .SetMethod("setBluetoothPairingHandler",
                  &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)

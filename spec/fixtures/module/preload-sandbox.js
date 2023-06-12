@@ -34,6 +34,9 @@
         cpuUsage: invoke(() => process.getCPUUsage()),
         ioCounters: invoke(() => process.getIOCounters()),
         uptime: invoke(() => process.uptime()),
+        nodeEvents: invoke(() => require('events') === require('node:events')),
+        nodeTimers: invoke(() => require('timers') === require('node:timers')),
+        nodeUrl: invoke(() => require('url') === require('node:url')),
         env: process.env,
         execPath: process.execPath,
         pid: process.pid,
@@ -52,7 +55,7 @@
       ipcRenderer.on('touch-the-opener', () => {
         let errorMessage = null;
         try {
-          const openerDoc = opener.document; // eslint-disable-line no-unused-vars
+          const openerDoc = opener.document;
         } catch (error) {
           errorMessage = error.message;
         }

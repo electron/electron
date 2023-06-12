@@ -256,7 +256,7 @@ const createWindow = () => {
 
 ### Calling your function when the app is ready
 
-```js title='main.js (Lines 12-14)'
+```js title='main.js (Lines 12-14)' @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 })
@@ -336,7 +336,7 @@ Because windows cannot be created before the `ready` event, you should only list
 `activate` events after your app is initialized. Do this by only listening for activate
 events inside your existing `whenReady()` callback.
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 

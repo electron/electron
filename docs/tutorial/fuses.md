@@ -67,7 +67,7 @@ The loadBrowserProcessSpecificV8Snapshot fuse changes which V8 snapshot file is 
 
 We've made a handy module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make flipping these fuses easy.  Check out the README of that module for more details on usage and potential error cases.
 
-```js
+```js @ts-nocheck
 require('@electron/fuses').flipFuses(
   // Path to electron
   require('electron'),

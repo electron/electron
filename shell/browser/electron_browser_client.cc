@@ -63,6 +63,7 @@
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
+#include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "services/device/public/cpp/geolocation/location_provider.h"
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/is_potentially_trustworthy.h"
@@ -186,7 +187,7 @@
 #include "components/crash/core/app/crashpad.h"        // nogncheck
 #endif
 
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE) && BUILDFLAG(IS_WIN)
+#if BUILDFLAG(IS_WIN)
 #include "chrome/browser/ui/views/overlay/video_overlay_window_views.h"
 #include "shell/browser/browser.h"
 #include "ui/aura/window.h"
@@ -422,9 +423,6 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
   prefs->navigate_on_drag_drop = false;
-#if !BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
-  prefs->picture_in_picture_enabled = false;
-#endif
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->preferred_color_scheme =
@@ -674,7 +672,6 @@ bool ElectronBrowserClient::CanCreateWindow(
   return false;
 }
 
-#if BUILDFLAG(ENABLE_PICTURE_IN_PICTURE)
 std::unique_ptr<content::VideoOverlayWindow>
 ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
     content::VideoPictureInPictureWindowController* controller) {
@@ -692,7 +689,6 @@ ElectronBrowserClient::CreateWindowForVideoPictureInPicture(
 #endif
   return overlay_window;
 }
-#endif
 
 void ElectronBrowserClient::GetAdditionalAllowedSchemesForFileSystem(
     std::vector<std::string>* additional_schemes) {
@@ -724,8 +720,7 @@ void ElectronBrowserClient::SiteInstanceGotProcess(
       return;
 
     extensions::ProcessMap::Get(browser_context)
-        ->Insert(extension->id(), site_instance->GetProcess()->GetID(),
-                 site_instance->GetId());
+        ->Insert(extension->id(), site_instance->GetProcess()->GetID());
   }
 #endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
@@ -775,32 +770,6 @@ bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
 base::FilePath ElectronBrowserClient::GetLoggingFileName(
     const base::CommandLine& cmd_line) {
   return logging::GetLogFileName(cmd_line);
-}
-
-void ElectronBrowserClient::SiteInstanceDeleting(
-    content::SiteInstance* site_instance) {
-#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
-  // Don't do anything if we're shutting down.
-  if (content::BrowserMainRunner::ExitedMainMessageLoop())
-    return;
-
-  auto* browser_context =
-      static_cast<ElectronBrowserContext*>(site_instance->GetBrowserContext());
-  if (!browser_context->IsOffTheRecord()) {
-    // If this isn't an extension renderer there's nothing to do.
-    extensions::ExtensionRegistry* registry =
-        extensions::ExtensionRegistry::Get(browser_context);
-    const extensions::Extension* extension =
-        registry->enabled_extensions().GetExtensionOrAppByURL(
-            site_instance->GetSiteURL());
-    if (!extension)
-      return;
-
-    extensions::ProcessMap::Get(browser_context)
-        ->Remove(extension->id(), site_instance->GetProcess()->GetID(),
-                 site_instance->GetId());
-  }
-#endif
 }
 
 std::unique_ptr<net::ClientCertStore>
@@ -1333,7 +1302,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
         header_client,
     bool* bypass_redirect_checks,
     bool* disable_secure_dns,
-    network::mojom::URLLoaderFactoryOverridePtr* factory_override) {
+    network::mojom::URLLoaderFactoryOverridePtr* factory_override,
+    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   auto web_request = api::WebRequest::FromOrCreate(isolate, browser_context);
@@ -1348,7 +1318,8 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
     bool use_proxy_for_web_request =
         web_request_api->MaybeProxyURLLoaderFactory(
             browser_context, frame_host, render_process_id, type, navigation_id,
-            ukm_source_id, factory_receiver, header_client);
+            ukm_source_id, factory_receiver, header_client,
+            navigation_response_task_runner);
 
     if (bypass_redirect_checks)
       *bypass_redirect_checks = use_proxy_for_web_request;
@@ -1716,7 +1687,7 @@ void ElectronBrowserClient::RegisterBrowserInterfaceBindersForServiceWorker(
 
 #if BUILDFLAG(IS_MAC)
 device::GeolocationManager* ElectronBrowserClient::GetGeolocationManager() {
-  return g_browser_process->geolocation_manager();
+  return device::GeolocationManager::GetInstance();
 }
 #endif
 

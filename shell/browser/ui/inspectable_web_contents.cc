@@ -21,6 +21,7 @@
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
+#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "components/prefs/pref_registry_simple.h"
 #include "components/prefs/pref_service.h"
 #include "components/prefs/scoped_user_pref_update.h"
@@ -94,16 +95,12 @@ const char kTitleFormat[] = "Developer Tools - %s";
 
 const size_t kMaxMessageChunkSize = IPC::Channel::kMaximumMessageSize / 4;
 
-// Stores all instances of InspectableWebContents.
-InspectableWebContents::List g_web_contents_instances_;
-
-base::Value RectToDictionary(const gfx::Rect& bounds) {
-  base::Value::Dict dict;
-  dict.Set("x", bounds.x());
-  dict.Set("y", bounds.y());
-  dict.Set("width", bounds.width());
-  dict.Set("height", bounds.height());
-  return base::Value(std::move(dict));
+base::Value::Dict RectToDictionary(const gfx::Rect& bounds) {
+  return base::Value::Dict{}
+      .Set("x", bounds.x())
+      .Set("y", bounds.y())
+      .Set("width", bounds.width())
+      .Set("height", bounds.height());
 }
 
 gfx::Rect DictionaryToRect(const base::Value::Dict& dict) {
@@ -331,14 +328,10 @@ InspectableWebContentsView* CreateInspectableContentsView(
     InspectableWebContents* inspectable_web_contents);
 
 // static
-const InspectableWebContents::List& InspectableWebContents::GetAll() {
-  return g_web_contents_instances_;
-}
-
 // static
 void InspectableWebContents::RegisterPrefs(PrefRegistrySimple* registry) {
   registry->RegisterDictionaryPref(kDevToolsBoundsPref,
-                                   RectToDictionary(gfx::Rect(0, 0, 800, 600)));
+                                   RectToDictionary(gfx::Rect{0, 0, 800, 600}));
   registry->RegisterDoublePref(kDevToolsZoomPref, 0.);
   registry->RegisterDictionaryPref(kDevToolsPreferences);
 }
@@ -376,11 +369,9 @@ InspectableWebContents::InspectableWebContents(
           display.y() + (display.height() - devtools_bounds_.height()) / 2);
     }
   }
-  g_web_contents_instances_.push_back(this);
 }
 
 InspectableWebContents::~InspectableWebContents() {
-  g_web_contents_instances_.remove(this);
   // Unsubscribe from devtools and Clean up resources.
   if (GetDevToolsWebContents())
     WebContentsDestroyed();
@@ -544,7 +535,8 @@ gfx::Rect InspectableWebContents::GetDevToolsBounds() const {
 }
 
 void InspectableWebContents::SaveDevToolsBounds(const gfx::Rect& bounds) {
-  pref_service_->Set(kDevToolsBoundsPref, RectToDictionary(bounds));
+  pref_service_->Set(kDevToolsBoundsPref,
+                     base::Value{RectToDictionary(bounds)});
   devtools_bounds_ = bounds;
 }
 
@@ -633,13 +625,8 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
 #endif
 
 void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
-  DevToolsContentsResizingStrategy strategy(rect);
-  if (contents_resizing_strategy_.Equals(strategy))
-    return;
-
-  contents_resizing_strategy_.CopyFrom(strategy);
   if (managed_devtools_web_contents_)
-    view_->SetContentsResizingStrategy(contents_resizing_strategy_);
+    view_->SetContentsResizingStrategy(DevToolsContentsResizingStrategy{rect});
 }
 
 void InspectableWebContents::InspectElementCompleted() {}

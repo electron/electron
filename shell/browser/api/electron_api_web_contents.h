@@ -16,9 +16,11 @@
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/observer_list_types.h"
+#include "base/task/thread_pool.h"
 #include "chrome/browser/devtools/devtools_eye_dropper.h"
 #include "chrome/browser/devtools/devtools_file_system_indexer.h"
 #include "chrome/browser/ui/exclusive_access/exclusive_access_context.h"  // nogncheck
+#include "chrome/browser/ui/exclusive_access/exclusive_access_manager.h"
 #include "content/common/frame.mojom.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/keyboard_event_processing_result.h"
@@ -76,8 +78,6 @@ class ResourceRequestBody;
 namespace gin {
 class Arguments;
 }
-
-class ExclusiveAccessManager;
 
 class SkRegion;
 
@@ -773,9 +773,6 @@ class WebContents : public ExclusiveAccessContext,
   // Whether the guest view has been attached.
   bool attached_ = false;
 
-  // The zoom controller for this webContents.
-  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
-
   // The type of current WebContents.
   Type type_ = Type::kBrowserWindow;
 
@@ -806,9 +803,10 @@ class WebContents : public ExclusiveAccessContext,
   // Whether window is fullscreened by window api.
   bool native_fullscreen_ = false;
 
-  scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_;
+  const scoped_refptr<DevToolsFileSystemIndexer> devtools_file_system_indexer_ =
+      base::MakeRefCounted<DevToolsFileSystemIndexer>();
 
-  std::unique_ptr<ExclusiveAccessManager> exclusive_access_manager_;
+  ExclusiveAccessManager exclusive_access_manager_{this};
 
   std::unique_ptr<DevToolsEyeDropper> eye_dropper_;
 
@@ -820,6 +818,11 @@ class WebContents : public ExclusiveAccessContext,
   // destroyed before dialog_manager_, otherwise a crash would happen.
   std::unique_ptr<InspectableWebContents> inspectable_web_contents_;
 
+  // The zoom controller for this webContents.
+  // Note: owned by inspectable_web_contents_, so declare this *after*
+  // that field to ensure the dtor destroys them in the right order.
+  raw_ptr<WebContentsZoomController> zoom_controller_ = nullptr;
+
   // Maps url to file path, used by the file requests sent from devtools.
   typedef std::map<std::string, base::FilePath> PathsMap;
   PathsMap saved_files_;
@@ -830,10 +833,11 @@ class WebContents : public ExclusiveAccessContext,
           DevToolsIndexingJobsMap;
   DevToolsIndexingJobsMap devtools_indexing_jobs_;
 
-  scoped_refptr<base::SequencedTaskRunner> file_task_runner_;
+  const scoped_refptr<base::SequencedTaskRunner> file_task_runner_ =
+      base::ThreadPool::CreateSequencedTaskRunner({base::MayBlock()});
 
 #if BUILDFLAG(ENABLE_PRINTING)
-  scoped_refptr<base::TaskRunner> print_task_runner_;
+  const scoped_refptr<base::TaskRunner> print_task_runner_;
 #endif
 
   // Stores the frame thats currently in fullscreen, nullptr if there is none.

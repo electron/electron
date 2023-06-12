@@ -10,11 +10,15 @@
 #include "base/strings/sys_string_conversions.h"
 #include "base/values.h"
 
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
 namespace electron {
 
 NSArray* ListValueToNSArray(const base::Value::List& value) {
   std::string json;
-  if (!base::JSONWriter::Write(base::Value(value.Clone()), &json))
+  if (!base::JSONWriter::Write(base::ValueView{value}, &json))
     return nil;
   NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
   id obj = [NSJSONSerialization JSONObjectWithData:jsonData
@@ -57,7 +61,7 @@ base::Value::List NSArrayToValue(NSArray* arr) {
 
 NSDictionary* DictionaryValueToNSDictionary(const base::Value::Dict& value) {
   std::string json;
-  if (!base::JSONWriter::Write(base::Value(value.Clone()), &json))
+  if (!base::JSONWriter::Write(base::ValueView{value}, &json))
     return nil;
   NSData* jsonData = [NSData dataWithBytes:json.c_str() length:json.length()];
   id obj = [NSJSONSerialization JSONObjectWithData:jsonData

@@ -206,7 +206,7 @@ void UsbChooserContext::RevokeObjectPermissionInternal(
     v8::HandleScope scope(isolate);
     gin_helper::Dictionary details =
         gin_helper::Dictionary::CreateEmpty(isolate);
-    details.Set("device", object.Clone());
+    details.Set("device", object);
     details.Set("origin", origin.Serialize());
     session->Emit("usb-device-revoked", details);
   }

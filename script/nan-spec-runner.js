@@ -9,7 +9,7 @@ const NPX_CMD = process.platform === 'win32' ? 'npx.cmd' : 'npx';
 const utils = require('./lib/utils');
 const { YARN_VERSION } = require('./yarn');
 
-if (!process.mainModule) {
+if (!require.main) {
   throw new Error('Must call the nan spec runner directly');
 }
 

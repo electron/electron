@@ -6,13 +6,13 @@ Subject: build_gn.patch
 We force V8 into 'shared library' mode so that it exports its symbols, which is
 necessary for native modules to load.
 
-Also, some fixes relating to mksnapshot on ARM.
+Also change visibility on mksnapshot in order to target mksnapshot for mksnapshot zip.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index d75f44b55a89828845f69f148da147ea29d523e2..4b90367b6a73503ae44c0a68c23d7a2fd606135c 100644
+index fe654f0f5dedfc06a72c008728215f5ec0feace6..b52ac02c1e3e85663a1fb97f0db7415fc6666dbd 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -714,7 +714,7 @@ config("internal_config") {
+@@ -704,7 +704,7 @@ config("internal_config") {
      ":cppgc_header_features",
    ]
  
@@ -21,7 +21,7 @@ index d75f44b55a89828845f69f148da147ea29d523e2..4b90367b6a73503ae44c0a68c23d7a2f
      defines += [ "BUILDING_V8_SHARED" ]
    }
  
-@@ -6463,7 +6463,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -6517,7 +6517,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
  
@@ -30,3 +30,11 @@ index d75f44b55a89828845f69f148da147ea29d523e2..4b90367b6a73503ae44c0a68c23d7a2f
  
      deps = [
        ":v8_libbase",
+@@ -6529,7 +6529,6 @@ if (current_toolchain == v8_generator_toolchain) {
+ 
+ if (current_toolchain == v8_snapshot_toolchain) {
+   v8_executable("mksnapshot") {
+-    visibility = [ ":*" ]  # Only targets in this file can depend on this.
+ 
+     sources = [
+       "src/snapshot/embedded/embedded-empty.cc",

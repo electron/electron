@@ -13,7 +13,6 @@
 #include <utility>
 #include <vector>
 
-#include "base/cxx17_backports.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
@@ -389,6 +388,9 @@ void NativeWindowMac::Close() {
     return;
   }
 
+  // Ensure we're detached from the parent window before closing.
+  RemoveChildFromParentWindow(this);
+
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
   // even after the user has ended the sheet.
@@ -406,6 +408,8 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
+  RemoveChildFromParentWindow(this);
+
   // Retain the child window before closing it. If the last reference to the
   // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
   // See e.g. http://crbug.com/616701.
@@ -473,14 +477,7 @@ void NativeWindowMac::Hide() {
     return;
   }
 
-  // Hide all children of the current window before hiding the window.
-  // components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-  // expects this when window visibility changes.
-  if ([window_ childWindows]) {
-    for (NSWindow* child in [window_ childWindows]) {
-      [child orderOut:nil];
-    }
-  }
+  DetachChildren();
 
   // Detach the window from the parent before.
   if (parent())
@@ -491,10 +488,6 @@ void NativeWindowMac::Hide() {
 
 bool NativeWindowMac::IsVisible() {
   bool occluded = [window_ occlusionState] == NSWindowOcclusionStateVisible;
-
-  // For a window to be visible, it must be visible to the user in the
-  // foreground of the app, which means that it should not be minimized or
-  // occluded
   return [window_ isVisible] && !occluded && !IsMinimized();
 }
 
@@ -562,6 +555,11 @@ void NativeWindowMac::Unmaximize() {
 }
 
 bool NativeWindowMac::IsMaximized() {
+  // It's possible for [window_ isZoomed] to be true
+  // when the window is minimized or fullscreened.
+  if (IsMinimized() || IsFullscreen())
+    return false;
+
   if (HasStyleMask(NSWindowStyleMaskResizable) != 0)
     return [window_ isZoomed];
 
@@ -597,6 +595,42 @@ bool NativeWindowMac::HandleDeferredClose() {
     return true;
   }
   return false;
+}
+
+void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
+  child_windows_.remove_if([&child](NativeWindow* w) { return (w == child); });
+
+  [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
+}
+
+void NativeWindowMac::RemoveChildFromParentWindow(NativeWindow* child) {
+  if (parent())
+    parent()->RemoveChildWindow(child);
+}
+
+void NativeWindowMac::AttachChildren() {
+  for (auto* child : child_windows_) {
+    auto* child_nswindow = child->GetNativeWindow().GetNativeNSWindow();
+    if ([child_nswindow parentWindow] == window_)
+      continue;
+
+    // Attaching a window as a child window resets its window level, so
+    // save and restore it afterwards.
+    NSInteger level = window_.level;
+    [window_ addChildWindow:child_nswindow ordered:NSWindowAbove];
+    [window_ setLevel:level];
+  }
+}
+
+void NativeWindowMac::DetachChildren() {
+  DCHECK(child_windows_.size() == [[window_ childWindows] count]);
+
+  // Hide all children before hiding/minimizing the window.
+  // NativeWidgetNSWindowBridge::NotifyVisibilityChangeDown()
+  // will DCHECK otherwise.
+  for (auto* child : child_windows_) {
+    [child->GetNativeWindow().GetNativeNSWindow() orderOut:nil];
+  }
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
@@ -1073,7 +1107,7 @@ void NativeWindowMac::InvalidateShadow() {
 }
 
 void NativeWindowMac::SetOpacity(const double opacity) {
-  const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
+  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   [window_ setAlphaValue:boundedOpacity];
 }
 
@@ -1757,33 +1791,27 @@ void NativeWindowMac::InternalSetWindowButtonVisibility(bool visible) {
   [[window_ standardWindowButton:NSWindowZoomButton] setHidden:!visible];
 }
 
-void NativeWindowMac::InternalSetParentWindow(NativeWindow* parent,
+void NativeWindowMac::InternalSetParentWindow(NativeWindow* new_parent,
                                               bool attach) {
   if (is_modal())
     return;
 
-  NativeWindow::SetParentWindow(parent);
-
   // Do not remove/add if we are already properly attached.
-  if (attach && parent &&
-      [window_ parentWindow] == parent->GetNativeWindow().GetNativeNSWindow())
+  if (attach && new_parent &&
+      [window_ parentWindow] ==
+          new_parent->GetNativeWindow().GetNativeNSWindow())
     return;
 
   // Remove current parent window.
-  if ([window_ parentWindow])
-    [[window_ parentWindow] removeChildWindow:window_];
+  RemoveChildFromParentWindow(this);
 
   // Set new parent window.
-  // Note that this method will force the window to become visible.
-  if (parent && attach) {
-    // Attaching a window as a child window resets its window level, so
-    // save and restore it afterwards.
-    NSInteger level = window_.level;
-    [parent->GetNativeWindow().GetNativeNSWindow()
-        addChildWindow:window_
-               ordered:NSWindowAbove];
-    [window_ setLevel:level];
+  if (new_parent && attach) {
+    new_parent->add_child_window(this);
+    new_parent->AttachChildren();
   }
+
+  NativeWindow::SetParentWindow(new_parent);
 }
 
 void NativeWindowMac::SetForwardMouseMessages(bool forward) {

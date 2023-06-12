@@ -593,7 +593,6 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { readFile: readFilePromise } = fs.promises;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   fs.promises.readFile = function (pathArgument: string, options: any) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) {

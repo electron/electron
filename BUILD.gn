@@ -99,10 +99,6 @@ if (is_linux) {
   }
 }
 
-declare_args() {
-  use_prebuilt_v8_context_snapshot = false
-}
-
 branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
@@ -544,6 +540,8 @@ source_set("electron_lib") {
 
   if (is_mac) {
     deps += [
+      ":chrome_lib_arc",
+      ":electron_lib_arc",
       "//components/remote_cocoa/app_shim",
       "//components/remote_cocoa/browser",
       "//content/browser:mac_helpers",
@@ -555,6 +553,7 @@ source_set("electron_lib") {
     }
 
     frameworks = [
+      "AuthenticationServices.framework",
       "AVFoundation.framework",
       "Carbon.framework",
       "LocalAuthentication.framework",
@@ -671,13 +670,6 @@ source_set("electron_lib") {
     ]
   }
 
-  if (enable_run_as_node) {
-    sources += [
-      "shell/app/node_main.cc",
-      "shell/app/node_main.h",
-    ]
-  }
-
   if (enable_osr) {
     sources += [
       "shell/browser/osr/osr_host_display_client.cc",
@@ -701,13 +693,6 @@ source_set("electron_lib") {
       "//components/viz/service",
       "//services/viz/public/mojom",
       "//ui/compositor",
-    ]
-  }
-
-  if (enable_desktop_capturer) {
-    sources += [
-      "shell/browser/api/electron_api_desktop_capturer.cc",
-      "shell/browser/api/electron_api_desktop_capturer.h",
     ]
   }
 
@@ -772,6 +757,8 @@ source_set("electron_lib") {
     sources += [
       "shell/browser/electron_pdf_web_contents_helper_client.cc",
       "shell/browser/electron_pdf_web_contents_helper_client.h",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.cc",
+      "shell/browser/extensions/api/pdf_viewer_private/pdf_viewer_private_api.h",
     ]
   }
 
@@ -779,6 +766,53 @@ source_set("electron_lib") {
 
   if (allow_runtime_configurable_key_storage) {
     defines += [ "ALLOW_RUNTIME_CONFIGURABLE_KEY_STORAGE" ]
+  }
+}
+
+if (is_mac) {
+  source_set("chrome_lib_arc") {
+    include_dirs = [ "." ]
+    sources = [
+      "//chrome/browser/extensions/global_shortcut_listener_mac.h",
+      "//chrome/browser/extensions/global_shortcut_listener_mac.mm",
+      "//chrome/browser/icon_loader_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_mac.mm",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.h",
+      "//chrome/browser/media/webrtc/system_media_capture_permissions_stats_mac.mm",
+      "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
+      "//chrome/browser/platform_util_mac.mm",
+      "//chrome/browser/process_singleton_mac.mm",
+    ]
+
+    deps = [
+      "//base",
+      "//skia",
+      "//third_party/electron_node:node_lib",
+      "//third_party/webrtc_overrides:webrtc_component",
+      "//v8",
+    ]
+
+    configs += [ "//build/config/compiler:enable_arc" ]
+  }
+
+  source_set("electron_lib_arc") {
+    include_dirs = [ "." ]
+    sources = [
+      "shell/browser/mac/dict_util.h",
+      "shell/browser/mac/dict_util.mm",
+      "shell/browser/mac/electron_application_delegate.h",
+      "shell/browser/mac/electron_application_delegate.mm",
+    ]
+
+    deps = [
+      "//base",
+      "//skia",
+      "//third_party/electron_node:node_lib",
+      "//v8",
+    ]
+
+    configs += [ "//build/config/compiler:enable_arc" ]
   }
 }
 
@@ -801,15 +835,6 @@ if (is_mac) {
     sources = [ "shell/common/resources/mac/MainMenu.xib" ]
   }
 
-  action("fake_v8_context_snapshot_generator") {
-    script = "build/fake_v8_context_snapshot_generator.py"
-    args = [
-      rebase_path("$root_out_dir/$v8_context_snapshot_filename"),
-      rebase_path("$root_out_dir/fake/$v8_context_snapshot_filename"),
-    ]
-    outputs = [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
-  }
-
   bundle_data("electron_framework_resources") {
     public_deps = [ ":packed_resources" ]
     sources = []
@@ -820,13 +845,8 @@ if (is_mac) {
     if (v8_use_external_startup_data) {
       public_deps += [ "//v8" ]
       if (use_v8_context_snapshot) {
-        if (use_prebuilt_v8_context_snapshot) {
-          sources += [ "$root_out_dir/fake/$v8_context_snapshot_filename" ]
-          public_deps += [ ":fake_v8_context_snapshot_generator" ]
-        } else {
-          sources += [ "$root_out_dir/$v8_context_snapshot_filename" ]
-          public_deps += [ "//tools/v8_context_snapshot" ]
-        }
+        sources += [ "$root_out_dir/$v8_context_snapshot_filename" ]
+        public_deps += [ "//tools/v8_context_snapshot" ]
       } else {
         sources += [ "$root_out_dir/snapshot_blob.bin" ]
       }

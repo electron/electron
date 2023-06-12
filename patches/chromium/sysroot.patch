@@ -7,11 +7,11 @@ Make chrome's install-sysroot scripts point to our custom sysroot builds,
 which include extra deps that Electron needs (e.g. libnotify)
 
 diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
-index 42842a184deb12b55c88b82134ef29f0d10c1a18..4dca0c2b63425b1592d0ee48b721402b8bebe347 100755
+index 67d52b47a7531453a1baa83b6863441ef1fadea7..da0b2142ca3fa9d4228e2592b8be9930ee1acdb3 100755
 --- a/build/linux/sysroot_scripts/install-sysroot.py
 +++ b/build/linux/sysroot_scripts/install-sysroot.py
-@@ -40,9 +40,11 @@ except ImportError:
-   from urllib2 import urlopen
+@@ -33,9 +33,11 @@ import sys
+ from urllib.request import urlopen
  
  SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 +SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
@@ -22,9 +22,9 @@ index 42842a184deb12b55c88b82134ef29f0d10c1a18..4dca0c2b63425b1592d0ee48b721402b
 +URL_PREFIX = 'https://dev-cdn.electronjs.org'
 +URL_PATH = 'linux-sysroots'
  
- VALID_ARCHS = ('arm', 'arm64', 'i386', 'amd64', 'mips', 'mips64el')
+ VALID_ARCHS = ('amd64', 'i386', 'armhf', 'arm64', 'armel', 'mipsel', 'mips64el')
  
-@@ -106,7 +108,7 @@ def GetSysrootDict(target_platform, target_arch):
+@@ -100,7 +102,7 @@ def GetSysrootDict(target_platform, target_arch):
    if target_arch not in VALID_ARCHS:
      raise Error('Unknown architecture: %s' % target_arch)
  

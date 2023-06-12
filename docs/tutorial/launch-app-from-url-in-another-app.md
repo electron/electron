@@ -45,6 +45,8 @@ if (process.defaultApp) {
 We will now define the function in charge of creating our browser window and load our application's `index.html` file.
 
 ```javascript
+let mainWindow
+
 const createWindow = () => {
   // Create the browser window.
   mainWindow = new BrowserWindow({
@@ -65,7 +67,7 @@ This code will be different in Windows compared to MacOS and Linux. This is due 
 
 #### Windows code:
 
-```javascript
+```javascript @ts-type={mainWindow:Electron.BrowserWindow} @ts-type={createWindow:()=>void}
 const gotTheLock = app.requestSingleInstanceLock()
 
 if (!gotTheLock) {
@@ -91,7 +93,7 @@ if (!gotTheLock) {
 
 #### MacOS and Linux code:
 
-```javascript
+```javascript @ts-type={createWindow:()=>void}
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -166,7 +168,7 @@ If you're using Electron Packager's API, adding support for protocol handlers is
 Electron Forge is handled, except
 `protocols` is part of the Packager options passed to the `packager` function.
 
-```javascript
+```javascript @ts-nocheck
 const packager = require('electron-packager')
 
 packager({

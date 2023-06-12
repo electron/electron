@@ -194,6 +194,14 @@ describe('webContents module', () => {
       }).to.throw('webContents.print(): Invalid print settings specified.');
     });
 
+    it('throws when an invalid pageSize is passed', () => {
+      const badSize = 5;
+      expect(() => {
+        // @ts-ignore this line is intentionally incorrect
+        w.webContents.print({ pageSize: badSize });
+      }).to.throw(`Unsupported pageSize: ${badSize}`);
+    });
+
     it('throws when an invalid callback is passed', () => {
       expect(() => {
         // @ts-ignore this line is intentionally incorrect
@@ -2065,8 +2073,7 @@ describe('webContents module', () => {
 
       await w.webContents.executeJavaScript('document.createElement(\'video\').canPlayType(\'video/webm; codecs="vp8.0"\')', true);
 
-      const result = await w.webContents.executeJavaScript(
-        `runTest(${features.isPictureInPictureEnabled()})`, true);
+      const result = await w.webContents.executeJavaScript('runTest(true)', true);
       expect(result).to.be.true();
     });
   });

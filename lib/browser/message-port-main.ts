@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 
 export class MessagePortMain extends EventEmitter {
-  _internalPort: any
+  _internalPort: any;
   constructor (internalPort: any) {
     super();
     this._internalPort = internalPort;

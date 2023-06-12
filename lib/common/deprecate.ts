@@ -81,7 +81,8 @@ export function event (emitter: NodeJS.EventEmitter, oldName: string, newName: s
 // remove a property with no replacement
 export function removeProperty<T, K extends (keyof T & string)>(object: T, removedName: K, onlyForValues?: any[]): T {
   // if the property's already been removed, warn about it
-  const info = Object.getOwnPropertyDescriptor((object as any).__proto__, removedName) // eslint-disable-line
+  // eslint-disable-next-line no-proto
+  const info = Object.getOwnPropertyDescriptor((object as any).__proto__, removedName);
   if (!info) {
     log(`Unable to remove property '${removedName}' from an object that lacks it.`);
     return object;

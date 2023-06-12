@@ -449,6 +449,10 @@ void WebContentsPreferences::OverrideWebkitPrefs(
         iter != default_font_family_.end())
       prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] =
           iter->second;
+    if (auto iter = default_font_family_.find("math");
+        iter != default_font_family_.end())
+      prefs->math_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
   }
 
   if (default_font_size_)

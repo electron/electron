@@ -87,22 +87,6 @@ gfx::Point Screen::GetCursorScreenPoint(v8::Isolate* isolate) {
   return screen_->GetCursorScreenPoint();
 }
 
-display::Display Screen::GetPrimaryDisplay() {
-  return screen_->GetPrimaryDisplay();
-}
-
-std::vector<display::Display> Screen::GetAllDisplays() {
-  return screen_->GetAllDisplays();
-}
-
-display::Display Screen::GetDisplayNearestPoint(const gfx::Point& point) {
-  return screen_->GetDisplayNearestPoint(point);
-}
-
-display::Display Screen::GetDisplayMatching(const gfx::Rect& match_rect) {
-  return screen_->GetDisplayMatching(match_rect);
-}
-
 #if BUILDFLAG(IS_WIN)
 
 static gfx::Rect ScreenToDIPRect(electron::NativeWindow* window,

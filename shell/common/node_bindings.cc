@@ -23,7 +23,6 @@
 #include "base/trace_event/trace_event.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/common/content_paths.h"
-#include "content/public/common/content_switches.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/browser/api/electron_api_app.h"
@@ -54,6 +53,7 @@
   V(electron_browser_browser_view)       \
   V(electron_browser_content_tracing)    \
   V(electron_browser_crash_reporter)     \
+  V(electron_browser_desktop_capturer)   \
   V(electron_browser_dialog)             \
   V(electron_browser_event_emitter)      \
   V(electron_browser_global_shortcut)    \
@@ -103,9 +103,6 @@
 
 #define ELECTRON_VIEWS_BINDINGS(V) V(electron_browser_image_view)
 
-#define ELECTRON_DESKTOP_CAPTURER_BINDINGS(V) \
-  V(electron_browser_desktop_capturer)
-
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
 
 // This is used to load built-in bindings. Instead of using
@@ -120,9 +117,6 @@ ELECTRON_RENDERER_BINDINGS(V)
 ELECTRON_UTILITY_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
 ELECTRON_VIEWS_BINDINGS(V)
-#endif
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
 #endif
 #if DCHECK_IS_ON()
 ELECTRON_TESTING_BINDINGS(V)
@@ -417,23 +411,17 @@ NodeBindings::~NodeBindings() {
 
 void NodeBindings::RegisterBuiltinBindings() {
 #define V(modname) _register_##modname();
-  auto* command_line = base::CommandLine::ForCurrentProcess();
-  std::string process_type =
-      command_line->GetSwitchValueASCII(::switches::kProcessType);
-  if (process_type.empty()) {
+  if (IsBrowserProcess()) {
     ELECTRON_BROWSER_BINDINGS(V)
 #if BUILDFLAG(ENABLE_VIEWS_API)
     ELECTRON_VIEWS_BINDINGS(V)
 #endif
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
-    ELECTRON_DESKTOP_CAPTURER_BINDINGS(V)
-#endif
   }
   ELECTRON_COMMON_BINDINGS(V)
-  if (process_type == ::switches::kRendererProcess) {
+  if (IsRendererProcess()) {
     ELECTRON_RENDERER_BINDINGS(V)
   }
-  if (process_type == ::switches::kUtilityProcess) {
+  if (IsUtilityProcess()) {
     ELECTRON_UTILITY_BINDINGS(V)
   }
 #if DCHECK_IS_ON()

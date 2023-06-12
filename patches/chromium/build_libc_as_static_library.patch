@@ -32,15 +32,15 @@ index 027ed522bf54972a6586004d4d4302bda3481146..c227b7e0379539d14859701b00c8f941
    ]
    if (is_linux) {
 diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index 3ab30c4f8776b9b60e736e69c9bfbce99263ff97..3e8ed18b836f863deafd28a6363b7de2bcdc1863 100644
+index ecd4a007ce9ad0b1595d88d7df4ffa09af89db83..94f6b98b873a6cdda7a04192fed16e532f0856ce 100644
 --- a/buildtools/third_party/libc++abi/BUILD.gn
 +++ b/buildtools/third_party/libc++abi/BUILD.gn
-@@ -4,7 +4,7 @@
- 
+@@ -5,7 +5,7 @@
+ import("//build/config/android/config.gni")
  import("//build/config/c++/c++.gni")
  
 -source_set("libc++abi") {
 +static_library("libc++abi") {
    if (export_libcxxabi_from_executables) {
-     visibility = [
-       "//build/config:executable_deps",
+     visibility = [ "//build/config:executable_deps" ]
+   } else {
