@@ -91,7 +91,7 @@ index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..facaa6fbca8ee7c04f83607e62b81b95
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index d7a3961a5c79e4d4f9f0fc5fbd6f1c55ab65ca9d..cf200ee43464bcde31dc13c18524e58d4ac2479b 100644
+index d7a3961a5c79e4d4f9f0fc5fbd6f1c55ab65ca9d..45c3bd7ef13be525ea6fbc2610513a0b93536b9d 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -23,7 +23,9 @@
@@ -149,16 +149,17 @@ index d7a3961a5c79e4d4f9f0fc5fbd6f1c55ab65ca9d..cf200ee43464bcde31dc13c18524e58d
      std::move(callback).Run(nullptr);
      return;
    }
-@@ -122,7 +142,7 @@ void OnDidScriptedPrint(
+@@ -122,7 +142,8 @@ void OnDidScriptedPrint(
  
    if (printer_query->last_status() != mojom::ResultCode::kSuccess ||
        !printer_query->settings().dpi()) {
 -    std::move(callback).Run(nullptr);
-+    std::move(callback).Run(nullptr, false);
++    bool canceled = printer_query->last_status() == mojom::ResultCode::kCanceled;
++    std::move(callback).Run(nullptr, canceled);
      return;
    }
  
-@@ -132,12 +152,13 @@ void OnDidScriptedPrint(
+@@ -132,12 +153,12 @@ void OnDidScriptedPrint(
                                  params->params.get());
    params->params->document_cookie = printer_query->cookie();
    if (!PrintMsgPrintParamsIsValid(*params->params)) {
@@ -169,8 +170,7 @@ index d7a3961a5c79e4d4f9f0fc5fbd6f1c55ab65ca9d..cf200ee43464bcde31dc13c18524e58d
  
    params->pages = printer_query->settings().ranges();
 -  std::move(callback).Run(std::move(params));
-+  bool canceled = printer_query->last_status() == mojom::ResultCode::kCanceled;
-+  std::move(callback).Run(std::move(params), canceled);
++  std::move(callback).Run(std::move(params), false);
    queue->QueuePrinterQuery(std::move(printer_query));
  }
  
