@@ -89,12 +89,12 @@ class TrayIcon {
 
   // Popups the menu.
   virtual void PopUpContextMenu(const gfx::Point& pos,
-                                ElectronMenuModel* menu_model);
+                                raw_ptr<ElectronMenuModel> menu_model);
 
   virtual void CloseContextMenu();
 
   // Set the context menu for this icon.
-  virtual void SetContextMenu(ElectronMenuModel* menu_model) = 0;
+  virtual void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) = 0;
 
   // Returns the bounds of tray icon.
   virtual gfx::Rect GetBounds();

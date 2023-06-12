@@ -20,7 +20,7 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 5c6be39a80cf8762f3fea0e3381295853e305e1d..2d3e51bc7a286afe7ca0368434ce94670bc9f9e4 100644
+index 5bfae3cc8319e455cab3b1e3283dd26f056e6827..38e027307c5ca9d08c4dd8e3ce6667e4eaf803b5 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
 @@ -1905,6 +1905,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
@@ -81,7 +81,7 @@ index c7ca2458708dd9577afdaef7fbcafaaa68046904..c4a1f1368ef053830c86cf86c3bec7ce
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 72b7f5be1422c286140962febc87b0f66f743690..5fea5c6a18fdbdb769bd35f3e701266fc1922289 100644
+index b7df289e4546fd5d33266223f4b678c1ab0e26e2..af4fdec439ebe630d43a60cfa53d3addfca052bd 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -213,7 +213,7 @@ index 8ca1f2220032401f7d63a52c563b526cc3f5200c..c006ccccc9717f8811b8ad43171fe24c
    IOSurfaceSetValue(surface, CFSTR("IOSurfaceColorSpace"), kCGColorSpaceSRGB);
  
 diff --git a/ui/gfx/switches.cc b/ui/gfx/switches.cc
-index df3caf8fab7a1c1f6bc0efa4fd3dd60b9de66e63..ac254ec1317450a9809da5d244c42fa11a3a4f98 100644
+index 7639d05f73b27a65b8c7cd41b526bc9308a98a31..f377eca18f90b1ae4aa85471a63f8e726f979ffb 100644
 --- a/ui/gfx/switches.cc
 +++ b/ui/gfx/switches.cc
 @@ -13,6 +13,8 @@ namespace switches {
