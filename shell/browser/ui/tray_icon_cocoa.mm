@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/message_loop/message_pump_mac.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
@@ -19,8 +20,8 @@
 #include "ui/native_theme/native_theme.h"
 
 @interface StatusItemView : NSView {
-  electron::TrayIconCocoa* trayIcon_;       // weak
-  ElectronMenuController* menuController_;  // weak
+  raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak
+  ElectronMenuController* menuController_;     // weak
   BOOL ignoreDoubleClickEvents_;
   base::scoped_nsobject<NSStatusItem> statusItem_;
   base::scoped_nsobject<NSTrackingArea> trackingArea_;

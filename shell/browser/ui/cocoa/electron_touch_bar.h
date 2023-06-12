@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
 
@@ -22,7 +23,7 @@
   std::vector<gin_helper::PersistentDictionary> ordered_settings_;
   std::map<std::string, gin_helper::PersistentDictionary> settings_;
   id<NSTouchBarDelegate> delegate_;
-  electron::NativeWindow* window_;
+  raw_ptr<electron::NativeWindow> window_;
 }
 
 - (id)initWithDelegate:(id<NSTouchBarDelegate>)delegate
