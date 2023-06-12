@@ -10,6 +10,7 @@
 
 #include "base/command_line.h"
 #include "base/memory/memory_pressure_listener.h"
+#include "base/strings/to_string.h"
 #include "base/strings/utf_string_conversions.h"
 #include "components/spellcheck/renderer/spellcheck.h"
 #include "content/public/renderer/render_frame.h"
