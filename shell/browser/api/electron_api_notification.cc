@@ -4,8 +4,8 @@
 
 #include "shell/browser/api/electron_api_notification.h"
 
-#include "base/guid.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/uuid.h"
 #include "gin/handle.h"
 #include "shell/browser/api/electron_api_menu.h"
 #include "shell/browser/browser.h"
@@ -226,7 +226,8 @@ void Notification::Close() {
 void Notification::Show() {
   Close();
   if (presenter_) {
-    notification_ = presenter_->CreateNotification(this, base::GenerateGUID());
+    notification_ = presenter_->CreateNotification(
+        this, base::Uuid::GenerateRandomV4().AsLowercaseString());
     if (notification_) {
       electron::NotificationOptions options;
       options.title = title_;

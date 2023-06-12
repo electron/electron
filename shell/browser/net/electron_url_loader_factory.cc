@@ -9,9 +9,9 @@
 #include <string>
 #include <utility>
 
-#include "base/guid.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
+#include "base/uuid.h"
 #include "content/public/browser/browser_thread.h"
 #include "content/public/browser/storage_partition.h"
 #include "mojo/public/cpp/system/data_pipe_producer.h"
@@ -552,8 +552,8 @@ void ElectronURLLoaderFactory::StartLoadingHttp(
   v8::Local<v8::Value> value;
   if (dict.Get("session", &value)) {
     if (value->IsNull()) {
-      browser_context =
-          ElectronBrowserContext::From(base::GenerateGUID(), true);
+      browser_context = ElectronBrowserContext::From(
+          base::Uuid::GenerateRandomV4().AsLowercaseString(), true);
     } else {
       gin::Handle<api::Session> session;
       if (gin::ConvertFromV8(dict.isolate(), value, &session) &&
