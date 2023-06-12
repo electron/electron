@@ -4278,7 +4278,7 @@ describe('BrowserWindow module', () => {
           await closed;
         }
 
-        await setTimeout();
+        await delay();
         expect(w.getChildWindows().length).to.equal(0);
       });
 
