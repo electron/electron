@@ -4273,7 +4273,7 @@ describe('BrowserWindow module', () => {
 
         for (let i = 0; i < 5; i++) {
           c = new BrowserWindow({ show: false, parent: w });
-          const closed = once(c, 'closed');
+          const closed = emittedOnce(c, 'closed');
           c.close();
           await closed;
         }
