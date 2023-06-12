@@ -234,7 +234,10 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
   WillCreateURLLoaderRequestInterceptors(
       content::NavigationUIData* navigation_ui_data,
-      int frame_tree_node_id) override;
+      int frame_tree_node_id,
+      int64_t navigation_id,
+      scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner)
+      override;
   bool ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
       base::StringPiece scheme,
       bool is_embedded_origin_secure) override;
@@ -330,7 +333,7 @@ class ElectronBrowserClient : public content::ContentBrowserClient,
       web_authentication_delegate_;
 
 #if BUILDFLAG(IS_MAC)
-  ElectronBrowserMainParts* browser_main_parts_ = nullptr;
+  raw_ptr<ElectronBrowserMainParts> browser_main_parts_ = nullptr;
 #endif
 };
 
