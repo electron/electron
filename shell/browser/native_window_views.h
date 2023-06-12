@@ -322,6 +322,9 @@ class NativeWindowViews : public NativeWindow,
   // Handles unhandled keyboard messages coming back from the renderer process.
   std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
 
+  // Whether the menubar is visible before the window enters fullscreen
+  bool menu_bar_visible_before_fullscreen_ = false;
+
   // Whether the window should be enabled based on user calls to SetEnabled()
   bool is_enabled_ = true;
   // How many modal children this window has;
