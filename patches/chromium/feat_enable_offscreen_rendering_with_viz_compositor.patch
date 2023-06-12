@@ -231,10 +231,10 @@ index e12c1d87018a86d763f59e5ac62058cf815fce3a..01f8023811b49797674a0de6e32c358d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..28766c6a228d243065e363838a28b38ac2448332
+index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c4113085dc9401
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,160 @@
+@@ -0,0 +1,161 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -331,8 +331,9 @@ index 0000000000000000000000000000000000000000..28766c6a228d243065e363838a28b38a
 +  canvas_.reset();
 +
 +  size_t required_bytes;
-+  if (!ResourceSizes::MaybeSizeInBytes(
-+          viewport_pixel_size_, ResourceFormat::RGBA_8888, &required_bytes)) {
++  if (!ResourceSizes::MaybeSizeInBytes(viewport_pixel_size_,
++                                       SinglePlaneFormat::kRGBA_8888,
++                                       &required_bytes)) {
 +    DLOG(ERROR) << "Invalid viewport size " << viewport_pixel_size_.ToString();
 +    return;
 +  }
