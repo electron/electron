@@ -6,10 +6,18 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 83cdc61ae5ac4b98fc1d68ad99672606c75ddd09..24108e9e3cccfd54e307b08b63ad4b9185b73c7e 100644
+index 83cdc61ae5ac4b98fc1d68ad99672606c75ddd09..0ca6f56c642f7874d1acdf6aae94a5e090d94afd 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1082,6 +1082,7 @@ component("base") {
+@@ -228,6 +228,7 @@ if (is_apple) {
+     ]
+     defines = [ "BASE_IMPLEMENTATION" ]
+     configs += [ "//build/config/compiler:enable_arc" ]
++    configs += [ "//electron/build/config:mas_build" ]
+     deps = [
+       "//base:base_static",
+       "//base/numerics:base_numerics",
+@@ -1082,6 +1083,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -43,10 +51,18 @@ index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 3bc799978ea24e2f6e566dcc7f8638789e18d61d..8f05d17943ed071061ce377292ccc4acf4183dd9 100644
+index 3bc799978ea24e2f6e566dcc7f8638789e18d61d..cd8910dbc57813d41cd0fa28bb2ad61aaa014bc9 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
-@@ -56,6 +56,7 @@ component("app_shim") {
+@@ -17,6 +17,7 @@ source_set("app_shim_arc") {
+   configs += [
+     ":app_shim_warnings",
+     "//build/config/compiler:enable_arc",
++    "//electron/build/config:mas_build"
+   ]
+   sources = [
+     "immersive_mode_controller.h",
+@@ -56,6 +57,7 @@ component("app_shim") {
    assert(is_mac)
  
    configs += [ ":app_shim_warnings" ]
