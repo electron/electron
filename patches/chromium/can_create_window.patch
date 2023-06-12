@@ -66,7 +66,7 @@ index 033780b477965e6915fc808cb468598f55050f2b..51da4e464c5768d979188bb46c11565c
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index 71ec7b5e5fa7ffb230b0a04d5fe044680050be29..048b33d57ec9ab2d696f267976510ed5454b3988 100644
+index 0d13c497fc6032f9a1ddc7f6a693412ec7caa9fd..05303e632953657176ddfb41add3189a3097eae2 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -658,6 +658,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,10 +79,10 @@ index 71ec7b5e5fa7ffb230b0a04d5fe044680050be29..048b33d57ec9ab2d696f267976510ed5
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 6a69d3a1934411f19a4e64cce38fb59b20f06b01..626f6385349db2e0e625d55524f6d260ae06b8cf 100644
+index 659035715218eccc18d19c6fea2a282d8f71c489..cfb536c2642b21e4edf60e677bce96a506189bb5 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
-@@ -167,6 +167,7 @@ class NetworkService;
+@@ -168,6 +168,7 @@ class NetworkService;
  class TrustedURLLoaderHeaderClient;
  }  // namespace mojom
  struct ResourceRequest;
@@ -90,7 +90,7 @@ index 6a69d3a1934411f19a4e64cce38fb59b20f06b01..626f6385349db2e0e625d55524f6d260
  }  // namespace network
  
  namespace sandbox {
-@@ -1067,6 +1068,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1068,6 +1069,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
