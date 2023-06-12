@@ -4958,7 +4958,7 @@ describe('BrowserWindow module', () => {
         w.setMenuBarVisibility(false);
         expect(w.isMenuBarVisible()).to.be.false('isMenuBarVisible');
 
-        const enterFS = once(w, 'enter-full-screen');
+        const enterFS = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFS;
         expect(w.fullScreen).to.be.true('not fullscreen');
