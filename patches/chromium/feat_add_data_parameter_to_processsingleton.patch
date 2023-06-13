@@ -65,7 +65,7 @@ index 02d9eabfef9521722340739bf86df3dfc30018d7..af8639ebcc61d8081a12334f652a551d
  #if BUILDFLAG(IS_WIN)
    bool EscapeVirtualization(const base::FilePath& user_data_dir);
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 5330402b1df783b8258b09d8e8dfc2cdf3819437..ab12ef7610f243f9cc0207d20fa55a133f0f85d3 100644
+index 7cd73bf6d1884bd9b38bcb33de009efb1da2add9..a7a441a24098dc95e71e871e776e2cd8dd3c0ea2 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -608,6 +608,7 @@ class ProcessSingleton::LinuxWatcher
