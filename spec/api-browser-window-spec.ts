@@ -4267,6 +4267,21 @@ describe('BrowserWindow module', () => {
         expect(w.getChildWindows().length).to.equal(0);
       });
 
+      it('can handle child window close and reparent multiple times', async () => {
+        const w = new BrowserWindow({ show: false });
+        let c: BrowserWindow | null;
+
+        for (let i = 0; i < 5; i++) {
+          c = new BrowserWindow({ show: false, parent: w });
+          const closed = emittedOnce(c, 'closed');
+          c.close();
+          await closed;
+        }
+
+        await delay();
+        expect(w.getChildWindows().length).to.equal(0);
+      });
+
       ifit(process.platform === 'darwin')('child window matches visibility when visibility changes', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false, parent: w });
