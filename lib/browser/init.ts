@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
