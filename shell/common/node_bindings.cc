@@ -33,7 +33,6 @@
 #include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
-#include "shell/common/node_includes.h"
 #include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/electron_node/src/debug_utils.h"
 
@@ -518,8 +517,9 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  if (!isolate_data_)
-    isolate_data_ = node::CreateIsolateData(isolate, uv_loop_, platform);
+  auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
+  context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
+                                           static_cast<void*>(isolate_data));
 
   node::Environment* env;
   uint64_t flags = node::EnvironmentFlags::kDefaultFlags |
@@ -550,7 +550,7 @@ node::Environment* NodeBindings::CreateEnvironment(
   {
     v8::TryCatch try_catch(isolate);
     env = node::CreateEnvironment(
-        isolate_data_, context, args, exec_args,
+        static_cast<node::IsolateData*>(isolate_data), context, args, exec_args,
         static_cast<node::EnvironmentFlags::Flags>(flags));
 
     if (try_catch.HasCaught()) {

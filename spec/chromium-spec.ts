@@ -1114,6 +1114,28 @@ describe('chromium features', () => {
       expect(frameName).to.equal('__proto__');
     });
 
+    it('works when used in conjunction with the vm module', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+
+      const { contextObject } = await w.webContents.executeJavaScript(`(async () => {
+        const vm = require('node:vm');
+        const contextObject = { count: 1, type: 'gecko' };
+        window.open('');
+        vm.runInNewContext('count += 1; type = "chameleon";', contextObject);
+        return { contextObject };
+      })()`);
+
+      expect(contextObject).to.deep.equal({ count: 2, type: 'chameleon' });
+    });
+
     // FIXME(nornagon): I'm not sure this ... ever was correct?
     xit('inherit options of parent window', async () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });

@@ -46,13 +46,18 @@ WebWorkerObserver::~WebWorkerObserver() {
   // Node.js expects `kExplicit` microtasks policy and will run microtasks
   // checkpoints after every call into JavaScript. Since we use a different
   // policy in the renderer - switch to `kExplicit`
-  v8::MicrotaskQueue* microtask_queue =
-      node_bindings_->uv_env()->context()->GetMicrotaskQueue();
+  auto* env = node_bindings_->uv_env();
+  v8::MicrotaskQueue* microtask_queue = env->context()->GetMicrotaskQueue();
   auto old_policy = microtask_queue->microtasks_policy();
   DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
   microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
-  node::FreeEnvironment(node_bindings_->uv_env());
-  node::FreeIsolateData(node_bindings_->isolate_data());
+
+  node::FreeEnvironment(env);
+  if (node_bindings_->uv_env() == nullptr) {
+    node::FreeIsolateData(node_bindings_->isolate_data(env->context()));
+    node_bindings_->clear_isolate_data(env->context());
+  }
+
   microtask_queue->set_microtasks_policy(old_policy);
 }
 

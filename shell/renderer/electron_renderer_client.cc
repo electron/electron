@@ -6,6 +6,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/contains.h"
+#include "base/debug/stack_trace.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/http/http_request_headers.h"
@@ -144,8 +145,8 @@ void ElectronRendererClient::WillReleaseScriptContext(
 
   node::FreeEnvironment(env);
   if (node_bindings_->uv_env() == nullptr) {
-    node::FreeIsolateData(node_bindings_->isolate_data());
-    node_bindings_->set_isolate_data(nullptr);
+    node::FreeIsolateData(node_bindings_->isolate_data(context));
+    node_bindings_->clear_isolate_data(context);
   }
 
   microtask_queue->set_microtasks_policy(old_policy);

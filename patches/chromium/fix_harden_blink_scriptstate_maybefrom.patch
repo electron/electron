@@ -40,13 +40,14 @@ accessing uninitialized lower indexes can return garbage values that cannot be n
 Refer to v8::EmbedderDataSlot::store_aligned_pointer for context.
 
 diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
-index 8d7c5631fd8f1499c67384286f0e3c4037673b32..6a7491bc27334f6d1b1175eaa472c888e2b35b5e 100644
+index 8d7c5631fd8f1499c67384286f0e3c4037673b32..99b2e2f63be8a46c5546dd53bc9b05e8c54e857c 100644
 --- a/gin/public/gin_embedders.h
 +++ b/gin/public/gin_embedders.h
-@@ -18,6 +18,7 @@ namespace gin {
+@@ -18,6 +18,8 @@ namespace gin {
  enum GinEmbedder : uint16_t {
    kEmbedderNativeGin,
    kEmbedderBlink,
++  kEmbedderElectron,
 +  kEmbedderBlinkTag,
    kEmbedderPDFium,
    kEmbedderFuchsia,
