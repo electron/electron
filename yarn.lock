@@ -141,10 +141,10 @@
   optionalDependencies:
     "@types/glob" "^7.1.1"
 
-"@electron/docs-parser@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.1.0.tgz#ba095def41746bde56bee731feaf22272bf0b765"
-  integrity sha512-qrjIKJk8t4/xAYldDVNQgcF8zdAAuG260bzPxdh/xI3p/yddm61bftoct+Tx2crnWFnOfOkr6nGERsDknNiT8A==
+"@electron/docs-parser@^1.1.1":
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@electron/docs-parser/-/docs-parser-1.1.1.tgz#14bec2940f81f4debb95a2b0f186f7f00d682899"
+  integrity sha512-IB6XCDaNTHqm7h0Joa1LUtZhmBvItRWp0KUNuNtuXLEv/6q6ZYw9wn89QzlFYxgH8ZTleF9dWpJby0mIpsX0Ng==
   dependencies:
     "@types/markdown-it" "^12.0.0"
     chai "^4.2.0"
@@ -213,10 +213,10 @@
     vscode-languageserver-textdocument "^1.0.8"
     vscode-uri "^3.0.7"
 
-"@electron/typescript-definitions@^8.14.0":
-  version "8.14.0"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.0.tgz#a88f74e915317ba943b57ffe499b319d04f01ee3"
-  integrity sha512-J3b4is6L0NB4+r+7s1Hl1YlzaveKnQt1gswadRyMRwb4gFU3VAe2oBMJLOhFRJMs/9PK/Xp+y9QwyC92Tyqe6A==
+"@electron/typescript-definitions@^8.14.5":
+  version "8.14.5"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.5.tgz#07ffc7dac6008e0f659215e3b88bc0d7c6bc6ece"
+  integrity sha512-68JfMTcj6X7B0dhjhj8lGGnnOlfuiR4f+2UBEtQDYRHfeSuFriKErno3Lh+jAolGSqhw39qr4lLO+FGToVdCew==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"

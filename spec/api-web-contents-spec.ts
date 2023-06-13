@@ -1976,24 +1976,26 @@ describe('webContents module', () => {
       expect(data).to.be.an.instanceof(Buffer).that.is.not.empty();
     });
 
+    type PageSizeString = Exclude<Required<Electron.PrintToPDFOptions>['pageSize'], Electron.Size>;
+
     it('with custom page sizes', async () => {
-      const paperFormats: Record<string, ElectronInternal.PageSize> = {
-        letter: { width: 8.5, height: 11 },
-        legal: { width: 8.5, height: 14 },
-        tabloid: { width: 11, height: 17 },
-        ledger: { width: 17, height: 11 },
-        a0: { width: 33.1, height: 46.8 },
-        a1: { width: 23.4, height: 33.1 },
-        a2: { width: 16.54, height: 23.4 },
-        a3: { width: 11.7, height: 16.54 },
-        a4: { width: 8.27, height: 11.7 },
-        a5: { width: 5.83, height: 8.27 },
-        a6: { width: 4.13, height: 5.83 }
+      const paperFormats: Record<PageSizeString, ElectronInternal.PageSize> = {
+        Letter: { width: 8.5, height: 11 },
+        Legal: { width: 8.5, height: 14 },
+        Tabloid: { width: 11, height: 17 },
+        Ledger: { width: 17, height: 11 },
+        A0: { width: 33.1, height: 46.8 },
+        A1: { width: 23.4, height: 33.1 },
+        A2: { width: 16.54, height: 23.4 },
+        A3: { width: 11.7, height: 16.54 },
+        A4: { width: 8.27, height: 11.7 },
+        A5: { width: 5.83, height: 8.27 },
+        A6: { width: 4.13, height: 5.83 }
       };
 
       await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
 
-      for (const format of Object.keys(paperFormats)) {
+      for (const format of Object.keys(paperFormats) as PageSizeString[]) {
         const data = await w.webContents.printToPDF({ pageSize: format });
 
         const doc = await pdfjs.getDocument(data).promise;
