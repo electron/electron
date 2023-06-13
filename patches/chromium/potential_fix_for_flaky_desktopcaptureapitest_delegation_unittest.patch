@@ -1,0 +1,25 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: henrika <henrika@chromium.org>
+Date: Thu, 22 Jun 2023 18:32:32 +0000
+Subject: Potential fix for flaky DesktopCaptureApiTest.Delegation unittest
+
+Bug: 1457052
+Change-Id: I0b53347eafb60106a250d4fa1ca74a3c6862822e
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4632824
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Commit-Queue: Henrik Andreasson <henrika@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1161343}
+
+diff --git a/content/browser/media/capture/desktop_capture_device.cc b/content/browser/media/capture/desktop_capture_device.cc
+index ef10371aa95ce930956975171077cccb6567e614..27687ee9f362c708af3e45d61effb20cebb413ae 100644
+--- a/content/browser/media/capture/desktop_capture_device.cc
++++ b/content/browser/media/capture/desktop_capture_device.cc
+@@ -159,7 +159,7 @@ class ScopedHighResolutionTimer {
+   }
+ 
+  private:
+-  bool enabled_;
++  bool enabled_ = false;
+ #endif
+ };
+ 
