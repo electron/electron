@@ -10,6 +10,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/no_destructor.h"
 #include "gin/handle.h"
@@ -561,62 +562,46 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     request->trusted_params->has_user_activation = has_user_activation;
   }
 
-  std::string mode;
-  if (opts.Get("mode", &mode) && !mode.empty()) {
-    if (mode == "navigate") {
-      request->mode = network::mojom::RequestMode::kNavigate;
-    } else if (mode == "cors") {
-      request->mode = network::mojom::RequestMode::kCors;
-    } else if (mode == "no-cors") {
-      request->mode = network::mojom::RequestMode::kNoCors;
-    } else if (mode == "same-origin") {
-      request->mode = network::mojom::RequestMode::kSameOrigin;
-    }
+  if (std::string mode; opts.Get("mode", &mode)) {
+    using Val = network::mojom::RequestMode;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"cors", Val::kCors},
+            {"navigate", Val::kNavigate},
+            {"no-cors", Val::kNoCors},
+            {"same-origin", Val::kSameOrigin},
+        });
+    if (auto* iter = Lookup.find(mode); iter != Lookup.end())
+      request->mode = iter->second;
   }
 
-  std::string destination;
-  if (opts.Get("destination", &destination) && !destination.empty()) {
-    if (destination == "empty") {
-      request->destination = network::mojom::RequestDestination::kEmpty;
-    } else if (destination == "audio") {
-      request->destination = network::mojom::RequestDestination::kAudio;
-    } else if (destination == "audioworklet") {
-      request->destination = network::mojom::RequestDestination::kAudioWorklet;
-    } else if (destination == "document") {
-      request->destination = network::mojom::RequestDestination::kDocument;
-    } else if (destination == "embed") {
-      request->destination = network::mojom::RequestDestination::kEmbed;
-    } else if (destination == "font") {
-      request->destination = network::mojom::RequestDestination::kFont;
-    } else if (destination == "frame") {
-      request->destination = network::mojom::RequestDestination::kFrame;
-    } else if (destination == "iframe") {
-      request->destination = network::mojom::RequestDestination::kIframe;
-    } else if (destination == "image") {
-      request->destination = network::mojom::RequestDestination::kImage;
-    } else if (destination == "manifest") {
-      request->destination = network::mojom::RequestDestination::kManifest;
-    } else if (destination == "object") {
-      request->destination = network::mojom::RequestDestination::kObject;
-    } else if (destination == "paintworklet") {
-      request->destination = network::mojom::RequestDestination::kPaintWorklet;
-    } else if (destination == "report") {
-      request->destination = network::mojom::RequestDestination::kReport;
-    } else if (destination == "script") {
-      request->destination = network::mojom::RequestDestination::kScript;
-    } else if (destination == "serviceworker") {
-      request->destination = network::mojom::RequestDestination::kServiceWorker;
-    } else if (destination == "style") {
-      request->destination = network::mojom::RequestDestination::kStyle;
-    } else if (destination == "track") {
-      request->destination = network::mojom::RequestDestination::kTrack;
-    } else if (destination == "video") {
-      request->destination = network::mojom::RequestDestination::kVideo;
-    } else if (destination == "worker") {
-      request->destination = network::mojom::RequestDestination::kWorker;
-    } else if (destination == "xslt") {
-      request->destination = network::mojom::RequestDestination::kXslt;
-    }
+  if (std::string destination; opts.Get("destination", &destination)) {
+    using Val = network::mojom::RequestDestination;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"audio", Val::kAudio},
+            {"audioworklet", Val::kAudioWorklet},
+            {"document", Val::kDocument},
+            {"embed", Val::kEmbed},
+            {"empty", Val::kEmpty},
+            {"font", Val::kFont},
+            {"frame", Val::kFrame},
+            {"iframe", Val::kIframe},
+            {"image", Val::kImage},
+            {"manifest", Val::kManifest},
+            {"object", Val::kObject},
+            {"paintworklet", Val::kPaintWorklet},
+            {"report", Val::kReport},
+            {"script", Val::kScript},
+            {"serviceworker", Val::kServiceWorker},
+            {"style", Val::kStyle},
+            {"track", Val::kTrack},
+            {"video", Val::kVideo},
+            {"worker", Val::kWorker},
+            {"xslt", Val::kXslt},
+        });
+    if (auto* iter = Lookup.find(destination); iter != Lookup.end())
+      request->destination = iter->second;
   }
 
   bool credentials_specified =
