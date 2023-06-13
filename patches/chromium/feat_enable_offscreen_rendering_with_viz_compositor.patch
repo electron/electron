@@ -59,10 +59,10 @@ index 5eeaadec9773f4890d9f8cccba1d50f645045b74..d7eb61a67c507ff8bd9e60878a9f5bbf
  // of lacros-chrome is complete.
  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS_LACROS)
 diff --git a/components/viz/host/layered_window_updater_impl.cc b/components/viz/host/layered_window_updater_impl.cc
-index 271486b45dcc87b52b3fd8a8f248b08a4918c97e..9de13bd8ea5f2efe5d0f23ab045fe0aba226cf5d 100644
+index 8f726bde2cb5da6acfe630006af0fc3a09811d6c..45d8cae3ba0fca9a1514f83032a10c8820b3126d 100644
 --- a/components/viz/host/layered_window_updater_impl.cc
 +++ b/components/viz/host/layered_window_updater_impl.cc
-@@ -44,7 +44,9 @@ void LayeredWindowUpdaterImpl::OnAllocatedSharedMemory(
+@@ -46,7 +46,9 @@ void LayeredWindowUpdaterImpl::OnAllocatedSharedMemory(
    // |region|'s handle will close when it goes out of scope.
  }
  
@@ -87,7 +87,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 5583233391b2133acd30d76ce4c3c5d87e0ffbc8..9551e3ea2e5f3de9bff158fc0f443df69a27f93a 100644
+index 5c86cab93c22d54648e70d56db850a0a939403b4..4793d5bc9de9a3a158f90e0432c32c4818bcef2e 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -141,6 +141,8 @@ viz_component("service") {
@@ -231,10 +231,10 @@ index e12c1d87018a86d763f59e5ac62058cf815fce3a..01f8023811b49797674a0de6e32c358d
  
 diff --git a/components/viz/service/display_embedder/software_output_device_proxy.cc b/components/viz/service/display_embedder/software_output_device_proxy.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..28766c6a228d243065e363838a28b38ac2448332
+index 0000000000000000000000000000000000000000..25c427e337a1bc049cd6977a13c4113085dc9401
 --- /dev/null
 +++ b/components/viz/service/display_embedder/software_output_device_proxy.cc
-@@ -0,0 +1,160 @@
+@@ -0,0 +1,161 @@
 +// Copyright 2014 The Chromium Authors. All rights reserved.
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -331,8 +331,9 @@ index 0000000000000000000000000000000000000000..28766c6a228d243065e363838a28b38a
 +  canvas_.reset();
 +
 +  size_t required_bytes;
-+  if (!ResourceSizes::MaybeSizeInBytes(
-+          viewport_pixel_size_, ResourceFormat::RGBA_8888, &required_bytes)) {
++  if (!ResourceSizes::MaybeSizeInBytes(viewport_pixel_size_,
++                                       SinglePlaneFormat::kRGBA_8888,
++                                       &required_bytes)) {
 +    DLOG(ERROR) << "Invalid viewport size " << viewport_pixel_size_.ToString();
 +    return;
 +  }
@@ -500,10 +501,10 @@ index 0000000000000000000000000000000000000000..e1a22ee881c0fd679ac2d2d4d11a3c93
 +
 +#endif  // COMPONENTS_VIZ_SERVICE_DISPLAY_EMBEDDER_SOFTWARE_OUTPUT_DEVICE_PROXY_H_
 diff --git a/components/viz/service/display_embedder/software_output_device_win.cc b/components/viz/service/display_embedder/software_output_device_win.cc
-index d4d4c1444e7a169d154bb9062f09f2270e7e9734..01943e14de567afd7b14f6a92eec651df185e1bb 100644
+index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf2a707ac8 100644
 --- a/components/viz/service/display_embedder/software_output_device_win.cc
 +++ b/components/viz/service/display_embedder/software_output_device_win.cc
-@@ -192,7 +192,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
+@@ -193,7 +193,7 @@ void SoftwareOutputDeviceWinProxy::EndPaintDelegated(
    if (!canvas_)
      return;
  
@@ -555,10 +556,10 @@ index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8
  
  }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index ea2888e6e6ce03dd1918a6183960d5809a15b59c..68c628ecbe2f596c93b6ac0d6b1c68cbb6b0a508 100644
+index c86f1e090cb844fb555098d128391ae66de2d594..1f20ff61a66f9a269fe5d5257470ef99e11fa72c 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -401,8 +401,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -395,8 +395,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();

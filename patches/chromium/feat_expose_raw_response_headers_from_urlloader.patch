@@ -49,10 +49,10 @@ index 185c4ba2dad840a35dd06ab874c8e2b2f5c1730c..9b3107a616d68d02065470a3b8e517b1
      mojo::PendingRemote<mojom::TrustTokenAccessObserver> trust_token_observer;
      mojo::PendingRemote<mojom::URLLoaderNetworkServiceObserver>
 diff --git a/services/network/public/cpp/url_request_mojom_traits.cc b/services/network/public/cpp/url_request_mojom_traits.cc
-index 5c5632b9563f748f8dfbf1395c06d6692d57be10..aac7abb6613277c27bc4e83202094660f943a80b 100644
+index b60c907a5ab72a618c7675844626f425a045af68..53f5e2535db83c68bb808571619da22adea7ba4e 100644
 --- a/services/network/public/cpp/url_request_mojom_traits.cc
 +++ b/services/network/public/cpp/url_request_mojom_traits.cc
-@@ -88,6 +88,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
+@@ -93,6 +93,7 @@ bool StructTraits<network::mojom::TrustedUrlRequestParamsDataView,
    out->disable_secure_dns = data.disable_secure_dns();
    out->has_user_activation = data.has_user_activation();
    out->allow_cookies_from_browser = data.allow_cookies_from_browser();
@@ -76,10 +76,10 @@ index 549b0da0d4790e0ced3048e7167fe1a74ab3f78a..71bc5c45d4f2ecf0abb7f6045bd9945e
    cookie_observer(
        const network::ResourceRequest::TrustedParams& trusted_params) {
 diff --git a/services/network/public/mojom/url_request.mojom b/services/network/public/mojom/url_request.mojom
-index 237e3fbfc9aec50dd74bd6a0e1235d2b50ad9fcd..3c81dda1ea478696790b3b4a2a3b7e59acaf70c3 100644
+index fa378b77ccfe9de4e4152352705e7bb1c9fcabee..b7687fed1cb3a9db028f19913c34696e28e23ff3 100644
 --- a/services/network/public/mojom/url_request.mojom
 +++ b/services/network/public/mojom/url_request.mojom
-@@ -72,6 +72,9 @@ struct TrustedUrlRequestParams {
+@@ -73,6 +73,9 @@ struct TrustedUrlRequestParams {
    // FollowRedirect().
    bool allow_cookies_from_browser;
  
