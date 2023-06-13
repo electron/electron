@@ -14,10 +14,15 @@ namespace api {
 
 namespace blink_utils {
 
-std::string GetPathForFile(gin::Arguments* args, v8::Local<v8::Value> file) {
+std::string GetPathForFile(gin_helper::Arguments* args,
+                           v8::Local<v8::Value> file) {
   blink::WebBlob blob = blink::WebBlob::FromV8Value(file);
-  if (blob.IsNull())
+  if (blob.IsNull()) {
+    args->ThrowError(
+        "getPathForFile expected to receive a File object but one was not "
+        "provided");
     return "";
+  }
   return blob.Path();
 }
 
