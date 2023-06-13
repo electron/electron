@@ -6,14 +6,13 @@
 
 #include <algorithm>
 #include <memory>
-#include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "base/base_paths.h"
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_set.h"
 #include "base/environment.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
@@ -231,32 +230,39 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   }
 }
 
-const std::unordered_set<base::StringPiece, base::StringPieceHash>
-GetAllowedDebugOptions() {
-  if (electron::fuses::IsNodeCliInspectEnabled()) {
-    // Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode
-    return {
-        "--inspect",          "--inspect-brk",
-        "--inspect-port",     "--debug",
-        "--debug-brk",        "--debug-port",
-        "--inspect-brk-node", "--inspect-publish-uid",
-    };
-  }
-  // If node CLI inspect support is disabled, allow no debug options.
-  return {};
+// Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode.
+// If node CLI inspect support is disabled, allow no debug options.
+bool IsAllowedDebugOption(base::StringPiece option) {
+  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
+      "--debug",
+      "--debug-brk",
+      "--debug-port",
+      "--inspect",
+      "--inspect-brk",
+      "--inspect-brk-node",
+      "--inspect-port",
+      "--inspect-publish-uid",
+  });
+
+  return electron::fuses::IsNodeCliInspectEnabled() && options.contains(option);
 }
 
 // Initialize NODE_OPTIONS to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
-  const std::set<std::string> disallowed = {
-      "--openssl-config", "--use-bundled-ca", "--use-openssl-ca",
-      "--force-fips", "--enable-fips"};
+  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
+      "--enable-fips",
+      "--force-fips",
+      "--openssl-config",
+      "--use-bundled-ca",
+      "--use-openssl-ca",
+  });
 
-  // Subset of options allowed in packaged apps
-  const std::set<std::string> allowed_in_packaged = {"--max-http-header-size",
-                                                     "--http-parser"};
+  static constexpr auto pkg_opts = base::MakeFixedFlatSet<base::StringPiece>({
+      "--http-parser",
+      "--max-http-header-size",
+  });
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
@@ -271,13 +277,12 @@ void SetNodeOptions(base::Environment* env) {
         // Strip off values passed to individual NODE_OPTIONs
         std::string option = part.substr(0, part.find('='));
 
-        if (is_packaged_app &&
-            allowed_in_packaged.find(option) == allowed_in_packaged.end()) {
+        if (is_packaged_app && !pkg_opts.contains(option)) {
           // Explicitly disallow majority of NODE_OPTIONS in packaged apps
           LOG(ERROR) << "Most NODE_OPTIONs are not supported in packaged apps."
                      << " See documentation for more details.";
           options.erase(options.find(option), part.length());
-        } else if (disallowed.find(option) != disallowed.end()) {
+        } else if (disallowed.contains(option)) {
           // Remove NODE_OPTIONS specifically disallowed for use in Node.js
           // through Electron owing to constraints like BoringSSL.
           LOG(ERROR) << "The NODE_OPTION " << option
@@ -375,9 +380,6 @@ bool NodeBindings::IsInitialized() {
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
 void NodeBindings::SetNodeCliFlags() {
-  const std::unordered_set<base::StringPiece, base::StringPieceHash> allowed =
-      GetAllowedDebugOptions();
-
   const auto argv = base::CommandLine::ForCurrentProcess()->argv();
   std::vector<std::string> args;
 
@@ -396,7 +398,7 @@ void NodeBindings::SetNodeCliFlags() {
     const auto stripped = base::StringPiece(option).substr(0, option.find('='));
 
     // Only allow in no-op (--) option or DebugOptions
-    if (allowed.count(stripped) != 0 || stripped == "--")
+    if (IsAllowedDebugOption(stripped) || stripped == "--")
       args.push_back(option);
   }
 
