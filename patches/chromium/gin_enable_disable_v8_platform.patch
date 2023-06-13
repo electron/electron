@@ -38,10 +38,10 @@ index 10caab6d9ef3345332c163a55dcef991248ab4ea..c9bc6e5dd7e1cf8d198afcd21cbb2497
    // Returns whether `Initialize` has already been invoked in the process.
    // Initialization is a one-way operation (i.e., this method cannot return
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index ba3ab6adff0db46c8a1fca2e1bf3b3cb4a41fbdd..0d56182a284b91e7bf5749dbf0796cbe705d2c1f 100644
+index 39185f759db0398c36dbdc140eb27644516f6bcd..5d97de5f7072054fdd57f0240c6faf0865013f3f 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -402,7 +402,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
+@@ -414,7 +414,8 @@ void SetFlags(IsolateHolder::ScriptMode mode,
  // static
  void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
                                 const std::string js_command_line_flags,
@@ -51,7 +51,7 @@ index ba3ab6adff0db46c8a1fca2e1bf3b3cb4a41fbdd..0d56182a284b91e7bf5749dbf0796cbe
    static bool v8_is_initialized = false;
    if (v8_is_initialized)
      return;
-@@ -412,7 +413,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
+@@ -424,7 +425,8 @@ void V8Initializer::Initialize(IsolateHolder::ScriptMode mode,
    // See https://crbug.com/v8/11043
    SetFlags(mode, js_command_line_flags);
  

@@ -14,10 +14,10 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2ee3295d68 100644
+index 32837d4ef4fddecf510c8681bc9bdb65f06cdbe6..6eac43311d31a5c71e07b74c8a9fbbbf46466eeb 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
-@@ -189,6 +189,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
+@@ -193,6 +193,13 @@ MacDeviceManagementStateNew IsDeviceRegisteredWithManagementNew() {
  DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
    static DeviceUserDomainJoinState state = [] {
      DeviceUserDomainJoinState state{false, false};
@@ -31,7 +31,7 @@ index 91a65a1e700cf1accb8e4541e0ceca4e0a734b16..323b9b48214aa013ad8f7da2f63cca2e
  
      @autoreleasepool {
        ODSession* session = [ODSession defaultSession];
-@@ -295,5 +302,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+@@ -299,5 +306,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
  
    return state;
  }

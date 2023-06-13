@@ -39,7 +39,7 @@ index e7e710d58e2bdf1f0bc042f479add048f3aa1ffb..dc0d69a726f389e4925001fc2c817fe0
      dbus::MethodCall* method_call,
      dbus::ExportedObject::ResponseSender sender) {
 diff --git a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
-index 1b0ffb4b1582f63bb13800f2f03bb4506988e8ff..b4498415faa5ecb1dc9e058fedde4dc03a300250 100644
+index 2c0df96d2840e6198604041fe1e1b63c89251208..09df6bb9fab6cffbab6302a04b7343b75568cdc3 100644
 --- a/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 +++ b/chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h
 @@ -71,10 +71,16 @@ class StatusIconLinuxDbus : public ui::StatusIconLinux,
