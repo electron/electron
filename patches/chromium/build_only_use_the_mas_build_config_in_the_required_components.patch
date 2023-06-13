@@ -128,10 +128,10 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d9582e58824c2ce611d122d3fab41317781f42e8..08e62f4bc01c39f7836e33eadf54ec74d1837cef 100644
+index 6709d1b96a1a92142f257911eaf546aa4954e935..e9d5318bceb63fe91811f4e04570bfc0efa23760 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -476,6 +476,7 @@ static_library("test_support") {
+@@ -477,6 +477,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -255,10 +255,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index c5d437134a3bd9e2f4213b6e132e7f9be85cba13..013c80d0d502b866117f34c3255b8a53928410e8 100644
+index cb282e3a526fb724b25c0d4c6a2af3da30ee0a20..d4275f68211f5a0cddfd2bcbc0f620e8f8b6c7aa 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -253,6 +253,7 @@ component("platform") {
+@@ -247,6 +247,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
