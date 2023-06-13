@@ -1,0 +1,62 @@
+From e79cb3d91b533f38c642bbe5906657d19349119a Mon Sep 17 00:00:00 2001
+From: Tony Herre <toprice@chromium.org>
+Date: Wed, 17 May 2023 08:39:29 +0000
+Subject: [PATCH] Revert "Ignore kIOReturnExclusiveAccess when opening USB interface on macOS 12+"
+
+This reverts commit c00563c557bacf0ced5baf646e7da3a5e1729027.
+
+Reason for revert: Suspected to be breaking some external cameras (internal ref b/278279304)
+
+Revert very largely rewritten due to a large refactoring which came inbetween in crrev.com/c/4255407. This reverts the core part - if USBInterfaceOpen() returns kIOReturnExclusiveAccess on MacOS 12+, we will now go back to returning early.
+
+
+
+Original change's description:
+> Ignore kIOReturnExclusiveAccess when opening USB interface on macOS 12+
+>
+> This CL ignores kIOReturnExclusiveAccess result from USBInterfaceOpen
+> when controlling pan/tilt/zoom and setting appropriate Power Line
+> frequency for flicker removal. It does so because on macOS 12+, VDCAssistant takes ownership of USB device which makes it so
+> kIOReturnSuccess is now returned when opening USB interface.
+>
+> Test: https://ptz.glitch.me
+>
+> Bug: 1270335
+> Change-Id: I6162c321a92c2aaa5f0f1cc79271b635e23ab5f5
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4247745
+> Reviewed-by: Markus Handell <handellm@google.com>
+> Commit-Queue: Markus Handell <handellm@google.com>
+> Commit-Queue: Fr <beaufort.francois@gmail.com>
+> Cr-Commit-Position: refs/heads/main@{#1105555}
+
+Bug: 1270335, 1432129
+Change-Id: I39e0a7ffd74148b8d29bcd726c972e37911a4ef2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4542980
+Reviewed-by: Markus Handell <handellm@google.com>
+Commit-Queue: Tony Herre <toprice@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1145199}
+---
+
+diff --git a/media/capture/video/mac/uvc_control_mac.mm b/media/capture/video/mac/uvc_control_mac.mm
+index cf1d9f24..1012bcf 100644
+--- a/media/capture/video/mac/uvc_control_mac.mm
++++ b/media/capture/video/mac/uvc_control_mac.mm
+@@ -294,12 +294,12 @@
+   IOReturn ret = (*control_interface)->USBInterfaceOpen(control_interface);
+   if (ret != kIOReturnSuccess) {
+     VLOG(1) << "Unable to open control interface";
+-    // On macOS 12+, VDCAssistant takes ownership of USB devices. So, we should
+-    // not bail out if kIOReturnExclusiveAccess is returned from
+-    // USBInterfaceOpen().
+-    if (!(base::mac::IsAtLeastOS12() && ret == kIOReturnExclusiveAccess)) {
+-      return ScopedIOUSBInterfaceInterface();
+-    }
++
++    // Temporary additional debug logging for crbug.com/1270335
++    VLOG_IF(1, base::mac::IsAtLeastOS12() && ret == kIOReturnExclusiveAccess)
++        << "Camera USBInterfaceOpen failed with "
++        << "kIOReturnExclusiveAccess";
++    return ScopedIOUSBInterfaceInterface();
+   }
+   return control_interface;
+ }
