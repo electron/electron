@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 13 Jun 2023 15:36:04 -0700
+Subject: expose WebBlob::Path to allow embedders to get file paths
+
+Used to replace the File.path augmentation Electron currently implements.  This is safer / more web-standard technique.
+
+diff --git a/third_party/blink/public/web/web_blob.h b/third_party/blink/public/web/web_blob.h
+index 0ca4d5f019a5a1c0a900d5fe6aba1e119e68495a..e1a14008fdd4d1ea789daf273994cb3e3f4e6f28 100644
+--- a/third_party/blink/public/web/web_blob.h
++++ b/third_party/blink/public/web/web_blob.h
+@@ -66,6 +66,7 @@ class BLINK_EXPORT WebBlob {
+   void Reset();
+   void Assign(const WebBlob&);
+   WebString Uuid();
++  std::string Path();
+ 
+   bool IsNull() const { return private_.IsNull(); }
+ 
+diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
+index a52910c2e47a8e1d4dd88c2576d33c200dd3486c..cc9afc2ec388128d8ac3456d5a191b617b385f05 100644
+--- a/third_party/blink/renderer/core/exported/web_blob.cc
++++ b/third_party/blink/renderer/core/exported/web_blob.cc
+@@ -38,6 +38,7 @@
+ #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h"
+ #include "third_party/blink/renderer/bindings/core/v8/v8_blob.h"
+ #include "third_party/blink/renderer/core/fileapi/blob.h"
++#include "third_party/blink/renderer/core/fileapi/file.h"
+ #include "third_party/blink/renderer/platform/blob/blob_data.h"
+ #include "third_party/blink/renderer/platform/file_metadata.h"
+ #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
+@@ -78,6 +79,14 @@ WebString WebBlob::Uuid() {
+   return private_->Uuid();
+ }
+ 
++std::string WebBlob::Path() {
++  if (!private_.Get())
++    return "";
++  if (private_->IsFile() && private_->HasBackingFile())
++    return To<File>(private_.Get())->GetPath().Utf8();
++  return "";
++}
++
+ v8::Local<v8::Value> WebBlob::ToV8Value(v8::Isolate* isolate) {
+   if (!private_.Get())
+     return v8::Local<v8::Value>();
