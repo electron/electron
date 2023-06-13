@@ -43,10 +43,10 @@ index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
+index 3bc799978ea24e2f6e566dcc7f8638789e18d61d..8f05d17943ed071061ce377292ccc4acf4183dd9 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
-@@ -16,6 +16,7 @@ component("app_shim") {
+@@ -56,6 +56,7 @@ component("app_shim") {
    assert(is_mac)
  
    configs += [ ":app_shim_warnings" ]
