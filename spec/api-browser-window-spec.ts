@@ -15,7 +15,6 @@ import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib
 import { once } from 'events';
 import { setTimeout } from 'timers/promises';
 
-const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
 
@@ -6071,7 +6070,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
+  describe('offscreen rendering', () => {
     let w: BrowserWindow;
     beforeEach(function () {
       w = new BrowserWindow({

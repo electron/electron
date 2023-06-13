@@ -83,7 +83,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
-#if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
   gin_helper::Dictionary web_preferences;
   bool offscreen;
@@ -91,7 +90,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
       web_preferences.Get(options::kOffscreen, &offscreen) && offscreen) {
     const_cast<gin_helper::Dictionary&>(options).Set(options::kFrame, false);
   }
-#endif
 
   // Creates NativeWindow.
   window_.reset(NativeWindow::Create(

@@ -91,11 +91,8 @@ class WebViewGuestDelegate;
 class FrameSubscriber;
 class WebDialogHelper;
 class NativeWindow;
-
-#if BUILDFLAG(ENABLE_OSR)
 class OffScreenRenderWidgetHostView;
 class OffScreenWebContentsView;
-#endif
 
 namespace api {
 
@@ -285,14 +282,12 @@ class WebContents : public ExclusiveAccessContext,
 
   // Methods for offscreen rendering
   bool IsOffScreen() const;
-#if BUILDFLAG(ENABLE_OSR)
   void OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap);
   void StartPainting();
   void StopPainting();
   bool IsPainting() const;
   void SetFrameRate(int frame_rate);
   int GetFrameRate() const;
-#endif
   void Invalidate();
   gfx::Size GetSizeForNewRenderView(content::WebContents*) override;
 
@@ -653,10 +648,8 @@ class WebContents : public ExclusiveAccessContext,
 
   void OnElectronBrowserConnectionError();
 
-#if BUILDFLAG(ENABLE_OSR)
   OffScreenWebContentsView* GetOffScreenWebContentsView() const;
   OffScreenRenderWidgetHostView* GetOffScreenRenderWidgetHostView() const;
-#endif
 
   // Called when received a synchronous message from renderer to
   // get the zoom level.
