@@ -235,6 +235,8 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   }
 }
 
+// Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode.
+// If node CLI inspect support is disabled, allow no debug options.
 bool IsAllowedDebugOption(base::StringPiece option) {
   static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
       "--debug",
