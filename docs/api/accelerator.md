@@ -55,7 +55,7 @@ The `Super` (or `Meta`) key is mapped to the `Windows` key on Windows and Linux 
 * `0` to `9`
 * `A` to `Z`
 * `F1` to `F24`
-* Punctuation like `~`, `!`, `@`, `#`, `$`, etc.
+* Various Punctuation: `)`, `!`, `@`, `#`, `$`, `%`, `^`, `&`, `*`, `(`, `:`, `;`, `:`, `+`, `=`, `<`, `,`, `_`, `-`, `>`, `.`, `?`, `/`, `~`, `` ` ``, `{`, `]`, `[`, `|`, `\`, `}`, `"`
 * `Plus`
 * `Space`
 * `Tab`

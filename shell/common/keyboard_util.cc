@@ -207,7 +207,6 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
       return ui::VKEY_Y;
     case 'z':
       return ui::VKEY_Z;
-
     case ')':
       *shifted = true;
       [[fallthrough]];
@@ -258,7 +257,6 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
       [[fallthrough]];
     case '9':
       return ui::VKEY_9;
-
     case ':':
       *shifted = true;
       [[fallthrough]];
@@ -314,7 +312,6 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
       [[fallthrough]];
     case '\'':
       return ui::VKEY_OEM_7;
-
     default:
       return ui::VKEY_UNKNOWN;
   }
