@@ -110,7 +110,7 @@ export function removeProperty<T, K extends (keyof T & string)>(object: T, remov
 }
 
 // change the name of a property
-export function renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T {
+export function renameProperty<T extends Object, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T {
   const warn = warnOnce(oldName, newName);
 
   // if the new property isn't there yet,
