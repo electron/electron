@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_service_worker_context.h"
 
-#include <string>
 #include <utility>
 
 #include "chrome/browser/browser_process.h"

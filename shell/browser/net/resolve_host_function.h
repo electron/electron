@@ -5,9 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_NET_RESOLVE_HOST_FUNCTION_H_
 #define ELECTRON_SHELL_BROWSER_NET_RESOLVE_HOST_FUNCTION_H_
 
-#include <deque>
 #include <string>
-#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"

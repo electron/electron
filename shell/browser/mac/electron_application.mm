@@ -4,7 +4,6 @@
 
 #import "shell/browser/mac/electron_application.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 

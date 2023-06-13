@@ -5,9 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_VIEWS_H_
 #define ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_VIEWS_H_
 
-#include <memory>
-#include <vector>
-
 #include "shell/browser/native_browser_view.h"
 
 namespace electron {

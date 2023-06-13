@@ -10,7 +10,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/views/root_view.h"
