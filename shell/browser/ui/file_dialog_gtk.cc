@@ -165,7 +165,7 @@ class FileChooserDialog {
   }
 
   void RunAsynchronous() {
-    g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
+    g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponse),
                      this);
     if (electron::IsElectron_gtkInitialized()) {
       gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog_));
