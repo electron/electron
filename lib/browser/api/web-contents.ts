@@ -317,7 +317,7 @@ WebContents.prototype.printToPDF = async function (options) {
 
   if (options.preferCSSPageSize !== undefined) {
     if (typeof options.preferCSSPageSize !== 'boolean') {
-      return Promise.reject(new Error('footerTemplate must be a String'));
+      return Promise.reject(new Error('preferCSSPageSize must be a Boolean'));
     }
     printSettings.preferCSSPageSize = options.preferCSSPageSize;
   }
