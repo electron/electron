@@ -1220,64 +1220,69 @@ describe('asar package', function () {
       });
     });
 
-    describe('child_process.fork', function () {
-      itremote('opens a normal js file', async function () {
-        const child = require('child_process').fork(path.join(asarDir, 'a.asar', 'ping.js'));
-        child.send('message');
-        const msg = await new Promise(resolve => child.once('message', resolve));
-        expect(msg).to.equal('message');
+    function generateSpecs (childProcess: string) {
+      describe(`${childProcess}.fork`, function () {
+        itremote('opens a normal js file', async function (childProcess: string) {
+          const child = require(childProcess).fork(path.join(asarDir, 'a.asar', 'ping.js'));
+          child.send('message');
+          const msg = await new Promise(resolve => child.once('message', resolve));
+          expect(msg).to.equal('message');
+        }, [childProcess]);
+
+        itremote('supports asar in the forked js', async function (childProcess: string, fixtures: string) {
+          const file = path.join(asarDir, 'a.asar', 'file1');
+          const child = require(childProcess).fork(path.join(fixtures, 'module', 'asar.js'));
+          child.send(file);
+          const content = await new Promise(resolve => child.once('message', resolve));
+          expect(content).to.equal(fs.readFileSync(file).toString());
+        }, [childProcess, fixtures]);
       });
 
-      itremote('supports asar in the forked js', async function (fixtures: string) {
-        const file = path.join(asarDir, 'a.asar', 'file1');
-        const child = require('child_process').fork(path.join(fixtures, 'module', 'asar.js'));
-        child.send(file);
-        const content = await new Promise(resolve => child.once('message', resolve));
-        expect(content).to.equal(fs.readFileSync(file).toString());
-      }, [fixtures]);
-    });
+      describe(`${childProcess}.exec`, function () {
+        itremote('should not try to extract the command if there is a reference to a file inside an .asar', async function (childProcess: string) {
+          const echo = path.join(asarDir, 'echo.asar', 'echo');
 
-    describe('child_process.exec', function () {
-      itremote('should not try to extract the command if there is a reference to a file inside an .asar', async function () {
-        const echo = path.join(asarDir, 'echo.asar', 'echo');
-
-        const stdout = await promisify(require('child_process').exec)('echo ' + echo + ' foo bar');
-        expect(stdout.toString().replace(/\r/g, '')).to.equal(echo + ' foo bar\n');
-      });
-    });
-
-    describe('child_process.execSync', function () {
-      itremote('should not try to extract the command if there is a reference to a file inside an .asar', async function () {
-        const echo = path.join(asarDir, 'echo.asar', 'echo');
-
-        const stdout = require('child_process').execSync('echo ' + echo + ' foo bar');
-        expect(stdout.toString().replace(/\r/g, '')).to.equal(echo + ' foo bar\n');
-      });
-    });
-
-    ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')('child_process.execFile', function () {
-      itremote('executes binaries', async function () {
-        const echo = path.join(asarDir, 'echo.asar', 'echo');
-        const stdout = await promisify(require('child_process').execFile)(echo, ['test']);
-        expect(stdout).to.equal('test\n');
+          const stdout = await promisify(require(childProcess).exec)('echo ' + echo + ' foo bar');
+          expect(stdout.toString().replace(/\r/g, '')).to.equal(echo + ' foo bar\n');
+        }, [childProcess]);
       });
 
-      itremote('executes binaries without callback', async function () {
-        const echo = path.join(asarDir, 'echo.asar', 'echo');
-        const process = require('child_process').execFile(echo, ['test']);
-        const code = await new Promise(resolve => process.once('close', resolve));
-        expect(code).to.equal(0);
-        process.on('error', function () {
-          throw new Error('error');
-        });
+      describe(`${childProcess}.execSync`, function () {
+        itremote('should not try to extract the command if there is a reference to a file inside an .asar', async function (childProcess: string) {
+          const echo = path.join(asarDir, 'echo.asar', 'echo');
+
+          const stdout = require(childProcess).execSync('echo ' + echo + ' foo bar');
+          expect(stdout.toString().replace(/\r/g, '')).to.equal(echo + ' foo bar\n');
+        }, [childProcess]);
       });
 
-      itremote('execFileSync executes binaries', function () {
-        const echo = path.join(asarDir, 'echo.asar', 'echo');
-        const output = require('child_process').execFileSync(echo, ['test']);
-        expect(String(output)).to.equal('test\n');
+      ifdescribe(process.platform === 'darwin' && process.arch !== 'arm64')(`${childProcess}.execFile`, function () {
+        itremote('executes binaries', async function (childProcess: string) {
+          const echo = path.join(asarDir, 'echo.asar', 'echo');
+          const stdout = await promisify(require(childProcess).execFile)(echo, ['test']);
+          expect(stdout).to.equal('test\n');
+        }, [childProcess]);
+
+        itremote('executes binaries without callback', async function (childProcess: string) {
+          const echo = path.join(asarDir, 'echo.asar', 'echo');
+          const process = require(childProcess).execFile(echo, ['test']);
+          const code = await new Promise(resolve => process.once('close', resolve));
+          expect(code).to.equal(0);
+          process.on('error', function () {
+            throw new Error('error');
+          });
+        }, [childProcess]);
+
+        itremote('execFileSync executes binaries', function (childProcess: string) {
+          const echo = path.join(asarDir, 'echo.asar', 'echo');
+          const output = require(childProcess).execFileSync(echo, ['test']);
+          expect(String(output)).to.equal('test\n');
+        }, [childProcess]);
       });
-    });
+    }
+
+    generateSpecs('child_process');
+    generateSpecs('node:child_process');
 
     describe('internalModuleReadJSON', function () {
       itremote('reads a normal file', function () {
