@@ -6,10 +6,8 @@
 #define ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
 
 #include <map>
-#include <memory>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/containers/queue.h"

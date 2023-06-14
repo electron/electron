@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
-#include <vector>
 
 #include "base/compiler_specific.h"
 #include "base/memory/raw_ptr.h"

@@ -4,7 +4,6 @@
 
 #include "shell/browser/usb/usb_chooser_context.h"
 
-#include <memory>
 #include <utility>
 #include <vector>
 

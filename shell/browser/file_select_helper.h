@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_
 #define ELECTRON_SHELL_BROWSER_FILE_SELECT_HELPER_H_
 
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>

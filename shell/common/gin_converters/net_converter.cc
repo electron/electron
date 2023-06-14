@@ -4,7 +4,6 @@
 
 #include "shell/common/gin_converters/net_converter.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>

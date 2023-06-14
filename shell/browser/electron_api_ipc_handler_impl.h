@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_ELECTRON_API_IPC_HANDLER_IMPL_H_
 
 #include <string>
-#include <vector>
 
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/web_contents_observer.h"

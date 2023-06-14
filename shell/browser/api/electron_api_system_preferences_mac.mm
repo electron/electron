@@ -5,7 +5,6 @@
 #include "shell/browser/api/electron_api_system_preferences.h"
 
 #include <map>
-#include <memory>
 #include <string>
 #include <utility>
 

@@ -4,8 +4,8 @@
 
 #include "shell/common/color_util.h"
 
+#include <algorithm>
 #include <cmath>
-#include <utility>
 #include <vector>
 
 #include "base/strings/string_util.h"
