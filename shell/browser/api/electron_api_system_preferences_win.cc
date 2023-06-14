@@ -9,6 +9,7 @@
 
 #include "shell/browser/api/electron_api_system_preferences.h"
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/win/core_winrt_util.h"
 #include "base/win/windows_types.h"
 #include "base/win/wrapped_window_proc.h"
@@ -97,73 +98,45 @@ std::string SystemPreferences::GetAccentColor() {
 
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
                                         const std::string& color) {
-  int id;
-  if (color == "3d-dark-shadow") {
-    id = COLOR_3DDKSHADOW;
-  } else if (color == "3d-face") {
-    id = COLOR_3DFACE;
-  } else if (color == "3d-highlight") {
-    id = COLOR_3DHIGHLIGHT;
-  } else if (color == "3d-light") {
-    id = COLOR_3DLIGHT;
-  } else if (color == "3d-shadow") {
-    id = COLOR_3DSHADOW;
-  } else if (color == "active-border") {
-    id = COLOR_ACTIVEBORDER;
-  } else if (color == "active-caption") {
-    id = COLOR_ACTIVECAPTION;
-  } else if (color == "active-caption-gradient") {
-    id = COLOR_GRADIENTACTIVECAPTION;
-  } else if (color == "app-workspace") {
-    id = COLOR_APPWORKSPACE;
-  } else if (color == "button-text") {
-    id = COLOR_BTNTEXT;
-  } else if (color == "caption-text") {
-    id = COLOR_CAPTIONTEXT;
-  } else if (color == "desktop") {
-    id = COLOR_DESKTOP;
-  } else if (color == "disabled-text") {
-    id = COLOR_GRAYTEXT;
-  } else if (color == "highlight") {
-    id = COLOR_HIGHLIGHT;
-  } else if (color == "highlight-text") {
-    id = COLOR_HIGHLIGHTTEXT;
-  } else if (color == "hotlight") {
-    id = COLOR_HOTLIGHT;
-  } else if (color == "inactive-border") {
-    id = COLOR_INACTIVEBORDER;
-  } else if (color == "inactive-caption") {
-    id = COLOR_INACTIVECAPTION;
-  } else if (color == "inactive-caption-gradient") {
-    id = COLOR_GRADIENTINACTIVECAPTION;
-  } else if (color == "inactive-caption-text") {
-    id = COLOR_INACTIVECAPTIONTEXT;
-  } else if (color == "info-background") {
-    id = COLOR_INFOBK;
-  } else if (color == "info-text") {
-    id = COLOR_INFOTEXT;
-  } else if (color == "menu") {
-    id = COLOR_MENU;
-  } else if (color == "menu-highlight") {
-    id = COLOR_MENUHILIGHT;
-  } else if (color == "menubar") {
-    id = COLOR_MENUBAR;
-  } else if (color == "menu-text") {
-    id = COLOR_MENUTEXT;
-  } else if (color == "scrollbar") {
-    id = COLOR_SCROLLBAR;
-  } else if (color == "window") {
-    id = COLOR_WINDOW;
-  } else if (color == "window-frame") {
-    id = COLOR_WINDOWFRAME;
-  } else if (color == "window-text") {
-    id = COLOR_WINDOWTEXT;
-  } else {
-    thrower.ThrowError("Unknown color: " + color);
-    return "";
-  }
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+          {"3d-dark-shadow", COLOR_3DDKSHADOW},
+          {"3d-face", COLOR_3DFACE},
+          {"3d-highlight", COLOR_3DHIGHLIGHT},
+          {"3d-light", COLOR_3DLIGHT},
+          {"3d-shadow", COLOR_3DSHADOW},
+          {"active-border", COLOR_ACTIVEBORDER},
+          {"active-caption", COLOR_ACTIVECAPTION},
+          {"active-caption-gradient", COLOR_GRADIENTACTIVECAPTION},
+          {"app-workspace", COLOR_APPWORKSPACE},
+          {"button-text", COLOR_BTNTEXT},
+          {"caption-text", COLOR_CAPTIONTEXT},
+          {"desktop", COLOR_DESKTOP},
+          {"disabled-text", COLOR_GRAYTEXT},
+          {"highlight", COLOR_HIGHLIGHT},
+          {"highlight-text", COLOR_HIGHLIGHTTEXT},
+          {"hotlight", COLOR_HOTLIGHT},
+          {"inactive-border", COLOR_INACTIVEBORDER},
+          {"inactive-caption", COLOR_INACTIVECAPTION},
+          {"inactive-caption-gradient", COLOR_GRADIENTINACTIVECAPTION},
+          {"inactive-caption-text", COLOR_INACTIVECAPTIONTEXT},
+          {"info-background", COLOR_INFOBK},
+          {"info-text", COLOR_INFOTEXT},
+          {"menu", COLOR_MENU},
+          {"menu-highlight", COLOR_MENUHILIGHT},
+          {"menu-text", COLOR_MENUTEXT},
+          {"menubar", COLOR_MENUBAR},
+          {"scrollbar", COLOR_SCROLLBAR},
+          {"window", COLOR_WINDOW},
+          {"window-frame", COLOR_WINDOWFRAME},
+          {"window-text", COLOR_WINDOWTEXT},
+      });
 
-  return ToRGBHex(color_utils::GetSysSkColor(id));
+  if (const auto* iter = Lookup.find(color); iter != Lookup.end())
+    return ToRGBHex(color_utils::GetSysSkColor(iter->second));
+
+  thrower.ThrowError("Unknown color: " + color);
+  return "";
 }
 
 std::string SystemPreferences::GetMediaAccessStatus(
