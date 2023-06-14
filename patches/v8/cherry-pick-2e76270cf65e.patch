@@ -1,7 +1,7 @@
-From 2e76270cf65e13348f8705fc95d6a7580c6174b2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shu-yu Guo <syg@chromium.org>
-Date: Mon, 05 Jun 2023 16:05:52 -0700
-Subject: [PATCH] Merged: Check for encoding when appending in string builder
+Date: Mon, 5 Jun 2023 16:05:52 -0700
+Subject: Merged: Check for encoding when appending in string builder
 
 Fixed: chromium:1450114
 (cherry picked from commit a7e2bef27b72f187a7dcdf95714df686f56d9e0b)
@@ -12,13 +12,12 @@ Reviewed-by: Igor Sheludko <ishell@chromium.org>
 Cr-Commit-Position: refs/branch-heads/11.4@{#41}
 Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
----
 
 diff --git a/src/strings/string-builder.cc b/src/strings/string-builder.cc
-index f6871d9..30540b6 100644
+index 9d1e3a95746b47b99c15f18ec593549d79e10b8c..c7e98e55763aba2d64f4070e25759489f850f589 100644
 --- a/src/strings/string-builder.cc
 +++ b/src/strings/string-builder.cc
-@@ -317,12 +317,21 @@
+@@ -306,12 +306,21 @@ bool IncrementalStringBuilder::CanAppendByCopy(Handle<String> string) {
  void IncrementalStringBuilder::AppendStringByCopy(Handle<String> string) {
    DCHECK(CanAppendByCopy(string));
  
