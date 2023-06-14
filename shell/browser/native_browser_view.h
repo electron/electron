@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_NATIVE_BROWSER_VIEW_H_
 
-#include <vector>
-
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/web_contents.h"
 #include "content/public/browser/web_contents_observer.h"

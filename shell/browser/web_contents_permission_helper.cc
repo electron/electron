@@ -4,8 +4,6 @@
 
 #include "shell/browser/web_contents_permission_helper.h"
 
-#include <memory>
-#include <string>
 #include <utility>
 
 #include "content/public/browser/browser_context.h"

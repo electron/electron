@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_NET_CONVERTER_H_
 
-#include <string>
 #include <utility>
 #include <vector>
 

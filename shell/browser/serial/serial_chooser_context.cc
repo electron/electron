@@ -4,7 +4,6 @@
 
 #include "shell/browser/serial/serial_chooser_context.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 
