@@ -462,6 +462,11 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
     base::FilePath child_path;
     base::FilePath program =
         base::MakeAbsoluteFilePath(command_line->GetProgram());
+    if (program.empty()) {
+      PLOG(ERROR) << "Failed to make absolute path for program: "
+                  << command_line->GetProgram();
+      exit(1);
+    }
 #if BUILDFLAG(IS_MAC)
     auto renderer_child_path = content::ChildProcessHost::GetChildPath(
         content::ChildProcessHost::CHILD_RENDERER);
