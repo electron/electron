@@ -103,18 +103,18 @@ index 55ef23bac1acd703d4e29a4418d85676f8b56be3..42bd5787bfc77dac3e309f1075325368
  }
  
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..a4c2867b4bb6c2c2dcd6565873ccccd940712449 100644
+index 79bf09102ab4ca9b0a5830132d98b7bd844b1c26..e2b20c0cda169d7b4af5c05b8797188955df8e3c 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -37,6 +37,7 @@
- #include "device/bluetooth/bluetooth_socket_mac.h"
- #include "device/bluetooth/public/cpp/bluetooth_address.h"
+@@ -41,6 +41,7 @@
+ #error "This file requires ARC support."
+ #endif
  
 +#if !IS_MAS_BUILD()
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -50,6 +51,7 @@
+@@ -54,6 +55,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -122,7 +122,7 @@ index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..a4c2867b4bb6c2c2dcd6565873ccccd9
  
  namespace {
  
-@@ -93,8 +95,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -97,8 +99,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -133,7 +133,7 @@ index 2c5387fbdcac4b33df770fcd37b050121d0b9b38..a4c2867b4bb6c2c2dcd6565873ccccd9
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        device_paired_status_callback_(
-@@ -249,8 +253,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -253,8 +257,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
