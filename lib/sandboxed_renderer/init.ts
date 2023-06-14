@@ -30,7 +30,17 @@ Object.setPrototypeOf(process, EventEmitter.prototype);
 const { ipcRendererInternal } = require('@electron/internal/renderer/ipc-renderer-internal') as typeof ipcRendererInternalModule;
 const ipcRendererUtils = require('@electron/internal/renderer/ipc-renderer-internal-utils') as typeof ipcRendererUtilsModule;
 
-const { preloadScripts, process: processProps } = ipcRendererUtils.invokeSync(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
+const {
+  preloadScripts,
+  process: processProps
+} = ipcRendererUtils.invokeSync<{
+  preloadScripts: {
+    preloadPath: string;
+    preloadSrc: string | null;
+    preloadError: null | Error;
+  }[];
+  process: NodeJS.Process;
+}>(IPC_MESSAGES.BROWSER_SANDBOX_LOAD);
 
 const electron = require('electron');
 
