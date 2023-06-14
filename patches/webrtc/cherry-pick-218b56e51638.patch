@@ -1,7 +1,7 @@
-From 218b56e516386cd57c7513197528c3124bcd7ef3 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Alexander Cooper <alcooper@chromium.org>
-Date: Wed, 08 Feb 2023 14:16:01 -0800
-Subject: [PATCH] Fix Destruction inside WGC Callback
+Date: Wed, 8 Feb 2023 14:16:01 -0800
+Subject: Fix Destruction inside WGC Callback
 
 If we are notified of the destruction of the window before a
 CaptureFrame call can fail, then we may end up attempting to destroy the
@@ -29,13 +29,12 @@ Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/293246
 Bot-Commit: rubber-stamper@appspot.gserviceaccount.com <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/5481@{#5}
 Cr-Branched-From: 2e1a9a4ae0234d4b1ea7a6fd4188afa1fb20379d-refs/heads/main@{#38901}
----
 
 diff --git a/modules/desktop_capture/win/wgc_capture_session.cc b/modules/desktop_capture/win/wgc_capture_session.cc
-index e165291..ea5565c 100644
+index 831257b4d476d674303f835f6002b22bf809a772..20045b6d1d1250fc9b634e51fe3875b484d6c397 100644
 --- a/modules/desktop_capture/win/wgc_capture_session.cc
 +++ b/modules/desktop_capture/win/wgc_capture_session.cc
-@@ -397,17 +397,14 @@
+@@ -388,17 +388,14 @@ HRESULT WgcCaptureSession::OnItemClosed(WGC::IGraphicsCaptureItem* sender,
  
    RTC_LOG(LS_INFO) << "Capture target has been closed.";
    item_closed_ = true;

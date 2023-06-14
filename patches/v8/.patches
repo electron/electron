@@ -21,3 +21,4 @@ merged_ic_fix_store_handler_selection_for_arguments_objects.patch
 cherry-pick-73af1a19a901.patch
 merged_regexp_fix_clobbered_register_in_global_unicode_special.patch
 m108-lts_api_fix_v8_object_setaccessorproperty.patch
+cherry-pick-2e76270cf65e.patch

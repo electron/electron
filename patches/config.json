@@ -27,5 +27,7 @@
 
   "src/electron/patches/skia": "src/third_party/skia",
 
-  "src/electron/patches/dawn": "src/third_party/dawn"
+  "src/electron/patches/dawn": "src/third_party/dawn",
+
+  "src/electron/patches/webrtc": "src/third_party/webrtc"
 }
