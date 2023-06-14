@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@webrtc.org>
+Date: Thu, 1 Jun 2023 16:08:52 +0200
+Subject: Move transceiver iteration loop over to the signaling thread.
+
+This is required for ReportTransportStats since iterating over the
+transceiver list from the network thread is not safe.
+
+(cherry picked from commit dba22d31909298161318e00d43a80cdb0abc940f)
+
+No-Try: true
+Bug: chromium:1446274, webrtc:12692
+Change-Id: I7c514df9f029112c4b1da85826af91217850fb26
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/307340
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Commit-Queue: Tomas Gunnarsson <tommi@webrtc.org>
+Cr-Original-Commit-Position: refs/heads/main@{#40197}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/308001
+Reviewed-by: Mirko Bonadei <mbonadei@webrtc.org>
+Cr-Commit-Position: refs/branch-heads/5735@{#3}
+Cr-Branched-From: df7df199abd619e75b9f1d9a7e12fc3f3f748775-refs/heads/main@{#39949}
+
+diff --git a/pc/peer_connection.cc b/pc/peer_connection.cc
+index 5de77fee9d2e5c76438b8612f29afc067bd02c13..7333bd59b99a618339413f0647562ed5ff5841d6 100644
+--- a/pc/peer_connection.cc
++++ b/pc/peer_connection.cc
+@@ -727,9 +727,6 @@ JsepTransportController* PeerConnection::InitializeTransportController_n(
+   transport_controller_->SubscribeIceConnectionState(
+       [this](cricket::IceConnectionState s) {
+         RTC_DCHECK_RUN_ON(network_thread());
+-        if (s == cricket::kIceConnectionConnected) {
+-          ReportTransportStats();
+-        }
+         signaling_thread()->PostTask(
+             SafeTask(signaling_thread_safety_.flag(), [this, s]() {
+               RTC_DCHECK_RUN_ON(signaling_thread());
+@@ -2390,6 +2387,20 @@ void PeerConnection::OnTransportControllerConnectionState(
+     case cricket::kIceConnectionConnected:
+       RTC_LOG(LS_INFO) << "Changing to ICE connected state because "
+                           "all transports are writable.";
++      {
++        std::vector<RtpTransceiverProxyRefPtr> transceivers;
++        if (ConfiguredForMedia()) {
++          transceivers = rtp_manager()->transceivers()->List();
++        }
++
++        network_thread()->PostTask(
++            SafeTask(network_thread_safety_,
++                     [this, transceivers = std::move(transceivers)] {
++                       RTC_DCHECK_RUN_ON(network_thread());
++                       ReportTransportStats(std::move(transceivers));
++                     }));
++      }
++
+       SetIceConnectionState(PeerConnectionInterface::kIceConnectionConnected);
+       NoteUsageEvent(UsageEvent::ICE_STATE_CONNECTED);
+       break;
+@@ -2730,20 +2741,18 @@ void PeerConnection::OnTransportControllerGatheringState(
+ }
+ 
+ // Runs on network_thread().
+-void PeerConnection::ReportTransportStats() {
++void PeerConnection::ReportTransportStats(
++    std::vector<RtpTransceiverProxyRefPtr> transceivers) {
+   TRACE_EVENT0("webrtc", "PeerConnection::ReportTransportStats");
+   rtc::Thread::ScopedDisallowBlockingCalls no_blocking_calls;
+   std::map<std::string, std::set<cricket::MediaType>>
+       media_types_by_transport_name;
+-  if (ConfiguredForMedia()) {
+-    for (const auto& transceiver :
+-         rtp_manager()->transceivers()->UnsafeList()) {
+-      if (transceiver->internal()->channel()) {
+-        std::string transport_name(
+-            transceiver->internal()->channel()->transport_name());
+-        media_types_by_transport_name[transport_name].insert(
+-            transceiver->media_type());
+-      }
++  for (const auto& transceiver : transceivers) {
++    if (transceiver->internal()->channel()) {
++      std::string transport_name(
++          transceiver->internal()->channel()->transport_name());
++      media_types_by_transport_name[transport_name].insert(
++          transceiver->media_type());
+     }
+   }
+ 
+diff --git a/pc/peer_connection.h b/pc/peer_connection.h
+index 39a240da4f3e601e8eea1a61dcab75369e51ac05..7f150822e9f224680fc4649a46f319ed97f9a171 100644
+--- a/pc/peer_connection.h
++++ b/pc/peer_connection.h
+@@ -567,7 +567,8 @@ class PeerConnection : public PeerConnectionInternal,
+ 
+   // Invoked when TransportController connection completion is signaled.
+   // Reports stats for all transports in use.
+-  void ReportTransportStats() RTC_RUN_ON(network_thread());
++  void ReportTransportStats(std::vector<RtpTransceiverProxyRefPtr> transceivers)
++      RTC_RUN_ON(network_thread());
+ 
+   // Gather the usage of IPv4/IPv6 as best connection.
+   static void ReportBestConnectionState(const cricket::TransportStats& stats);
+diff --git a/pc/peer_connection_integrationtest.cc b/pc/peer_connection_integrationtest.cc
+index 7fa94527f1002b6a3d17b9aa45211e51a51d7544..c12cbd4fcac2b110d875a1371d29ad54f48c8d71 100644
+--- a/pc/peer_connection_integrationtest.cc
++++ b/pc/peer_connection_integrationtest.cc
+@@ -1836,6 +1836,10 @@ TEST_P(PeerConnectionIntegrationTest,
+   EXPECT_EQ_WAIT(webrtc::PeerConnectionInterface::kIceConnectionConnected,
+                  callee()->ice_connection_state(), kDefaultTimeout);
+ 
++  // Part of reporting the stats will occur on the network thread, so flush it
++  // before checking NumEvents.
++  SendTask(network_thread(), [] {});
++
+   EXPECT_METRIC_EQ(1, webrtc::metrics::NumEvents(
+                           "WebRTC.PeerConnection.CandidatePairType_UDP",
+                           webrtc::kIceCandidatePairHostNameHostName));
+@@ -1964,6 +1968,10 @@ TEST_P(PeerConnectionIntegrationIceStatesTest, MAYBE_VerifyBestConnection) {
+   EXPECT_EQ_WAIT(webrtc::PeerConnectionInterface::kIceConnectionConnected,
+                  callee()->ice_connection_state(), kDefaultTimeout);
+ 
++  // Part of reporting the stats will occur on the network thread, so flush it
++  // before checking NumEvents.
++  SendTask(network_thread(), [] {});
++
+   // TODO(bugs.webrtc.org/9456): Fix it.
+   const int num_best_ipv4 = webrtc::metrics::NumEvents(
+       "WebRTC.PeerConnection.IPMetrics", webrtc::kBestConnections_IPv4);
