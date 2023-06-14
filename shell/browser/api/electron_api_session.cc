@@ -15,11 +15,11 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/guid.h"
 #include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -277,7 +277,8 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::Time& start_time,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
-      base::GenerateGUID(), id, path, path, url_chain, GURL(),
+      base::Uuid::GenerateRandomV4().AsLowercaseString(), id, path, path,
+      url_chain, GURL(),
       content::StoragePartitionConfig::CreateDefault(
           download_manager->GetBrowserContext()),
       GURL(), GURL(), absl::nullopt, mime_type, mime_type, start_time,

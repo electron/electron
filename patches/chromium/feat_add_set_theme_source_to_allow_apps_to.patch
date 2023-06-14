@@ -26,7 +26,7 @@ index 4c60eb7caf5eddbdb71b753c710c7053476bee04..88dd58492d84c6da4f179a5ef651923a
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index a337d8ff4ed81dae4455af01cc9dc72356a31f82..ca9318f403ce9e80b28b107a47f67405663e8775 100644
+index 5ee7cd7952f7b956c32e793e251d5b0cb457026a..bc2fac2b97ffbcc4c0b54d1652c37bfb021d5d3d 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -410,6 +410,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -53,7 +53,7 @@ index a337d8ff4ed81dae4455af01cc9dc72356a31f82..ca9318f403ce9e80b28b107a47f67405
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -605,6 +622,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -606,6 +623,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    PageColors page_colors_ = PageColors::kOff;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
@@ -62,10 +62,10 @@ index a337d8ff4ed81dae4455af01cc9dc72356a31f82..ca9318f403ce9e80b28b107a47f67405
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index b27c0856568c5c601976aa0593d16014a4f99dfe..5aa80492896f7b1107c974b00e5d145256cf7647 100644
+index 87807be3558a2fdd222241b046718f9f1f0b7858..dcff51e17f5215d62c62141f2b63f26501e59d09 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -622,6 +622,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -623,6 +623,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;

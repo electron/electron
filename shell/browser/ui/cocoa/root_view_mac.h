@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ROOT_VIEW_MAC_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ROOT_VIEW_MAC_H_
 
+#include "base/memory/raw_ptr.h"
 #include "ui/views/view.h"
 
 namespace electron {
@@ -27,7 +28,7 @@ class RootViewMac : public views::View {
 
  private:
   // Parent window, weak ref.
-  NativeWindow* window_;
+  raw_ptr<NativeWindow> window_;
 };
 
 }  // namespace electron

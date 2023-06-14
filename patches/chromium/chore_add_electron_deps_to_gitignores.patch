@@ -18,7 +18,7 @@ index 7141c8b3de3bc419d536499ce775d98b619a7bdb..d316050668a44ccfd033a56cd1de4901
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index a1dd3deb87cfe5dbd451f2a1cdab576e3152535b..d3f626cee6998992f67b14108090acea17eccaf1 100644
+index bca69adc4f735f1b142d90f37c1602069a2e9396..70fb31d3b3706e61bf37f1102f48a6fcccb35eea 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -94,6 +94,7 @@
