@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Benoit Lize <lizeb@chromium.org>
 Date: Fri, 9 Jun 2023 17:59:08 +0000
-Subject: [base] Do not use va_args twice in asprintf()
+Subject: Do not use va_args twice in asprintf()
 
 (cherry picked from commit 3cff0cb19a6d01cbdd9932f43dabaaeda9c0330a)
 
