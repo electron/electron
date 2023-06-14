@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 #define ELECTRON_SHELL_BROWSER_PRINTING_PRINT_VIEW_MANAGER_ELECTRON_H_
 
-#include <memory>
 #include <string>
 #include <vector>
 

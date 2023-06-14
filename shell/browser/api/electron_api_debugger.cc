@@ -4,7 +4,6 @@
 
 #include "shell/browser/api/electron_api_debugger.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 

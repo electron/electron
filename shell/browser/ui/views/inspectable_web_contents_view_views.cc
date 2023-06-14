@@ -5,9 +5,7 @@
 #include "shell/browser/ui/views/inspectable_web_contents_view_views.h"
 
 #include <memory>
-
 #include <utility>
-#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"

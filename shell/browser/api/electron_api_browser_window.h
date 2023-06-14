@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BROWSER_WINDOW_H_
 
 #include <string>
-#include <vector>
 
 #include "base/cancelable_callback.h"
 #include "shell/browser/api/electron_api_base_window.h"

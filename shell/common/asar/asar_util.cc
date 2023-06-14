@@ -5,8 +5,8 @@
 #include "shell/common/asar/asar_util.h"
 
 #include <map>
+#include <memory>
 #include <string>
-#include <utility>
 
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"

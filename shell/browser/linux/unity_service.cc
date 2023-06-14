@@ -7,7 +7,6 @@
 #include <dlfcn.h>
 #include <gtk/gtk.h>
 
-#include <memory>
 #include <string>
 
 #include "base/environment.h"

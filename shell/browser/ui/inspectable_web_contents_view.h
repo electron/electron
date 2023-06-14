@@ -7,7 +7,6 @@
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_VIEW_H_
 
 #include <string>
-#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "shell/common/api/api.mojom.h"

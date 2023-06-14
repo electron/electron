@@ -5,9 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 #define ELECTRON_SHELL_BROWSER_USB_USB_CHOOSER_CONTROLLER_H_
 
-#include <string>
-#include <unordered_map>
-#include <utility>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"

@@ -5,8 +5,8 @@
 #include "shell/common/crash_keys.h"
 
 #include <deque>
-#include <utility>
-#include <vector>
+#include <map>
+#include <string>
 
 #include "base/command_line.h"
 #include "base/environment.h"
