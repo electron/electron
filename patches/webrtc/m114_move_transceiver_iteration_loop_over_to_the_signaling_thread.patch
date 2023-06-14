@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tommi <tommi@webrtc.org>
 Date: Thu, 1 Jun 2023 16:08:52 +0200
-Subject: [M114] Move transceiver iteration loop over to the signaling thread.
+Subject: Move transceiver iteration loop over to the signaling thread.
 
 This is required for ReportTransportStats since iterating over the
 transceiver list from the network thread is not safe.
