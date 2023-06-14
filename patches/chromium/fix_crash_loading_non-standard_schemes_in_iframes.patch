@@ -37,10 +37,10 @@ index be377b434ebf579962808a6b3ee377ea0e240734..56094608d0b7877f8b747e4262ec9db9
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 09ddb217948bde74dff56d1ab030f1ccc6fd77a8..778520d167229a8278657bcede2798eb6e04a6e3 100644
+index 2a287fb5dd411574305d5d0d14de78cca03e0bab..62f4f9bc96d134f63bbad33da3ae40b4f8f5f403 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2915,6 +2915,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2921,6 +2921,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // last committed document.
    CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
  
@@ -58,7 +58,7 @@ index 09ddb217948bde74dff56d1ab030f1ccc6fd77a8..778520d167229a8278657bcede2798eb
    // Sets a ResourceCache in the renderer. `this` must be active and there must
    // be no pending navigation. `remote` must have the same and process
    // isolation policy.
-@@ -3288,17 +3299,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3294,17 +3305,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  
