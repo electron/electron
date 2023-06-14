@@ -1,7 +1,11 @@
-From e0efbd45ea7421fb944c7343254ac5dc22bee541 Mon Sep 17 00:00:00 2001
-From: Henrik Boström <hbos@webrtc.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Henrik=20Bostr=C3=B6m?= <hbos@webrtc.org>
 Date: Fri, 20 Jan 2023 10:48:31 +0100
-Subject: [PATCH] [Merge-110] [Stats] Handle the case of missing certificates.
+Subject: =?UTF-8?q?=C2=A0[Stats]=20Handle=20the=20case=20of=20missing=20ce?=
+ =?UTF-8?q?rtificates.?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 Certificates being missing is a sign of a bug (e.g. webrtc:14844, to be
 fixed separately) which is why we have a DCHECK. But this DCHECK does
@@ -22,13 +26,12 @@ Cr-Original-Commit-Position: refs/heads/main@{#39159}
 Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/291380
 Cr-Commit-Position: refs/branch-heads/5481@{#2}
 Cr-Branched-From: 2e1a9a4ae0234d4b1ea7a6fd4188afa1fb20379d-refs/heads/main@{#38901}
----
 
 diff --git a/pc/rtc_stats_collector.cc b/pc/rtc_stats_collector.cc
-index d500a7b..1d88566 100644
+index ff7e334169da41c400d94387527734362d5dbeaa..c16e9ac7eaade4785f16afa46b2051f338095ca3 100644
 --- a/pc/rtc_stats_collector.cc
 +++ b/pc/rtc_stats_collector.cc
-@@ -2192,16 +2192,17 @@
+@@ -2197,16 +2197,17 @@ void RTCStatsCollector::ProduceTransportStats_n(
      // exist.
      const auto& certificate_stats_it =
          transport_cert_stats.find(transport_name);

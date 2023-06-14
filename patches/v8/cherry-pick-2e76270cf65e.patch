@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Mon, 5 Jun 2023 16:05:52 -0700
+Subject: Merged: Check for encoding when appending in string builder
+
+Fixed: chromium:1450114
+(cherry picked from commit a7e2bef27b72f187a7dcdf95714df686f56d9e0b)
+
+Change-Id: I5838383b6b12d137e84c8a36863ef88000e85c76
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4604652
+Reviewed-by: Igor Sheludko <ishell@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.4@{#41}
+Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
+Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
+
+diff --git a/src/strings/string-builder.cc b/src/strings/string-builder.cc
+index 9d1e3a95746b47b99c15f18ec593549d79e10b8c..c7e98e55763aba2d64f4070e25759489f850f589 100644
+--- a/src/strings/string-builder.cc
++++ b/src/strings/string-builder.cc
+@@ -306,12 +306,21 @@ bool IncrementalStringBuilder::CanAppendByCopy(Handle<String> string) {
+ void IncrementalStringBuilder::AppendStringByCopy(Handle<String> string) {
+   DCHECK(CanAppendByCopy(string));
+ 
+-  Handle<SeqOneByteString> part =
+-      Handle<SeqOneByteString>::cast(current_part());
+   {
+     DisallowGarbageCollection no_gc;
+-    String::WriteToFlat(*string, part->GetChars(no_gc) + current_index_, 0,
+-                        string->length());
++    if (encoding_ == String::ONE_BYTE_ENCODING) {
++      String::WriteToFlat(
++          *string,
++          Handle<SeqOneByteString>::cast(current_part())->GetChars(no_gc) +
++              current_index_,
++          0, string->length());
++    } else {
++      String::WriteToFlat(
++          *string,
++          Handle<SeqTwoByteString>::cast(current_part())->GetChars(no_gc) +
++              current_index_,
++          0, string->length());
++    }
+   }
+   current_index_ += string->length();
+   DCHECK(current_index_ <= part_length_);

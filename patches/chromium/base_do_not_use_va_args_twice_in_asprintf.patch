@@ -1,0 +1,96 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Benoit Lize <lizeb@chromium.org>
+Date: Fri, 9 Jun 2023 17:59:08 +0000
+Subject: Do not use va_args twice in asprintf()
+
+(cherry picked from commit 3cff0cb19a6d01cbdd9932f43dabaaeda9c0330a)
+
+Bug: 1450536
+Change-Id: Ib34d96935278869a63897f9a1c66afc98865d90f
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4579347
+Reviewed-by: Egor Pasko <pasko@chromium.org>
+Commit-Queue: Benoit Lize <lizeb@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1151796}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4604070
+Reviewed-by: Michael Thiessen <mthiesse@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5735@{#1224}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+
+diff --git a/base/allocator/partition_allocator/shim/allocator_shim_override_linker_wrapped_symbols.h b/base/allocator/partition_allocator/shim/allocator_shim_override_linker_wrapped_symbols.h
+index 621873126602463a09efca1bf1548ed10910d323..de2af6d7d54e254b9e7b8264b53d30a338fb13e8 100644
+--- a/base/allocator/partition_allocator/shim/allocator_shim_override_linker_wrapped_symbols.h
++++ b/base/allocator/partition_allocator/shim/allocator_shim_override_linker_wrapped_symbols.h
+@@ -123,13 +123,21 @@ SHIM_ALWAYS_EXPORT char* __wrap_getcwd(char* buffer, size_t size) {
+ SHIM_ALWAYS_EXPORT int __wrap_vasprintf(char** strp,
+                                         const char* fmt,
+                                         va_list va_args) {
++  // There are cases where we need to use the list of arguments twice, namely
++  // when the original buffer is too small. It is not allowed to walk the list
++  // twice, so make a copy for the second invocation of vsnprintf().
++  va_list va_args_copy;
++  va_copy(va_args_copy, va_args);
++
+   constexpr int kInitialSize = 128;
+   *strp = static_cast<char*>(
+       malloc(kInitialSize));  // Our malloc() doesn't return nullptr.
+ 
+   int actual_size = vsnprintf(*strp, kInitialSize, fmt, va_args);
+-  if (actual_size < 0)
++  if (actual_size < 0) {
++    va_end(va_args_copy);
+     return actual_size;
++  }
+   *strp =
+       static_cast<char*>(realloc(*strp, static_cast<size_t>(actual_size + 1)));
+ 
+@@ -139,9 +147,14 @@ SHIM_ALWAYS_EXPORT int __wrap_vasprintf(char** strp,
+   //
+   // This is very lightly used in Chromium in practice, see crbug.com/116558 for
+   // details.
+-  if (actual_size >= kInitialSize)
+-    return vsnprintf(*strp, static_cast<size_t>(actual_size + 1), fmt, va_args);
+-
++  if (actual_size >= kInitialSize) {
++    int ret = vsnprintf(*strp, static_cast<size_t>(actual_size + 1), fmt,
++                        va_args_copy);
++    va_end(va_args_copy);
++    return ret;
++  }
++
++  va_end(va_args_copy);
+   return actual_size;
+ }
+ 
+diff --git a/base/allocator/partition_allocator/shim/allocator_shim_unittest.cc b/base/allocator/partition_allocator/shim/allocator_shim_unittest.cc
+index 6caf9d6ffe0db92602ac1e448f45da422e077c2c..57d36f722e1aa747cda3a808104cc108147552c1 100644
+--- a/base/allocator/partition_allocator/shim/allocator_shim_unittest.cc
++++ b/base/allocator/partition_allocator/shim/allocator_shim_unittest.cc
+@@ -706,6 +706,28 @@ TEST_F(AllocatorShimTest, InterceptVasprintf) {
+   // Should not crash.
+ }
+ 
++TEST_F(AllocatorShimTest, InterceptLongVasprintf) {
++  char* str = nullptr;
++  const char* lorem_ipsum =
++      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. "
++      "Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, "
++      "ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula "
++      "massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci "
++      "nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit "
++      "amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat "
++      "in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero "
++      "pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo "
++      "in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue "
++      "blandit sodales. Vestibulum ante ipsum primis in faucibus orci luctus "
++      "et ultrices posuere cubilia Curae; Aliquam nibh. Mauris ac mauris sed "
++      "pede pellentesque fermentum. Maecenas adipiscing ante non diam sodales "
++      "hendrerit.";
++  int err = asprintf(&str, "%s", lorem_ipsum);
++  EXPECT_EQ(err, static_cast<int>(strlen(lorem_ipsum)));
++  EXPECT_TRUE(str);
++  free(str);
++}
++
+ #endif  // BUILDFLAG(USE_PARTITION_ALLOC_AS_MALLOC)
+ 
+ #endif  // BUILDFLAG(IS_ANDROID)
