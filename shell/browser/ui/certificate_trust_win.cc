@@ -33,7 +33,7 @@ BOOL AddToTrustedRootStore(const PCCERT_CONTEXT cert_context,
   if (result) {
     // force Chromium to reload it's database for this certificate
     auto* cert_db = net::CertDatabase::GetInstance();
-    cert_db->NotifyObserversCertDBChanged();
+    cert_db->NotifyObserversTrustStoreChanged();
   }
 
   CertCloseStore(root_cert_store, CERT_CLOSE_STORE_FORCE_FLAG);

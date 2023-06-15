@@ -293,10 +293,6 @@ SerialPolicyAllowedPorts* BrowserProcessImpl::serial_policy_allowed_ports() {
   return nullptr;
 }
 
-HidPolicyAllowedDevices* BrowserProcessImpl::hid_policy_allowed_devices() {
-  return nullptr;
-}
-
 HidSystemTrayIcon* BrowserProcessImpl::hid_system_tray_icon() {
   return nullptr;
 }
