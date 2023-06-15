@@ -4,7 +4,7 @@ import * as url from 'url';
 import { Worker } from 'worker_threads';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import { getRemoteContext, ifdescribe, itremote, useRemoteContext } from './lib/spec-helpers';
+import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
 import * as importedFs from 'fs';
 import { once } from 'events';
 
@@ -115,7 +115,8 @@ describe('asar package', () => {
   });
 
   describe('worker threads', function () {
-    it('should start worker thread from asar file', function (callback) {
+    // DISABLED-FIXME(#38192): only disabled for ASan.
+    ifit(!process.env.IS_ASAN)('should start worker thread from asar file', function (callback) {
       const p = path.join(asarDir, 'worker_threads.asar', 'worker.js');
       const w = new Worker(p);
 
