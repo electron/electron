@@ -1,7 +1,7 @@
 import { GitProcess, IGitExecutionOptions, IGitResult } from 'dugite';
 import { expect } from 'chai';
 import * as notes from '../script/release/notes/notes.js';
-import * as path from 'path';
+import * as path from 'node:path';
 import * as sinon from 'sinon';
 
 /* Fake a Dugite GitProcess that only returns the specific

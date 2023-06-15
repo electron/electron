@@ -1,11 +1,11 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as path from 'path';
+import * as http from 'node:http';
+import * as path from 'node:path';
 import { BrowserWindow } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 describe('debugger module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

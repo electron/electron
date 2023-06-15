@@ -1,15 +1,15 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as url from 'url';
+import * as http from 'node:http';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as url from 'node:url';
 
 import { BrowserWindow, WebPreferences } from 'electron/main';
 
 import { closeWindow } from './lib/window-helpers';
 import { emittedUntil } from './lib/events-helpers';
 import { listen } from './lib/spec-helpers';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
   return message.indexOf('Electron Security Warning') > -1;

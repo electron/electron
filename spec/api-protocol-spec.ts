@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
-import * as ChildProcess from 'child_process';
-import * as path from 'path';
-import * as url from 'url';
-import * as http from 'http';
-import * as fs from 'fs';
-import * as qs from 'querystring';
-import * as stream from 'stream';
-import { EventEmitter, once } from 'events';
+import * as ChildProcess from 'node:child_process';
+import * as path from 'node:path';
+import * as url from 'node:url';
+import * as http from 'node:http';
+import * as fs from 'node:fs';
+import * as qs from 'node:querystring';
+import * as stream from 'node:stream';
+import { EventEmitter, once } from 'node:events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { listen, defer, ifit } from './lib/spec-helpers';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 

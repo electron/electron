@@ -1,6 +1,6 @@
-const inspector = require('inspector');
-const path = require('path');
-const { pathToFileURL } = require('url');
+const inspector = require('node:inspector');
+const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 // This test case will set a breakpoint 4 lines below
 function debuggedFunction () {

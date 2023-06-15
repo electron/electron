@@ -1,15 +1,15 @@
 import { expect } from 'chai';
-import * as childProcess from 'child_process';
-import * as http from 'http';
+import * as childProcess from 'node:child_process';
+import * as http from 'node:http';
 import * as Busboy from 'busboy';
-import * as path from 'path';
+import * as path from 'node:path';
 import { ifdescribe, ifit, defer, startRemoteControlApp, repeatedly, listen } from './lib/spec-helpers';
 import { app } from 'electron/main';
 import { crashReporter } from 'electron/common';
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
+import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
 import * as uuid from 'uuid';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
 const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm');
@@ -523,7 +523,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
         const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
         return remotely((crashScriptPath: string) => {
           const { app } = require('electron');
-          const childProcess = require('child_process');
+          const childProcess = require('node:child_process');
           const version = app.getVersion();
           const url = 'http://127.0.0.1';
           childProcess.fork(crashScriptPath, [url, version], { silent: true });

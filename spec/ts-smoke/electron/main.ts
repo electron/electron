@@ -22,7 +22,7 @@ import {
 } from 'electron/main';
 
 import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
-import * as path from 'path';
+import * as path from 'node:path';
 
 // Quick start
 // https://github.com/electron/electron/blob/main/docs/tutorial/quick-start.md
@@ -1136,7 +1136,7 @@ session.defaultSession.on('will-download', (event, item, webContents) => {
   console.log('will-download', webContents.id);
   event.preventDefault();
   require('got')(item.getURL()).then((data: any) => {
-    require('fs').writeFileSync('/somewhere', data);
+    require('node:fs').writeFileSync('/somewhere', data);
   });
 });
 

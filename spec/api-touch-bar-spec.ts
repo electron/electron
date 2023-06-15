@@ -1,4 +1,4 @@
-import * as path from 'path';
+import * as path from 'node:path';
 import { BrowserWindow, TouchBar } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { expect } from 'chai';

@@ -1,13 +1,13 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as path from 'path';
-import * as url from 'url';
+import * as http from 'node:http';
+import * as path from 'node:path';
+import * as url from 'node:url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedNTimes } from './lib/events-helpers';
 import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import * as path from 'path';
-import * as url from 'url';
-import { Worker } from 'worker_threads';
+import * as path from 'node:path';
+import * as url from 'node:url';
+import { Worker } from 'node:worker_threads';
 import { BrowserWindow, ipcMain } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import * as importedFs from 'fs';
-import { once } from 'events';
+import * as importedFs from 'node:fs';
+import { once } from 'node:events';
 
 describe('asar package', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -142,7 +142,7 @@ function promisify (_f: Function): any {
 describe('asar package', function () {
   const fixtures = path.join(__dirname, 'fixtures');
   const asarDir = path.join(fixtures, 'test.asar');
-  const fs = require('fs') as typeof importedFs; // dummy, to fool typescript
+  const fs = require('node:fs') as typeof importedFs; // dummy, to fool typescript
 
   useRemoteContext({
     url: url.pathToFileURL(path.join(fixtures, 'pages', 'blank.html')),
@@ -159,8 +159,8 @@ describe('asar package', function () {
         chai.expect(error).to.have.property('code').which.equals(code);
       }
 
-      fs = require('fs')
-      path = require('path')
+      fs = require('node:fs')
+      path = require('node:path')
       asarDir = ${JSON.stringify(asarDir)}
 
       // This is used instead of util.promisify for some tests to dodge the
@@ -1121,13 +1121,13 @@ describe('asar package', function () {
 
       itremote('promisified version handles an existing file', async () => {
         const p = path.join(asarDir, 'a.asar', 'file1');
-        const exists = await require('util').promisify(fs.exists)(p);
+        const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.true();
       });
 
       itremote('promisified version handles a non-existent file', async function () {
         const p = path.join(asarDir, 'a.asar', 'not-exist');
-        const exists = await require('util').promisify(fs.exists)(p);
+        const exists = await require('node:util').promisify(fs.exists)(p);
         expect(exists).to.be.false();
       });
     });
@@ -1311,7 +1311,7 @@ describe('asar package', function () {
     describe('util.promisify', function () {
       itremote('can promisify all fs functions', function () {
         const originalFs = require('original-fs');
-        const util = require('util');
+        const util = require('node:util');
         const { hasOwnProperty } = Object.prototype;
 
         for (const [propertyName, originalValue] of Object.entries(originalFs)) {
@@ -1405,7 +1405,7 @@ describe('asar package', function () {
       itremote('is reset to its original value when execSync throws an error', function () {
         process.noAsar = false;
         expect(() => {
-          require('child_process').execSync(path.join(__dirname, 'does-not-exist.txt'));
+          require('node:child_process').execSync(path.join(__dirname, 'does-not-exist.txt'));
         }).to.throw();
         expect(process.noAsar).to.be.false();
       });
@@ -1531,8 +1531,8 @@ describe('asar package', function () {
     });
 
     itremote('has the same APIs as fs', function () {
-      expect(Object.keys(require('fs'))).to.deep.equal(Object.keys(require('original-fs')));
-      expect(Object.keys(require('fs').promises)).to.deep.equal(Object.keys(require('original-fs').promises));
+      expect(Object.keys(require('node:fs'))).to.deep.equal(Object.keys(require('original-fs')));
+      expect(Object.keys(require('node:fs').promises)).to.deep.equal(Object.keys(require('original-fs').promises));
     });
   });
 

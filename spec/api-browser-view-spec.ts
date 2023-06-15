@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import * as path from 'path';
+import * as path from 'node:path';
 import { BrowserView, BrowserWindow, screen, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { defer, ifit, startRemoteControlApp } from './lib/spec-helpers';
 import { areColorsSimilar, captureScreen, getPixelColor } from './lib/screen-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 describe('BrowserView module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');

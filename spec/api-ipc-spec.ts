@@ -1,10 +1,10 @@
-import { EventEmitter, once } from 'events';
+import { EventEmitter, once } from 'node:events';
 import { expect } from 'chai';
 import { BrowserWindow, ipcMain, IpcMainInvokeEvent, MessageChannelMain, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { defer, listen } from './lib/spec-helpers';
-import * as path from 'path';
-import * as http from 'http';
+import * as path from 'node:path';
+import * as http from 'node:http';
 
 const v8Util = process._linkedBinding('electron_common_v8_util');
 const fixturesPath = path.resolve(__dirname, 'fixtures');

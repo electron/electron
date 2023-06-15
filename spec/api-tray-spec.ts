@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { Menu, Tray } from 'electron/main';
 import { nativeImage } from 'electron/common';
 import { ifdescribe, ifit } from './lib/spec-helpers';
-import * as path from 'path';
+import * as path from 'node:path';
 
 describe('tray module', () => {
   let tray: Tray;

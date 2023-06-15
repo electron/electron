@@ -1,10 +1,10 @@
 import { expect } from 'chai';
 import { nativeTheme, systemPreferences, BrowserWindow, ipcMain } from 'electron/main';
-import { once } from 'events';
-import * as os from 'os';
-import * as path from 'path';
+import { once } from 'node:events';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import * as semver from 'semver';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';

@@ -1,16 +1,16 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as http2 from 'http2';
-import * as qs from 'querystring';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as url from 'url';
+import * as http from 'node:http';
+import * as http2 from 'node:http2';
+import * as qs from 'node:querystring';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as url from 'node:url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo, Socket } from 'net';
+import { AddressInfo, Socket } from 'node:net';
 import { listen, defer } from './lib/spec-helpers';
-import { once } from 'events';
-import { ReadableStream } from 'stream/web';
+import { once } from 'node:events';
+import { ReadableStream } from 'node:stream/web';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -603,7 +603,7 @@ describe('webRequest module', () => {
         });
       });
       server.on('upgrade', function upgrade (request, socket, head) {
-        const pathname = require('url').parse(request.url).pathname;
+        const pathname = require('node:url').parse(request.url).pathname;
         if (pathname === '/websocket') {
           reqHeaders[request.url!] = request.headers;
           wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
@@ -625,7 +625,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders: details.requestHeaders });
       });
       ses.webRequest.onHeadersReceived((details, callback) => {
-        const pathname = require('url').parse(details.url).pathname;
+        const pathname = require('node:url').parse(details.url).pathname;
         receivedHeaders[pathname] = details.responseHeaders;
         callback({ cancel: false });
       });

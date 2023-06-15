@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import * as path from 'path';
+import * as path from 'node:path';
 import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 describe('ipcRenderer module', () => {
   const fixtures = path.join(__dirname, 'fixtures');
@@ -62,7 +62,7 @@ describe('ipcRenderer module', () => {
     it('does not crash when sending external objects', async () => {
       await expect(w.webContents.executeJavaScript(`{
         const { ipcRenderer } = require('electron')
-        const http = require('http')
+        const http = require('node:http')
 
         const request = http.request({ port: 5000, hostname: '127.0.0.1', method: 'GET', path: '/' })
         const stream = request.agent.sockets['127.0.0.1:5000:'][0]._handle._externalStream

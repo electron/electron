@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { screen, desktopCapturer, BrowserWindow } from 'electron/main';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 
 import { closeAllWindows } from './lib/window-helpers';

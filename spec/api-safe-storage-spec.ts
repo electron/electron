@@ -1,10 +1,10 @@
-import * as cp from 'child_process';
-import * as path from 'path';
+import * as cp from 'node:child_process';
+import * as path from 'node:path';
 import { safeStorage } from 'electron/main';
 import { expect } from 'chai';
 import { ifdescribe } from './lib/spec-helpers';
 import * as fs from 'fs-extra';
-import { once } from 'events';
+import { once } from 'node:events';
 
 /* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
 * Chrome from reaching the system's keyring or libsecret. When running the tests with config.store

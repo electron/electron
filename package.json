@@ -47,6 +47,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-standard": "^4.0.1",
+    "eslint-plugin-unicorn": "^46.0.1",
     "events": "^3.2.0",
     "express": "^4.16.4",
     "folder-hash": "^2.1.1",

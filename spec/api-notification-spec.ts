@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { Notification } from 'electron/main';
-import { once } from 'events';
+import { once } from 'node:events';
 import { ifit } from './lib/spec-helpers';
 
 describe('Notification module', () => {

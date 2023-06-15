@@ -1,13 +1,13 @@
 import { expect } from 'chai';
-import * as dns from 'dns';
+import * as dns from 'node:dns';
 import { net, session, ClientRequest, BrowserWindow, ClientRequestConstructorOptions, protocol } from 'electron/main';
-import * as http from 'http';
-import * as url from 'url';
-import * as path from 'path';
-import { Socket } from 'net';
+import * as http from 'node:http';
+import * as url from 'node:url';
+import * as path from 'node:path';
+import { Socket } from 'node:net';
 import { defer, listen } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 // See https://github.com/nodejs/node/issues/40702.
 dns.setDefaultResultOrder('ipv4first');

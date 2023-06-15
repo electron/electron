@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import * as path from 'path';
-import { Buffer } from 'buffer';
+import * as path from 'node:path';
+import { Buffer } from 'node:buffer';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { clipboard, nativeImage } from 'electron/common';
 
