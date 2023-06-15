@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 83cdc61ae5ac4b98fc1d68ad99672606c75ddd09..0ca6f56c642f7874d1acdf6aae94a5e090d94afd 100644
+index ba907d51ea11537e83a6c7c813c13ec51da808c0..16933abf6878f3e31f3e29a77505b8c125b33b58 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -228,6 +228,7 @@ if (is_apple) {
@@ -92,7 +92,7 @@ index 4793d5bc9de9a3a158f90e0432c32c4818bcef2e..c42793c782c13a62b6205d0ed555ad5a
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 3177185f3adfd2bbb6ca6c6c8fdabde4cb90e839..7ccb4ecd7c9d9fb4106e15812f191b65eb8c03ac 100644
+index e6125b6af20434f3ec3171c044d515b8c120a7b5..1e2ccffbe25e5149a8e5c8174f75119014386f57 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -128,7 +128,7 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 6709d1b96a1a92142f257911eaf546aa4954e935..e9d5318bceb63fe91811f4e04570bfc0efa23760 100644
+index d27590a1629161bf9f2e28c12bda4a78c95c194d..2e9c6979d0ebb17394d8c67fbc56df24801943bb 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -153,13 +153,13 @@ index 9d47887dd255187ffe49f5d9dbd01aff5b1de15e..7cde88462e0fc57f9f19badbf1042153
      configs += [ "//build/config/compiler:enable_arc" ]
    }
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 642afd72cc0f98fe2590cef0c470f378eabb939e..894769a5de698767117339cab0fc2942d1a20b90 100644
+index 52940b9bc43aa96dc0a7f90e63ec123ca41c5fab..7c71b07ca2d4b1418b305e876b6be51921b3ea66 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -240,6 +240,7 @@ component("bluetooth") {
-       "IOKit.framework",
+@@ -241,6 +241,7 @@ component("bluetooth") {
        "Foundation.framework",
      ]
+     configs += [ "//build/config/compiler:enable_arc" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
@@ -230,7 +230,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index db6a4b6a75ed36008128dbcadbe99397483d9566..1910ace5b6acc27c8c215a0f481ac8a6b327ac06 100644
+index ea98141f7cf3c4fcacfd82061963129b5d66bfa4..7ec5889a61e5575936a31196270333d39dcb6154 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {
@@ -267,7 +267,7 @@ index cb282e3a526fb724b25c0d4c6a2af3da30ee0a20..d4275f68211f5a0cddfd2bcbc0f620e8
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 4de874f3d12be434ea7f7f9737077a37cd11dc4c..78281df1de98e25a3d73471fc2f57699cf48e5d4 100644
+index e6a0ca42d0fa2446b300714372986da7e2013f16..fd651028ead9103dabcbb3686e412c12ba8e7952 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,7 @@ component("base") {
