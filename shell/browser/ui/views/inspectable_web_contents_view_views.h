@@ -31,7 +31,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   // InspectableWebContentsView:
   views::View* GetView() override;
-  views::View* GetWebView() override;
   void ShowDevTools(bool activate) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
