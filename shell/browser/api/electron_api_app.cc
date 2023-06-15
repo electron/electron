@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/containers/span.h"
 #include "base/environment.h"
 #include "base/files/file_path.h"
@@ -473,51 +474,38 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 }
 
 // Return the path constant from string.
-int GetPathConstant(const std::string& name) {
-  if (name == "appData")
-    return DIR_APP_DATA;
-  else if (name == "sessionData")
-    return DIR_SESSION_DATA;
-  else if (name == "userData")
-    return chrome::DIR_USER_DATA;
-  else if (name == "cache")
+constexpr int GetPathConstant(base::StringPiece name) {
+  // clang-format off
+  constexpr auto Lookup = base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+      {"appData", DIR_APP_DATA},
 #if BUILDFLAG(IS_POSIX)
-    return base::DIR_CACHE;
+      {"cache", base::DIR_CACHE},
 #else
-    return base::DIR_ROAMING_APP_DATA;
+      {"cache", base::DIR_ROAMING_APP_DATA},
 #endif
-  else if (name == "userCache")
-    return DIR_USER_CACHE;
-  else if (name == "logs")
-    return DIR_APP_LOGS;
-  else if (name == "crashDumps")
-    return DIR_CRASH_DUMPS;
-  else if (name == "home")
-    return base::DIR_HOME;
-  else if (name == "temp")
-    return base::DIR_TEMP;
-  else if (name == "userDesktop" || name == "desktop")
-    return base::DIR_USER_DESKTOP;
-  else if (name == "exe")
-    return base::FILE_EXE;
-  else if (name == "module")
-    return base::FILE_MODULE;
-  else if (name == "documents")
-    return chrome::DIR_USER_DOCUMENTS;
-  else if (name == "downloads")
-    return chrome::DIR_DEFAULT_DOWNLOADS;
-  else if (name == "music")
-    return chrome::DIR_USER_MUSIC;
-  else if (name == "pictures")
-    return chrome::DIR_USER_PICTURES;
-  else if (name == "videos")
-    return chrome::DIR_USER_VIDEOS;
+      {"crashDumps", DIR_CRASH_DUMPS},
+      {"desktop", base::DIR_USER_DESKTOP},
+      {"documents", chrome::DIR_USER_DOCUMENTS},
+      {"downloads", chrome::DIR_DEFAULT_DOWNLOADS},
+      {"exe", base::FILE_EXE},
+      {"home", base::DIR_HOME},
+      {"logs", DIR_APP_LOGS},
+      {"module", base::FILE_MODULE},
+      {"music", chrome::DIR_USER_MUSIC},
+      {"pictures", chrome::DIR_USER_PICTURES},
 #if BUILDFLAG(IS_WIN)
-  else if (name == "recent")
-    return electron::DIR_RECENT;
+      {"recent", electron::DIR_RECENT},
 #endif
-  else
-    return -1;
+      {"sessionData", DIR_SESSION_DATA},
+      {"temp", base::DIR_TEMP},
+      {"userCache", DIR_USER_CACHE},
+      {"userData", chrome::DIR_USER_DATA},
+      {"userDesktop", base::DIR_USER_DESKTOP},
+      {"videos", chrome::DIR_USER_VIDEOS},
+  });
+  // clang-format on
+  const auto* iter = Lookup.find(name);
+  return iter != Lookup.end() ? iter->second : -1;
 }
 
 bool NotificationCallbackWrapper(
