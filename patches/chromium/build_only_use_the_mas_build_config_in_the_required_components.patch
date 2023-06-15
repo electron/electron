@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ba907d51ea11537e83a6c7c813c13ec51da808c0..16933abf6878f3e31f3e29a77505b8c125b33b58 100644
+index 0ab06651e6f02fe82edd0be862b61dff60e61190..014c196f31fbf760423cddf14551e6963418017d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -228,6 +228,7 @@ if (is_apple) {
@@ -128,7 +128,7 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d27590a1629161bf9f2e28c12bda4a78c95c194d..2e9c6979d0ebb17394d8c67fbc56df24801943bb 100644
+index dea6e42fd43d95c92b6f066194527c0b015ec1e8..52d49c966735fbcf3326da0039dd3dd2b99142b1 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -279,7 +279,7 @@ index e6a0ca42d0fa2446b300714372986da7e2013f16..fd651028ead9103dabcbb3686e412c12
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 4fb4a862d285fababc67d4f2fe38036ea83bd8a9..fa71bc82342412d85fb05312b441cecbfd9da778 100644
+index 082c6bc2bfbc546a80f4a21253ef9294cd4c6e14..2b1f97a1177dc39a8ea6026ae4add83c14380e84 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -306,10 +306,10 @@ index ac1875a96d3d877a81b0f26c6a18036e0674c590..d4d74d3bee9be3735ca3245c8a9b0d06
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 146d5428d9ab82da74a427ee9ac05258e23d681d..ba6b43d205145e3bae0f094ecdaa0cebda3e0a66 100644
+index f4d38afeb09d013fd5c92296d782d53d29dbcd49..ff239357bc70c98d77d731a2e17606721511dde3 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -680,6 +680,7 @@ component("views") {
+@@ -682,6 +682,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -317,7 +317,7 @@ index 146d5428d9ab82da74a427ee9ac05258e23d681d..ba6b43d205145e3bae0f094ecdaa0ceb
    }
  
    if (is_win) {
-@@ -1096,6 +1097,8 @@ source_set("test_support") {
+@@ -1098,6 +1099,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
