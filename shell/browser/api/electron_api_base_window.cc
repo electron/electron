@@ -309,12 +309,6 @@ void BaseWindow::OnWindowMessage(UINT message, WPARAM w_param, LPARAM l_param) {
 }
 #endif
 
-void BaseWindow::SetContentView(gin::Handle<View> view) {
-  ResetBrowserViews();
-  content_view_.Reset(isolate(), view.ToV8());
-  window_->SetContentView(view->view());
-}
-
 void BaseWindow::CloseImmediately() {
   if (!window_->IsClosed())
     window_->CloseImmediately();
@@ -972,13 +966,6 @@ void BaseWindow::SetGTKDarkThemeEnabled(bool use_dark_theme) {
   window_->SetGTKDarkThemeEnabled(use_dark_theme);
 }
 
-v8::Local<v8::Value> BaseWindow::GetContentView() const {
-  if (content_view_.IsEmpty())
-    return v8::Null(isolate());
-  else
-    return v8::Local<v8::Value>::New(isolate(), content_view_);
-}
-
 v8::Local<v8::Value> BaseWindow::GetParentWindow() const {
   if (parent_window_.IsEmpty())
     return v8::Null(isolate());
@@ -1165,7 +1152,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
   prototype->SetClassName(gin::StringToV8(isolate, "BaseWindow"));
   gin_helper::Destroyable::MakeDestroyable(isolate, prototype);
   gin_helper::ObjectTemplateBuilder(isolate, prototype->PrototypeTemplate())
-      .SetMethod("setContentView", &BaseWindow::SetContentView)
       .SetMethod("close", &BaseWindow::Close)
       .SetMethod("focus", &BaseWindow::Focus)
       .SetMethod("blur", &BaseWindow::Blur)
@@ -1303,7 +1289,6 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAspectRatio", &BaseWindow::SetAspectRatio)
       .SetMethod("previewFile", &BaseWindow::PreviewFile)
       .SetMethod("closeFilePreview", &BaseWindow::CloseFilePreview)
-      .SetMethod("getContentView", &BaseWindow::GetContentView)
       .SetMethod("getParentWindow", &BaseWindow::GetParentWindow)
       .SetMethod("getChildWindows", &BaseWindow::GetChildWindows)
       .SetMethod("getBrowserView", &BaseWindow::GetBrowserView)

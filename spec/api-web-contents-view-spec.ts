@@ -10,11 +10,6 @@ describe('WebContentsView', () => {
     w = null as unknown as BaseWindow;
   });
 
-  it('can be used as content view', () => {
-    w = new BaseWindow({ show: false });
-    w.setContentView(new WebContentsView({}));
-  });
-
   function triggerGCByAllocation () {
     const arr = [];
     for (let i = 0; i < 1000000; i++) {

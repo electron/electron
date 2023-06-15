@@ -98,9 +98,6 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
 
   InitWithArgs(args);
 
-  // Install the content view after BaseWindow's JS code is initialized.
-  SetContentView(gin::CreateHandle<View>(isolate, web_contents_view.get()));
-
   // Init window after everything has been setup.
   window()->InitFromOptions(options);
 }

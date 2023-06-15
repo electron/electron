@@ -87,7 +87,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   // Public APIs of NativeWindow.
-  void SetContentView(gin::Handle<View> view);
   void Close();
   virtual void CloseImmediately();
   virtual void Focus();
@@ -224,7 +223,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetGTKDarkThemeEnabled(bool use_dark_theme);
 
   // Public getters of NativeWindow.
-  v8::Local<v8::Value> GetContentView() const;
   v8::Local<v8::Value> GetParentWindow() const;
   std::vector<v8::Local<v8::Object>> GetChildWindows() const;
   v8::Local<v8::Value> GetBrowserView(gin_helper::Arguments* args) const;
@@ -273,7 +271,6 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   MessageCallbackMap messages_callback_map_;
 #endif
 
-  v8::Global<v8::Value> content_view_;
   std::map<int32_t, v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
