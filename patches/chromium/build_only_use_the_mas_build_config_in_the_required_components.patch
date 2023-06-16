@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 0ab06651e6f02fe82edd0be862b61dff60e61190..014c196f31fbf760423cddf14551e6963418017d 100644
+index 24cda788abd70d477069e0e995745cae4958e9b2..5525b1c29d12c8483f840c2efe3038188f0aa729 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -228,6 +228,7 @@ if (is_apple) {
@@ -38,10 +38,10 @@ index 63b32e52a11af599dbc5154ed353e2bf7250e9d3..fc6ed0cdbe211cb29dd5a1dded36b3b0
  
  if (is_win) {
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index a20e1b68ebd112d66ad82e5753b756218e457c9e..65c7170d1c2dbe4ecfc75c4fed92d6e7ff8efb27 100644
+index 7ed10085264af6f50b05e51dd93c49e3828d5b3b..d8c77f52376a13af7636e64ff0b5cf58f4fbcf97 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -71,6 +71,8 @@ component("os_crypt") {
+@@ -48,6 +48,8 @@ component("os_crypt") {
        "os_crypt_mac.mm",
      ]
      configs += [ "//build/config/compiler:enable_arc" ]
@@ -92,7 +92,7 @@ index 4793d5bc9de9a3a158f90e0432c32c4818bcef2e..c42793c782c13a62b6205d0ed555ad5a
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e6125b6af20434f3ec3171c044d515b8c120a7b5..1e2ccffbe25e5149a8e5c8174f75119014386f57 100644
+index e19e0f77d5f60e541130260a5fb4002753f9b063..96d9089ab43cc6d15e5f07364b6cd215d796e314 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -128,7 +128,7 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index dea6e42fd43d95c92b6f066194527c0b015ec1e8..52d49c966735fbcf3326da0039dd3dd2b99142b1 100644
+index 6f86e6f16a941f6a869686fa661c669ae4ac21a7..4e3b2947636c449e8ad87eb29f043ab7ac821e28 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -279,7 +279,7 @@ index e6a0ca42d0fa2446b300714372986da7e2013f16..fd651028ead9103dabcbb3686e412c12
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 082c6bc2bfbc546a80f4a21253ef9294cd4c6e14..2b1f97a1177dc39a8ea6026ae4add83c14380e84 100644
+index 66a600175e8dbb98d695f1006506671b88daa099..2c3f56aa98994077172169d42c82fb4177d906e7 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -294,7 +294,7 @@ index 082c6bc2bfbc546a80f4a21253ef9294cd4c6e14..2b1f97a1177dc39a8ea6026ae4add83c
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index ac1875a96d3d877a81b0f26c6a18036e0674c590..d4d74d3bee9be3735ca3245c8a9b0d06c8f82eca 100644
+index 2df80838018fb39accd8c1d8a692a56fa478c93b..87aede930b473492096e4b3efb13d7c608f7557a 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -192,6 +192,7 @@ component("gfx") {
@@ -306,10 +306,10 @@ index ac1875a96d3d877a81b0f26c6a18036e0674c590..d4d74d3bee9be3735ca3245c8a9b0d06
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index f4d38afeb09d013fd5c92296d782d53d29dbcd49..ff239357bc70c98d77d731a2e17606721511dde3 100644
+index 2feb32f83513e4fe6f395ef4d0149af4fb74023e..045ad4c53a8670df70eedbd98ca5dc4763c711a1 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -682,6 +682,7 @@ component("views") {
+@@ -684,6 +684,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -317,7 +317,7 @@ index f4d38afeb09d013fd5c92296d782d53d29dbcd49..ff239357bc70c98d77d731a2e1760672
    }
  
    if (is_win) {
-@@ -1098,6 +1099,8 @@ source_set("test_support") {
+@@ -1100,6 +1101,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
