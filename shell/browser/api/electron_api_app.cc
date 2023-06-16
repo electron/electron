@@ -476,7 +476,7 @@ IconLoader::IconSize GetIconSizeByString(const std::string& size) {
 // Return the path constant from string.
 constexpr int GetPathConstant(base::StringPiece name) {
   // clang-format off
-  constexpr auto Lookup = base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+  constexpr auto Lookup = base::MakeFixedFlatMap<base::StringPiece, int>({
       {"appData", DIR_APP_DATA},
 #if BUILDFLAG(IS_POSIX)
       {"cache", base::DIR_CACHE},

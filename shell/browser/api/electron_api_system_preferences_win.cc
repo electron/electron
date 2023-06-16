@@ -99,7 +99,7 @@ std::string SystemPreferences::GetAccentColor() {
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
                                         const std::string& color) {
   static constexpr auto Lookup =
-      base::MakeFixedFlatMapSorted<base::StringPiece, int>({
+      base::MakeFixedFlatMap<base::StringPiece, int>({
           {"3d-dark-shadow", COLOR_3DDKSHADOW},
           {"3d-face", COLOR_3DFACE},
           {"3d-highlight", COLOR_3DHIGHLIGHT},

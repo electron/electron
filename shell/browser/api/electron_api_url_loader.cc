@@ -416,7 +416,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   if (std::string mode; opts.Get("mode", &mode)) {
     using Val = network::mojom::RequestMode;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"cors", Val::kCors},
             {"navigate", Val::kNavigate},
             {"no-cors", Val::kNoCors},
@@ -429,7 +429,7 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
   if (std::string destination; opts.Get("destination", &destination)) {
     using Val = network::mojom::RequestDestination;
     static constexpr auto Lookup =
-        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+        base::MakeFixedFlatMap<base::StringPiece, Val>({
             {"audio", Val::kAudio},
             {"audioworklet", Val::kAudioWorklet},
             {"document", Val::kDocument},
