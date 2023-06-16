@@ -108,10 +108,6 @@ views::View* InspectableWebContentsViewViews::GetView() {
   return this;
 }
 
-views::View* InspectableWebContentsViewViews::GetWebView() {
-  return contents_web_view_;
-}
-
 void InspectableWebContentsViewViews::ShowDevTools(bool activate) {
   if (devtools_visible_)
     return;
