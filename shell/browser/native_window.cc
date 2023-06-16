@@ -266,6 +266,9 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     // For normal window, use white as default background.
     SetBackgroundColor(SK_ColorWHITE);
   }
+  // TODO: figure out the right condition for this
+  SetBackgroundColor(SK_ColorTRANSPARENT);
+
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
