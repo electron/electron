@@ -9,6 +9,7 @@
 #include <utility>
 
 #include "base/containers/contains.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/memory/raw_ptr.h"
 #include "base/stl_util.h"
 #include "base/task/sequenced_task_runner.h"
@@ -31,54 +32,34 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 
+static constexpr auto ResourceTypes =
+    base::MakeFixedFlatMapSorted<base::StringPiece,
+                                 extensions::WebRequestResourceType>({
+        {"cspReport", extensions::WebRequestResourceType::CSP_REPORT},
+        {"font", extensions::WebRequestResourceType::FONT},
+        {"image", extensions::WebRequestResourceType::IMAGE},
+        {"mainFrame", extensions::WebRequestResourceType::MAIN_FRAME},
+        {"media", extensions::WebRequestResourceType::MEDIA},
+        {"object", extensions::WebRequestResourceType::OBJECT},
+        {"ping", extensions::WebRequestResourceType::PING},
+        {"script", extensions::WebRequestResourceType::SCRIPT},
+        {"stylesheet", extensions::WebRequestResourceType::STYLESHEET},
+        {"subFrame", extensions::WebRequestResourceType::SUB_FRAME},
+        {"webSocket", extensions::WebRequestResourceType::WEB_SOCKET},
+        {"xhr", extensions::WebRequestResourceType::XHR},
+    });
+
 namespace gin {
 
 template <>
 struct Converter<extensions::WebRequestResourceType> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    extensions::WebRequestResourceType type) {
-    const char* result;
-    switch (type) {
-      case extensions::WebRequestResourceType::MAIN_FRAME:
-        result = "mainFrame";
-        break;
-      case extensions::WebRequestResourceType::SUB_FRAME:
-        result = "subFrame";
-        break;
-      case extensions::WebRequestResourceType::STYLESHEET:
-        result = "stylesheet";
-        break;
-      case extensions::WebRequestResourceType::SCRIPT:
-        result = "script";
-        break;
-      case extensions::WebRequestResourceType::IMAGE:
-        result = "image";
-        break;
-      case extensions::WebRequestResourceType::FONT:
-        result = "font";
-        break;
-      case extensions::WebRequestResourceType::OBJECT:
-        result = "object";
-        break;
-      case extensions::WebRequestResourceType::XHR:
-        result = "xhr";
-        break;
-      case extensions::WebRequestResourceType::PING:
-        result = "ping";
-        break;
-      case extensions::WebRequestResourceType::CSP_REPORT:
-        result = "cspReport";
-        break;
-      case extensions::WebRequestResourceType::MEDIA:
-        result = "media";
-        break;
-      case extensions::WebRequestResourceType::WEB_SOCKET:
-        result = "webSocket";
-        break;
-      default:
-        result = "other";
-    }
-    return StringToV8(isolate, result);
+    for (const auto& [name, val] : ResourceTypes)
+      if (type == val)
+        return StringToV8(isolate, name);
+
+    return StringToV8(isolate, "other");
   }
 };
 
@@ -96,34 +77,11 @@ struct UserData : public base::SupportsUserData::Data {
   raw_ptr<WebRequest> data;
 };
 
-extensions::WebRequestResourceType ParseResourceType(const std::string& value) {
-  if (value == "mainFrame") {
-    return extensions::WebRequestResourceType::MAIN_FRAME;
-  } else if (value == "subFrame") {
-    return extensions::WebRequestResourceType::SUB_FRAME;
-  } else if (value == "stylesheet") {
-    return extensions::WebRequestResourceType::STYLESHEET;
-  } else if (value == "script") {
-    return extensions::WebRequestResourceType::SCRIPT;
-  } else if (value == "image") {
-    return extensions::WebRequestResourceType::IMAGE;
-  } else if (value == "font") {
-    return extensions::WebRequestResourceType::FONT;
-  } else if (value == "object") {
-    return extensions::WebRequestResourceType::OBJECT;
-  } else if (value == "xhr") {
-    return extensions::WebRequestResourceType::XHR;
-  } else if (value == "ping") {
-    return extensions::WebRequestResourceType::PING;
-  } else if (value == "cspReport") {
-    return extensions::WebRequestResourceType::CSP_REPORT;
-  } else if (value == "media") {
-    return extensions::WebRequestResourceType::MEDIA;
-  } else if (value == "webSocket") {
-    return extensions::WebRequestResourceType::WEB_SOCKET;
-  } else {
-    return extensions::WebRequestResourceType::OTHER;
-  }
+extensions::WebRequestResourceType ParseResourceType(base::StringPiece value) {
+  if (const auto* iter = ResourceTypes.find(value); iter != ResourceTypes.end())
+    return iter->second;
+
+  return extensions::WebRequestResourceType::OTHER;
 }
 
 // Convert HttpResponseHeaders to V8.

@@ -62,20 +62,16 @@ struct Converter<network::mojom::CredentialsMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      network::mojom::CredentialsMode* out) {
-    std::string mode;
-    if (!ConvertFromV8(isolate, val, &mode))
-      return false;
-    if (mode == "omit")
-      *out = network::mojom::CredentialsMode::kOmit;
-    else if (mode == "include")
-      *out = network::mojom::CredentialsMode::kInclude;
-    else if (mode == "same-origin")
-      // Note: This only makes sense if the request specifies the "origin"
-      // option.
-      *out = network::mojom::CredentialsMode::kSameOrigin;
-    else
-      return false;
-    return true;
+    using Val = network::mojom::CredentialsMode;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"include", Val::kInclude},
+            {"omit", Val::kOmit},
+            // Note: This only makes sense if the request
+            // specifies the "origin" option.
+            {"same-origin", Val::kSameOrigin},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -84,25 +80,17 @@ struct Converter<blink::mojom::FetchCacheMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::mojom::FetchCacheMode* out) {
-    std::string cache;
-    if (!ConvertFromV8(isolate, val, &cache))
-      return false;
-    if (cache == "default") {
-      *out = blink::mojom::FetchCacheMode::kDefault;
-    } else if (cache == "no-store") {
-      *out = blink::mojom::FetchCacheMode::kNoStore;
-    } else if (cache == "reload") {
-      *out = blink::mojom::FetchCacheMode::kBypassCache;
-    } else if (cache == "no-cache") {
-      *out = blink::mojom::FetchCacheMode::kValidateCache;
-    } else if (cache == "force-cache") {
-      *out = blink::mojom::FetchCacheMode::kForceCache;
-    } else if (cache == "only-if-cached") {
-      *out = blink::mojom::FetchCacheMode::kOnlyIfCached;
-    } else {
-      return false;
-    }
-    return true;
+    using Val = blink::mojom::FetchCacheMode;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"default", Val::kDefault},
+            {"force-cache", Val::kForceCache},
+            {"no-cache", Val::kValidateCache},
+            {"no-store", Val::kNoStore},
+            {"only-if-cached", Val::kOnlyIfCached},
+            {"reload", Val::kBypassCache},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -111,42 +99,24 @@ struct Converter<net::ReferrerPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::ReferrerPolicy* out) {
-    std::string referrer_policy;
-    if (!ConvertFromV8(isolate, val, &referrer_policy))
-      return false;
-    if (base::CompareCaseInsensitiveASCII(referrer_policy, "no-referrer") ==
-        0) {
-      *out = net::ReferrerPolicy::NO_REFERRER;
-    } else if (base::CompareCaseInsensitiveASCII(
-                   referrer_policy, "no-referrer-when-downgrade") == 0) {
-      *out = net::ReferrerPolicy::CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE;
-    } else if (base::CompareCaseInsensitiveASCII(referrer_policy, "origin") ==
-               0) {
-      *out = net::ReferrerPolicy::ORIGIN;
-    } else if (base::CompareCaseInsensitiveASCII(
-                   referrer_policy, "origin-when-cross-origin") == 0) {
-      *out = net::ReferrerPolicy::ORIGIN_ONLY_ON_TRANSITION_CROSS_ORIGIN;
-    } else if (base::CompareCaseInsensitiveASCII(referrer_policy,
-                                                 "unsafe-url") == 0) {
-      *out = net::ReferrerPolicy::NEVER_CLEAR;
-    } else if (base::CompareCaseInsensitiveASCII(referrer_policy,
-                                                 "same-origin") == 0) {
-      *out = net::ReferrerPolicy::CLEAR_ON_TRANSITION_CROSS_ORIGIN;
-    } else if (base::CompareCaseInsensitiveASCII(referrer_policy,
-                                                 "strict-origin") == 0) {
-      *out = net::ReferrerPolicy::
-          ORIGIN_CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE;
-    } else if (referrer_policy == "" ||
-               base::CompareCaseInsensitiveASCII(
-                   referrer_policy, "strict-origin-when-cross-origin") == 0) {
-      *out = net::ReferrerPolicy::REDUCE_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN;
-    } else {
-      return false;
-    }
-    return true;
+    using Val = net::ReferrerPolicy;
+    // clang-format off
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"", Val::REDUCE_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN},
+            {"no-referrer", Val::NO_REFERRER},
+            {"no-referrer-when-downgrade", Val::CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE},
+            {"origin", Val::ORIGIN},
+            {"origin-when-cross-origin", Val::ORIGIN_ONLY_ON_TRANSITION_CROSS_ORIGIN},
+            {"same-origin", Val::CLEAR_ON_TRANSITION_CROSS_ORIGIN},
+            {"strict-origin", Val:: ORIGIN_CLEAR_ON_TRANSITION_FROM_SECURE_TO_INSECURE},
+            {"strict-origin-when-cross-origin", Val::REDUCE_GRANULARITY_ON_TRANSITION_CROSS_ORIGIN},
+            {"unsafe-url", Val::NEVER_CLEAR},
+        });
+    // clang-format on
+    return FromV8WithLowerLookup(isolate, val, Lookup, out);
   }
 };
-
 }  // namespace gin
 
 namespace electron::api {
