@@ -24,6 +24,8 @@ class MicrotasksRunner : public base::TaskObserver {
  public:
   explicit MicrotasksRunner(v8::Isolate* isolate);
 
+  void PerformCheckpoint();
+
   // base::TaskObserver
   void WillProcessTask(const base::PendingTask& pending_task,
                        bool was_blocked_or_low_priority) override;
