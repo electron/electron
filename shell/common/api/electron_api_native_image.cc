@@ -20,6 +20,7 @@
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "net/base/data_url.h"
+#include "shell/browser/browser.h"
 #include "shell/common/asar/asar_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gfx_converter.h"
@@ -29,12 +30,14 @@
 #include "shell/common/gin_helper/function_template_extensions.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "shell/common/skia_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
 #include "third_party/skia/include/core/SkPixelRef.h"
 #include "ui/base/layout.h"
+#include "ui/base/resource/resource_scale_factor.h"
 #include "ui/base/webui/web_ui_util.h"
 #include "ui/gfx/codec/jpeg_codec.h"
 #include "ui/gfx/codec/png_codec.h"
@@ -52,6 +55,18 @@
 namespace electron::api {
 
 namespace {
+
+// This is needed to avoid a hard CHECK when certain aspects of
+// ImageSkia are invoked before the browser process is ready,
+// since supported scales are normally set by
+// ui::ResourceBundle::InitSharedInstance during browser process startup.
+void EnsureSupportedScaleFactors() {
+  if (!electron::IsBrowserProcess())
+    return;
+
+  if (!Browser::Get()->is_ready())
+    ui::SetSupportedResourceScaleFactors({ui::k100Percent});
+}
 
 // Get the scale factor from options object at the first argument
 float GetScaleFactorFromOptions(gin::Arguments* args) {
@@ -108,12 +123,15 @@ base::win::ScopedHICON ReadICOFromPath(int size, const base::FilePath& path) {
 
 NativeImage::NativeImage(v8::Isolate* isolate, const gfx::Image& image)
     : image_(image), isolate_(isolate) {
+  EnsureSupportedScaleFactors();
   UpdateExternalAllocatedMemoryUsage();
 }
 
 #if BUILDFLAG(IS_WIN)
 NativeImage::NativeImage(v8::Isolate* isolate, const base::FilePath& hicon_path)
     : hicon_path_(hicon_path), isolate_(isolate) {
+  EnsureSupportedScaleFactors();
+
   // Use the 256x256 icon as fallback icon.
   gfx::ImageSkia image_skia;
   electron::util::ReadImageSkiaFromICO(&image_skia, GetHICON(256));
