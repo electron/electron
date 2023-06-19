@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { GitProcess } = require('dugite');
-const childProcess = require('child_process');
+const childProcess = require('node:child_process');
 const { ESLint } = require('eslint');
-const fs = require('fs');
+const fs = require('node:fs');
 const minimist = require('minimist');
-const path = require('path');
+const path = require('node:path');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 

@@ -1,9 +1,9 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
-const assert = require('assert');
-const fs = require('fs');
+const assert = require('node:assert');
+const fs = require('node:fs');
 const got = require('got');
-const path = require('path');
+const path = require('node:path');
 const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
 const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit();

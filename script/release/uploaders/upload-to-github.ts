@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN

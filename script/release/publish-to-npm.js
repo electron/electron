@@ -1,7 +1,7 @@
 const temp = require('temp');
-const fs = require('fs');
-const path = require('path');
-const childProcess = require('child_process');
+const fs = require('node:fs');
+const path = require('node:path');
+const childProcess = require('node:child_process');
 const got = require('got');
 const semver = require('semver');
 

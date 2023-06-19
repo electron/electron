@@ -1,6 +1,6 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
-const assert = require('assert');
+const assert = require('node:assert');
 const got = require('got');
 const { Octokit } = require('@octokit/rest');
 

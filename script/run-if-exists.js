@@ -1,5 +1,5 @@
-const cp = require('child_process');
-const fs = require('fs');
+const cp = require('node:child_process');
+const fs = require('node:fs');
 
 const checkPath = process.argv[2];
 const command = process.argv.slice(3);

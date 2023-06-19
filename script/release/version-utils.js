@@ -1,8 +1,8 @@
-const path = require('path');
-const fs = require('fs');
+const path = require('node:path');
+const fs = require('node:fs');
 const semver = require('semver');
 const { GitProcess } = require('dugite');
-const { promisify } = require('util');
+const { promisify } = require('node:util');
 
 const { ELECTRON_DIR } = require('../lib/utils');
 

@@ -1,8 +1,8 @@
 const { GitProcess } = require('dugite');
-const fs = require('fs');
+const fs = require('node:fs');
 const klaw = require('klaw');
-const os = require('os');
-const path = require('path');
+const os = require('node:os');
+const path = require('node:path');
 
 const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');

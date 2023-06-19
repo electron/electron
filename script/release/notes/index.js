@@ -2,7 +2,7 @@
 
 const { GitProcess } = require('dugite');
 const minimist = require('minimist');
-const path = require('path');
+const path = require('node:path');
 const semver = require('semver');
 
 const { ELECTRON_DIR } = require('../../lib/utils');

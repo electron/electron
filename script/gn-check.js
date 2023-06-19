@@ -4,8 +4,8 @@ Usage:
 $ node ./script/gn-check.js [--outDir=dirName]
 */
 
-const cp = require('child_process');
-const path = require('path');
+const cp = require('node:child_process');
+const path = require('node:path');
 const args = require('minimist')(process.argv.slice(2), { string: ['outDir'] });
 
 const { getOutDir } = require('./lib/utils');
