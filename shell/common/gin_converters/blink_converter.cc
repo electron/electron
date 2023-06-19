@@ -8,12 +8,14 @@
 #include <string>
 #include <vector>
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
 #include "shell/common/gin_converters/gfx_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
+#include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/keyboard_util.h"
@@ -130,86 +132,77 @@ struct Converter<blink::WebMouseEvent::Button> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebMouseEvent::Button* out) {
-    std::string button = base::ToLowerASCII(gin::V8ToString(isolate, val));
-    if (button == "left")
-      *out = blink::WebMouseEvent::Button::kLeft;
-    else if (button == "middle")
-      *out = blink::WebMouseEvent::Button::kMiddle;
-    else if (button == "right")
-      *out = blink::WebMouseEvent::Button::kRight;
-    else
-      return false;
-    return true;
+    using Val = blink::WebMouseEvent::Button;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"left", Val::kLeft},
+            {"middle", Val::kMiddle},
+            {"right", Val::kRight},
+        });
+    return FromV8WithLowerLookup(isolate, val, Lookup, out);
   }
 };
+
+// clang-format off
+
+// these are the modifier names we both accept and return
+static constexpr auto Modifiers =
+    base::MakeFixedFlatMapSorted<base::StringPiece, blink::WebInputEvent::Modifiers>({
+        {"alt", blink::WebInputEvent::Modifiers::kAltKey},
+        {"capslock", blink::WebInputEvent::Modifiers::kCapsLockOn},
+        {"control", blink::WebInputEvent::Modifiers::kControlKey},
+        {"isautorepeat", blink::WebInputEvent::Modifiers::kIsAutoRepeat},
+        {"iskeypad", blink::WebInputEvent::Modifiers::kIsKeyPad},
+        {"left", blink::WebInputEvent::Modifiers::kIsLeft},
+        {"leftbuttondown", blink::WebInputEvent::Modifiers::kLeftButtonDown},
+        {"meta", blink::WebInputEvent::Modifiers::kMetaKey},
+        {"middlebuttondown", blink::WebInputEvent::Modifiers::kMiddleButtonDown},
+        {"numlock", blink::WebInputEvent::Modifiers::kNumLockOn},
+        {"right", blink::WebInputEvent::Modifiers::kIsRight},
+        {"rightbuttondown", blink::WebInputEvent::Modifiers::kRightButtonDown},
+        {"shift", blink::WebInputEvent::Modifiers::kShiftKey},
+        // TODO(nornagon): the rest of the modifiers
+});
+
+// these are the modifier names we accept but do not return
+static constexpr auto ModifierAliases =
+    base::MakeFixedFlatMapSorted<base::StringPiece, blink::WebInputEvent::Modifiers>({
+        {"cmd", blink::WebInputEvent::Modifiers::kMetaKey},
+        {"command", blink::WebInputEvent::Modifiers::kMetaKey},
+        {"ctrl", blink::WebInputEvent::Modifiers::kControlKey},
+});
+
+static constexpr auto ReferrerPolicies =
+    base::MakeFixedFlatMapSorted<base::StringPiece, network::mojom::ReferrerPolicy>({
+        {"default", network::mojom::ReferrerPolicy::kDefault},
+        {"no-referrer", network::mojom::ReferrerPolicy::kNever},
+        {"no-referrer-when-downgrade", network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade},
+        {"origin", network::mojom::ReferrerPolicy::kOrigin},
+        {"same-origin", network::mojom::ReferrerPolicy::kSameOrigin},
+        {"strict-origin", network::mojom::ReferrerPolicy::kStrictOrigin},
+        {"strict-origin-when-cross-origin", network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin},
+        {"unsafe-url", network::mojom::ReferrerPolicy::kAlways},
+    });
+
+// clang-format on
 
 template <>
 struct Converter<blink::WebInputEvent::Modifiers> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Handle<v8::Value> val,
                      blink::WebInputEvent::Modifiers* out) {
-    std::string modifier = base::ToLowerASCII(gin::V8ToString(isolate, val));
-    if (modifier == "shift")
-      *out = blink::WebInputEvent::Modifiers::kShiftKey;
-    else if (modifier == "control" || modifier == "ctrl")
-      *out = blink::WebInputEvent::Modifiers::kControlKey;
-    else if (modifier == "alt")
-      *out = blink::WebInputEvent::Modifiers::kAltKey;
-    else if (modifier == "meta" || modifier == "command" || modifier == "cmd")
-      *out = blink::WebInputEvent::Modifiers::kMetaKey;
-    else if (modifier == "iskeypad")
-      *out = blink::WebInputEvent::Modifiers::kIsKeyPad;
-    else if (modifier == "isautorepeat")
-      *out = blink::WebInputEvent::Modifiers::kIsAutoRepeat;
-    else if (modifier == "leftbuttondown")
-      *out = blink::WebInputEvent::Modifiers::kLeftButtonDown;
-    else if (modifier == "middlebuttondown")
-      *out = blink::WebInputEvent::Modifiers::kMiddleButtonDown;
-    else if (modifier == "rightbuttondown")
-      *out = blink::WebInputEvent::Modifiers::kRightButtonDown;
-    else if (modifier == "capslock")
-      *out = blink::WebInputEvent::Modifiers::kCapsLockOn;
-    else if (modifier == "numlock")
-      *out = blink::WebInputEvent::Modifiers::kNumLockOn;
-    else if (modifier == "left")
-      *out = blink::WebInputEvent::Modifiers::kIsLeft;
-    else if (modifier == "right")
-      *out = blink::WebInputEvent::Modifiers::kIsRight;
-    // TODO(nornagon): the rest of the modifiers
-    return true;
+    return FromV8WithLowerLookup(isolate, val, Modifiers, out) ||
+           FromV8WithLowerLookup(isolate, val, ModifierAliases, out);
   }
 };
 
 std::vector<base::StringPiece> ModifiersToArray(int modifiers) {
-  using Modifiers = blink::WebInputEvent::Modifiers;
   std::vector<base::StringPiece> modifier_strings;
-  if (modifiers & Modifiers::kShiftKey)
-    modifier_strings.push_back("shift");
-  if (modifiers & Modifiers::kControlKey)
-    modifier_strings.push_back("control");
-  if (modifiers & Modifiers::kAltKey)
-    modifier_strings.push_back("alt");
-  if (modifiers & Modifiers::kMetaKey)
-    modifier_strings.push_back("meta");
-  if (modifiers & Modifiers::kIsKeyPad)
-    modifier_strings.push_back("iskeypad");
-  if (modifiers & Modifiers::kIsAutoRepeat)
-    modifier_strings.push_back("isautorepeat");
-  if (modifiers & Modifiers::kLeftButtonDown)
-    modifier_strings.push_back("leftbuttondown");
-  if (modifiers & Modifiers::kMiddleButtonDown)
-    modifier_strings.push_back("middlebuttondown");
-  if (modifiers & Modifiers::kRightButtonDown)
-    modifier_strings.push_back("rightbuttondown");
-  if (modifiers & Modifiers::kCapsLockOn)
-    modifier_strings.push_back("capslock");
-  if (modifiers & Modifiers::kNumLockOn)
-    modifier_strings.push_back("numlock");
-  if (modifiers & Modifiers::kIsLeft)
-    modifier_strings.push_back("left");
-  if (modifiers & Modifiers::kIsRight)
-    modifier_strings.push_back("right");
-  // TODO(nornagon): the rest of the modifiers
+
+  for (const auto& [name, mask] : Modifiers)
+    if (mask & modifiers)
+      modifier_strings.emplace_back(name);
+
   return modifier_strings;
 }
 
@@ -553,26 +546,11 @@ v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStats>::ToV8(
 v8::Local<v8::Value> Converter<network::mojom::ReferrerPolicy>::ToV8(
     v8::Isolate* isolate,
     const network::mojom::ReferrerPolicy& in) {
-  switch (in) {
-    case network::mojom::ReferrerPolicy::kDefault:
-      return StringToV8(isolate, "default");
-    case network::mojom::ReferrerPolicy::kAlways:
-      return StringToV8(isolate, "unsafe-url");
-    case network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade:
-      return StringToV8(isolate, "no-referrer-when-downgrade");
-    case network::mojom::ReferrerPolicy::kNever:
-      return StringToV8(isolate, "no-referrer");
-    case network::mojom::ReferrerPolicy::kOrigin:
-      return StringToV8(isolate, "origin");
-    case network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin:
-      return StringToV8(isolate, "strict-origin-when-cross-origin");
-    case network::mojom::ReferrerPolicy::kSameOrigin:
-      return StringToV8(isolate, "same-origin");
-    case network::mojom::ReferrerPolicy::kStrictOrigin:
-      return StringToV8(isolate, "strict-origin");
-    default:
-      return StringToV8(isolate, "no-referrer");
-  }
+  for (const auto& [name, val] : ReferrerPolicies)
+    if (val == in)
+      return StringToV8(isolate, name);
+
+  return StringToV8(isolate, "no-referrer");
 }
 
 // static
@@ -580,26 +558,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
     v8::Isolate* isolate,
     v8::Handle<v8::Value> val,
     network::mojom::ReferrerPolicy* out) {
-  std::string policy = base::ToLowerASCII(gin::V8ToString(isolate, val));
-  if (policy == "default")
-    *out = network::mojom::ReferrerPolicy::kDefault;
-  else if (policy == "unsafe-url")
-    *out = network::mojom::ReferrerPolicy::kAlways;
-  else if (policy == "no-referrer-when-downgrade")
-    *out = network::mojom::ReferrerPolicy::kNoReferrerWhenDowngrade;
-  else if (policy == "no-referrer")
-    *out = network::mojom::ReferrerPolicy::kNever;
-  else if (policy == "origin")
-    *out = network::mojom::ReferrerPolicy::kOrigin;
-  else if (policy == "strict-origin-when-cross-origin")
-    *out = network::mojom::ReferrerPolicy::kStrictOriginWhenCrossOrigin;
-  else if (policy == "same-origin")
-    *out = network::mojom::ReferrerPolicy::kSameOrigin;
-  else if (policy == "strict-origin")
-    *out = network::mojom::ReferrerPolicy::kStrictOrigin;
-  else
-    return false;
-  return true;
+  return FromV8WithLowerLookup(isolate, val, ReferrerPolicies, out);
 }
 
 // static
