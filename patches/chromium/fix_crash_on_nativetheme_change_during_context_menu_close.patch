@@ -15,7 +15,7 @@ This should be upstreamed, as other uses of MenuController in this
 file do check for menu controller being null.
 
 diff --git a/ui/views/controls/menu/menu_scroll_view_container.cc b/ui/views/controls/menu/menu_scroll_view_container.cc
-index 76bb4863858fb1bde1288b3d1b1d07f151a2f801..f2ceb3b8d6cbcf4bb4af8b85573bba29a38e5abf 100644
+index c4f9cea175824f9f5d592e05affdf717a391dcd6..7163f3ff0c745ce1099685028179e5ed0c54ef05 100644
 --- a/ui/views/controls/menu/menu_scroll_view_container.cc
 +++ b/ui/views/controls/menu/menu_scroll_view_container.cc
 @@ -402,8 +402,7 @@ void MenuScrollViewContainer::CreateDefaultBorder() {
