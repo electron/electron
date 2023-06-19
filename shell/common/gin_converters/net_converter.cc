@@ -689,57 +689,28 @@ v8::Local<v8::Value> Converter<net::IPEndPoint>::ToV8(
 bool Converter<net::DnsQueryType>::FromV8(v8::Isolate* isolate,
                                           v8::Local<v8::Value> val,
                                           net::DnsQueryType* out) {
-  std::string query_type;
-  if (!ConvertFromV8(isolate, val, &query_type))
-    return false;
-
-  if (query_type == "A") {
-    *out = net::DnsQueryType::A;
-    return true;
-  }
-
-  if (query_type == "AAAA") {
-    *out = net::DnsQueryType::AAAA;
-    return true;
-  }
-
-  return false;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, net::DnsQueryType>({
+          {"A", net::DnsQueryType::A},
+          {"AAAA", net::DnsQueryType::AAAA},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
 // static
 bool Converter<net::HostResolverSource>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 net::HostResolverSource* out) {
-  std::string query_type;
-  if (!ConvertFromV8(isolate, val, &query_type))
-    return false;
-
-  if (query_type == "any") {
-    *out = net::HostResolverSource::ANY;
-    return true;
-  }
-
-  if (query_type == "system") {
-    *out = net::HostResolverSource::SYSTEM;
-    return true;
-  }
-
-  if (query_type == "dns") {
-    *out = net::HostResolverSource::DNS;
-    return true;
-  }
-
-  if (query_type == "mdns") {
-    *out = net::HostResolverSource::MULTICAST_DNS;
-    return true;
-  }
-
-  if (query_type == "localOnly") {
-    *out = net::HostResolverSource::LOCAL_ONLY;
-    return true;
-  }
-
-  return false;
+  using Val = net::HostResolverSource;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"any", Val::ANY},
+          {"dns", Val::DNS},
+          {"localOnly", Val::LOCAL_ONLY},
+          {"mdns", Val::MULTICAST_DNS},
+          {"system", Val::SYSTEM},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
 // static
@@ -747,26 +718,14 @@ bool Converter<network::mojom::ResolveHostParameters::CacheUsage>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     network::mojom::ResolveHostParameters::CacheUsage* out) {
-  std::string query_type;
-  if (!ConvertFromV8(isolate, val, &query_type))
-    return false;
-
-  if (query_type == "allowed") {
-    *out = network::mojom::ResolveHostParameters::CacheUsage::ALLOWED;
-    return true;
-  }
-
-  if (query_type == "staleAllowed") {
-    *out = network::mojom::ResolveHostParameters::CacheUsage::STALE_ALLOWED;
-    return true;
-  }
-
-  if (query_type == "disallowed") {
-    *out = network::mojom::ResolveHostParameters::CacheUsage::DISALLOWED;
-    return true;
-  }
-
-  return false;
+  using Val = network::mojom::ResolveHostParameters::CacheUsage;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"allowed", Val::ALLOWED},
+          {"disallowed", Val::DISALLOWED},
+          {"staleAllowed", Val::STALE_ALLOWED},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
 // static
@@ -774,21 +733,13 @@ bool Converter<network::mojom::SecureDnsPolicy>::FromV8(
     v8::Isolate* isolate,
     v8::Local<v8::Value> val,
     network::mojom::SecureDnsPolicy* out) {
-  std::string query_type;
-  if (!ConvertFromV8(isolate, val, &query_type))
-    return false;
-
-  if (query_type == "allow") {
-    *out = network::mojom::SecureDnsPolicy::ALLOW;
-    return true;
-  }
-
-  if (query_type == "disable") {
-    *out = network::mojom::SecureDnsPolicy::DISABLE;
-    return true;
-  }
-
-  return false;
+  using Val = network::mojom::SecureDnsPolicy;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"allow", Val::ALLOW},
+          {"disable", Val::DISABLE},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
 // static
