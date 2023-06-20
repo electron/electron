@@ -128,3 +128,4 @@ add_gin_converter_support_for_arraybufferview.patch
 chore_defer_usb_service_getdevices_request_until_usb_service_is.patch
 cherry-pick-48a136e77e6d.patch
 cherry-pick-e6e23ba00379.patch
+fix_crash_on_nativetheme_change_during_context_menu_close.patch
