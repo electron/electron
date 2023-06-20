@@ -63,12 +63,13 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
 void ElectronRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
-  // TODO(zcbenz): Do not create Node environment if node integration is not
-  // enabled.
-
   // Only load Node.js if we are a main frame or a devtools extension
   // unless Node.js support has been explicitly enabled for subframes.
-  if (!ShouldLoadPreload(renderer_context, render_frame))
+  auto* cmdline = base::CommandLine::ForCurrentProcess();
+  bool should_load_node = ShouldLoadPreload(renderer_context, render_frame) &&
+                          cmdline->HasSwitch(switches::kNodeIntegration);
+
+  if (!should_load_node)
     return;
 
   injected_frames_.insert(render_frame);

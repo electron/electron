@@ -381,6 +381,9 @@ void WebContentsPreferences::AppendCommandLineSwitches(
   if (node_integration_in_worker_)
     command_line->AppendSwitch(switches::kNodeIntegrationInWorker);
 
+  if (node_integration_)
+    command_line->AppendSwitch(switches::kNodeIntegration);
+
   // We are appending args to a webContents so let's save the current state
   // of our preferences object so that during the lifetime of the WebContents
   // we can fetch the options used to initially configure the WebContents

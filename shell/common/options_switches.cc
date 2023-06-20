@@ -239,8 +239,13 @@ const char kAppPath[] = "app-path";
 // The command line switch versions of the options.
 const char kScrollBounce[] = "scroll-bounce";
 
-// Command switch passed to renderer process to control nodeIntegration.
+// Command switch passed to renderer process to control nodeIntegration in
+// workers.
 const char kNodeIntegrationInWorker[] = "node-integration-in-worker";
+
+// Command switch passed to renderer process to control nodeIntegration in
+// workers.
+const char kNodeIntegration[] = "node-integration";
 
 // Widevine options
 // Path to Widevine CDM binaries.
