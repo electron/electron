@@ -141,40 +141,25 @@ struct Converter<JumpListItem::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      JumpListItem::Type* out) {
-    std::string item_type;
-    if (!ConvertFromV8(isolate, val, &item_type))
-      return false;
-
-    if (item_type == "task")
-      *out = JumpListItem::Type::kTask;
-    else if (item_type == "separator")
-      *out = JumpListItem::Type::kSeparator;
-    else if (item_type == "file")
-      *out = JumpListItem::Type::kFile;
-    else
-      return false;
-
-    return true;
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    JumpListItem::Type val) {
-    std::string item_type;
-    switch (val) {
-      case JumpListItem::Type::kTask:
-        item_type = "task";
-        break;
+    for (const auto& [name, item_val] : Lookup)
+      if (item_val == val)
+        return gin::ConvertToV8(isolate, name);
 
-      case JumpListItem::Type::kSeparator:
-        item_type = "separator";
-        break;
-
-      case JumpListItem::Type::kFile:
-        item_type = "file";
-        break;
-    }
-    return gin::ConvertToV8(isolate, item_type);
+    return gin::ConvertToV8(isolate, "");
   }
+
+ private:
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListItem::Type>({
+          {"file", JumpListItem::Type::kFile},
+          {"separator", JumpListItem::Type::kSeparator},
+          {"task", JumpListItem::Type::kTask},
+      });
 };
 
 template <>
@@ -247,46 +232,26 @@ struct Converter<JumpListCategory::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      JumpListCategory::Type* out) {
-    std::string category_type;
-    if (!ConvertFromV8(isolate, val, &category_type))
-      return false;
-
-    if (category_type == "tasks")
-      *out = JumpListCategory::Type::kTasks;
-    else if (category_type == "frequent")
-      *out = JumpListCategory::Type::kFrequent;
-    else if (category_type == "recent")
-      *out = JumpListCategory::Type::kRecent;
-    else if (category_type == "custom")
-      *out = JumpListCategory::Type::kCustom;
-    else
-      return false;
-
-    return true;
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    JumpListCategory::Type val) {
-    std::string category_type;
-    switch (val) {
-      case JumpListCategory::Type::kTasks:
-        category_type = "tasks";
-        break;
+    for (const auto& [name, type_val] : Lookup)
+      if (type_val == val)
+        return gin::ConvertToV8(isolate, name);
 
-      case JumpListCategory::Type::kFrequent:
-        category_type = "frequent";
-        break;
-
-      case JumpListCategory::Type::kRecent:
-        category_type = "recent";
-        break;
-
-      case JumpListCategory::Type::kCustom:
-        category_type = "custom";
-        break;
-    }
-    return gin::ConvertToV8(isolate, category_type);
+    return gin::ConvertToV8(isolate, "");
   }
+
+ private:
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, JumpListCategory::Type>({
+          {"custom", JumpListCategory::Type::kCustom},
+          {"frequent", JumpListCategory::Type::kFrequent},
+          {"recent", JumpListCategory::Type::kRecent},
+          {"tasks", JumpListCategory::Type::kTasks},
+      });
 };
 
 template <>
@@ -440,20 +405,13 @@ struct Converter<net::SecureDnsMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      net::SecureDnsMode* out) {
-    std::string s;
-    if (!ConvertFromV8(isolate, val, &s))
-      return false;
-    if (s == "off") {
-      *out = net::SecureDnsMode::kOff;
-      return true;
-    } else if (s == "automatic") {
-      *out = net::SecureDnsMode::kAutomatic;
-      return true;
-    } else if (s == "secure") {
-      *out = net::SecureDnsMode::kSecure;
-      return true;
-    }
-    return false;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, net::SecureDnsMode>({
+            {"automatic", net::SecureDnsMode::kAutomatic},
+            {"off", net::SecureDnsMode::kOff},
+            {"secure", net::SecureDnsMode::kSecure},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 }  // namespace gin
