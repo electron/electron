@@ -184,6 +184,16 @@ Returns `string` - ETag header value.
 Returns `Double` - Number of seconds since the UNIX epoch when the download was
 started.
 
+[comment]: # (OpenFin Instance Methods)
+
+#### `downloadItem.getLastReason()`
+
+Returns `String` - Returns the most recent interrupt reason for this item.
+Returns 'NONE' if there is no previous interrupt reason.
+Interrupted downloads and resumed downloads return the last known interrupt reason.
+Meaning of the returned reason strings:
+https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h
+
 ### Instance Properties
 
 #### `downloadItem.savePath`
