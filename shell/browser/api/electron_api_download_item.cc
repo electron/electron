@@ -282,8 +282,8 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("setSaveDialogOptions", &DownloadItem::SetSaveDialogOptions)
       .SetMethod("getSaveDialogOptions", &DownloadItem::GetSaveDialogOptions)
       .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
-      .SetMethod("getETag", &DownloadItem::GetETag),
-      .SetMethod("getLastReason", &DownloadItem::GetLastReason),
+      .SetMethod("getETag", &DownloadItem::GetETag)
+      .SetMethod("getLastReason", &DownloadItem::GetLastReason)
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
