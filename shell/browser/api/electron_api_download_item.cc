@@ -15,6 +15,7 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/gin_converters/download_converter.h"
 #include "url/gurl.h"
 
 namespace gin {
@@ -248,6 +249,12 @@ double DownloadItem::GetStartTime() const {
   return download_item_->GetStartTime().ToDoubleT();
 }
 
+download::DownloadInterruptReason DownloadItem::GetLastReason() const {
+  if (!CheckAlive())
+    return download::DOWNLOAD_INTERRUPT_REASON_NONE;
+  return download_item_->GetLastReason();
+}
+
 // static
 gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
     v8::Isolate* isolate) {
@@ -275,7 +282,8 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("setSaveDialogOptions", &DownloadItem::SetSaveDialogOptions)
       .SetMethod("getSaveDialogOptions", &DownloadItem::GetSaveDialogOptions)
       .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
-      .SetMethod("getETag", &DownloadItem::GetETag)
+      .SetMethod("getETag", &DownloadItem::GetETag),
+      .SetMethod("getLastReason", &DownloadItem::GetLastReason),
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
