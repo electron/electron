@@ -51,7 +51,7 @@ index 0ffa0ec042bd59de5d28fad53dee2b6321d64b18..a6570cb144952a1bb7eca124bb4cbb33
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index f3a89933fef78c62e4c67fcfd521c8413c32e38f..8497ad66f2344b0379b8033d26ca2b87fa134294 100644
+index f10414f382b48ecc162b22d9638d948e3e719733..47d13dbe9efd501efabe096607e53cb80744cd42 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -316,6 +316,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
