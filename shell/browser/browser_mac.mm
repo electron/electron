@@ -32,6 +32,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/platform_util.h"
+#include "ui/base/resource/resource_scale_factor.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
@@ -501,14 +502,12 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
     image = native_image->image();
   }
 
-  DockSetIconImage(image);
-}
-
-void Browser::DockSetIconImage(gfx::Image const& image) {
-  if (!is_ready_) {
-    dock_icon_ = image;
-    return;
-  }
+  // This is needed to avoid a hard CHECK when this fn is called
+  // before the browser process is ready, since supported scales
+  // are normally set by ui::ResourceBundle::InitSharedInstance
+  // during browser process startup.
+  if (!is_ready())
+    ui::SetSupportedResourceScaleFactors({ui::k100Percent});
 
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
