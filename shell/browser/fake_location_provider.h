@@ -31,7 +31,7 @@ class FakeLocationProvider : public device::LocationProvider {
 
  private:
   device::mojom::GeolocationDiagnostics::ProviderState state_ =
-      mojom::GeolocationDiagnostics::ProviderState::kStopped;
+      device::mojom::GeolocationDiagnostics::ProviderState::kStopped;
   device::mojom::GeopositionResultPtr result_;
   LocationProviderUpdateCallback callback_;
 };
