@@ -186,13 +186,12 @@ started.
 
 [comment]: # (OpenFin Instance Methods)
 
-#### `downloadItem.getLastReason()`
+#### `downloadItem.getLastInterruptReason()`
 
-Returns `String` - Returns the most recent interrupt reason for this item.
-Returns 'NONE' if there is no previous interrupt reason.
-Interrupted downloads and resumed downloads return the last known interrupt reason.
-Meaning of the returned reason strings:
-https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h
+Returns the most recent interrupt reason for this item, or 'NONE' if there is no previous interrupt reason.
+The list of potential return values and their meanings can be found [here](Meaning of the returned reason strings:
+https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h)
+
 
 ### Instance Properties
 

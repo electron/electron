@@ -249,7 +249,7 @@ double DownloadItem::GetStartTime() const {
   return download_item_->GetStartTime().ToDoubleT();
 }
 
-download::DownloadInterruptReason DownloadItem::GetLastReason() const {
+download::DownloadInterruptReason DownloadItem::GetLastInterruptReason() const {
   if (!CheckAlive())
     return download::DOWNLOAD_INTERRUPT_REASON_NONE;
   return download_item_->GetLastReason();
@@ -283,7 +283,7 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getSaveDialogOptions", &DownloadItem::GetSaveDialogOptions)
       .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
       .SetMethod("getETag", &DownloadItem::GetETag)
-      .SetMethod("getLastReason", &DownloadItem::GetLastReason)
+      .SetMethod("getLastInterruptReason", &DownloadItem::GetLastInterruptReason)
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
