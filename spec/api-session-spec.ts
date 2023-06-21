@@ -1412,7 +1412,7 @@ describe('session module', () => {
 
   describe('session-created event', () => {
     it('is emitted when a session is created', async () => {
-      const sessionCreated = once(app, 'session-created');
+      const sessionCreated = once(app, 'session-created') as Promise<[any, Session]>;
       const session1 = session.fromPartition('' + Math.random());
       const [session2] = await sessionCreated;
       expect(session1).to.equal(session2);

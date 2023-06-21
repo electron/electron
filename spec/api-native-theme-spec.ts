@@ -84,7 +84,7 @@ describe('nativeTheme module', () => {
           .addEventListener('change', () => require('electron').ipcRenderer.send('theme-change'))
       `);
       const originalSystemIsDark = await getPrefersColorSchemeIsDark(w);
-      let changePromise: Promise<any[]> = once(ipcMain, 'theme-change');
+      let changePromise = once(ipcMain, 'theme-change');
       nativeTheme.themeSource = 'dark';
       if (!originalSystemIsDark) await changePromise;
       expect(await getPrefersColorSchemeIsDark(w)).to.equal(true);

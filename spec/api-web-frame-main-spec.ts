@@ -143,7 +143,7 @@ describe('webFrameMain module', () => {
     it('should show parent origin when child page is about:blank', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
-      const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       expect(w.webContents.mainFrame.origin).to.equal('file://');
       await w.webContents.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
@@ -163,7 +163,7 @@ describe('webFrameMain module', () => {
       expect(mainFrame.origin).to.equal(serverA.url.replace(/\/$/, ''));
       const [childFrame] = mainFrame.frames;
       expect(childFrame.origin).to.equal(serverB.url.replace(/\/$/, ''));
-      const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       await childFrame.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
       expect(childWebContents.mainFrame.origin).to.equal(childFrame.origin);
@@ -367,7 +367,7 @@ describe('webFrameMain module', () => {
   describe('"frame-created" event', () => {
     it('emits when the main frame is created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = once(w.webContents, 'frame-created');
+      const promise = once(w.webContents, 'frame-created') as Promise<[any, Electron.FrameCreatedDetails]>;
       w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
       const [, details] = await promise;
       expect(details.frame).to.equal(w.webContents.mainFrame);
@@ -375,7 +375,7 @@ describe('webFrameMain module', () => {
 
     it('emits when nested frames are created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<[any, Electron.FrameCreatedDetails][]>;
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);

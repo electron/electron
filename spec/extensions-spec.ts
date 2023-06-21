@@ -54,7 +54,7 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     await w.loadURL('about:blank');
 
-    const promise = once(app, 'web-contents-created');
+    const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const args: any = await promise;
     const wc: Electron.WebContents = args[1];
@@ -74,7 +74,7 @@ describe('chrome extensions', () => {
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
     await w.loadURL('about:blank');
 
-    const promise = once(app, 'web-contents-created');
+    const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
     await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
     const args: any = await promise;
     const wc: Electron.WebContents = args[1];
@@ -457,7 +457,7 @@ describe('chrome extensions', () => {
 
     it('has session in background page', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      const promise = once(app, 'web-contents-created');
+      const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       const { id } = await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
@@ -468,7 +468,7 @@ describe('chrome extensions', () => {
 
     it('can open devtools of background page', async () => {
       const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
-      const promise = once(app, 'web-contents-created');
+      const promise = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       await customSession.loadExtension(path.join(fixtures, 'extensions', 'persistent-background-page'));
       const [, bgPageContents] = await promise;
       expect(bgPageContents.getType()).to.equal('backgroundPage');
