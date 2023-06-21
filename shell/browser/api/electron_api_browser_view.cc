@@ -131,6 +131,10 @@ void BrowserView::WebContentsDestroyed() {
   Unpin();
 }
 
+void BrowserView::OnCloseContents() {
+  api_web_contents_ = nullptr;
+}
+
 // static
 gin::Handle<BrowserView> BrowserView::New(gin_helper::ErrorThrower thrower,
                                           gin::Arguments* args) {
