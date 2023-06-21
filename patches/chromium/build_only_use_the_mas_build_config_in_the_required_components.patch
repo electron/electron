@@ -71,10 +71,10 @@ index 3bc799978ea24e2f6e566dcc7f8638789e18d61d..cd8910dbc57813d41cd0fa28bb2ad61a
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 4793d5bc9de9a3a158f90e0432c32c4818bcef2e..c42793c782c13a62b6205d0ed555ad5abab16197 100644
+index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d39c279879 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -332,6 +332,7 @@ viz_component("service") {
+@@ -331,6 +331,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -82,7 +82,7 @@ index 4793d5bc9de9a3a158f90e0432c32c4818bcef2e..c42793c782c13a62b6205d0ed555ad5a
    }
  
    if (is_android || use_ozone) {
-@@ -588,6 +589,8 @@ viz_source_set("unit_tests") {
+@@ -587,6 +588,8 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -92,7 +92,7 @@ index 4793d5bc9de9a3a158f90e0432c32c4818bcef2e..c42793c782c13a62b6205d0ed555ad5a
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 77badcf1fe11874c8293d65c5026bc6098e9f0d3..eedc925e821d8cd170f88a9756126830e2aa935f 100644
+index 7901304acdeb5845f1c1292d6360bda41c0764e0..a3d148324a0d7bc7d5416fd8e6fbdfdd956d9ccf 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -104,7 +104,7 @@ index 77badcf1fe11874c8293d65c5026bc6098e9f0d3..eedc925e821d8cd170f88a9756126830
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index de480444c8c92bcbaa769f9d9b140b2d9fe17999..879c49fdbb3e7d4dc9a7610900e83ad8ed61c85a 100644
+index aa1ae523aee045fb1db412a42af8aadb97e9ee2a..e5fe6c0212721a67d67b17ee8871eb92e339f845 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -174,6 +174,7 @@ source_set("common") {
@@ -116,7 +116,7 @@ index de480444c8c92bcbaa769f9d9b140b2d9fe17999..879c49fdbb3e7d4dc9a7610900e83ad8
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade263e798478 100644
+index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b60304f01e 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
 @@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
@@ -128,7 +128,7 @@ index abf8aa4dcf498f9684c10fbbe85547040029401a..6a3897cb80071cf9cdd0ee035a7ade26
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 5a8c97d24f7fae81decc1f9a61e260505edf96ff..2f727303a6adfe937db665b404bc6742a834ad0c 100644
+index e4ad1503753b46cf9488eec9c41c122a0b2b8d68..3c71c505a49e9abd2ccfcb840d296fc270615dea 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -230,7 +230,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index ea98141f7cf3c4fcacfd82061963129b5d66bfa4..7ec5889a61e5575936a31196270333d39dcb6154 100644
+index d1ab6d45d519dd131a854b01b90295b5e7316d71..7086774c980636b160f5152ac2c3c6b737217dd1 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {
@@ -279,7 +279,7 @@ index e6a0ca42d0fa2446b300714372986da7e2013f16..fd651028ead9103dabcbb3686e412c12
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 66a600175e8dbb98d695f1006506671b88daa099..2c3f56aa98994077172169d42c82fb4177d906e7 100644
+index e7e52516cec15d41abb9f9c9458c5f3420de7dc0..2e13ca6442c616944577b3374fae082554e585c0 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {

@@ -9,10 +9,10 @@ at rutime. It would be best if eventually all usages of this property were
 replaced with clean ozone native implementations.
 
 diff --git a/ui/ozone/platform/x11/ozone_platform_x11.cc b/ui/ozone/platform/x11/ozone_platform_x11.cc
-index 464421d46a5d764971bc010af6032e743147aa72..6815d2748a4ae70d107b14f8b65f07788ddb8330 100644
+index bf0365da219530780ec232e477f13ed216e6d5b9..84b137b0bff80f63db58b08d6c97ed5228294e0a 100644
 --- a/ui/ozone/platform/x11/ozone_platform_x11.cc
 +++ b/ui/ozone/platform/x11/ozone_platform_x11.cc
-@@ -192,6 +192,7 @@ class OzonePlatformX11 : public OzonePlatform,
+@@ -193,6 +193,7 @@ class OzonePlatformX11 : public OzonePlatform,
            base::MessagePumpType::UI;
        properties->supports_vulkan_swap_chain = true;
        properties->skia_can_fall_back_to_x11 = true;
