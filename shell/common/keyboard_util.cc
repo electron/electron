@@ -16,7 +16,7 @@ namespace {
 
 // Return key code represented by |str|.
 ui::KeyboardCode KeyboardCodeFromKeyIdentifier(
-    const std::string& s,
+    base::StringPiece s,
     absl::optional<char16_t>* shifted_char) {
   std::string str = base::ToLowerASCII(s);
   if (str == "ctrl" || str == "control") {
@@ -137,9 +137,7 @@ ui::KeyboardCode KeyboardCodeFromKeyIdentifier(
   }
 }
 
-}  // namespace
-
-ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
+constexpr ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
   c = base::ToLowerASCII(c);
   *shifted = false;
   switch (c) {
@@ -317,7 +315,9 @@ ui::KeyboardCode KeyboardCodeFromCharCode(char16_t c, bool* shifted) {
   }
 }
 
-ui::KeyboardCode KeyboardCodeFromStr(const std::string& str,
+}  // namespace
+
+ui::KeyboardCode KeyboardCodeFromStr(base::StringPiece str,
                                      absl::optional<char16_t>* shifted_char) {
   if (str.size() == 1) {
     bool shifted = false;

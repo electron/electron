@@ -274,7 +274,7 @@ struct Converter<content::SavePageType> {
             {"htmlonly", Val::SAVE_PAGE_TYPE_AS_ONLY_HTML},
             {"mhtml", Val::SAVE_PAGE_TYPE_AS_MHTML},
         });
-    return FromV8WithLowerLookup(isoalte, val, Lookuop, out);
+    return FromV8WithLowerLookup(isolate, val, Lookup, out);
   }
 };
 
