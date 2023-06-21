@@ -39,19 +39,31 @@ This will allow you to observe call chains and identify potential issue areas.
 
 > Note that this will increase the size of the build significantly, taking up around 50G of disk space
 
-Write the following file to `electron/.git/info/exclude/debug.gn`
+Write the following file to `electron/build/args/debug.gn`
 
 ```gn
-import("//electron/build/args/testing.gn")
+import("testing.gn")
 is_debug = true
 symbol_level = 2
 forbid_non_component_debug_builds = false
 ```
 
+Then add `build/args/debug.gn` to the end of `electron/.git/info/exclude`, like this
+
+```sh
+# git ls-files --others --exclude-from=.git/info/exclude
+# Lines that start with '#' are comments.
+# For a project mostly in C, the following would be a good set of
+# exclude patterns (uncomment them if you want to use them):
+# *.[oa]
+# *~
+build/args/debug.gn
+```
+
 Then execute:
 
 ```sh
-$ gn gen out/Debug --args="import(\"//electron/.git/info/exclude/debug.gn\") $GN_EXTRA_ARGS"
+$ gn gen out/Debug --args="import(\"//electron/build/args/debug.gn\") $GN_EXTRA_ARGS"
 $ ninja -C out/Debug electron
 ```
 
