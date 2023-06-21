@@ -817,8 +817,8 @@ void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
 
-  for (const auto& header : headers) {
-    download_params->add_request_header(header.first, header.second);
+  for (const auto& [name, value] : headers) {
+    download_params->add_request_header(name, value);
   }
 
   auto* download_manager = browser_context()->GetDownloadManager();
