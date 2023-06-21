@@ -162,7 +162,7 @@ describe('ipcRenderer module', () => {
             ipcRenderer.once('pong', (event, data) => resolve(data))
           })`);
           expect(data.payload).to.equal(payload);
-          expect(data.isMainFrame).to.be.true();
+          expect(data.senderIsMainFrame).to.be.true();
         });
 
         it('sends message to WebContents from a child frame', async () => {
@@ -190,7 +190,7 @@ describe('ipcRenderer module', () => {
 
           const data = await promise;
           expect(data.payload).to.equal(payload);
-          expect(data.isMainFrame).to.be.false();
+          expect(data.senderIsMainFrame).to.be.false();
         });
 
         it('sends message on channel with non-ASCII characters to WebContents', async () => {

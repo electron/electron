@@ -2077,10 +2077,10 @@ void WebContents::MessageTo(int32_t web_contents_id,
       return;
 
     int32_t sender_id = ID();
-    bool is_main_frame = render_frame_host->GetParent() == nullptr;
+    bool sender_is_main_frame = render_frame_host->GetParent() == nullptr;
     web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
                                               std::move(arguments), sender_id,
-                                              is_main_frame);
+                                              sender_is_main_frame);
   }
 }
 

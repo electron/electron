@@ -11,7 +11,7 @@ interface ElectronRenderer {
       string channel,
       blink.mojom.CloneableMessage arguments,
       int32 sender_id,
-      bool is_main_frame);
+      bool sender_is_main_frame);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
