@@ -20,8 +20,8 @@
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
-    "standard/no-callback-literal": "off",
-    "node/no-deprecated-api": "off"
+    "n/no-callback-literal": "off",
+    "n/no-deprecated-api": "off"
   },
   "parserOptions": {
     "ecmaVersion": 6,
