@@ -5,8 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_KEYBOARD_UTIL_H_
 #define ELECTRON_SHELL_COMMON_KEYBOARD_UTIL_H_
 
-#include <base/strings/string_piece.h>
-
+#include "base/strings/string_piece.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
