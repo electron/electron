@@ -298,7 +298,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders;
         requestHeaders.Accept = '*/*;test/header';
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       const { data } = await ajax(defaultURL);
       expect(data).to.equal('/header/received');
@@ -331,7 +331,7 @@ describe('webRequest module', () => {
         ses.webRequest.onBeforeSendHeaders((details, callback) => {
           const requestHeaders = details.requestHeaders;
           requestHeaders.Accept = '*/*;test/header';
-          callback({ requestHeaders: requestHeaders });
+          callback({ requestHeaders });
         });
         const { data } = await ajax('no-cors://fake-host/redirect');
         expect(data).to.equal('header-received');
@@ -344,7 +344,7 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
         const requestHeaders = details.requestHeaders;
         requestHeaders.Origin = 'http://new-origin';
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       const { data } = await ajax(defaultURL);
       expect(data).to.equal('/new/origin');
@@ -365,7 +365,7 @@ describe('webRequest module', () => {
         Test: 'header'
       };
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
@@ -391,7 +391,7 @@ describe('webRequest module', () => {
       };
       let onSendHeadersCalled = false;
       ses.webRequest.onBeforeSendHeaders((details, callback) => {
-        callback({ requestHeaders: requestHeaders });
+        callback({ requestHeaders });
       });
       ses.webRequest.onSendHeaders((details) => {
         expect(details.requestHeaders).to.deep.equal(requestHeaders);
@@ -440,7 +440,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders.Custom = ['Changed'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('custom', 'Changed');
@@ -450,7 +450,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders['access-control-allow-origin'] = ['http://new-origin'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL);
       expect(headers).to.to.have.property('access-control-allow-origin', 'http://new-origin');
@@ -460,7 +460,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders!;
         responseHeaders.Custom = ['Changed'] as any;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax('cors://host');
       expect(headers).to.to.have.property('custom', 'Changed');
@@ -489,7 +489,7 @@ describe('webRequest module', () => {
     it('follows server redirect', async () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders;
-        callback({ responseHeaders: responseHeaders });
+        callback({ responseHeaders });
       });
       const { headers } = await ajax(defaultURL + 'serverRedirect');
       expect(headers).to.to.have.property('custom', 'Header');
@@ -499,7 +499,7 @@ describe('webRequest module', () => {
       ses.webRequest.onHeadersReceived((details, callback) => {
         const responseHeaders = details.responseHeaders;
         callback({
-          responseHeaders: responseHeaders,
+          responseHeaders,
           statusLine: 'HTTP/1.1 404 Not Found'
         });
       });
@@ -536,7 +536,7 @@ describe('webRequest module', () => {
       const redirectURL = defaultURL + 'redirect';
       ses.webRequest.onBeforeRequest((details, callback) => {
         if (details.url === defaultURL) {
-          callback({ redirectURL: redirectURL });
+          callback({ redirectURL });
         } else {
           callback({});
         }

@@ -680,10 +680,12 @@ WebContents.prototype._init = function () {
     // Make new windows requested by links behave like "window.open".
     this.on('-new-window' as any, (event: Electron.Event, url: string, frameName: string, disposition: Electron.HandlerDetails['disposition'],
       rawFeatures: string, referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -718,10 +720,12 @@ WebContents.prototype._init = function () {
     let windowOpenOverriddenOptions: BrowserWindowConstructorOptions | null = null;
     let windowOpenOutlivesOpenerOption: boolean = false;
     this.on('-will-add-new-contents' as any, (event: Electron.Event, url: string, frameName: string, rawFeatures: string, disposition: Electron.HandlerDetails['disposition'], referrer: Electron.Referrer, postData: PostData) => {
-      const postBody = postData ? {
-        data: postData,
-        ...parseContentTypeFormat(postData)
-      } : undefined;
+      const postBody = postData
+        ? {
+            data: postData,
+            ...parseContentTypeFormat(postData)
+          }
+        : undefined;
       const details: Electron.HandlerDetails = {
         url,
         frameName,
@@ -742,14 +746,16 @@ WebContents.prototype._init = function () {
       windowOpenOutlivesOpenerOption = result.outlivesOpener;
       windowOpenOverriddenOptions = result.browserWindowConstructorOptions;
       if (!event.defaultPrevented) {
-        const secureOverrideWebPreferences = windowOpenOverriddenOptions ? {
-          // Allow setting of backgroundColor as a webPreference even though
-          // it's technically a BrowserWindowConstructorOptions option because
-          // we need to access it in the renderer at init time.
-          backgroundColor: windowOpenOverriddenOptions.backgroundColor,
-          transparent: windowOpenOverriddenOptions.transparent,
-          ...windowOpenOverriddenOptions.webPreferences
-        } : undefined;
+        const secureOverrideWebPreferences = windowOpenOverriddenOptions
+          ? {
+              // Allow setting of backgroundColor as a webPreference even though
+              // it's technically a BrowserWindowConstructorOptions option because
+              // we need to access it in the renderer at init time.
+              backgroundColor: windowOpenOverriddenOptions.backgroundColor,
+              transparent: windowOpenOverriddenOptions.transparent,
+              ...windowOpenOverriddenOptions.webPreferences
+            }
+          : undefined;
         const { webPreferences: parsedWebPreferences } = parseFeatures(rawFeatures);
         const webPreferences = makeWebPreferences({
           embedder: this,

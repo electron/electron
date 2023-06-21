@@ -17,12 +17,12 @@ const isLinuxOnArm = process.platform === 'linux' && process.arch.includes('arm'
 type CrashInfo = {
   prod: string
   ver: string
-  process_type: string // eslint-disable-line camelcase
+  process_type: string
   ptype: string
   platform: string
   _productName: string
   _version: string
-  upload_file_minidump: Buffer // eslint-disable-line camelcase
+  upload_file_minidump: Buffer
   guid: string
   mainProcessSpecific: 'mps' | undefined
   rendererSpecific: 'rs' | undefined
@@ -531,7 +531,8 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       }
     }
 
-    const processList = process.platform === 'linux' ? ['main', 'renderer', 'sandboxed-renderer']
+    const processList = process.platform === 'linux'
+      ? ['main', 'renderer', 'sandboxed-renderer']
       : ['main', 'renderer', 'sandboxed-renderer', 'node'];
     for (const crashingProcess of processList) {
       describe(`when ${crashingProcess} crashes`, () => {

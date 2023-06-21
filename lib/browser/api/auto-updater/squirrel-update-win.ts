@@ -27,7 +27,7 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
       return callback(`AutoUpdater process with arguments ${args} is already running`);
     } else if (!spawnedProcess) {
       spawnedProcess = spawn(updateExe, args, {
-        detached: detached,
+        detached,
         windowsHide: true
       });
       spawnedArgs = args || [];

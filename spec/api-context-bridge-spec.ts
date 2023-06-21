@@ -67,7 +67,9 @@ describe('contextBridge', () => {
     describe(`with sandbox=${useSandbox}`, () => {
       const makeBindingWindow = async (bindingCreator: Function, worldId: number = 0) => {
         const preloadContentForMainWorld = `const renderer_1 = require('electron');
-        ${useSandbox ? '' : `require('node:v8').setFlagsFromString('--expose_gc');
+        ${useSandbox
+? ''
+: `require('node:v8').setFlagsFromString('--expose_gc');
         const gc=require('node:vm').runInNewContext('gc');
         renderer_1.contextBridge.exposeInMainWorld('GCRunner', {
           run: () => gc()
@@ -75,7 +77,9 @@ describe('contextBridge', () => {
         (${bindingCreator.toString()})();`;
 
         const preloadContentForIsolatedWorld = `const renderer_1 = require('electron');
-        ${useSandbox ? '' : `require('node:v8').setFlagsFromString('--expose_gc');
+        ${useSandbox
+? ''
+: `require('node:v8').setFlagsFromString('--expose_gc');
         const gc=require('node:vm').runInNewContext('gc');
         renderer_1.webFrame.setIsolatedWorldInfo(${worldId}, {
           name: "Isolated World"

@@ -2126,7 +2126,7 @@ describe('chromium features', () => {
     it('has user agent', async () => {
       const server = http.createServer();
       const { port } = await listen(server);
-      const wss = new ws.Server({ server: server });
+      const wss = new ws.Server({ server });
       const finished = new Promise<string | undefined>((resolve, reject) => {
         wss.on('error', reject);
         wss.on('connection', (ws, upgradeReq) => {
@@ -2937,6 +2937,7 @@ describe('navigator.hid', () => {
             haveDevices = true;
             return true;
           }
+          return false;
         });
         if (foundDevice) {
           callback(foundDevice.deviceId);
@@ -2984,6 +2985,7 @@ describe('navigator.hid', () => {
               return true;
             }
           }
+          return false;
         });
       }
       callback();
@@ -3137,6 +3139,7 @@ describe('navigator.usb', () => {
             haveDevices = true;
             return true;
           }
+          return false;
         });
         if (foundDevice) {
           callback(foundDevice.deviceId);
