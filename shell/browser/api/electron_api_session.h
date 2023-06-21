@@ -131,7 +131,7 @@ class Session : public gin::Wrappable<Session>,
   bool IsPersistent();
   v8::Local<v8::Promise> GetBlobData(v8::Isolate* isolate,
                                      const std::string& uuid);
-  void DownloadURL(const GURL& url);
+  void DownloadURL(const GURL& url, gin::Arguments* args);
   void CreateInterruptedDownload(const gin_helper::Dictionary& options);
   void SetPreloads(const std::vector<base::FilePath>& preloads);
   std::vector<base::FilePath> GetPreloads() const;
