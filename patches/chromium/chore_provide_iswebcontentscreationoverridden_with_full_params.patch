@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 0b9b22ed11db2aaa5cb4290370aa38bf739e415d..5a8b34ea90f32e12bd75c6b5318c743096e9694c 100644
+index 865414f0994a4e29f297532538486f780edd51d3..3a60a59497571a33bba8efa7654a32403ab99978 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4123,8 +4123,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4113,8 +4113,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -246,7 +246,7 @@ index 8019a5c687a87a4257f9f7c0581781095fc20043..d7ccb0f7a7b15fb19640b1b0491750b1
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 76d699790fb7d92587293b14332f696dc5460322..2b15ee95474fab528fd710b52d3a1d9e6a60b871 100644
+index 989778079d5dc91127989e43f3ce6b25a9df56d4..71b5a7c30f6546e3172ea31f9b0572c0e6a9f660 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -322,8 +322,7 @@ class CONTENT_EXPORT WebContentsDelegate {
@@ -358,7 +358,7 @@ index 60acb83c8d76f71db689f9d188bb6e8f64a74ffb..aa6cee708d1e451b443bc26528b56cc8
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index d7f5236840939989ffea27b67fe1ae0a35315bdf..9ce1696415228ac05dc745a6e0c79c3cd69d3828 100644
+index aa3148852ff61323cb9bf20817c6677cffe34ded..82790630067f11da8c4eac785b242d5cd131d3e3 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -428,8 +428,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
