@@ -319,15 +319,17 @@ struct Converter<electron::api::WebContents::Type> {
                      v8::Local<v8::Value> val,
                      electron::api::WebContents::Type* out) {
     using Val = electron::api::WebContents::Type;
+    // clang-format off
     static constexpr auto Lookup =
         base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
           {"backgroundPage", Val::kBackgroundPage},
-              {"browserView", Val::kBrowserView},
+          {"browserView", Val::kBrowserView},
 #if BUILDFLAG(ENABLE_OSR)
-              {"offscreen", Val::kOffScreen},
+          {"offscreen", Val::kOffScreen},
 #endif
-              {"webview", Val::kWebView},
+          {"webview", Val::kWebView},
         });
+    // clang-format on
     return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
