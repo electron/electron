@@ -1150,6 +1150,23 @@ describe('chromium features', () => {
       expect(eventData).to.equal('size: 350 450');
     });
 
+    it('loads preload script after setting opener to null', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            preload: path.join(fixturesPath, 'module', 'preload.js')
+          }
+        }
+      }));
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
+      const [, { webContents }] = await once(app, 'browser-window-created');
+      const [,, message] = await once(webContents, 'console-message');
+      expect(message).to.equal('{"require":"function","module":"undefined","process":"object","Buffer":"function"}');
+    });
+
     it('disables the <webview> tag when it is disabled on the parent window', async () => {
       const windowUrl = url.pathToFileURL(path.join(fixturesPath, 'pages', 'window-opener-no-webview-tag.html'));
       windowUrl.searchParams.set('p', `${fixturesPath}/pages/window-opener-webview.html`);
