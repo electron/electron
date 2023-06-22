@@ -117,7 +117,7 @@ async function createRelease (branchToTarget, isBeta) {
     name: `electron ${newVersion}`,
     body: releaseBody,
     prerelease: releaseIsPrelease,
-    target_commitish: newVersion.indexOf('nightly') !== -1 ? 'main' : branchToTarget
+    target_commitish: newVersion.includes('nightly') ? 'main' : branchToTarget
   }).catch(err => {
     console.log(`${fail} Error creating new release: `, err);
     process.exit(1);
