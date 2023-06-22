@@ -916,7 +916,7 @@ index d971e446859507456da153a9d59f3ed4857b66cb..9ab75731a941e7065dfaa481508cfa47
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index cc47fb1a2a3d6a6fe15448ebdba25c29b4b88aa0..e6125b6af20434f3ec3171c044d515b8c120a7b5 100644
+index 2b24019730046b0cddf47ef0ee9850da486ff53b..e19e0f77d5f60e541130260a5fb4002753f9b063 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2901,8 +2901,9 @@ source_set("browser") {
