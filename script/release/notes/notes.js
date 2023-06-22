@@ -256,7 +256,7 @@ async function runRetryable (fn, maxRetries) {
     try {
       return await fn();
     } catch (error) {
-      await new Promise((resolve, reject) => setTimeout(resolve, CHECK_INTERVAL));
+      await new Promise(resolve => setTimeout(resolve, CHECK_INTERVAL));
       lastError = error;
     }
   }

@@ -8,6 +8,7 @@ const ELECTRON_DIR = path.resolve(__dirname, '..', '..');
 const SRC_DIR = path.resolve(ELECTRON_DIR, '..');
 
 require('colors');
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const pass = '✓'.green;
 const fail = '✗'.red;
 
@@ -129,7 +130,7 @@ function chunkFilenames (filenames, offset = 0) {
  * @returns {Promise<string[]>}
 */
 async function findMatchingFiles (top, test) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const matches = [];
     klaw(top, {
       filter: f => path.basename(f) !== '.bin'

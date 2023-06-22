@@ -1,4 +1,4 @@
-const { app, safeStorage, ipcMain } = require('electron');
+const { app, safeStorage } = require('electron');
 const { promises: fs } = require('node:fs');
 const path = require('node:path');
 
@@ -7,6 +7,6 @@ const writeFile = fs.writeFile;
 
 app.whenReady().then(async () => {
   const encrypted = safeStorage.encryptString('plaintext');
-  const encryptedString = await writeFile(pathToEncryptedString, encrypted);
+  await writeFile(pathToEncryptedString, encrypted);
   app.quit();
 });

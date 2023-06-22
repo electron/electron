@@ -1,6 +1,5 @@
 /* eslint-disable camelcase */
 const { BlobServiceClient } = require('@azure/storage-blob');
-const fs = require('node:fs');
 const path = require('node:path');
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.ELECTRON_ARTIFACTS_BLOB_STORAGE);

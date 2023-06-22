@@ -50,7 +50,7 @@ async function downloadWithRetry (url, directory) {
       return await downloadFile(downloadURL, directory);
     } catch (err) {
       lastError = err;
-      await new Promise((resolve, reject) => setTimeout(resolve, 30000));
+      await new Promise(resolve => setTimeout(resolve, 30000));
     }
   }
   throw lastError;

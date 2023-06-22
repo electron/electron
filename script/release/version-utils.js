@@ -1,12 +1,7 @@
-const path = require('node:path');
-const fs = require('node:fs');
 const semver = require('semver');
 const { GitProcess } = require('dugite');
-const { promisify } = require('node:util');
 
 const { ELECTRON_DIR } = require('../lib/utils');
-
-const readFile = promisify(fs.readFile);
 
 const preType = {
   NONE: 'none',

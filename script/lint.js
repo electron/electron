@@ -272,7 +272,7 @@ function parseCommandLine () {
   const opts = minimist(process.argv.slice(2), {
     boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only'],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
-    unknown: arg => { help = true; }
+    unknown: () => { help = true; }
   });
   if (help || opts.help) {
     console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]');

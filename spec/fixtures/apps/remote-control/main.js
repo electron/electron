@@ -1,7 +1,7 @@
 const { app } = require('electron');
 const http = require('node:http');
 const v8 = require('node:v8');
-// eslint-disable-next-line camelcase
+// eslint-disable-next-line camelcase,@typescript-eslint/no-unused-vars
 const promises_1 = require('node:timers/promises');
 
 if (app.commandLine.hasSwitch('boot-eval')) {
