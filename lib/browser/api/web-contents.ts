@@ -1,8 +1,8 @@
 import { app, ipcMain, session, webFrameMain } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
-import * as url from 'url';
-import * as path from 'path';
+import * as url from 'node:url';
+import * as path from 'node:path';
 import { openGuestWindow, makeWebPreferences, parseContentTypeFormat } from '@electron/internal/browser/guest-window-manager';
 import { parseFeatures } from '@electron/internal/browser/parse-features-string';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';

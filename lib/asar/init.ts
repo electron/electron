@@ -1,3 +1,3 @@
 import { wrapFsWithAsar } from './fs-wrapper';
 
-wrapFsWithAsar(require('fs'));
+wrapFsWithAsar(require('node:fs'));

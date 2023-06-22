@@ -1,7 +1,7 @@
 import { ProtocolRequest, session } from 'electron/main';
-import { createReadStream } from 'fs';
-import { Readable } from 'stream';
-import { ReadableStream } from 'stream/web';
+import { createReadStream } from 'node:fs';
+import { Readable } from 'node:stream';
+import { ReadableStream } from 'node:stream/web';
 
 // Global protocol APIs.
 const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._linkedBinding('electron_browser_protocol');

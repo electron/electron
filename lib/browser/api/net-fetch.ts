@@ -1,5 +1,5 @@
 import { net, IncomingMessage, Session as SessionT } from 'electron/main';
-import { Readable, Writable, isReadable } from 'stream';
+import { Readable, Writable, isReadable } from 'node:stream';
 import { allowAnyProtocol } from '@electron/internal/browser/api/net-client-request';
 
 function createDeferredPromise<T, E extends Error = Error> (): { promise: Promise<T>; resolve: (x: T) => void; reject: (e: E) => void; } {

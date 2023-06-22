@@ -13,6 +13,7 @@
           "@electron/internal/browser/*"
         ]
       }
-    ]
+    ],
+    "unicorn/prefer-node-protocol": "off"
   }
 }

@@ -1,5 +1,5 @@
-import * as url from 'url';
-import { Readable, Writable } from 'stream';
+import * as url from 'node:url';
+import { Readable, Writable } from 'node:stream';
 import { app } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 

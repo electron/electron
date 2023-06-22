@@ -1,6 +1,6 @@
-import * as path from 'path';
+import * as path from 'node:path';
 
-const Module = require('module');
+const Module = require('node:module');
 
 // We do not want to allow use of the VM module in the renderer process as
 // it conflicts with Blink's V8::Context internal logic.

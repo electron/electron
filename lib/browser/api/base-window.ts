@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import type { BaseWindow as TLWT } from 'electron/main';
 import * as deprecate from '@electron/internal/common/deprecate';
 const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as { BaseWindow: typeof TLWT };

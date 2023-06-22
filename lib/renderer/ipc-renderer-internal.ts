@@ -1,3 +1,4 @@
+// eslint-disable-next-line unicorn/prefer-node-protocol
 import { EventEmitter } from 'events';
 
 const { ipc } = process._linkedBinding('electron_renderer_ipc');

@@ -1,0 +1,5 @@
+{
+  "rules": {
+    "unicorn/prefer-node-protocol": "off"
+  }
+}

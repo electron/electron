@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Milan Burda <milan.burda@gmail.com>
+Date: Fri, 23 Jun 2023 02:38:47 +0200
+Subject: fix: support 'node:' prefix in lib/internal/bootstrap/loaders.js
+
+TypeError: Missing internal module 'node:events'
+    at requireBuiltin (node:internal/bootstrap/loaders:364:19)
+    at node:events (node:electron/js2c/browser_init:6353:18)
+    at __webpack_require__ (node:electron/js2c/browser_init:6477:42)
+
+diff --git a/lib/internal/bootstrap/loaders.js b/lib/internal/bootstrap/loaders.js
+index be7924ea1615fa7ed51496a62176f7ed59c0b57a..cec105670bec96eac92d4a6c5b8b7f7e5e872f13 100644
+--- a/lib/internal/bootstrap/loaders.js
++++ b/lib/internal/bootstrap/loaders.js
+@@ -58,6 +58,7 @@ const {
+   SafeMap,
+   SafeSet,
+   String,
++  StringPrototypeSlice,
+   StringPrototypeStartsWith,
+   TypeError,
+ } = primordials;
+@@ -358,6 +359,11 @@ function requireBuiltin(id) {
+     return loaderExports;
+   }
+ 
++  if (StringPrototypeStartsWith(id, 'node:')) {
++    // Slice 'node:' prefix
++    id = StringPrototypeSlice(id, 5);
++  }
++
+   const mod = BuiltinModule.map.get(id);
+   // Can't load the internal errors module from here, have to use a raw error.
+   // eslint-disable-next-line no-restricted-syntax

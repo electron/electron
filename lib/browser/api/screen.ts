@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 
 const { createScreen } = process._linkedBinding('electron_browser_screen');
 
