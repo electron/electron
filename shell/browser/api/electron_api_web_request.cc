@@ -8,6 +8,7 @@
 #include <string>
 #include <utility>
 
+#include "base/containers/contains.h"
 #include "base/stl_util.h"
 #include "base/task/sequenced_task_runner.h"
 #include "base/values.h"
@@ -293,7 +294,7 @@ bool WebRequest::RequestFilter::MatchesURL(const GURL& url) const {
 
 bool WebRequest::RequestFilter::MatchesType(
     extensions::WebRequestResourceType type) const {
-  return types_.empty() || types_.find(type) != types_.end();
+  return types_.empty() || base::Contains(types_, type);
 }
 
 bool WebRequest::RequestFilter::MatchesRequest(
