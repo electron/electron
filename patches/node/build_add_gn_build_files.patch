@@ -676,10 +676,10 @@ rename from deps/base64/base64/lib/arch/ssse3/codec.c
 rename to deps/base64/base64/lib/arch/ssse3/ssse3_codec.c
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..71a37834f4e693c190eb7e7d04e3f5ce67c487ad
+index 0000000000000000000000000000000000000000..2a902c68ca445b8451e442c314c60ee5a30719e4
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,135 @@
 +config("cares_config") {
 +  include_dirs = [ "include", "src/lib" ]
 +}
@@ -750,6 +750,7 @@ index 0000000000000000000000000000000000000000..71a37834f4e693c190eb7e7d04e3f5ce
 +    "src/lib/ares_private.h",
 +    "src/lib/ares_process.c",
 +    "src/lib/ares_query.c",
++    "src/lib/ares_rand.c",
 +    "src/lib/ares__read_line.c",
 +    "src/lib/ares__readaddrinfo.c",
 +    "src/lib/ares_search.c",
