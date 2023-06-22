@@ -572,8 +572,6 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   config->store = command_line.GetSwitchValueASCII(::switches::kPasswordStore);
   config->product_name = app_name;
   config->application_name = app_name;
-  config->main_thread_runner =
-      base::SingleThreadTaskRunner::GetCurrentDefault();
   // c.f.
   // https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
   config->should_use_preference =
