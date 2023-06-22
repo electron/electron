@@ -12,7 +12,7 @@ import { listen } from './lib/spec-helpers';
 import { setTimeout } from 'node:timers/promises';
 
 const messageContainsSecurityWarning = (event: Event, level: number, message: string) => {
-  return message.indexOf('Electron Security Warning') > -1;
+  return message.includes('Electron Security Warning');
 };
 
 const isLoaded = (event: Event, level: number, message: string) => {

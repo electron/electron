@@ -23,7 +23,8 @@
       "destructuring": "all"
     }],
     "standard/no-callback-literal": "off",
-    "unicorn/prefer-date-now": "error"
+    "unicorn/prefer-date-now": "error",
+    "unicorn/prefer-includes": "error"
   },
   "parserOptions": {
     "ecmaVersion": 6,
