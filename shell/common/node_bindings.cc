@@ -182,7 +182,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
     v8::Local<v8::String> v8_specifier,
     v8::Local<v8::FixedArray> v8_import_assertions) {
   if (node::Environment::GetCurrent(context) == nullptr) {
-    if (electron::IsBrowserProcess())
+    if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
       return v8::MaybeLocal<v8::Promise>();
     return blink::V8Initializer::HostImportModuleDynamically(
         context, v8_host_defined_options, v8_referrer_resource_url,
@@ -211,7 +211,7 @@ void HostInitializeImportMetaObject(v8::Local<v8::Context> context,
                                     v8::Local<v8::Module> module,
                                     v8::Local<v8::Object> meta) {
   if (node::Environment::GetCurrent(context) == nullptr) {
-    if (electron::IsBrowserProcess())
+    if (electron::IsBrowserProcess() || electron::IsUtilityProcess())
       return;
     return blink::V8Initializer::HostGetImportMetaProperties(context, module,
                                                              meta);
