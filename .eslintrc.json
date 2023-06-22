@@ -24,7 +24,8 @@
     }],
     "standard/no-callback-literal": "off",
     "unicorn/prefer-date-now": "error",
-    "unicorn/prefer-includes": "error"
+    "unicorn/prefer-includes": "error",
+    "unicorn/prefer-type-error": "error"
   },
   "parserOptions": {
     "ecmaVersion": 6,

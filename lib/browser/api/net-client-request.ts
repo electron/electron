@@ -339,7 +339,7 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
       throw new Error('chunkedEncoding can only be set before the request is started');
     }
     if (typeof this._chunkedEncoding !== 'undefined') {
-      throw new Error('chunkedEncoding can only be set once');
+      throw new TypeError('chunkedEncoding can only be set once');
     }
     this._chunkedEncoding = !!value;
     if (this._chunkedEncoding) {

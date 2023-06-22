@@ -331,7 +331,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
     const idSet = new Set();
     items.forEach((item) => {
       if (!(item instanceof TouchBarItem)) {
-        throw new Error('Each item must be an instance of TouchBarItem');
+        throw new TypeError('Each item must be an instance of TouchBarItem');
       }
 
       if (item.type === 'other_items_proxy') {

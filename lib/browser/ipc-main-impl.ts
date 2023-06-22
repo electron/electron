@@ -16,7 +16,7 @@ export class IpcMainImpl extends EventEmitter {
       throw new Error(`Attempted to register a second handler for '${method}'`);
     }
     if (typeof fn !== 'function') {
-      throw new Error(`Expected handler to be a function, but found type '${typeof fn}'`);
+      throw new TypeError(`Expected handler to be a function, but found type '${typeof fn}'`);
     }
     this._invokeHandlers.set(method, fn);
   };

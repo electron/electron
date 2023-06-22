@@ -24,12 +24,12 @@ class AutoUpdater extends EventEmitter {
       if (typeof options.url === 'string') {
         updateURL = options.url;
       } else {
-        throw new Error('Expected options object to contain a \'url\' string property in setFeedUrl call');
+        throw new TypeError('Expected options object to contain a \'url\' string property in setFeedUrl call');
       }
     } else if (typeof options === 'string') {
       updateURL = options;
     } else {
-      throw new Error('Expected an options object with a \'url\' property to be provided');
+      throw new TypeError('Expected an options object with a \'url\' property to be provided');
     }
     this.updateURL = updateURL;
   }
