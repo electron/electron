@@ -1,9 +1,9 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron');
 
 ipcMain.on('create-frameless-window', (event, { url }) => {
-  const win = new BrowserWindow({ frame: false })
-  win.loadURL(url)
-})
+  const win = new BrowserWindow({ frame: false });
+  win.loadURL(url);
+});
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
@@ -13,10 +13,10 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true
     }
-  })
-  mainWindow.loadFile('index.html')
+  });
+  mainWindow.loadFile('index.html');
 }
 
 app.whenReady().then(() => {
-  createWindow()
-})
+  createWindow();
+});

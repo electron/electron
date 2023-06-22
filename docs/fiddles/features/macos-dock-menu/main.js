@@ -1,18 +1,18 @@
-const { app, BrowserWindow, Menu } = require('electron')
+const { app, BrowserWindow, Menu } = require('electron');
 
 function createWindow () {
   const win = new BrowserWindow({
     width: 800,
     height: 600
-  })
+  });
 
-  win.loadFile('index.html')
+  win.loadFile('index.html');
 }
 
 const dockMenu = Menu.buildFromTemplate([
   {
     label: 'New Window',
-    click () { console.log('New Window') }
+    click () { console.log('New Window'); }
   }, {
     label: 'New Window with Settings',
     submenu: [
@@ -21,22 +21,22 @@ const dockMenu = Menu.buildFromTemplate([
     ]
   },
   { label: 'New Command...' }
-])
+]);
 
 app.whenReady().then(() => {
   if (process.platform === 'darwin') {
-    app.dock.setMenu(dockMenu)
+    app.dock.setMenu(dockMenu);
   }
-}).then(createWindow)
+}).then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
+});
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
+    createWindow();
   }
-})
+});

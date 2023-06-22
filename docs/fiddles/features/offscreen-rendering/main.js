@@ -1,8 +1,8 @@
-const { app, BrowserWindow } = require('electron')
-const fs = require('fs')
-const path = require('path')
+const { app, BrowserWindow } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
-app.disableHardwareAcceleration()
+app.disableHardwareAcceleration();
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -11,28 +11,28 @@ function createWindow () {
     webPreferences: {
       offscreen: true
     }
-  })
+  });
 
-  win.loadURL('https://github.com')
+  win.loadURL('https://github.com');
   win.webContents.on('paint', (event, dirty, image) => {
-    fs.writeFileSync('ex.png', image.toPNG())
-  })
-  win.webContents.setFrameRate(60)
-  console.log(`The screenshot has been successfully saved to ${path.join(process.cwd(), 'ex.png')}`)
+    fs.writeFileSync('ex.png', image.toPNG());
+  });
+  win.webContents.setFrameRate(60);
+  console.log(`The screenshot has been successfully saved to ${path.join(process.cwd(), 'ex.png')}`);
 }
 
 app.whenReady().then(() => {
-  createWindow()
+  createWindow();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+      createWindow();
     }
-  })
-})
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
+});

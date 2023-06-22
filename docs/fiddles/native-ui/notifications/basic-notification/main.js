@@ -1,6 +1,6 @@
-const { BrowserWindow, app } = require('electron')
+const { BrowserWindow, app } = require('electron');
 
-let mainWindow = null
+let mainWindow = null;
 
 function createWindow () {
   const windowOptions = {
@@ -10,16 +10,16 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true
     }
-  }
+  };
 
-  mainWindow = new BrowserWindow(windowOptions)
-  mainWindow.loadFile('index.html')
+  mainWindow = new BrowserWindow(windowOptions);
+  mainWindow.loadFile('index.html');
 
   mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+    mainWindow = null;
+  });
 }
 
 app.whenReady().then(() => {
-  createWindow()
-})
+  createWindow();
+});

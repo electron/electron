@@ -1,10 +1,10 @@
-const { BrowserWindow, app, screen, ipcMain } = require('electron')
+const { BrowserWindow, app, screen, ipcMain } = require('electron');
 
-let mainWindow = null
+let mainWindow = null;
 
 ipcMain.handle('get-screen-size', () => {
-  return screen.getPrimaryDisplay().workAreaSize
-})
+  return screen.getPrimaryDisplay().workAreaSize;
+});
 
 function createWindow () {
   const windowOptions = {
@@ -14,16 +14,16 @@ function createWindow () {
     webPreferences: {
       nodeIntegration: true
     }
-  }
+  };
 
-  mainWindow = new BrowserWindow(windowOptions)
-  mainWindow.loadFile('index.html')
+  mainWindow = new BrowserWindow(windowOptions);
+  mainWindow.loadFile('index.html');
 
   mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+    mainWindow = null;
+  });
 }
 
 app.whenReady().then(() => {
-  createWindow()
-})
+  createWindow();
+});

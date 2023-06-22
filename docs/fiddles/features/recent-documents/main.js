@@ -1,32 +1,32 @@
-const { app, BrowserWindow } = require('electron')
-const fs = require('fs')
-const path = require('path')
+const { app, BrowserWindow } = require('electron');
+const fs = require('fs');
+const path = require('path');
 
 function createWindow () {
   const win = new BrowserWindow({
     width: 800,
     height: 600
-  })
+  });
 
-  win.loadFile('index.html')
+  win.loadFile('index.html');
 }
 
-const fileName = 'recently-used.md'
+const fileName = 'recently-used.md';
 fs.writeFile(fileName, 'Lorem Ipsum', () => {
-  app.addRecentDocument(path.join(__dirname, fileName))
-})
+  app.addRecentDocument(path.join(__dirname, fileName));
+});
 
-app.whenReady().then(createWindow)
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  app.clearRecentDocuments()
+  app.clearRecentDocuments();
   if (process.platform !== 'darwin') {
-    app.quit()
+    app.quit();
   }
-})
+});
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
+    createWindow();
   }
-})
+});

@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain, clipboard } = require('electron')
-const path = require('path')
+const { app, BrowserWindow, ipcMain, clipboard } = require('electron');
+const path = require('path');
 
-let mainWindow = null
+let mainWindow = null;
 
 function createWindow () {
   const windowOptions = {
@@ -11,28 +11,28 @@ function createWindow () {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     }
-  }
+  };
 
-  mainWindow = new BrowserWindow(windowOptions)
-  mainWindow.loadFile('index.html')
+  mainWindow = new BrowserWindow(windowOptions);
+  mainWindow.loadFile('index.html');
 
   mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+    mainWindow = null;
+  });
 }
 
 ipcMain.handle('clipboard:writeText', (event, text) => {
-  clipboard.writeText(text)
-})
+  clipboard.writeText(text);
+});
 
 app.whenReady().then(() => {
-  createWindow()
+  createWindow();
 
   app.on('activate', function () {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
-  })
-})
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
 
 app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') app.quit()
-})
+  if (process.platform !== 'darwin') app.quit();
+});

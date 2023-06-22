@@ -126,7 +126,7 @@ const LINTERS = [{
   }
 }, {
   key: 'javascript',
-  roots: ['build', 'default_app', 'lib', 'npm', 'script', 'spec'],
+  roots: ['build', 'default_app', 'docs/fiddles', 'lib', 'npm', 'script', 'spec'],
   ignoreRoots: ['spec/node_modules'],
   test: filename => filename.endsWith('.js') || filename.endsWith('.ts'),
   run: async (opts, filenames) => {
