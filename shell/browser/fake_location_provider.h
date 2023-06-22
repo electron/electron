@@ -20,6 +20,8 @@ class FakeLocationProvider : public device::LocationProvider {
   FakeLocationProvider& operator=(const FakeLocationProvider&) = delete;
 
   // LocationProvider Implementation:
+  void FillDiagnostics(
+      device::mojom::GeolocationDiagnostics& diagnostics) override;
   void SetUpdateCallback(
       const LocationProviderUpdateCallback& callback) override;
   void StartProvider(bool high_accuracy) override;
@@ -28,6 +30,8 @@ class FakeLocationProvider : public device::LocationProvider {
   void OnPermissionGranted() override;
 
  private:
+  device::mojom::GeolocationDiagnostics::ProviderState state_ =
+      device::mojom::GeolocationDiagnostics::ProviderState::kStopped;
   device::mojom::GeopositionResultPtr result_;
   LocationProviderUpdateCallback callback_;
 };

@@ -6,7 +6,7 @@ Subject: mas: avoid usage of CGDisplayUsesForceToGray
 Removes usage of the CGDisplayUsesForceToGray private API.
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 4a7d465c5f5690709eca8aa4ac90e905ab7d199e..30f72b9655e790d864fc7e28983b6a37074448a5 100644
+index eac90f20353e52ee676302b39ae5cb204c0a9dcb..1c3eb1dbd4417c675d4592cad126a7fe75cd1e3c 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
 @@ -268,7 +268,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
@@ -25,5 +25,5 @@ index 4a7d465c5f5690709eca8aa4ac90e905ab7d199e..30f72b9655e790d864fc7e28983b6a37
    display.set_is_monochrome(CGDisplayUsesForceToGray());
 +#endif
  
-   // Query the display's referesh rate.
+   // Query the display's refresh rate.
    {
