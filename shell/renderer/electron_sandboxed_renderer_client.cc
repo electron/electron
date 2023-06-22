@@ -217,7 +217,7 @@ void ElectronSandboxedRendererClient::WillReleaseScriptContext(
 void ElectronSandboxedRendererClient::EmitProcessEvent(
     content::RenderFrame* render_frame,
     const char* event_name) {
-  if (injected_frames_.find(render_frame) == injected_frames_.end())
+  if (!base::Contains(injected_frames_, render_frame))
     return;
 
   auto* isolate = blink::MainThreadIsolate();

@@ -12,6 +12,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -729,8 +730,8 @@ std::map<std::string, std::string> GetAddedFileSystemPaths(
 
 bool IsDevToolsFileSystemAdded(content::WebContents* web_contents,
                                const std::string& file_system_path) {
-  auto file_system_paths = GetAddedFileSystemPaths(web_contents);
-  return file_system_paths.find(file_system_path) != file_system_paths.end();
+  return base::Contains(GetAddedFileSystemPaths(web_contents),
+                        file_system_path);
 }
 
 void SetBackgroundColor(content::RenderWidgetHostView* rwhv, SkColor color) {

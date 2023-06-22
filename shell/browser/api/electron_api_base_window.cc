@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
@@ -760,8 +761,7 @@ void BaseWindow::SetBrowserView(
 }
 
 void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter == browser_views_.end()) {
+  if (!base::Contains(browser_views_, browser_view->ID())) {
     // If we're reparenting a BrowserView, ensure that it's detached from
     // its previous owner window.
     BaseWindow* owner_window = browser_view->owner_window();

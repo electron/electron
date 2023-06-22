@@ -149,8 +149,7 @@ void HidChooserController::OnDeviceAdded(
 void HidChooserController::OnDeviceRemoved(
     const device::mojom::HidDeviceInfo& device) {
   auto id = PhysicalDeviceIdFromDeviceInfo(device);
-  auto items_it = std::find(items_.begin(), items_.end(), id);
-  if (items_it == items_.end())
+  if (!base::Contains(items_, id))
     return;
   api::Session* session = GetSession();
   if (session) {
