@@ -9,6 +9,7 @@
 #include <string>
 #include <utility>
 
+#include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/stringprintf.h"
 #include "base/uuid.h"
@@ -45,22 +46,17 @@ struct Converter<electron::ProtocolType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::ProtocolType* out) {
-    std::string type;
-    if (!ConvertFromV8(isolate, val, &type))
-      return false;
-    if (type == "buffer")
-      *out = electron::ProtocolType::kBuffer;
-    else if (type == "string")
-      *out = electron::ProtocolType::kString;
-    else if (type == "file")
-      *out = electron::ProtocolType::kFile;
-    else if (type == "http")
-      *out = electron::ProtocolType::kHttp;
-    else if (type == "stream")
-      *out = electron::ProtocolType::kStream;
-    else  // note "free" is internal type, not allowed to be passed from user
-      return false;
-    return true;
+    using Val = electron::ProtocolType;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            // note "free" is internal type, not allowed to be passed from user
+            {"buffer", Val::kBuffer},
+            {"file", Val::kFile},
+            {"http", Val::kHttp},
+            {"stream", Val::kStream},
+            {"string", Val::kString},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
