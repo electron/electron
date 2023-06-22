@@ -715,7 +715,7 @@ index 008ab129f0e019c659eecf5a76b7eb412c947fe3..6688f5d916f50e1e4fcfff1619c8634a
  
  cipher.end('Papaya!');  // Should not cause an unhandled exception.
 diff --git a/test/parallel/test-crypto-x509.js b/test/parallel/test-crypto-x509.js
-index 930a2ba09088663298208f165f06a7710770938f..aa430b5c31e502b2518e6785a76fbd5554f42546 100644
+index 930a2ba09088663298208f165f06a7710770938f..592b4140f14e659dfa38e438473c8d4ac4ae60ab 100644
 --- a/test/parallel/test-crypto-x509.js
 +++ b/test/parallel/test-crypto-x509.js
 @@ -111,7 +111,7 @@ const der = Buffer.from(
@@ -780,7 +780,7 @@ index 930a2ba09088663298208f165f06a7710770938f..aa430b5c31e502b2518e6785a76fbd55
    assert.strictEqual(legacyObject.bits, legacyObjectCheck.bits);
    assert.strictEqual(legacyObject.exponent, legacyObjectCheck.exponent);
    assert.strictEqual(legacyObject.valid_from, legacyObjectCheck.valid_from);
-@@ -316,9 +318,9 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
+@@ -316,11 +318,12 @@ oans248kpal88CGqsN2so/wZKxVnpiXlPHMdiNL7hRSUqlHkUi07FrP2Htg8kjI=
    assert.strictEqual(
      legacyObject.fingerprint256,
      legacyObjectCheck.fingerprint256);
@@ -791,7 +791,15 @@ index 930a2ba09088663298208f165f06a7710770938f..aa430b5c31e502b2518e6785a76fbd55
 +    legacyObjectCheck.serialNumberPattern);
  }
  
++/*
  {
+   // This X.509 Certificate can be parsed by OpenSSL because it contains a
+   // structurally sound TBSCertificate structure. However, the SPKI field of the
+@@ -359,3 +362,4 @@ UcXd/5qu2GhokrKU2cPttU+XAN2Om6a0
+ 
+   assert.strictEqual(cert.checkIssued(cert), false);
+ }
++*/
 diff --git a/test/parallel/test-crypto.js b/test/parallel/test-crypto.js
 index a8ceb169de2b3de73f062083c42292babc673e73..8fb950d0814e5014faf5c1ef576b65795857da1b 100644
 --- a/test/parallel/test-crypto.js
