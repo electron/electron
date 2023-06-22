@@ -37,7 +37,7 @@ class PowerSaveBlocker : public gin::Wrappable<PowerSaveBlocker> {
   void UpdatePowerSaveBlocker();
   int Start(device::mojom::WakeLockType type);
   bool Stop(int id);
-  bool IsStarted(int id);
+  bool IsStarted(int id) const;
 
   device::mojom::WakeLock* GetWakeLock();
 

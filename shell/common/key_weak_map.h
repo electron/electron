@@ -9,6 +9,7 @@
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "v8/include/v8.h"
 
 namespace electron {
@@ -51,7 +52,7 @@ class KeyWeakMap {
   }
 
   // Whether there is an object with |key| in this WeakMap.
-  bool Has(const K& key) const { return map_.find(key) != map_.end(); }
+  constexpr bool Has(const K& key) const { return base::Contains(map_, key); }
 
   // Returns all objects.
   std::vector<v8::Local<v8::Object>> Values(v8::Isolate* isolate) const {
