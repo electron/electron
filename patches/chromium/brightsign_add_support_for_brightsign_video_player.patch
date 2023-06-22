@@ -1,32 +1,14 @@
-From a7f977ff3c676c4ed3dacbdb8d5ee2644689e407 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Caner Altinbasak <cal@brightsign.biz>
 Date: Tue, 23 May 2023 11:15:31 +0100
-Subject: [PATCH] brightsign: Add support for Brightsign video player
+Subject: brightsign: Add support for Brightsign video player
 
 Adds compile and runtime options for Brightsign video player, which links
 with libvid.
----
- build/config/brightsign_build.gni             |   5 +
- .../renderer_host/render_process_host_impl.cc |   1 +
- media/base/media_switches.cc                  |   5 +
- media/base/media_switches.h                   |   4 +
- media/media_options.gni                       |   4 +
- .../blink/renderer/platform/media/BUILD.gn    |  23 +
- .../media/brightsign/video_player_proxy.cc    | 135 ++++
- .../media/brightsign/video_player_proxy.h     |  50 ++
- .../brightsign/web_media_player_brightsign.cc | 755 ++++++++++++++++++
- .../brightsign/web_media_player_brightsign.h  | 246 ++++++
- .../media/web_media_player_builder.cc         |  45 +-
- 11 files changed, 1258 insertions(+), 15 deletions(-)
- create mode 100644 build/config/brightsign_build.gni
- create mode 100644 third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc
- create mode 100644 third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h
- create mode 100644 third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc
- create mode 100644 third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h
 
 diff --git a/build/config/brightsign_build.gni b/build/config/brightsign_build.gni
 new file mode 100644
-index 0000000000000..5a3085210677e
+index 0000000000000000000000000000000000000000..5a3085210677e9ed7c3c21f42901da1daecd003e
 --- /dev/null
 +++ b/build/config/brightsign_build.gni
 @@ -0,0 +1,5 @@
@@ -36,7 +18,7 @@ index 0000000000000..5a3085210677e
 +}
 +
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 7249e2ff8d4ab..750f54fe0a58c 100644
+index 7249e2ff8d4ab1a6aa3cfca227fd77e5201337c2..750f54fe0a58c966f7572bb0e5c4fc0fa6c5b076 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -3406,6 +3406,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
@@ -48,7 +30,7 @@ index 7249e2ff8d4ab..750f54fe0a58c 100644
      switches::kUseFakeUIForMediaStream,
      switches::kUseMobileUserAgent,
 diff --git a/media/base/media_switches.cc b/media/base/media_switches.cc
-index 72886a1e25b54..849c216c18624 100644
+index 72886a1e25b54c5730ec6e50b6ecbd5c120ab116..849c216c186242b7fa12dec2d41cd70c4f1593a8 100644
 --- a/media/base/media_switches.cc
 +++ b/media/base/media_switches.cc
 @@ -18,6 +18,11 @@
@@ -64,7 +46,7 @@ index 72886a1e25b54..849c216c18624 100644
  const char kAudioBufferSize[] = "audio-buffer-size";
  
 diff --git a/media/base/media_switches.h b/media/base/media_switches.h
-index 8af79cb1c1526..e469a6217e144 100644
+index 8af79cb1c152674f86e05361367de2e2ed4f9d68..e469a6217e144966564cb169761e30a21b269d81 100644
 --- a/media/base/media_switches.h
 +++ b/media/base/media_switches.h
 @@ -22,6 +22,10 @@ class CommandLine;
@@ -79,7 +61,7 @@ index 8af79cb1c1526..e469a6217e144 100644
  
  #if BUILDFLAG(ENABLE_PASSTHROUGH_AUDIO_CODECS)
 diff --git a/media/media_options.gni b/media/media_options.gni
-index f4696a2026306..92b91abe1d18e 100644
+index f4696a202630616c07780be132a66625dab95c5c..92b91abe1d18ee270dc583becd1ed2a93caca32e 100644
 --- a/media/media_options.gni
 +++ b/media/media_options.gni
 @@ -2,6 +2,7 @@
@@ -101,7 +83,7 @@ index f4696a2026306..92b91abe1d18e 100644
  
  # Use another declare_args() to allow dependence on args defined above.
 diff --git a/third_party/blink/renderer/platform/media/BUILD.gn b/third_party/blink/renderer/platform/media/BUILD.gn
-index 71f2cb5d8c38a..2b3096ed5ba41 100644
+index 71f2cb5d8c38a8a9bdf79fb189e7f080510f1934..2b3096ed5ba41df870f54a3cb840aadb0eb31808 100644
 --- a/third_party/blink/renderer/platform/media/BUILD.gn
 +++ b/third_party/blink/renderer/platform/media/BUILD.gn
 @@ -2,8 +2,10 @@
@@ -145,7 +127,7 @@ index 71f2cb5d8c38a..2b3096ed5ba41 100644
  source_set("unit_tests") {
 diff --git a/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc
 new file mode 100644
-index 0000000000000..02ba79772dd11
+index 0000000000000000000000000000000000000000..02ba79772dd11a2542ed9559498600137eb63979
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.cc
 @@ -0,0 +1,135 @@
@@ -286,7 +268,7 @@ index 0000000000000..02ba79772dd11
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h
 new file mode 100644
-index 0000000000000..ec11c71e81201
+index 0000000000000000000000000000000000000000..ec11c71e812011794588d6ce04ad1db8c6ffb25b
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/video_player_proxy.h
 @@ -0,0 +1,50 @@
@@ -342,7 +324,7 @@ index 0000000000000..ec11c71e81201
 +#endif
 diff --git a/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc
 new file mode 100644
-index 0000000000000..7a61499360d27
+index 0000000000000000000000000000000000000000..7a61499360d2724cc7888a2c6766d722bb46d7b3
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.cc
 @@ -0,0 +1,755 @@
@@ -1103,7 +1085,7 @@ index 0000000000000..7a61499360d27
 +}  // namespace blink
 diff --git a/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h
 new file mode 100644
-index 0000000000000..353615d8f67ae
+index 0000000000000000000000000000000000000000..353615d8f67aeea1eadfd53cab4c9603a5afe616
 --- /dev/null
 +++ b/third_party/blink/renderer/platform/media/brightsign/web_media_player_brightsign.h
 @@ -0,0 +1,246 @@
@@ -1354,7 +1336,7 @@ index 0000000000000..353615d8f67ae
 +
 +#endif  // THIRD_PARTY_BLINK_RENDERER_PLATFORM_MEDIA_BRIGHTSIGN_WEB_MEDIA_PLAYER_BRIGHTSIGN_H_
 diff --git a/third_party/blink/renderer/platform/media/web_media_player_builder.cc b/third_party/blink/renderer/platform/media/web_media_player_builder.cc
-index 7499445be269f..248faef330b62 100644
+index 7499445be269ff25eb1b650396e4f761faacfb64..248faef330b62b148051e0ec4f91cfd2ddd43f5e 100644
 --- a/third_party/blink/renderer/platform/media/web_media_player_builder.cc
 +++ b/third_party/blink/renderer/platform/media/web_media_player_builder.cc
 @@ -6,6 +6,7 @@
@@ -1430,6 +1412,3 @@ index 7499445be269f..248faef330b62 100644
  }
  
  }  // namespace blink
--- 
-2.30.2
-
