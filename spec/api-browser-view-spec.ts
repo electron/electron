@@ -257,6 +257,20 @@ describe('BrowserView module', () => {
         w.removeBrowserView(view);
       }).to.not.throw();
     });
+
+    it('can be called on a BrowserView with a destroyed webContents', (done) => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+
+      view.webContents.on('destroyed', () => {
+        w.removeBrowserView(view);
+        done();
+      });
+
+      view.webContents.loadURL('data:text/html,hello there').then(() => {
+        view.webContents.close();
+      });
+    });
   });
 
   describe('BrowserWindow.getBrowserViews()', () => {
