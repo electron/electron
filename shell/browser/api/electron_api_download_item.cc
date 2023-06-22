@@ -249,10 +249,11 @@ double DownloadItem::GetStartTime() const {
   return download_item_->GetStartTime().ToDoubleT();
 }
 
-download::DownloadInterruptReason DownloadItem::GetLastInterruptReason() const {
+std::string DownloadItem::GetLastInterruptReason() const {
   if (!CheckAlive())
-    return download::DOWNLOAD_INTERRUPT_REASON_NONE;
-  return download_item_->GetLastReason();
+    return "NONE";
+  auto reason = download_item_->GetLastReason();
+  return download::DownloadInterruptReasonToString(reason);
 }
 
 // static

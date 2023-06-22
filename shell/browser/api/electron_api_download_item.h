@@ -76,7 +76,7 @@ class DownloadItem : public gin::Wrappable<DownloadItem>,
   std::string GetLastModifiedTime() const;
   std::string GetETag() const;
   double GetStartTime() const;
-  download::DownloadInterruptReason GetLastInterruptReason() const;
+  std::string GetLastInterruptReason() const;
 
   base::FilePath save_path_;
   file_dialog::DialogSettings dialog_options_;
