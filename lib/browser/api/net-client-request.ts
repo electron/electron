@@ -461,31 +461,39 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
 
     this._urlLoader.on('redirect', (event, redirectInfo, headers) => {
       const { statusCode, newMethod, newUrl } = redirectInfo;
-      if (this._redirectPolicy === 'error') {
-        this._die(new Error('Attempted to redirect, but redirect policy was \'error\''));
-      } else if (this._redirectPolicy === 'manual') {
-        let _followRedirect = false;
-        this._followRedirectCb = () => { _followRedirect = true; };
-        try {
-          this.emit('redirect', statusCode, newMethod, newUrl, headers);
-        } finally {
-          this._followRedirectCb = undefined;
-          if (!_followRedirect && !this._aborted) {
-            this._die(new Error('Redirect was cancelled'));
-          }
+      switch (this._redirectPolicy) {
+        case 'error': {
+          this._die(new Error('Attempted to redirect, but redirect policy was \'error\''));
+          break;
         }
-      } else if (this._redirectPolicy === 'follow') {
+        case 'manual': {
+          let _followRedirect = false;
+          this._followRedirectCb = () => { _followRedirect = true; };
+          try {
+            this.emit('redirect', statusCode, newMethod, newUrl, headers);
+          } finally {
+            this._followRedirectCb = undefined;
+            if (!_followRedirect && !this._aborted) {
+              this._die(new Error('Redirect was cancelled'));
+            }
+          }
+          break;
+        }
+        case 'follow': {
         // Calling followRedirect() when the redirect policy is 'follow' is
         // allowed but does nothing. (Perhaps it should throw an error
         // though...? Since the redirect will happen regardless.)
-        try {
-          this._followRedirectCb = () => {};
-          this.emit('redirect', statusCode, newMethod, newUrl, headers);
-        } finally {
-          this._followRedirectCb = undefined;
+          try {
+            this._followRedirectCb = () => {};
+            this.emit('redirect', statusCode, newMethod, newUrl, headers);
+          } finally {
+            this._followRedirectCb = undefined;
+          }
+          break;
         }
-      } else {
-        this._die(new Error(`Unexpected redirect policy '${this._redirectPolicy}'`));
+        default: {
+          this._die(new Error(`Unexpected redirect policy '${this._redirectPolicy}'`));
+        }
       }
     });
 

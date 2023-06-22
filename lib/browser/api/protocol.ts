@@ -48,12 +48,25 @@ function convertToRequestBody (uploadData: ProtocolRequest['uploadData']): Reque
       } else {
         if (!chunks.length) { return controller.close(); }
         const chunk = chunks.shift()!;
-        if (chunk.type === 'rawData') { controller.enqueue(chunk.bytes); } else if (chunk.type === 'file') {
-          current = Readable.toWeb(createReadStream(chunk.filePath, { start: chunk.offset ?? 0, end: chunk.length >= 0 ? chunk.offset + chunk.length : undefined })).getReader();
-          this.pull!(controller);
-        } else if (chunk.type === 'stream') {
-          current = makeStreamFromPipe(chunk.body).getReader();
-          this.pull!(controller);
+        switch (chunk.type) {
+          case 'rawData': {
+            controller.enqueue(chunk.bytes);
+            break;
+          }
+          case 'file': {
+            const stream = createReadStream(chunk.filePath, {
+              start: chunk.offset ?? 0,
+              end: chunk.length >= 0 ? chunk.offset + chunk.length : undefined
+            });
+            current = Readable.toWeb(stream).getReader();
+            this.pull!(controller);
+            break;
+          }
+          case 'stream': {
+            current = makeStreamFromPipe(chunk.body).getReader();
+            this.pull!(controller);
+            break;
+          }
         }
       }
     }

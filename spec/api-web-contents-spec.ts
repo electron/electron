@@ -1415,18 +1415,28 @@ describe('webContents module', () => {
     before(async () => {
       server = http.createServer((req, res) => {
         const respond = () => {
-          if (req.url === '/redirect-cross-site') {
-            res.setHeader('Location', `${crossSiteUrl}/redirected`);
-            res.statusCode = 302;
-            res.end();
-          } else if (req.url === '/redirected') {
-            res.end('<html><script>window.localStorage</script></html>');
-          } else if (req.url === '/first-window-open') {
-            res.end(`<html><script>window.open('${serverUrl}/second-window-open', 'first child');</script></html>`);
-          } else if (req.url === '/second-window-open') {
-            res.end('<html><script>window.open(\'wrong://url\', \'second child\');</script></html>');
-          } else {
-            res.end();
+          switch (req.url) {
+            case '/redirect-cross-site': {
+              res.setHeader('Location', `${crossSiteUrl}/redirected`);
+              res.statusCode = 302;
+              res.end();
+              break;
+            }
+            case '/redirected': {
+              res.end('<html><script>window.localStorage</script></html>');
+              break;
+            }
+            case '/first-window-open': {
+              res.end(`<html><script>window.open('${serverUrl}/second-window-open', 'first child');</script></html>`);
+              break;
+            }
+            case '/second-window-open': {
+              res.end('<html><script>window.open(\'wrong://url\', \'second child\');</script></html>');
+              break;
+            }
+            default: {
+              res.end();
+            }
           }
         };
         setTimeout().then(respond);

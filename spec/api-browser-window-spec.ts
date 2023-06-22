@@ -591,22 +591,34 @@ describe('BrowserWindow module', () => {
         let url = null as unknown as string;
         before(async () => {
           server = http.createServer((req, res) => {
-            if (req.url === '/navigate-top') {
-              res.end('<a target=_top href="/">navigate _top</a>');
-            } else if (req.url === '/navigate-iframe') {
-              res.end('<a href="/test">navigate iframe</a>');
-            } else if (req.url === '/navigate-iframe?navigated') {
-              res.end('Successfully navigated');
-            } else if (req.url === '/navigate-iframe-immediately') {
-              res.end(`
+            switch (req.url) {
+              case '/navigate-top': {
+                res.end('<a target=_top href="/">navigate _top</a>');
+                break;
+              }
+              case '/navigate-iframe': {
+                res.end('<a href="/test">navigate iframe</a>');
+                break;
+              }
+              case '/navigate-iframe?navigated': {
+                res.end('Successfully navigated');
+                break;
+              }
+              case '/navigate-iframe-immediately': {
+                res.end(`
                 <script type="text/javascript" charset="utf-8">
                   location.href += '?navigated'
                 </script>
               `);
-            } else if (req.url === '/navigate-iframe-immediately?navigated') {
-              res.end('Successfully navigated');
-            } else {
-              res.end('');
+                break;
+              }
+              case '/navigate-iframe-immediately?navigated': {
+                res.end('Successfully navigated');
+                break;
+              }
+              default: {
+                res.end('');
+              }
             }
           });
           url = (await listen(server)).url;
@@ -882,18 +894,28 @@ describe('BrowserWindow module', () => {
         ];
         before(async () => {
           server = http.createServer((req, res) => {
-            if (req.url === '/navigate') {
-              res.end('<a href="/">navigate</a>');
-            } else if (req.url === '/redirect') {
-              res.end('<a href="/redirect2">redirect</a>');
-            } else if (req.url === '/redirect2') {
-              res.statusCode = 302;
-              res.setHeader('location', url);
-              res.end();
-            } else if (req.url === '/in-page') {
-              res.end('<a href="#in-page">redirect</a><div id="in-page"></div>');
-            } else {
-              res.end('');
+            switch (req.url) {
+              case '/navigate': {
+                res.end('<a href="/">navigate</a>');
+                break;
+              }
+              case '/redirect': {
+                res.end('<a href="/redirect2">redirect</a>');
+                break;
+              }
+              case '/redirect2': {
+                res.statusCode = 302;
+                res.setHeader('location', url);
+                res.end();
+                break;
+              }
+              case '/in-page': {
+                res.end('<a href="#in-page">redirect</a><div id="in-page"></div>');
+                break;
+              }
+              default: {
+                res.end('');
+              }
             }
           });
           url = (await listen(server)).url;

@@ -628,15 +628,22 @@ describe('chromium features', () => {
         }
       });
       w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(message);
-        } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
-          session.fromPartition('sw-file-scheme-spec').clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => done());
+        switch (channel) {
+          case 'reload': {
+            w.webContents.reload();
+            break;
+          }
+          case 'error': {
+            done(message);
+            break;
+          }
+          case 'response': {
+            expect(message).to.equal('Hello from serviceWorker!');
+            session.fromPartition('sw-file-scheme-spec').clearStorageData({
+              storages: ['serviceworkers']
+            }).then(() => done());
+            break;
+          }
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -666,18 +673,25 @@ describe('chromium features', () => {
         }
       });
       w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
-          customSession.clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => {
-            customSession.protocol.uninterceptProtocol('file');
-            done();
-          });
+        switch (channel) {
+          case 'reload': {
+            w.webContents.reload();
+            break;
+          }
+          case 'error': {
+            done(`unexpected error : ${message}`);
+            break;
+          }
+          case 'response': {
+            expect(message).to.equal('Hello from serviceWorker!');
+            customSession.clearStorageData({
+              storages: ['serviceworkers']
+            }).then(() => {
+              customSession.protocol.uninterceptProtocol('file');
+              done();
+            });
+            break;
+          }
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -702,18 +716,25 @@ describe('chromium features', () => {
         }
       });
       w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(`unexpected error : ${message}`);
-        } else if (channel === 'response') {
-          expect(message).to.equal('Hello from serviceWorker!');
-          customSession.clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => {
-            customSession.protocol.uninterceptProtocol(serviceWorkerScheme);
-            done();
-          });
+        switch (channel) {
+          case 'reload': {
+            w.webContents.reload();
+            break;
+          }
+          case 'error': {
+            done(`unexpected error : ${message}`);
+            break;
+          }
+          case 'response': {
+            expect(message).to.equal('Hello from serviceWorker!');
+            customSession.clearStorageData({
+              storages: ['serviceworkers']
+            }).then(() => {
+              customSession.protocol.uninterceptProtocol(serviceWorkerScheme);
+              done();
+            });
+            break;
+          }
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -2431,12 +2452,19 @@ describe('font fallback', () => {
     const fonts = await getRenderedFonts(html);
     expect(fonts).to.be.an('array');
     expect(fonts).to.have.length(1);
-    if (process.platform === 'win32') {
-      expect(fonts[0].familyName).to.equal('Arial');
-    } else if (process.platform === 'darwin') {
-      expect(fonts[0].familyName).to.equal('Helvetica');
-    } else if (process.platform === 'linux') {
-      expect(fonts[0].familyName).to.equal('DejaVu Sans');
+    switch (process.platform) {
+      case 'win32': {
+        expect(fonts[0].familyName).to.equal('Arial');
+        break;
+      }
+      case 'darwin': {
+        expect(fonts[0].familyName).to.equal('Helvetica');
+        break;
+      }
+      case 'linux': {
+        expect(fonts[0].familyName).to.equal('DejaVu Sans');
+        break;
+      }
     } // I think this depends on the distro? We don't specify a default.
   });
 
@@ -2909,16 +2937,23 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
 
     it('setAppBadge can be called in a ServiceWorker', (done) => {
       w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'error') {
-          done(message);
-        } else if (channel === 'response') {
-          expect(message).to.equal('SUCCESS setting app badge');
-          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-          session.fromPartition('sw-file-scheme-spec').clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => done());
+        switch (channel) {
+          case 'reload': {
+            w.webContents.reload();
+            break;
+          }
+          case 'error': {
+            done(message);
+            break;
+          }
+          case 'response': {
+            expect(message).to.equal('SUCCESS setting app badge');
+            expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+            session.fromPartition('sw-file-scheme-spec').clearStorageData({
+              storages: ['serviceworkers']
+            }).then(() => done());
+            break;
+          }
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));
@@ -2927,19 +2962,28 @@ ifdescribe((process.platform !== 'linux' || app.isUnityRunning()))('navigator.se
 
     it('clearAppBadge can be called in a ServiceWorker', (done) => {
       w.webContents.on('ipc-message', (event, channel, message) => {
-        if (channel === 'reload') {
-          w.webContents.reload();
-        } else if (channel === 'setAppBadge') {
-          expect(message).to.equal('SUCCESS setting app badge');
-          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-        } else if (channel === 'error') {
-          done(message);
-        } else if (channel === 'response') {
-          expect(message).to.equal('SUCCESS clearing app badge');
-          expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
-          session.fromPartition('sw-file-scheme-spec').clearStorageData({
-            storages: ['serviceworkers']
-          }).then(() => done());
+        switch (channel) {
+          case 'reload': {
+            w.webContents.reload();
+            break;
+          }
+          case 'setAppBadge': {
+            expect(message).to.equal('SUCCESS setting app badge');
+            expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+            break;
+          }
+          case 'error': {
+            done(message);
+            break;
+          }
+          case 'response': {
+            expect(message).to.equal('SUCCESS clearing app badge');
+            expect(waitForBadgeCount(expectedBadgeCount)).to.eventually.equal(expectedBadgeCount);
+            session.fromPartition('sw-file-scheme-spec').clearStorageData({
+              storages: ['serviceworkers']
+            }).then(() => done());
+            break;
+          }
         }
       });
       w.webContents.on('render-process-gone', () => done(new Error('WebContents crashed.')));

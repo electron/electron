@@ -55,22 +55,29 @@ BrowserWindow.prototype._init = function (this: BWT) {
 
   const warn = deprecate.warnOnceMessage('\'scroll-touch-{begin,end,edge}\' are deprecated and will be removed. Please use the WebContents \'input-event\' event instead.');
   this.webContents.on('input-event', (_, e) => {
-    if (e.type === 'gestureScrollBegin') {
-      if (this.listenerCount('scroll-touch-begin') !== 0) {
-        warn();
-        this.emit('scroll-touch-edge');
-        this.emit('scroll-touch-begin');
+    switch (e.type) {
+      case 'gestureScrollBegin': {
+        if (this.listenerCount('scroll-touch-begin') !== 0) {
+          warn();
+          this.emit('scroll-touch-edge');
+          this.emit('scroll-touch-begin');
+        }
+        break;
       }
-    } else if (e.type === 'gestureScrollUpdate') {
-      if (this.listenerCount('scroll-touch-edge') !== 0) {
-        warn();
-        this.emit('scroll-touch-edge');
+      case 'gestureScrollUpdate': {
+        if (this.listenerCount('scroll-touch-edge') !== 0) {
+          warn();
+          this.emit('scroll-touch-edge');
+        }
+        break;
       }
-    } else if (e.type === 'gestureScrollEnd') {
-      if (this.listenerCount('scroll-touch-end') !== 0) {
-        warn();
-        this.emit('scroll-touch-edge');
-        this.emit('scroll-touch-end');
+      case 'gestureScrollEnd': {
+        if (this.listenerCount('scroll-touch-end') !== 0) {
+          warn();
+          this.emit('scroll-touch-edge');
+          this.emit('scroll-touch-end');
+        }
+        break;
       }
     }
   });

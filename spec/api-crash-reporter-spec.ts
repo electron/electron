@@ -501,33 +501,38 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
     });
 
     function crash (processType: string, remotely: Function) {
-      if (processType === 'main') {
-        return remotely(() => {
-          setTimeout().then(() => { process.crash(); });
-        });
-      } else if (processType === 'renderer') {
-        return remotely(() => {
-          const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
-          bw.loadURL('about:blank');
-          bw.webContents.executeJavaScript('process.crash()');
-        });
-      } else if (processType === 'sandboxed-renderer') {
-        const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
-        return remotely((preload: string) => {
-          const { BrowserWindow } = require('electron');
-          const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload, contextIsolation: false } });
-          bw.loadURL('about:blank');
-        }, preloadPath);
-      } else if (processType === 'node') {
-        const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
-        return remotely((crashScriptPath: string) => {
-          const { app } = require('electron');
-          const childProcess = require('node:child_process');
-          const version = app.getVersion();
-          const url = 'http://127.0.0.1';
-          childProcess.fork(crashScriptPath, [url, version], { silent: true });
-        }, crashScriptPath);
+      switch (processType) {
+        case 'main': {
+          return remotely(() => {
+            setTimeout().then(() => { process.crash(); });
+          });
+        }
+        case 'renderer': {
+          return remotely(() => {
+            const { BrowserWindow } = require('electron');
+            const bw = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+            bw.loadURL('about:blank');
+            bw.webContents.executeJavaScript('process.crash()');
+          });
+        }
+        case 'sandboxed-renderer': {
+          const preloadPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'sandbox-preload.js');
+          return remotely((preload: string) => {
+            const { BrowserWindow } = require('electron');
+            const bw = new BrowserWindow({ show: false, webPreferences: { sandbox: true, preload, contextIsolation: false } });
+            bw.loadURL('about:blank');
+          }, preloadPath);
+        }
+        case 'node': {
+          const crashScriptPath = path.join(__dirname, 'fixtures', 'apps', 'crash', 'node-crash.js');
+          return remotely((crashScriptPath: string) => {
+            const { app } = require('electron');
+            const childProcess = require('node:child_process');
+            const version = app.getVersion();
+            const url = 'http://127.0.0.1';
+            childProcess.fork(crashScriptPath, [url, version], { silent: true });
+          }, crashScriptPath);
+        }
       }
     }
 
