@@ -170,7 +170,7 @@ index 2a31606b1f5814d57ffe59026cc5735fa7cee597..272ae9f414f8d0873e30479b5bfd237c
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index 8ca1f2220032401f7d63a52c563b526cc3f5200c..c006ccccc9717f8811b8ad43171fe24c3e6bb2b5 100644
+index 4336e255385b4f5ec86e7bfa710b5caaf22adb6b..578ea22f1c29512fd58e631629d5ee03aeb10b38 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -196,7 +196,7 @@ index 8ca1f2220032401f7d63a52c563b526cc3f5200c..c006ccccc9717f8811b8ad43171fe24c
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -318,6 +327,15 @@ IOSurfaceRef CreateIOSurface(const gfx::Size& size,
+@@ -319,6 +328,15 @@ base::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  
