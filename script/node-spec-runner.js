@@ -1,6 +1,6 @@
-const cp = require('child_process');
-const fs = require('fs');
-const path = require('path');
+const cp = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const args = require('minimist')(process.argv.slice(2), {
   boolean: ['default', 'validateDisabled'],

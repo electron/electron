@@ -5,7 +5,7 @@ const args = require('minimist')(process.argv.slice(2), {
   string: ['tag', 'releaseID'],
   default: { releaseID: '' }
 });
-const { execSync } = require('child_process');
+const { execSync } = require('node:child_process');
 const { GitProcess } = require('dugite');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
 const { Octokit } = require('@octokit/rest');

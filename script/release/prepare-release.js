@@ -6,11 +6,11 @@ const args = require('minimist')(process.argv.slice(2), {
 });
 const ciReleaseBuild = require('./ci-release-build');
 const { Octokit } = require('@octokit/rest');
-const { execSync } = require('child_process');
+const { execSync } = require('node:child_process');
 const { GitProcess } = require('dugite');
 
-const path = require('path');
-const readline = require('readline');
+const path = require('node:path');
+const readline = require('node:readline');
 const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
 const bumpType = args._[0];

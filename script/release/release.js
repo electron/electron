@@ -9,13 +9,13 @@ const args = require('minimist')(process.argv.slice(2), {
   ],
   default: { verboseNugget: false }
 });
-const fs = require('fs');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const { execSync } = require('node:child_process');
 const got = require('got');
-const path = require('path');
+const path = require('node:path');
 const semver = require('semver');
 const temp = require('temp').track();
-const { URL } = require('url');
+const { URL } = require('node:url');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Octokit } = require('@octokit/rest');
 
