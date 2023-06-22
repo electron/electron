@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/containers/fixed_flat_map.h"
 #include "content/public/browser/context_menu_params.h"
 #include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
@@ -222,20 +223,14 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
 bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 content::StopFindAction* out) {
-  std::string action;
-  if (!ConvertFromV8(isolate, val, &action))
-    return false;
-
-  if (action == "clearSelection")
-    *out = content::STOP_FIND_ACTION_CLEAR_SELECTION;
-  else if (action == "keepSelection")
-    *out = content::STOP_FIND_ACTION_KEEP_SELECTION;
-  else if (action == "activateSelection")
-    *out = content::STOP_FIND_ACTION_ACTIVATE_SELECTION;
-  else
-    return false;
-
-  return true;
+  using Val = content::StopFindAction;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
+          {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
+          {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
 // static
