@@ -52,6 +52,7 @@ void MenuMac::PopupAt(BaseWindow* window,
                       int x,
                       int y,
                       int positioning_item,
+                      bool initiated_by_keyboard,
                       base::OnceClosure callback) {
   NativeWindow* native_window = window->window();
   if (!native_window)

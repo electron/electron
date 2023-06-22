@@ -25,6 +25,7 @@ class MenuViews : public Menu {
                int x,
                int y,
                int positioning_item,
+               bool initiated_by_keyboard,
                base::OnceClosure callback) override;
   void ClosePopupAt(int32_t window_id) override;
 
