@@ -1554,15 +1554,11 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` string | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
+* `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
-
-Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
-deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setBackgroundMaterial(material)` _Windows_
 

@@ -82,7 +82,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
     if ([user_notification isKindOfClass:[NSUserNotification class]]) {
       notification_info =
           [static_cast<NSUserNotification*>(user_notification) userInfo];
-    } else if (@available(macOS 10.14, *)) {
+    } else {
       notification_info = UNNotificationResponseToNSDictionary(
           static_cast<UNNotificationResponse*>(user_notification));
     }

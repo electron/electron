@@ -467,7 +467,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     BOOL checked = model->IsItemCheckedAt(modelIndex);
     DCHECK([(id)item isKindOfClass:[NSMenuItem class]]);
 
-    [(id)item setState:(checked ? NSOnState : NSOffState)];
+    [(id)item
+        setState:(checked ? NSControlStateValueOn : NSControlStateValueOff)];
     [(id)item setHidden:(!model->IsVisibleAt(modelIndex))];
 
     return model->IsEnabledAt(modelIndex);
