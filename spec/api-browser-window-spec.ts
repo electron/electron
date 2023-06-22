@@ -2312,7 +2312,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('causes the right value to be emitted on `always-on-top-changed`', async () => {
-      const alwaysOnTopChanged = once(w, 'always-on-top-changed');
+      const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
       w.setAlwaysOnTop(true);
       const [, alwaysOnTop] = await alwaysOnTopChanged;
@@ -2694,7 +2694,7 @@ describe('BrowserWindow module', () => {
       // https://github.com/electron/electron/issues/25413, and is not integral
       // to the test.
       const p = once(w.webContents, 'did-attach-webview');
-      const [, webviewContents] = await once(app, 'web-contents-created');
+      const [, webviewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
       await p;
     });
@@ -3496,7 +3496,7 @@ describe('BrowserWindow module', () => {
         const pageUrl = 'file://' + htmlPath;
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
-        const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window');
+        const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window') as [BrowserWindow, Electron.DidCreateWindowDetails];
         const expectedUrl = process.platform === 'win32'
           ? 'file:///' + htmlPath.replace(/\\/g, '/')
           : pageUrl;
@@ -3542,7 +3542,7 @@ describe('BrowserWindow module', () => {
 
         // The page is going to open a popup that it won't be able to close.
         // We have to close it from here later.
-        const [, popupWindow] = await once(app, 'browser-window-created');
+        const [, popupWindow] = await once(app, 'browser-window-created') as [any, BrowserWindow];
 
         // Ask the popup window for details.
         const detailsAnswer = once(ipcMain, 'child-loaded');
@@ -3600,11 +3600,11 @@ describe('BrowserWindow module', () => {
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
-          once(app, 'web-contents-created'),
+          once(app, 'web-contents-created') as Promise<[any, WebContents]>,
           once(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.contextIsolation).to.equal(false);
+        expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
       it('should set ipc event sender correctly', async () => {
@@ -3736,7 +3736,7 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        const didAttachWebview = once(w.webContents, 'did-attach-webview');
+        const didAttachWebview = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
         const webviewDomReady = once(ipcMain, 'webview-dom-ready');
         w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
@@ -3850,11 +3850,11 @@ describe('BrowserWindow module', () => {
         }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
-          once(app, 'web-contents-created'),
+          once(app, 'web-contents-created') as Promise<[any, WebContents]>,
           once(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.contextIsolation).to.equal(false);
+        expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
       describe('window.location', () => {
@@ -5952,10 +5952,10 @@ describe('BrowserWindow module', () => {
           preload: path.join(fixtures, 'api', 'isolated-preload.js')
         }
       });
-      const browserWindowCreated = once(app, 'browser-window-created');
+      const browserWindowCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
       const [, window] = await browserWindowCreated;
-      expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true('contextIsolation');
+      expect(window.webContents.getLastWebPreferences()!.contextIsolation).to.be.true('contextIsolation');
     });
     it('separates the page context from the Electron/preload context with sandbox on', async () => {
       const ws = new BrowserWindow({
@@ -6086,7 +6086,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('creates offscreen window with correct size', async () => {
-      const paint = once(w.webContents, 'paint');
+      const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       const [,, data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
@@ -6117,7 +6117,7 @@ describe('BrowserWindow module', () => {
 
     describe('window.webContents.isPainting()', () => {
       it('returns whether is currently painting', async () => {
-        const paint = once(w.webContents, 'paint');
+        const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
         await paint;
         expect(w.webContents.isPainting()).to.be.true('isPainting');
@@ -6144,7 +6144,7 @@ describe('BrowserWindow module', () => {
         w.webContents.stopPainting();
         w.webContents.startPainting();
 
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.isPainting()).to.be.true('isPainting');
       });
     });
@@ -6152,13 +6152,13 @@ describe('BrowserWindow module', () => {
     describe('frameRate APIs', () => {
       it('has default frame rate (function)', async () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.getFrameRate()).to.equal(60);
       });
 
       it('has default frame rate (property)', async () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(60);
       });
 
@@ -6169,7 +6169,7 @@ describe('BrowserWindow module', () => {
 
         w.webContents.setFrameRate(30);
 
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.getFrameRate()).to.equal(30);
       });
 
@@ -6180,7 +6180,7 @@ describe('BrowserWindow module', () => {
 
         w.webContents.frameRate = 30;
 
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
     });

@@ -107,7 +107,7 @@ describe('focus handling', () => {
       }
     });
 
-    const webviewReady = once(w.webContents, 'did-attach-webview');
+    const webviewReady = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
     await w.loadFile(path.join(fixturesPath, 'pages', 'tab-focus-loop-elements.html'));
     const [, wvContents] = await webviewReady;
     webviewContents = wvContents;
@@ -940,7 +940,7 @@ describe('chromium features', () => {
 
           await w.loadFile(path.join(fixturesPath, 'pages', 'form-with-data.html'));
 
-          const windowCreatedPromise = once(app, 'browser-window-created');
+          const windowCreatedPromise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
 
           w.webContents.executeJavaScript(`
             const form = document.querySelector('form')
@@ -972,7 +972,7 @@ describe('chromium features', () => {
 
         defer(() => { w.close(); });
 
-        const promise = once(app, 'browser-window-created');
+        const promise = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
         w.loadFile(path.join(fixturesPath, 'pages', 'window-open.html'));
         const [, newWindow] = await promise;
         expect(newWindow.isVisible()).to.equal(true);
@@ -1008,7 +1008,7 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript(`
         { b = window.open('devtools://devtools/bundled/inspector.html', '', 'nodeIntegration=no,show=no'); null }
       `);
-      const [, contents] = await once(app, 'web-contents-created');
+      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
       const typeofProcessGlobal = await contents.executeJavaScript('typeof process');
       expect(typeofProcessGlobal).to.equal('undefined');
     });
@@ -1019,7 +1019,7 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript(`
         { b = window.open('about:blank', '', 'nodeIntegration=no,show=no'); null }
       `);
-      const [, contents] = await once(app, 'web-contents-created');
+      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
       const typeofProcessGlobal = await contents.executeJavaScript('typeof process');
       expect(typeofProcessGlobal).to.equal('undefined');
     });
@@ -1036,14 +1036,14 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript(`
         { b = window.open(${JSON.stringify(windowUrl)}, '', 'javascript=no,show=no'); null }
       `);
-      const [, contents] = await once(app, 'web-contents-created');
+      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
       await once(contents, 'did-finish-load');
       // Click link on page
       contents.sendInputEvent({ type: 'mouseDown', clickCount: 1, x: 1, y: 1 });
       contents.sendInputEvent({ type: 'mouseUp', clickCount: 1, x: 1, y: 1 });
-      const [, window] = await once(app, 'browser-window-created');
+      const [, window] = await once(app, 'browser-window-created') as [any, BrowserWindow];
       const preferences = window.webContents.getLastWebPreferences();
-      expect(preferences.javascript).to.be.false();
+      expect(preferences!.javascript).to.be.false();
     });
 
     it('defines a window.location getter', async () => {
@@ -1056,7 +1056,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript(`{ b = window.open(${JSON.stringify(targetURL)}); null }`);
-      const [, window] = await once(app, 'browser-window-created');
+      const [, window] = await once(app, 'browser-window-created') as [any, BrowserWindow];
       await once(window.webContents, 'did-finish-load');
       expect(await w.webContents.executeJavaScript('b.location.href')).to.equal(targetURL);
     });
@@ -1065,7 +1065,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
-      const [, { webContents }] = await once(app, 'browser-window-created');
+      const [, { webContents }] = await once(app, 'browser-window-created') as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
       // When it loads, redirect
       w.webContents.executeJavaScript(`{ b.location = ${JSON.stringify(`file://${fixturesPath}/pages/base-page.html`)}; null }`);
@@ -1076,7 +1076,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.webContents.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
       w.webContents.executeJavaScript('{ b = window.open("about:blank"); null }');
-      const [, { webContents }] = await once(app, 'browser-window-created');
+      const [, { webContents }] = await once(app, 'browser-window-created') as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
       // When it loads, redirect
       w.webContents.executeJavaScript(`{ b.location.href = ${JSON.stringify(`file://${fixturesPath}/pages/base-page.html`)}; null }`);
@@ -1087,7 +1087,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(); null }');
-      const [, { webContents }] = await once(app, 'browser-window-created');
+      const [, { webContents }] = await once(app, 'browser-window-created') as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
       expect(await w.webContents.executeJavaScript('b.location.href')).to.equal('about:blank');
     });
@@ -1096,7 +1096,7 @@ describe('chromium features', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('{ b = window.open(\'\'); null }');
-      const [, { webContents }] = await once(app, 'browser-window-created');
+      const [, { webContents }] = await once(app, 'browser-window-created') as [any, BrowserWindow];
       await once(webContents, 'did-finish-load');
       expect(await w.webContents.executeJavaScript('b.location.href')).to.equal('about:blank');
     });
@@ -1864,7 +1864,7 @@ describe('chromium features', () => {
     it('opens when loading a pdf resource as top level navigation', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(pdfSource);
-      const [, contents] = await once(app, 'web-contents-created');
+      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
       await once(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
@@ -1872,7 +1872,7 @@ describe('chromium features', () => {
     it('opens when loading a pdf resource in a iframe', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'pdf-in-iframe.html'));
-      const [, contents] = await once(app, 'web-contents-created');
+      const [, contents] = await once(app, 'web-contents-created') as [any, WebContents];
       await once(contents, 'did-navigate');
       expect(contents.getURL()).to.equal('chrome-extension://mhjfbmdgcfjbbpaeojofohoefgiehjai/index.html');
     });
