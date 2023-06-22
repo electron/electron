@@ -1,5 +1,5 @@
 import { clipboard } from 'electron/common';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';

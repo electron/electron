@@ -2,7 +2,10 @@
   "root": true,
   "extends": "standard",
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint",
+    "unicorn"
+  ],
   "env": {
     "browser": true
   },
@@ -21,7 +24,8 @@
       "destructuring": "all"
     }],
     "standard/no-callback-literal": "off",
-    "node/no-deprecated-api": "off"
+    "node/no-deprecated-api": "off",
+    "unicorn/prefer-node-protocol": "error"
   },
   "parserOptions": {
     "ecmaVersion": 6,

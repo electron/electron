@@ -1,11 +1,11 @@
-import { Buffer } from 'buffer';
-import * as path from 'path';
-import * as util from 'util';
-import type * as Crypto from 'crypto';
+import { Buffer } from 'node:buffer';
+import * as path from 'node:path';
+import * as util from 'node:util';
+import type * as Crypto from 'node:crypto';
 
 const asar = process._linkedBinding('electron_common_asar');
 
-const Module = require('module');
+const Module = require('node:module');
 
 const Promise: PromiseConstructor = global.Promise;
 
@@ -66,7 +66,7 @@ const gid = process.getgid?.() ?? 0;
 const fakeTime = new Date();
 
 const asarStatsToFsStats = function (stats: NodeJS.AsarFileStat) {
-  const { Stats, constants } = require('fs');
+  const { Stats, constants } = require('node:fs');
 
   let mode = constants.S_IROTH ^ constants.S_IRGRP ^ constants.S_IRUSR ^ constants.S_IWUSR;
 
@@ -203,7 +203,7 @@ function validateBufferIntegrity (buffer: Buffer, integrity: NodeJS.AsarFileInfo
 
   // Delay load crypto to improve app boot performance
   // when integrity protection is not enabled
-  crypto = crypto || require('crypto');
+  crypto = crypto || require('node:crypto');
   const actual = crypto.createHash(integrity.algorithm).update(buffer).digest('hex');
   if (actual !== integrity.hash) {
     console.error(`ASAR Integrity Violation: got a hash mismatch (${actual} vs ${integrity.hash})`);
@@ -239,9 +239,9 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const logASARAccess = (asarPath: string, filePath: string, offset: number) => {
     if (!process.env.ELECTRON_LOG_ASAR_READS) return;
     if (!logFDs.has(asarPath)) {
-      const path = require('path');
+      const path = require('node:path');
       const logFilename = `${path.basename(asarPath, '.asar')}-access-log.txt`;
-      const logPath = path.join(require('os').tmpdir(), logFilename);
+      const logPath = path.join(require('node:os').tmpdir(), logFilename);
       logFDs.set(asarPath, fs.openSync(logPath, 'a'));
     }
     fs.writeSync(logFDs.get(asarPath), `${offset}: ${filePath}\n`);
@@ -833,7 +833,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   // tests will match. This env var will only slow things down in users apps
   // and should not be used.
   if (process.env.ELECTRON_EAGER_ASAR_HOOK_FOR_TESTING) {
-    overrideChildProcess(require('child_process'));
+    overrideChildProcess(require('node:child_process'));
   } else {
     const originalModuleLoad = Module._load;
     Module._load = (request: string, ...args: any[]) => {

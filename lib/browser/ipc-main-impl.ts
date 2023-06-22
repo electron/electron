@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { IpcMainInvokeEvent } from 'electron/main';
 
 export class IpcMainImpl extends EventEmitter {

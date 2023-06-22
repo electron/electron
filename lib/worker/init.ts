@@ -1,6 +1,6 @@
-import * as path from 'path';
+import * as path from 'node:path';
 
-const Module = require('module');
+const Module = require('node:module');
 
 // We modified the original process.argv to let node.js load the
 // init.js, we need to restore it here.

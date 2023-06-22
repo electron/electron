@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 import { Menu } from 'electron/main';
 import * as deprecate from '@electron/internal/common/deprecate';

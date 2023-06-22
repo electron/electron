@@ -1,4 +1,4 @@
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 const { createParentPort } = process._linkedBinding('electron_utility_parent_port');
 

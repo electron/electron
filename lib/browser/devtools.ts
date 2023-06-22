@@ -1,6 +1,6 @@
 import { dialog, Menu } from 'electron/main';
-import * as fs from 'fs';
-import * as url from 'url';
+import * as fs from 'node:fs';
+import * as url from 'node:url';
 
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';

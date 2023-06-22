@@ -1,5 +1,5 @@
 import { app } from 'electron/main';
-import { EventEmitter } from 'events';
+import { EventEmitter } from 'node:events';
 import * as squirrelUpdate from '@electron/internal/browser/api/auto-updater/squirrel-update-win';
 
 class AutoUpdater extends EventEmitter {

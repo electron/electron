@@ -1,10 +1,10 @@
-import { EventEmitter } from 'events';
-import * as fs from 'fs';
-import * as path from 'path';
+import { EventEmitter } from 'node:events';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 
-const Module = require('module');
+const Module = require('node:module');
 
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
@@ -126,7 +126,7 @@ if (packageJson.desktopName != null) {
 // Set v8 flags, deliberately lazy load so that apps that do not use this
 // feature do not pay the price
 if (packageJson.v8Flags != null) {
-  require('v8').setFlagsFromString(packageJson.v8Flags);
+  require('node:v8').setFlagsFromString(packageJson.v8Flags);
 }
 
 app.setAppPath(packagePath);
