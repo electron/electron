@@ -19,20 +19,15 @@ async function findRelease () {
   });
 
   const targetRelease = releases.data.find(release => release.tag_name === version);
-  let returnObject = {};
 
-  if (targetRelease) {
-    returnObject = {
-      id: targetRelease.id,
-      draft: targetRelease.draft,
-      exists: true
-    };
-  } else {
-    returnObject = {
-      exists: false,
-      draft: false
-    };
-  }
+  const returnObject = targetRelease ? {
+    id: targetRelease.id,
+    draft: targetRelease.draft,
+    exists: true
+  } : {
+    exists: false,
+    draft: false
+  };
   console.log(JSON.stringify(returnObject));
 }
 

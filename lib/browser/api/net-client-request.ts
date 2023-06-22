@@ -221,11 +221,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     if (options.host) {
       urlObj.host = options.host;
     } else {
-      if (options.hostname) {
-        urlObj.hostname = options.hostname;
-      } else {
-        urlObj.hostname = 'localhost';
-      }
+      urlObj.hostname = options.hostname || 'localhost';
 
       if (options.port) {
         urlObj.port = options.port;

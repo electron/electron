@@ -60,11 +60,7 @@ async function circleCIcall (targetBranch, workflowName, options) {
     branch: targetBranch,
     parameters: {}
   };
-  if (options.ghRelease) {
-    buildRequest.parameters['upload-to-storage'] = '0';
-  } else {
-    buildRequest.parameters['upload-to-storage'] = '1';
-  }
+  buildRequest.parameters['upload-to-storage'] = options.ghRelease ? '0' : '1';
   buildRequest.parameters[`run-${workflowName}`] = true;
   if (options.arch) {
     const validArches = circleCIPublishIndividualArches[workflowName];

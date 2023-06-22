@@ -158,12 +158,7 @@ async function tagRelease (version) {
 
 async function verifyNewVersion () {
   const newVersion = await getNewVersion(true);
-  let response;
-  if (args.automaticRelease) {
-    response = 'y';
-  } else {
-    response = await promptForVersion(newVersion);
-  }
+  const response = args.automaticRelease ? 'y' : await promptForVersion(newVersion);
   if (response.match(/^y/i)) {
     console.log(`${pass} Starting release of ${newVersion}`);
   } else {

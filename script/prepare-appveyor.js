@@ -81,11 +81,7 @@ async function getPullRequestId (targetBranch) {
     state: 'open',
     head: `electron:${targetBranch}`
   });
-  if (prsForBranch.data.length === 1) {
-    return prsForBranch.data[0].number;
-  } else {
-    return null;
-  }
+  return prsForBranch.data.length === 1 ? prsForBranch.data[0].number : null;
 }
 
 function useAppVeyorImage (targetBranch, options) {
