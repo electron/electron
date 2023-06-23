@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index bbc44e2e130d7..7d5c401fe5909 100644
+index bbc44e2e130d7de88d12a283ee69b83bfde8962e..7d5c401fe5909551a42509ea3b14f263ccab5d0f 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -145,6 +145,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,7 +26,7 @@ index bbc44e2e130d7..7d5c401fe5909 100644
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 5db88f1f25c23..23d2eff0ed3d4 100644
+index 5db88f1f25c23f3296f785b88bba3aabdad263a7..23d2eff0ed3d4eae42f5ac16ec4e08586af94641 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
 @@ -409,6 +409,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
@@ -62,7 +62,7 @@ index 5db88f1f25c23..23d2eff0ed3d4 100644
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index 87807be3558a2..dcff51e17f521 100644
+index 87807be3558a2fdd222241b046718f9f1f0b7858..dcff51e17f5215d62c62141f2b63f26501e59d09 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
 @@ -623,6 +623,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {

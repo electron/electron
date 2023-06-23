@@ -128,7 +128,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 026845e0b1b3de4dd88b80eae5d6eb7d21bd2d7f..aa6b4507f210eeabf78f92e1875c35ed5f7d181c 100644
+index dc2d95b15ab1bf3f50cd6761e5ca823b533250df..66ab901f7890f795ec7dcf64572b67427ef6dd5b 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -230,7 +230,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d1ab6d45d519dd131a854b01b90295b5e7316d71..7086774c980636b160f5152ac2c3c6b737217dd1 100644
+index 479decb21d8834d5833c26879e8861877adb8a95..7add8f6db9a02b4b4e85806836b8f59cf2d34a47 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {
