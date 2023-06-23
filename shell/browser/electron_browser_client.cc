@@ -759,12 +759,17 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
 #endif
 }
 
-bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
-    content::BrowserContext* browser_context,
-    const GURL& scope,
+void ElectronBrowserClient::GetMediaDeviceIDSalt(
+    content::RenderFrameHost* rfh,
     const net::SiteForCookies& site_for_cookies,
-    const absl::optional<url::Origin>& top_frame_origin) {
-  return true;
+    const blink::StorageKey& storage_key,
+    base::OnceCallback<void(bool, const std::string&)> callback) {
+  constexpr bool persistent_media_device_id_allowed = true;
+  std::string persistent_media_device_id_salt =
+      static_cast<ElectronBrowserContext*>(rfh->GetBrowserContext())
+          ->GetMediaDeviceIDSalt();
+  std::move(callback).Run(persistent_media_device_id_allowed,
+                          persistent_media_device_id_salt);
 }
 
 base::FilePath ElectronBrowserClient::GetLoggingFileName(
