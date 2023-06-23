@@ -8,6 +8,7 @@
 #include "base/containers/contains.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
+#include "gin/public/context_holder.h"
 #include "net/http/http_request_headers.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -20,9 +21,34 @@
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
+#include "third_party/blink/renderer/bindings/core/v8/v8_initializer.h"  // nogncheck
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
 
 namespace electron {
+
+namespace {
+
+// Checks if the message comes from node vm context or blink context, and only
+// pass the message to blink under the later case. This is because blink will
+// do a hard crash if it sees a foreign context.
+void MessageHandlerWrapper(v8::Local<v8::Message> message,
+                           v8::Local<v8::Value> data) {
+  // If the exception is an object, check if it is created in blink context.
+  if (data->IsObject()) {
+    v8::Local<v8::Context> context;
+    if (data.As<v8::Object>()->GetCreationContext().ToLocal(&context)) {
+      void* blink_script_state = context->GetAlignedPointerFromEmbedderData(
+          // blink::ScriptState::kV8ContextPerContextDataIndex
+          static_cast<int>(gin::kPerContextDataStartIndex) +
+          static_cast<int>(gin::kEmbedderBlink));
+      if (!blink_script_state)
+        return;
+    }
+  }
+  blink::V8Initializer::MessageHandlerInMainThread(message, data);
+}
+
+}  // namespace
 
 ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
@@ -31,6 +57,20 @@ ElectronRendererClient::ElectronRendererClient()
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
+
+void ElectronRendererClient::RenderThreadStarted() {
+  RendererClientBase::RenderThreadStarted();
+  // Replace blink's message handler with our wrapper.
+  v8::Isolate* isolate = v8::Isolate::GetCurrent();
+  isolate->RemoveMessageListeners(
+      blink::V8Initializer::MessageHandlerInMainThread);
+  isolate->AddMessageListenerWithErrorLevel(
+      MessageHandlerWrapper,
+      // Same with blink::V8Initializer::InitializeMainThread.
+      v8::Isolate::kMessageError | v8::Isolate::kMessageWarning |
+          v8::Isolate::kMessageInfo | v8::Isolate::kMessageDebug |
+          v8::Isolate::kMessageLog);
+}
 
 void ElectronRendererClient::RenderFrameCreated(
     content::RenderFrame* render_frame) {

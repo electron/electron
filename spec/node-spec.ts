@@ -4,7 +4,8 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import { getRemoteContext, ifdescribe, ifit, itremote, useRemoteContext } from './lib/spec-helpers';
-import { webContents } from 'electron/main';
+import { closeAllWindows } from './lib/window-helpers';
+import { BrowserWindow, webContents } from 'electron/main';
 import { EventEmitter } from 'node:stream';
 import { once } from 'node:events';
 
@@ -480,8 +481,33 @@ describe('node feature', () => {
   });
 
   describe('vm.runInNewContext', () => {
+    afterEach(async () => {
+      await closeAllWindows();
+    });
+
     itremote('should not crash', () => {
       require('node:vm').runInNewContext('');
+    });
+
+    it('should not crash after throwing exception in vm context', (done) => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          contextIsolation: false,
+          nodeIntegration: true
+        }
+      });
+      const html = `<script>
+        const vm = require('node:vm');
+        const context = { x: 2 };
+        vm.createContext(context);
+        vm.runInContext('throw new Error()', context);
+      </script>`;
+      w.webContents.once('render-process-gone', (event, details) => {
+        if (details.reason !== 'clean-exit') { done(details.reason); }
+      });
+      w.webContents.once('did-finish-load', () => done());
+      w.webContents.loadURL('data:text/html;charset=UTF-8,' + encodeURIComponent(html));
     });
   });
 

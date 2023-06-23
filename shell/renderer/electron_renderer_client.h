@@ -36,6 +36,7 @@ class ElectronRendererClient : public RendererClientBase {
 
  private:
   // content::ContentRendererClient:
+  void RenderThreadStarted() override;
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
