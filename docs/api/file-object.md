@@ -4,8 +4,8 @@
 
 > **Warning**
 > The `path` property that Electron adds to the `File` interface is deprecated
-> and **will** be removed in a future Electron release.  We reccomend you
-> use `blinkUtils.getPathForFile` instead.
+> and **will** be removed in a future Electron release.  We recommend you
+> use `webUtils.getPathForFile` instead.
 
 The DOM's File interface provides abstraction around native files in order to
 let users work on native files directly with the HTML5 file API. Electron has

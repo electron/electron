@@ -91,7 +91,7 @@
   V(electron_common_v8_util)
 
 #define ELECTRON_RENDERER_BINDINGS(V) \
-  V(electron_renderer_blink_utils)    \
+  V(electron_renderer_web_utils)      \
   V(electron_renderer_context_bridge) \
   V(electron_renderer_crash_reporter) \
   V(electron_renderer_ipc)            \
