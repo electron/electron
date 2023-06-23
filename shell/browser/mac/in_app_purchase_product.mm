@@ -114,8 +114,7 @@
  */
 - (in_app_purchase::ProductSubscriptionPeriod)
     skProductSubscriptionPeriodToStruct:
-        (SKProductSubscriptionPeriod*)productSubscriptionPeriod
-    API_AVAILABLE(macosx(10.13.2)) {
+        (SKProductSubscriptionPeriod*)productSubscriptionPeriod {
   in_app_purchase::ProductSubscriptionPeriod productSubscriptionPeriodStruct;
 
   productSubscriptionPeriodStruct.numberOfUnits =
@@ -140,7 +139,7 @@
  * @param productDiscount - The SKProductDiscount object to convert.
  */
 - (in_app_purchase::ProductDiscount)skProductDiscountToStruct:
-    (SKProductDiscount*)productDiscount API_AVAILABLE(macosx(10.13.2)) {
+    (SKProductDiscount*)productDiscount {
   in_app_purchase::ProductDiscount productDiscountStruct;
 
   if (productDiscount.paymentMode == SKProductDiscountPaymentModePayAsYouGo) {

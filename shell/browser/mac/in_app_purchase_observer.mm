@@ -99,7 +99,7 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
  * @param paymentDiscount - The SKPaymentDiscount object to convert.
  */
 - (in_app_purchase::PaymentDiscount)skPaymentDiscountToStruct:
-    (SKPaymentDiscount*)paymentDiscount API_AVAILABLE(macosx(10.14.4)) {
+    (SKPaymentDiscount*)paymentDiscount {
   in_app_purchase::PaymentDiscount paymentDiscountStruct;
 
   paymentDiscountStruct.identifier = [paymentDiscount.identifier UTF8String];
