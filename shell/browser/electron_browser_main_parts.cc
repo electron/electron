@@ -67,6 +67,7 @@
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
+#include "ui/color/color_provider_manager.h"
 
 #if defined(USE_AURA)
 #include "ui/display/display.h"
