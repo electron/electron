@@ -24,7 +24,7 @@
 #endif
 
 static NSDictionary* UNNotificationResponseToNSDictionary(
-    UNNotificationResponse* response) API_AVAILABLE(macosx(10.14)) {
+    UNNotificationResponse* response) {
   if (![response respondsToSelector:@selector(actionIdentifier)] ||
       ![response respondsToSelector:@selector(notification)]) {
     return nil;
