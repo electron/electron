@@ -1971,6 +1971,30 @@ describe('chromium features', () => {
     });
   });
 
+  // https://developer.mozilla.org/en-US/docs/Web/API/NetworkInformation
+  describe('navigator.connection', () => {
+    it('returns the correct value', async () => {
+      const w = new BrowserWindow({ show: false });
+
+      w.webContents.session.enableNetworkEmulation({
+        latency: 500,
+        downloadThroughput: 6400,
+        uploadThroughput: 6400
+      });
+
+      await w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      const rtt = await w.webContents.executeJavaScript('navigator.connection.rtt');
+      expect(rtt).to.be.a('number');
+
+      const downlink = await w.webContents.executeJavaScript('navigator.connection.downlink');
+      expect(downlink).to.be.a('number');
+
+      const effectiveTypes = ['slow-2g', '2g', '3g', '4g'];
+      const effectiveType = await w.webContents.executeJavaScript('navigator.connection.effectiveType');
+      expect(effectiveTypes).to.include(effectiveType);
+    });
+  });
+
   describe('navigator.userAgentData', () => {
     // These tests are done on an http server because navigator.userAgentData
     // requires a secure context.

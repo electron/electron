@@ -524,6 +524,8 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 
+  fake_browser_process_->PreMainMessageLoopRun();
+
   return GetExitCode();
 }
 
