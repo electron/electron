@@ -2,35 +2,28 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/renderer/api/electron_api_blink_utils.h"
+#include "shell/renderer/api/electron_api_web_utils.h"
 
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/node_includes.h"
 #include "third_party/blink/public/web/web_blob.h"
 
-namespace electron {
+namespace electron::api::web_utils {
 
-namespace api {
-
-namespace blink_utils {
-
-std::string GetPathForFile(gin_helper::Arguments* args,
-                           v8::Local<v8::Value> file) {
+std::string GetPathForFile(v8::Isolate* isolate, v8::Local<v8::Value> file) {
   blink::WebBlob blob = blink::WebBlob::FromV8Value(file);
   if (blob.IsNull()) {
-    args->ThrowError(
-        "getPathForFile expected to receive a File object but one was not "
-        "provided");
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowTypeError(
+            "getPathForFile expected to receive a File object but one was not "
+            "provided");
     return "";
   }
   return blob.Path();
 }
 
-}  // namespace blink_utils
-
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api::web_utils
 
 namespace {
 
@@ -40,9 +33,9 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  dict.SetMethod("getPathForFile", &electron::api::blink_utils::GetPathForFile);
+  dict.SetMethod("getPathForFile", &electron::api::web_utils::GetPathForFile);
 }
 
 }  // namespace
 
-NODE_LINKED_BINDING_CONTEXT_AWARE(electron_renderer_blink_utils, Initialize)
+NODE_LINKED_BINDING_CONTEXT_AWARE(electron_renderer_web_utils, Initialize)

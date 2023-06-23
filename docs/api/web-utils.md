@@ -1,14 +1,14 @@
-# blinkUtils
+# webUtils
 
-> A utility layer to interact with blink objects
+> A utility layer to interact with Web API objects (Files, Blobs, etc.)
 
 Process: [Renderer](../glossary.md#renderer-process)
 
 ## Methods
 
-The `blinkUtils` module has the following methods:
+The `webUtils` module has the following methods:
 
-### `blinkUtils.getPathForFile(file)`
+### `webUtils.getPathForFile(file)`
 
 * `file` File - A web [File](https://developer.mozilla.org/en-US/docs/Web/API/File) object.
 
@@ -21,6 +21,6 @@ This method superceded the previous augmentation to the `File` object with the `
 const oldPath = document.querySelector('input').files[0].path
 
 // After
-const { blinkUtils } = require('electron')
-const newPath = blinkUtils.getPathForFile(document.querySelector('input').files[0])
+const { webUtils } = require('electron')
+const newPath = webUtils.getPathForFile(document.querySelector('input').files[0])
 ```
