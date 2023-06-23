@@ -14,10 +14,9 @@ namespace electron::api::web_utils {
 std::string GetPathForFile(v8::Isolate* isolate, v8::Local<v8::Value> file) {
   blink::WebBlob blob = blink::WebBlob::FromV8Value(file);
   if (blob.IsNull()) {
-    gin_helper::ErrorThrower(args->isolate())
-        .ThrowTypeError(
-            "getPathForFile expected to receive a File object but one was not "
-            "provided");
+    gin_helper::ErrorThrower(isolate).ThrowTypeError(
+        "getPathForFile expected to receive a File object but one was not "
+        "provided");
     return "";
   }
   return blob.Path();
