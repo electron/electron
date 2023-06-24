@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a0ed00105bc7a8ab60362734ac6b1950805082a6..e03994ef59ce91376d70141bf07bf122d5dc2fa5 100644
+index 7ea132b9a57dcd59e993a656973e40211c1528f1..f95939e8e6af4d38c5d6741e8366017d905eec90 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -228,6 +228,7 @@ if (is_apple) {
@@ -17,7 +17,7 @@ index a0ed00105bc7a8ab60362734ac6b1950805082a6..e03994ef59ce91376d70141bf07bf122
      deps = [
        "//base:base_static",
        "//base/numerics:base_numerics",
-@@ -1082,6 +1083,7 @@ component("base") {
+@@ -1083,6 +1084,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -92,7 +92,7 @@ index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d3
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 897473258ed4e81151ad41659fa0ee9336cce246..2446f6bc8cbbd85e4266edccd07f6e9f5cd75120 100644
+index 8cda2e82439426ba97f353e1a6907ec5beacab51..24a7e2dc82d53f17dd8ea0db21c1b520b4df157d 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -128,7 +128,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index dc2d95b15ab1bf3f50cd6761e5ca823b533250df..66ab901f7890f795ec7dcf64572b67427ef6dd5b 100644
+index 7cf9d3fb6a4fe5948c07e1480fcfa807df1f72e5..8abb898502d3cd636471630ffee9632f003370e7 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -230,7 +230,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 479decb21d8834d5833c26879e8861877adb8a95..7add8f6db9a02b4b4e85806836b8f59cf2d34a47 100644
+index e90fdebe5ca8109c3308b66624dd4b6840e04136..9a3056aaea45c270732a6c066b27a6e565f8d647 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {
@@ -255,10 +255,10 @@ index 7637db0ce03b9e8d242e47f5aff85c21967a541f..e66fdb98adb035a917942432806e0dfa
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index cb282e3a526fb724b25c0d4c6a2af3da30ee0a20..d4275f68211f5a0cddfd2bcbc0f620e8f8b6c7aa 100644
+index 46dedcc0be88eb0abe461efef1f99928397d6d89..ac2711e76aebb765a14794d550f6ef7e5cf740f4 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -247,6 +247,7 @@ component("platform") {
+@@ -248,6 +248,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
