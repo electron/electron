@@ -540,7 +540,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   }
 
   if (sysColor)
-    return ToRGBHex(skia::NSSystemColorToSkColor(sysColor));
+    return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor));
   return "";
 }
 
