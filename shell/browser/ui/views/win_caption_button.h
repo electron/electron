@@ -63,8 +63,8 @@ class WinCaptionButton : public views::Button {
   std::unique_ptr<WinIconPainter> icon_painter_;
   ViewID button_type_;
 
-  int base_width_ = WindowFrameUtil::kWindows10GlassCaptionButtonWidth;
-  int height_ = WindowFrameUtil::kWindows10GlassCaptionButtonHeightRestored;
+  int base_width_ = WindowFrameUtil::kWindowsCaptionButtonWidth;
+  int height_ = WindowFrameUtil::kWindowsCaptionButtonHeightRestored;
 };
 }  // namespace electron
 
