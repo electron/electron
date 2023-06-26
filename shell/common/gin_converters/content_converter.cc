@@ -24,36 +24,81 @@
 
 namespace gin {
 
-template <>
-struct Converter<ui::MenuSourceType> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ui::MenuSourceType& in) {
-    switch (in) {
-      case ui::MENU_SOURCE_MOUSE:
-        return StringToV8(isolate, "mouse");
-      case ui::MENU_SOURCE_KEYBOARD:
-        return StringToV8(isolate, "keyboard");
-      case ui::MENU_SOURCE_TOUCH:
-        return StringToV8(isolate, "touch");
-      case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
-        return StringToV8(isolate, "touchMenu");
-      case ui::MENU_SOURCE_LONG_PRESS:
-        return StringToV8(isolate, "longPress");
-      case ui::MENU_SOURCE_LONG_TAP:
-        return StringToV8(isolate, "longTap");
-      case ui::MENU_SOURCE_TOUCH_HANDLE:
-        return StringToV8(isolate, "touchHandle");
-      case ui::MENU_SOURCE_STYLUS:
-        return StringToV8(isolate, "stylus");
-      case ui::MENU_SOURCE_ADJUST_SELECTION:
-        return StringToV8(isolate, "adjustSelection");
-      case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
-        return StringToV8(isolate, "adjustSelectionReset");
-      default:
-        return StringToV8(isolate, "none");
-    }
+// static
+v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
+    v8::Isolate* isolate,
+    const ui::MenuSourceType& in) {
+  switch (in) {
+    case ui::MENU_SOURCE_MOUSE:
+      return StringToV8(isolate, "mouse");
+    case ui::MENU_SOURCE_KEYBOARD:
+      return StringToV8(isolate, "keyboard");
+    case ui::MENU_SOURCE_TOUCH:
+      return StringToV8(isolate, "touch");
+    case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
+      return StringToV8(isolate, "touchMenu");
+    case ui::MENU_SOURCE_LONG_PRESS:
+      return StringToV8(isolate, "longPress");
+    case ui::MENU_SOURCE_LONG_TAP:
+      return StringToV8(isolate, "longTap");
+    case ui::MENU_SOURCE_TOUCH_HANDLE:
+      return StringToV8(isolate, "touchHandle");
+    case ui::MENU_SOURCE_STYLUS:
+      return StringToV8(isolate, "stylus");
+    case ui::MENU_SOURCE_ADJUST_SELECTION:
+      return StringToV8(isolate, "adjustSelection");
+    case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
+      return StringToV8(isolate, "adjustSelectionReset");
+    case ui::MENU_SOURCE_NONE:
+      return StringToV8(isolate, "none");
   }
-};
+}
+
+// static
+bool Converter<ui::MenuSourceType>::FromV8(v8::Isolate* isolate,
+                                           v8::Local<v8::Value> val,
+                                           ui::MenuSourceType* out) {
+  std::string type;
+  if (!ConvertFromV8(isolate, val, &type))
+    return false;
+
+  if (type == "mouse") {
+    *out = ui::MENU_SOURCE_MOUSE;
+    return true;
+  } else if (type == "keyboard") {
+    *out = ui::MENU_SOURCE_KEYBOARD;
+    return true;
+  } else if (type == "touch") {
+    *out = ui::MENU_SOURCE_TOUCH;
+    return true;
+  } else if (type == "touchMenu") {
+    *out = ui::MENU_SOURCE_TOUCH_EDIT_MENU;
+    return true;
+  } else if (type == "longPress") {
+    *out = ui::MENU_SOURCE_LONG_PRESS;
+    return true;
+  } else if (type == "longTap") {
+    *out = ui::MENU_SOURCE_LONG_TAP;
+    return true;
+  } else if (type == "touchHandle") {
+    *out = ui::MENU_SOURCE_TOUCH_HANDLE;
+    return true;
+  } else if (type == "stylus") {
+    *out = ui::MENU_SOURCE_STYLUS;
+    return true;
+  } else if (type == "adjustSelection") {
+    *out = ui::MENU_SOURCE_ADJUST_SELECTION;
+    return true;
+  } else if (type == "adjustSelectionReset") {
+    *out = ui::MENU_SOURCE_ADJUST_SELECTION_RESET;
+    return true;
+  } else if (type == "none") {
+    *out = ui::MENU_SOURCE_NONE;
+    return true;
+  }
+
+  return false;
+}
 
 // static
 v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(

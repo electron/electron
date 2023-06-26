@@ -80,10 +80,10 @@ The `menu` object has the following instance methods:
   * `positioningItem` number (optional) _macOS_ - The index of the menu item to
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
-  * `initiatedByKeyboard` boolean (optional) _Windows_ _Linux_ - Whether the menu popup
-    was triggered by a keyboard action. If true, the first top-level item in the menu
-    will be focused when the menu is opened. This behavior can assist in keyboard
-    accessibility.
+  * `sourceType` string (optional) _Windows_ _Linux_ - This should map to the `menuSourceType`
+    provided by the `context-menu` event. It is not reccomended to set this value manually,
+    only provide values you receive from other APIs or leave it `undefined`.
+    Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
   * `callback` Function (optional) - Called when menu is closed.
 
 Pops up this menu as a context menu in the [`BrowserWindow`](browser-window.md).
