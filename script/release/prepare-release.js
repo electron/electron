@@ -197,7 +197,7 @@ async function prepareRelease (isBeta, notesOnly) {
     const newVersion = await getNewVersion(true);
     console.log(newVersion);
   } else {
-    const currentBranch = (args.branch) ? args.branch : await getCurrentBranch(ELECTRON_DIR);
+    const currentBranch = args.branch || await getCurrentBranch(ELECTRON_DIR);
     if (notesOnly) {
       const newVersion = await getNewVersion(true);
       const releaseNotes = await getReleaseNotes(currentBranch, newVersion);
