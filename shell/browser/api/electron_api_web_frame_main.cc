@@ -184,9 +184,7 @@ void WebFrameMain::Send(v8::Isolate* isolate,
   if (!CheckRenderFrame())
     return;
 
-  GetRendererApi()->Message(internal, channel, std::move(message),
-                            0 /* sender_id */,
-                            false /* sender_is_main_frame */);
+  GetRendererApi()->Message(internal, channel, std::move(message));
 }
 
 const mojo::Remote<mojom::ElectronRenderer>& WebFrameMain::GetRendererApi() {
