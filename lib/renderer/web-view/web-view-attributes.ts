@@ -80,6 +80,7 @@ export class PartitionAttribute extends WebViewAttribute {
   }
 
   public handleMutation = (oldValue: any, newValue: any) => {
+    // eslint-disable-next-line unicorn/prefer-default-parameters
     newValue = newValue || '';
 
     // The partition cannot change if the webview has already navigated.

@@ -26,6 +26,7 @@
     "unicorn/prefer-array-find": "error",
     "unicorn/prefer-array-some": "error",
     "unicorn/prefer-date-now": "error",
+    "unicorn/prefer-default-parameters": "error",
     "unicorn/prefer-includes": "error",
     "unicorn/prefer-logical-operator-over-ternary": "error",
     "unicorn/prefer-optional-catch-binding": "error",
