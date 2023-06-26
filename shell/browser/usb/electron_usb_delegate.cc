@@ -159,13 +159,13 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
 
 std::unique_ptr<UsbChooser> ElectronUsbDelegate::RunChooser(
     content::RenderFrameHost& frame,
-    std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+    blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {
   UsbChooserController* controller = ControllerForFrame(&frame);
   if (controller) {
     DeleteControllerForFrame(&frame);
   }
-  AddControllerForFrame(&frame, std::move(filters), std::move(callback));
+  AddControllerForFrame(&frame, std::move(options), std::move(callback));
   // Return a nullptr because the return value isn't used for anything. The
   // return value is simply used in Chromium to cleanup the chooser UI once the
   // usb service is destroyed.
@@ -269,12 +269,12 @@ UsbChooserController* ElectronUsbDelegate::ControllerForFrame(
 
 UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
     content::RenderFrameHost* render_frame_host,
-    std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+    blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto controller = std::make_unique<UsbChooserController>(
-      render_frame_host, std::move(filters), std::move(callback), web_contents,
+      render_frame_host, std::move(options), std::move(callback), web_contents,
       weak_factory_.GetWeakPtr());
   controller_map_.insert(
       std::make_pair(render_frame_host, std::move(controller)));

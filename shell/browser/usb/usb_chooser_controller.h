@@ -32,7 +32,7 @@ class UsbChooserController final : public UsbChooserContext::DeviceObserver,
  public:
   UsbChooserController(
       content::RenderFrameHost* render_frame_host,
-      std::vector<device::mojom::UsbDeviceFilterPtr> device_filters,
+      blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback,
       content::WebContents* web_contents,
       base::WeakPtr<ElectronUsbDelegate> usb_delegate);
@@ -58,7 +58,7 @@ class UsbChooserController final : public UsbChooserContext::DeviceObserver,
   void RunCallback(device::mojom::UsbDeviceInfoPtr device_info);
   void OnDeviceChosen(gin::Arguments* args);
 
-  std::vector<device::mojom::UsbDeviceFilterPtr> filters_;
+  blink::mojom::WebUsbRequestDeviceOptionsPtr options_;
   blink::mojom::WebUsbService::GetPermissionCallback callback_;
   url::Origin origin_;
 

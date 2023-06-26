@@ -45,7 +45,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
                                        std::vector<uint8_t>& classes) override;
   std::unique_ptr<content::UsbChooser> RunChooser(
       content::RenderFrameHost& frame,
-      std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+      blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback) override;
   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
                                   const url::Origin& origin) override;
@@ -83,7 +83,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
 
   UsbChooserController* AddControllerForFrame(
       content::RenderFrameHost* render_frame_host,
-      std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+      blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback);
 
   class ContextObservation;
