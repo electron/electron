@@ -30,6 +30,7 @@
     "unicorn/prefer-logical-operator-over-ternary": "error",
     "unicorn/prefer-optional-catch-binding": "error",
     "unicorn/prefer-prototype-methods": "error",
+    "unicorn/prefer-set-has": "error",
     "unicorn/prefer-type-error": "error"
   },
   "parserOptions": {

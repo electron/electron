@@ -61,12 +61,12 @@ async function getDraftRelease (version, skipValidation) {
 
 async function validateReleaseAssets (release, validatingRelease) {
   const requiredAssets = assetsForVersion(release.tag_name, validatingRelease).sort();
-  const extantAssets = release.assets.map(asset => asset.name).sort();
+  const extantAssets = new Set(release.assets.map(asset => asset.name).sort());
   const downloadUrls = release.assets.map(asset => ({ url: asset.browser_download_url, file: asset.name })).sort((a, b) => a.file.localeCompare(b.file));
 
   failureCount = 0;
   requiredAssets.forEach(asset => {
-    check(extantAssets.includes(asset), asset);
+    check(extantAssets.has(asset), asset);
   });
   check((failureCount === 0), 'All required GitHub assets exist for release', true);
 
