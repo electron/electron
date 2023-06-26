@@ -60,7 +60,7 @@ describe('nativeTheme module', () => {
       expect(called).to.equal(false);
     });
 
-    ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '18.0.0'))('on macOS 10.14', () => {
+    ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '19.0.0'))('on macOS 10.15+', () => {
       it('should update appLevelAppearance when set', () => {
         nativeTheme.themeSource = 'dark';
         expect(systemPreferences.appLevelAppearance).to.equal('dark');
