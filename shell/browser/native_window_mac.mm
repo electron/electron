@@ -3,9 +3,9 @@
 // found in the LICENSE file.
 
 #include "shell/browser/native_window_mac.h"
-
 #include <AvailabilityMacros.h>
 #include <objc/objc-runtime.h>
+#include "ui/gfx/mac/scoped_cocoa_disable_screen_updates.h"
 
 #include <algorithm>
 #include <memory>
@@ -1192,19 +1192,48 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   [CATransaction commit];
 }
 
-void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
+void NativeWindowMac::ReplaceBrowserView(NativeBrowserView* viewToAdd,
+                                         NativeBrowserView* viewToRemove) {
   [CATransaction begin];
   [CATransaction setDisableActions:YES];
 
-  if (!view) {
+  if (!viewToAdd || !viewToRemove) {
     [CATransaction commit];
     return;
   }
 
-  if (view->GetInspectableWebContentsView())
-    [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-        removeFromSuperview];
-  remove_browser_view(view);
+  // auto bounds = viewToRemove->GetBounds();
+
+  add_browser_view(viewToAdd);
+  auto* viewToAddInspectableWebContentsView =
+      viewToAdd->GetInspectableWebContentsView();
+  auto* viewToRemoveInspectableWebContentsView =
+      viewToRemove->GetInspectableWebContentsView();
+
+  if (viewToAddInspectableWebContentsView &&
+      viewToRemoveInspectableWebContentsView) {
+    auto* native_view_to_add =
+        viewToAddInspectableWebContentsView->GetNativeView().GetNativeNSView();
+    auto* native_view_to_remove =
+        viewToRemoveInspectableWebContentsView->GetNativeView()
+            .GetNativeNSView();
+    native_view_to_add.frame = native_view_to_remove.frame;
+    gfx::ScopedCocoaDisableScreenUpdates disabler;
+    [[window_ contentView] addSubview:native_view_to_add
+                           positioned:NSWindowBelow
+                           relativeTo:native_view_to_remove];
+    // viewToAdd->SetBounds(bounds);
+    //            [NSTimer scheduledTimerWithTimeInterval:0.1
+    //                                             target:native_view_to_remove
+    //                                           selector:@selector(removeFromSuperview)
+    //                                           userInfo:nil
+    //                                            repeats:NO];
+    [native_view_to_remove removeFromSuperview];
+    native_view_to_add.hidden = NO;
+    //[native_view_to_remove removeFromSuperview];
+    remove_browser_view(viewToRemove);
+    gfx::ScopedCocoaDisableScreenUpdates enabler;
+  }
 
   [CATransaction commit];
 }
@@ -1229,6 +1258,23 @@ void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
                            relativeTo:nil];
     native_view.hidden = NO;
   }
+
+  [CATransaction commit];
+}
+
+void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
+
+  if (!view) {
+    [CATransaction commit];
+    return;
+  }
+
+  if (view->GetInspectableWebContentsView())
+    [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
+        removeFromSuperview];
+  remove_browser_view(view);
 
   [CATransaction commit];
 }

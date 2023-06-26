@@ -179,6 +179,9 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   virtual void RemoveBrowserView(gin::Handle<BrowserView> browser_view);
   virtual void SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                  gin_helper::Arguments* args);
+  virtual void ReplaceBrowserView(
+      gin::Handle<BrowserView> browser_view_to_add,
+      gin::Handle<BrowserView> browser_view_to_remove);
   virtual std::vector<v8::Local<v8::Value>> GetBrowserViews() const;
   virtual void ResetBrowserViews();
   std::string GetMediaSourceId() const;

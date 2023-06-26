@@ -797,6 +797,13 @@ void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
   window_->SetTopBrowserView(browser_view->view());
 }
 
+void BaseWindow::ReplaceBrowserView(
+    gin::Handle<BrowserView> browser_view_to_add,
+    gin::Handle<BrowserView> browser_view_to_remove) {
+  window_->ReplaceBrowserView(browser_view_to_add->view(),
+                              browser_view_to_remove->view());
+}
+
 std::string BaseWindow::GetMediaSourceId() const {
   return window_->GetDesktopMediaID().ToString();
 }
@@ -1251,6 +1258,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("addBrowserView", &BaseWindow::AddBrowserView)
       .SetMethod("removeBrowserView", &BaseWindow::RemoveBrowserView)
       .SetMethod("setTopBrowserView", &BaseWindow::SetTopBrowserView)
+      .SetMethod("replaceBrowserView", &BaseWindow::ReplaceBrowserView)
       .SetMethod("getMediaSourceId", &BaseWindow::GetMediaSourceId)
       .SetMethod("getNativeWindowHandle", &BaseWindow::GetNativeWindowHandle)
       .SetMethod("setProgressBar", &BaseWindow::SetProgressBar)
