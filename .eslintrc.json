@@ -29,12 +29,6 @@
   },
   "overrides": [
     {
-      "files": "*.js",
-      "rules": {
-        "@typescript-eslint/no-unused-vars": "off"
-      }
-    },
-    {
       "files": "*.ts",
       "rules": {
         "no-undef": "off",

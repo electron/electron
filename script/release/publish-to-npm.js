@@ -2,7 +2,6 @@ const temp = require('temp');
 const fs = require('node:fs');
 const path = require('node:path');
 const childProcess = require('node:child_process');
-const got = require('got');
 const semver = require('semver');
 
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils');
