@@ -1035,6 +1035,9 @@ void WebContents::InitWithWebContents(
 }
 
 WebContents::~WebContents() {
+  if (owner_window_) {
+    owner_window_->RemoveBackgroundThrottlingSource(this);
+  }
   if (web_contents()) {
     content::RenderViewHost* host = web_contents()->GetRenderViewHost();
     if (host)
@@ -2253,10 +2256,15 @@ void WebContents::SetOwnerWindow(NativeWindow* owner_window) {
 
 void WebContents::SetOwnerWindow(content::WebContents* web_contents,
                                  NativeWindow* owner_window) {
+  if (owner_window_) {
+    owner_window_->RemoveBackgroundThrottlingSource(this);
+  }
+
   if (owner_window) {
     owner_window_ = owner_window->GetWeakPtr();
     NativeWindowRelay::CreateForWebContents(web_contents,
                                             owner_window->GetWeakPtr());
+    owner_window_->AddBackgroundThrottlingSource(this);
   } else {
     owner_window_ = nullptr;
     web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());
@@ -2309,6 +2317,10 @@ bool WebContents::GetBackgroundThrottling() const {
 
 void WebContents::SetBackgroundThrottling(bool allowed) {
   background_throttling_ = allowed;
+
+  if (owner_window_) {
+    owner_window_->UpdateBackgroundThrottlingState();
+  }
 
   auto* rfh = web_contents()->GetPrimaryMainFrame();
   if (!rfh)

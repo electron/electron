@@ -47,6 +47,7 @@ class PersistentDictionary;
 namespace electron {
 
 class ElectronMenuModel;
+class BackgroundThrottlingSource;
 class NativeBrowserView;
 
 namespace api {
@@ -393,6 +394,17 @@ class NativeWindow : public base::SupportsUserData,
   void AddDraggableRegionProvider(DraggableRegionProvider* provider);
   void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
 
+  // Adds |source| to |background_throttling_sources_|, triggers update of
+  // background throttling state.
+  void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Removes |source| to |background_throttling_sources_|, triggers update of
+  // background throttling state.
+  void RemoveBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Updates `ui::Compositor` background throttling state based on
+  // |background_throttling_sources_|. If at least one of the sources disables
+  // throttling, then throttling in the `ui::Compositor` will be disabled.
+  void UpdateBackgroundThrottlingState();
+
  protected:
   friend class api::BrowserView;
 
@@ -482,6 +494,8 @@ class NativeWindow : public base::SupportsUserData,
 
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
+
+  std::set<BackgroundThrottlingSource*> background_throttling_sources_;
 
   // Accessible title.
   std::u16string accessible_title_;
