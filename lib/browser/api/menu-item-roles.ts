@@ -311,7 +311,7 @@ export const roleList: Record<RoleId, Role> = {
 };
 
 const hasRole = (role: keyof typeof roleList) => {
-  return Object.prototype.hasOwnProperty.call(roleList, role);
+  return Object.hasOwn(roleList, role);
 };
 
 const canExecuteRole = (role: keyof typeof roleList) => {
@@ -336,7 +336,7 @@ export function getCheckStatus (role: RoleId) {
 }
 
 export function shouldOverrideCheckStatus (role: RoleId) {
-  return hasRole(role) && Object.prototype.hasOwnProperty.call(roleList[role], 'checked');
+  return hasRole(role) && Object.hasOwn(roleList[role], 'checked');
 }
 
 export function getDefaultAccelerator (role: RoleId) {

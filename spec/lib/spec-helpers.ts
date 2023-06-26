@@ -55,7 +55,7 @@ class RemoteControlApp {
         res.on('data', chunk => { chunks.push(chunk); });
         res.on('end', () => {
           const ret = v8.deserialize(Buffer.concat(chunks));
-          if (Object.prototype.hasOwnProperty.call(ret, 'error')) {
+          if (Object.hasOwn(ret, 'error')) {
             reject(new Error(`remote error: ${ret.error}\n\nTriggered at:`));
           } else {
             resolve(ret.result);
