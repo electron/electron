@@ -66,7 +66,7 @@ index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ce
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index 55ef23bac1acd703d4e29a4418d85676f8b56be3..42bd5787bfc77dac3e309f1075325368d508f9b7 100644
+index b9788cf84caf5e151b124e4b3bea81cc906e0673..e4a884a2715be084d0d5ae8d75a3e613f181e56f 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
 @@ -12,10 +12,11 @@
@@ -75,33 +75,32 @@ index 55ef23bac1acd703d4e29a4418d85676f8b56be3..42bd5787bfc77dac3e309f1075325368
  
 +#if !IS_MAS_BUILD()
  extern "C" {
- bool CGFontRenderingGetFontSmoothingDisabled(void) API_AVAILABLE(macos(10.14));
+ bool CGFontRenderingGetFontSmoothingDisabled(void);
  }
 -
 +#endif
  namespace content {
  
  void SystemColorsDidChange(int aqua_color_variant) {
-@@ -36,8 +37,19 @@ void SystemColorsDidChange(int aqua_color_variant) {
- bool IsSubpixelAntialiasingAvailable() {
-   if (@available(macOS 10.14, *)) {
-     // See https://trac.webkit.org/changeset/239306/webkit for more info.
-+#if !IS_MAS_BUILD()
-     return !CGFontRenderingGetFontSmoothingDisabled();
-+#else
-+    NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
-+    NSString *default_key = @"CGFontRenderingGetFontSmoothingDisabled";
-+    // Check that key exists since boolForKey defaults to NO when the
-+    // key is missing and this key in fact defaults to YES;
-+    if ([defaults objectForKey:default_key] == nil)
-+      return false;
-+    return ![defaults boolForKey:default_key];
-+#endif
-   }
-+
-   return true;
+@@ -34,8 +35,18 @@ void SystemColorsDidChange(int aqua_color_variant) {
  }
  
+ bool IsSubpixelAntialiasingAvailable() {
++#if !IS_MAS_BUILD()
+   // See https://trac.webkit.org/changeset/239306/webkit for more info.
+   return !CGFontRenderingGetFontSmoothingDisabled();
++#else
++  NSUserDefaults* defaults = [NSUserDefaults standardUserDefaults];
++  NSString *default_key = @"CGFontRenderingGetFontSmoothingDisabled";
++  // Check that key exists since boolForKey defaults to NO when the
++  // key is missing and this key in fact defaults to YES;
++  if ([defaults objectForKey:default_key] == nil)
++    return false;
++  return ![defaults boolForKey:default_key];
++#endif
+ }
+ 
+ }  // namespace content
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
 index 79bf09102ab4ca9b0a5830132d98b7bd844b1c26..e2b20c0cda169d7b4af5c05b8797188955df8e3c 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm

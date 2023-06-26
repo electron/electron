@@ -64,7 +64,7 @@ index 4cd668a127a50e5462e3878c3f1dcb7384926768..dfbec49249404df8f8ebdbd26e6e865c
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index 3e34964194912398838dbfc8758ff5b686e84768..3ce41224c6a20fa15b67f8b37def14f48198b141 100644
+index c0c82737679ea9b92fb3195c465bc1083e86e710..a7e5ce39727b70f93cca50c0f1a8162171cc32d8 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -2775,6 +2775,7 @@ void LocalFrame::RequestExecuteScript(
@@ -75,13 +75,12 @@ index 3e34964194912398838dbfc8758ff5b686e84768..3ce41224c6a20fa15b67f8b37def14f4
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -2805,7 +2806,8 @@ void LocalFrame::RequestExecuteScript(
+@@ -2808,7 +2809,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
-       ToScriptState(DomWindow(), *world), std::move(script_sources),
-       execute_script_policy, user_gesture, evaluation_timing, blocking_option,
--      want_result_option, promise_behavior, std::move(callback));
-+      want_result_option, promise_behavior, std::move(callback),
-+      std::move(raw_callback));
+       script_state, std::move(script_sources), execute_script_policy,
+       user_gesture, evaluation_timing, blocking_option, want_result_option,
+-      promise_behavior, std::move(callback));
++      promise_behavior, std::move(callback), std::move(raw_callback));
  }
  
  void LocalFrame::SetEvictCachedSessionStorageOnFreezeOrUnload() {

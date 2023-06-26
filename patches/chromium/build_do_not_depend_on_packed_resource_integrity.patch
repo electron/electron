@@ -46,7 +46,7 @@ index 34c95081fe1f74f75878135854cc2e776ddd4026..f32310c3869058bceb0ef803b6ff0170
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 5d692612270c5a06d6a64e467499439cbbe9266c..8a15b00c29f5ce040f805e86d9d69caac6fb7e4e 100644
+index 3a6fba25d3badbce7da1ca27a38d65562dabc3c9..7ade86387a567de7689b10b2bce4c03dd930a7d2 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
 @@ -6615,7 +6615,6 @@ test("unit_tests") {

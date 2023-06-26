@@ -92,7 +92,7 @@ index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d3
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8cda2e82439426ba97f353e1a6907ec5beacab51..24a7e2dc82d53f17dd8ea0db21c1b520b4df157d 100644
+index 723e937150ce59cf72cc5800ca2af82b0686a534..a43e8995dab378fdb3a1774cbf91a273d2d98a6c 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -128,7 +128,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7cf9d3fb6a4fe5948c07e1480fcfa807df1f72e5..8abb898502d3cd636471630ffee9632f003370e7 100644
+index d0c494bb1943b6f634f703b6f1a697cc3a105b91..601535c2483b9385f9f7866c496d4c4a16ae1ffc 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -230,7 +230,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index e90fdebe5ca8109c3308b66624dd4b6840e04136..9a3056aaea45c270732a6c066b27a6e565f8d647 100644
+index cec00272736c844246aabbf688b13d631af41236..82de763b603baf242aec6c82ac20e3abc8bf808f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {
