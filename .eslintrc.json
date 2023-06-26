@@ -23,6 +23,7 @@
       "destructuring": "all"
     }],
     "standard/no-callback-literal": "off",
+    "unicorn/no-array-for-each": "error",
     "unicorn/prefer-array-find": "error",
     "unicorn/prefer-array-some": "error",
     "unicorn/prefer-date-now": "error",

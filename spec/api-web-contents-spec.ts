@@ -1281,10 +1281,10 @@ describe('webContents module', () => {
         'default_public_and_private_interfaces',
         'disable_non_proxied_udp'
       ];
-      policies.forEach((policy) => {
+      for (const policy of policies) {
         w.webContents.setWebRTCIPHandlingPolicy(policy as any);
         expect(w.webContents.getWebRTCIPHandlingPolicy()).to.equal(policy);
-      });
+      }
     });
   });
 
