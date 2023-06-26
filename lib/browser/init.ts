@@ -31,7 +31,7 @@ process.on('uncaughtException', function (error) {
   // so we import it inside the handler down here
   import('electron')
     .then(({ dialog }) => {
-      const stack = error.stack ? error.stack : `${error.name}: ${error.message}`;
+      const stack = error.stack || `${error.name}: ${error.message}`;
       const message = 'Uncaught Exception:\n' + stack;
       dialog.showErrorBox('A JavaScript error occurred in the main process', message);
     });

@@ -27,8 +27,9 @@
     "unicorn/prefer-array-some": "error",
     "unicorn/prefer-date-now": "error",
     "unicorn/prefer-includes": "error",
-    "unicorn/prefer-prototype-methods": "error",
+    "unicorn/prefer-logical-operator-over-ternary": "error",
     "unicorn/prefer-optional-catch-binding": "error",
+    "unicorn/prefer-prototype-methods": "error",
     "unicorn/prefer-type-error": "error"
   },
   "parserOptions": {
