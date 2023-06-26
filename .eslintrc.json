@@ -25,6 +25,7 @@
     "standard/no-callback-literal": "off",
     "unicorn/prefer-date-now": "error",
     "unicorn/prefer-includes": "error",
+    "unicorn/prefer-optional-catch-binding": "error",
     "unicorn/prefer-type-error": "error"
   },
   "parserOptions": {
