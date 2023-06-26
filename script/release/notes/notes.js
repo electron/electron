@@ -365,12 +365,14 @@ async function getMergedTrops (commit, pool) {
       };
 
       const comments = await getComments(ghKey);
-      ((comments && comments.data) ? comments.data : [])
+      for (const [branch, key] of (comments?.data || [])
         .filter(isTropComment)
         .map(getBranchNameAndPullKey)
         .filter(pair => pair)
         .filter(([branch]) => mergedBranches.has(branch))
-        .forEach(([branch, key]) => branches.set(branch, key));
+      ) {
+        branches.set(branch, key);
+      }
     }
   }
 
@@ -461,7 +463,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     toBranch
   };
 
-  pool.commits.forEach(commit => {
+  for (const commit of pool.commits) {
     const str = commit.semanticType;
     if (commit.isBreakingChange) {
       notes.breaking.push(commit);
@@ -478,7 +480,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     } else {
       notes.unknown.push(commit);
     }
-  });
+  }
 
   return notes;
 };

@@ -157,7 +157,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     });
   };
 
-  generateConfigs(
+  for (const config of generateConfigs(
     {
       preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
       nodeIntegrationInSubFrames: true
@@ -174,9 +174,9 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       name: 'webview',
       webPreferences: { webviewTag: true, preload: false }
     }
-  ).forEach(config => {
+  )) {
     generateTests(config.title, config.webPreferences);
-  });
+  }
 
   describe('internal <iframe> inside of <webview>', () => {
     let w: BrowserWindow;

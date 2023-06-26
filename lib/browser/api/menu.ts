@@ -153,9 +153,9 @@ Menu.prototype.insert = function (pos, item) {
 
 Menu.prototype._callMenuWillShow = function () {
   if (this.delegate) this.delegate.menuWillShow(this);
-  this.items.forEach(item => {
+  for (const item of this.items) {
     if (item.submenu) item.submenu._callMenuWillShow();
-  });
+  }
 };
 
 /* Static Methods */
@@ -196,13 +196,13 @@ Menu.buildFromTemplate = function (template) {
   const filtered = removeExtraSeparators(sorted);
 
   const menu = new Menu();
-  filtered.forEach(item => {
+  for (const item of filtered) {
     if (item instanceof MenuItem) {
       menu.append(item);
     } else {
       menu.append(new MenuItem(item));
     }
-  });
+  }
 
   return menu;
 };
@@ -280,9 +280,9 @@ function insertItemByType (this: MenuType, item: MenuItem, pos: number) {
         enumerable: true,
         get: () => checked.get(item),
         set: () => {
-          this.groupsMap[item.groupId].forEach(other => {
+          for (const other of this.groupsMap[item.groupId]) {
             if (other !== item) checked.set(other, false);
-          });
+          }
           checked.set(item, true);
         }
       });

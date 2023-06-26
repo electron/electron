@@ -27,7 +27,9 @@ describe('webContents.setWindowOpenHandler', () => {
         done(e);
       } finally {
         process.removeAllListeners('uncaughtException');
-        listeners.forEach((listener) => process.on('uncaughtException', listener));
+        for (const listener of listeners) {
+          process.on('uncaughtException', listener);
+        }
       }
     });
 
