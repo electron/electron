@@ -146,14 +146,14 @@ require('@electron/internal/browser/api/web-frame-main');
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
 
-const KNOWN_XDG_DESKTOP_VALUES = ['Pantheon', 'Unity:Unity7', 'pop:GNOME'];
+const KNOWN_XDG_DESKTOP_VALUES = new Set(['Pantheon', 'Unity:Unity7', 'pop:GNOME']);
 
 function currentPlatformSupportsAppIndicator () {
   if (process.platform !== 'linux') return false;
   const currentDesktop = process.env.XDG_CURRENT_DESKTOP;
 
   if (!currentDesktop) return false;
-  if (KNOWN_XDG_DESKTOP_VALUES.includes(currentDesktop)) return true;
+  if (KNOWN_XDG_DESKTOP_VALUES.has(currentDesktop)) return true;
   // ubuntu based or derived session (default ubuntu one, communitheme…) supports
   // indicator too.
   if (/ubuntu/ig.test(currentDesktop)) return true;
