@@ -209,6 +209,7 @@ type ExtraURLLoaderOptions = {
    allowNonHttpProtocols: boolean;
 }
 function parseOptions (optionsIn: ClientRequestConstructorOptions | string): NodeJS.CreateURLLoaderOptions & ExtraURLLoaderOptions {
+  // eslint-disable-next-line node/no-deprecated-api
   const options: any = typeof optionsIn === 'string' ? url.parse(optionsIn) : { ...optionsIn };
 
   let urlStr: string = options.url;
@@ -241,6 +242,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
       // an invalid request.
       throw new TypeError('Request path contains unescaped characters');
     }
+    // eslint-disable-next-line node/no-deprecated-api
     const pathObj = url.parse(options.path || '/');
     urlObj.pathname = pathObj.pathname;
     urlObj.search = pathObj.search;

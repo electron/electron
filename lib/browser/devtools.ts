@@ -1,6 +1,5 @@
 import { dialog, Menu } from 'electron/main';
 import * as fs from 'fs';
-import * as url from 'url';
 
 import { ipcMainInternal } from '@electron/internal/browser/ipc-main-internal';
 import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-utils';
@@ -49,7 +48,7 @@ const getEditMenuItems = function (): Electron.MenuItemConstructorOptions[] {
 };
 
 const isChromeDevTools = function (pageURL: string) {
-  const { protocol } = url.parse(pageURL);
+  const { protocol } = new URL(pageURL);
   return protocol === 'devtools:';
 };
 
