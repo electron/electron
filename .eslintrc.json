@@ -24,6 +24,7 @@
     }],
     "standard/no-callback-literal": "off",
     "unicorn/prefer-array-find": "error",
+    "unicorn/prefer-array-some": "error",
     "unicorn/prefer-date-now": "error",
     "unicorn/prefer-includes": "error",
     "unicorn/prefer-optional-catch-binding": "error",
