@@ -63,7 +63,7 @@ void ElectronRenderFrameObserver::DidClearWindowObject() {
   // Check DidInstallConditionalFeatures below for the background.
   auto* web_frame =
       static_cast<blink::WebLocalFrameImpl*>(render_frame_->GetWebFrame());
-  if (has_delayed_node_initialization_ && web_frame->Opener() &&
+  if (has_delayed_node_initialization_ &&
       !web_frame->IsOnInitialEmptyDocument()) {
     v8::Isolate* isolate = blink::MainThreadIsolate();
     v8::HandleScope handle_scope(isolate);
