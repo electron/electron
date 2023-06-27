@@ -9,13 +9,13 @@
 #include "base/strings/utf_string_conversions.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/electron_browser_main_parts.h"
+#include "shell/common/gin_converters/download_converter.h"
 #include "shell/common/gin_converters/file_dialog_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/node_includes.h"
-#include "shell/common/gin_converters/download_converter.h"
 #include "url/gurl.h"
 
 namespace gin {
@@ -284,7 +284,8 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getSaveDialogOptions", &DownloadItem::GetSaveDialogOptions)
       .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
       .SetMethod("getETag", &DownloadItem::GetETag)
-      .SetMethod("getLastInterruptReason", &DownloadItem::GetLastInterruptReason)
+      .SetMethod("getLastInterruptReason", 
+                 &DownloadItem::GetLastInterruptReason)
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
 
