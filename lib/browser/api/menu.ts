@@ -213,9 +213,7 @@ function areValidTemplateItems (template: (MenuItemConstructorOptions | MenuItem
   return template.every(item =>
     item != null &&
     typeof item === 'object' &&
-    (Object.prototype.hasOwnProperty.call(item, 'label') ||
-     Object.prototype.hasOwnProperty.call(item, 'role') ||
-     item.type === 'separator'));
+    (Object.hasOwn(item, 'label') || Object.hasOwn(item, 'role') || item.type === 'separator'));
 }
 
 function sortTemplate (template: (MenuItemConstructorOptions | MenuItem)[]) {

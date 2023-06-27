@@ -1312,7 +1312,6 @@ describe('asar package', function () {
       itremote('can promisify all fs functions', function () {
         const originalFs = require('original-fs');
         const util = require('node:util');
-        const { hasOwnProperty } = Object.prototype;
 
         for (const [propertyName, originalValue] of Object.entries(originalFs)) {
           // Some properties exist but have a value of `undefined` on some platforms.
@@ -1321,7 +1320,7 @@ describe('asar package', function () {
           // Also check for `null`s, `hasOwnProperty()` can't handle them.
           if (typeof originalValue === 'undefined' || originalValue === null) continue;
 
-          if (hasOwnProperty.call(originalValue, util.promisify.custom)) {
+          if (Object.hasOwn(originalValue, util.promisify.custom)) {
             expect(fs).to.have.own.property(propertyName)
               .that.has.own.property(util.promisify.custom);
           }

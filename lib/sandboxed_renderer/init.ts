@@ -21,7 +21,7 @@ v8Util.setHiddenValue(global, 'Buffer', Buffer);
 // The process object created by webpack is not an event emitter, fix it so
 // the API is more compatible with non-sandboxed renderers.
 for (const prop of Object.keys(EventEmitter.prototype) as (keyof typeof process)[]) {
-  if (Object.prototype.hasOwnProperty.call(process, prop)) {
+  if (Object.hasOwn(process, prop)) {
     delete process[prop];
   }
 }
