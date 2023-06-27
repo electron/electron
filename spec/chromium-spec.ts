@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as ChildProcess from 'child_process';
-import { EventEmitter } from 'events';
+import { EventEmitter, once } from 'events';
 import { promisify } from 'util';
 import { ifit, ifdescribe, defer, delay, itremote } from './lib/spec-helpers';
 import { AddressInfo } from 'net';
@@ -1145,6 +1145,23 @@ describe('chromium features', () => {
         return { eventData: e.data }
       })()`);
       expect(eventData).to.equal('size: 350 450');
+    });
+
+    it('loads preload script after setting opener to null', async () => {
+      const w = new BrowserWindow({ show: false });
+      w.webContents.setWindowOpenHandler(() => ({
+        action: 'allow',
+        overrideBrowserWindowOptions: {
+          webPreferences: {
+            preload: path.join(fixturesPath, 'module', 'preload.js')
+          }
+        }
+      }));
+      w.loadURL('about:blank');
+      w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
+      const [, { webContents }] = await once(app, 'browser-window-created');
+      const [,, message] = await once(webContents, 'console-message');
+      expect(message).to.equal('{"require":"function","module":"undefined","process":"object","Buffer":"function"}');
     });
 
     it('disables the <webview> tag when it is disabled on the parent window', async () => {
