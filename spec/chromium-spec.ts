@@ -8,7 +8,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as url from 'url';
 import * as ChildProcess from 'child_process';
-import { EventEmitter } from 'events';
+import { EventEmitter, once } from 'events';
 import { promisify } from 'util';
 import { ifit, ifdescribe, defer, delay, itremote } from './lib/spec-helpers';
 import { AddressInfo } from 'net';
