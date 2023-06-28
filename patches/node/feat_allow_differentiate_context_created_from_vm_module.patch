@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Thu, 29 Jun 2023 02:24:57 +0900
+Subject: feat: allow differentiate context created from vm module
+
+Allows an embedder to identify if a given context was created by the
+VM module. Needed for supporting //electron/patches/chromium/fix_harden_blink_scriptstate_maybefrom.patch.
+
+Can be upstreamed.
+
+diff --git a/src/env.cc b/src/env.cc
+index 045f6242e9e49e58537a2f3a1e75b7f9ef15921a..b86bd9e2643a4a86778d12c433131b2698df3f7a 100644
+--- a/src/env.cc
++++ b/src/env.cc
+@@ -63,6 +63,10 @@ int const ContextEmbedderTag::kNodeContextTag = 0x6e6f64;
+ void* const ContextEmbedderTag::kNodeContextTagPtr = const_cast<void*>(
+     static_cast<const void*>(&ContextEmbedderTag::kNodeContextTag));
+ 
++int const ContextEmbedderTag::kNodeVMContextTag = 0x6e6f65;
++void* const ContextEmbedderTag::kNodeVMContextTagPtr = const_cast<void*>(
++    static_cast<const void*>(&ContextEmbedderTag::kNodeVMContextTag));
++
+ void AsyncHooks::ResetPromiseHooks(Local<Function> init,
+                                    Local<Function> before,
+                                    Local<Function> after,
+@@ -548,6 +552,10 @@ void Environment::AssignToContext(Local<v8::Context> context,
+   // This must not be done before other context fields are initialized.
+   ContextEmbedderTag::TagNodeContext(context);
+ 
++  if (principal_realm_->context() != context) {
++    ContextEmbedderTag::TagNodeVMContext(context);
++  }
++
+ #if HAVE_INSPECTOR
+   inspector_agent()->ContextCreated(context, info);
+ #endif  // HAVE_INSPECTOR
+diff --git a/src/node_context_data.h b/src/node_context_data.h
+index 4278a17f4b6ad0238ec543a89203a0ea941cafd1..17abdd310506654784bd0f566b82a9b401e976a0 100644
+--- a/src/node_context_data.h
++++ b/src/node_context_data.h
+@@ -47,6 +47,10 @@ namespace node {
+ #define NODE_CONTEXT_TAG 39
+ #endif
+ 
++#ifndef NODE_VM_CONTEXT_TAG
++#define NODE_VM_CONTEXT_TAG 40
++#endif
++
+ enum ContextEmbedderIndex {
+   kEnvironment = NODE_CONTEXT_EMBEDDER_DATA_INDEX,
+   kSandboxObject = NODE_CONTEXT_SANDBOX_OBJECT_INDEX,
+@@ -57,6 +61,7 @@ enum ContextEmbedderIndex {
+   kContextifyContext = NODE_CONTEXT_CONTEXTIFY_CONTEXT_INDEX,
+   kRealm = NODE_CONTEXT_REALM_INDEX,
+   kContextTag = NODE_CONTEXT_TAG,
++  kVMContextTag = NODE_VM_CONTEXT_TAG,
+ };
+ 
+ class ContextEmbedderTag {
+@@ -69,6 +74,14 @@ class ContextEmbedderTag {
+         ContextEmbedderTag::kNodeContextTagPtr);
+   }
+ 
++  static inline void TagNodeVMContext(v8::Local<v8::Context> context) {
++    // Used by ContextEmbedderTag::IsNodeVMContext to know that we are on a
++    // node VM.
++    context->SetAlignedPointerInEmbedderData(
++        ContextEmbedderIndex::kVMContextTag,
++        ContextEmbedderTag::kNodeVMContextTagPtr);
++  }
++
+   static inline bool IsNodeContext(v8::Local<v8::Context> context) {
+     if (UNLIKELY(context.IsEmpty())) {
+       return false;
+@@ -85,9 +98,27 @@ class ContextEmbedderTag {
+     return true;
+   }
+ 
++  static inline bool IsNodeVMContext(v8::Local<v8::Context> context) {
++    if (UNLIKELY(context.IsEmpty())) {
++      return false;
++    }
++    if (UNLIKELY(context->GetNumberOfEmbedderDataFields() <=
++                 ContextEmbedderIndex::kVMContextTag)) {
++      return false;
++    }
++    if (UNLIKELY(context->GetAlignedPointerFromEmbedderData(
++                     ContextEmbedderIndex::kVMContextTag) !=
++                 ContextEmbedderTag::kNodeVMContextTagPtr)) {
++      return false;
++    }
++    return true;
++  }
++
+  private:
+   static void* const kNodeContextTagPtr;
++  static void* const kNodeVMContextTagPtr;
+   static int const kNodeContextTag;
++  static int const kNodeVMContextTag;
+ 
+   ContextEmbedderTag() = delete;
+ };
