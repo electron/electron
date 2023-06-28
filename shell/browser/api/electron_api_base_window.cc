@@ -771,6 +771,7 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
     window_->AddDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(this);
     browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
+    browser_views_z_indexes_.push_back(browser_view->ID());
   }
 }
 
@@ -782,6 +783,7 @@ void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
     browser_view->SetOwnerWindow(nullptr);
     iter->second.Reset();
     browser_views_.erase(iter);
+    browser_views_z_indexes_.remove(iter->first);
   }
 }
 
@@ -794,6 +796,8 @@ void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
     return;
   }
 
+  browser_views_z_indexes_.remove(iter->first);
+  browser_views_z_indexes_.push_back(iter->first);
   window_->SetTopBrowserView(browser_view->view());
 }
 
@@ -1012,8 +1016,9 @@ v8::Local<v8::Value> BaseWindow::GetBrowserView(
 std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
   std::vector<v8::Local<v8::Value>> ret;
 
-  for (auto const& views_iter : browser_views_) {
-    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
+  for (auto const& browser_view_id : browser_views_z_indexes_) {
+    ret.push_back(v8::Local<v8::Value>::New(
+        isolate(), browser_views_.at(browser_view_id)));
   }
 
   return ret;
