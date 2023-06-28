@@ -21,7 +21,7 @@
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
-#include "third_party/blink/renderer/platform/bindings/script_state"  // nogncheck
+#include "third_party/blink/renderer/platform/bindings/script_state.h"  // nogncheck
 
 namespace electron {
 
