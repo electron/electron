@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 28 Jun 2023 21:11:40 +0900
+Subject: fix: harden blink::ScriptState::MaybeFrom
+
+This is needed as side effect of https://chromium-review.googlesource.com/c/chromium/src/+/4609446
+which now gets blink::ExecutionContext from blink::ScriptState
+and there are isolate callbacks which get entered from Node.js
+environment that has v8::Context not associated with blink::ScriptState.
+One such example is ModifyCodeGenerationFromStrings in node_bindings.cc,
+without this patch blink::ScriptState::MaybeFrom will try to extract
+blink::ScriptState from the provided v8::Context since Node.js has context
+embedder data fields with index greater than blink (see node_context_data.h)
+leading to the following CHECK failure.
+
+```
+script_state.h(169)] Security Check Failed: script_state
+```
+
+diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
+index 7109852950cde0a6553000421faacefb39366b41..2f1fa527077489877d376d8cbcf5e1d33388d243 100644
+--- a/third_party/blink/renderer/platform/bindings/script_state.h
++++ b/third_party/blink/renderer/platform/bindings/script_state.h
+@@ -181,6 +181,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+         kV8ContextPerContextDataIndex) {
+       return nullptr;
+     }
++    ScriptState* script_state =
++        static_cast<ScriptState*>(context->GetAlignedPointerFromEmbedderData(
++            kV8ContextPerContextDataIndex));
++    if (!script_state) {
++      return nullptr;
++    }
+     return From(context);
+   }
+ 
