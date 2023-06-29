@@ -81,9 +81,9 @@ The `menu` object has the following instance methods:
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
   * `initiatedByKeyboard` boolean (optional) _Windows_ _Linux_ - Whether the menu popup
-    was triggered by keyboard actions.  This will cause certain focus behaviors to change
-    so that the first item in the menu is focused when the menu opens which is beneficial
-    for keyboard accessibility.
+    was triggered by a keyboard action. If true, the first top-level item in the menu
+    will be focused when the menu is opened. This behavior can assist in keyboard
+    accessibility.
   * `callback` Function (optional) - Called when menu is closed.
 
 Pops up this menu as a context menu in the [`BrowserWindow`](browser-window.md).
