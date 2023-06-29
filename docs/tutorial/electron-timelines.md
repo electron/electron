@@ -9,6 +9,7 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 
 | Electron | Alpha | Beta | Stable | EOL | Chrome | Node | Supported |
 | ------- | ----- | ------- | ------ | ------ | ---- | ---- | ---- |
+| 26.0.0 | 2023-Jun-01 | 2023-Jun-27 | 2023-Aug-08 | TBD | M116 | TBD | ✅ |
 | 25.0.0 | 2023-Apr-10 | 2023-May-02 | 2023-May-30 | 2023-Dec-05 | M114 | TBD | ✅ |
 | 24.0.0 | 2022-Feb-09 | 2023-Mar-07 | 2023-Apr-04 | 2023-Oct-03 | M112 | v18.14 | ✅ |
 | 23.0.0 | 2022-Dec-01 | 2023-Jan-10 | 2023-Feb-07 | 2023-Aug-08 | M110 | v18.12 | ✅ |
@@ -56,12 +57,12 @@ Chromium has the own public release schedule [here](https://chromiumdash.appspot
 
 :::info
 
-Beginning in September 2021 (Electron 15), the Electron team
-will temporarily support the latest **four** stable major versions. This
-extended support is intended to help Electron developers transition to
-the [new 8-week release cadence](https://electronjs.org/blog/8-week-cadence),
-and will continue until the release of Electron 19. At that time,
-the Electron team will drop support back to the latest three stable major versions.
+The Electron team will temporarily support Electron 22 until October 10, 2023.
+This extended support is intended to help Electron developers who still need
+support for Windows 7/8/8.1, which ended support in Electron 23. The October
+support date follows the extended support dates from both Chromium and Microsoft.
+On October 11, the Electron team will drop support back to the latest three
+stable major versions.
 
 :::
 
