@@ -24,6 +24,7 @@ class MenuMac : public Menu {
                int x,
                int y,
                int positioning_item,
+               bool initiated_by_keyboard,
                base::OnceClosure callback) override;
   void PopupOnUI(const base::WeakPtr<NativeWindow>& native_window,
                  int32_t window_id,
