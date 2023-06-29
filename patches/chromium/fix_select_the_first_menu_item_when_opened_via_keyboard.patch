@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index f8b3ded1dba82259f7d536ed5bab1a972d182419..13a63c8179915e96a08e567d98c54c3bb32f0b86 100644
+index f8b3ded1dba82259f7d536ed5bab1a972d182419..b095843c8b28783bf51c0bf7becb111010651486 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -563,6 +563,7 @@ void MenuController::Run(Widget* parent,
@@ -17,22 +17,46 @@ index f8b3ded1dba82259f7d536ed5bab1a972d182419..13a63c8179915e96a08e567d98c54c3b
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -625,7 +626,14 @@ void MenuController::Run(Widget* parent,
-   UpdateInitialLocation(bounds, position, context_menu);
- 
+@@ -627,6 +628,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
--  SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+   SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+ 
 +  if (source_type == ui::MENU_SOURCE_KEYBOARD && context_menu && root->HasSubmenu()) {
 +    // For context menus opened via the keyboard we select the first item by default
 +    // to match accessibility expectations
-+    MenuItemView* first_item = root->GetSubmenu()->GetMenuItemAt(0);
-+    SetSelection(first_item ? first_item : root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
-+  } else {
-+    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
++    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
++    if (first_item)
++      SetSelection(first_item, SELECTION_UPDATE_IMMEDIATELY);
 +  }
- 
++
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
+         false, ui::LocatedEvent::FromIfValid(event));
+@@ -2262,19 +2271,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+     }
+     item->GetSubmenu()->ShowAt(params);
+ 
+-    // Figure out if the mouse is under the menu; if so, remember the mouse
+-    // location so we can ignore the first mouse move event(s) with that
+-    // location. We do this after `ShowAt` because `ConvertFromScreen` doesn't
+-    // work correctly if the widget isn't shown.
++    // Remember the mouse location so we can ignore the first mouse move
++    // event(s) with that location. We do this after `ShowAt` because
++    // `ConvertFromScreen` doesn't work correctly if the widget isn't shown.
+     if (item->GetSubmenu()->GetWidget()) {
+       const gfx::Point mouse_pos = ConvertFromScreen(
+           *item->submenu_,
+           display::Screen::GetScreen()->GetCursorScreenPoint());
+-      MenuPart part_under_mouse = GetMenuPart(item->submenu_, mouse_pos);
+-      if (part_under_mouse.type != MenuPartType::kNone) {
+-        menu_open_mouse_loc_ =
+-            GetLocationInRootMenu(*item->submenu_, mouse_pos);
+-      }
++      menu_open_mouse_loc_ =
++          GetLocationInRootMenu(*item->submenu_, mouse_pos);
+     }
+ 
+     item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
 index e10b92be74908f8d96e421843cb2231f712a4895..82dc2f014d2e333057836290a00c7142b460bb57 100644
 --- a/ui/views/controls/menu/menu_controller.h
