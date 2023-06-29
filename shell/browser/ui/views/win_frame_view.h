@@ -59,6 +59,8 @@ class WinFrameView : public FramelessView {
  protected:
   // views::View:
   void Layout() override;
+  gfx::Size GetMinimumSize() const override;
+  gfx::Size GetMaximumSize() const override;
 
  private:
   friend class WinCaptionButtonContainer;
