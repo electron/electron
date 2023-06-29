@@ -22,7 +22,7 @@ void MenuViews::PopupAt(BaseWindow* window,
                         int x,
                         int y,
                         int positioning_item,
-                        bool initiated_by_keyboard,
+                        ui::MenuSourceType source_type,
                         base::OnceClosure callback) {
   auto* native_window = static_cast<NativeWindowViews*>(window->window());
   if (!native_window)
@@ -56,8 +56,7 @@ void MenuViews::PopupAt(BaseWindow* window,
       std::make_unique<MenuRunner>(model(), flags, std::move(close_callback));
   menu_runners_[window_id]->RunMenuAt(
       native_window->widget(), nullptr, gfx::Rect(location, gfx::Size()),
-      views::MenuAnchorPosition::kTopLeft,
-      initiated_by_keyboard ? ui::MENU_SOURCE_KEYBOARD : ui::MENU_SOURCE_MOUSE);
+      views::MenuAnchorPosition::kTopLeft, source_type);
 }
 
 void MenuViews::ClosePopupAt(int32_t window_id) {
