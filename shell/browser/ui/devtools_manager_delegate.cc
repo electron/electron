@@ -80,7 +80,16 @@ std::unique_ptr<content::DevToolsSocketFactory> CreateSocketFactory() {
       DLOG(WARNING) << "Invalid http debugger port number " << temp_port;
     }
   }
-  return std::make_unique<TCPServerSocketFactory>("127.0.0.1", port);
+  net::IPAddress address;
+  std::string address_str = "127.0.0.1";
+  if (command_line.HasSwitch(switches::kRemoteDebuggingAddress)) {
+    address_str =
+        command_line.GetSwitchValueASCII(switches::kRemoteDebuggingAddress);
+    if (!address.AssignFromIPLiteral(address_str)) {
+      DLOG(WARNING) << "Invalid devtools server address: " << address_str;
+    }
+  }
+  return std::make_unique<TCPServerSocketFactory>(address_str, port);
 }
 
 const char kBrowserCloseMethod[] = "Browser.close";

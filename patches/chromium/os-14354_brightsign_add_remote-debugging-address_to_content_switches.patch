@@ -1,0 +1,39 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tariq Bashir <tbashir@brightsign.biz>
+Date: Wed, 28 Jun 2023 16:37:03 +0100
+Subject: OS-14354 BrightSign: add remote-debugging-address to content switches
+
+A change has been added to Electron TCPServerSocketFactory to allow a custom
+address to be used for remote debugging (i.e. use 0.0.0.0 instead of 127.0.0.1).
+This change adds the remote-debugging-address switch to the content switches to
+allow it to be used in Electron.
+
+diff --git a/content/public/common/content_switches.cc b/content/public/common/content_switches.cc
+index a11a8178ada26..6f0df20012edb 100644
+--- a/content/public/common/content_switches.cc
++++ b/content/public/common/content_switches.cc
+@@ -669,6 +669,12 @@ const char kRegisterPepperPlugins[]         = "register-pepper-plugins";
+ // "JSON" (the default) or "CBOR".
+ const char kRemoteDebuggingPipe[] = "remote-debugging-pipe";
+ 
++// Use the given address instead of the default loopback for accepting remote
++// debugging connections. Should be used together with --remote-debugging-port.
++// Note that the remote debugging protocol does not perform any authentication,
++// so exposing it too widely can be a security risk.
++const char kRemoteDebuggingAddress[] = "remote-debugging-address";
++
+ // Enables remote debug over HTTP on the specified port.
+ const char kRemoteDebuggingPort[]           = "remote-debugging-port";
+ 
+diff --git a/content/public/common/content_switches.h b/content/public/common/content_switches.h
+index b8f1c93f56c31..f02d9b86a900a 100644
+--- a/content/public/common/content_switches.h
++++ b/content/public/common/content_switches.h
+@@ -189,6 +189,7 @@ CONTENT_EXPORT extern const char kReduceUserAgentPlatformOsCpu[];
+ CONTENT_EXPORT extern const char kRegisterPepperPlugins[];
+ CONTENT_EXPORT extern const char kRemoteDebuggingPipe[];
+ CONTENT_EXPORT extern const char kRemoteDebuggingPort[];
++CONTENT_EXPORT extern const char kRemoteDebuggingAddress[];
+ CONTENT_EXPORT extern const char kRemoteAllowOrigins[];
+ CONTENT_EXPORT extern const char kRendererClientId[];
+ extern const char kRendererCmdPrefix[];
