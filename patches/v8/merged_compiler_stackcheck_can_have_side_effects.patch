@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Tue, 13 Jun 2023 17:08:59 +0200
+Subject: Merged: [compiler] StackCheck can have side effects
+
+Bug: chromium:1452137
+(cherry picked from commit e548943e473b020fdc1de6e5543ca31b24d8b7f9)
+
+Change-Id: Ibd7c9b02efd12341b452e4c34a635a58a817649f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4637129
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Commit-Queue: Tobias Tebbi <tebbi@chromium.org>
+Auto-Submit: Tobias Tebbi <tebbi@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.4@{#49}
+Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
+Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
+
+diff --git a/src/compiler/js-operator.cc b/src/compiler/js-operator.cc
+index 8af8e7d32fb68fdcaedaf08427103c893d23098d..e60c8a2c78970c89c4f52a6dc34a97d56e602e26 100644
+--- a/src/compiler/js-operator.cc
++++ b/src/compiler/js-operator.cc
+@@ -1396,7 +1396,7 @@ const Operator* JSOperatorBuilder::CloneObject(FeedbackSource const& feedback,
+ const Operator* JSOperatorBuilder::StackCheck(StackCheckKind kind) {
+   return zone()->New<Operator1<StackCheckKind>>(  // --
+       IrOpcode::kJSStackCheck,                    // opcode
+-      Operator::kNoWrite,                         // properties
++      Operator::kNoProperties,                    // properties
+       "JSStackCheck",                             // name
+       0, 1, 1, 0, 1, 2,                           // counts
+       kind);                                      // parameter

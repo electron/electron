@@ -1,0 +1,215 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Kevin McNee <mcnee@chromium.org>
+Date: Wed, 14 Jun 2023 01:10:19 +0000
+Subject: M114: Don't recursively destroy guests when clearing unattached
+ guests
+
+Don't recursively destroy guests when clearing unattached guests
+
+When an embedder process is destroyed, we also destroy any unattached
+guests associated with that process. This is currently done with a
+single call to `owned_guests_.erase`. However, it's possible that two
+unattached guests could have an opener relationship, which causes the
+destruction of the opener guest to also destroy the other guest, during
+the call to `erase`, which is unsafe.
+
+We now separate the steps of erasing `owned_guests_` and destroying the
+guests, to avoid this recursive guest destruction.
+
+This also fixes the WaitForNumGuestsCreated test method to not
+return prematurely.
+
+(cherry picked from commit 6345e7871e8197af92f9c6158b06c6e197f87945)
+
+Bug: 1450397
+Change-Id: Ifef5ec9ff3a1e6952ff56ec279e29e8522625ac0
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4589949
+Commit-Queue: Kevin McNee <mcnee@chromium.org>
+Auto-Submit: Kevin McNee <mcnee@chromium.org>
+Reviewed-by: James Maclean <wjmaclean@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1153396}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4611152
+Commit-Queue: James Maclean <wjmaclean@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5735@{#1292}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+
+diff --git a/chrome/browser/apps/guest_view/web_view_browsertest.cc b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+index 7159cf6af5cfd0ad5b9e5ba526043a4407a5399d..e43966f43f7ae551b3ea335a3f4222887071a75e 100644
+--- a/chrome/browser/apps/guest_view/web_view_browsertest.cc
++++ b/chrome/browser/apps/guest_view/web_view_browsertest.cc
+@@ -2731,6 +2731,22 @@ IN_PROC_BROWSER_TEST_P(WebViewNewWindowTest,
+   EXPECT_TRUE(content::NavigateToURLFromRenderer(guest2, coop_url));
+ }
+ 
++// This test creates a situation where we have two unattached webviews which
++// have an opener relationship, and ensures that we can shutdown safely. See
++// https://crbug.com/1450397.
++IN_PROC_BROWSER_TEST_P(WebViewNewWindowTest, DestroyOpenerBeforeAttachment) {
++  TestHelper("testDestroyOpenerBeforeAttachment", "web_view/newwindow",
++             NEEDS_TEST_SERVER);
++  GetGuestViewManager()->WaitForNumGuestsCreated(2);
++
++  content::RenderProcessHost* embedder_rph =
++      GetEmbedderWebContents()->GetPrimaryMainFrame()->GetProcess();
++  content::RenderProcessHostWatcher kill_observer(
++      embedder_rph, content::RenderProcessHostWatcher::WATCH_FOR_PROCESS_EXIT);
++  EXPECT_TRUE(embedder_rph->Shutdown(content::RESULT_CODE_KILLED));
++  kill_observer.Wait();
++}
++
+ IN_PROC_BROWSER_TEST_P(WebViewTest, ContextMenuInspectElement) {
+   LoadAppWithGuest("web_view/context_menus/basic");
+   content::RenderFrameHost* guest_rfh = GetGuestRenderFrameHost();
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/newwindow/embedder.js b/chrome/test/data/extensions/platform_apps/web_view/newwindow/embedder.js
+index 900911f4963d23d74225868dce01326ba533f63a..4dd25d8849b0b13957ab7fa2912c0a158d3cd244 100644
+--- a/chrome/test/data/extensions/platform_apps/web_view/newwindow/embedder.js
++++ b/chrome/test/data/extensions/platform_apps/web_view/newwindow/embedder.js
+@@ -34,6 +34,9 @@ embedder.setUp_ = function(config) {
+   embedder.guestWithLinkURL = embedder.baseGuestURL +
+       '/extensions/platform_apps/web_view/newwindow' +
+       '/guest_with_link.html';
++  embedder.guestOpenOnLoadURL = embedder.baseGuestURL +
++      '/extensions/platform_apps/web_view/newwindow' +
++      '/guest_opener_open_on_load.html';
+ };
+ 
+ /** @private */
+@@ -652,6 +655,24 @@ function testNewWindowDeferredAttachmentIndefinitely() {
+   embedder.setUpNewWindowRequest_(webview, 'guest.html', '', testName);
+ }
+ 
++// This is not a test in and of itself, but a means of creating a webview that
++// is left in an unattached state while its opener webview is also in an
++// unattached state, so that the C++ side can test it in that state.
++function testDestroyOpenerBeforeAttachment() {
++  embedder.test.succeed();
++
++  let webview = new WebView();
++  webview.src = embedder.guestOpenOnLoadURL;
++  document.body.appendChild(webview);
++
++  // By spinning forever here, we prevent `webview` from completing the
++  // attachment process. But since the guest is still created and it calls
++  // window.open, we have a situation where two unattached webviews have an
++  // opener relationship. The C++ side will test that we can shutdown safely in
++  // this case.
++  while (true) {}
++}
++
+ embedder.test.testList = {
+   'testNewWindowAttachAfterOpenerDestroyed':
+       testNewWindowAttachAfterOpenerDestroyed,
+@@ -675,7 +696,9 @@ embedder.test.testList = {
+       testNewWindowWebViewNameTakesPrecedence,
+   'testNewWindowAndUpdateOpener': testNewWindowAndUpdateOpener,
+   'testNewWindowDeferredAttachmentIndefinitely':
+-      testNewWindowDeferredAttachmentIndefinitely
++      testNewWindowDeferredAttachmentIndefinitely,
++  'testDestroyOpenerBeforeAttachment':
++      testDestroyOpenerBeforeAttachment
+ };
+ 
+ onload = function() {
+diff --git a/chrome/test/data/extensions/platform_apps/web_view/newwindow/guest_opener_open_on_load.html b/chrome/test/data/extensions/platform_apps/web_view/newwindow/guest_opener_open_on_load.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..e961feb3c6487066801adf414bf4a2746c50a3f6
+--- /dev/null
++++ b/chrome/test/data/extensions/platform_apps/web_view/newwindow/guest_opener_open_on_load.html
+@@ -0,0 +1,13 @@
++<!--
++Copyright 2023 The Chromium Authors
++Use of this source code is governed by a BSD-style license that can be
++found in the LICENSE file.
++-->
++<html>
++<body>
++<script>
++  // A guest that opens a new window on load.
++  window.open('guest.html');
++</script>
++</body>
++</html>
+diff --git a/components/guest_view/browser/guest_view_manager.cc b/components/guest_view/browser/guest_view_manager.cc
+index 38f0f12e65009c660a6dba262617d48c10ff72ea..129443365f474b840e2ddc61868e89af2851a892 100644
+--- a/components/guest_view/browser/guest_view_manager.cc
++++ b/components/guest_view/browser/guest_view_manager.cc
+@@ -324,7 +324,20 @@ void GuestViewManager::RemoveGuest(int guest_instance_id) {
+ 
+ void GuestViewManager::EmbedderProcessDestroyed(int embedder_process_id) {
+   embedders_observed_.erase(embedder_process_id);
++
++  // We can't just call std::multimap::erase here because destroying a guest
++  // could trigger the destruction of another guest which is also owned by
++  // `owned_guests_`. Recursively calling std::multimap::erase is unsafe (see
++  // https://crbug.com/1450397). So we take ownership of all of the guests that
++  // will be destroyed before erasing the entries from the map.
++  std::vector<std::unique_ptr<GuestViewBase>> guests_to_destroy;
++  const auto destroy_range = owned_guests_.equal_range(embedder_process_id);
++  for (auto it = destroy_range.first; it != destroy_range.second; ++it) {
++    guests_to_destroy.push_back(std::move(it->second));
++  }
+   owned_guests_.erase(embedder_process_id);
++  guests_to_destroy.clear();
++
+   CallViewDestructionCallbacks(embedder_process_id);
+ }
+ 
+diff --git a/components/guest_view/browser/test_guest_view_manager.cc b/components/guest_view/browser/test_guest_view_manager.cc
+index ab703db51b5ecd33e5fabd831ba121a2b5047d93..877f3eea7b440ed0a860253f85108c2442afee2e 100644
+--- a/components/guest_view/browser/test_guest_view_manager.cc
++++ b/components/guest_view/browser/test_guest_view_manager.cc
+@@ -36,7 +36,6 @@ TestGuestViewManager::TestGuestViewManager(
+       num_guests_created_(0),
+       expected_num_guests_created_(0),
+       num_views_garbage_collected_(0),
+-      waiting_for_guests_created_(false),
+       waiting_for_attach_(nullptr) {}
+ 
+ TestGuestViewManager::~TestGuestViewManager() = default;
+@@ -127,14 +126,15 @@ GuestViewBase* TestGuestViewManager::WaitForNextGuestViewCreated() {
+ }
+ 
+ void TestGuestViewManager::WaitForNumGuestsCreated(size_t count) {
+-  if (count == num_guests_created_)
++  if (count == num_guests_created_) {
+     return;
++  }
+ 
+-  waiting_for_guests_created_ = true;
+   expected_num_guests_created_ = count;
+ 
+   num_created_run_loop_ = std::make_unique<base::RunLoop>();
+   num_created_run_loop_->Run();
++  num_created_run_loop_ = nullptr;
+ }
+ 
+ void TestGuestViewManager::WaitUntilAttached(GuestViewBase* guest_view) {
+@@ -179,13 +179,11 @@ void TestGuestViewManager::AddGuest(int guest_instance_id,
+     created_run_loop_->Quit();
+ 
+   ++num_guests_created_;
+-  if (!waiting_for_guests_created_ &&
+-      num_guests_created_ != expected_num_guests_created_) {
+-    return;
+-  }
+ 
+-  if (num_created_run_loop_)
++  if (num_created_run_loop_ &&
++      num_guests_created_ == expected_num_guests_created_) {
+     num_created_run_loop_->Quit();
++  }
+ }
+ 
+ void TestGuestViewManager::AttachGuest(int embedder_process_id,
+diff --git a/components/guest_view/browser/test_guest_view_manager.h b/components/guest_view/browser/test_guest_view_manager.h
+index 75015f30cfaf8f4bb427b360951f01c729f37308..557afdbdcde44062f13dd981aacd56b8c17d35d6 100644
+--- a/components/guest_view/browser/test_guest_view_manager.h
++++ b/components/guest_view/browser/test_guest_view_manager.h
+@@ -121,7 +121,6 @@ class TestGuestViewManager : public GuestViewManager {
+   size_t num_guests_created_;
+   size_t expected_num_guests_created_;
+   int num_views_garbage_collected_;
+-  bool waiting_for_guests_created_;
+ 
+   // Tracks the life time of the GuestView's main FrameTreeNode. The main FTN
+   // has the same lifesspan as the GuestView.
