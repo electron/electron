@@ -1,0 +1,368 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Tue, 27 Jun 2023 22:05:17 +0900
+Subject: Revert "Simplify DWM transitions on Windows"
+
+This reverts commit 392e5f43aae8d225a118145cbc5f5bb104cbe541.
+
+Can be removed once https://github.com/electron/electron/issues/38937 is resolved.
+
+diff --git a/chrome/app/chrome_command_ids.h b/chrome/app/chrome_command_ids.h
+index 15f4aac24744228c0e74ec521c18eb6ab5f59c5b..b9a71c9063d8ee573424a9161cc127af169944a9 100644
+--- a/chrome/app/chrome_command_ids.h
++++ b/chrome/app/chrome_command_ids.h
+@@ -59,6 +59,7 @@
+ #define IDC_MOVE_TAB_NEXT               34032
+ #define IDC_MOVE_TAB_PREVIOUS           34033
+ #define IDC_SEARCH                      34035
++#define IDC_DEBUG_FRAME_TOGGLE          34038
+ #define IDC_WINDOW_MENU                 34045
+ #define IDC_MINIMIZE_WINDOW             34046
+ #define IDC_MAXIMIZE_WINDOW             34047
+diff --git a/chrome/browser/ui/browser_command_controller.cc b/chrome/browser/ui/browser_command_controller.cc
+index b198e41661d459302ddccfab70ac3de8cd2c48b5..405c0ac7c41ef4cb6a8804c8a34a7328d796d7bd 100644
+--- a/chrome/browser/ui/browser_command_controller.cc
++++ b/chrome/browser/ui/browser_command_controller.cc
+@@ -1184,6 +1184,7 @@ void BrowserCommandController::InitCommandState() {
+       IDC_DUPLICATE_TAB, !browser_->is_type_picture_in_picture());
+   UpdateTabRestoreCommandState();
+   command_updater_.UpdateCommandEnabled(IDC_EXIT, true);
++  command_updater_.UpdateCommandEnabled(IDC_DEBUG_FRAME_TOGGLE, true);
+   command_updater_.UpdateCommandEnabled(IDC_NAME_WINDOW, true);
+ #if BUILDFLAG(IS_CHROMEOS)
+   command_updater_.UpdateCommandEnabled(
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc
+index fa718692b769c3bbcf83f700718cf88dc631d058..c8ed066b698ab08d5cfbc644ca1f66f23c0fbeec 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.cc
+@@ -397,6 +397,13 @@ void BrowserDesktopWindowTreeHostWin::HandleDestroying() {
+   DesktopWindowTreeHostWin::HandleDestroying();
+ }
+ 
++void BrowserDesktopWindowTreeHostWin::HandleFrameChanged() {
++  // Reinitialize the status bubble, since it needs to be initialized
++  // differently depending on whether or not DWM composition is enabled
++  browser_view_->InitStatusBubble();
++  DesktopWindowTreeHostWin::HandleFrameChanged();
++}
++
+ void BrowserDesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(
+     float window_scale_factor) {
+   DesktopWindowTreeHostWin::HandleWindowScaleFactorChanged(window_scale_factor);
+diff --git a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.h b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.h
+index 28412d00adf463a1453aecc82ca1179f0521822d..a3bd2e0cae1d341adfe9dd498886ae5914e1cba7 100644
+--- a/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.h
++++ b/chrome/browser/ui/views/frame/browser_desktop_window_tree_host_win.h
+@@ -66,6 +66,7 @@ class BrowserDesktopWindowTreeHostWin
+   bool GetDwmFrameInsetsInPixels(gfx::Insets* insets) const override;
+   void HandleCreate() override;
+   void HandleDestroying() override;
++  void HandleFrameChanged() override;
+   void HandleWindowScaleFactorChanged(float window_scale_factor) override;
+   bool PreHandleMSG(UINT message,
+                     WPARAM w_param,
+diff --git a/chrome/browser/ui/views/frame/browser_view.cc b/chrome/browser/ui/views/frame/browser_view.cc
+index 6920106ba91e0d1c0c1706a28b4ce5a14b5f3aed..306affc1d9573acd475d79f30a3583f0e716f33e 100644
+--- a/chrome/browser/ui/views/frame/browser_view.cc
++++ b/chrome/browser/ui/views/frame/browser_view.cc
+@@ -927,8 +927,7 @@ BrowserView::BrowserView(std::unique_ptr<Browser> browser)
+   infobar_container_ =
+       AddChildView(std::make_unique<InfoBarContainerView>(this));
+ 
+-  status_bubble_ = std::make_unique<StatusBubbleViews>(contents_web_view_);
+-  contents_web_view_->SetStatusBubble(status_bubble_.get());
++  InitStatusBubble();
+ 
+   // Create do-nothing view for the sake of controlling the z-order of the find
+   // bar widget.
+@@ -1049,6 +1048,11 @@ void BrowserView::SetDisableRevealerDelayForTesting(bool disable) {
+   g_disable_revealer_delay_for_testing = disable;
+ }
+ 
++void BrowserView::InitStatusBubble() {
++  status_bubble_ = std::make_unique<StatusBubbleViews>(contents_web_view_);
++  contents_web_view_->SetStatusBubble(status_bubble_.get());
++}
++
+ gfx::Rect BrowserView::GetFindBarBoundingBox() const {
+   gfx::Rect contents_bounds = contents_container_->ConvertRectToWidget(
+       contents_container_->GetLocalBounds());
+@@ -3397,6 +3401,11 @@ ui::ImageModel BrowserView::GetWindowIcon() {
+ }
+ 
+ bool BrowserView::ExecuteWindowsCommand(int command_id) {
++  // This function handles WM_SYSCOMMAND, WM_APPCOMMAND, and WM_COMMAND.
++#if BUILDFLAG(IS_WIN)
++  if (command_id == IDC_DEBUG_FRAME_TOGGLE)
++    GetWidget()->DebugToggleFrameType();
++#endif
+   // Translate WM_APPCOMMAND command ids into a command id that the browser
+   // knows how to handle.
+   int command_id_from_app_command = GetCommandIDForAppCommandID(command_id);
+diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
+index d80a6df7380e5aec6ecba092315c905a09d7e2cc..bde91001c6f75f9918b9063eb0eaff5d56ea06c1 100644
+--- a/chrome/browser/ui/views/frame/browser_view.h
++++ b/chrome/browser/ui/views/frame/browser_view.h
+@@ -164,6 +164,12 @@ class BrowserView : public BrowserWindow,
+ 
+   void SetDownloadShelfForTest(DownloadShelf* download_shelf);
+ 
++  // Initializes (or re-initializes) the status bubble.  We try to only create
++  // the bubble once and re-use it for the life of the browser, but certain
++  // events (such as changing enabling/disabling Aero on Win) can force a need
++  // to change some of the bubble's creation parameters.
++  void InitStatusBubble();
++
+   // Returns the constraining bounding box that should be used to lay out the
+   // FindBar within. This is _not_ the size of the find bar, just the bounding
+   // box it should be laid out within. The coordinate system of the returned
+diff --git a/chrome/browser/ui/views/frame/system_menu_model_builder.cc b/chrome/browser/ui/views/frame/system_menu_model_builder.cc
+index 984929bb899dbd791443bf3ccd841f5a975a7dbd..75719ef6280ce46c176cb3277e602a11d99a45e0 100644
+--- a/chrome/browser/ui/views/frame/system_menu_model_builder.cc
++++ b/chrome/browser/ui/views/frame/system_menu_model_builder.cc
+@@ -69,6 +69,7 @@ void SystemMenuModelBuilder::BuildMenu(ui::SimpleMenuModel* model) {
+     BuildSystemMenuForBrowserWindow(model);
+   else
+     BuildSystemMenuForAppOrPopupWindow(model);
++  AddFrameToggleItems(model);
+ }
+ 
+ void SystemMenuModelBuilder::BuildSystemMenuForBrowserWindow(
+@@ -157,6 +158,14 @@ void SystemMenuModelBuilder::BuildSystemMenuForAppOrPopupWindow(
+   AppendTeleportMenu(model);
+ }
+ 
++void SystemMenuModelBuilder::AddFrameToggleItems(ui::SimpleMenuModel* model) {
++  if (base::CommandLine::ForCurrentProcess()->HasSwitch(
++          switches::kDebugEnableFrameToggle)) {
++    model->AddSeparator(ui::NORMAL_SEPARATOR);
++    model->AddItem(IDC_DEBUG_FRAME_TOGGLE, u"Toggle Frame Type");
++  }
++}
++
+ #if BUILDFLAG(IS_CHROMEOS)
+ void SystemMenuModelBuilder::AppendMoveToDesksMenu(ui::SimpleMenuModel* model) {
+   gfx::NativeWindow window =
+diff --git a/chrome/browser/ui/views/frame/system_menu_model_builder.h b/chrome/browser/ui/views/frame/system_menu_model_builder.h
+index 8f69eab1fc2b9c81d14f7b547b4f434c722b98aa..8acaa2816a03f41b19ec364eea2658682737798c 100644
+--- a/chrome/browser/ui/views/frame/system_menu_model_builder.h
++++ b/chrome/browser/ui/views/frame/system_menu_model_builder.h
+@@ -47,6 +47,9 @@ class SystemMenuModelBuilder {
+   void BuildSystemMenuForBrowserWindow(ui::SimpleMenuModel* model);
+   void BuildSystemMenuForAppOrPopupWindow(ui::SimpleMenuModel* model);
+ 
++  // Adds items for toggling the frame type (if necessary).
++  void AddFrameToggleItems(ui::SimpleMenuModel* model);
++
+ #if BUILDFLAG(IS_CHROMEOS)
+   // Add the submenu for move to desks.
+   void AppendMoveToDesksMenu(ui::SimpleMenuModel* model);
+diff --git a/chrome/common/chrome_switches.cc b/chrome/common/chrome_switches.cc
+index b23fbffea35f1f9936b998bbe501c9e5acdecf6a..4d635764d6c5db0b493aba9d3b2add095fc9ebe4 100644
+--- a/chrome/common/chrome_switches.cc
++++ b/chrome/common/chrome_switches.cc
+@@ -143,6 +143,10 @@ const char kCredits[] = "credits";
+ // devtools://devtools/bundled/<path>
+ const char kCustomDevtoolsFrontend[] = "custom-devtools-frontend";
+ 
++// Enables a frame context menu item that toggles the frame in and out of glass
++// mode (Windows Vista and up only).
++const char kDebugEnableFrameToggle[] = "debug-enable-frame-toggle";
++
+ // Adds debugging entries such as Inspect Element to context menus of packed
+ // apps.
+ const char kDebugPackedApps[] = "debug-packed-apps";
+diff --git a/chrome/common/chrome_switches.h b/chrome/common/chrome_switches.h
+index be1f7824d85a6705aa8c220578ac62f0d1a4114e..7ce3dd85d1cab1fbd5aff6104ea0d1b864ebcb0c 100644
+--- a/chrome/common/chrome_switches.h
++++ b/chrome/common/chrome_switches.h
+@@ -61,6 +61,7 @@ extern const char kCrashOnHangThreads[];
+ extern const char kCreateBrowserOnStartupForTests[];
+ extern const char kCredits[];
+ extern const char kCustomDevtoolsFrontend[];
++extern const char kDebugEnableFrameToggle[];
+ extern const char kDebugPackedApps[];
+ extern const char kDevToolsFlags[];
+ extern const char kDiagnostics[];
+diff --git a/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc b/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
+index d0dc2b4993891837c6ac76e095833126db461032..ba1bcbc63475b7151e2335c9237124ca8ca31dc7 100644
+--- a/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
++++ b/ui/views/widget/desktop_aura/desktop_native_widget_aura_unittest.cc
+@@ -136,6 +136,30 @@ TEST_F(DesktopNativeWidgetAuraTest, WidgetNotVisibleOnlyWindowTreeHostShown) {
+ }
+ #endif
+ 
++TEST_F(DesktopNativeWidgetAuraTest, DesktopAuraWindowShowFrameless) {
++  Widget widget;
++  Widget::InitParams init_params =
++      CreateParams(Widget::InitParams::TYPE_WINDOW_FRAMELESS);
++  init_params.ownership = Widget::InitParams::WIDGET_OWNS_NATIVE_WIDGET;
++  widget.Init(std::move(init_params));
++
++  // Make sure that changing frame type doesn't crash when there's no non-client
++  // view.
++  ASSERT_EQ(nullptr, widget.non_client_view());
++  widget.DebugToggleFrameType();
++  widget.Show();
++
++#if BUILDFLAG(IS_WIN)
++  // On Windows also make sure that handling WM_SYSCOMMAND doesn't crash with
++  // custom frame. Frame type needs to be toggled again if Aero Glass is
++  // disabled.
++  if (widget.ShouldUseNativeFrame())
++    widget.DebugToggleFrameType();
++  SendMessage(widget.GetNativeWindow()->GetHost()->GetAcceleratedWidget(),
++              WM_SYSCOMMAND, SC_RESTORE, 0);
++#endif  // BUILDFLAG(IS_WIN)
++}
++
+ #if BUILDFLAG(IS_CHROMEOS_ASH)
+ // TODO(crbug.com/916272): investigate fixing and enabling on Chrome OS.
+ #define MAYBE_GlobalCursorState DISABLED_GlobalCursorState
+diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+index 73e76c0d940f09336bbec6db47f1afee5153ced0..61673ac08ca19816dc01c89b6687f5b2a7c289e2 100644
+--- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
++++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
+@@ -1028,6 +1028,8 @@ void DesktopWindowTreeHostWin::HandleClientSizeChanged(
+ }
+ 
+ void DesktopWindowTreeHostWin::HandleFrameChanged() {
++  CheckForMonitorChange();
++  desktop_native_widget_aura_->UpdateWindowTransparency();
+   // Replace the frame and layout the contents.
+   if (GetWidget()->non_client_view())
+     GetWidget()->non_client_view()->UpdateFrame();
+diff --git a/ui/views/widget/widget.cc b/ui/views/widget/widget.cc
+index 2b52ad2f63bd6924fcd3d000bbb7ed6fd9f4b0dd..3d7a2f986c38de6b2e69722e63ee3b139d257756 100644
+--- a/ui/views/widget/widget.cc
++++ b/ui/views/widget/widget.cc
+@@ -1209,6 +1209,21 @@ bool Widget::ShouldWindowContentsBeTransparent() const {
+                         : false;
+ }
+ 
++void Widget::DebugToggleFrameType() {
++  if (!native_widget_)
++    return;
++
++  if (frame_type_ == FrameType::kDefault) {
++    frame_type_ = ShouldUseNativeFrame() ? FrameType::kForceCustom
++                                         : FrameType::kForceNative;
++  } else {
++    frame_type_ = frame_type_ == FrameType::kForceCustom
++                      ? FrameType::kForceNative
++                      : FrameType::kForceCustom;
++  }
++  FrameTypeChanged();
++}
++
+ void Widget::FrameTypeChanged() {
+   if (native_widget_)
+     native_widget_->FrameTypeChanged();
+diff --git a/ui/views/widget/widget.h b/ui/views/widget/widget.h
+index 51017b6f5dd9a9d5f26723c7ec7a6e0404c93b65..54b9e676c9423b78184fc63b80299dd7529cbd28 100644
+--- a/ui/views/widget/widget.h
++++ b/ui/views/widget/widget.h
+@@ -922,6 +922,10 @@ class VIEWS_EXPORT Widget : public internal::NativeWidgetDelegate,
+   // (for example, so that they can overhang onto the window title bar).
+   bool ShouldWindowContentsBeTransparent() const;
+ 
++  // Forces the frame into the alternate frame type (custom or native) depending
++  // on its current state.
++  void DebugToggleFrameType();
++
+   // Tell the window that something caused the frame type to change.
+   void FrameTypeChanged();
+ 
+diff --git a/ui/views/widget/widget_unittest.cc b/ui/views/widget/widget_unittest.cc
+index 9aced70287c3ac877310457c1aad3b2544a85800..35f435d3d4d5eda44b69e5e66ec9480534d3ef44 100644
+--- a/ui/views/widget/widget_unittest.cc
++++ b/ui/views/widget/widget_unittest.cc
+@@ -1317,6 +1317,10 @@ TEST_P(WidgetWithDestroyedNativeViewOrNativeWidgetTest, Deactivate) {
+   widget()->Deactivate();
+ }
+ 
++TEST_P(WidgetWithDestroyedNativeViewOrNativeWidgetTest, DebugToggleFrameType) {
++  widget()->DebugToggleFrameType();
++}
++
+ TEST_P(WidgetWithDestroyedNativeViewOrNativeWidgetTest, DraggedView) {
+   widget()->dragged_view();
+ }
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 575877b4fb0929d0cdd22af399f7078fcd713584..90dd6487fdf438a61672a81f08b545742045944a 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -1741,6 +1741,20 @@ void HWNDMessageHandler::ResetWindowRegion(bool force, bool redraw) {
+   }
+ }
+ 
++void HWNDMessageHandler::UpdateDwmNcRenderingPolicy() {
++  if (IsFullscreen())
++    return;
++
++  DWMNCRENDERINGPOLICY policy =
++      custom_window_region_.is_valid() ||
++              delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN
++          ? DWMNCRP_DISABLED
++          : DWMNCRP_ENABLED;
++
++  DwmSetWindowAttribute(hwnd(), DWMWA_NCRENDERING_POLICY, &policy,
++                        sizeof(DWMNCRENDERINGPOLICY));
++}
++
+ LRESULT HWNDMessageHandler::DefWindowProcWithRedrawLock(UINT message,
+                                                         WPARAM w_param,
+                                                         LPARAM l_param) {
+@@ -3607,10 +3621,34 @@ bool HWNDMessageHandler::IsSynthesizedMouseMessage(unsigned int message,
+ }
+ 
+ void HWNDMessageHandler::PerformDwmTransition() {
+-  CHECK(IsFrameSystemDrawn());
+-
+   dwm_transition_desired_ = false;
++
++  UpdateDwmNcRenderingPolicy();
++  // Don't redraw the window here, because we need to hide and show the window
++  // which will also trigger a redraw.
++  ResetWindowRegion(true, false);
++  // The non-client view needs to update too.
+   delegate_->HandleFrameChanged();
++  // This calls DwmExtendFrameIntoClientArea which must be called when DWM
++  // composition state changes.
++  UpdateDwmFrame();
++
++  if (IsVisible() && IsFrameSystemDrawn()) {
++    // For some reason, we need to hide the window after we change from a custom
++    // frame to a native frame.  If we don't, the client area will be filled
++    // with black.  This seems to be related to an interaction between DWM and
++    // SetWindowRgn, but the details aren't clear. Additionally, we need to
++    // specify SWP_NOZORDER here, otherwise if you have multiple chrome windows
++    // open they will re-appear with a non-deterministic Z-order.
++    // Note: caused http://crbug.com/895855, where a laptop lid close+reopen
++    // puts window in the background but acts like a foreground window. Fixed by
++    // not calling this unless DWM composition actually changes. Finally, since
++    // we don't want windows stealing focus if they're not already active, we
++    // set SWP_NOACTIVATE.
++    UINT flags = SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_NOACTIVATE;
++    SetWindowPos(hwnd(), nullptr, 0, 0, 0, 0, flags | SWP_HIDEWINDOW);
++    SetWindowPos(hwnd(), nullptr, 0, 0, 0, 0, flags | SWP_SHOWWINDOW);
++  }
+ }
+ 
+ void HWNDMessageHandler::UpdateDwmFrame() {
+diff --git a/ui/views/win/hwnd_message_handler.h b/ui/views/win/hwnd_message_handler.h
+index 7238af3f51179145a1c1eb9639ca756c2a697554..694945c4f3a62ed13a3b80cc5fba5673e29eef4e 100644
+--- a/ui/views/win/hwnd_message_handler.h
++++ b/ui/views/win/hwnd_message_handler.h
+@@ -324,6 +324,11 @@ class VIEWS_EXPORT HWNDMessageHandler : public gfx::WindowImpl,
+   // frame windows.
+   void ResetWindowRegion(bool force, bool redraw);
+ 
++  // Enables or disables rendering of the non-client (glass) area by DWM,
++  // under Vista and above, depending on whether the caller has requested a
++  // custom frame.
++  void UpdateDwmNcRenderingPolicy();
++
+   // Calls DefWindowProc, safely wrapping the call in a ScopedRedrawLock to
+   // prevent frame flicker. DefWindowProc handling can otherwise render the
+   // classic-look window title bar directly.
