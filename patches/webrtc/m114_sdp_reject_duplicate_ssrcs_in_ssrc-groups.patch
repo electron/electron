@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Philipp Hancke <phancke@microsoft.com>
 Date: Thu, 15 Jun 2023 07:21:56 +0200
-Subject: [M114] sdp: reject duplicate ssrcs in ssrc-groups
+Subject: sdp: reject duplicate ssrcs in ssrc-groups
 
 while not really covered by
   https://www.rfc-editor.org/rfc/rfc5576.html#section-4.2
