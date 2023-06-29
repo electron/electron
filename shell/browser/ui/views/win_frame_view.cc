@@ -185,21 +185,6 @@ void WinFrameView::Layout() {
   NonClientFrameView::Layout();
 }
 
-gfx::Size WinFrameView::GetMinimumSize() const {
-  if (window_->has_frame())
-    return window_->GetMinimumSize();
-  else
-    return window_->GetContentMinimumSize();
-}
-
-gfx::Size WinFrameView::GetMaximumSize() const {
-  gfx::Size size = window_->has_frame() ? window_->GetMaximumSize()
-                                        : window_->GetContentMaximumSize();
-  // Electron public APIs returns (0, 0) when maximum size is not set, but it
-  // would break internal window APIs like HWNDMessageHandler::SetAspectRatio.
-  return size.IsEmpty() ? gfx::Size(INT_MAX, INT_MAX) : size;
-}
-
 int WinFrameView::FrameTopBorderThickness(bool restored) const {
   // Mouse and touch locations are floored but GetSystemMetricsInDIP is rounded,
   // so we need to floor instead or else the difference will cause the hittest
