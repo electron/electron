@@ -81,7 +81,7 @@ The `menu` object has the following instance methods:
     be positioned under the mouse cursor at the specified coordinates. Default
     is -1.
   * `sourceType` string (optional) _Windows_ _Linux_ - This should map to the `menuSourceType`
-    provided by the `context-menu` event. It is not reccomended to set this value manually,
+    provided by the `context-menu` event. It is not recommended to set this value manually,
     only provide values you receive from other APIs or leave it `undefined`.
     Can be `none`, `mouse`, `keyboard`, `touch`, `touchMenu`, `longPress`, `longTap`, `touchHandle`, `stylus`, `adjustSelection`, or `adjustSelectionReset`.
   * `callback` Function (optional) - Called when menu is closed.
