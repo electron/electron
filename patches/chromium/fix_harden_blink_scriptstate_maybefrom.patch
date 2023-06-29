@@ -19,8 +19,9 @@ leading to the following CHECK failure.
 script_state.h(169)] Security Check Failed: script_state
 ```
 
-This patch adds a hook to allow embedders confirm if a given context is
-something created by them.
+This patch adds a new tag in the context associated with ScriptState
+to uniquely identify. It is based on what Node.js does to identify the
+context created by it in `node_context_data.h`.
 
 PS: We are not performing a check like
 
@@ -38,67 +39,82 @@ the embedder data slot will not lazy initialize indexes in the former. This mean
 accessing uninitialized lower indexes can return garbage values that cannot be null checked.
 Refer to v8::EmbedderDataSlot::store_aligned_pointer for context.
 
+diff --git a/gin/public/gin_embedders.h b/gin/public/gin_embedders.h
+index 8d7c5631fd8f1499c67384286f0e3c4037673b32..6a7491bc27334f6d1b1175eaa472c888e2b35b5e 100644
+--- a/gin/public/gin_embedders.h
++++ b/gin/public/gin_embedders.h
+@@ -18,6 +18,7 @@ namespace gin {
+ enum GinEmbedder : uint16_t {
+   kEmbedderNativeGin,
+   kEmbedderBlink,
++  kEmbedderBlinkTag,
+   kEmbedderPDFium,
+   kEmbedderFuchsia,
+ };
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.cc b/third_party/blink/renderer/platform/bindings/script_state.cc
-index 7ff8785cd64c1264a88f91f7bd3292c6943f58ea..2f60dcf26b175727f447edfc94236c1c3f7e7855 100644
+index 7ff8785cd64c1264a88f91f7bd3292c6943f58ea..bc14ad8cab9fa3ec45bcb9f670b198970ecbeb92 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.cc
 +++ b/third_party/blink/renderer/platform/bindings/script_state.cc
-@@ -12,6 +12,7 @@
- namespace blink {
+@@ -13,6 +13,10 @@ namespace blink {
  
  ScriptState::CreateCallback ScriptState::s_create_callback_ = nullptr;
-+ScriptState::ContextEmbedderDataCallback ScriptState::s_context_embedder_data_callback_ = nullptr;
  
++int const ScriptState::kScriptStateTag = 0x6e6f64;
++void* const ScriptState::kScriptStateTagPtr = const_cast<void*>(
++    static_cast<const void*>(&ScriptState::kScriptStateTag));
++
  // static
  void ScriptState::SetCreateCallback(CreateCallback create_callback) {
-@@ -20,6 +21,14 @@ void ScriptState::SetCreateCallback(CreateCallback create_callback) {
-   s_create_callback_ = create_callback;
+   DCHECK(create_callback);
+@@ -37,6 +41,8 @@ ScriptState::ScriptState(v8::Local<v8::Context> context,
+   DCHECK(world_);
+   context_.SetWeak(this, &OnV8ContextCollectedCallback);
+   context->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex, this);
++  context->SetAlignedPointerInEmbedderData(
++      kV8ContextPerContextDataTagIndex, ScriptState::kScriptStateTagPtr);
+   RendererResourceCoordinator::Get()->OnScriptStateCreated(this,
+                                                            execution_context);
  }
+@@ -78,6 +84,8 @@ void ScriptState::DissociateContext() {
+   // Cut the reference from V8 context to ScriptState.
+   GetContext()->SetAlignedPointerInEmbedderData(kV8ContextPerContextDataIndex,
+                                                 nullptr);
++  GetContext()->SetAlignedPointerInEmbedderData(
++      kV8ContextPerContextDataTagIndex, nullptr);
+   reference_from_v8_context_.Clear();
  
-+// static
-+void ScriptState::SetContextEmbedderDataCallback(
-+    ContextEmbedderDataCallback callback) {
-+  DCHECK(callback);
-+  DCHECK(!s_context_embedder_data_callback_);
-+  s_context_embedder_data_callback_ = callback;
-+}
-+
- // static
- ScriptState* ScriptState::Create(v8::Local<v8::Context> context,
-                                  scoped_refptr<DOMWrapperWorld> world,
+   // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index 7109852950cde0a6553000421faacefb39366b41..16957f0ab51a36fde2112ac97cf9352e752af301 100644
+index 7109852950cde0a6553000421faacefb39366b41..79be73cb660839d6074b11cd7491dc3d5e876345 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
-@@ -123,6 +123,8 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
-     v8::Local<v8::Context> context_;
-   };
- 
-+  using ContextEmbedderDataCallback = bool (*)(v8::Local<v8::Context>);
-+
-   static ScriptState* Create(v8::Local<v8::Context>,
-                              scoped_refptr<DOMWrapperWorld>,
-                              ExecutionContext*);
-@@ -181,9 +183,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
-         kV8ContextPerContextDataIndex) {
-       return nullptr;
-     }
-+    if (s_context_embedder_data_callback_ &&
-+        !s_context_embedder_data_callback_(context)) {
+@@ -178,7 +178,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+   static ScriptState* MaybeFrom(v8::Local<v8::Context> context) {
+     DCHECK(!context.IsEmpty());
+     if (context->GetNumberOfEmbedderDataFields() <=
+-        kV8ContextPerContextDataIndex) {
++        kV8ContextPerContextDataTagIndex) {
 +      return nullptr;
 +    }
++    if (context->GetAlignedPointerFromEmbedderData(
++            kV8ContextPerContextDataTagIndex) !=
++        ScriptState::kScriptStateTagPtr) {
+       return nullptr;
+     }
      return From(context);
-   }
- 
-+  static void SetContextEmbedderDataCallback(ContextEmbedderDataCallback);
-+
-   v8::Isolate* GetIsolate() const { return isolate_; }
-   DOMWrapperWorld& World() const { return *world_; }
-   const V8ContextToken& GetToken() const { return token_; }
-@@ -246,6 +254,7 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
-                                           scoped_refptr<DOMWrapperWorld>,
-                                           ExecutionContext*);
-   static CreateCallback s_create_callback_;
-+  static ContextEmbedderDataCallback s_context_embedder_data_callback_;
+@@ -249,9 +254,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
    static void SetCreateCallback(CreateCallback);
    friend class ScriptStateImpl;
  
++  static void* const kScriptStateTagPtr;
++  static int const kScriptStateTag;
+   static constexpr int kV8ContextPerContextDataIndex =
+       static_cast<int>(gin::kPerContextDataStartIndex) +
+       static_cast<int>(gin::kEmbedderBlink);
++  static constexpr int kV8ContextPerContextDataTagIndex =
++      static_cast<int>(gin::kPerContextDataStartIndex) +
++      static_cast<int>(gin::kEmbedderBlink) +
++      static_cast<int>(gin::kEmbedderBlinkTag);
+ };
+ 
+ // ScriptStateProtectingContext keeps the context associated with the

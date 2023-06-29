@@ -45,7 +45,6 @@ class ElectronRendererClient : public RendererClientBase {
       v8::Local<v8::Context> context) override;
 
   node::Environment* GetEnvironment(content::RenderFrame* frame) const;
-  static bool IsBlinkContext(v8::Local<v8::Context> context);
 
   // Whether the node integration has been initialized.
   bool node_integration_initialized_ = false;

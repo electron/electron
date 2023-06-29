@@ -21,7 +21,6 @@
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
-#include "third_party/blink/renderer/platform/bindings/script_state.h"  // nogncheck
 
 namespace electron {
 
@@ -29,10 +28,7 @@ ElectronRendererClient::ElectronRendererClient()
     : node_bindings_(
           NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
       electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
-  blink::ScriptState::SetContextEmbedderDataCallback(
-      ElectronRendererClient::IsBlinkContext);
-}
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
 
@@ -205,11 +201,6 @@ node::Environment* ElectronRendererClient::GetEnvironment(
       GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
   node::Environment* env = node::Environment::GetCurrent(context);
   return base::Contains(environments_, env) ? env : nullptr;
-}
-
-// static
-bool ElectronRendererClient::IsBlinkContext(v8::Local<v8::Context> context) {
-  return !node::ContextEmbedderTag::IsNodeVMContext(context);
 }
 
 }  // namespace electron
