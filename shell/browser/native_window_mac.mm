@@ -58,7 +58,7 @@
 @implementation ElectronProgressBar
 
 - (void)drawRect:(NSRect)dirtyRect {
-  if (self.style != NSProgressIndicatorBarStyle)
+  if (self.style != NSProgressIndicatorStyleBar)
     return;
   // Draw edges of rounded rect.
   NSRect rect = NSInsetRect([self bounds], 1.0, 1.0);
@@ -915,7 +915,6 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::Invalidate() {
-  [window_ flushWindow];
   [[window_ contentView] setNeedsDisplay:YES];
 }
 
@@ -1289,7 +1288,7 @@ void NativeWindowMac::SetProgressBar(double progress,
     NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
     NSProgressIndicator* progress_indicator =
         [[[ElectronProgressBar alloc] initWithFrame:frame] autorelease];
-    [progress_indicator setStyle:NSProgressIndicatorBarStyle];
+    [progress_indicator setStyle:NSProgressIndicatorStyleBar];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
     [progress_indicator setMinValue:0];
@@ -1400,26 +1399,10 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
-  std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
-  node::Environment* env =
-      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-
   NSVisualEffectMaterial vibrancyType{};
-  if (type == "appearance-based") {
-    EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
-                "electron");
-    vibrancyType = NSVisualEffectMaterialAppearanceBased;
-  } else if (type == "light") {
-    EmitWarning(env, "NSVisualEffectMaterialLight" + dep_warn, "electron");
-    vibrancyType = NSVisualEffectMaterialLight;
-  } else if (type == "dark") {
-    EmitWarning(env, "NSVisualEffectMaterialDark" + dep_warn, "electron");
-    vibrancyType = NSVisualEffectMaterialDark;
-  } else if (type == "titlebar") {
+  if (type == "titlebar") {
     vibrancyType = NSVisualEffectMaterialTitlebar;
-  }
-
-  if (type == "selection") {
+  } else if (type == "selection") {
     vibrancyType = NSVisualEffectMaterialSelection;
   } else if (type == "menu") {
     vibrancyType = NSVisualEffectMaterialMenu;
@@ -1427,35 +1410,24 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialPopover;
   } else if (type == "sidebar") {
     vibrancyType = NSVisualEffectMaterialSidebar;
-  } else if (type == "medium-light") {
-    EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
-                "electron");
-    vibrancyType = NSVisualEffectMaterialMediumLight;
-  } else if (type == "ultra-dark") {
-    EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn, "electron");
-    vibrancyType = NSVisualEffectMaterialUltraDark;
-  }
-
-  if (@available(macOS 10.14, *)) {
-    if (type == "header") {
-      vibrancyType = NSVisualEffectMaterialHeaderView;
-    } else if (type == "sheet") {
-      vibrancyType = NSVisualEffectMaterialSheet;
-    } else if (type == "window") {
-      vibrancyType = NSVisualEffectMaterialWindowBackground;
-    } else if (type == "hud") {
-      vibrancyType = NSVisualEffectMaterialHUDWindow;
-    } else if (type == "fullscreen-ui") {
-      vibrancyType = NSVisualEffectMaterialFullScreenUI;
-    } else if (type == "tooltip") {
-      vibrancyType = NSVisualEffectMaterialToolTip;
-    } else if (type == "content") {
-      vibrancyType = NSVisualEffectMaterialContentBackground;
-    } else if (type == "under-window") {
-      vibrancyType = NSVisualEffectMaterialUnderWindowBackground;
-    } else if (type == "under-page") {
-      vibrancyType = NSVisualEffectMaterialUnderPageBackground;
-    }
+  } else if (type == "header") {
+    vibrancyType = NSVisualEffectMaterialHeaderView;
+  } else if (type == "sheet") {
+    vibrancyType = NSVisualEffectMaterialSheet;
+  } else if (type == "window") {
+    vibrancyType = NSVisualEffectMaterialWindowBackground;
+  } else if (type == "hud") {
+    vibrancyType = NSVisualEffectMaterialHUDWindow;
+  } else if (type == "fullscreen-ui") {
+    vibrancyType = NSVisualEffectMaterialFullScreenUI;
+  } else if (type == "tooltip") {
+    vibrancyType = NSVisualEffectMaterialToolTip;
+  } else if (type == "content") {
+    vibrancyType = NSVisualEffectMaterialContentBackground;
+  } else if (type == "under-window") {
+    vibrancyType = NSVisualEffectMaterialUnderWindowBackground;
+  } else if (type == "under-page") {
+    vibrancyType = NSVisualEffectMaterialUnderPageBackground;
   }
 
   if (vibrancyType) {

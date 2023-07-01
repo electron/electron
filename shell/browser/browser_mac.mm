@@ -179,7 +179,11 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
   CFStringRef protocol_cf = base::mac::NSToCFCast(protocol_ns);
+// TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   CFArrayRef bundleList = LSCopyAllHandlersForURLScheme(protocol_cf);
+#pragma clang diagnostic pop
   if (!bundleList) {
     return false;
   }
@@ -229,9 +233,12 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
 
+// TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   base::ScopedCFTypeRef<CFStringRef> bundleId(
       LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns)));
-
+#pragma clang diagnostic pop
   if (!bundleId)
     return false;
 

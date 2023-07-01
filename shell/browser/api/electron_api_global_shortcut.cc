@@ -29,14 +29,8 @@ namespace {
 
 #if BUILDFLAG(IS_MAC)
 bool RegisteringMediaKeyForUntrustedClient(const ui::Accelerator& accelerator) {
-  if (base::mac::IsAtLeastOS10_14()) {
-    if (Command::IsMediaKey(accelerator)) {
-      if (!electron::api::SystemPreferences::IsTrustedAccessibilityClient(
-              false))
-        return true;
-    }
-  }
-  return false;
+  return Command::IsMediaKey(accelerator) &&
+         !electron::api::SystemPreferences::IsTrustedAccessibilityClient(false);
 }
 
 bool MapHasMediaKeys(
