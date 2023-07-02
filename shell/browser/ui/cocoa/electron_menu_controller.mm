@@ -65,6 +65,7 @@ Role kRolesMap[] = {
     {@selector(toggleFullScreenMode:), "togglefullscreen"},
     {@selector(toggleTabBar:), "toggletabbar"},
     {@selector(selectNextTab:), "selectnexttab"},
+    {@selector(toggleTabOverview:), "showalltabs"},
     {@selector(selectPreviousTab:), "selectprevioustab"},
     {@selector(mergeAllWindows:), "mergeallwindows"},
     {@selector(moveTabToNewWindow:), "movetabtonewwindow"},

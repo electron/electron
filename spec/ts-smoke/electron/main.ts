@@ -824,6 +824,7 @@ Menu.buildFromTemplate([
   { role: 'toggleTabBar' },
   { role: 'selectNextTab' },
   { role: 'selectPreviousTab' },
+  { role: 'showAllTabs' },
   { role: 'mergeAllWindows' },
   { role: 'clearRecentDocuments' },
   { role: 'moveTabToNewWindow' }

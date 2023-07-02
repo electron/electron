@@ -439,6 +439,8 @@ void NativeWindow::SelectPreviousTab() {}
 
 void NativeWindow::SelectNextTab() {}
 
+void NativeWindow::ShowAllTabs() {}
+
 void NativeWindow::MergeAllWindows() {}
 
 void NativeWindow::MoveTabToNewWindow() {}
