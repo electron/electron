@@ -423,6 +423,13 @@ class NativeWindow : public base::SupportsUserData,
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
 
+  // Minimum and maximum size.
+  absl::optional<extensions::SizeConstraints> size_constraints_;
+  // Same as above but stored as content size, we are storing 2 types of size
+  // constraints beacause converting between them will cause rounding errors
+  // on HiDPI displays on some environments.
+  absl::optional<extensions::SizeConstraints> content_size_constraints_;
+
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state_ =
       FullScreenTransitionState::kNone;
@@ -449,9 +456,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window is transparent.
   bool transparent_ = false;
-
-  // Minimum and maximum size, stored as content size.
-  extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_ = false;
