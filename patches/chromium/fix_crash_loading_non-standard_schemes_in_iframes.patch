@@ -17,10 +17,10 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 860422baf9918b83bdac88eb97a6a029333eb97a..985a4daf7fa6ba07bfc5b176aeb9a1968814c605 100644
+index 436e3af9226318a08686721bd20984e6113458f8..d831df0b5c38441e1ae1bf9c5f03dd0134b7bb66 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -7353,10 +7353,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
+@@ -7359,10 +7359,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
    if (IsForMhtmlSubframe())
      return origin_with_debug_info;
  
@@ -37,10 +37,10 @@ index 860422baf9918b83bdac88eb97a6a029333eb97a..985a4daf7fa6ba07bfc5b176aeb9a196
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index b82987cdc645d74340d5297d1355235c8cfc633c..c02c8a889f75cbb4905eb57285dfdeb219cf271a 100644
+index 6ddaecb3a85bda6da0e24c936cffe5412fd3c5ed..2441144970ad50b9fcd3d283a4b2135ef17eb3a5 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2936,6 +2936,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2946,6 +2946,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // last committed document.
    CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
  
@@ -58,7 +58,7 @@ index b82987cdc645d74340d5297d1355235c8cfc633c..c02c8a889f75cbb4905eb57285dfdeb2
    // Sets a ResourceCache in the renderer. `this` must be active and there must
    // be no pending navigation. `remote` must have the same and process
    // isolation policy.
-@@ -3318,17 +3329,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3333,17 +3344,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

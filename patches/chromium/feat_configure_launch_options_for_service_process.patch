@@ -183,7 +183,7 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 4a5df7babed52c05f453a264d724dd2d89f7a0c6..3e11e84f5a42b3758ff0662eff249b6ad6ded77b 100644
+index 86d4bad2154acb4cb01dff27b03aa2d3f3f03c15..dc574685118b24ff2037e6fd02816fdb7ee78583 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
 @@ -156,11 +156,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
@@ -252,7 +252,7 @@ index 4a5df7babed52c05f453a264d724dd2d89f7a0c6..3e11e84f5a42b3758ff0662eff249b6a
  #if BUILDFLAG(IS_WIN)
      if (!preload_libraries_.empty()) {
 diff --git a/content/browser/utility_process_host.h b/content/browser/utility_process_host.h
-index 45b85c90b5d01a0b1311e15705794ab4c9369fa1..d13dbd7a917e53a4dbee21ad0f98a5bd2ab1d1b9 100644
+index 012069cada2220f6c1976107bc2e4ca6dcb7d7ca..a52a197eb51f8c00d7321f03ccb436ec7d009d47 100644
 --- a/content/browser/utility_process_host.h
 +++ b/content/browser/utility_process_host.h
 @@ -35,6 +35,10 @@

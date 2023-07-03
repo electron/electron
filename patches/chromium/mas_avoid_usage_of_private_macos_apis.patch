@@ -14,7 +14,7 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index 09e99c33ba9f0..6ac1f2ea2aeff 100644
+index 09e99c33ba9f0fe739a26757aa9018d4dcf180aa..6ac1f2ea2aeff8e640d0307dc7ad4c28a4764552 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
 @@ -117,6 +117,13 @@ MacDeviceManagementState IsDeviceRegisteredWithManagement() {
@@ -39,7 +39,7 @@ index 09e99c33ba9f0..6ac1f2ea2aeff 100644
  
  }  // namespace base
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index b267bc2272fa8..967e22699bf56 100644
+index b267bc2272fa82334a70d897a900f1ea37b1a598..967e22699bf565368704972c021f9b425a570f08 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
 @@ -21,13 +21,18 @@
@@ -99,7 +99,7 @@ index b267bc2272fa8..967e22699bf56 100644
      DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
    }
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 6e73be2bd964a..58a7eb1e982a9 100644
+index 6e73be2bd964aa8cf743c1ae01ce8e188dbcac8e..58a7eb1e982a90d6197579ffdb9545340356a65c 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -127,7 +127,7 @@ index 6e73be2bd964a..58a7eb1e982a9 100644
  
  }  // namespace
 diff --git a/sandbox/mac/sandbox_logging.cc b/sandbox/mac/sandbox_logging.cc
-index f52f1d1da4d43..2406f5d4342da 100644
+index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907a55c929f 100644
 --- a/sandbox/mac/sandbox_logging.cc
 +++ b/sandbox/mac/sandbox_logging.cc
 @@ -32,9 +32,11 @@
@@ -155,7 +155,7 @@ index f52f1d1da4d43..2406f5d4342da 100644
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b..8de2556bb59c7 100644
+index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@

@@ -57,7 +57,7 @@ index 6268851494a0bbc0b3e693782dae6171f6347657..87ae3db7aec96577856804aa3718e53e
                                                     access_mode_, task_runner);
    //  TODO(https://crbug.com/1347092): Refactor such that caller need not
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index c9bc6e5dd7e1cf8d198afcd21cbb24970337a50f..688f10fa48511818848f6177a1a20a19ebd54f99 100644
+index 6d9dfd15e0d0589b5974afa6bb7418e499954d87..ea0b44b8e693fcbec3a2c8c0c0ed63780f8841e1 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
 @@ -83,13 +83,15 @@ class GIN_EXPORT IsolateHolder {

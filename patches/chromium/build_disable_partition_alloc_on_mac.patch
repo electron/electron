@@ -9,10 +9,10 @@ and can be removed when the crash in fork is resolved.
 Related issue: https://github.com/electron/electron/issues/32718
 
 diff --git a/build_overrides/partition_alloc.gni b/build_overrides/partition_alloc.gni
-index 0574216aabe93171e8f59eedc480178a0e1ac3ce..a6c5dc4b48b83c965e04fa0c31b36e009f76798f 100644
+index 161dfbb8ab6071417202daeaa859951c3e59719b..94182390984fd2d4e8384b2476862373fc97afd0 100644
 --- a/build_overrides/partition_alloc.gni
 +++ b/build_overrides/partition_alloc.gni
-@@ -51,7 +51,7 @@ _disable_partition_alloc_everywhere =
+@@ -46,7 +46,7 @@ _disable_partition_alloc_everywhere =
  if (is_ios) {
    _is_partition_alloc_everywhere_platform = ios_partition_alloc_enabled
  } else {

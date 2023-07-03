@@ -6,7 +6,7 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index 73bdc6d0788463ef7a8656e8902fde62cbbb5464..7d49d9928fcbb23361a63eb458d6841e4adcbf41 100644
+index 436c6497bf39cb17027a267a65290eab4d2be5be..483f12fca768a99d91409ea501bbcd5a6588bfe7 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
 @@ -48,6 +48,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
@@ -21,7 +21,7 @@ index 73bdc6d0788463ef7a8656e8902fde62cbbb5464..7d49d9928fcbb23361a63eb458d6841e
  ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
      int command_id) const {
    return ImageModel();
-@@ -313,6 +318,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
+@@ -329,6 +334,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
    MenuItemsChanged();
  }
  
@@ -33,7 +33,7 @@ index 73bdc6d0788463ef7a8656e8902fde62cbbb5464..7d49d9928fcbb23361a63eb458d6841e
  void SimpleMenuModel::SetMinorText(size_t index,
                                     const std::u16string& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -406,6 +416,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -422,6 +432,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -47,7 +47,7 @@ index 73bdc6d0788463ef7a8656e8902fde62cbbb5464..7d49d9928fcbb23361a63eb458d6841e
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index 5ffe7891e71c24a0f31f758c1f467eff645bb658..7c4d37c8b05c64866bc41b38596ffb06e16d69f4 100644
+index 6a74342ef1ab2843cf7aec214a69758aa4952cf5..b0cce74b3f251e7b26d572ba2c37d45f95de47d3 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -50,6 +50,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {

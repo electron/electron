@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 91a8f2c3aa812..20d4a7f0accad 100644
+index 91a8f2c3aa812314156637b563af4de50c0e106e..20d4a7f0accad78e28c6195476a09aa461dcf363 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -973,7 +973,6 @@ if (is_win) {
@@ -34,7 +34,7 @@ index 91a8f2c3aa812..20d4a7f0accad 100644
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index 3a66a52b8d3c6..facaa6fbca8ee 100644
+index 3a66a52b8d3c6da9cd8d7e9afdc8d59f528ec3d5..facaa6fbca8ee7c04f83607e62b81b9594727ada 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -93,6 +93,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -519,7 +519,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
    }
    CompleteScriptedPrint(printing_rfh_, std::move(params), std::move(callback));
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index fcee7b58a8eeb..160b5a6ad2d5c 100644
+index fcee7b58a8eebd9fc044bab51a5d0e540de0de7d..160b5a6ad2d5cb6e0292f9ff1d16ee556d950880 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -47,6 +47,8 @@ namespace printing {
@@ -601,7 +601,7 @@ index fcee7b58a8eeb..160b5a6ad2d5c 100644
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 85e2d8c9161b4..7bcedc3c75e5c 100644
+index 85e2d8c9161b4c6b122371a5a17b844c0660bb39..7bcedc3c75e5c77c1c00f0124b44e9d145646e08 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -629,7 +629,7 @@ index 85e2d8c9161b4..7bcedc3c75e5c 100644
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
-index e83cf407beebc..5e770a6a840b4 100644
+index e83cf407beebcec5ccf7eaa991f43d4d3713833b..5e770a6a840b48e07ff056fe038aad54e526429e 100644
 --- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
 +++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.cc
 @@ -21,7 +21,7 @@ FakePrintRenderFrame::FakePrintRenderFrame(
@@ -642,7 +642,7 @@ index e83cf407beebc..5e770a6a840b4 100644
  void FakePrintRenderFrame::PrintWithParams(mojom::PrintPagesParamsPtr params,
                                             PrintWithParamsCallback callback) {
 diff --git a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
-index 32403bb077dcb..af773c93ab969 100644
+index 32403bb077dcbbffe6a3a862feff619e980c5f93..af773c93ab969a5dc483cc63384851ff62cf51ec 100644
 --- a/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
 +++ b/chrome/browser/ui/webui/print_preview/fake_print_render_frame.h
 @@ -25,7 +25,7 @@ class FakePrintRenderFrame : public mojom::PrintRenderFrame {
@@ -655,7 +655,7 @@ index 32403bb077dcb..af773c93ab969 100644
                         PrintWithParamsCallback callback) override;
    void PrintForSystemDialog() override;
 diff --git a/components/printing/browser/print_manager.cc b/components/printing/browser/print_manager.cc
-index 21c81377d32ae..0767f4e9369e9 100644
+index 21c81377d32ae8d4185598a7eba88ed1d2063ef0..0767f4e9369e926b1cea99178c1a1975941f1765 100644
 --- a/components/printing/browser/print_manager.cc
 +++ b/components/printing/browser/print_manager.cc
 @@ -47,6 +47,8 @@ void PrintManager::IsPrintingEnabled(IsPrintingEnabledCallback callback) {
@@ -668,7 +668,7 @@ index 21c81377d32ae..0767f4e9369e9 100644
                                    mojom::PrintFailureReason reason) {
    // Note: Not redundant with cookie checks in the same method in other parts of
 diff --git a/components/printing/browser/print_manager.h b/components/printing/browser/print_manager.h
-index ca71560874a01..a8551d95e64da 100644
+index ca71560874a0189068dd11fbc039f5673bf6bd96..a8551d95e64da2afbc1685b2df8f1fc377c7117b 100644
 --- a/components/printing/browser/print_manager.h
 +++ b/components/printing/browser/print_manager.h
 @@ -48,6 +48,7 @@ class PrintManager : public content::WebContentsObserver,
@@ -680,7 +680,7 @@ index ca71560874a01..a8551d95e64da 100644
                        mojom::PrintFailureReason reason) override;
  
 diff --git a/components/printing/common/print.mojom b/components/printing/common/print.mojom
-index c97825d05cb7d..fde20b8a6c481 100644
+index c97825d05cb7d132c9af489998f4ed8c32603c00..fde20b8a6c4811ce728abfee26b2ab7b53027a94 100644
 --- a/components/printing/common/print.mojom
 +++ b/components/printing/common/print.mojom
 @@ -296,7 +296,7 @@ union PrintWithParamsResult {
@@ -705,7 +705,7 @@ index c97825d05cb7d..fde20b8a6c481 100644
    // Tells the browser printing failed.
    PrintingFailed(int32 cookie, PrintFailureReason reason);
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index 5d5144737eace..d9a9b65da336f 100644
+index 5d5144737eace87832ab5c44cd8e2bfdeda5dec2..d9a9b65da336f31f4d302f5363737263d30aea4e 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -45,6 +45,7 @@
@@ -878,7 +878,7 @@ index 5d5144737eace..d9a9b65da336f 100644
              std::move(quit_closure).Run();
            },
 diff --git a/components/printing/renderer/print_render_frame_helper.h b/components/printing/renderer/print_render_frame_helper.h
-index 0fea424325081..c700de4b81fc0 100644
+index 0fea424325081a0ef6720000841ea321b89024d0..c700de4b81fc0c157946e76faedaca6b59aeac0c 100644
 --- a/components/printing/renderer/print_render_frame_helper.h
 +++ b/components/printing/renderer/print_render_frame_helper.h
 @@ -247,7 +247,7 @@ class PrintRenderFrameHelper
@@ -919,7 +919,7 @@ index 0fea424325081..c700de4b81fc0 100644
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9dce64a4568c8..ac198bbcda343 100644
+index 9dce64a4568c8c96c9cb4e3023881380365bc735..ac198bbcda3431fdf45811006435b06aae7d61c5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2904,8 +2904,9 @@ source_set("browser") {
@@ -935,7 +935,7 @@ index 9dce64a4568c8..ac198bbcda343 100644
      if (is_chromeos) {
        sources += [
 diff --git a/printing/printing_context.cc b/printing/printing_context.cc
-index 370dedfb4b464..256666b64d8ff 100644
+index 370dedfb4b4649f85a02b3a50ee16f525f57f44a..256666b64d8ffb5b50c9424c40ae1bb4050da6fb 100644
 --- a/printing/printing_context.cc
 +++ b/printing/printing_context.cc
 @@ -143,7 +143,6 @@ void PrintingContext::UsePdfSettings() {
@@ -947,7 +947,7 @@ index 370dedfb4b464..256666b64d8ff 100644
      std::unique_ptr<PrintSettings> settings =
          PrintSettingsFromJobSettings(job_settings);
 diff --git a/printing/printing_context.h b/printing/printing_context.h
-index 2fb3aef0797f2..75a70e331f8b5 100644
+index 2fb3aef0797f204f08c20e48987cd8c2703185de..75a70e331f8b539027748dad3252912cb85e8797 100644
 --- a/printing/printing_context.h
 +++ b/printing/printing_context.h
 @@ -178,6 +178,9 @@ class COMPONENT_EXPORT(PRINTING) PrintingContext {
@@ -971,7 +971,7 @@ index 2fb3aef0797f2..75a70e331f8b5 100644
    bool skip_system_calls() const {
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
 diff --git a/sandbox/policy/mac/sandbox_mac.mm b/sandbox/policy/mac/sandbox_mac.mm
-index cc0e9b58d2686..d0ad07b3205aa 100644
+index cc0e9b58d2686c45f8471eccdde7d9c5b03b4cae..d0ad07b3205aa7e9dcb8cc6217426a1bde22a15f 100644
 --- a/sandbox/policy/mac/sandbox_mac.mm
 +++ b/sandbox/policy/mac/sandbox_mac.mm
 @@ -41,6 +41,10 @@
