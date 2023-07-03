@@ -714,6 +714,8 @@ filenames = {
     "shell/browser/extensions/api/resources_private/resources_private_api.h",
     "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.cc",
     "shell/browser/extensions/api/runtime/electron_runtime_api_delegate.h",
+    "shell/browser/extensions/api/scripting/scripting_api.cc",
+    "shell/browser/extensions/api/scripting/scripting_api.h",
     "shell/browser/extensions/api/streams_private/streams_private_api.cc",
     "shell/browser/extensions/api/streams_private/streams_private_api.h",
     "shell/browser/extensions/api/tabs/tabs_api.cc",

@@ -44,13 +44,19 @@ provisional and may be removed.
 
 All features of this API are supported.
 
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/devtools_inspectedWindow) for more information.
+
 ### `chrome.devtools.network`
 
 All features of this API are supported.
 
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/devtools_network) for more information.
+
 ### `chrome.devtools.panels`
 
 All features of this API are supported.
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/devtools_panels) for more information.
 
 ### `chrome.extension`
 
@@ -62,6 +68,25 @@ The following methods of `chrome.extension` are supported:
 
 - `chrome.extension.getURL`
 - `chrome.extension.getBackgroundPage`
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/extension) for more information.
+
+### `chrome.management`
+
+The following methods of `chrome.management` are supported:
+
+- `chrome.management.getAll`
+- `chrome.management.get`
+- `chrome.management.getSelf`
+- `chrome.management.getPermissionWarningsById`
+- `chrome.management.getPermissionWarningsByManifest`
+
+The following events of `chrome.management` are supported:
+
+- `chrome.management.onEnabled`
+- `chrome.management.onDisabled`
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/management) for more information.
 
 ### `chrome.runtime`
 
@@ -89,11 +114,23 @@ The following events of `chrome.runtime` are supported:
 - `chrome.runtime.onConnect`
 - `chrome.runtime.onMessage`
 
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/runtime) for more information.
+
+### `chrome.scripting`
+
+All features of this API are supported.
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/scripting) for more information.
+
 ### `chrome.storage`
 
 The following methods of `chrome.storage` are supported:
 
 - `chrome.storage.local`
+
+`chrome.storage.sync` and `chrome.storage.managed` are **not** supported.
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/storage) for more information.
 
 ### `chrome.tabs`
 
@@ -111,23 +148,12 @@ The following methods of `chrome.tabs` are supported:
 > tab". Since Electron has no such concept, passing `-1` as a tab ID is not
 > supported and will raise an error.
 
-### `chrome.management`
-
-The following methods of `chrome.management` are supported:
-
-- `chrome.management.getAll`
-- `chrome.management.get`
-- `chrome.management.getSelf`
-- `chrome.management.getPermissionWarningsById`
-- `chrome.management.getPermissionWarningsByManifest`
-
-The following events of `chrome.management` are supported:
-
-- `chrome.management.onEnabled`
-- `chrome.management.onDisabled`
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/tabs) for more information.
 
 ### `chrome.webRequest`
 
 All features of this API are supported.
 
 > **NOTE:** Electron's [`webRequest`](web-request.md) module takes precedence over `chrome.webRequest` if there are conflicting handlers.
+
+See [official documentation](https://developer.chrome.com/docs/extensions/reference/webRequest) for more information.
