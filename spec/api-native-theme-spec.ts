@@ -1,9 +1,7 @@
 import { expect } from 'chai';
 import { nativeTheme, systemPreferences, BrowserWindow, ipcMain } from 'electron/main';
 import { once } from 'node:events';
-import * as os from 'node:os';
 import * as path from 'node:path';
-import * as semver from 'semver';
 import { setTimeout } from 'node:timers/promises';
 
 import { ifdescribe } from './lib/spec-helpers';
@@ -60,7 +58,7 @@ describe('nativeTheme module', () => {
       expect(called).to.equal(false);
     });
 
-    ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '18.0.0'))('on macOS 10.14', () => {
+    ifdescribe(process.platform === 'darwin')('on macOS', () => {
       it('should update appLevelAppearance when set', () => {
         nativeTheme.themeSource = 'dark';
         expect(systemPreferences.appLevelAppearance).to.equal('dark');

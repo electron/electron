@@ -104,12 +104,9 @@
   Windows, which adds standard window frame. Setting it to `false` will remove
   window shadow and window animations. Default is `true`.
 * `vibrancy` string (optional) _macOS_ - Add a type of vibrancy effect to
-  the window, only on macOS. Can be `appearance-based`, `light`, `dark`,
-  `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `medium-light`,
-  `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
-  `tooltip`, `content`, `under-window`, or `under-page`. Please note that
-  `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
-  deprecated and have been removed in macOS Catalina (10.15).
+  the window, only on macOS. Can be `appearance-based`, `titlebar`, `selection`,
+  `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
+  `tooltip`, `content`, `under-window`, or `under-page`.
 * `backgroundMaterial` string (optional) _Windows_ - Set the window's
   system-drawn background material, including behind the non-client area.
   Can be `auto`, `none`, `mica`, `acrylic` or `tabbed`. See [win.setBackgroundMaterial](../browser-window.md#winsetbackgroundmaterialmaterial-windows) for more information.

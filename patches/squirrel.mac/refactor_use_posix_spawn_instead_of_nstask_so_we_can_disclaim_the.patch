@@ -7,7 +7,7 @@ Subject: refactor: use posix_spawn instead of NSTask so we can disclaim the
 This ensures that if the ShipIt executable is hotswapped it doesn't inherit TCC permissions
 
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index db246534e176f9c3ea2dd8b1c8659378fdc2435d..2c515ffdd67052a08ee8155c0e46b57e9721a0e5 100644
+index db246534e176f9c3ea2dd8b1c8659378fdc2435d..032f0b3e9200b423f1cd25fa2f39bc4117443741 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
 @@ -13,6 +13,9 @@
@@ -41,7 +41,7 @@ index db246534e176f9c3ea2dd8b1c8659378fdc2435d..2c515ffdd67052a08ee8155c0e46b57e
  // The maximum number of times ShipIt should run the same installation state, in
  // an attempt to update.
  //
-@@ -136,11 +153,37 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+@@ -136,11 +153,35 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
  							NSString *exe = NSProcessInfo.processInfo.arguments[0];
  							NSLog(@"Launching new ShipIt at %@ with instructions to launch %@", exe, bundleURL);
  
@@ -53,11 +53,9 @@ index db246534e176f9c3ea2dd8b1c8659378fdc2435d..2c515ffdd67052a08ee8155c0e46b57e
 +							posix_spawnattr_t attr;
 +							CHECK_ERR(posix_spawnattr_init(&attr));
 +
-+							if (@available(macOS 10.14, *)) {
-+									// Disclaim TCC responsibilities
-+									if (responsibility_spawnattrs_setdisclaim)
-+											CHECK_ERR(responsibility_spawnattrs_setdisclaim(&attr, 1));
-+							}
++							// Disclaim TCC responsibilities
++							if (responsibility_spawnattrs_setdisclaim)
++									CHECK_ERR(responsibility_spawnattrs_setdisclaim(&attr, 1));
 +
 +							pid_t pid = 0;
 +
@@ -84,7 +82,7 @@ index db246534e176f9c3ea2dd8b1c8659378fdc2435d..2c515ffdd67052a08ee8155c0e46b57e
  
  							NSLog(@"New ShipIt exited");
  						} else {
-@@ -172,7 +215,13 @@ int main(int argc, const char * argv[]) {
+@@ -172,7 +213,13 @@ int main(int argc, const char * argv[]) {
  		});
  
  		if (argc < 3) {

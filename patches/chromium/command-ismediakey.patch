@@ -117,10 +117,10 @@ index db596585cbb44b3710636e3fc013f288966f604f..6d5557ee1a2c35ee15e695e024834184
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 7eb89675a7bb3f22aefc1fb843d7e68554a165fd..bd783a0bfd92c3f9b5553a6480d258c2528ee740 100644
+index e6eb63380dfa7141e1e542635c582a131d2d515f..2b56fbeac62b79420bb1d82101a3c57fd798d260 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -36,6 +36,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -133,7 +133,7 @@ index 7eb89675a7bb3f22aefc1fb843d7e68554a165fd..bd783a0bfd92c3f9b5553a6480d258c2
    }
    return VKEY_UNKNOWN;
  }
-@@ -190,7 +196,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -194,7 +200,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

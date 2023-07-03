@@ -270,7 +270,7 @@ function parseOptions (optionsIn: ClientRequestConstructorOptions | string): Nod
     origin: options.origin,
     referrerPolicy: options.referrerPolicy,
     cache: options.cache,
-    allowNonHttpProtocols: Object.prototype.hasOwnProperty.call(options, kAllowNonHttpProtocols)
+    allowNonHttpProtocols: Object.hasOwn(options, kAllowNonHttpProtocols)
   };
   const headers: Record<string, string | string[]> = options.headers || {};
   for (const [name, value] of Object.entries(headers)) {

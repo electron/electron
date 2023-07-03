@@ -81,7 +81,7 @@ let routeFailure = false;
 
 respondNTimes.toRoutes = (routes: Record<string, http.RequestListener>, n: number) => {
   return respondNTimes((request, response) => {
-    if (Object.prototype.hasOwnProperty.call(routes, request.url || '')) {
+    if (Object.hasOwn(routes, request.url || '')) {
       (async () => {
         await Promise.resolve(routes[request.url || ''](request, response));
       })().catch((err) => {
