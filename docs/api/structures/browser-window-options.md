@@ -145,7 +145,7 @@ Possible values are:
     receive focus, keyboard, or mouse events. You can still use globalShortcut to
     receive input sparingly.
   * The `dock` type creates a dock-like window behavior.
-  * The `Toolbar` type creates a window with a toolbar appearance.
+  * The `toolbar` type creates a window with a toolbar appearance.
   * The `splash` type behaves in a specific way. It is not
     draggable, even if the CSS styling of the window's body contains
     -webkit-app-region: drag. This type is commonly used for splash screens.
