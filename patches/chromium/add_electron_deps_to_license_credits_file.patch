@@ -7,12 +7,12 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index 2a6a4733128dfc5916163c1c91c26f27da1d2f0a..f248f68e22d94b5762f0a64e0fe6804eef1d61d1 100755
+index dfb1bda193c8f..0fa8d4c430a8f 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
-@@ -413,6 +413,31 @@ SPECIAL_CASES = {
+@@ -424,6 +424,31 @@ SPECIAL_CASES = {
          "License": "Apache 2.0",
-         "License File": "/third_party/selenium-atoms/LICENSE.closure",
+         "License File": ["/third_party/selenium-atoms/LICENSE.closure"],
      },
 +    os.path.join('third_party', 'electron_node'): {
 +        "Name": "Node.js",
@@ -41,4 +41,4 @@ index 2a6a4733128dfc5916163c1c91c26f27da1d2f0a..f248f68e22d94b5762f0a64e0fe6804e
 +    },
  }
  
- # Soon-to-be-deprecated special value for 'License File' field used to indicate
+ # The delimiter used to separate license files specified in the 'License File'
