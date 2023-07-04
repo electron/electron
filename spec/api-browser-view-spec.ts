@@ -146,14 +146,7 @@ describe('BrowserView module', () => {
   });
 
   describe('BrowserView.getBounds()', () => {
-    it('returns correct bounds on a framed window', () => {
-      view = new BrowserView();
-      const bounds = { x: 10, y: 20, width: 30, height: 40 };
-      view.setBounds(bounds);
-      expect(view.getBounds()).to.deep.equal(bounds);
-    });
-
-    it('returns correct bounds on a frameless window', () => {
+    it('returns the current bounds', () => {
       view = new BrowserView();
       const bounds = { x: 10, y: 20, width: 30, height: 40 };
       view.setBounds(bounds);
