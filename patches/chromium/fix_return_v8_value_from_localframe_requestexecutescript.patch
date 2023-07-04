@@ -226,7 +226,7 @@ index 0d9e7eff1aab0871fbe0f0031c0ae3341cace6f3..0d4f7a17dd99fb283d8abc6aac498381
  
  v8::MaybeLocal<v8::Value> WebLocalFrameImpl::CallFunctionEvenIfScriptDisabled(
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.h b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
-index cc487e218fc55e451a8c6da4e75b5afcc59777a9..a9f46b3d4f52d9a28f209e732af2da768bd6392c 100644
+index fd9c7eade2356cd746d865bc3c04f6226e7386d2..6c33b891c18ccca4ae5178e664e55630b5a97ba5 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.h
 @@ -196,6 +196,7 @@ class CORE_EXPORT WebLocalFrameImpl final

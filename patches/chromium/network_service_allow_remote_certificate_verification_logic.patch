@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index a590693fc6cca9672c081c734a7609889d665610..1db6a1ae6b4f8087dde262f4f632bea55c228021 100644
+index 847c9fb683c7fad712eb5bfde4262dff61e95a7b..1b2a6485e92a8e5c48c297878aae717c0b2538ca 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -145,6 +145,11 @@
@@ -147,7 +147,7 @@ index a590693fc6cca9672c081c734a7609889d665610..1db6a1ae6b4f8087dde262f4f632bea5
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index d5b2a812ac70f3f7deabe6bf75397ee740fa393f..34535976f2ea1ec738fd61b314a0a0bad0cdfe16 100644
+index 5d111be5116835c63ee0116b874dc3a60f6c2833..1937ec11b9eb99bd9a75204ceec7b33c0f01b32c 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -115,6 +115,7 @@ class URLMatcher;

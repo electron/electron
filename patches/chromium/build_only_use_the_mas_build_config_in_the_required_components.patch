@@ -92,7 +92,7 @@ index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d3
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ac198bbcda3431fdf45811006435b06aae7d61c5..c2561c165ea461e581731a9e73e78f25c93d89f4 100644
+index 118eca485b71d7cc2536ce4cd170600771d2f829..039bcf4dae40976582f510b1c36455c9777e1900 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {

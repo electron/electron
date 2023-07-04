@@ -577,7 +577,7 @@ index c86f1e090cb844fb555098d128391ae66de2d594..1f20ff61a66f9a269fe5d5257470ef99
        compositor_data.display_client->GetBoundRemote(resize_task_runner_);
    mojo::AssociatedRemote<viz::mojom::ExternalBeginFrameController>
 diff --git a/services/viz/privileged/mojom/compositing/display_private.mojom b/services/viz/privileged/mojom/compositing/display_private.mojom
-index 350fa67c492490bbd5e8d13ea4368df798261071..d5718735b288d27055af05411a160377c473d27b 100644
+index 29936bca703b86fee89e2b7f35c64a47cd60770b..7fb5a0082bae7d8e06ca8588129d34e866f043bf 100644
 --- a/services/viz/privileged/mojom/compositing/display_private.mojom
 +++ b/services/viz/privileged/mojom/compositing/display_private.mojom
 @@ -114,7 +114,6 @@ interface DisplayClient {

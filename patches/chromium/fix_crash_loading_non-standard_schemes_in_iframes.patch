@@ -17,7 +17,7 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 436e3af9226318a08686721bd20984e6113458f8..d831df0b5c38441e1ae1bf9c5f03dd0134b7bb66 100644
+index 01592d6c0b959482a3d70bab1486eb6b116c295c..5197ca9f23c01ddde2f4d35e09f30b46aaa6902a 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -7359,10 +7359,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
