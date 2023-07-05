@@ -137,6 +137,16 @@ Possible values are:
 
 * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
+  * The `desktop` type places the window at the desktop background window level
+    (kCGDesktopWindowLevel - 1). However, note that a desktop window will not
+    receive focus, keyboard, or mouse events. You can still use globalShortcut to
+    receive input sparingly.
+  * The `dock` type creates a dock-like window behavior.
+  * The `toolbar` type creates a window with a toolbar appearance.
+  * The `splash` type behaves in a specific way. It is not
+    draggable, even if the CSS styling of the window's body contains
+    -webkit-app-region: drag. This type is commonly used for splash screens.
+  * The `notification` type creates a window that behaves like a system notification.
 * On macOS, possible types are `desktop`, `textured`, `panel`.
   * The `textured` type adds metal gradient appearance
     (`NSWindowStyleMaskTexturedBackground`).
