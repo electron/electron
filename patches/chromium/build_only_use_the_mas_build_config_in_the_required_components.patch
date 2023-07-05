@@ -128,7 +128,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 9bd85e6e58f4cb2cf8d41f254a68ec189c70c0c3..10c1154c7f2a07decf6b4086c32670e4e7348b1e 100644
+index f0a71256db6ef5df5251b142664754808dba3e4e..4366142b37eb8de2f88c2d2498d04a64ece2ea34 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {

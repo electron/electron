@@ -35,10 +35,10 @@ index 394d0a39a6c86c68c868eeca0e0d9a4108e1dafc..a1b91f3ce3e28cb7afc7bae7a3eef0fd
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 0d966e045669ee0423d6a486fa8e619938a32de2..1e46ecc1aa8447b3fd0f4e5a66f92ca5ef148887 100644
+index 6e4a04936b66d96a539489bbda6db3af6d9838be..829ea637f9eeb64de543cca4d99b69aca497b4ba 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -96,6 +96,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
