@@ -147,9 +147,12 @@ class WebContents : public ExclusiveAccessContext,
       v8::Isolate* isolate,
       const gin_helper::Dictionary& web_preferences);
 
+  // gin_helper::Constructible
+  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "WebContents"; }
+
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
-  static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
   const char* GetTypeName() override;
 
   void Destroy();

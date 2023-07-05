@@ -256,7 +256,7 @@ bool Notification::IsSupported() {
 
 void Notification::FillObjectTemplate(v8::Isolate* isolate,
                                       v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Notification", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("show", &Notification::Show)
       .SetMethod("close", &Notification::Close)
       .SetProperty("title", &Notification::GetTitle, &Notification::SetTitle)
@@ -280,6 +280,10 @@ void Notification::FillObjectTemplate(v8::Isolate* isolate,
       .SetProperty("toastXml", &Notification::GetToastXml,
                    &Notification::SetToastXml)
       .Build();
+}
+
+const char* Notification::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

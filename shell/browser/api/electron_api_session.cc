@@ -1301,7 +1301,7 @@ gin::Handle<Session> Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Session", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
@@ -1379,7 +1379,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* Session::GetTypeName() {
-  return "Session";
+  return GetClassName();
 }
 
 }  // namespace electron::api
