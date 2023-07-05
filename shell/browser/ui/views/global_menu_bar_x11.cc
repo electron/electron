@@ -194,7 +194,8 @@ GlobalMenuBarX11::~GlobalMenuBarX11() {
 
 // static
 std::string GlobalMenuBarX11::GetPathForWindow(x11::Window window) {
-  return base::StringPrintf("/com/canonical/menu/%X", window);
+  return base::StringPrintf("/com/canonical/menu/%X",
+                            static_cast<uint>(window));
 }
 
 void GlobalMenuBarX11::SetMenu(ElectronMenuModel* menu_model) {
