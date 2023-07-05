@@ -78,6 +78,7 @@ class Menu : public gin::Wrappable<Menu>,
                        int x,
                        int y,
                        int positioning_item,
+                       ui::MenuSourceType source_type,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;

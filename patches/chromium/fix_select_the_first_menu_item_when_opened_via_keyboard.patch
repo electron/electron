@@ -1,0 +1,182 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Mon, 26 Jun 2023 00:50:45 -0700
+Subject: fix: select the first menu item when opened via keyboard
+
+This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
+
+diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
+index f8b3ded1dba82259f7d536ed5bab1a972d182419..b095843c8b28783bf51c0bf7becb111010651486 100644
+--- a/ui/views/controls/menu/menu_controller.cc
++++ b/ui/views/controls/menu/menu_controller.cc
+@@ -563,6 +563,7 @@ void MenuController::Run(Widget* parent,
+                          MenuAnchorPosition position,
+                          bool context_menu,
+                          bool is_nested_drag,
++                         ui::MenuSourceType source_type,
+                          gfx::NativeView native_view_for_gestures) {
+   exit_type_ = ExitType::kNone;
+   possible_drag_ = false;
+@@ -627,6 +628,14 @@ void MenuController::Run(Widget* parent,
+   // Set the selection, which opens the initial menu.
+   SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
+ 
++  if (source_type == ui::MENU_SOURCE_KEYBOARD && context_menu && root->HasSubmenu()) {
++    // For context menus opened via the keyboard we select the first item by default
++    // to match accessibility expectations
++    MenuItemView* first_item = FindInitialSelectableMenuItem(root, INCREMENT_SELECTION_DOWN);
++    if (first_item)
++      SetSelection(first_item, SELECTION_UPDATE_IMMEDIATELY);
++  }
++
+   if (button_controller) {
+     pressed_lock_ = button_controller->TakeLock(
+         false, ui::LocatedEvent::FromIfValid(event));
+@@ -2262,19 +2271,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+     }
+     item->GetSubmenu()->ShowAt(params);
+ 
+-    // Figure out if the mouse is under the menu; if so, remember the mouse
+-    // location so we can ignore the first mouse move event(s) with that
+-    // location. We do this after `ShowAt` because `ConvertFromScreen` doesn't
+-    // work correctly if the widget isn't shown.
++    // Remember the mouse location so we can ignore the first mouse move
++    // event(s) with that location. We do this after `ShowAt` because
++    // `ConvertFromScreen` doesn't work correctly if the widget isn't shown.
+     if (item->GetSubmenu()->GetWidget()) {
+       const gfx::Point mouse_pos = ConvertFromScreen(
+           *item->submenu_,
+           display::Screen::GetScreen()->GetCursorScreenPoint());
+-      MenuPart part_under_mouse = GetMenuPart(item->submenu_, mouse_pos);
+-      if (part_under_mouse.type != MenuPartType::kNone) {
+-        menu_open_mouse_loc_ =
+-            GetLocationInRootMenu(*item->submenu_, mouse_pos);
+-      }
++      menu_open_mouse_loc_ =
++          GetLocationInRootMenu(*item->submenu_, mouse_pos);
+     }
+ 
+     item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
+diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
+index e10b92be74908f8d96e421843cb2231f712a4895..82dc2f014d2e333057836290a00c7142b460bb57 100644
+--- a/ui/views/controls/menu/menu_controller.h
++++ b/ui/views/controls/menu/menu_controller.h
+@@ -134,6 +134,7 @@ class VIEWS_EXPORT MenuController
+            MenuAnchorPosition position,
+            bool context_menu,
+            bool is_nested_drag,
++           ui::MenuSourceType source_type,
+            gfx::NativeView native_view_for_gestures = gfx::NativeView());
+ 
+   bool for_drop() const { return for_drop_; }
+diff --git a/ui/views/controls/menu/menu_runner.cc b/ui/views/controls/menu/menu_runner.cc
+index adb22671b94fa16854773baad0e6bff1322c6646..fae32722f1209151fa1da59d0c7892aba8956108 100644
+--- a/ui/views/controls/menu/menu_runner.cc
++++ b/ui/views/controls/menu/menu_runner.cc
+@@ -82,7 +82,7 @@ void MenuRunner::RunMenuAt(Widget* parent,
+   }
+ 
+   impl_->RunMenuAt(parent, button_controller, bounds, anchor, run_types_,
+-                   native_view_for_gestures, corners);
++                   source_type, native_view_for_gestures, corners);
+ }
+ 
+ bool MenuRunner::IsRunning() const {
+diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
+index c2513d2889a2baabb1464a53b6b0a32176d52d0c..54f4f863d9ecdf22e3087944f773a866e6c50024 100644
+--- a/ui/views/controls/menu/menu_runner_impl.cc
++++ b/ui/views/controls/menu/menu_runner_impl.cc
+@@ -116,6 +116,7 @@ void MenuRunnerImpl::RunMenuAt(Widget* parent,
+                                const gfx::Rect& bounds,
+                                MenuAnchorPosition anchor,
+                                int32_t run_types,
++                               ui::MenuSourceType source_type,
+                                gfx::NativeView native_view_for_gestures,
+                                absl::optional<gfx::RoundedCornersF> corners) {
+   closing_event_time_ = base::TimeTicks();
+@@ -184,7 +185,7 @@ void MenuRunnerImpl::RunMenuAt(Widget* parent,
+   controller->Run(parent, button_controller, menu_, bounds, anchor,
+                   (run_types & MenuRunner::CONTEXT_MENU) != 0,
+                   (run_types & MenuRunner::NESTED_DRAG) != 0,
+-                  native_view_for_gestures);
++                  source_type, native_view_for_gestures);
+ }
+ 
+ void MenuRunnerImpl::Cancel() {
+diff --git a/ui/views/controls/menu/menu_runner_impl.h b/ui/views/controls/menu/menu_runner_impl.h
+index 4d2909b5094ab2a4af63504ac0b9f905b5b17759..c49038f592ab1f219ba8b902b69ec7b320e1f74d 100644
+--- a/ui/views/controls/menu/menu_runner_impl.h
++++ b/ui/views/controls/menu/menu_runner_impl.h
+@@ -52,6 +52,7 @@ class VIEWS_EXPORT MenuRunnerImpl : public MenuRunnerImplInterface,
+       const gfx::Rect& bounds,
+       MenuAnchorPosition anchor,
+       int32_t run_types,
++      ui::MenuSourceType source_type,
+       gfx::NativeView native_view_for_gestures,
+       absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
+   void Cancel() override;
+diff --git a/ui/views/controls/menu/menu_runner_impl_adapter.cc b/ui/views/controls/menu/menu_runner_impl_adapter.cc
+index b6c680063889bb997814cd1be45dfbe5f0989f74..dec5f4b2d609aa7b0cec0f16cc89e222bf9d7b85 100644
+--- a/ui/views/controls/menu/menu_runner_impl_adapter.cc
++++ b/ui/views/controls/menu/menu_runner_impl_adapter.cc
+@@ -33,10 +33,11 @@ void MenuRunnerImplAdapter::RunMenuAt(
+     const gfx::Rect& bounds,
+     MenuAnchorPosition anchor,
+     int32_t types,
++    ui::MenuSourceType source_type,
+     gfx::NativeView native_view_for_gestures,
+     absl::optional<gfx::RoundedCornersF> corners) {
+   impl_->RunMenuAt(parent, button_controller, bounds, anchor, types,
+-                   native_view_for_gestures);
++                   source_type, native_view_for_gestures);
+ }
+ 
+ void MenuRunnerImplAdapter::Cancel() {
+diff --git a/ui/views/controls/menu/menu_runner_impl_adapter.h b/ui/views/controls/menu/menu_runner_impl_adapter.h
+index e6587d2208a13576af1831b94724a6286f0e0607..91223ef3f099e20aee5cf1d685c45d2c7f53628e 100644
+--- a/ui/views/controls/menu/menu_runner_impl_adapter.h
++++ b/ui/views/controls/menu/menu_runner_impl_adapter.h
+@@ -43,6 +43,7 @@ class VIEWS_EXPORT MenuRunnerImplAdapter : public MenuRunnerImplInterface {
+       const gfx::Rect& bounds,
+       MenuAnchorPosition anchor,
+       int32_t types,
++      ui::MenuSourceType source_type,
+       gfx::NativeView native_view_for_gestures,
+       absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
+   void Cancel() override;
+diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.h b/ui/views/controls/menu/menu_runner_impl_cocoa.h
+index 50291eb07440a35173410336927490f44aae604b..febdb941ff72f7e8e9cc9b36e04c35b0f4c0227d 100644
+--- a/ui/views/controls/menu/menu_runner_impl_cocoa.h
++++ b/ui/views/controls/menu/menu_runner_impl_cocoa.h
+@@ -42,6 +42,7 @@ class VIEWS_EXPORT MenuRunnerImplCocoa : public MenuRunnerImplInterface {
+       const gfx::Rect& bounds,
+       MenuAnchorPosition anchor,
+       int32_t run_types,
++      ui::MenuSourceType source_type,
+       gfx::NativeView native_view_for_gestures,
+       absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
+   void Cancel() override;
+diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
+index 46a50f5a808c3bda24f44c1ce3a9944327f22fa4..0bfdf45ed43b0701d927940ca78be765b9184b4f 100644
+--- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
++++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
+@@ -192,6 +192,7 @@
+     const gfx::Rect& bounds,
+     MenuAnchorPosition anchor,
+     int32_t run_types,
++    ui::MenuSourceType source_type,
+     gfx::NativeView native_view_for_gestures,
+     absl::optional<gfx::RoundedCornersF> corners) {
+   DCHECK(!IsRunning());
+diff --git a/ui/views/controls/menu/menu_runner_impl_interface.h b/ui/views/controls/menu/menu_runner_impl_interface.h
+index cf696fbcf071455007422b95608485c358d8a2b8..b18a6f9b1b4858af0fcb65d1a2e36ba2596e9726 100644
+--- a/ui/views/controls/menu/menu_runner_impl_interface.h
++++ b/ui/views/controls/menu/menu_runner_impl_interface.h
+@@ -45,6 +45,7 @@ class MenuRunnerImplInterface {
+       const gfx::Rect& bounds,
+       MenuAnchorPosition anchor,
+       int32_t run_types,
++      ui::MenuSourceType source_type,
+       gfx::NativeView native_view_for_gestures,
+       absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) = 0;
+ 
