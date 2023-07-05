@@ -78,6 +78,7 @@
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
+#include "ui/gfx/win/msg_util.h"
 #endif
 
 namespace electron {
@@ -136,6 +137,25 @@ gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
   screen_rect.set_origin(
       display::win::ScreenWin::DIPToScreenRect(hwnd, pixel_bounds).origin());
   return screen_rect;
+}
+
+// Chromium uses a buggy implementation that converts content rect to window
+// rect when calculating min/max size, we should use the same implementation
+// when passing min/max size so we can get correct results.
+gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
+  // Calculate the size of window frame, using same code with the
+  // HWNDMessageHandler::OnGetMinMaxInfo method.
+  // The pitfall is, when window is minimized the calculated window frame size
+  // will be different from other states.
+  RECT client_rect, rect;
+  GetClientRect(hwnd, &client_rect);
+  GetWindowRect(hwnd, &rect);
+  CR_DEFLATE_RECT(&rect, &client_rect);
+  // Convert DIP size to pixel size, do calculation and then return DIP size.
+  gfx::Rect screen_rect = DIPToScreenRect(hwnd, gfx::Rect(size));
+  gfx::Size screen_client_size(screen_rect.width() - (rect.right - rect.left),
+                               screen_rect.height() - (rect.bottom - rect.top));
+  return ScreenToDIPRect(hwnd, gfx::Rect(screen_client_size)).size();
 }
 
 #endif
@@ -811,6 +831,29 @@ void NativeWindowViews::SetContentSizeConstraints(
   if (resizable_)
     old_size_constraints_ = size_constraints;
 }
+
+#if BUILDFLAG(IS_WIN)
+// This override does almost the same with its parent, except that it uses
+// the WindowSizeToContentSizeBuggy method to convert window size to content
+// size. See the comment of the method for the reason behind this.
+extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
+    const {
+  if (content_size_constraints_)
+    return *content_size_constraints_;
+  if (!size_constraints_)
+    return extensions::SizeConstraints();
+  extensions::SizeConstraints constraints;
+  if (size_constraints_->HasMaximumSize()) {
+    constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
+        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+  }
+  if (size_constraints_->HasMinimumSize()) {
+    constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
+        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+  }
+  return constraints;
+}
+#endif
 
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
