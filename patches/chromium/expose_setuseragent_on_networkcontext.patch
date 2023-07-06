@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 1b2a6485e92a8e5c48c297878aae717c0b2538ca..52deb2ffe0ff1fa6da391c9d2a2fa58f45b616d3 100644
+index 8df1d684938c71428fe01c71a884893cefd98c34..52b4f06360a9d2f1f7b9eea6c50b83bd8e530836 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1492,6 +1492,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1504,6 +1504,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,7 +51,7 @@ index 1b2a6485e92a8e5c48c297878aae717c0b2538ca..52deb2ffe0ff1fa6da391c9d2a2fa58f
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 1937ec11b9eb99bd9a75204ceec7b33c0f01b32c..20aef28cddd3d08ed60fa4b365b0fbfd1da42bf9 100644
+index 4a212e1d8ee5bb1e085921b1d126c0cfe5abe7e8..13d826698b62cc66de5bab4d998c3480e12c1263 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -317,6 +317,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
