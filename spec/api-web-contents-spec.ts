@@ -2542,4 +2542,65 @@ describe('webContents module', () => {
       expect(w.getBounds().height).to.equal(height);
     });
   });
+
+  describe('will-open-dialog event', () => {
+    afterEach(closeAllWindows);
+    it('is triggered by javascript confirm', async () => {
+      const bw = new BrowserWindow({ show: false });
+      await bw.loadURL(`file://${fixturesPath}/pages/blank.html`);
+
+      // confirm dialog accept
+      bw.webContents.once('will-open-dialog', (e, dialogType, message, defaultPrompt, originUrl, callback) => {
+        expect(dialogType).to.equal('confirm');
+        expect(message).to.equal('message');
+        expect(defaultPrompt).to.equal('');
+        expect(originUrl).to.equal(`file://${fixturesPath}/pages/blank.html`);
+        e.preventDefault();
+        callback(true, '');
+      });
+      let result = await bw.webContents.executeJavaScript('confirm("message");');
+      expect(result).to.equal(true);
+
+      // confirm dialog reject
+      bw.webContents.once('will-open-dialog', (e, dialogType, message, defaultPrompt, originUrl, callback) => {
+        expect(dialogType).to.equal('confirm');
+        expect(message).to.equal('message');
+        expect(defaultPrompt).to.equal('');
+        expect(originUrl).to.equal(`file://${fixturesPath}/pages/blank.html`);
+        e.preventDefault();
+        callback(false, '');
+      });
+      result = await bw.webContents.executeJavaScript('confirm("message");');
+      expect(result).to.equal(false);
+    });
+
+    it('is triggered by javascript alert', async () => {
+      const bw = new BrowserWindow({ show: false });
+      await bw.loadURL(`file://${fixturesPath}/pages/blank.html`);
+
+      bw.webContents.once('will-open-dialog', (e, dialogType, message, defaultPrompt, originUrl, callback) => {
+        expect(dialogType).to.equal('alert');
+        expect(message).to.equal('message');
+        expect(defaultPrompt).to.equal('');
+        expect(originUrl).to.equal(`file://${fixturesPath}/pages/blank.html`);
+        e.preventDefault();
+        callback(true, '');
+      });
+      await bw.webContents.executeJavaScript('alert("message");');
+    });
+
+    it('will not crash or assert if callback called without preventDefault being called', async () => {
+      const bw = new BrowserWindow({ show: false });
+      await bw.loadURL(`file://${fixturesPath}/pages/blank.html`);
+
+      bw.webContents.once('will-open-dialog', (e, dialogType, message, defaultPrompt, originUrl, callback) => {
+        expect(dialogType).to.equal('alert');
+        expect(message).to.equal('message');
+        expect(defaultPrompt).to.equal('');
+        expect(originUrl).to.equal(`file://${fixturesPath}/pages/blank.html`);
+        callback(true, '');
+      });
+      await bw.webContents.executeJavaScript('alert("message");');
+    });
+  });
 });

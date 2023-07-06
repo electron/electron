@@ -14,10 +14,37 @@
 #include "shell/browser/native_window.h"
 #include "shell/browser/ui/message_box.h"
 #include "shell/browser/web_contents_preferences.h"
+#include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/options_switches.h"
 #include "ui/gfx/image/image_skia.h"
 
 using content::JavaScriptDialogType;
+
+namespace gin {
+
+template <>
+struct Converter<JavaScriptDialogType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   JavaScriptDialogType val) {
+    std::string dialog_type = "unknown";
+    switch (val) {
+      case JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_ALERT:
+        dialog_type = "alert";
+        break;
+      case JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_CONFIRM:
+        dialog_type = "confirm";
+        break;
+      case JavaScriptDialogType::JAVASCRIPT_DIALOG_TYPE_PROMPT:
+        dialog_type = "prompt";
+        break;
+      default:
+        break;
+    }
+    return gin::ConvertToV8(isolate, dialog_type);
+  }
+};
+
+}  // namespace gin
 
 namespace electron {
 
@@ -65,6 +92,55 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
     return std::move(callback).Run(false, std::u16string());
   }
 
+  will_open_dialog_callback_ =
+      base::BindOnce(&ElectronJavaScriptDialogManager::OnWillOpenDialogCallback,
+                     base::Unretained(this), web_contents, dialog_type,
+                     message_text, std::move(callback), origin);
+
+  auto* api_web_contents = api::WebContents::From(web_contents);
+  if (api_web_contents) {
+    bool default_prevented = api_web_contents->Emit(
+        "will-open-dialog", dialog_type, message_text, default_prompt_text,
+        origin_url.spec(),
+        base::BindOnce(
+            &ElectronJavaScriptDialogManager::OnEmittedWillOpenDialogCallback,
+            base::Unretained(this)));
+
+    // Its possible that a user may call the callback and not preventDefault, we
+    // have to handle that case.
+    if (!default_prevented && will_open_dialog_callback_) {
+      std::move(will_open_dialog_callback_).Run(false, false);
+    }
+  } else {
+    std::move(will_open_dialog_callback_).Run(false, false);
+  }
+}
+
+void ElectronJavaScriptDialogManager::OnEmittedWillOpenDialogCallback(
+    bool accept,
+    const std::string& user_input) {
+  if (will_open_dialog_callback_) {
+    std::move(will_open_dialog_callback_).Run(true, accept);
+  }
+}
+
+void ElectronJavaScriptDialogManager::OnWillOpenDialogCallback(
+    content::WebContents* web_contents,
+    JavaScriptDialogType dialog_type,
+    const std::u16string& message_text,
+    DialogClosedCallback callback,
+    const std::string& origin,
+    bool default_prevented,
+    bool accept) {
+  auto close_dialog_callback =
+      base::BindOnce(&ElectronJavaScriptDialogManager::OnMessageBoxCallback,
+                     base::Unretained(this), std::move(callback), origin);
+
+  if (default_prevented) {
+    std::move(close_dialog_callback).Run((accept) ? 0 : 1, false);
+    return;
+  }
+
   // No default button
   int default_id = -1;
   int cancel_id = 0;
@@ -78,6 +154,8 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   }
 
   origin_counts_[origin]++;
+
+  auto* web_preferences = WebContentsPreferences::From(web_contents);
 
   std::string checkbox;
   if (origin_counts_[origin] > 1 && web_preferences &&
@@ -102,10 +180,7 @@ void ElectronJavaScriptDialogManager::RunJavaScriptDialog(
   settings.cancel_id = cancel_id;
   settings.message = base::UTF16ToUTF8(message_text);
 
-  electron::ShowMessageBox(
-      settings,
-      base::BindOnce(&ElectronJavaScriptDialogManager::OnMessageBoxCallback,
-                     base::Unretained(this), std::move(callback), origin));
+  electron::ShowMessageBox(settings, std::move(close_dialog_callback));
 }
 
 void ElectronJavaScriptDialogManager::RunBeforeUnloadDialog(

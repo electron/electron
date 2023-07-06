@@ -997,6 +997,28 @@ Returns:
 
 Emitted when the [mainFrame](web-contents.md#contentsmainframe-readonly), an `<iframe>`, or a nested `<iframe>` is loaded within the page.
 
+#### Event: 'will-open-dialog'
+
+Returns:
+
+* `event` Event
+* `dialogType` string - The dialog type.  Possible values:
+  * `alert`
+  * `confirm`
+  * `prompt`
+* `message` string (optional) - Only used when `dialogType` is `alert` or `confirm`.
+* `defaultPrompt` string (optional) - Only used when `dialogType` is `prompt`.
+* `originUrl` string (optional) - The origin URL of where the dialog box is originated from.
+* `callback` Function
+  * `accept` boolean - Whether the dialog should be accepted or rejected.
+  * `userInput` string (optional) - Only used when `accept` is `true`.
+
+Emitted when a dialog box is about to be opened. If `event.preventDefault` is not called,
+the dialog box will be displayed and handled as normal. `callback` should be called with
+`accept` to indicate whether the dialog should be accepted or rejected.
+
+If no event listener is added for this event, the dialog box will be handled as normal.
+
 ### Instance Methods
 
 #### `contents.loadURL(url[, options])`
