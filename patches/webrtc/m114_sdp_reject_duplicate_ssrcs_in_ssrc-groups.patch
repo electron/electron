@@ -1,0 +1,79 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Philipp Hancke <phancke@microsoft.com>
+Date: Thu, 15 Jun 2023 07:21:56 +0200
+Subject: sdp: reject duplicate ssrcs in ssrc-groups
+
+while not really covered by
+  https://www.rfc-editor.org/rfc/rfc5576.html#section-4.2
+and using the same SSRC for RTX and primary payload may work
+since payload type demuxing *could* be used is not a good idea.
+This also applies to flexfec's FEC-FR.
+
+For the nonstandard SIM ssrc-group duplicates make no sense.
+This rejects duplicates for unknown ssrc-groups as well.
+
+BUG=chromium:1454860
+
+(cherry picked from commit 6a38a3eb38f732b89ca0d8e36c43a434670c4ef5)
+
+No-Try: true
+Change-Id: I3e86101dbd5d6c4099f2fdb7b4a52d5cd0809c5f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/308820
+Reviewed-by: Taylor Brandstetter <deadbeef@webrtc.org>
+Reviewed-by: Harald Alvestrand <hta@webrtc.org>
+Commit-Queue: Philipp Hancke <phancke@microsoft.com>
+Cr-Original-Commit-Position: refs/heads/main@{#40292}
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/309601
+Cr-Commit-Position: refs/branch-heads/5735@{#4}
+Cr-Branched-From: df7df199abd619e75b9f1d9a7e12fc3f3f748775-refs/heads/main@{#39949}
+
+diff --git a/pc/webrtc_sdp.cc b/pc/webrtc_sdp.cc
+index 39b16901a1c8951aa102ea1cdbdbfcf06b9b4b87..02375ad60dcef89b303faa42d3ea0faea6d22a0b 100644
+--- a/pc/webrtc_sdp.cc
++++ b/pc/webrtc_sdp.cc
+@@ -3485,6 +3485,11 @@ bool ParseSsrcGroupAttribute(absl::string_view line,
+     if (!GetValueFromString(line, fields[i], &ssrc, error)) {
+       return false;
+     }
++    // Reject duplicates. While not forbidden by RFC 5576,
++    // they don't make sense.
++    if (absl::c_linear_search(ssrcs, ssrc)) {
++      return ParseFailed(line, "Duplicate SSRC in ssrc-group", error);
++    }
+     ssrcs.push_back(ssrc);
+   }
+   ssrc_groups->push_back(SsrcGroup(semantics, ssrcs));
+diff --git a/pc/webrtc_sdp_unittest.cc b/pc/webrtc_sdp_unittest.cc
+index 7880af069380a514730466112364e4529bef112f..1e5b669ccaef2f6696383c6da1864f9a5e5dc8a8 100644
+--- a/pc/webrtc_sdp_unittest.cc
++++ b/pc/webrtc_sdp_unittest.cc
+@@ -4722,3 +4722,29 @@ TEST_F(WebRtcSdpTest, ParseIgnoreUnknownSsrcSpecificAttribute) {
+   SdpParseError error;
+   ASSERT_TRUE(webrtc::SdpDeserialize(sdp, &output, &error));
+ }
++
++TEST_F(WebRtcSdpTest, RejectDuplicateSsrcInSsrcGroup) {
++  std::string sdp =
++      "v=0\r\n"
++      "o=- 0 3 IN IP4 127.0.0.1\r\n"
++      "s=-\r\n"
++      "t=0 0\r\n"
++      "a=group:BUNDLE 0\r\n"
++      "a=fingerprint:sha-1 "
++      "4A:AD:B9:B1:3F:82:18:3B:54:02:12:DF:3E:5D:49:6B:19:E5:7C:AB\r\n"
++      "a=setup:actpass\r\n"
++      "a=ice-ufrag:ETEn\r\n"
++      "a=ice-pwd:OtSK0WpNtpUjkY4+86js7Z/l\r\n"
++      "m=video 9 UDP/TLS/RTP/SAVPF 96 97\r\n"
++      "c=IN IP4 0.0.0.0\r\n"
++      "a=rtcp-mux\r\n"
++      "a=sendonly\r\n"
++      "a=mid:0\r\n"
++      "a=rtpmap:96 VP8/90000\r\n"
++      "a=rtpmap:97 rtx/90000\r\n"
++      "a=fmtp:97 apt=96\r\n"
++      "a=ssrc-group:FID 1234 1234\r\n"
++      "a=ssrc:1234 cname:test\r\n";
++  JsepSessionDescription jdesc(kDummyType);
++  EXPECT_FALSE(SdpDeserialize(sdp, &jdesc));
++}

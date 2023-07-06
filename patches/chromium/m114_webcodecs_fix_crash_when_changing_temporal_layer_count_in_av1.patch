@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Eugene Zemtsov <eugene@chromium.org>
+Date: Wed, 21 Jun 2023 17:57:52 +0000
+Subject: webcodecs: Fix crash when changing temporal layer count in AV1
+ encoder
+
+(cherry picked from commit f312efac1b90117729e8961b58c643fc0eae1fbd)
+
+Bug: 1447568
+Change-Id: I4ecb02ed956707571573a65ade17fdffe676b502
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4554300
+Auto-Submit: Eugene Zemtsov <eugene@chromium.org>
+Commit-Queue: Dale Curtis <dalecurtis@chromium.org>
+Reviewed-by: Dale Curtis <dalecurtis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1148041}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4610718
+Cr-Commit-Position: refs/branch-heads/5735@{#1360}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+
+diff --git a/media/video/av1_video_encoder.cc b/media/video/av1_video_encoder.cc
+index 71e4fa09a650183c3cd2ef84520d9493f2655bba..266170a524bc8f4317bec941714fe0be9333de37 100644
+--- a/media/video/av1_video_encoder.cc
++++ b/media/video/av1_video_encoder.cc
+@@ -118,6 +118,7 @@ EncoderStatus SetUpAomConfig(const VideoEncoder::Options& opts,
+   svc_params = {};
+   svc_params.framerate_factor[0] = 1;
+   svc_params.number_spatial_layers = 1;
++  svc_params.number_temporal_layers = 1;
+   if (opts.scalability_mode.has_value()) {
+     switch (opts.scalability_mode.value()) {
+       case SVCScalabilityMode::kL1T2:
+diff --git a/media/video/software_video_encoder_test.cc b/media/video/software_video_encoder_test.cc
+index 318c743bddcf9bec3a994f125ea329d45f8c4376..7a27b9326a5df556b1a6bacdad71081d46bcc781 100644
+--- a/media/video/software_video_encoder_test.cc
++++ b/media/video/software_video_encoder_test.cc
+@@ -602,6 +602,63 @@ TEST_P(SVCVideoEncoderTest, EncodeClipTemporalSvc) {
+   }
+ }
+ 
++TEST_P(SVCVideoEncoderTest, ChangeLayers) {
++  VideoEncoder::Options options;
++  options.frame_size = gfx::Size(640, 480);
++  options.bitrate = Bitrate::ConstantBitrate(1000000u);  // 1Mbps
++  options.framerate = 25;
++  options.scalability_mode = GetParam().scalability_mode;
++  std::vector<scoped_refptr<VideoFrame>> frames_to_encode;
++
++  std::vector<VideoEncoderOutput> chunks;
++  size_t total_frames_count = 80;
++
++  // Encoder all frames with 3 temporal layers and put all outputs in |chunks|
++  auto frame_duration = base::Seconds(1.0 / options.framerate.value());
++
++  VideoEncoder::OutputCB encoder_output_cb = base::BindLambdaForTesting(
++      [&](VideoEncoderOutput output,
++          absl::optional<VideoEncoder::CodecDescription> desc) {
++        chunks.push_back(std::move(output));
++      });
++
++  encoder_->Initialize(profile_, options, /*info_cb=*/base::DoNothing(),
++                       std::move(encoder_output_cb),
++                       ValidatingStatusCB(/* quit_run_loop_on_call */ true));
++  RunUntilQuit();
++
++  uint32_t color = 0x964050;
++  for (auto frame_index = 0u; frame_index < total_frames_count; frame_index++) {
++    auto timestamp = frame_index * frame_duration;
++
++    const bool reconfigure = (frame_index == total_frames_count / 2);
++    if (reconfigure) {
++      encoder_->Flush(ValidatingStatusCB(/* quit_run_loop_on_call */ true));
++      RunUntilQuit();
++
++      // Ask encoder to change SVC mode, empty output callback
++      // means the encoder should keep the old one.
++      options.scalability_mode = SVCScalabilityMode::kL1T1;
++      encoder_->ChangeOptions(
++          options, VideoEncoder::OutputCB(),
++          ValidatingStatusCB(/* quit_run_loop_on_call */ true));
++      RunUntilQuit();
++    }
++
++    auto frame =
++        CreateFrame(options.frame_size, pixel_format_, timestamp, color);
++    color = (color << 1) + frame_index;
++    frames_to_encode.push_back(frame);
++    encoder_->Encode(frame, VideoEncoder::EncodeOptions(false),
++                     ValidatingStatusCB(/* quit_run_loop_on_call */ true));
++    RunUntilQuit();
++  }
++
++  encoder_->Flush(ValidatingStatusCB(/* quit_run_loop_on_call */ true));
++  RunUntilQuit();
++  EXPECT_EQ(chunks.size(), total_frames_count);
++}
++
+ TEST_P(H264VideoEncoderTest, ReconfigureWithResize) {
+   VideoEncoder::Options options;
+   gfx::Size size1(320, 200), size2(400, 240);

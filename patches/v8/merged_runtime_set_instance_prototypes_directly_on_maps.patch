@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Fri, 16 Jun 2023 17:13:52 +0200
+Subject: Merged: [runtime] Set instance prototypes directly on maps
+
+Bug: chromium:1452137
+(cherry picked from commit c7c447735f762f6d6d0878e229371797845ef4ab)
+
+Change-Id: I611c41f942e2e51f3c4b4f1d119c18410617188e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4637888
+Commit-Queue: Igor Sheludko <ishell@chromium.org>
+Auto-Submit: Igor Sheludko <ishell@chromium.org>
+Commit-Queue: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Toon Verwaest <verwaest@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.4@{#47}
+Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
+Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
+
+diff --git a/src/objects/js-function.cc b/src/objects/js-function.cc
+index 62fe309a471b323c1cb2a9a872380563bbdc369f..878ef8fd6b49debcd46f8d4f3693630fb02fef17 100644
+--- a/src/objects/js-function.cc
++++ b/src/objects/js-function.cc
+@@ -672,6 +672,10 @@ void SetInstancePrototype(Isolate* isolate, Handle<JSFunction> function,
+       // At that point, a new initial map is created and the prototype is put
+       // into the initial map where it belongs.
+       function->set_prototype_or_initial_map(*value, kReleaseStore);
++      if (value->IsJSObjectThatCanBeTrackedAsPrototype()) {
++        // Optimize as prototype to detach it from its transition tree.
++        JSObject::OptimizeAsPrototype(Handle<JSObject>::cast(value));
++      }
+     } else {
+       Handle<Map> new_map =
+           Map::Copy(isolate, initial_map, "SetInstancePrototype");
+@@ -796,8 +800,10 @@ void JSFunction::EnsureHasInitialMap(Handle<JSFunction> function) {
+   Handle<HeapObject> prototype;
+   if (function->has_instance_prototype()) {
+     prototype = handle(function->instance_prototype(), isolate);
++    map->set_prototype(*prototype);
+   } else {
+     prototype = isolate->factory()->NewFunctionPrototype(function);
++    Map::SetPrototype(isolate, map, prototype);
+   }
+   DCHECK(map->has_fast_object_elements());
+ 
