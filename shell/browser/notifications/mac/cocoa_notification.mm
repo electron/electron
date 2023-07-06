@@ -64,6 +64,11 @@ void CocoaNotification::Show(const NotificationOptions& options) {
                                               options.reply_placeholder)];
   }
 
+  // We need to explicitly set this to false if there are no
+  // actions, otherwise a Show button will appear by default.
+  if (options.actions.size() == 0)
+    [notification_ setHasActionButton:false];
+
   int i = 0;
   action_index_ = UINT_MAX;
   NSMutableArray* additionalActions =
@@ -75,7 +80,6 @@ void CocoaNotification::Show(const NotificationOptions& options) {
       // become additional actions.
       if (!options.has_reply && action_index_ == UINT_MAX) {
         // First button observed is the displayed action
-        [notification_ setHasActionButton:true];
         [notification_
             setActionButtonTitle:base::SysUTF16ToNSString(action.text)];
         action_index_ = i;
