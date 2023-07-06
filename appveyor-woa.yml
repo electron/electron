@@ -85,6 +85,8 @@ for:
             Remove-Item -Recurse -Force $pwd\build-tools
           }
       - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: New-Item -Name depot_tools\.disable_auto_update -ItemType File
+      - depot_tools\bootstrap\win_tools.bat
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {
