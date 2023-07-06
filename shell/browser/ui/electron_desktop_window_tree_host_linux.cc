@@ -223,8 +223,8 @@ void ElectronDesktopWindowTreeHostLinux::UpdateClientDecorationHints(
     // Convert the region to a list of rectangles.
     std::vector<gfx::Rect> opaque_region;
     for (SkRegion::Iterator i(region); !i.done(); i.next())
-      opaque_region.push_back(gfx::SkIRectToRect(i.rect()));
-    window->SetOpaqueRegion(&opaque_region);
+      opaque_region.emplace_back(gfx::SkIRectToRect(i.rect()));
+    window->SetOpaqueRegion(opaque_region);
   }
 }
 
