@@ -1325,7 +1325,9 @@ void WebContents::CloseContents(content::WebContents* source) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
 
-  Destroy();
+  // This is handled by the embedder frame.
+  if (!IsGuest())
+    Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
