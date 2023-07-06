@@ -15,7 +15,7 @@ This should be upstreamed, as other uses of MenuController in this
 file do check for menu controller being null.
 
 diff --git a/ui/views/controls/menu/menu_scroll_view_container.cc b/ui/views/controls/menu/menu_scroll_view_container.cc
-index 76bb4863858fb1bde1288b3d1b1d07f151a2f801..f2ceb3b8d6cbcf4bb4af8b85573bba29a38e5abf 100644
+index 76bb4863858fb1bde1288b3d1b1d07f151a2f801..dc0dd45da0097330612a0810fcd2bd18f5c42be4 100644
 --- a/ui/views/controls/menu/menu_scroll_view_container.cc
 +++ b/ui/views/controls/menu/menu_scroll_view_container.cc
 @@ -402,8 +402,7 @@ void MenuScrollViewContainer::CreateDefaultBorder() {
@@ -35,7 +35,7 @@ index 76bb4863858fb1bde1288b3d1b1d07f151a2f801..f2ceb3b8d6cbcf4bb4af8b85573bba29
 -    if (menu_config.use_bubble_border && (corner_radius_ > 0) &&
 -        !menu_controller->IsCombobox()) {
 +    // Menu controller could be null during context menu being closed.
-+    bool is_combobox = menu_controller && !menu_controller->IsCombobox();
++    bool is_combobox = menu_controller && menu_controller->IsCombobox();
 +    if (menu_config.use_bubble_border && (corner_radius_ > 0) && !is_combobox) {
        CreateBubbleBorder();
      } else {
