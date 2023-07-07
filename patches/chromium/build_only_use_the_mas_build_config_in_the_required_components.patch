@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 98bacb75d01cd1ed2da5b88998e4872494f9d0bf..c214f218e6195dbdfc7a6a78f3a2611d496a0629 100644
+index 871ba0d274455f0ba53b75c6dd7d862349e80576..b738449a8908400f7fd33b218217e2ac0ed92fe0 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -228,6 +228,7 @@ if (is_apple) {
@@ -92,10 +92,10 @@ index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d3
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ffc45ce115652302aa286f16bba0b16b47a38ffe..8fb4ea5be46c458b2c4fc73ddb4a6d0f08d2b114 100644
+index 4869c4f22b6caf492e423caaec0a0edb1d062a13..4e443120e2294f8c8a645092513e7372e418ac64 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -115,6 +115,7 @@ source_set("browser") {
+@@ -56,6 +56,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -306,7 +306,7 @@ index 148332cd1041e46f5fd9d396110b0c72f4b515b5..5992a7acaf7807848e43805fd22d1217
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 5025edcce6338e484c6bd5bb2e3c07df194f7829..228b1cd6b639cdf7f6dc363611e581ed308f5379 100644
+index a7d46bc8bbf09db6d96a2139850ca940a79ea4b5..a1579cb5aef391480d511ad1541302c19cde0e65 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -686,6 +686,7 @@ component("views") {
