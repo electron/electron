@@ -27,7 +27,7 @@ Node.js package for testing with WebDriver. Its ecosystem also includes various 
 First you need to run the WebdriverIO starter toolkit in your project root directory:
 
 ```sh npm2yarn
-npx wdio . --yes
+npx create-wdio . --yes
 ```
 
 This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
