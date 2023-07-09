@@ -4,7 +4,7 @@
 [![AppVeyor Build Status](https://ci.appveyor.com/api/projects/status/4lggi9dpjc1qob7k/branch/main?svg=true)](https://ci.appveyor.com/project/electron-bot/electron-ljo26/branch/main)
 [![Electron Discord Invite](https://img.shields.io/discord/745037351163527189?color=%237289DA&label=chat&logo=discord&logoColor=white)](https://discord.gg/electronjs)
 
-:memo: Available Translations: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
+:memo: Translations available: 🇨🇳 🇧🇷 🇪🇸 🇯🇵 🇷🇺 🇫🇷 🇺🇸 🇩🇪.
 View these docs in other languages on our [Crowdin](https://crowdin.com/project/electron) project.
 
 The Electron framework lets you write cross-platform desktop applications
@@ -49,7 +49,7 @@ Each Electron release provides binaries for macOS, Windows, and Linux.
 
 Use [`Electron Fiddle`](https://github.com/electron/fiddle)
 to build, run, and package small Electron experiments, to see code examples for all of Electron's APIs, and
-to try out different versions of Electron. It's designed to make the start of your journey with
+to try out different versions of Electron. It's designed to start your journey with
 Electron easier.
 
 Alternatively, clone and run the

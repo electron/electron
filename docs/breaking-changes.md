@@ -1,6 +1,6 @@
 # Breaking Changes
 
-Breaking changes will be documented here, and deprecation warnings added to JS code where possible, at least [one major version](tutorial/electron-versioning.md#semver) before the change is made.
+Breaking changes will be documented here, and deprecation warnings will be added to JS code where possible, at least [one major version] (tutorial/electron-versioning.md#semver) before the change is made.
 
 ### Types of Breaking Changes
 
@@ -9,8 +9,8 @@ This document uses the following convention to categorize breaking changes:
 * **API Changed:** An API was changed in such a way that code that has not been updated is guaranteed to throw an exception.
 * **Behavior Changed:** The behavior of Electron has changed, but not in such a way that an exception will necessarily be thrown.
 * **Default Changed:** Code depending on the old default may break, not necessarily throwing an exception. The old behavior can be restored by explicitly specifying the value.
-* **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
-* **Removed:** An API or feature was removed, and is no longer supported by Electron.
+* **Deprecated:** An API was marked as deprecated. The API will continue to function but will emit a deprecation warning and be removed in a future release.
+* **Removed:** An API or feature was removed and is no longer supported by Electron.
 
 ## Planned Breaking API Changes (27.0)
 
@@ -26,7 +26,7 @@ or later will be required to run Electron v27.0.0 and higher.
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
 
 The `protocol.register*Protocol` and `protocol.intercept*Protocol` methods have
-been replaced with [`protocol.handle`](api/protocol.md#protocolhandlescheme-handler).
+been replaced with [`protocol.handle`] (api/protocol.md#protocolhandlescheme-handler).
 
 The new method can either register a new protocol or intercept an existing
 protocol, and responses can be of any type.
@@ -40,7 +40,7 @@ protocol.registerBufferProtocol('some-protocol', () => {
 // Replace with
 protocol.handle('some-protocol', () => {
   return new Response(
-    Buffer.from('<h5>Response</h5>'), // Could also be a string or ReadableStream.
+    Buffer.from('<h5>Response</h5>'), // Could also be a string or readable stream.
     { headers: { 'content-type': 'text/html' } }
   )
 })

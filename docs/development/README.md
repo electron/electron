@@ -26,7 +26,7 @@ For guides on Electron app development, see
 
 In order to contribute to Electron, the first thing you'll want to do is get the code.
 
-[Electron's `build-tools`](https://github.com/electron/build-tools) automate much of the setup for compiling Electron from source with different configurations and build targets.
+[Electron's `build-tools`](https://github.com/electron/build-tools) automates much of the setup for compiling Electron from source with different configurations and build targets.
 
 If you would prefer to build Electron manually, see the [build instructions](build-instructions-gn.md).
 
@@ -68,7 +68,7 @@ Details about each group and their responsibilities can be found in the [governa
 
 ## Patches in Electron
 
-Electron is built on two major upstream projects: Chromium and Node.js. Each of these projects has several of their own dependencies, too. We try our best to use these dependencies exactly as they are but sometimes we can't achieve our goals without patching those upstream dependencies to fit our use cases.
+Electron is built on two major upstream projects: Chromium and Node.js. Each of these projects has several of its own dependencies, too. We try our best to use these dependencies exactly as they are, but sometimes we can't achieve our goals without patching those upstream dependencies to fit our use cases.
 
 As such, we maintain a collection of patches as part of our source tree. The process for adding or altering one of these patches to Electron's source tree via a pull request can be found in [patches](patches.md).
 
