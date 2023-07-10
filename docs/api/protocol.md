@@ -88,7 +88,7 @@ non-standard schemes can not recognize relative URLs:
 
 ```html
 <body>
-  <img src='test.png'>
+  <img src='test.png' alt="protocol_doc_img">
 </body>
 ```
 
