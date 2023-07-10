@@ -95,6 +95,7 @@ class Session : public gin::Wrappable<Session>,
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Session"; }
   const char* GetTypeName() override;
 
   // Methods.

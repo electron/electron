@@ -4,6 +4,10 @@ import { once } from 'node:events';
 import { ifit } from './lib/spec-helpers';
 
 describe('Notification module', () => {
+  it('sets the correct class name on the prototype', () => {
+    expect(Notification.prototype.constructor.name).to.equal('Notification');
+  });
+
   it('is supported', () => {
     expect(Notification.isSupported()).to.be.a('boolean');
   });

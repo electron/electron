@@ -4161,7 +4161,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                                      v8::Local<v8::ObjectTemplate> templ) {
   gin::InvokerOptions options;
   options.holder_is_first_argument = true;
-  options.holder_type = "WebContents";
+  options.holder_type = GetClassName();
   templ->Set(
       gin::StringToSymbol(isolate, "isDestroyed"),
       gin::CreateFunctionTemplate(
@@ -4301,7 +4301,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* WebContents::GetTypeName() {
-  return "WebContents";
+  return GetClassName();
 }
 
 ElectronBrowserContext* WebContents::GetBrowserContext() const {
