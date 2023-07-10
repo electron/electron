@@ -29,9 +29,11 @@ class Menu : public gin::Wrappable<Menu>,
   // gin_helper::Constructible
   static gin::Handle<Menu> New(gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Menu"; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
 #if BUILDFLAG(IS_MAC)
   // Set the global menubar.

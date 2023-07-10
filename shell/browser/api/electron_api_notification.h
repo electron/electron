@@ -40,6 +40,7 @@ class Notification : public gin::Wrappable<Notification>,
   static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
                                        gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Notification"; }
 
   // NotificationDelegate:
   void NotificationAction(int index) override;
@@ -52,6 +53,7 @@ class Notification : public gin::Wrappable<Notification>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
   // disable copy
   Notification(const Notification&) = delete;

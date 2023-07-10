@@ -299,6 +299,10 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .Build();
 }
 
+const char* Menu::GetTypeName() {
+  return GetClassName();
+}
+
 }  // namespace electron::api
 
 namespace {

@@ -40,6 +40,10 @@ describe('BrowserView module', () => {
     expect(webContents.getAllWebContents()).to.have.length(0);
   });
 
+  it('sets the correct class name on the prototype', () => {
+    expect(BrowserView.prototype.constructor.name).to.equal('BrowserView');
+  });
+
   it('can be created with an existing webContents', async () => {
     const wc = (webContents as typeof ElectronInternal.WebContents).create({ sandbox: true });
     await wc.loadURL('about:blank');
