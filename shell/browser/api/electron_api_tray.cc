@@ -396,7 +396,7 @@ bool Tray::CheckAlive() {
 // static
 void Tray::FillObjectTemplate(v8::Isolate* isolate,
                               v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Tray", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
@@ -416,6 +416,10 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds)
       .Build();
+}
+
+const char* Tray::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

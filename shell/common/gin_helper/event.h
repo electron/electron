@@ -27,6 +27,7 @@ class Event : public gin::Wrappable<Event>,
   static v8::Local<v8::ObjectTemplate> FillObjectTemplate(
       v8::Isolate* isolate,
       v8::Local<v8::ObjectTemplate> prototype);
+  static const char* GetClassName() { return "Event"; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
