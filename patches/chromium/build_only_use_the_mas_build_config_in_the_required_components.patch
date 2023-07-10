@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 871ba0d274455f0ba53b75c6dd7d862349e80576..b738449a8908400f7fd33b218217e2ac0ed92fe0 100644
+index ec0186b314e017846c5614628d0249b301eaacd0..c250a3f3a706176a75b8279b88b0a1add77292f8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -228,6 +228,7 @@ if (is_apple) {
@@ -17,7 +17,7 @@ index 871ba0d274455f0ba53b75c6dd7d862349e80576..b738449a8908400f7fd33b218217e2ac
      deps = [
        ":base_static",
        ":debugging_buildflags",
-@@ -1087,6 +1088,7 @@ component("base") {
+@@ -1088,6 +1089,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -51,18 +51,10 @@ index 7ed10085264af6f50b05e51dd93c49e3828d5b3b..d8c77f52376a13af7636e64ff0b5cf58
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index 3bc799978ea24e2f6e566dcc7f8638789e18d61d..cd8910dbc57813d41cd0fa28bb2ad61aaa014bc9 100644
+index c52c741205d140fbe8b3be02974c89ea22c2365f..9460c656f71e24044ffccc55053a04b8f23f15e9 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
-@@ -17,6 +17,7 @@ source_set("app_shim_arc") {
-   configs += [
-     ":app_shim_warnings",
-     "//build/config/compiler:enable_arc",
-+    "//electron/build/config:mas_build"
-   ]
-   sources = [
-     "immersive_mode_controller.h",
-@@ -56,6 +57,7 @@ component("app_shim") {
+@@ -16,6 +16,7 @@ component("app_shim") {
    assert(is_mac)
  
    configs += [ ":app_shim_warnings" ]
@@ -92,7 +84,7 @@ index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d3
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 4869c4f22b6caf492e423caaec0a0edb1d062a13..4e443120e2294f8c8a645092513e7372e418ac64 100644
+index 0e7d5979c493f2269e46b62ba09d396a638a93d5..cd3aa48f01391a5ea51e6b7a4d5626ce004d080f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -128,7 +120,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index b060a1d18ef855f6afbb0120fb1caa8b08c26069..1fb1e83eb9d49dd4d0a5bbab2135e38140db5b3f 100644
+index 3e55b8751a0111bc229a0d25dea6bceca4b46ddc..e46c4073b9ad91e8ff819d4cc604b2353621528d 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -230,7 +222,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index cec00272736c844246aabbf688b13d631af41236..82de763b603baf242aec6c82ac20e3abc8bf808f 100644
+index 670903698c899df678a16218d8c373d94a7f2b9e..15c0c7125434c13c5a4b8c74dee937f542cc16fd 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {

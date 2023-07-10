@@ -163,7 +163,7 @@ index 4ef9884d28ca97fdb6727fad942465a185403bec..009d511a4b54eb4a456a3fc4cb03f296
    // moved on send.
    bool is_background_tab =
 diff --git a/content/web_test/browser/web_test_content_browser_client.cc b/content/web_test/browser/web_test_content_browser_client.cc
-index aa329214ee7fc0176c06a5a136e9b8ad49b7f0c6..7cefe64bfcd2832c4b72dc5f5edece6a8cf9e9df 100644
+index e0f55d75e7f39425c72a01a8117c3671a1ff98e3..2697f6e2a6343aa87d84fc6b87357787e9e57173 100644
 --- a/content/web_test/browser/web_test_content_browser_client.cc
 +++ b/content/web_test/browser/web_test_content_browser_client.cc
 @@ -505,6 +505,8 @@ bool WebTestContentBrowserClient::CanCreateWindow(

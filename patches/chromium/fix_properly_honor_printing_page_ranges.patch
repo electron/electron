@@ -25,10 +25,10 @@ index 3f6289a9cee6d94349ef30760aad4a2b0a015c25..63b833fb3473f526be21ebe4549e17ee
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index 2748468ba184dca7befd1a1411dc3a27e2df7175..e1230b5df685a04c60404ff4345c6ec9ef86e98c 100644
+index ce528252965ad10325659a099e046b119c72cf12..67427b928705ad0049c5f0035de6bd0a171d65c7 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -204,7 +204,8 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -213,7 +213,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index 2748468ba184dca7befd1a1411dc3a27e2df7175..e1230b5df685a04c60404ff4345c6ec9
        return OnError();
      }
    }
-@@ -357,6 +358,22 @@ PMPaper MatchPaper(CFArrayRef paper_list,
+@@ -366,6 +367,22 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  

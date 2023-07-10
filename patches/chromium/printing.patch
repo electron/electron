@@ -245,7 +245,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
    set_cookie(settings->params->document_cookie);
    std::move(callback).Run(std::move(settings));
  }
-@@ -441,7 +478,8 @@ void PrintViewManagerBase::GetDefaultPrintSettingsReply(
+@@ -442,7 +479,8 @@ void PrintViewManagerBase::GetDefaultPrintSettingsReply(
  void PrintViewManagerBase::ScriptedPrintReply(
      ScriptedPrintCallback callback,
      int process_id,
@@ -255,7 +255,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
  
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
-@@ -456,12 +494,15 @@ void PrintViewManagerBase::ScriptedPrintReply(
+@@ -457,12 +495,15 @@ void PrintViewManagerBase::ScriptedPrintReply(
      return;
    }
  
@@ -273,7 +273,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
    }
  }
  
-@@ -598,10 +639,12 @@ void PrintViewManagerBase::DidPrintDocument(
+@@ -599,10 +640,12 @@ void PrintViewManagerBase::DidPrintDocument(
  void PrintViewManagerBase::GetDefaultPrintSettings(
      GetDefaultPrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -286,7 +286,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
  #if BUILDFLAG(ENABLE_OOP_PRINTING)
    if (printing::features::kEnableOopPrintDriversJobPrint.Get() &&
  #if BUILDFLAG(ENABLE_PRINT_CONTENT_ANALYSIS)
-@@ -653,10 +696,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -654,10 +697,12 @@ void PrintViewManagerBase::UpdatePrintSettings(
      base::Value::Dict job_settings,
      UpdatePrintSettingsCallback callback) {
    DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
@@ -299,7 +299,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
  
    absl::optional<int> printer_type_value =
        job_settings.FindInt(kSettingPrinterType);
-@@ -667,6 +712,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -668,6 +713,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
  
    mojom::PrinterType printer_type =
        static_cast<mojom::PrinterType>(*printer_type_value);
@@ -307,7 +307,7 @@ index c976fb2a814e4ff09650982034371e40d1ab77bc..3ef781934426efd662db583492ffdef4
    if (printer_type != mojom::PrinterType::kExtension &&
        printer_type != mojom::PrinterType::kPdf &&
        printer_type != mojom::PrinterType::kLocal) {
-@@ -686,6 +732,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
+@@ -687,6 +733,7 @@ void PrintViewManagerBase::UpdatePrintSettings(
      if (value > 0)
        job_settings.Set(kSettingRasterizePdfDpi, value);
    }
@@ -919,10 +919,10 @@ index 0fea424325081a0ef6720000841ea321b89024d0..c700de4b81fc0c157946e76faedaca6b
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index bfef3f103b7fe79cd702acb21d0cb1ac610210d9..4869c4f22b6caf492e423caaec0a0edb1d062a13 100644
+index f36dd04aac1ad386ff1501d4a9b862cc4093e329..0e7d5979c493f2269e46b62ba09d396a638a93d5 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2907,8 +2907,9 @@ source_set("browser") {
+@@ -2905,8 +2905,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  

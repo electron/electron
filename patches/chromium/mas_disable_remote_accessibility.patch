@@ -11,10 +11,10 @@ needs to think it's coming from the PWA process). I think it can just be chopped
 out -- if there are any side-effects, we should be able to work around them.
 
 diff --git a/components/remote_cocoa/app_shim/application_bridge.mm b/components/remote_cocoa/app_shim/application_bridge.mm
-index 88e4b9b878b59014dc3c4e875eb2acb1b72e7559..b5bdb96a05ab084166d64d4ca69ff9179cef6fba 100644
+index 1411678acc567b4d6368d0e2e6224f0974d61825..b9495cc1a391603b2c223ab1cf2d75b19b23d52e 100644
 --- a/components/remote_cocoa/app_shim/application_bridge.mm
 +++ b/components/remote_cocoa/app_shim/application_bridge.mm
-@@ -52,6 +52,7 @@
+@@ -55,6 +55,7 @@
  
    // NativeWidgetNSWindowHostHelper:
    id GetNativeViewAccessible() override {
@@ -22,32 +22,31 @@ index 88e4b9b878b59014dc3c4e875eb2acb1b72e7559..b5bdb96a05ab084166d64d4ca69ff917
      if (!remote_accessibility_element_) {
        int64_t browser_pid = 0;
        std::vector<uint8_t> element_token;
-@@ -63,6 +64,9 @@ id GetNativeViewAccessible() override {
-           base::scoped_policy::RETAIN);
+@@ -65,6 +66,9 @@ id GetNativeViewAccessible() override {
+           ui::RemoteAccessibility::GetRemoteElementFromToken(element_token);
      }
-     return remote_accessibility_element_.get();
+     return remote_accessibility_element_;
 +#else
 +    return nil;
 +#endif
    }
    void DispatchKeyEvent(ui::KeyEvent* event) override {
      bool event_handled = false;
-@@ -101,8 +105,10 @@ void GetWordAt(const gfx::Point& location_in_content,
+@@ -103,7 +107,9 @@ void GetWordAt(const gfx::Point& location_in_content,
    mojo::AssociatedRemote<mojom::TextInputHost> text_input_host_remote_;
  
    std::unique_ptr<NativeWidgetNSWindowBridge> bridge_;
 +#if !IS_MAS_BUILD()
-   base::scoped_nsobject<NSAccessibilityRemoteUIElement>
-       remote_accessibility_element_;
+   NSAccessibilityRemoteUIElement* __strong remote_accessibility_element_;
 +#endif
  };
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index 5c366bd97b0ea5ff61bc4f1f67a9f8afd09d0c29..a6d890113b2746e69146ed492dcca2579d143427 100644
+index 10032ea5829e7dfc610db23f0f8f12021fe466f6..2b3f68f8e92e00caab15c048fcc2fc02f54a21fc 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -572,10 +572,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -591,10 +591,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -59,7 +58,7 @@ index 5c366bd97b0ea5ff61bc4f1f67a9f8afd09d0c29..a6d890113b2746e69146ed492dcca257
 +#endif
  
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
-   // crrev/c/1236675. The ordering of unassociated layers relative to NSView
+   // https://crrev.com/c/1236675. The ordering of unassociated layers relative
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 index ba279439ae7029f202a2282aca835462b335205b..7f3b2373dcb5cd31af972cbe8571a9d50a64ae4f 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
