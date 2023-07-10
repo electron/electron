@@ -59,7 +59,9 @@ NSString* GetAppPathForProtocol(const GURL& url) {
     // likely kLSApplicationNotFoundErr
     return nullptr;
   }
-  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
+  NSURL* app_url =
+      const_cast<NSURL*>(reinterpret_cast<const NSURL*>(openingApp.get()));
+  NSString* app_path = [app_url path];
   return app_path;
 }
 
@@ -178,7 +180,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  CFStringRef protocol_cf = base::mac::NSToCFCast(protocol_ns);
+  CFStringRef protocol_cf = reinterpret_cast<CFStringRef>((protocol_ns);
 // TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
@@ -200,7 +202,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   // No other app was found set it to none instead of setting it back to itself.
   if ([identifier isEqualToString:(__bridge NSString*)other]) {
-    other = base::mac::NSToCFCast(@"None");
+    other = reinterpret_cast<CFStringRef>(@"None");
   }
 
   OSStatus return_code = LSSetDefaultHandlerForURLScheme(protocol_cf, other);
@@ -217,8 +219,9 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  OSStatus return_code = LSSetDefaultHandlerForURLScheme(
-      base::mac::NSToCFCast(protocol_ns), base::mac::NSToCFCast(identifier));
+  CFStringRef protocol_cf = reinterpret_cast<CFStringRef>(protocol_ns);
+  CFStringRef identifier_cf = reinterpret_cast<CFStringRef>(identifier);
+  OSStatus return_code = LSSetDefaultHandlerForURLScheme(protocol_cf, identifier_cf));
   return return_code == noErr;
 }
 
@@ -232,20 +235,22 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
+  CFStringRef protocol_cf = reinterpret_cast<CFStringRef>(protocol_ns);
 
 // TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   base::ScopedCFTypeRef<CFStringRef> bundleId(
-      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns)));
+      LSCopyDefaultHandlerForURLScheme(protocol_cf));
 #pragma clang diagnostic pop
   if (!bundleId)
     return false;
 
   // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
-  NSComparisonResult result =
-      [base::mac::CFToNSCast(bundleId) caseInsensitiveCompare:identifier];
+  NSString* bundle_id_ns =
+      const_cast<NSString*>(reinterpret_cast<const NSString*>(bundleId));
+  NSComparisonResult result = [bundle_id_ns caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
 }
 
