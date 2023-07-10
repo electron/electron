@@ -245,6 +245,7 @@ class NativeWindow : public base::SupportsUserData,
   // Native Tab API
   virtual void SelectPreviousTab();
   virtual void SelectNextTab();
+  virtual void ShowAllTabs();
   virtual void MergeAllWindows();
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();

@@ -2072,6 +2072,14 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('BrowserWindow.showAllTabs()', () => {
+      it('does not throw', () => {
+        expect(() => {
+          w.showAllTabs();
+        }).to.not.throw();
+      });
+    });
+
     describe('BrowserWindow.mergeAllWindows()', () => {
       it('does not throw', () => {
         expect(() => {

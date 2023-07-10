@@ -210,6 +210,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item);
   void SelectPreviousTab();
   void SelectNextTab();
+  void ShowAllTabs();
   void MergeAllWindows();
   void MoveTabToNewWindow();
   void ToggleTabBar();
