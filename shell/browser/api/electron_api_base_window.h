@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_BASE_WINDOW_H_
 
-#include <list>
 #include <map>
 #include <memory>
 #include <string>
@@ -276,9 +275,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
-  // ids of attached browser views z-index sorted.
-  std::list<int32_t> browser_views_ids_by_z_indexes_;
-  std::map<int32_t, v8::Global<v8::Value>> browser_views_;
+  std::vector<v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
