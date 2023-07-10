@@ -283,7 +283,7 @@ gin::Handle<Protocol> Protocol::New(gin_helper::ErrorThrower thrower) {
 v8::Local<v8::ObjectTemplate> Protocol::FillObjectTemplate(
     v8::Isolate* isolate,
     v8::Local<v8::ObjectTemplate> tmpl) {
-  return gin::ObjectTemplateBuilder(isolate, "Protocol", tmpl)
+  return gin::ObjectTemplateBuilder(isolate, GetClassName(), tmpl)
       .SetMethod("registerStringProtocol",
                  &Protocol::RegisterProtocolFor<ProtocolType::kString>)
       .SetMethod("registerBufferProtocol",
@@ -317,7 +317,7 @@ v8::Local<v8::ObjectTemplate> Protocol::FillObjectTemplate(
 }
 
 const char* Protocol::GetTypeName() {
-  return "Protocol";
+  return GetClassName();
 }
 
 }  // namespace electron::api

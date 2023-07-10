@@ -409,7 +409,7 @@ void WebFrameMain::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* WebFrameMain::GetTypeName() {
-  return "WebFrameMain";
+  return GetClassName();
 }
 
 }  // namespace electron::api
