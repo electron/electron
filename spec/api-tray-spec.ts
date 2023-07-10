@@ -15,6 +15,10 @@ describe('tray module', () => {
   });
 
   describe('new Tray', () => {
+    it('sets the correct class name on the prototype', () => {
+      expect(Tray.prototype.constructor.name).to.equal('Tray');
+    });
+
     it('throws a descriptive error for a missing file', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {
