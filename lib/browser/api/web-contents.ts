@@ -411,7 +411,7 @@ WebContents.prototype.getPrintersAsync = async function () {
 
 WebContents.prototype.loadFile = function (filePath, options = {}) {
   if (typeof filePath !== 'string') {
-    throw new Error('Must pass filePath as a string');
+    throw new TypeError('Must pass filePath as a string');
   }
   const { query, search, hash } = options;
 

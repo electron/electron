@@ -20,7 +20,7 @@ export function deregisterEvents (viewInstanceId: number) {
 
 export function createGuest (iframe: HTMLIFrameElement, elementInstanceId: number, params: Record<string, any>): Promise<number> {
   if (!(iframe instanceof HTMLIFrameElement)) {
-    throw new Error('Invalid embedder frame');
+    throw new TypeError('Invalid embedder frame');
   }
 
   const embedderFrameId = webFrame.getWebFrameId(iframe.contentWindow!);
