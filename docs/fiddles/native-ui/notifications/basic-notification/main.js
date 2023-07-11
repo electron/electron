@@ -8,6 +8,7 @@ function createWindow () {
     height: 300,
     title: 'Basic Notification',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   }
