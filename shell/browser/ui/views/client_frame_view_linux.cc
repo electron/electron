@@ -309,13 +309,13 @@ void ClientFrameViewLinux::PaintAsActiveChanged() {
 
 void ClientFrameViewLinux::UpdateThemeValues() {
   gtk::GtkCssContext window_context =
-      gtk::AppendCssNodeToStyleContext({}, "GtkWindow#window.background.csd");
+      gtk::AppendCssNodeToStyleContext({}, "window.background.csd");
   gtk::GtkCssContext headerbar_context = gtk::AppendCssNodeToStyleContext(
-      {}, "GtkHeaderBar#headerbar.default-decoration.titlebar");
-  gtk::GtkCssContext title_context = gtk::AppendCssNodeToStyleContext(
-      headerbar_context, "GtkLabel#label.title");
+      {}, "headerbar.default-decoration.titlebar");
+  gtk::GtkCssContext title_context =
+      gtk::AppendCssNodeToStyleContext(headerbar_context, "label.title");
   gtk::GtkCssContext button_context = gtk::AppendCssNodeToStyleContext(
-      headerbar_context, "GtkButton#button.image-button");
+      headerbar_context, "button.image-button");
 
   gtk_style_context_set_parent(headerbar_context, window_context);
   gtk_style_context_set_parent(title_context, headerbar_context);
