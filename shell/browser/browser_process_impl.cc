@@ -312,12 +312,6 @@ void BrowserProcessImpl::SetLinuxStorageBackend(
     case os_crypt::SelectedLinuxBackend::BASIC_TEXT:
       selected_linux_storage_backend_ = "basic_text";
       break;
-    case os_crypt::SelectedLinuxBackend::GNOME_ANY:
-      selected_linux_storage_backend_ = "gnome_any";
-      break;
-    case os_crypt::SelectedLinuxBackend::GNOME_KEYRING:
-      selected_linux_storage_backend_ = "gnome_keyring";
-      break;
     case os_crypt::SelectedLinuxBackend::GNOME_LIBSECRET:
       selected_linux_storage_backend_ = "gnome_libsecret";
       break;
