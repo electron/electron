@@ -1295,7 +1295,7 @@ describe('webContents module', () => {
       const policies = [
         '10000-10100',
         '20000-20800',
-        '60000-65535',
+        '60000-65535'
       ];
       policies.forEach((policy) => {
         w.webContents.setWebRTCUDPPortRangePolicy(policy as any);
