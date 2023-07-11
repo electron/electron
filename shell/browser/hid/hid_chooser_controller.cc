@@ -306,15 +306,14 @@ bool HidChooserController::IsExcluded(
 bool HidChooserController::AddDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
   const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
-  auto find_it = device_map_.find(id);
-  if (find_it != device_map_.end()) {
-    find_it->second.push_back(device.Clone());
-    return false;
-  }
-  // A new device was connected. Append it to the end of the chooser list.
-  device_map_[id].push_back(device.Clone());
-  items_.push_back(id);
-  return true;
+  auto [iter, is_new_physical_device] = device_map_.try_emplace(id);
+  iter->second.emplace_back(device.Clone());
+
+  // append new devices to the chooser list
+  if (is_new_physical_device)
+    items_.emplace_back(id);
+
+  return is_new_physical_device;
 }
 
 bool HidChooserController::RemoveDeviceInfo(
