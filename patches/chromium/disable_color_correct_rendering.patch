@@ -35,10 +35,10 @@ index 394d0a39a6c86c68c868eeca0e0d9a4108e1dafc..a1b91f3ce3e28cb7afc7bae7a3eef0fd
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index 46ea5b77442eb577de068ee90f06fe55733ee93e..f832306bc4a38b743cff2eb525badb7e383a8241 100644
+index 6e4a04936b66d96a539489bbda6db3af6d9838be..829ea637f9eeb64de543cca4d99b69aca497b4ba 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
-@@ -102,6 +102,8 @@ class CC_EXPORT LayerTreeSettings {
+@@ -95,6 +95,8 @@ class CC_EXPORT LayerTreeSettings {
    bool use_rgba_4444 = false;
    bool unpremultiply_and_dither_low_bit_depth_tiles = false;
  
@@ -48,10 +48,10 @@ index 46ea5b77442eb577de068ee90f06fe55733ee93e..f832306bc4a38b743cff2eb525badb7e
    // Image Decode Service and raster tiles without images until the decode is
    // ready.
 diff --git a/components/viz/common/display/renderer_settings.h b/components/viz/common/display/renderer_settings.h
-index 66564fbc928d28af97d7afaa2cfea03ce7ebc04c..cdd32d25eab50cbc2910f92eca92b9f6c8c7b5fe 100644
+index 4614eeb897bb109df9323c6024e1624aacb9bd4a..dd0d0ea4a33dd1c026ec2c419960d6be2e24e57c 100644
 --- a/components/viz/common/display/renderer_settings.h
 +++ b/components/viz/common/display/renderer_settings.h
-@@ -24,6 +24,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
+@@ -23,6 +23,7 @@ class VIZ_COMMON_EXPORT RendererSettings {
    RendererSettings(const RendererSettings& other);
    ~RendererSettings();
  
@@ -81,7 +81,7 @@ index e4deb71ea3afa1ef9d6ddac9c61f5916ff608514..d2e6854ac2aaa3cc83c0b72ebc03193b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 7891c0d116ef4e9b080746698be0c71b6f9a8595..e5a2ac168bf1fdbfc2c0c64f5c8b03efb56db347 100644
+index b7df289e4546fd5d33266223f4b678c1ab0e26e2..af4fdec439ebe630d43a60cfa53d3addfca052bd 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
 @@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
@@ -93,10 +93,10 @@ index 7891c0d116ef4e9b080746698be0c71b6f9a8595..e5a2ac168bf1fdbfc2c0c64f5c8b03ef
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 37fdd04d9738c699db8c9140600f90e8523de93e..945ba0d61888d8c9f4eb139246150c4fd180e5ab 100644
+index 8e6b01842d522ecd3daae406e8ebea42929a2ec0..0f695a388b0874d3ae8b719d6a8bdf9d0b79aae7 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -3527,6 +3527,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
+@@ -3517,6 +3517,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
    // Propagate the following switches to the renderer command line (along
    // with any associated values) if present in the browser command line.
    static const char* const kSwitchNames[] = {
@@ -148,10 +148,10 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 2231be747344fafdecfc115cd8f797cafd7a243c..c32ae8a3db4077708052915e9ea13930df6a5566 100644
+index a3be3d5df20d292e3a27e34a8949641b0cf5a306..47e2ba5a320398723d2eaef4776bc8fbd9469221 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-@@ -29,6 +29,7 @@
+@@ -25,6 +25,7 @@
  #include "third_party/blink/renderer/platform/runtime_enabled_features.h"
  #include "ui/base/ui_base_features.h"
  #include "ui/base/ui_base_switches.h"
@@ -159,7 +159,7 @@ index 2231be747344fafdecfc115cd8f797cafd7a243c..c32ae8a3db4077708052915e9ea13930
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -230,6 +231,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -210,6 +211,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
