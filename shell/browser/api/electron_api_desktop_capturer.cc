@@ -183,14 +183,33 @@ DesktopCapturer::~DesktopCapturer() = default;
 
 DesktopCapturer::DesktopListListener::DesktopListListener(
     OnceCallback update_callback,
-    OnceCallback failure_callback)
+    OnceCallback failure_callback,
+    bool skip_thumbnails)
     : update_callback_(std::move(update_callback)),
-      failure_callback_(std::move(failure_callback)) {}
+      failure_callback_(std::move(failure_callback)),
+      have_thumbnail_(skip_thumbnails) {}
 
 DesktopCapturer::DesktopListListener::~DesktopListListener() = default;
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListSelection() {
-  std::move(update_callback_).Run();
+  if (have_thumbnail_) {
+    std::move(update_callback_).Run();
+  } else {
+    have_selection_ = true;
+  }
+}
+
+void DesktopCapturer::DesktopListListener::OnSourceThumbnailChanged(int index) {
+  if (have_selection_) {
+    // This is called every time a thumbnail is refreshed. Reset variable to
+    // ensure that the callback is not run again.
+    have_selection_ = false;
+
+    // PipeWire returns a single source, so index is not relevant.
+    std::move(update_callback_).Run();
+  } else {
+    have_thumbnail_ = true;
+  }
 }
 
 void DesktopCapturer::DesktopListListener::OnDelegatedSourceListDismissed() {
@@ -237,7 +256,8 @@ void DesktopCapturer::StartHandling(bool capture_window,
           OnceCallback failure_callback = base::BindOnce(
               &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
           window_listener_ = std::make_unique<DesktopListListener>(
-              std::move(update_callback), std::move(failure_callback));
+              std::move(update_callback), std::move(failure_callback),
+              thumbnail_size.IsEmpty());
           window_capturer_->StartUpdating(window_listener_.get());
         } else {
           window_capturer_->Update(std::move(update_callback),
@@ -261,7 +281,8 @@ void DesktopCapturer::StartHandling(bool capture_window,
           OnceCallback failure_callback = base::BindOnce(
               &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
           screen_listener_ = std::make_unique<DesktopListListener>(
-              std::move(update_callback), std::move(failure_callback));
+              std::move(update_callback), std::move(failure_callback),
+              thumbnail_size.IsEmpty());
           screen_capturer_->StartUpdating(screen_listener_.get());
         } else {
           screen_capturer_->Update(std::move(update_callback),

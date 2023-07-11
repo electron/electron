@@ -67,7 +67,8 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
   class DesktopListListener : public DesktopMediaListObserver {
    public:
     DesktopListListener(OnceCallback update_callback,
-                        OnceCallback failure_callback);
+                        OnceCallback failure_callback,
+                        bool skip_thumbnails);
     ~DesktopListListener() override;
 
    protected:
@@ -75,7 +76,7 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
     void OnSourceRemoved(int index) override {}
     void OnSourceMoved(int old_index, int new_index) override {}
     void OnSourceNameChanged(int index) override {}
-    void OnSourceThumbnailChanged(int index) override {}
+    void OnSourceThumbnailChanged(int index) override;
     void OnSourcePreviewChanged(size_t index) override {}
     void OnDelegatedSourceListSelection() override;
     void OnDelegatedSourceListDismissed() override;
@@ -83,6 +84,8 @@ class DesktopCapturer : public gin::Wrappable<DesktopCapturer>,
    private:
     OnceCallback update_callback_;
     OnceCallback failure_callback_;
+    bool have_selection_ = false;
+    bool have_thumbnail_ = false;
   };
 
   void UpdateSourcesList(DesktopMediaList* list);
