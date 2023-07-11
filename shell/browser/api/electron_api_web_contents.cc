@@ -2646,16 +2646,19 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 #endif
 
   bool activate = true;
+  std::string title;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
       options.Get("activate", &activate);
+      options.Get("titles", &title);
     }
   }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
+  inspectable_web_contents_->SetTitles(title);
   inspectable_web_contents_->ShowDevTools(activate);
 }
 

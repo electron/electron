@@ -426,6 +426,10 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
+void InspectableWebContents::SetTitles(const std::string& title) {
+  devtools_titles_ = title;
+}
+
 void InspectableWebContents::SetDevToolsWebContents(
     content::WebContents* devtools) {
   if (!managed_devtools_web_contents_)
@@ -565,6 +569,7 @@ void InspectableWebContents::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
+    view_->SetTitle(base::UTF8ToUTF16(devtools_titles_));
   } else {
     if (dock_state_.empty()) {
       const base::Value::Dict& prefs =
@@ -632,9 +637,12 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectElementCompleted() {}
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
-  if (managed_devtools_web_contents_)
-    view_->SetTitle(
-        base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+  if (managed_devtools_web_contents_) {
+    if (devtools_titles_.empty()) {
+      view_->SetTitle(
+          base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+    }
+  }
 }
 
 void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
