@@ -20,9 +20,7 @@ std::string ApplicationInfoDictionaryValue(NSString* key) {
 }
 
 std::string ApplicationInfoDictionaryValue(CFStringRef key) {
-  NSString* key_ns =
-      const_cast<NSString*>(reinterpret_cast<const NSString*>(key));
-  return ApplicationInfoDictionaryValue(key_ns);
+  return ApplicationInfoDictionaryValue(base::mac::CFToNSCast(key));
 }
 
 }  // namespace
