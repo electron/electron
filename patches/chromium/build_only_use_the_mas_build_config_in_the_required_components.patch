@@ -92,10 +92,18 @@ index 488abc9ed0d61a4b73f4bec34cbca416abfbf715..7b1b36d6ab787e2c43d7556b1e4bb1d3
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ffc45ce115652302aa286f16bba0b16b47a38ffe..8fb4ea5be46c458b2c4fc73ddb4a6d0f08d2b114 100644
+index ffc45ce115652302aa286f16bba0b16b47a38ffe..e996d5fce050564b5d1529e781e128dbe6b7cd10 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -115,6 +115,7 @@ source_set("browser") {
+@@ -43,6 +43,7 @@ if (is_apple) {
+     configs += [
+       "//build/config/compiler:enable_arc",
+       "//content:content_implementation",
++      "//electron/build/config:mas_build"
+     ]
+     deps = [
+       "//base",
+@@ -115,6 +116,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
