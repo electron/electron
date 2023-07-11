@@ -1651,8 +1651,8 @@ Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
 
-Returns `BrowserView[]` - an array of all BrowserViews that have been attached
-with `addBrowserView` or `setBrowserView`.
+Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
+with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.

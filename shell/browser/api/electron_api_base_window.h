@@ -275,7 +275,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
 #endif
 
   v8::Global<v8::Value> content_view_;
-  std::map<int32_t, v8::Global<v8::Value>> browser_views_;
+  std::vector<v8::Global<v8::Value>> browser_views_;
   v8::Global<v8::Value> menu_;
   v8::Global<v8::Value> parent_window_;
   KeyWeakMap<int> child_windows_;
