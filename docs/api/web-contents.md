@@ -2064,6 +2064,16 @@ Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
 
+#### `contents.getWebRTCUDPPortRangePolicy()`
+
+Returns `string` - Returns the WebRTC UDP Port Range Policy. Empty string means the policy is invalid.
+
+#### `contents.setWebRTCUDPPortRangePolicy(policy)`
+
+* `policy` string - Specify the WebRTC UDP Port Range Policy. The format of the policy arg should be organized as 10000-19999, for example.
+
+Setting the WebRTC UDP Port Range policy allows you to restrict the udp port range assigned to apps via WebRTC.
+
 #### `contents.getMediaSourceId(requestWebContents)`
 
 * `requestWebContents` WebContents - Web contents that the id will be registered to.

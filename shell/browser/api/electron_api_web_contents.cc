@@ -718,6 +718,47 @@ content::RenderFrameHost* GetRenderFrameHost(
   return frame_host;
 }
 
+std::string ToPortRange(uint16_t min_port, uint16_t max_port) {
+  if (min_port == 0 || min_port > max_port || max_port > UINT16_MAX) {
+    return std::string();
+  }
+
+  return base::NumberToString(min_port) + "-" + base::NumberToString(max_port);
+}
+
+void ParsePortRange(const std::string& range,
+                    uint16_t* min_port,
+                    uint16_t* max_port) {
+  // Set to default value 0 which indicats invalid
+  *min_port = 0;
+  *max_port = 0;
+
+  if (range.empty())
+    return;
+
+  size_t separator_index = range.find('-');
+  if (separator_index == std::string::npos)
+    return;
+
+  std::string min_port_string, max_port_string;
+  base::TrimWhitespaceASCII(range.substr(0, separator_index), base::TRIM_ALL,
+                            &min_port_string);
+  base::TrimWhitespaceASCII(range.substr(separator_index + 1), base::TRIM_ALL,
+                            &max_port_string);
+  unsigned min_port_uint, max_port_uint;
+  if (!base::StringToUint(min_port_string, &min_port_uint) ||
+      !base::StringToUint(max_port_string, &max_port_uint)) {
+    return;
+  }
+  if (min_port_uint == 0 || min_port_uint > max_port_uint ||
+      max_port_uint > UINT16_MAX) {
+    return;
+  }
+
+  *min_port = static_cast<uint16_t>(min_port_uint);
+  *max_port = static_cast<uint16_t>(max_port_uint);
+}
+
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -2539,6 +2580,28 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
+const std::string WebContents::GetWebRTCUDPPortRangePolicy(void) const {
+  return ToPortRange(
+      web_contents()->GetMutableRendererPrefs()->webrtc_udp_min_port,
+      web_contents()->GetMutableRendererPrefs()->webrtc_udp_max_port);
+}
+
+void WebContents::SetWebRTCUDPPortRangePolicy(
+    const std::string& webrtc_udp_port_range_policy) {
+  uint16_t port_min = 0;
+  uint16_t port_max = 0;
+
+  if (GetWebRTCUDPPortRangePolicy() == webrtc_udp_port_range_policy)
+    return;
+
+  ParsePortRange(webrtc_udp_port_range_policy, &port_min, &port_max);
+
+  web_contents()->GetMutableRendererPrefs()->webrtc_udp_min_port = port_min;
+  web_contents()->GetMutableRendererPrefs()->webrtc_udp_max_port = port_max;
+
+  web_contents()->SyncRendererPrefs();
+}
+
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
@@ -4286,9 +4349,13 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
+      .SetMethod("setWebRTCUDPPortRangePolicy",
+                 &WebContents::SetWebRTCUDPPortRangePolicy)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
+      .SetMethod("getWebRTCUDPPortRangePolicy",
+                 &WebContents::GetWebRTCUDPPortRangePolicy)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)

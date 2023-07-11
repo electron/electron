@@ -1288,6 +1288,22 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webrtc udp port range policy api', () => {
+    afterEach(closeAllWindows);
+    it('can set and get webrtc udp port range policies', () => {
+      const w = new BrowserWindow({ show: false });
+      const policies = [
+        '10000-10100',
+        '20000-20800',
+        '60000-65535',
+      ];
+      policies.forEach((policy) => {
+        w.webContents.setWebRTCUDPPortRangePolicy(policy as any);
+        expect(w.webContents.getWebRTCUDPPortRangePolicy()).to.equal(policy);
+      });
+    });
+  });
+
   describe('opener api', () => {
     afterEach(closeAllWindows);
     it('can get opener with window.open()', async () => {
