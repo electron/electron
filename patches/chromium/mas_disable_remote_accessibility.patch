@@ -61,7 +61,7 @@ index 5c366bd97b0ea5ff61bc4f1f67a9f8afd09d0c29..a6d890113b2746e69146ed492dcca257
    // Beware: This view was briefly removed (in favor of a bare CALayer) in
    // crrev/c/1236675. The ordering of unassociated layers relative to NSView
 diff --git a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
-index 34f794f084bb418f9aa0f14f793ac5df348eb1b8..5fa8596a92e4a994ddce5942179c263551646a3b 100644
+index 34f794f084bb418f9aa0f14f793ac5df348eb1b8..69a96c1d4862e04d83d52adf1818c68a082c02f8 100644
 --- a/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 +++ b/content/app_shim_remote_cocoa/ns_view_bridge_factory_impl.mm
 @@ -87,8 +87,10 @@ id GetFocusedBrowserAccessibilityElement() override {
@@ -75,6 +75,17 @@ index 34f794f084bb418f9aa0f14f793ac5df348eb1b8..5fa8596a92e4a994ddce5942179c2635
    }
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
+@@ -150,8 +152,10 @@ void SmartMagnify(const blink::WebGestureEvent& web_event) override {
+ 
+   mojo::AssociatedRemote<mojom::RenderWidgetHostNSViewHost> host_;
+   std::unique_ptr<RenderWidgetHostNSViewBridge> bridge_;
++  #if !IS_MAS_BUILD()
+   base::scoped_nsobject<NSAccessibilityRemoteUIElement>
+       remote_accessibility_element_;
++  #endif
+ };
+ }
+ 
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 index aac882b0fb185ebb548954d54ab56e485a9e7fec..89e28c4e325b1800d81a5d2e3fb49b57618ba0c4 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
