@@ -41,7 +41,7 @@ index c4eda85ebb59f2f9fc440c93590b99d1e8a16447..5f518ffa672ef62a94dd043e5bc4a53c
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index f24ae14ecbc35796ae49604612224bce8d592951..dd41611f28d2815fc7fb3d8a7fe808f6710a6d68 100644
+index 02e4b8db0ff115cff405373529b417e982d79b4c..d136a2fa73afc891b5f2d9db0d5c53b0ed1790e2 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -57,7 +57,9 @@
@@ -88,20 +88,20 @@ index f24ae14ecbc35796ae49604612224bce8d592951..dd41611f28d2815fc7fb3d8a7fe808f6
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 8cd4cd65a02b3ca332f1d4164ff7c16cda10cdb8..bcd99c491085d3bfca4434c65ad53d2f6da51831 100644
+index 9f4869f00f31c6d3ad5081b1e7b67c4cf495fbdd..228b8d2e8835dc3a4f0454521a2bbd523cfd8933 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -119,6 +119,7 @@ - (void)setContentsChanged;
+@@ -124,6 +124,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
 +#if !IS_MAS_BUILD()
    // Early-out if the remote layer has not changed.
-   if ([remote_layer_ contextId] == ca_context_id)
+   if (remote_layer_.contextId == ca_context_id) {
      return;
-@@ -149,6 +150,9 @@ - (void)setContentsChanged;
+@@ -153,6 +154,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
-     io_surface_layer_.reset();
+     io_surface_layer_ = nil;
    }
 +#else
 +  NOTREACHED() << "Remote layer is being used in MAS build";

@@ -101,7 +101,7 @@ index b9788cf84caf5e151b124e4b3bea81cc906e0673..e4a884a2715be084d0d5ae8d75a3e613
  
  }  // namespace content
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 79bf09102ab4ca9b0a5830132d98b7bd844b1c26..e2b20c0cda169d7b4af5c05b8797188955df8e3c 100644
+index aa93fcc4de03d8032e9090ca8b66019eeb7be8b0..721e7083e94fa977908858c908274c8db49c07a0 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -41,6 +41,7 @@
@@ -131,7 +131,7 @@ index 79bf09102ab4ca9b0a5830132d98b7bd844b1c26..e2b20c0cda169d7b4af5c05b87971889
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        device_paired_status_callback_(
-@@ -253,8 +257,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -247,8 +251,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

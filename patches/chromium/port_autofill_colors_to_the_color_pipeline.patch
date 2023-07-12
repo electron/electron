@@ -61,7 +61,7 @@ index b1381d60447be969d3cf6d7027f1d88f00029826..86822f5483a25e606ac340d673682049
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index 5cf5a5f3308f086dfe7893a28f221cd8acf01e36..226ace6c4a2457405b4e6db3fd2f5cf20e66237b 100644
+index c698b842b496db488e9fd17a180d339ed5073a6c..8fc856f69cc6bbf06382c1873e9327255feeb8b6 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -202,6 +202,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,

@@ -155,7 +155,7 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
+index 175cbb4a23a4ab5f86c4bfa8158f8e0ada5454ed..ce44db60ba61394bbadacc4b85c94643a6e0261f 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
@@ -167,8 +167,8 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718b
  OSStatus SetApplicationIsDaemon(Boolean isDaemon);
  void _LSSetApplicationLaunchServicesServerConnectionStatus(
 @@ -19,10 +20,12 @@ void _LSSetApplicationLaunchServicesServerConnectionStatus(
- // https://github.com/WebKit/webkit/commit/8da694b0b3febcc262653d01a45e946ce91845ed.
- void _CSCheckFixDisable() API_AVAILABLE(macosx(10.15));
+ // https://github.com/WebKit/WebKit/blob/24aaedc770d192d03a07ba4a71727274aaa8fc07/Source/WebKit/WebProcess/cocoa/WebProcessCocoa.mm#L840
+ void _CSCheckFixDisable();
  }  // extern "C"
 +#endif
  
@@ -179,7 +179,7 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718b
    // Allow the process to continue without a LaunchServices ASN. The
    // INIT_Process function in HIServices will abort if it cannot connect to
    // launchservicesd to get an ASN. By setting this flag, HIServices skips
-@@ -36,12 +39,15 @@ void DisableLaunchServices() {
+@@ -36,10 +39,13 @@ void DisableLaunchServices() {
        0, ^bool(CFDictionaryRef options) {
          return false;
        });
@@ -188,9 +188,7 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718b
  
  void DisableCoreServicesCheckFix() {
 +#if !IS_MAS_BUILD()
-   if (__builtin_available(macOS 10.15, *)) {
-     _CSCheckFixDisable();
-   }
+   _CSCheckFixDisable();
 +#endif
  }
  
