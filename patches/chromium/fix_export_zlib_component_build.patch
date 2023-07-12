@@ -1,0 +1,25 @@
+From 74061d7b83fe760e771bfeb7d9172b02ca006b98 Mon Sep 17 00:00:00 2001
+From: hiitiger <lushang@outlook.com>
+Date: Wed, 12 Jul 2023 11:31:45 +0800
+Subject: [PATCH] fix: export zlib component_build
+
+---
+ third_party/zlib/BUILD.gn | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/third_party/zlib/BUILD.gn b/third_party/zlib/BUILD.gn
+index 883d31f7264fd..d17eb3a4bc181 100644
+--- a/third_party/zlib/BUILD.gn
++++ b/third_party/zlib/BUILD.gn
+@@ -316,7 +316,7 @@ component("zlib") {
+   defines = []
+   deps = []
+ 
+-  if (is_win) {
++  if (is_win && !is_component_build) {
+     defines += [ "ZLIB_DLL" ]
+   }
+ 
+-- 
+2.39.2.windows.1
+

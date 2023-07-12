@@ -1,0 +1,42 @@
+From 3e1d7d7ab7dbd68ddb22b6bc7d0dc1f09ef8f979 Mon Sep 17 00:00:00 2001
+From: hiitiger <lushang@outlook.com>
+Date: Wed, 12 Jul 2023 11:07:52 +0800
+Subject: [PATCH] build: keep Node as a static lib even in component builds
+
+---
+ BUILD.gn | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/BUILD.gn b/BUILD.gn
+index a47875642d..ff429d28c4 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -148,11 +148,11 @@ config("node_internal_config") {
+   if (node_module_version != "") {
+     defines += [ "NODE_MODULE_VERSION=" + node_module_version ]
+   }
+-  if (is_component_build) {
+-    defines += [
+-      "NODE_SHARED_MODE",
+-    ]
+-  }
++#  if (is_component_build) {
++#    defines += [
++#      "NODE_SHARED_MODE",
++#    ]
++#  }
+ 
+   if (target_cpu == "x86") {
+     node_arch = "ia32"
+@@ -206,7 +206,7 @@ executable("overlapped-checker") {
+   }
+ }
+ 
+-component("node_lib") {
++static_library("node_lib") {
+   deps = [
+     ":node_js2c",
+     "deps/googletest:gtest",
+-- 
+2.39.2.windows.1
+

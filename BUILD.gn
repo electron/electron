@@ -529,9 +529,9 @@ source_set("electron_lib") {
     sources += filenames.lib_sources_views
   }
 
-  if (is_component_build) {
-    defines += [ "NODE_SHARED_MODE" ]
-  }
+  #  if (is_component_build) {
+  #    defines += [ "NODE_SHARED_MODE" ]
+  #  }
 
   if (enable_fake_location_provider) {
     sources += [
