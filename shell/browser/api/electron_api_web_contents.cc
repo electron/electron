@@ -2652,13 +2652,13 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
       options.Get("activate", &activate);
-      options.Get("titles", &title);
+      options.Get("title", &title);
     }
   }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
-  inspectable_web_contents_->SetTitles(title);
+  inspectable_web_contents_->SetTitle(title);
   inspectable_web_contents_->ShowDevTools(activate);
 }
 

@@ -426,8 +426,8 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
-void InspectableWebContents::SetTitles(const std::string& title) {
-  devtools_titles_ = title;
+void InspectableWebContents::SetTitle(const std::string& title) {
+  devtools_title_ = title;
 }
 
 void InspectableWebContents::SetDevToolsWebContents(
@@ -569,7 +569,7 @@ void InspectableWebContents::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
-    view_->SetTitle(base::UTF8ToUTF16(devtools_titles_));
+    view_->SetTitle(base::UTF8ToUTF16(devtools_title_));
   } else {
     if (dock_state_.empty()) {
       const base::Value::Dict& prefs =
@@ -638,7 +638,7 @@ void InspectableWebContents::InspectElementCompleted() {}
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
-    if (devtools_titles_.empty()) {
+    if (devtools_title_.empty()) {
       view_->SetTitle(
           base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
     }
