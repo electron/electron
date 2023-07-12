@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index df227a4f7a6717d4c60102f44b6457b1d619baa3..75f14022b692df00c4eb783ec2f891c857e63f8e 100644
+index df227a4f7a6717d4c60102f44b6457b1d619baa3..4472a474a7e5771698e53c9e89618352c58d8c0e 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -161,6 +161,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -75,7 +75,7 @@ index df227a4f7a6717d4c60102f44b6457b1d619baa3..75f14022b692df00c4eb783ec2f891c8
    // This code is just copied from WebKit except renaming variables.
    static NSArray* const kAttributes = @[
      NSUnderlineStyleAttributeName, NSUnderlineColorAttributeName,
-+#if IS_MAS_BUILD()
++#if !IS_MAS_BUILD()
      NSMarkedClauseSegmentAttributeName, NSTextInputReplacementRangeAttributeName
 +#else
 +    NSMarkedClauseSegmentAttributeName
