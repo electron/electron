@@ -25,6 +25,8 @@
 #include "components/proxy_config/proxy_config_dictionary.h"
 #include "components/proxy_config/proxy_config_pref_names.h"
 #include "content/public/browser/child_process_security_policy.h"
+#include "content/public/browser/network_quality_observer_factory.h"
+#include "content/public/browser/network_service_instance.h"
 #include "content/public/common/content_switches.h"
 #include "electron/fuses.h"
 #include "extensions/common/constants.h"
@@ -128,6 +130,10 @@ void BrowserProcessImpl::PreCreateThreads() {
   // this can be created on first use.
   if (!SystemNetworkContextManager::GetInstance())
     SystemNetworkContextManager::CreateInstance(local_state_.get());
+}
+
+void BrowserProcessImpl::PreMainMessageLoopRun() {
+  CreateNetworkQualityObserver();
 }
 
 void BrowserProcessImpl::PostMainMessageLoopRun() {
@@ -323,4 +329,19 @@ printing::PrintJobManager* BrowserProcessImpl::print_job_manager() {
 
 StartupData* BrowserProcessImpl::startup_data() {
   return nullptr;
+}
+
+network::NetworkQualityTracker* BrowserProcessImpl::GetNetworkQualityTracker() {
+  if (!network_quality_tracker_) {
+    network_quality_tracker_ = std::make_unique<network::NetworkQualityTracker>(
+        base::BindRepeating(&content::GetNetworkService));
+  }
+  return network_quality_tracker_.get();
+}
+
+void BrowserProcessImpl::CreateNetworkQualityObserver() {
+  DCHECK(!network_quality_observer_);
+  network_quality_observer_ =
+      content::CreateNetworkQualityObserver(GetNetworkQualityTracker());
+  DCHECK(network_quality_observer_);
 }
