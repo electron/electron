@@ -8,6 +8,7 @@ function createWindow () {
     height: 400,
     title: 'Get version information',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   }

@@ -1,3 +1,5 @@
+const { shell } = require('electron')
+
 const basicNotification = {
   title: 'Basic Notification',
   body: 'Short message part'
@@ -27,3 +29,15 @@ basicNotificationButton.addEventListener('click', () => {
     console.log('Notification clicked')
   }
 })
+
+const links = document.querySelectorAll('a[href]')
+
+for (const link of links) {
+  const url = link.getAttribute('href')
+  if (url.indexOf('http') === 0) {
+    link.addEventListener('click', (e) => {
+      e.preventDefault()
+      shell.openExternal(url)
+    })
+  }
+}

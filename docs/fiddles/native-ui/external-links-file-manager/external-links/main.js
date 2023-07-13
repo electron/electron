@@ -8,6 +8,7 @@ function createWindow () {
     height: 400,
     title: 'Open External Links',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   }

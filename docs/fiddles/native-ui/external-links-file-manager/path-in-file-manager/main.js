@@ -8,6 +8,7 @@ function createWindow () {
     height: 400,
     title: 'Open Path in File Manager',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   }
