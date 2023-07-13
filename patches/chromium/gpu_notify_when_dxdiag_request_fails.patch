@@ -12,10 +12,10 @@ rendering and there is no signal from browser process on this event
 to identify it.
 
 diff --git a/content/browser/gpu/gpu_data_manager_impl.cc b/content/browser/gpu/gpu_data_manager_impl.cc
-index bcc2798027aaf132d1bcf526357c8fc65b268c2a..6762c090034f5b29e978bfd9ac0a5677d2b779eb 100644
+index e496fc3cab0eed155123f5fc0e3cb5c4332bfcea..db062a89b241ea7d73b01a28adf6725e9f951e4d 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl.cc
-@@ -230,6 +230,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
+@@ -225,6 +225,11 @@ void GpuDataManagerImpl::TerminateInfoCollectionGpuProcess() {
    base::AutoLock auto_lock(lock_);
    private_->TerminateInfoCollectionGpuProcess();
  }
@@ -24,26 +24,26 @@ index bcc2798027aaf132d1bcf526357c8fc65b268c2a..6762c090034f5b29e978bfd9ac0a5677
 +  base::AutoLock auto_lock(lock_);
 +  return private_->DxdiagDx12VulkanRequested();
 +}
- #endif
+ #endif  // BUILDFLAG(IS_WIN)
  
- void GpuDataManagerImpl::UpdateDawnInfo(
+ void GpuDataManagerImpl::PostCreateThreads() {
 diff --git a/content/browser/gpu/gpu_data_manager_impl.h b/content/browser/gpu/gpu_data_manager_impl.h
-index dec0836918007eb0d3be46e57cfc92c31af3dc62..9059320a73d27b81fb627753ce5a379470873f33 100644
+index c57305681efb469d296c90df68b6cdbea927580d..6dda1a5465e08df64b539ee203b7c40386d16e72 100644
 --- a/content/browser/gpu/gpu_data_manager_impl.h
 +++ b/content/browser/gpu/gpu_data_manager_impl.h
-@@ -125,6 +125,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
-   // BrowserMainParts override instead.
-   void PostCreateThreads();
+@@ -121,6 +121,7 @@ class CONTENT_EXPORT GpuDataManagerImpl : public GpuDataManager,
+   bool Dx12Requested() const;
+   bool VulkanRequested() const;
    void TerminateInfoCollectionGpuProcess();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
-   void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
- 
+   // Called from BrowserMainLoop::PostCreateThreads().
+   // TODO(content/browser/gpu/OWNERS): This should probably use a
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.cc b/content/browser/gpu/gpu_data_manager_impl_private.cc
-index a8884357f015b8205e9b25ff6ab7a5c268d4ef01..e6ffc967a38df013f767f1d5b5af830ad0ab4e95 100644
+index cd958aa527e3d078fd8f16e6b681bd80b2b41288..7826c31f0d91e742bf0909252f170258d63cd536 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.cc
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.cc
-@@ -1190,6 +1190,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
+@@ -1178,6 +1178,12 @@ void GpuDataManagerImplPrivate::TerminateInfoCollectionGpuProcess() {
    if (host)
      host->ForceShutdown();
  }
@@ -55,16 +55,16 @@ index a8884357f015b8205e9b25ff6ab7a5c268d4ef01..e6ffc967a38df013f767f1d5b5af830a
 +}
  #endif
  
- void GpuDataManagerImplPrivate::UpdateDawnInfo(
+ void GpuDataManagerImplPrivate::PostCreateThreads() {
 diff --git a/content/browser/gpu/gpu_data_manager_impl_private.h b/content/browser/gpu/gpu_data_manager_impl_private.h
-index ed4a3a959ba33fb893ac64b1f965dc3315e78e2c..2023620a79e7267ad5b5859ebf962b747889cdac 100644
+index cc93bb117b67c8dc656c1850c3c5f41b5bc31c82..c3a5c24ac664bf4701612f7c7f2e1586625c5b78 100644
 --- a/content/browser/gpu/gpu_data_manager_impl_private.h
 +++ b/content/browser/gpu/gpu_data_manager_impl_private.h
-@@ -87,6 +87,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+@@ -86,6 +86,7 @@ class CONTENT_EXPORT GpuDataManagerImplPrivate {
+   bool Dx12Requested() const;
    bool VulkanRequested() const;
-   void PostCreateThreads();
    void TerminateInfoCollectionGpuProcess();
 +  bool DxdiagDx12VulkanRequested() const;
  #endif
+   void PostCreateThreads();
    void UpdateDawnInfo(const std::vector<std::string>& dawn_info_list);
- 

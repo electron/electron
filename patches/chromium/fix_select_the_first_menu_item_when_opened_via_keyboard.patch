@@ -157,7 +157,7 @@ index 68c01b93a973a1910c1cce1e581b5c5e38a8c787..fd82c908886f646327e59a2f4ee8dc34
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index c4c1f9b517927cff4fc573504f8e707433a6c1cc..32ab57972c8935a08919dfffab1ad59a4724b67c 100644
+index 8bbf8104fdb46dc8fdb506d8504a1c9f9376175e..717488a814d122e6b0b285b1b1e49488f981eccb 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 @@ -193,6 +193,7 @@
