@@ -9,13 +9,12 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
   const fixtures = path.resolve(__dirname, 'fixtures');
 
   describe('clipboard.readImage()', () => {
-    it('returns NativeImage instance', async () => {
+    it('returns NativeImage instance', () => {
       const p = path.join(fixtures, 'assets', 'logo.png');
-      const img = nativeImage.createFromPath(p);
-      console.log('img.toDataURL(): ', img.toDataURL());
-      clipboard.writeImage(img);
-      const readImage = await clipboard.readImage();
-      expect(readImage.toDataURL()).to.equal(img.toDataURL());
+      const i = nativeImage.createFromPath(p);
+      clipboard.writeImage(i);
+      const readImage = clipboard.readImage();
+      expect(readImage.toDataURL()).to.equal(i.toDataURL());
     });
   });
 
@@ -79,7 +78,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
   });
 
   describe('clipboard.write()', () => {
-    it('returns data correctly', async () => {
+    it('returns data correctly', () => {
       const text = 'test';
       const rtf = '{\\rtf1\\utf8 text}';
       const p = path.join(fixtures, 'assets', 'logo.png');
@@ -97,7 +96,7 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       expect(clipboard.readText()).to.equal(text);
       expect(clipboard.readHTML()).to.equal(markup);
       expect(clipboard.readRTF()).to.equal(rtf);
-      const readImage = await clipboard.readImage();
+      const readImage = clipboard.readImage();
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
 
       if (process.platform !== 'linux') {

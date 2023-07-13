@@ -83,7 +83,7 @@ clipboard.writeHTML('<b>Hi</b>')
 
 * `type` string (optional) - Can be `selection` or `clipboard`; default is 'clipboard'. `selection` is only available on Linux.
 
-Returns `Promise<NativeImage>` - The image content in the clipboard, which is a [NativeImage](native-image.md).
+Returns [`NativeImage`](native-image.md) - The image content in the clipboard.
 
 ### `clipboard.writeImage(image[, type])`
 

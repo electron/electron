@@ -7,6 +7,7 @@
 #include <map>
 
 #include "base/containers/contains.h"
+#include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -218,24 +219,28 @@ void Clipboard::WriteBookmark(const std::u16string& title,
   writer.WriteBookmark(title, url);
 }
 
-v8::Local<v8::Promise> Clipboard::ReadImage(gin_helper::Arguments* args) {
-  gin_helper::Promise<gfx::Image> promise(args->isolate());
-  v8::Local<v8::Promise> handle = promise.GetHandle();
-
+gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
+  absl::optional<gfx::Image> image;
+
+  base::RunLoop run_loop;
+  base::RepeatingClosure callback = run_loop.QuitClosure();
   clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](gin_helper::Promise<gfx::Image> promise,
+          [](absl::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
-            promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
+            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            std::move(cb).Run();
           },
-          std::move(promise)));
+          &image, std::move(callback)));
+  run_loop.Run();
 
-  return handle;
+  DCHECK(image.has_value());
+  return image.value();
 }
 
 void Clipboard::WriteImage(const gfx::Image& image,
