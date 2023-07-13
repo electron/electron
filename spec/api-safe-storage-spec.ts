@@ -6,15 +6,6 @@ import { ifdescribe } from './lib/spec-helpers';
 import * as fs from 'fs-extra';
 import { once } from 'node:events';
 
-/* isEncryptionAvailable returns false in Linux when running CI due to a mocked dbus. This stops
-* Chrome from reaching the system's keyring or libsecret. When running the tests with config.store
-* set to basic-text, a nullptr is returned from chromium,  defaulting the available encryption to false.
-*
-* Because all encryption methods are gated by isEncryptionAvailable, the methods will never return the correct values
-* when run on CI and linux.
-* Refs: https://github.com/electron/electron/issues/30424.
-*/
-
 describe('safeStorage module', () => {
   it('safeStorage before and after app is ready', async () => {
     const appPath = path.join(__dirname, 'fixtures', 'crash-cases', 'safe-storage');
@@ -33,7 +24,13 @@ describe('safeStorage module', () => {
   });
 });
 
-ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
+describe('safeStorage module', () => {
+  before(() => {
+    if (process.platform === 'linux') {
+      safeStorage.setUsePlainTextEncryption(true);
+    }
+  });
+
   after(async () => {
     const pathToEncryptedString = path.resolve(__dirname, 'fixtures', 'api', 'safe-storage', 'encrypted.txt');
     if (await fs.pathExists(pathToEncryptedString)) {
@@ -44,6 +41,12 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
   describe('SafeStorage.isEncryptionAvailable()', () => {
     it('should return true when encryption key is available (macOS, Windows)', () => {
       expect(safeStorage.isEncryptionAvailable()).to.equal(true);
+    });
+  });
+
+  ifdescribe(process.platform === 'linux')('SafeStorage.getSelectedStorageBackend()', () => {
+    it('should return a valid backend', () => {
+      expect(safeStorage.getSelectedStorageBackend()).to.equal('basic_text');
     });
   });
 
@@ -87,6 +90,7 @@ ifdescribe(process.platform !== 'linux')('safeStorage module', () => {
       }).to.throw(Error);
     });
   });
+
   describe('safeStorage persists encryption key across app relaunch', () => {
     it('can decrypt after closing and reopening app', async () => {
       const fixturesPath = path.resolve(__dirname, 'fixtures');
