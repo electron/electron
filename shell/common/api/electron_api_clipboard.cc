@@ -7,6 +7,7 @@
 #include <map>
 
 #include "base/containers/contains.h"
+#include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -221,17 +222,23 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   absl::optional<gfx::Image> image;
+
+  base::RunLoop run_loop;
+  base::RepeatingClosure callback = run_loop.QuitClosure();
   clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image,
+          [](absl::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
             image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            std::move(cb).Run();
           },
-          &image));
+          &image, std::move(callback)));
+  run_loop.Run();
+
   DCHECK(image.has_value());
   return image.value();
 }
