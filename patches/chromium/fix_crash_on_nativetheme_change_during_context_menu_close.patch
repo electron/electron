@@ -35,7 +35,7 @@ index c4f9cea175824f9f5d592e05affdf717a391dcd6..7163f3ff0c745ce1099685028179e5ed
 -    if (menu_config.use_bubble_border && (corner_radius_ > 0) &&
 -        !menu_controller->IsCombobox()) {
 +    // Menu controller could be null during context menu being closed.
-+    bool is_combobox = menu_controller && !menu_controller->IsCombobox();
++    bool is_combobox = menu_controller && menu_controller->IsCombobox();
 +    if (menu_config.use_bubble_border && (corner_radius_ > 0) && !is_combobox) {
        CreateBubbleBorder();
      } else {
