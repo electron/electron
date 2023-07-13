@@ -56,8 +56,7 @@ clipboard.clear();
 clipboard.write({
   html: '<html></html>',
   text: 'Hello World!',
-  bookmark: 'Bookmark name',
-  image: clipboard.readImage()
+  bookmark: 'Bookmark name'
 });
 
 // crash-reporter
@@ -135,8 +134,9 @@ holder.ondrop = function (e) {
 // nativeImage
 // https://github.com/electron/electron/blob/main/docs/api/native-image.md
 
-const image = clipboard.readImage();
-console.log(image.getSize());
+clipboard.readImage().then(image => {
+  console.log(image.getSize());
+});
 
 // https://github.com/electron/electron/blob/main/docs/api/process.md
 

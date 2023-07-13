@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "shell/common/gin_helper/promise.h"
 #include "ui/base/clipboard/clipboard.h"
 #include "ui/gfx/image/image.h"
 #include "v8/include/v8.h"
@@ -52,7 +53,7 @@ class Clipboard {
                             const std::string& url,
                             gin_helper::Arguments* args);
 
-  static gfx::Image ReadImage(gin_helper::Arguments* args);
+  static v8::Local<v8::Promise> ReadImage(gin_helper::Arguments* args);
   static void WriteImage(const gfx::Image& image, gin_helper::Arguments* args);
 
   static std::u16string ReadFindText();

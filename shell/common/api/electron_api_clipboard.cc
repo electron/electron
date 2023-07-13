@@ -218,22 +218,24 @@ void Clipboard::WriteBookmark(const std::u16string& title,
   writer.WriteBookmark(title, url);
 }
 
-gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
+v8::Local<v8::Promise> Clipboard::ReadImage(gin_helper::Arguments* args) {
+  gin_helper::Promise<gfx::Image> promise(args->isolate());
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  absl::optional<gfx::Image> image;
   clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image,
+          [](gin_helper::Promise<gfx::Image> promise,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
-            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            promise.Resolve(gfx::Image::CreateFrom1xBitmap(bitmap));
           },
-          &image));
-  DCHECK(image.has_value());
-  return image.value();
+          std::move(promise)));
+
+  return handle;
 }
 
 void Clipboard::WriteImage(const gfx::Image& image,
