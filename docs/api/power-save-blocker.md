@@ -7,12 +7,21 @@ Process: [Main](../glossary.md#main-process)
 For example:
 
 ```javascript
-const { powerSaveBlocker } = require('electron')
+// const { powerSaveBlocker } = require('electron')
 
-const id = powerSaveBlocker.start('prevent-display-sleep')
-console.log(powerSaveBlocker.isStarted(id))
+// const id = powerSaveBlocker.start('prevent-display-sleep')
+// console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id)
+// powerSaveBlocker.stop(id)
+const { powerSaveBlocker } = require('electron');
+
+const id = powerSaveBlocker.start('prevent-display-sleep');
+console.log(powerSaveBlocker.isStarted(id));
+
+const stopped = powerSaveBlocker.stop(id) as unknown as boolean;
+console.log(stopped);
+
+
 ```
 
 ## Methods
