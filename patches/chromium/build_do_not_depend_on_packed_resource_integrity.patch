@@ -33,7 +33,7 @@ index bfb799ebe63f9134604c1343a215405d0dff0cca..4d5d3b4876cab294d4347ffcf0c87781
            "//base",
            "//build:branding_buildflags",
 diff --git a/chrome/browser/BUILD.gn b/chrome/browser/BUILD.gn
-index 036e801adf32367ccb8a3053c8557a8532795680..5212f49d1f86384f40aa09267f92b4053a546c99 100644
+index a21ac39e8ad1f9c4d6dbc25e3ab3a077ce439920..ccdbcf77d4c6347099721af5106a7372e35e6779 100644
 --- a/chrome/browser/BUILD.gn
 +++ b/chrome/browser/BUILD.gn
 @@ -4635,7 +4635,7 @@ static_library("browser") {
@@ -46,10 +46,10 @@ index 036e801adf32367ccb8a3053c8557a8532795680..5212f49d1f86384f40aa09267f92b405
        sources += [ "certificate_viewer_stub.cc" ]
      }
 diff --git a/chrome/test/BUILD.gn b/chrome/test/BUILD.gn
-index 04a1c4722ee69c172c7436d084f2d5f0165afb9c..bf0d62f4ce5306cdfea016d47f633f874be455dc 100644
+index a0568bdcc5b1722ceab811fea4b85788e202ce75..f640077ed4cfba57680647fd29ddf7f9004e49cf 100644
 --- a/chrome/test/BUILD.gn
 +++ b/chrome/test/BUILD.gn
-@@ -6650,7 +6650,6 @@ test("unit_tests") {
+@@ -6645,7 +6645,6 @@ test("unit_tests") {
  
      deps += [
        "//chrome:other_version",
@@ -57,7 +57,7 @@ index 04a1c4722ee69c172c7436d084f2d5f0165afb9c..bf0d62f4ce5306cdfea016d47f633f87
        "//chrome//services/util_win:unit_tests",
        "//chrome/app:chrome_dll_resources",
        "//chrome/app:win_unit_tests",
-@@ -6676,6 +6675,10 @@ test("unit_tests") {
+@@ -6671,6 +6670,10 @@ test("unit_tests") {
        "//ui/resources",
      ]
  
@@ -68,7 +68,7 @@ index 04a1c4722ee69c172c7436d084f2d5f0165afb9c..bf0d62f4ce5306cdfea016d47f633f87
      ldflags = [
        "/DELAYLOAD:api-ms-win-core-winrt-error-l1-1-0.dll",
        "/DELAYLOAD:api-ms-win-core-winrt-l1-1-0.dll",
-@@ -7621,7 +7624,6 @@ test("unit_tests") {
+@@ -7612,7 +7615,6 @@ test("unit_tests") {
      }
  
      deps += [
@@ -76,7 +76,7 @@ index 04a1c4722ee69c172c7436d084f2d5f0165afb9c..bf0d62f4ce5306cdfea016d47f633f87
        "//chrome/browser/apps:icon_standardizer",
        "//chrome/browser/apps/app_service",
        "//chrome/browser/apps/app_service:test_support",
-@@ -7707,6 +7709,10 @@ test("unit_tests") {
+@@ -7698,6 +7700,10 @@ test("unit_tests") {
        "//ui/webui/resources/js/browser_command:mojo_bindings",
      ]
  
