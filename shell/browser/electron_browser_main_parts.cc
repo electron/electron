@@ -14,6 +14,7 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "base/metrics/field_trial.h"
+#include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -24,6 +25,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/sync/key_storage_config_linux.h"
+#include "components/os_crypt/sync/key_storage_util_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
@@ -566,6 +568,15 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   config->should_use_preference =
       command_line.HasSwitch(::switches::kEnableEncryptionSelection);
   base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
+
+  bool use_backend = !config->should_use_preference ||
+                     os_crypt::GetBackendUse(config->user_data_path);
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::nix::DesktopEnvironment desktop_env =
+      base::nix::GetDesktopEnvironment(env.get());
+  os_crypt::SelectedLinuxBackend selected_backend =
+      os_crypt::SelectBackend(config->store, use_backend, desktop_env);
+  fake_browser_process_->SetLinuxStorageBackend(selected_backend);
   OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_MAC)

@@ -22,6 +22,10 @@
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "shell/browser/net/system_network_context_manager.h"
 
+#if BUILDFLAG(IS_LINUX)
+#include "components/os_crypt/sync/key_storage_util_linux.h"
+#endif
+
 namespace printing {
 class PrintJobManager;
 }
@@ -51,6 +55,11 @@ class BrowserProcessImpl : public BrowserProcess {
 
   void SetSystemLocale(const std::string& locale);
   const std::string& GetSystemLocale() const;
+
+#if BUILDFLAG(IS_LINUX)
+  void SetLinuxStorageBackend(os_crypt::SelectedLinuxBackend selected_backend);
+  const std::string& GetLinuxStorageBackend() const;
+#endif
 
   void EndSession() override {}
   void FlushLocalStateAndReply(base::OnceClosure reply) override {}
@@ -122,6 +131,9 @@ class BrowserProcessImpl : public BrowserProcess {
   std::unique_ptr<device::GeolocationManager> geolocation_manager_;
   std::string locale_;
   std::string system_locale_;
+#if BUILDFLAG(IS_LINUX)
+  std::string selected_linux_storage_backend_;
+#endif
 
   std::unique_ptr<network::NetworkQualityTracker> network_quality_tracker_;
   std::unique_ptr<

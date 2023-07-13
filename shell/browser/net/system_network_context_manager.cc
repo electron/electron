@@ -34,7 +34,6 @@
 #include "services/network/public/cpp/features.h"
 #include "services/network/public/cpp/shared_url_loader_factory.h"
 #include "services/network/public/mojom/network_context.mojom.h"
-#include "shell/browser/api/electron_api_safe_storage.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/electron_browser_client.h"
 #include "shell/common/application_info.h"
@@ -290,10 +289,6 @@ void SystemNetworkContextManager::OnNetworkServiceCreated(
       electron::fuses::IsCookieEncryptionEnabled()) {
     network_service->SetEncryptionKey(OSCrypt::GetRawEncryptionKey());
   }
-
-#if DCHECK_IS_ON()
-  electron::safestorage::SetElectronCryptoReady(true);
-#endif
 }
 
 network::mojom::NetworkContextParamsPtr
