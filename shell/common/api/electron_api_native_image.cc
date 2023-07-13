@@ -202,21 +202,23 @@ bool NativeImage::TryConvertNativeImage(v8::Isolate* isolate,
 
 #if BUILDFLAG(IS_WIN)
 HICON NativeImage::GetHICON(int size) {
-  auto iter = hicons_.find(size);
-  if (iter != hicons_.end())
+  if (auto iter = hicons_.find(size); iter != hicons_.end())
     return iter->second.get();
 
   // First try loading the icon with specified size.
   if (!hicon_path_.empty()) {
-    hicons_[size] = ReadICOFromPath(size, hicon_path_);
-    return hicons_[size].get();
+    auto& hicon = hicons_[size];
+    hicon = ReadICOFromPath(size, hicon_path_);
+    return hicon.get();
   }
 
   // Then convert the image to ICO.
   if (image_.IsEmpty())
     return NULL;
-  hicons_[size] = IconUtil::CreateHICONFromSkBitmap(image_.AsBitmap());
-  return hicons_[size].get();
+
+  auto& hicon = hicons_[size];
+  hicon = IconUtil::CreateHICONFromSkBitmap(image_.AsBitmap());
+  return hicon.get();
 }
 #endif
 
