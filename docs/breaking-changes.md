@@ -21,24 +21,6 @@ macOS 10.13 (High Sierra) and macOS 10.14 (Mojave) are no longer supported by [C
 Older versions of Electron will continue to run on these operating systems, but macOS 10.15 (Catalina)
 or later will be required to run Electron v27.0.0 and higher.
 
-## Planned Breaking API Changes (26.0)
-
-### API Changed: `clipboard.readImage()` now returns a Promise
-
-`clipboard.readImage()` has been modified to be asynchronous and return a Promise.
-This has been changed as a result of upstream changes in Chromium.
-
-```js
-// Removed in Electron 26
-const image = clipboard.readImage()
-console.log(image)
-
-// Replace with
-clipboard.readImage().then(image => {
-  console.log(image)
-})
-```
-
 ## Planned Breaking API Changes (25.0)
 
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
