@@ -79,7 +79,7 @@ syntax](https://tools.ietf.org/html/rfc3986#section-3). For example `http` and
 `https` are standard schemes, while `file` is not.
 
 Registering a scheme as standard allows relative and absolute resources to
-be resolved correctly when served. Otherwise the scheme will behave like the
+be resolved correctly when served. Otherwise, the scheme will behave like the
 `file` protocol, but without the ability to resolve relative URLs.
 
 For example when you load following page with custom protocol without
@@ -88,16 +88,16 @@ non-standard schemes can not recognize relative URLs:
 
 ```html
 <body>
-  <img src='test.png'>
+  <img src='test.png' alt="non-standard-schemes">
 </body>
 ```
 
 Registering a scheme as standard will allow access to files through the
-[FileSystem API][file-system-api]. Otherwise the renderer will throw a security
+[FileSystem API][file-system-api]. Otherwise, the renderer will throw a security
 error for the scheme.
 
-By default web storage apis (localStorage, sessionStorage, webSQL, indexedDB,
-cookies) are disabled for non standard schemes. So in general if you want to
+By default, web storage apis (localStorage, sessionStorage, webSQL, indexedDB,
+cookies) are disabled for non-standard schemes. So in general if you want to
 register a custom protocol to replace the `http` protocol, you have to register
 it as a standard scheme.
 
@@ -191,7 +191,7 @@ To handle the `request`, the `callback` should be called with either the file's
 path or an object that has a `path` property, e.g. `callback(filePath)` or
 `callback({ path: filePath })`. The `filePath` must be an absolute path.
 
-By default the `scheme` is treated like `http:`, which is parsed differently
+By default, the `scheme` is treated like `http:`, which is parsed differently
 from protocols that follow the "generic URI syntax" like `file:`.
 
 ### `protocol.registerBufferProtocol(scheme, handler)` _Deprecated_
