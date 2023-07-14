@@ -56,10 +56,7 @@ This function will return one of the following values:
 
 * `basic_text` - When the desktop environment is not recognised or if the following
 command line flag is provided `--password-store="basic"`.
-* `gnome_any` - When the desktop environment is `X-Cinnamon`, `Deepin`, `GNOME`, `Pantheon`, `XFCE`, `UKUI`, `unity` or if the following command line flag is provided `--password-store="gnome"`. When this value is present the application
-will first try to use `libsecret` backend and if it fails will attempt to use `libgnome_keyring`.
-* `gnome_libsecret` - When the following command line flag is provided `--password-store="gnome-libsecret"`.
-* `gnome_keyring` - When the following command line flag is provided `--password-store="gnome-keyring"`.
+* `gnome_libsecret` - When the desktop environment is `X-Cinnamon`, `Deepin`, `GNOME`, `Pantheon`, `XFCE`, `UKUI`, `unity` or if the following command line flag is provided `--password-store="gnome-libsecret"`.
 * `kwallet` - When the desktop session is `kde4` or if the following command line flag
 is provided `--password-store="kwallet"`.
 * `kwallet5` - When the desktop session is `kde5` or if the following command line flag
