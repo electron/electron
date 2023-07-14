@@ -75,8 +75,8 @@
 * `backgroundThrottling` boolean (optional) - Whether to throttle animations and timers
   when the page becomes background. This also affects the
   [Page Visibility API](../browser-window.md#page-visibility). When at least one
-  [webContents](../web-contents.md) displayed in the single
-  [browserWindow](../browser-window.md) has dsiabled `backgroundThrottling` then
+  [webContents](../web-contents.md) displayed in a single
+  [browserWindow](../browser-window.md) has disabled `backgroundThrottling` then
   frames will be drawn and swapped for the whole window and other
   [webContents](../web-contents.md) displayed by it. Defaults to `true`.
 * `offscreen` boolean (optional) - Whether to enable offscreen rendering for the browser

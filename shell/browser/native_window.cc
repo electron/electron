@@ -755,10 +755,7 @@ void NativeWindow::RemoveBackgroundThrottlingSource(
 }
 
 void NativeWindow::UpdateBackgroundThrottlingState() {
-  if (!GetWidget()) {
-    return;
-  }
-  if (!GetWidget()->GetCompositor()) {
+  if (!GetWidget() || !GetWidget()->GetCompositor()) {
     return;
   }
   bool enable_background_throttling = true;
