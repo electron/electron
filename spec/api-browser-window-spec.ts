@@ -47,6 +47,10 @@ const isBeforeUnload = (event: Event, level: number, message: string) => {
 };
 
 describe('BrowserWindow module', () => {
+  it('sets the correct class name on the prototype', () => {
+    expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
+  });
+
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', async () => {
       expect(() => {
@@ -2072,6 +2076,14 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('BrowserWindow.showAllTabs()', () => {
+      it('does not throw', () => {
+        expect(() => {
+          w.showAllTabs();
+        }).to.not.throw();
+      });
+    });
+
     describe('BrowserWindow.mergeAllWindows()', () => {
       it('does not throw', () => {
         expect(() => {
@@ -2499,10 +2511,10 @@ describe('BrowserWindow module', () => {
     it('allows setting, changing, and removing the vibrancy', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
-        w.setVibrancy('light');
-        w.setVibrancy('dark');
+        w.setVibrancy('titlebar');
+        w.setVibrancy('selection');
         w.setVibrancy(null);
-        w.setVibrancy('ultra-dark');
+        w.setVibrancy('menu');
         w.setVibrancy('' as any);
       }).to.not.throw();
     });

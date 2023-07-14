@@ -25,6 +25,7 @@ class MenuViews : public Menu {
                int x,
                int y,
                int positioning_item,
+               ui::MenuSourceType source_type,
                base::OnceClosure callback) override;
   void ClosePopupAt(int32_t window_id) override;
 

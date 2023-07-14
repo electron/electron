@@ -183,14 +183,6 @@ async function runTestUsingElectron (specDir, testName) {
   console.log(`${pass} Electron ${testName} process tests passed.`);
 }
 
-const specFilter = (file) => {
-  if (!/-spec\.[tj]s$/.test(file)) {
-    return false;
-  } else {
-    return true;
-  }
-};
-
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json');
   const outDir = `out/${utils.getOutDir()}`;

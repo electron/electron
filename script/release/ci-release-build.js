@@ -2,7 +2,6 @@ if (!process.env.CI) require('dotenv-safe').load();
 
 const assert = require('node:assert');
 const got = require('got');
-const { Octokit } = require('@octokit/rest');
 
 const BUILD_APPVEYOR_URL = 'https://ci.appveyor.com/api/builds';
 const CIRCLECI_PIPELINE_URL = 'https://circleci.com/api/v2/project/gh/electron/electron/pipeline';

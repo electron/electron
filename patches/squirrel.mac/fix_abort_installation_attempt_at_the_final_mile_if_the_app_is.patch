@@ -53,10 +53,10 @@ index c1f328fa8c3689218ef260347cb8f9d30b789efe..f502df2f88424ea902a061adfeb30358
  				}]
  				flattenMap:^(SQRLShipItRequest *request) {
 diff --git a/Squirrel/ShipIt-main.m b/Squirrel/ShipIt-main.m
-index 2c515ffdd67052a08ee8155c0e46b57e9721a0e5..5f3e29642012d04fc506b730a4e87fba861df250 100644
+index 032f0b3e9200b423f1cd25fa2f39bc4117443741..671f8fa2104df85046ff813d4b824a65caae502f 100644
 --- a/Squirrel/ShipIt-main.m
 +++ b/Squirrel/ShipIt-main.m
-@@ -201,8 +201,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
+@@ -199,8 +199,14 @@ static void installRequest(RACSignal *readRequestSignal, NSString *applicationId
  			return action;
  		}]
  		subscribeError:^(NSError *error) {

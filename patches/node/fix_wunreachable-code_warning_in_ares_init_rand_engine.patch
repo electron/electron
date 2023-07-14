@@ -1,0 +1,50 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 22 Jun 2023 11:59:47 -0500
+Subject: fix: Wunreachable-code warning in ares__init_rand_engine()
+
+Fix upstream Win32 FTBFS when building with -Werror,-Wunreachable-code.
+
+This patch can be removed after the fix is picked up in Node.js.
+Upstream PR @ https://github.com/c-ares/c-ares/pull/531
+
+diff --git a/deps/cares/src/lib/ares_rand.c b/deps/cares/src/lib/ares_rand.c
+index 766c1e6ea9bda1784cfb611dbac66424806cd23a..12d943921e3ba61cbf7a2ed3194fcd5a6c61da8a 100644
+--- a/deps/cares/src/lib/ares_rand.c
++++ b/deps/cares/src/lib/ares_rand.c
+@@ -55,6 +55,7 @@ BOOLEAN WINAPI SystemFunction036(PVOID RandomBuffer, ULONG RandomBufferLength);
+ #  endif
+ #endif
+ 
++#if !defined(HAVE_ARC4RANDOM_BUF) && !defined(_WIN32)
+ 
+ #define ARES_RC4_KEY_LEN 32 /* 256 bits */
+ 
+@@ -129,6 +130,7 @@ static void ares_rc4_init(ares_rand_rc4 *rc4_state)
+   rc4_state->i = 0;
+   rc4_state->j = 0;
+ }
++#endif
+ 
+ /* Just outputs the key schedule, no need to XOR with any data since we have none */
+ static void ares_rc4_prng(ares_rand_rc4 *rc4_state, unsigned char *buf, size_t len)
+@@ -166,13 +168,13 @@ static int ares__init_rand_engine(ares_rand_state *state)
+     return 1;
+   }
+   /* Fall-Thru on failure to RC4 */
+-#endif
+ 
+   state->type = ARES_RAND_RC4;
+   ares_rc4_init(&state->state.rc4);
+ 
+   /* Currently cannot fail */
+   return 1;
++#endif
+ }
+ 
+ 
+@@ -276,4 +278,3 @@ unsigned short ares__generate_new_id(ares_rand_state *state)
+   ares__rand_bytes(state, (unsigned char *)&r, sizeof(r));
+   return r;
+ }
+-

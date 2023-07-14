@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-116.0.5833.0
+image: e-116.0.5845.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -85,6 +85,8 @@ for:
             Remove-Item -Recurse -Force $pwd\build-tools
           }
       - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: New-Item -Name depot_tools\.disable_auto_update -ItemType File
+      - depot_tools\bootstrap\win_tools.bat
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {

@@ -9,10 +9,10 @@ rate-limiting, compression and global annotations.
 This should be upstreamed.
 
 diff --git a/components/crash/core/app/crash_reporter_client.cc b/components/crash/core/app/crash_reporter_client.cc
-index 284dd099122df85d2cebf467cdb3a54b45a343eb..bb21ddbd2ee4d2952a4b753a5c553005f8dc46db 100644
+index 3f3ed53d48fc4b19642cae847e69982782790e31..51d089f9fa0e1734f98f270a81a200beda71f2f4 100644
 --- a/components/crash/core/app/crash_reporter_client.cc
 +++ b/components/crash/core/app/crash_reporter_client.cc
-@@ -145,6 +145,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
+@@ -141,6 +141,17 @@ bool CrashReporterClient::ReportingIsEnforcedByPolicy(bool* breakpad_enabled) {
    return false;
  }
  

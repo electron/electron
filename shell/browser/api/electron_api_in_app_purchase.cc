@@ -109,8 +109,6 @@ struct Converter<in_app_purchase::Product> {
     dict.Set("productIdentifier", val.productIdentifier);
     dict.Set("localizedDescription", val.localizedDescription);
     dict.Set("localizedTitle", val.localizedTitle);
-    dict.Set("contentVersion", val.contentVersion);
-    dict.Set("contentLengths", val.contentLengths);
 
     // Pricing Information
     dict.Set("price", val.price);

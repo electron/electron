@@ -11,6 +11,10 @@ import { setTimeout } from 'node:timers/promises';
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
 describe('Menu module', function () {
+  it('sets the correct class name on the prototype', () => {
+    expect(Menu.prototype.constructor.name).to.equal('Menu');
+  });
+
   describe('Menu.buildFromTemplate', () => {
     it('should be able to attach extra fields', () => {
       const menu = Menu.buildFromTemplate([

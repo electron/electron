@@ -58,7 +58,7 @@
 @implementation ElectronProgressBar
 
 - (void)drawRect:(NSRect)dirtyRect {
-  if (self.style != NSProgressIndicatorBarStyle)
+  if (self.style != NSProgressIndicatorStyleBar)
     return;
   // Draw edges of rounded rect.
   NSRect rect = NSInsetRect([self bounds], 1.0, 1.0);
@@ -160,6 +160,47 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
     return;
   }
   [self setFrame:[[self superview] bounds]];
+}
+
+// -[NSWindow orderWindow] does not handle reordering for children
+// windows. Their order is fixed to the attachment order (the last attached
+// window is on the top). Therefore, work around it by re-parenting in our
+// desired order.
+void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
+  NSWindow* parent = [child_window parentWindow];
+  DCHECK(parent);
+
+  // `ordered_children` sorts children windows back to front.
+  NSArray<NSWindow*>* children = [[child_window parentWindow] childWindows];
+  std::vector<std::pair<NSInteger, NSWindow*>> ordered_children;
+  for (NSWindow* child in children)
+    ordered_children.push_back({[child orderedIndex], child});
+  std::sort(ordered_children.begin(), ordered_children.end(), std::greater<>());
+
+  // If `other_window` is nullptr, place `child_window` in front of
+  // all other children windows.
+  if (other_window == nullptr)
+    other_window = ordered_children.back().second;
+
+  if (child_window == other_window)
+    return;
+
+  for (NSWindow* child in children)
+    [parent removeChildWindow:child];
+
+  const bool relative_to_parent = parent == other_window;
+  if (relative_to_parent)
+    [parent addChildWindow:child_window ordered:NSWindowAbove];
+
+  // Re-parent children windows in the desired order.
+  for (auto [ordered_index, child] : ordered_children) {
+    if (child != child_window && child != other_window) {
+      [parent addChildWindow:child ordered:NSWindowAbove];
+    } else if (child == other_window && !relative_to_parent) {
+      [parent addChildWindow:other_window ordered:NSWindowAbove];
+      [parent addChildWindow:child_window ordered:NSWindowAbove];
+    }
+  }
 }
 
 }  // namespace
@@ -759,13 +800,21 @@ bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
   if (!webrtc::GetWindowOwnerPid(window_id))
     return false;
 
-  [window_ orderWindow:NSWindowAbove relativeTo:id.id];
+  if (!parent()) {
+    [window_ orderWindow:NSWindowAbove relativeTo:window_id];
+  } else {
+    NSWindow* other_window = [NSApp windowWithWindowNumber:window_id];
+    ReorderChildWindowAbove(window_, other_window);
+  }
 
   return true;
 }
 
 void NativeWindowMac::MoveTop() {
-  [window_ orderWindow:NSWindowAbove relativeTo:0];
+  if (!parent())
+    [window_ orderWindow:NSWindowAbove relativeTo:0];
+  else
+    ReorderChildWindowAbove(window_, nullptr);
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
@@ -915,7 +964,6 @@ void NativeWindowMac::Center() {
 }
 
 void NativeWindowMac::Invalidate() {
-  [window_ flushWindow];
   [[window_ contentView] setNeedsDisplay:YES];
 }
 
@@ -1289,7 +1337,7 @@ void NativeWindowMac::SetProgressBar(double progress,
     NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
     NSProgressIndicator* progress_indicator =
         [[[ElectronProgressBar alloc] initWithFrame:frame] autorelease];
-    [progress_indicator setStyle:NSProgressIndicatorBarStyle];
+    [progress_indicator setStyle:NSProgressIndicatorStyleBar];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
     [progress_indicator setMinValue:0];
@@ -1400,26 +1448,10 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     return;
   }
 
-  std::string dep_warn = " has been deprecated and removed as of macOS 10.15.";
-  node::Environment* env =
-      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-
   NSVisualEffectMaterial vibrancyType{};
-  if (type == "appearance-based") {
-    EmitWarning(env, "NSVisualEffectMaterialAppearanceBased" + dep_warn,
-                "electron");
-    vibrancyType = NSVisualEffectMaterialAppearanceBased;
-  } else if (type == "light") {
-    EmitWarning(env, "NSVisualEffectMaterialLight" + dep_warn, "electron");
-    vibrancyType = NSVisualEffectMaterialLight;
-  } else if (type == "dark") {
-    EmitWarning(env, "NSVisualEffectMaterialDark" + dep_warn, "electron");
-    vibrancyType = NSVisualEffectMaterialDark;
-  } else if (type == "titlebar") {
+  if (type == "titlebar") {
     vibrancyType = NSVisualEffectMaterialTitlebar;
-  }
-
-  if (type == "selection") {
+  } else if (type == "selection") {
     vibrancyType = NSVisualEffectMaterialSelection;
   } else if (type == "menu") {
     vibrancyType = NSVisualEffectMaterialMenu;
@@ -1427,35 +1459,24 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancyType = NSVisualEffectMaterialPopover;
   } else if (type == "sidebar") {
     vibrancyType = NSVisualEffectMaterialSidebar;
-  } else if (type == "medium-light") {
-    EmitWarning(env, "NSVisualEffectMaterialMediumLight" + dep_warn,
-                "electron");
-    vibrancyType = NSVisualEffectMaterialMediumLight;
-  } else if (type == "ultra-dark") {
-    EmitWarning(env, "NSVisualEffectMaterialUltraDark" + dep_warn, "electron");
-    vibrancyType = NSVisualEffectMaterialUltraDark;
-  }
-
-  if (@available(macOS 10.14, *)) {
-    if (type == "header") {
-      vibrancyType = NSVisualEffectMaterialHeaderView;
-    } else if (type == "sheet") {
-      vibrancyType = NSVisualEffectMaterialSheet;
-    } else if (type == "window") {
-      vibrancyType = NSVisualEffectMaterialWindowBackground;
-    } else if (type == "hud") {
-      vibrancyType = NSVisualEffectMaterialHUDWindow;
-    } else if (type == "fullscreen-ui") {
-      vibrancyType = NSVisualEffectMaterialFullScreenUI;
-    } else if (type == "tooltip") {
-      vibrancyType = NSVisualEffectMaterialToolTip;
-    } else if (type == "content") {
-      vibrancyType = NSVisualEffectMaterialContentBackground;
-    } else if (type == "under-window") {
-      vibrancyType = NSVisualEffectMaterialUnderWindowBackground;
-    } else if (type == "under-page") {
-      vibrancyType = NSVisualEffectMaterialUnderPageBackground;
-    }
+  } else if (type == "header") {
+    vibrancyType = NSVisualEffectMaterialHeaderView;
+  } else if (type == "sheet") {
+    vibrancyType = NSVisualEffectMaterialSheet;
+  } else if (type == "window") {
+    vibrancyType = NSVisualEffectMaterialWindowBackground;
+  } else if (type == "hud") {
+    vibrancyType = NSVisualEffectMaterialHUDWindow;
+  } else if (type == "fullscreen-ui") {
+    vibrancyType = NSVisualEffectMaterialFullScreenUI;
+  } else if (type == "tooltip") {
+    vibrancyType = NSVisualEffectMaterialToolTip;
+  } else if (type == "content") {
+    vibrancyType = NSVisualEffectMaterialContentBackground;
+  } else if (type == "under-window") {
+    vibrancyType = NSVisualEffectMaterialUnderWindowBackground;
+  } else if (type == "under-page") {
+    vibrancyType = NSVisualEffectMaterialUnderPageBackground;
   }
 
   if (vibrancyType) {
@@ -1561,6 +1582,10 @@ void NativeWindowMac::SelectPreviousTab() {
 
 void NativeWindowMac::SelectNextTab() {
   [window_ selectNextTab:nil];
+}
+
+void NativeWindowMac::ShowAllTabs() {
+  [window_ toggleTabOverview:nil];
 }
 
 void NativeWindowMac::MergeAllWindows() {

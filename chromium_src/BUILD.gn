@@ -127,13 +127,6 @@ static_library("chrome") {
     sources += [ "//chrome/browser/process_singleton_posix.cc" ]
   }
 
-  if (is_mac) {
-    sources += [
-      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
-      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
-    ]
-  }
-
   if (is_win) {
     sources += [
       "//chrome/browser/extensions/global_shortcut_listener_win.cc",
@@ -349,6 +342,8 @@ if (is_mac) {
       "//chrome/browser/media/webrtc/window_icon_util_mac.mm",
       "//chrome/browser/platform_util_mac.mm",
       "//chrome/browser/process_singleton_mac.mm",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.h",
+      "//chrome/browser/ui/views/eye_dropper/eye_dropper_view_mac.mm",
     ]
 
     deps = [

@@ -198,13 +198,17 @@ v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {
 // static
 void BrowserView::FillObjectTemplate(v8::Isolate* isolate,
                                      v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "BrowserView", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .Build();
+}
+
+const char* BrowserView::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

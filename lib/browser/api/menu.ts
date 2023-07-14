@@ -69,7 +69,7 @@ Menu.prototype.popup = function (options = {}) {
   if (options == null || typeof options !== 'object') {
     throw new TypeError('Options must be an object');
   }
-  let { window, x, y, positioningItem, callback } = options;
+  let { window, x, y, positioningItem, sourceType, callback } = options;
 
   // no callback passed
   if (!callback || typeof callback !== 'function') callback = () => {};
@@ -78,6 +78,7 @@ Menu.prototype.popup = function (options = {}) {
   if (typeof x !== 'number') x = -1;
   if (typeof y !== 'number') y = -1;
   if (typeof positioningItem !== 'number') positioningItem = -1;
+  if (typeof sourceType !== 'string' || !sourceType) sourceType = 'mouse';
 
   // find which window to use
   const wins = BaseWindow.getAllWindows();
@@ -91,7 +92,7 @@ Menu.prototype.popup = function (options = {}) {
     }
   }
 
-  this.popupAt(window as unknown as BaseWindow, x, y, positioningItem, callback);
+  this.popupAt(window as unknown as BaseWindow, x, y, positioningItem, sourceType, callback);
   return { browserWindow: window, x, y, position: positioningItem };
 };
 
@@ -213,9 +214,7 @@ function areValidTemplateItems (template: (MenuItemConstructorOptions | MenuItem
   return template.every(item =>
     item != null &&
     typeof item === 'object' &&
-    (Object.prototype.hasOwnProperty.call(item, 'label') ||
-     Object.prototype.hasOwnProperty.call(item, 'role') ||
-     item.type === 'separator'));
+    (Object.hasOwn(item, 'label') || Object.hasOwn(item, 'role') || item.type === 'separator'));
 }
 
 function sortTemplate (template: (MenuItemConstructorOptions | MenuItem)[]) {

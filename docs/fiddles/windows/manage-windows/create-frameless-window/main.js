@@ -11,6 +11,7 @@ function createWindow () {
     height: 400,
     title: 'Create a frameless window',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   })
