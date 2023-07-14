@@ -9,7 +9,7 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 04b898df25b5d2dfafbc0f0010af9325a90c28d4..45d2c05203cc6ef2cebb4a8c32a7954a85111df7 100644
+index 80a710d95c95f34cc684846042de066ac5dea871..85c4954928246190201c875faf79d27ddb1e3865 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
 @@ -7828,6 +7828,7 @@ void RenderFrameHostImpl::CreateNewWindow(
@@ -79,7 +79,7 @@ index d7a8a6d628b790ad9747335b45d1bb148f536ed7..7ba6f9bf054cf9b4d89cfa129caf91a8
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index a558365d87cb4b46eb3bd016fc10889726811db0..1263f4042fe6d62af24131e4a4d7fda714275f48 100644
+index fe0b1b96209c48d298a0de2041e2841083f891a9..044a426f4dab1b60b035e4f383b6c468446afc74 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -169,6 +169,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index a558365d87cb4b46eb3bd016fc10889726811db0..1263f4042fe6d62af24131e4a4d7fda7
  }  // namespace network
  
  namespace sandbox {
-@@ -1076,6 +1077,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1078,6 +1079,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
