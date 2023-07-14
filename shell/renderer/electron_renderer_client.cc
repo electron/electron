@@ -144,10 +144,8 @@ void ElectronRendererClient::WillReleaseScriptContext(
   microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
   node::FreeEnvironment(env);
-  if (node_bindings_->uv_env() == nullptr) {
-    node::FreeIsolateData(node_bindings_->isolate_data(context));
-    node_bindings_->clear_isolate_data(context);
-  }
+  node::FreeIsolateData(node_bindings_->isolate_data(context));
+  node_bindings_->clear_isolate_data(context);
 
   microtask_queue->set_microtasks_policy(old_policy);
 
