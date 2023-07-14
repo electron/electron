@@ -97,6 +97,9 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
 
   microtask_queue->set_microtasks_policy(old_policy);
 
+  // ElectronBindings is tracking node environments.
+  electron_bindings_->EnvironmentDestroyed(env);
+
   if (lazy_tls->Get())
     lazy_tls->Set(nullptr);
 }
