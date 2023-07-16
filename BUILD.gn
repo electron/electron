@@ -763,6 +763,7 @@ if (is_mac) {
 
     deps = [
       "buildflags",
+      "shell/common/api:mojo",
       "//base",
       "//skia",
       "//third_party/electron_node:node_lib",
