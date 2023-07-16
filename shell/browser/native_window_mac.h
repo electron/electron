@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "base/mac/scoped_nsobject.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "shell/browser/native_window.h"
 #include "ui/display/display_observer.h"
@@ -193,8 +192,8 @@ class NativeWindowMac : public NativeWindow,
     kInactive,
   };
 
-  ElectronPreviewItem* preview_item() const { return preview_item_.get(); }
-  ElectronTouchBar* touch_bar() const { return touch_bar_.get(); }
+  ElectronPreviewItem* preview_item() const { return preview_item_; }
+  ElectronTouchBar* touch_bar() const { return touch_bar_; }
   bool zoom_to_page_width() const { return zoom_to_page_width_; }
   bool always_simple_fullscreen() const { return always_simple_fullscreen_; }
 
@@ -235,9 +234,9 @@ class NativeWindowMac : public NativeWindow,
 
   ElectronNSWindow* window_;  // Weak ref, managed by widget_.
 
-  base::scoped_nsobject<ElectronNSWindowDelegate> window_delegate_;
-  base::scoped_nsobject<ElectronPreviewItem> preview_item_;
-  base::scoped_nsobject<ElectronTouchBar> touch_bar_;
+  ElectronNSWindowDelegate* __strong window_delegate_;
+  ElectronPreviewItem* __strong preview_item_;
+  ElectronTouchBar* __strong touch_bar_;
 
   // The views::View that fills the client area.
   std::unique_ptr<RootViewMac> root_view_;
@@ -266,7 +265,7 @@ class NativeWindowMac : public NativeWindow,
   absl::optional<bool> window_button_visibility_;
 
   // Controls the position and visibility of window buttons.
-  base::scoped_nsobject<WindowButtonsProxy> buttons_proxy_;
+  WindowButtonsProxy* __strong buttons_proxy_;
 
   std::unique_ptr<SkRegion> draggable_region_;
 

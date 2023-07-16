@@ -532,14 +532,10 @@ void Browser::ShowAboutPanel() {
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
   if (credits != nil) {
-    base::scoped_nsobject<NSMutableDictionary> mutable_options(
-        [options mutableCopy]);
-    base::scoped_nsobject<NSAttributedString> creditString(
-        [[NSAttributedString alloc]
-            initWithString:credits
-                attributes:@{
-                  NSForegroundColorAttributeName : [NSColor textColor]
-                }]);
+    NSMutableDictionary* mutable_options = [options mutableCopy];
+    NSAttributedString* creditString = [[NSAttributedString alloc]
+        initWithString:credits
+            attributes:@{NSForegroundColorAttributeName : [NSColor textColor]}];
 
     [mutable_options setValue:creditString forKey:@"Credits"];
     options = [NSDictionary dictionaryWithDictionary:mutable_options];
