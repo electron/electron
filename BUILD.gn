@@ -947,7 +947,7 @@ if (is_mac) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
-      extra_configs = [ "//electron/build/config:mas_build" ]
+      configs += [ "//electron/build/config:mas_build" ]
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
@@ -1118,7 +1118,7 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
-    extra_configs = [ "//electron/build/config:mas_build" ]
+    configs += [ "//electron/build/config:mas_build" ]
   }
 
   if (enable_dsyms) {
