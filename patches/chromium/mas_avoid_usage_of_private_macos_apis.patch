@@ -38,35 +38,11 @@ index 09e99c33ba9f0fe739a26757aa9018d4dcf180aa..6ac1f2ea2aeff8e640d0307dc7ad4c28
 +#endif
  
  }  // namespace base
-diff --git a/base/mac/foundation_util.mm b/base/mac/foundation_util.mm
-index d3cd2a2324e3da84d80778bc251d8e4e1feee93b..8c9a9518eab32569a550c9fbf7085917c49caf27 100644
---- a/base/mac/foundation_util.mm
-+++ b/base/mac/foundation_util.mm
-@@ -371,8 +371,7 @@ void SetBaseBundleID(const char* new_base_bundle_id) {
-       const_cast<NSFont*>(reinterpret_cast<const NSFont*>(cf_val));
-   DCHECK(!cf_val ||
-          CTFontGetTypeID() == CFGetTypeID(cf_val) ||
--         (_CFIsObjC(CTFontGetTypeID(), cf_val) &&
--          [ns_val isKindOfClass:[NSFont class]]));
-+         ([ns_val isKindOfClass:[NSFont class]]));
-   return ns_val;
- }
- 
-@@ -445,9 +444,6 @@ CTFontRef NSToCFCast(NSFont* ns_val) {
-     return (CTFontRef)(cf_val);
-   }
- 
--  if (!_CFIsObjC(CTFontGetTypeID(), cf_val))
--    return NULL;
--
-   id<NSObject> ns_val = reinterpret_cast<id>(const_cast<void*>(cf_val));
-   if ([ns_val isKindOfClass:[NSFont class]]) {
-     return (CTFontRef)(cf_val);
 diff --git a/base/process/launch_mac.cc b/base/process/launch_mac.cc
-index de77363ffcb89e0b8c7b7033d973b89eb0dd28ae..fc02c33ccd023c366c73a21b87711a61b0b6eb10 100644
+index b267bc2272fa82334a70d897a900f1ea37b1a598..967e22699bf565368704972c021f9b425a570f08 100644
 --- a/base/process/launch_mac.cc
 +++ b/base/process/launch_mac.cc
-@@ -21,14 +21,19 @@
+@@ -21,13 +21,18 @@
  #include "base/threading/scoped_blocking_call.h"
  #include "base/threading/thread_restrictions.h"
  #include "base/trace_event/base_tracing.h"
@@ -76,19 +52,18 @@ index de77363ffcb89e0b8c7b7033d973b89eb0dd28ae..fc02c33ccd023c366c73a21b87711a61
  
  extern "C" {
  // Changes the current thread's directory to a path or directory file
- // descriptor. libpthread only exposes a syscall wrapper starting in
- // macOS 10.12, but the system call dates back to macOS 10.5. On older OSes,
- // the syscall is issued directly.
+ // descriptor.
 +#if !IS_MAS_BUILD()
- int pthread_chdir_np(const char* dir) API_AVAILABLE(macosx(10.12));
- int pthread_fchdir_np(int fd) API_AVAILABLE(macosx(10.12));
+ int pthread_chdir_np(const char* dir);
+ 
+ int pthread_fchdir_np(int fd);
 +#endif
  
- int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs, int disclaim)
-     API_AVAILABLE(macosx(10.14));
+ int responsibility_spawnattrs_setdisclaim(posix_spawnattr_t attrs,
+                                           int disclaim);
 @@ -99,13 +104,27 @@ class PosixSpawnFileActions {
- };
  
+ #if !BUILDFLAG(IS_MAC)
  int ChangeCurrentThreadDirectory(const char* path) {
 +#if IS_MAS_BUILD()
 +  #pragma clang diagnostic push
@@ -112,17 +87,17 @@ index de77363ffcb89e0b8c7b7033d973b89eb0dd28ae..fc02c33ccd023c366c73a21b87711a61
    return pthread_fchdir_np(-1);
 +#endif
  }
+ #endif
  
- struct GetAppOutputOptions {
-@@ -225,7 +244,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
+@@ -226,7 +245,7 @@ Process LaunchProcess(const std::vector<std::string>& argv,
      file_actions.Inherit(STDERR_FILENO);
    }
  
 -#if BUILDFLAG(IS_MAC)
 +#if 0
    if (options.disclaim_responsibility) {
-     if (__builtin_available(macOS 10.14, *)) {
-       DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
+     DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
+   }
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
 index 6e73be2bd964aa8cf743c1ae01ce8e188dbcac8e..58a7eb1e982a90d6197579ffdb9545340356a65c 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
@@ -180,7 +155,7 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718ba81696b5 100644
+index 175cbb4a23a4ab5f86c4bfa8158f8e0ada5454ed..ce44db60ba61394bbadacc4b85c94643a6e0261f 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
@@ -192,8 +167,8 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718b
  OSStatus SetApplicationIsDaemon(Boolean isDaemon);
  void _LSSetApplicationLaunchServicesServerConnectionStatus(
 @@ -19,10 +20,12 @@ void _LSSetApplicationLaunchServicesServerConnectionStatus(
- // https://github.com/WebKit/webkit/commit/8da694b0b3febcc262653d01a45e946ce91845ed.
- void _CSCheckFixDisable() API_AVAILABLE(macosx(10.15));
+ // https://github.com/WebKit/WebKit/blob/24aaedc770d192d03a07ba4a71727274aaa8fc07/Source/WebKit/WebProcess/cocoa/WebProcessCocoa.mm#L840
+ void _CSCheckFixDisable();
  }  // extern "C"
 +#endif
  
@@ -204,7 +179,7 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718b
    // Allow the process to continue without a LaunchServices ASN. The
    // INIT_Process function in HIServices will abort if it cannot connect to
    // launchservicesd to get an ASN. By setting this flag, HIServices skips
-@@ -36,12 +39,15 @@ void DisableLaunchServices() {
+@@ -36,10 +39,13 @@ void DisableLaunchServices() {
        0, ^bool(CFDictionaryRef options) {
          return false;
        });
@@ -213,9 +188,7 @@ index 92b84121da46b692b89f70a46e36f5d1991383b8..8de2556bb59c70f229d35da05fd0718b
  
  void DisableCoreServicesCheckFix() {
 +#if !IS_MAS_BUILD()
-   if (__builtin_available(macOS 10.15, *)) {
-     _CSCheckFixDisable();
-   }
+   _CSCheckFixDisable();
 +#endif
  }
  

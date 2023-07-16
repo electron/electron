@@ -7,17 +7,16 @@ Guard usages in blink of private Mac APIs by MAS_BUILD, so they can be
 excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/base/process/process_info_mac.cc b/base/process/process_info_mac.cc
-index 6840358c3187522c63dff66b5a85567aaadc5c12..72c57fbc5fbb267f96ff9e21915fb801ed5bf24e 100644
+index 94a028be3c315edc0056408ab9ab41b6b001a1c1..0d830234edb5621f57e39f4a951d357a23f677c1 100644
 --- a/base/process/process_info_mac.cc
 +++ b/base/process/process_info_mac.cc
-@@ -9,18 +9,22 @@
+@@ -8,15 +8,21 @@
  #include <stdlib.h>
  #include <unistd.h>
  
 +#if !IS_MAS_BUILD()
  extern "C" {
- pid_t responsibility_get_pid_responsible_for_pid(pid_t)
-     API_AVAILABLE(macosx(10.12));
+ pid_t responsibility_get_pid_responsible_for_pid(pid_t);
  }
 +#endif
  
@@ -25,14 +24,14 @@ index 6840358c3187522c63dff66b5a85567aaadc5c12..72c57fbc5fbb267f96ff9e21915fb801
  
  bool IsProcessSelfResponsible() {
 +#if !IS_MAS_BUILD()
-   if (__builtin_available(macOS 10.14, *)) {
-     const pid_t pid = getpid();
-     return responsibility_get_pid_responsible_for_pid(pid) == pid;
-   }
+   const pid_t pid = getpid();
+   return responsibility_get_pid_responsible_for_pid(pid) == pid;
++#else
++  return true;
 +#endif
-   return true;
  }
  
+ }  // namespace base
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
 index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ced88f21a5 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
@@ -102,7 +101,7 @@ index b9788cf84caf5e151b124e4b3bea81cc906e0673..e4a884a2715be084d0d5ae8d75a3e613
  
  }  // namespace content
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 79bf09102ab4ca9b0a5830132d98b7bd844b1c26..e2b20c0cda169d7b4af5c05b8797188955df8e3c 100644
+index aa93fcc4de03d8032e9090ca8b66019eeb7be8b0..721e7083e94fa977908858c908274c8db49c07a0 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -41,6 +41,7 @@
@@ -132,7 +131,7 @@ index 79bf09102ab4ca9b0a5830132d98b7bd844b1c26..e2b20c0cda169d7b4af5c05b87971889
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        device_paired_status_callback_(
-@@ -253,8 +257,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -247,8 +251,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {

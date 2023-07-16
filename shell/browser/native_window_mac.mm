@@ -52,6 +52,10 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/native_frame_view_mac.h"
 
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
 @interface ElectronProgressBar : NSProgressIndicator
 @end
 
@@ -450,12 +454,6 @@ void NativeWindowMac::Close() {
 
 void NativeWindowMac::CloseImmediately() {
   RemoveChildFromParentWindow(this);
-
-  // Retain the child window before closing it. If the last reference to the
-  // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
-  // See e.g. http://crbug.com/616701.
-  base::scoped_nsobject<NSWindow> child_window(window_,
-                                               base::scoped_policy::RETAIN);
   [window_ close];
 }
 
@@ -1330,13 +1328,13 @@ void NativeWindowMac::SetProgressBar(double progress,
   // For the first time API invoked, we need to create a ContentView in
   // DockTile.
   if (first_time) {
-    NSImageView* image_view = [[[NSImageView alloc] init] autorelease];
+    NSImageView* image_view = [[NSImageView alloc] init];
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];
 
     NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
     NSProgressIndicator* progress_indicator =
-        [[[ElectronProgressBar alloc] initWithFrame:frame] autorelease];
+        [[ElectronProgressBar alloc] initWithFrame:frame];
     [progress_indicator setStyle:NSProgressIndicatorStyleBar];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
@@ -1483,8 +1481,8 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancy_type_ = type;
 
     if (vibrantView == nil) {
-      vibrantView = [[[NSVisualEffectView alloc]
-          initWithFrame:[[window_ contentView] bounds]] autorelease];
+      vibrantView = [[NSVisualEffectView alloc]
+          initWithFrame:[[window_ contentView] bounds]];
       [window_ setVibrantView:vibrantView];
 
       [vibrantView

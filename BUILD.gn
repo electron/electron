@@ -748,20 +748,34 @@ if (is_mac) {
   source_set("electron_lib_arc") {
     include_dirs = [ "." ]
     sources = [
+      "shell/browser/browser_mac.mm",
       "shell/browser/mac/dict_util.h",
       "shell/browser/mac/dict_util.mm",
+      "shell/browser/mac/electron_application.h",
+      "shell/browser/mac/electron_application.mm",
       "shell/browser/mac/electron_application_delegate.h",
       "shell/browser/mac/electron_application_delegate.mm",
+      "shell/browser/native_window_mac.h",
+      "shell/browser/native_window_mac.mm",
+      "shell/browser/ui/cocoa/electron_ns_window_delegate.h",
+      "shell/browser/ui/cocoa/electron_ns_window_delegate.mm",
     ]
 
     deps = [
+      "buildflags",
+      "shell/common/api:mojo",
       "//base",
       "//skia",
       "//third_party/electron_node:node_lib",
+      "//third_party/webrtc_overrides:webrtc_component",
       "//v8",
     ]
 
-    configs += [ "//build/config/compiler:enable_arc" ]
+    configs += [
+      "//build/config/compiler:enable_arc",
+      "//electron/build/config:mas_build",
+      "//third_party/electron_node:node_internals",
+    ]
   }
 }
 

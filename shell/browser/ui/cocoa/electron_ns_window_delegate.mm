@@ -17,6 +17,10 @@
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 using FullScreenTransitionState =
     electron::NativeWindow::FullScreenTransitionState;
@@ -324,9 +328,9 @@ using FullScreenTransitionState =
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     NSWindow* sheetParent = [window sheetParent];
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce(base::RetainBlock(^{
+        FROM_HERE, base::BindOnce(^{
           [sheetParent endSheet:window];
-        })));
+        }));
   }
 
   // Clears the delegate when window is going to be closed, since EL Capitan it

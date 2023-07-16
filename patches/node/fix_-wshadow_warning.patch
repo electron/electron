@@ -1,0 +1,46 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Fri, 7 Jul 2023 11:28:19 -0500
+Subject: fix: -Wshadow warning
+
+In utils.h's `ERROR_AND_ABORT` macro, rename the static local variable
+`args` to avoid -Wshadow warnings in code that calls `ERROR_AND_ABORT()`
+or `CHECK()` from a function that already has an `args` variable.
+
+This patch could be removed after upstreaming to Node.js.
+
+Example warning:
+
+In file included from ../../third_party/electron_node/src/inspector/runtime_agent.cc:3:
+In file included from ../../third_party/electron_node/src/env-inl.h:32:
+../../third_party/electron_node/src/node_internals.h:72:3: error: declaration shadows a local variable [-Werror,-Wshadow]
+   72 |   CHECK(args[0]->IsObject());
+      |   ^
+../../third_party/electron_node/src/util.h:154:7: note: expanded from macro 'CHECK'
+  154 |       ERROR_AND_ABORT(expr);                                                  \
+      |       ^
+../../third_party/electron_node/src/util.h:132:38: note: expanded from macro 'ERROR_AND_ABORT'
+  132 |     static const node::AssertionInfo args = {                                 \
+      |                                      ^
+../../third_party/electron_node/src/node_internals.h:67:67: note: previous declaration is here
+   67 | void GetSockOrPeerName(const v8::FunctionCallbackInfo<v8::Value>& args) {
+      |                                                                   ^
+1 error generated.
+
+diff --git a/src/util.h b/src/util.h
+index b1750f7b718f664153a96aa90be6efd94a46cda0..aef06b22076f4a288b00d348ee47d5978d41e75b 100644
+--- a/src/util.h
++++ b/src/util.h
+@@ -129,10 +129,10 @@ void DumpBacktrace(FILE* fp);
+   do {                                                                        \
+     /* Make sure that this struct does not end up in inline code, but      */ \
+     /* rather in a read-only data section when modifying this code.        */ \
+-    static const node::AssertionInfo args = {                                 \
++    static const node::AssertionInfo error_and_abort_args = {                 \
+       __FILE__ ":" STRINGIFY(__LINE__), #expr, PRETTY_FUNCTION_NAME           \
+     };                                                                        \
+-    node::Assert(args);                                                       \
++    node::Assert(error_and_abort_args);                                       \
+   } while (0)
+ 
+ #ifdef __GNUC__
