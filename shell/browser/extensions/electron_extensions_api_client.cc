@@ -32,8 +32,8 @@ namespace extensions {
 class ElectronGuestViewManagerDelegate
     : public ExtensionsGuestViewManagerDelegate {
  public:
-  explicit ElectronGuestViewManagerDelegate(content::BrowserContext* context)
-      : ExtensionsGuestViewManagerDelegate(context) {}
+  explicit ElectronGuestViewManagerDelegate()
+      : ExtensionsGuestViewManagerDelegate() {}
   ~ElectronGuestViewManagerDelegate() override = default;
 
   // disable copy
@@ -118,9 +118,8 @@ ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
 }
 
 std::unique_ptr<guest_view::GuestViewManagerDelegate>
-ElectronExtensionsAPIClient::CreateGuestViewManagerDelegate(
-    content::BrowserContext* context) const {
-  return std::make_unique<ElectronGuestViewManagerDelegate>(context);
+ElectronExtensionsAPIClient::CreateGuestViewManagerDelegate() const {
+  return std::make_unique<ElectronGuestViewManagerDelegate>();
 }
 
 }  // namespace extensions
