@@ -297,6 +297,10 @@ HidSystemTrayIcon* BrowserProcessImpl::hid_system_tray_icon() {
   return nullptr;
 }
 
+UsbSystemTrayIcon* BrowserProcessImpl::usb_system_tray_icon() {
+  return nullptr;
+}
+
 void BrowserProcessImpl::SetSystemLocale(const std::string& locale) {
   system_locale_ = locale;
 }
