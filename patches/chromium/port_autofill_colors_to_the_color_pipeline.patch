@@ -8,7 +8,7 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index ca8afffa9d67e1039a53e5867202d2d7bbc43f7e..71b47780514bd8a31d24cae91544a38ca7eff589 100644
+index 118fdf05c357e3a36de188f505dd8482056dc9b0..a758aba16e8cb2dda5ea78ef885d7207a5573f22 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
 @@ -377,6 +377,10 @@
@@ -22,7 +22,7 @@ index ca8afffa9d67e1039a53e5867202d2d7bbc43f7e..71b47780514bd8a31d24cae91544a38c
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -464,6 +468,7 @@
+@@ -470,6 +474,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,7 +31,7 @@ index ca8afffa9d67e1039a53e5867202d2d7bbc43f7e..71b47780514bd8a31d24cae91544a38c
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index b1381d60447be969d3cf6d7027f1d88f00029826..86822f5483a25e606ac340d673682049616ca8ab 100644
+index 05d283f9c55381b7ada52b872cd2e41ef5ae184c..9c897504c6854d9e8fb3870ca3860a2008c13850 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -224,6 +224,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
@@ -52,7 +52,7 @@ index b1381d60447be969d3cf6d7027f1d88f00029826..86822f5483a25e606ac340d673682049
    mixer[kColorSeparator] = {kColorMidground};
    mixer[kColorShadowBase] = {dark_mode ? SK_ColorBLACK : gfx::kGoogleGrey800};
    mixer[kColorShadowValueAmbientShadowElevationThree] =
-@@ -322,6 +333,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
+@@ -335,6 +346,7 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
    mixer[kColorTreeNodeForegroundSelectedFocused] = {kColorTreeNodeForeground};
    mixer[kColorTreeNodeForegroundSelectedUnfocused] = {
        kColorTreeNodeForegroundSelectedFocused};

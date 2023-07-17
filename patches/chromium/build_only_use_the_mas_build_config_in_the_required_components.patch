@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index eb9bc951061a48d25e4b87c8ba2c1740163f2a6c..042b9aa295c78246c907b560ba0401431230123d 100644
+index aa7f2d6b3f2ff416ea42e320c6813c45ab38049d..9509ae4fb685a5b2257f34500918fbe777e2dc9b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1029,6 +1029,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -55,7 +55,7 @@ index c52c741205d140fbe8b3be02974c89ea22c2365f..9460c656f71e24044ffccc55053a04b8
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index ebc723289104f2d6e0684586214cfeb7a64aeb69..2b708fe7ba36755f93816f8d19801bb06484e8c7 100644
+index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdbf2420b2c 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -332,6 +332,7 @@ viz_component("service") {
@@ -66,7 +66,7 @@ index ebc723289104f2d6e0684586214cfeb7a64aeb69..2b708fe7ba36755f93816f8d19801bb0
    }
  
    if (is_android || use_ozone) {
-@@ -589,6 +590,8 @@ viz_source_set("unit_tests") {
+@@ -590,6 +591,8 @@ viz_source_set("unit_tests") {
      ]
      configs += [ "//build/config/compiler:enable_arc" ]
      frameworks = [ "IOSurface.framework" ]
@@ -76,7 +76,7 @@ index ebc723289104f2d6e0684586214cfeb7a64aeb69..2b708fe7ba36755f93816f8d19801bb0
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 9f8f97981311eb58ccc57118fdab978b080f34b6..cb0361c3ab6fed0b397909210692bfe4dec4cc96 100644
+index 798498992ae1e8003ed3d9b4ba3b22e31410a065..ddec233997c6449d964604bb3746ac37074a4cb9 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -112,7 +112,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3ae0f5f3a941a4edfb73c9d1b6ebf87c6ec2cc62..136b36295e669f423a6539a444b4de42c26c81cb 100644
+index da5183c7ed3eb6219e9d79202ac2e1883a48abdc..78ebaf890b3f1bb7e470573c875a751dedf37f31 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -214,7 +214,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 670903698c899df678a16218d8c373d94a7f2b9e..15c0c7125434c13c5a4b8c74dee937f542cc16fd 100644
+index 410f09c7b8a50c515eed664f31a54d6aa2d9de26..19517bf957637129c98923c0939e1737561fa42f 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {
@@ -263,7 +263,7 @@ index 7d0a002dba31c5e5bdc4bbec0ef396280f0f3d89..fe61909e6228b8c2f982035ef2ccee2b
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 11ff80e18ea42b290f96a90fecb9cfbc0f78a51c..6a01260f2ad2e9e8c05a4a44613bdf2a75c2a8ea 100644
+index e37e8a6f980a9eb522eea2191be2691d49a9638d..8fcfcfdec68e0c591abd58dbde957d2dbccf491f 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -290,7 +290,7 @@ index e66e2339ea3cb8b2b80ef3f0b09dcc53a2240339..07e11afb172ecbb24c04f25f87c11bdc
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index a7d46bc8bbf09db6d96a2139850ca940a79ea4b5..a1579cb5aef391480d511ad1541302c19cde0e65 100644
+index 30642c59d4ab84cbe6cc82e6b5b645cdacc07418..ca2e4c1b9064132fa9612339106d3729d79bf3cf 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -686,6 +686,7 @@ component("views") {
@@ -301,7 +301,7 @@ index a7d46bc8bbf09db6d96a2139850ca940a79ea4b5..a1579cb5aef391480d511ad1541302c1
    }
  
    if (is_win) {
-@@ -1102,6 +1103,8 @@ source_set("test_support") {
+@@ -1103,6 +1104,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
