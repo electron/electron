@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Caner Altinbasak <cal@brightsign.biz>
+Date: Mon, 17 Jul 2023 15:12:57 +0100
+Subject: wayland_input_method_context: Add support for deleting outside
+ selection range
+
+Chromium wayland backend refuses to send the deletion request to
+Chromium if user is trying to delete a text outside selection
+area. Apparently this a problem on some systems.
+
+However, it is not a problem for us. I've excluded the case where
+cursor needs to be moved first. Tha still reports an error. But
+now it covers the cases where characters coming before and/or after
+the cursor gets deleted.
+
+diff --git a/ui/ozone/platform/wayland/host/wayland_input_method_context.cc b/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
+index caa5074cbd6fd..2ffd6360a35c2 100644
+--- a/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
++++ b/ui/ozone/platform/wayland/host/wayland_input_method_context.cc
+@@ -672,7 +672,23 @@ void WaylandInputMethodContext::OnDeleteSurroundingText(int32_t index,
+   base::UTF8ToUTF16AndAdjustOffsets(base::UTF16ToUTF8(surrounding_text),
+                                     &offsets_for_adjustment);
+   if (base::Contains(offsets_for_adjustment, std::u16string::npos)) {
+-    LOG(DFATAL) << "The selection range for surrounding text is invalid.";
++    // Deleting a string outside selection range. Send the delete without
++    // adjustments. Incoming data gives position of index and how many
++    // characters needs to be deleted. Method we are calling is how many
++    // characters before and after current cursor position is deleted.
++    size_t before = 0;
++    size_t after = 0;
++    if (index < 0 && index + length >= 0) {
++        before = -index;
++        after = index + length;
++    } else if (index > 0 && index + length <= 0) {
++        before = index + length;
++        after = index;
++    } else {
++        LOG(DFATAL) << "The deletion range cannot change the index.";
++        return;
++    }
++    ime_delegate_->OnDeleteSurroundingText(before, after);
+     return;
+   }
+ 
