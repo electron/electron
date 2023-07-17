@@ -159,7 +159,6 @@ filenames = {
     "shell/browser/ui/cocoa/window_buttons_proxy.mm",
     "shell/browser/ui/drag_util_mac.mm",
     "shell/browser/ui/file_dialog_mac.mm",
-    "shell/browser/ui/inspectable_web_contents_view_mac.h",
     "shell/browser/ui/message_box_mac.mm",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
