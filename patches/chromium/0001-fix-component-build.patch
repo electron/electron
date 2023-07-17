@@ -1,0 +1,91 @@
+From 477ecc20757b98ecb314acde46170c8ab17e4081 Mon Sep 17 00:00:00 2001
+From: hiitiger <lushang@outlook.com>
+Date: Mon, 17 Jul 2023 17:13:59 +0800
+Subject: [PATCH] fix component build
+
+---
+ content/browser/gpu/compositor_util.h                          | 3 ++-
+ content/browser/keyboard_lock/keyboard_lock_service_impl.h     | 3 ++-
+ .../browser/renderer_host/input/mouse_wheel_phase_handler.h    | 3 ++-
+ third_party/blink/public/web/web_message_port_converter.h      | 2 +-
+ 4 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/content/browser/gpu/compositor_util.h b/content/browser/gpu/compositor_util.h
+index 5d5a083dc3160..bbdd969f2f5a6 100644
+--- a/content/browser/gpu/compositor_util.h
++++ b/content/browser/gpu/compositor_util.h
+@@ -10,6 +10,7 @@
+ #include <vector>
+ 
+ #include "base/values.h"
++#include "content/common/content_export.h"
+ 
+ namespace content {
+ 
+@@ -36,7 +37,7 @@ int NumberOfRendererRasterThreads();
+ // Returns true if main thread can be pipelined with activation.
+ bool IsMainFrameBeforeActivationEnabled();
+ 
+-base::Value GetFeatureStatus();
++CONTENT_EXPORT base::Value GetFeatureStatus();
+ base::Value GetProblems();
+ std::vector<std::string> GetDriverBugWorkarounds();
+ 
+diff --git a/content/browser/keyboard_lock/keyboard_lock_service_impl.h b/content/browser/keyboard_lock/keyboard_lock_service_impl.h
+index 4a80c67d0a8bf..f04aeb9ce33ba 100644
+--- a/content/browser/keyboard_lock/keyboard_lock_service_impl.h
++++ b/content/browser/keyboard_lock/keyboard_lock_service_impl.h
+@@ -13,6 +13,7 @@
+ #include "content/public/browser/document_service.h"
+ #include "mojo/public/cpp/bindings/pending_receiver.h"
+ #include "third_party/blink/public/mojom/keyboard_lock/keyboard_lock.mojom.h"
++#include "content/common/content_export.h"
+ 
+ namespace content {
+ 
+@@ -21,7 +22,7 @@ class RenderFrameHost;
+ class KeyboardLockServiceImpl final
+     : public DocumentService<blink::mojom::KeyboardLockService> {
+  public:
+-  static void CreateMojoService(
++  CONTENT_EXPORT static void CreateMojoService(
+       RenderFrameHost* render_frame_host,
+       mojo::PendingReceiver<blink::mojom::KeyboardLockService> receiver);
+ 
+diff --git a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
+index d69f9d4641613..9a2cc60027aaa 100644
+--- a/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
++++ b/content/browser/renderer_host/input/mouse_wheel_phase_handler.h
+@@ -11,6 +11,7 @@
+ #include "content/browser/renderer_host/render_widget_host_delegate.h"
+ #include "third_party/blink/public/common/input/web_mouse_wheel_event.h"
+ #include "third_party/blink/public/mojom/input/input_event_result.mojom-shared.h"
++#include "content/common/content_export.h"
+ 
+ namespace content {
+ class RenderWidgetHostViewBase;
+@@ -51,7 +52,7 @@ enum class FirstScrollUpdateAckState {
+ // The MouseWheelPhaseHandler is responsible for adding the proper phase to
+ // wheel events. Phase information is necessary for wheel scrolling since it
+ // shows the start and end of a scrolling sequence.
+-class MouseWheelPhaseHandler {
++class CONTENT_EXPORT MouseWheelPhaseHandler {
+  public:
+   MouseWheelPhaseHandler(RenderWidgetHostViewBase* const host_view);
+ 
+diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
+index 1283bd18cce78..bb2b68b3f6778 100644
+--- a/third_party/blink/public/web/web_message_port_converter.h
++++ b/third_party/blink/public/web/web_message_port_converter.h
+@@ -27,7 +27,7 @@ class BLINK_EXPORT WebMessagePortConverter {
+   static absl::optional<MessagePortChannel>
+   DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);
+ 
+-  BLINK_EXPORT static v8::Local<v8::Value>
++  static v8::Local<v8::Value>
+   EntangleAndInjectMessagePortChannel(v8::Local<v8::Context>, MessagePortChannel);
+ };
+ 
+-- 
+2.39.2.windows.1
+
