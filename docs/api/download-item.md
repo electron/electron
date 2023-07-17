@@ -189,7 +189,7 @@ started.
 #### `downloadItem.getLastInterruptReason()`
 
 Returns the most recent interrupt reason for this item, or 'NONE' if there is no previous interrupt reason.
-The list of potential return values and their meanings can be found [here](https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h)
+The list of potential return values and their meanings can be found [here]: https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h
 
 
 ### Instance Properties
