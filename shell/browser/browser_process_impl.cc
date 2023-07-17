@@ -305,6 +305,36 @@ const std::string& BrowserProcessImpl::GetSystemLocale() const {
   return system_locale_;
 }
 
+#if BUILDFLAG(IS_LINUX)
+void BrowserProcessImpl::SetLinuxStorageBackend(
+    os_crypt::SelectedLinuxBackend selected_backend) {
+  switch (selected_backend) {
+    case os_crypt::SelectedLinuxBackend::BASIC_TEXT:
+      selected_linux_storage_backend_ = "basic_text";
+      break;
+    case os_crypt::SelectedLinuxBackend::GNOME_LIBSECRET:
+      selected_linux_storage_backend_ = "gnome_libsecret";
+      break;
+    case os_crypt::SelectedLinuxBackend::KWALLET:
+      selected_linux_storage_backend_ = "kwallet";
+      break;
+    case os_crypt::SelectedLinuxBackend::KWALLET5:
+      selected_linux_storage_backend_ = "kwallet5";
+      break;
+    case os_crypt::SelectedLinuxBackend::KWALLET6:
+      selected_linux_storage_backend_ = "kwallet6";
+      break;
+    case os_crypt::SelectedLinuxBackend::DEFER:
+      NOTREACHED();
+      break;
+  }
+}
+
+const std::string& BrowserProcessImpl::GetLinuxStorageBackend() const {
+  return selected_linux_storage_backend_;
+}
+#endif  // BUILDFLAG(IS_LINUX)
+
 void BrowserProcessImpl::SetApplicationLocale(const std::string& locale) {
   locale_ = locale;
 }
