@@ -130,8 +130,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 }
 
 + (instancetype)weakPtrForModel:(electron::ElectronMenuModel*)model {
-  return [[[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model]
-      autorelease];
+  return [[WeakPtrToElectronMenuModelAsNSObject alloc] initWithModel:model];
 }
 
 + (electron::ElectronMenuModel*)getFrom:(id)instance {
@@ -182,7 +181,6 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   [self cancel];
 
   model_ = nullptr;
-  [super dealloc];
 }
 
 - (void)setCloseCallback:(base::OnceClosure)callback {
@@ -198,8 +196,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
     std::u16string title = u"Open Recent";
     NSString* openTitle = l10n_util::FixUpWindowsStyleLabel(title);
 
-    recentDocumentsMenuItem_ = [[[[[NSApp mainMenu] itemWithTitle:@"Electron"]
-        submenu] itemWithTitle:openTitle] retain];
+    recentDocumentsMenuItem_ = [[[[NSApp mainMenu] itemWithTitle:@"Electron"]
+        submenu] itemWithTitle:openTitle];
   }
 
   model_ = model->GetWeakPtr();
@@ -230,7 +228,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 // Creates a NSMenu from the given model. If the model has submenus, this can
 // be invoked recursively.
 - (NSMenu*)menuFromModel:(electron::ElectronMenuModel*)model {
-  NSMenu* menu = [[[NSMenu alloc] initWithTitle:@""] autorelease];
+  NSMenu* menu = [[NSMenu alloc] initWithTitle:@""];
 
   const int count = model->GetItemCount();
   for (int index = 0; index < count; index++) {
@@ -255,7 +253,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 - (void)moveMenuItems:(NSMenu*)source to:(NSMenu*)destination {
   const NSInteger count = [source numberOfItems];
   for (NSInteger index = 0; index < count; index++) {
-    NSMenuItem* removedItem = [[[source itemAtIndex:0] retain] autorelease];
+    NSMenuItem* removedItem = [source itemAtIndex:0];
     [source removeItemAtIndex:0];
     [destination addItem:removedItem];
   }
@@ -285,7 +283,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   DCHECK_EQ([item target], recentDocumentsMenu);
 
   // Remember the new menu item that carries the recent documents menu
-  recentDocumentsMenuItem_ = [item retain];
+  recentDocumentsMenuItem_ = item;
 }
 
 // Fill the menu with Share Menu items.
@@ -338,7 +336,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 
     [item setTarget:nil];
     [item setAction:nil];
-    NSMenu* submenu = [[[NSMenu alloc] initWithTitle:sub_label] autorelease];
+    NSMenu* submenu = [[NSMenu alloc] initWithTitle:sub_label];
     [item setSubmenu:submenu];
     [NSApp setServicesMenu:submenu];
   } else if (role == u"sharemenu") {

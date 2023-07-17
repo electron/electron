@@ -116,13 +116,8 @@ filenames = {
   ]
 
   lib_sources_mac = [
-    "shell/app/electron_main_delegate_mac.h",
-    "shell/app/electron_main_delegate_mac.mm",
     "shell/browser/api/electron_api_app_mac.mm",
-    "shell/browser/api/electron_api_native_theme_mac.mm",
     "shell/browser/api/electron_api_power_monitor_mac.mm",
-    "shell/browser/api/electron_api_push_notifications_mac.mm",
-    "shell/browser/api/electron_api_system_preferences_mac.mm",
     "shell/browser/api/electron_api_web_contents_mac.mm",
     "shell/browser/auto_updater_mac.mm",
     "shell/browser/mac/in_app_purchase_observer.h",
@@ -146,7 +141,6 @@ filenames = {
     "shell/browser/ui/cocoa/electron_bundle_mover.h",
     "shell/browser/ui/cocoa/electron_bundle_mover.mm",
     "shell/browser/ui/cocoa/electron_menu_controller.h",
-    "shell/browser/ui/cocoa/electron_menu_controller.mm",
     "shell/browser/ui/cocoa/electron_native_widget_mac.h",
     "shell/browser/ui/cocoa/electron_native_widget_mac.mm",
     "shell/browser/ui/cocoa/electron_ns_panel.h",
@@ -167,8 +161,6 @@ filenames = {
     "shell/browser/ui/file_dialog_mac.mm",
     "shell/browser/ui/inspectable_web_contents_view_mac.h",
     "shell/browser/ui/message_box_mac.mm",
-    "shell/browser/ui/tray_icon_cocoa.h",
-    "shell/browser/ui/tray_icon_cocoa.mm",
     "shell/common/api/electron_api_clipboard_mac.mm",
     "shell/common/api/electron_api_native_image_mac.mm",
     "shell/common/asar/archive_mac.mm",

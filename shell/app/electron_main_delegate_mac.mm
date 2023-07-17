@@ -10,7 +10,6 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/mac/foundation_util.h"
-#include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/browser/mac_helpers.h"
@@ -18,6 +17,10 @@
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/application_info.h"
 #include "shell/common/mac/main_application_bundle.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
 
 namespace electron {
 
@@ -70,14 +73,15 @@ void ElectronMainDelegate::OverrideChildProcessPath() {
 }
 
 void ElectronMainDelegate::SetUpBundleOverrides() {
-  base::mac::ScopedNSAutoreleasePool pool;
-  NSBundle* bundle = MainApplicationBundle();
-  std::string base_bundle_id =
-      base::SysNSStringToUTF8([bundle bundleIdentifier]);
-  NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
-  if (team_id)
-    base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
-  base::mac::SetBaseBundleID(base_bundle_id.c_str());
+  @autoreleasepool {
+    NSBundle* bundle = MainApplicationBundle();
+    std::string base_bundle_id =
+        base::SysNSStringToUTF8([bundle bundleIdentifier]);
+    NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
+    if (team_id)
+      base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
+    base::mac::SetBaseBundleID(base_bundle_id.c_str());
+  }
 }
 
 void RegisterAtomCrApp() {

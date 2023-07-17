@@ -30,13 +30,17 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/native_theme/native_theme.h"
 
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
 namespace gin {
 
 template <>
 struct Converter<NSAppearance*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     NSAppearance** out) {
+                     NSAppearance* __strong* out) {
     if (val->IsNull()) {
       *out = nil;
       return true;
@@ -463,7 +467,8 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
 
 // static
 bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
-  NSDictionary* options = @{(id)kAXTrustedCheckOptionPrompt : @(prompt)};
+  NSDictionary* options =
+      @{(__bridge id)kAXTrustedCheckOptionPrompt : @(prompt)};
   return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
 }
 
