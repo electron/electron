@@ -23,11 +23,12 @@
 
 namespace electron {
 
+static ElectronApplicationDelegate* __strong delegate_;
+
 void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
   // Set our own application delegate.
-  ElectronApplicationDelegate* delegate =
-      [[ElectronApplicationDelegate alloc] init];
-  [NSApp setDelegate:delegate];
+  delegate_ = [[ElectronApplicationDelegate alloc] init];
+  [NSApp setDelegate:delegate_];
 
   PreCreateMainMessageLoopCommon();
 
@@ -44,6 +45,7 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
 }
 
 void ElectronBrowserMainParts::FreeAppDelegate() {
+  delegate_ = nil;
   [NSApp setDelegate:nil];
 }
 
