@@ -293,7 +293,7 @@ gin::ObjectTemplateBuilder DownloadItem::GetObjectTemplateBuilder(
       .SetMethod("getSaveDialogOptions", &DownloadItem::GetSaveDialogOptions)
       .SetMethod("getLastModifiedTime", &DownloadItem::GetLastModifiedTime)
       .SetMethod("getETag", &DownloadItem::GetETag)
-      .SetMethod("getLastInterruptReason", 
+      .SetMethod("getLastInterruptReason",
                  &DownloadItem::GetLastInterruptReason)
       .SetMethod("getStartTime", &DownloadItem::GetStartTime);
 }
