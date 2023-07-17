@@ -9,7 +9,6 @@
 #include "base/strings/utf_string_conversions.h"
 #include "net/base/filename_util.h"
 #include "shell/browser/electron_browser_main_parts.h"
-#include "shell/common/gin_converters/download_converter.h"
 #include "shell/common/gin_converters/file_dialog_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
@@ -43,6 +42,16 @@ struct Converter<download::DownloadItem::DownloadState> {
         break;
     }
     return ConvertToV8(isolate, download_state);
+  }
+};
+
+template <>
+struct Converter<download::DownloadInterruptReason> {
+  static v8::Local<v8::Value> ToV8(
+      v8::Isolate* isolate,
+      const download::DownloadInterruptReason& val) {
+    const auto string_val = download::DownloadInterruptReasonToString(val);
+    return Converter<std::string>::ToV8(isolate, string_val);
   }
 };
 
