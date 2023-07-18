@@ -6,6 +6,7 @@
 
 #include "base/command_line.h"
 #include "base/containers/contains.h"
+#include "base/debug/stack_trace.h"
 #include "content/public/renderer/render_frame.h"
 #include "electron/buildflags/buildflags.h"
 #include "net/http/http_request_headers.h"
@@ -143,10 +144,8 @@ void ElectronRendererClient::WillReleaseScriptContext(
   microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
   node::FreeEnvironment(env);
-  if (node_bindings_->uv_env() == nullptr) {
-    node::FreeIsolateData(node_bindings_->isolate_data());
-    node_bindings_->set_isolate_data(nullptr);
-  }
+  node::FreeIsolateData(node_bindings_->isolate_data(context));
+  node_bindings_->clear_isolate_data(context);
 
   microtask_queue->set_microtasks_policy(old_policy);
 
@@ -159,19 +158,20 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
   // We do not create a Node.js environment in service or shared workers
   // owing to an inability to customize sandbox policies in these workers
   // given that they're run out-of-process.
+  // Also avoid creating a Node.js environment for worklet global scope
+  // created on the main thread.
   auto* ec = blink::ExecutionContext::From(context);
-  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope())
+  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
+      ec->IsMainThreadWorkletGlobalScope())
     return;
 
   // This won't be correct for in-process child windows with webPreferences
   // that have a different value for nodeIntegrationInWorker
   if (base::CommandLine::ForCurrentProcess()->HasSwitch(
           switches::kNodeIntegrationInWorker)) {
-    // WorkerScriptReadyForEvaluationOnWorkerThread can be invoked multiple
-    // times for the same thread, so we need to create a new observer each time
-    // this happens. We use a ThreadLocalOwnedPointer to ensure that the old
-    // observer for a given thread gets destructed when swapping with the new
-    // observer in WebWorkerObserver::Create.
+    auto* current = WebWorkerObserver::GetCurrent();
+    if (current)
+      return;
     WebWorkerObserver::Create()->WorkerScriptReadyForEvaluation(context);
   }
 }
@@ -179,7 +179,8 @@ void ElectronRendererClient::WorkerScriptReadyForEvaluationOnWorkerThread(
 void ElectronRendererClient::WillDestroyWorkerContextOnWorkerThread(
     v8::Local<v8::Context> context) {
   auto* ec = blink::ExecutionContext::From(context);
-  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope())
+  if (ec->IsServiceWorkerGlobalScope() || ec->IsSharedWorkerGlobalScope() ||
+      ec->IsMainThreadWorkletGlobalScope())
     return;
 
   // TODO(loc): Note that this will not be correct for in-process child windows

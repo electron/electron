@@ -13,6 +13,9 @@
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
+#include "gin/public/context_holder.h"
+#include "gin/public/gin_embedders.h"
+#include "shell/common/node_includes.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
 
@@ -20,13 +23,13 @@ namespace base {
 class SingleThreadTaskRunner;
 }
 
-namespace node {
-class Environment;
-class MultiIsolatePlatform;
-class IsolateData;
-}  // namespace node
-
 namespace electron {
+
+// Choose a reasonable unique index that's higher than any Blink uses
+// and thus unlikely to collide with an existing index.
+static constexpr int kElectronContextEmbedderDataIndex =
+    static_cast<int>(gin::kPerContextDataStartIndex) +
+    static_cast<int>(gin::kEmbedderElectron);
 
 // A helper class to manage uv_handle_t types, e.g. uv_async_t.
 //
@@ -108,11 +111,24 @@ class NodeBindings {
   // Notify embed thread to start polling after environment is loaded.
   void StartPolling();
 
-  // Gets/sets the per isolate data.
-  void set_isolate_data(node::IsolateData* isolate_data) {
-    isolate_data_ = isolate_data;
+  // Clears the PerIsolateData.
+  void clear_isolate_data(v8::Local<v8::Context> context) {
+    context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
+                                             nullptr);
   }
-  node::IsolateData* isolate_data() const { return isolate_data_; }
+
+  node::IsolateData* isolate_data(v8::Local<v8::Context> context) const {
+    if (context->GetNumberOfEmbedderDataFields() <=
+        kElectronContextEmbedderDataIndex) {
+      return nullptr;
+    }
+    auto* isolate_data = static_cast<node::IsolateData*>(
+        context->GetAlignedPointerFromEmbedderData(
+            kElectronContextEmbedderDataIndex));
+    CHECK(isolate_data);
+    CHECK(isolate_data->event_loop());
+    return isolate_data;
+  }
 
   // Gets/sets the environment to wrap uv loop.
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
