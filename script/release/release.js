@@ -9,13 +9,12 @@ const args = require('minimist')(process.argv.slice(2), {
   ],
   default: { verboseNugget: false }
 });
-const fs = require('fs');
-const { execSync } = require('child_process');
+const fs = require('node:fs');
+const { execSync } = require('node:child_process');
 const got = require('got');
-const path = require('path');
+const path = require('node:path');
 const semver = require('semver');
 const temp = require('temp').track();
-const { URL } = require('url');
 const { BlobServiceClient } = require('@azure/storage-blob');
 const { Octokit } = require('@octokit/rest');
 
@@ -299,7 +298,7 @@ async function uploadShasumFile (filePath, fileName, releaseId) {
 }
 
 function saveShaSumFile (checksums, fileName) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     temp.open(fileName, (err, info) => {
       if (err) {
         console.error(`${fail} Could not create ${fileName} file`);
@@ -370,18 +369,6 @@ async function makeRelease (releaseToValidate) {
     console.log(`${pass} SUCCESS!!! Release has been published. Please run ` +
       '"npm run publish-to-npm" to publish release to npm.');
   }
-}
-
-async function makeTempDir () {
-  return new Promise((resolve, reject) => {
-    temp.mkdir('electron-publish', (err, dirPath) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(dirPath);
-      }
-    });
-  });
 }
 
 const SHASUM_256_FILENAME = 'SHASUMS256.txt';

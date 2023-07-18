@@ -13,10 +13,10 @@ messages in the legacy window handle layer.
 These conditions are regularly hit with WCO-enabled windows on Windows.
 
 diff --git a/content/browser/renderer_host/legacy_render_widget_host_win.cc b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-index c7bc52f1b54249e497a7f60e0bf7106d345b5ef6..bea43ee34da9869aec30dec4dc08ffd9d8af25a8 100644
+index e8636eea56835a3936765f7b1d5a1a88b20288e1..a7829f409a90a871f42c9d0d5fa65bf8f65045f0 100644
 --- a/content/browser/renderer_host/legacy_render_widget_host_win.cc
 +++ b/content/browser/renderer_host/legacy_render_widget_host_win.cc
-@@ -318,12 +318,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -317,12 +317,12 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
                                                   WPARAM w_param,
                                                   LPARAM l_param,
                                                   BOOL& handled) {
@@ -31,7 +31,7 @@ index c7bc52f1b54249e497a7f60e0bf7106d345b5ef6..bea43ee34da9869aec30dec4dc08ffd9
        tme.hwndTrack = hwnd();
        tme.dwHoverTime = 0;
        TrackMouseEvent(&tme);
-@@ -354,7 +354,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
+@@ -353,7 +353,10 @@ LRESULT LegacyRenderWidgetHostHWND::OnMouseRange(UINT message,
      // out of the picture.
      if (!handled &&
           (message >= WM_NCMOUSEMOVE && message <= WM_NCXBUTTONDBLCLK)) {

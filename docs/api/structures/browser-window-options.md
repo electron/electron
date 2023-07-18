@@ -104,12 +104,9 @@
   Windows, which adds standard window frame. Setting it to `false` will remove
   window shadow and window animations. Default is `true`.
 * `vibrancy` string (optional) _macOS_ - Add a type of vibrancy effect to
-  the window, only on macOS. Can be `appearance-based`, `light`, `dark`,
-  `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `medium-light`,
-  `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
-  `tooltip`, `content`, `under-window`, or `under-page`. Please note that
-  `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` are
-  deprecated and have been removed in macOS Catalina (10.15).
+  the window, only on macOS. Can be `appearance-based`, `titlebar`, `selection`,
+  `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`,
+  `tooltip`, `content`, `under-window`, or `under-page`.
 * `backgroundMaterial` string (optional) _Windows_ - Set the window's
   system-drawn background material, including behind the non-client area.
   Can be `auto`, `none`, `mica`, `acrylic` or `tabbed`. See [win.setBackgroundMaterial](../browser-window.md#winsetbackgroundmaterialmaterial-windows) for more information.
@@ -140,6 +137,16 @@ Possible values are:
 
 * On Linux, possible types are `desktop`, `dock`, `toolbar`, `splash`,
   `notification`.
+  * The `desktop` type places the window at the desktop background window level
+    (kCGDesktopWindowLevel - 1). However, note that a desktop window will not
+    receive focus, keyboard, or mouse events. You can still use globalShortcut to
+    receive input sparingly.
+  * The `dock` type creates a dock-like window behavior.
+  * The `toolbar` type creates a window with a toolbar appearance.
+  * The `splash` type behaves in a specific way. It is not
+    draggable, even if the CSS styling of the window's body contains
+    -webkit-app-region: drag. This type is commonly used for splash screens.
+  * The `notification` type creates a window that behaves like a system notification.
 * On macOS, possible types are `desktop`, `textured`, `panel`.
   * The `textured` type adds metal gradient appearance
     (`NSWindowStyleMaskTexturedBackground`).

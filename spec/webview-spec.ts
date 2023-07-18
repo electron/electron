@@ -208,7 +208,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const didAttachWebview = once(w.webContents, 'did-attach-webview');
+      const didAttachWebview = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       const webviewDomReady = once(ipcMain, 'webview-dom-ready');
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
@@ -434,7 +434,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const attachPromise = once(w.webContents, 'did-attach-webview');
+      const attachPromise = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       const readyPromise = once(ipcMain, 'dom-ready');
       w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
       const [, webview] = await attachPromise;
@@ -453,7 +453,7 @@ describe('<webview> tag', function () {
           contextIsolation: false
         }
       });
-      const attachPromise = once(w.webContents, 'did-attach-webview');
+      const attachPromise = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       await w.loadFile(path.join(fixtures, 'pages', 'webview-zoom-inherited.html'));
       await attachPromise;
       await w.webContents.executeJavaScript('view.remove()');
@@ -463,7 +463,7 @@ describe('<webview> tag', function () {
 
   describe('requestFullscreen from webview', () => {
     afterEach(closeAllWindows);
-    const loadWebViewWindow = async () => {
+    async function loadWebViewWindow (): Promise<[BrowserWindow, WebContents]> {
       const w = new BrowserWindow({
         webPreferences: {
           webviewTag: true,
@@ -472,7 +472,7 @@ describe('<webview> tag', function () {
         }
       });
 
-      const attachPromise = once(w.webContents, 'did-attach-webview');
+      const attachPromise = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       const loadPromise = once(w.webContents, 'did-finish-load');
       const readyPromise = once(ipcMain, 'webview-ready');
 
@@ -572,7 +572,7 @@ describe('<webview> tag', function () {
         }
       });
 
-      const didAttachWebview = once(w.webContents, 'did-attach-webview');
+      const didAttachWebview = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
       w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
       const [, webContents] = await didAttachWebview;
@@ -792,7 +792,7 @@ describe('<webview> tag', function () {
         partition,
         nodeintegration: 'on'
       });
-      const [, webViewContents] = await once(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'media');
       const [, errorName] = await errorFromRenderer;
       expect(errorName).to.equal('PermissionDeniedError');
@@ -806,7 +806,7 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await once(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'geolocation');
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('User denied Geolocation');
@@ -820,7 +820,7 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await once(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midi');
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('SecurityError');
@@ -834,7 +834,7 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await once(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       setUpRequestHandler(webViewContents.id, 'midiSysex');
       const [, error] = await errorFromRenderer;
       expect(error).to.equal('SecurityError');
@@ -845,7 +845,7 @@ describe('<webview> tag', function () {
         src: 'magnet:test',
         partition
       });
-      const [, webViewContents] = await once(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       await setUpRequestHandler(webViewContents.id, 'openExternal');
     });
 
@@ -857,7 +857,7 @@ describe('<webview> tag', function () {
         nodeintegration: 'on',
         webpreferences: 'contextIsolation=no'
       });
-      const [, webViewContents] = await once(app, 'web-contents-created');
+      const [, webViewContents] = await once(app, 'web-contents-created') as [any, WebContents];
 
       await setUpRequestHandler(webViewContents.id, 'notifications');
 

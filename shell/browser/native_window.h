@@ -17,11 +17,11 @@
 #include "base/supports_user_data.h"
 #include "content/public/browser/desktop_media_id.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "extensions/browser/app_window/size_constraints.h"
 #include "shell/browser/draggable_region_provider.h"
 #include "shell/browser/native_window_observer.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
-#include "shell/common/api/api.mojom.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/views/widget/widget_delegate.h"
 
@@ -245,6 +245,7 @@ class NativeWindow : public base::SupportsUserData,
   // Native Tab API
   virtual void SelectPreviousTab();
   virtual void SelectNextTab();
+  virtual void ShowAllTabs();
   virtual void MergeAllWindows();
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
@@ -423,6 +424,13 @@ class NativeWindow : public base::SupportsUserData,
   // The "titleBarStyle" option.
   TitleBarStyle title_bar_style_ = TitleBarStyle::kNormal;
 
+  // Minimum and maximum size.
+  absl::optional<extensions::SizeConstraints> size_constraints_;
+  // Same as above but stored as content size, we are storing 2 types of size
+  // constraints beacause converting between them will cause rounding errors
+  // on HiDPI displays on some environments.
+  absl::optional<extensions::SizeConstraints> content_size_constraints_;
+
   std::queue<bool> pending_transitions_;
   FullScreenTransitionState fullscreen_transition_state_ =
       FullScreenTransitionState::kNone;
@@ -449,9 +457,6 @@ class NativeWindow : public base::SupportsUserData,
 
   // Whether window is transparent.
   bool transparent_ = false;
-
-  // Minimum and maximum size, stored as content size.
-  extensions::SizeConstraints size_constraints_;
 
   // Whether window can be resized larger than screen.
   bool enable_larger_than_screen_ = false;

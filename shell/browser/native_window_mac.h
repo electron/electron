@@ -12,8 +12,8 @@
 #include <vector>
 
 #include "base/mac/scoped_nsobject.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "shell/browser/native_window.h"
-#include "shell/common/api/api.mojom.h"
 #include "ui/display/display_observer.h"
 #include "ui/native_theme/native_theme_observer.h"
 #include "ui/views/controls/native/native_view_host.h"
@@ -139,6 +139,7 @@ class NativeWindowMac : public NativeWindow,
   void SetEscapeTouchBarItem(gin_helper::PersistentDictionary item) override;
   void SelectPreviousTab() override;
   void SelectNextTab() override;
+  void ShowAllTabs() override;
   void MergeAllWindows() override;
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;

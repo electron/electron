@@ -12,7 +12,7 @@ ipcRenderer.on('saved-file', (event, path) => {
   document.getElementById('file-saved').innerHTML = `Path selected: ${path}`
 })
 
-Array.prototype.forEach.call(links, (link) => {
+for (const link of links) {
   const url = link.getAttribute('href')
   if (url.indexOf('http') === 0) {
     link.addEventListener('click', (e) => {
@@ -20,4 +20,4 @@ Array.prototype.forEach.call(links, (link) => {
       shell.openExternal(url)
     })
   }
-})
+}

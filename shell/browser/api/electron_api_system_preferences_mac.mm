@@ -51,11 +51,7 @@ struct Converter<NSAppearance*> {
       *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
       return true;
     } else if (name == "dark") {
-      if (@available(macOS 10.14, *)) {
-        *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
-      } else {
-        *out = [NSAppearance appearanceNamed:NSAppearanceNameAqua];
-      }
+      *out = [NSAppearance appearanceNamed:NSAppearanceNameDarkAqua];
       return true;
     }
 
@@ -63,17 +59,13 @@ struct Converter<NSAppearance*> {
   }
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate, NSAppearance* val) {
-    if (val == nil) {
+    if (val == nil)
       return v8::Null(isolate);
-    }
 
     if ([val.name isEqualToString:NSAppearanceNameAqua]) {
       return gin::ConvertToV8(isolate, "light");
-    }
-    if (@available(macOS 10.14, *)) {
-      if ([val.name isEqualToString:NSAppearanceNameDarkAqua]) {
-        return gin::ConvertToV8(isolate, "dark");
-      }
+    } else if ([val.name isEqualToString:NSAppearanceNameDarkAqua]) {
+      return gin::ConvertToV8(isolate, "dark");
     }
 
     return gin::ConvertToV8(isolate, "unknown");
@@ -382,10 +374,7 @@ void SystemPreferences::SetUserDefault(const std::string& name,
 }
 
 std::string SystemPreferences::GetAccentColor() {
-  NSColor* sysColor = nil;
-  if (@available(macOS 10.14, *))
-    sysColor = [NSColor controlAccentColor];
-
+  NSColor* sysColor = sysColor = [NSColor controlAccentColor];
   return ToRGBAHex(skia::NSSystemColorToSkColor(sysColor),
                    false /* include_hash */);
 }
@@ -421,14 +410,10 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 
 bool SystemPreferences::CanPromptTouchID() {
   base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
-  LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometrics;
-  if (@available(macOS 10.15, *))
-    auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
+  LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
   if (![context canEvaluatePolicy:auth_policy error:nil])
     return false;
-  if (@available(macOS 10.13.2, *))
-    return [context biometryType] == LABiometryTypeTouchID;
-  return true;
+  return [context biometryType] == LABiometryTypeTouchID;
 }
 
 v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
@@ -501,8 +486,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   } else if (color == "disabled-control-text") {
     sysColor = [NSColor disabledControlTextColor];
   } else if (color == "find-highlight") {
-    if (@available(macOS 10.14, *))
-      sysColor = [NSColor findHighlightColor];
+    sysColor = [NSColor findHighlightColor];
   } else if (color == "grid") {
     sysColor = [NSColor gridColor];
   } else if (color == "header-text") {
@@ -524,8 +508,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   } else if (color == "secondary-label") {
     sysColor = [NSColor secondaryLabelColor];
   } else if (color == "selected-content-background") {
-    if (@available(macOS 10.14, *))
-      sysColor = [NSColor selectedContentBackgroundColor];
+    sysColor = [NSColor selectedContentBackgroundColor];
   } else if (color == "selected-control") {
     sysColor = [NSColor selectedControlColor];
   } else if (color == "selected-control-text") {
@@ -537,8 +520,7 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   } else if (color == "selected-text") {
     sysColor = [NSColor selectedTextColor];
   } else if (color == "separator") {
-    if (@available(macOS 10.14, *))
-      sysColor = [NSColor separatorColor];
+    sysColor = [NSColor separatorColor];
   } else if (color == "shadow") {
     sysColor = [NSColor shadowColor];
   } else if (color == "tertiary-label") {
@@ -550,14 +532,11 @@ std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
   } else if (color == "under-page-background") {
     sysColor = [NSColor underPageBackgroundColor];
   } else if (color == "unemphasized-selected-content-background") {
-    if (@available(macOS 10.14, *))
-      sysColor = [NSColor unemphasizedSelectedContentBackgroundColor];
+    sysColor = [NSColor unemphasizedSelectedContentBackgroundColor];
   } else if (color == "unemphasized-selected-text-background") {
-    if (@available(macOS 10.14, *))
-      sysColor = [NSColor unemphasizedSelectedTextBackgroundColor];
+    sysColor = [NSColor unemphasizedSelectedTextBackgroundColor];
   } else if (color == "unemphasized-selected-text") {
-    if (@available(macOS 10.14, *))
-      sysColor = [NSColor unemphasizedSelectedTextColor];
+    sysColor = [NSColor unemphasizedSelectedTextColor];
   } else if (color == "window-background") {
     sysColor = [NSColor windowBackgroundColor];
   } else if (color == "window-frame-text") {
@@ -596,18 +575,13 @@ v8::Local<v8::Promise> SystemPreferences::AskForMediaAccess(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   if (auto type = ParseMediaType(media_type)) {
-    if (@available(macOS 10.14, *)) {
-      __block gin_helper::Promise<bool> p = std::move(promise);
-      [AVCaptureDevice requestAccessForMediaType:type
-                               completionHandler:^(BOOL granted) {
-                                 dispatch_async(dispatch_get_main_queue(), ^{
-                                   p.Resolve(!!granted);
-                                 });
-                               }];
-    } else {
-      // access always allowed pre-10.14 Mojave
-      promise.Resolve(true);
-    }
+    __block gin_helper::Promise<bool> p = std::move(promise);
+    [AVCaptureDevice requestAccessForMediaType:type
+                             completionHandler:^(BOOL granted) {
+                               dispatch_async(dispatch_get_main_queue(), ^{
+                                 p.Resolve(!!granted);
+                               });
+                             }];
   } else {
     promise.RejectWithErrorMessage("Invalid media type");
   }
@@ -626,30 +600,22 @@ bool SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled() {
 
 v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
     v8::Isolate* isolate) {
-  if (@available(macOS 10.14, *)) {
-    return gin::ConvertToV8(
-        isolate, [NSApplication sharedApplication].effectiveAppearance);
-  }
-  return v8::Null(isolate);
+  return gin::ConvertToV8(
+      isolate, [NSApplication sharedApplication].effectiveAppearance);
 }
 
 v8::Local<v8::Value> SystemPreferences::GetAppLevelAppearance(
     v8::Isolate* isolate) {
-  if (@available(macOS 10.14, *)) {
-    return gin::ConvertToV8(isolate,
-                            [NSApplication sharedApplication].appearance);
-  }
-  return v8::Null(isolate);
+  return gin::ConvertToV8(isolate,
+                          [NSApplication sharedApplication].appearance);
 }
 
 void SystemPreferences::SetAppLevelAppearance(gin::Arguments* args) {
-  if (@available(macOS 10.14, *)) {
-    NSAppearance* appearance;
-    if (args->GetNext(&appearance)) {
-      [[NSApplication sharedApplication] setAppearance:appearance];
-    } else {
-      args->ThrowError();
-    }
+  NSAppearance* appearance;
+  if (args->GetNext(&appearance)) {
+    [[NSApplication sharedApplication] setAppearance:appearance];
+  } else {
+    args->ThrowError();
   }
 }
 

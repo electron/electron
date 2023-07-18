@@ -8,7 +8,7 @@
 #include <memory>
 #include <vector>
 
-#include "shell/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/gfx/image/image.h"
 

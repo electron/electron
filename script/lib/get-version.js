@@ -1,5 +1,5 @@
-const { spawnSync } = require('child_process');
-const path = require('path');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
 
 module.exports.getElectronVersion = () => {
   // Find the nearest tag to the current HEAD

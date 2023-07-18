@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
-const childProcess = require('child_process');
-const crypto = require('crypto');
+const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
 const fs = require('fs-extra');
 const { hashElement } = require('folder-hash');
-const os = require('os');
-const path = require('path');
+const os = require('node:os');
+const path = require('node:path');
 const unknownFlags = [];
 
 require('colors');
@@ -182,14 +182,6 @@ async function runTestUsingElectron (specDir, testName) {
   }
   console.log(`${pass} Electron ${testName} process tests passed.`);
 }
-
-const specFilter = (file) => {
-  if (!/-spec\.[tj]s$/.test(file)) {
-    return false;
-  } else {
-    return true;
-  }
-};
 
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json');

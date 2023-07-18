@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "base/containers/contains.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -202,26 +203,15 @@ struct Converter<printing::mojom::MarginType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      printing::mojom::MarginType* out) {
-    std::string type;
-    if (ConvertFromV8(isolate, val, &type)) {
-      if (type == "default") {
-        *out = printing::mojom::MarginType::kDefaultMargins;
-        return true;
-      }
-      if (type == "none") {
-        *out = printing::mojom::MarginType::kNoMargins;
-        return true;
-      }
-      if (type == "printableArea") {
-        *out = printing::mojom::MarginType::kPrintableAreaMargins;
-        return true;
-      }
-      if (type == "custom") {
-        *out = printing::mojom::MarginType::kCustomMargins;
-        return true;
-      }
-    }
-    return false;
+    using Val = printing::mojom::MarginType;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"custom", Val::kCustomMargins},
+            {"default", Val::kDefaultMargins},
+            {"none", Val::kNoMargins},
+            {"printableArea", Val::kPrintableAreaMargins},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -230,22 +220,14 @@ struct Converter<printing::mojom::DuplexMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      printing::mojom::DuplexMode* out) {
-    std::string mode;
-    if (ConvertFromV8(isolate, val, &mode)) {
-      if (mode == "simplex") {
-        *out = printing::mojom::DuplexMode::kSimplex;
-        return true;
-      }
-      if (mode == "longEdge") {
-        *out = printing::mojom::DuplexMode::kLongEdge;
-        return true;
-      }
-      if (mode == "shortEdge") {
-        *out = printing::mojom::DuplexMode::kShortEdge;
-        return true;
-      }
-    }
-    return false;
+    using Val = printing::mojom::DuplexMode;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"longEdge", Val::kLongEdge},
+            {"shortEdge", Val::kShortEdge},
+            {"simplex", Val::kSimplex},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -285,20 +267,14 @@ struct Converter<content::SavePageType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      content::SavePageType* out) {
-    std::string save_type;
-    if (!ConvertFromV8(isolate, val, &save_type))
-      return false;
-    save_type = base::ToLowerASCII(save_type);
-    if (save_type == "htmlonly") {
-      *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
-    } else if (save_type == "htmlcomplete") {
-      *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
-    } else if (save_type == "mhtml") {
-      *out = content::SAVE_PAGE_TYPE_AS_MHTML;
-    } else {
-      return false;
-    }
-    return true;
+    using Val = content::SavePageType;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"htmlcomplete", Val::SAVE_PAGE_TYPE_AS_COMPLETE_HTML},
+            {"htmlonly", Val::SAVE_PAGE_TYPE_AS_ONLY_HTML},
+            {"mhtml", Val::SAVE_PAGE_TYPE_AS_MHTML},
+        });
+    return FromV8WithLowerLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -336,22 +312,15 @@ struct Converter<electron::api::WebContents::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::api::WebContents::Type* out) {
-    using Type = electron::api::WebContents::Type;
-    std::string type;
-    if (!ConvertFromV8(isolate, val, &type))
-      return false;
-    if (type == "backgroundPage") {
-      *out = Type::kBackgroundPage;
-    } else if (type == "browserView") {
-      *out = Type::kBrowserView;
-    } else if (type == "webview") {
-      *out = Type::kWebView;
-    } else if (type == "offscreen") {
-      *out = Type::kOffScreen;
-    } else {
-      return false;
-    }
-    return true;
+    using Val = electron::api::WebContents::Type;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"backgroundPage", Val::kBackgroundPage},
+            {"browserView", Val::kBrowserView},
+            {"offscreen", Val::kOffScreen},
+            {"webview", Val::kWebView},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -1328,7 +1297,9 @@ void WebContents::CloseContents(content::WebContents* source) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
 
-  Destroy();
+  // This is handled by the embedder frame.
+  if (!IsGuest())
+    Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1894,7 +1865,7 @@ bool WebContents::EmitNavigationEvent(
   content::RenderFrameHost* initiator_frame_host =
       navigation_handle->GetInitiatorFrameToken().has_value()
           ? content::RenderFrameHost::FromFrameToken(
-                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorProcessId(),
                 navigation_handle->GetInitiatorFrameToken().value())
           : nullptr;
 
@@ -4193,7 +4164,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                                      v8::Local<v8::ObjectTemplate> templ) {
   gin::InvokerOptions options;
   options.holder_is_first_argument = true;
-  options.holder_type = "WebContents";
+  options.holder_type = GetClassName();
   templ->Set(
       gin::StringToSymbol(isolate, "isDestroyed"),
       gin::CreateFunctionTemplate(
@@ -4333,7 +4304,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* WebContents::GetTypeName() {
-  return "WebContents";
+  return GetClassName();
 }
 
 ElectronBrowserContext* WebContents::GetBrowserContext() const {

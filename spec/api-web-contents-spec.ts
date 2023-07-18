@@ -3,7 +3,7 @@ import { AddressInfo } from 'node:net';
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
-import { BrowserWindow, ipcMain, webContents, session, app, BrowserView } from 'electron/main';
+import { BrowserWindow, ipcMain, webContents, session, app, BrowserView, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, defer, waitUntil, listen, ifit } from './lib/spec-helpers';
 import { once } from 'node:events';
@@ -24,7 +24,7 @@ describe('webContents module', () => {
       });
       w.loadFile(path.join(fixturesPath, 'pages', 'webview-zoom-factor.html'));
 
-      await once(w.webContents, 'did-attach-webview');
+      await once(w.webContents, 'did-attach-webview') as [any, WebContents];
 
       w.webContents.openDevTools();
 
@@ -637,7 +637,7 @@ describe('webContents module', () => {
         if (opts.meta) modifiers.push('meta');
         if (opts.isAutoRepeat) modifiers.push('isAutoRepeat');
 
-        const p = once(w.webContents, 'before-input-event');
+        const p = once(w.webContents, 'before-input-event') as Promise<[any, Electron.Input]>;
         w.webContents.sendInputEvent({
           type: opts.type,
           keyCode: opts.keyCode,
@@ -720,7 +720,7 @@ describe('webContents module', () => {
           modifiers: ['control', 'meta']
         });
 
-        const [, zoomDirection] = await once(w.webContents, 'zoom-changed');
+        const [, zoomDirection] = await once(w.webContents, 'zoom-changed') as [any, string];
         expect(zoomDirection).to.equal('in');
       };
 
@@ -743,7 +743,7 @@ describe('webContents module', () => {
           modifiers: ['control', 'meta']
         });
 
-        const [, zoomDirection] = await once(w.webContents, 'zoom-changed');
+        const [, zoomDirection] = await once(w.webContents, 'zoom-changed') as [any, string];
         expect(zoomDirection).to.equal('out');
       };
 
@@ -1293,7 +1293,7 @@ describe('webContents module', () => {
     it('can get opener with window.open()', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript('window.open("about:blank")', true);
       const [childWindow] = await childPromise;
       expect(childWindow.webContents.opener).to.equal(w.webContents.mainFrame);
@@ -1301,7 +1301,7 @@ describe('webContents module', () => {
     it('has no opener when using "noopener"', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript('window.open("about:blank", undefined, "noopener")', true);
       const [childWindow] = await childPromise;
       expect(childWindow.webContents.opener).to.be.null();
@@ -1309,7 +1309,7 @@ describe('webContents module', () => {
     it('can get opener with a[target=_blank][rel=opener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript(`(function() {
         const a = document.createElement('a');
         a.target = '_blank';
@@ -1323,7 +1323,7 @@ describe('webContents module', () => {
     it('has no opener with a[target=_blank][rel=noopener]', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
       await w.loadURL('about:blank');
-      const childPromise = once(w.webContents, 'did-create-window');
+      const childPromise = once(w.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
       w.webContents.executeJavaScript(`(function() {
         const a = document.createElement('a');
         a.target = '_blank';
@@ -1485,7 +1485,7 @@ describe('webContents module', () => {
 
       it('forcefullyCrashRenderer() crashes the process with reason=killed||crashed', async () => {
         expect(w.webContents.isCrashed()).to.equal(false);
-        const crashEvent = once(w.webContents, 'render-process-gone');
+        const crashEvent = once(w.webContents, 'render-process-gone') as Promise<[any, Electron.RenderProcessGoneDetails]>;
         w.webContents.forcefullyCrashRenderer();
         const [, details] = await crashEvent;
         expect(details.reason === 'killed' || details.reason === 'crashed').to.equal(true, 'reason should be killed || crashed');
@@ -1716,7 +1716,7 @@ describe('webContents module', () => {
             }
           });
 
-          const promise = once(w.webContents, 'preload-error');
+          const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
           w.loadURL('about:blank');
 
           const [, preloadPath, error] = await promise;
@@ -1735,7 +1735,7 @@ describe('webContents module', () => {
             }
           });
 
-          const promise = once(w.webContents, 'preload-error');
+          const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
           w.loadURL('about:blank');
 
           const [, preloadPath, error] = await promise;
@@ -1754,7 +1754,7 @@ describe('webContents module', () => {
             }
           });
 
-          const promise = once(w.webContents, 'preload-error');
+          const promise = once(w.webContents, 'preload-error') as Promise<[any, string, Error]>;
           w.loadURL('about:blank');
 
           const [, preloadPath, error] = await promise;
@@ -2227,9 +2227,9 @@ describe('webContents module', () => {
       const bw = new BrowserWindow({ show: false });
       await bw.loadURL('about:blank');
       bw.webContents.executeJavaScript('child = window.open("", "", "show=no"); null');
-      const [, child] = await once(app, 'web-contents-created');
+      const [, child] = await once(app, 'web-contents-created') as [any, WebContents];
       bw.webContents.executeJavaScript('child.document.title = "new title"');
-      const [, title] = await once(child, 'page-title-updated');
+      const [, title] = await once(child, 'page-title-updated') as [any, string];
       expect(title).to.equal('new title');
     });
   });
@@ -2251,7 +2251,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixturesPath, 'pages', 'base-page.html'));
 
-      const promise = once(w.webContents, 'context-menu');
+      const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
 
       // Simulate right-click to create context-menu event.
       const opts = { x: 0, y: 0, button: 'right' as any };
@@ -2350,7 +2350,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.moveTo(100, 100)', true);
-      const [, rect] = await once(w.webContents, 'content-bounds-updated');
+      const [, rect] = await once(w.webContents, 'content-bounds-updated') as [any, Electron.Rectangle];
       const { width, height } = w.getBounds();
       expect(rect).to.deep.equal({
         x: 100,
@@ -2367,7 +2367,7 @@ describe('webContents module', () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL('about:blank');
       w.webContents.executeJavaScript('window.resizeTo(100, 100)', true);
-      const [, rect] = await once(w.webContents, 'content-bounds-updated');
+      const [, rect] = await once(w.webContents, 'content-bounds-updated') as [any, Electron.Rectangle];
       const { x, y } = w.getBounds();
       expect(rect).to.deep.equal({
         x,

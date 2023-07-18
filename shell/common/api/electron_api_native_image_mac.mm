@@ -29,7 +29,7 @@ NSData* bufferFromNSImage(NSImage* image) {
   CGImageRef ref = [image CGImageForProposedRect:nil context:nil hints:nil];
   NSBitmapImageRep* rep = [[NSBitmapImageRep alloc] initWithCGImage:ref];
   [rep setSize:[image size]];
-  return [rep representationUsingType:NSPNGFileType
+  return [rep representationUsingType:NSBitmapImageFileTypePNG
                            properties:[[NSDictionary alloc] init]];
 }
 
@@ -54,79 +54,50 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   CGSize cg_size = size.ToCGSize();
 
-  if (@available(macOS 10.15, *)) {
-    NSURL* nsurl = base::mac::FilePathToNSURL(path);
+  NSURL* nsurl = base::mac::FilePathToNSURL(path);
 
-    // We need to explicitly check if the user has passed an invalid path
-    // because QLThumbnailGenerationRequest will generate a stock file icon
-    // and pass silently if we do not.
-    if (![[NSFileManager defaultManager] fileExistsAtPath:[nsurl path]]) {
-      promise.RejectWithErrorMessage(
-          "unable to retrieve thumbnail preview image for the given path");
-      return handle;
-    }
-
-    NSScreen* screen = [[NSScreen screens] firstObject];
-    base::scoped_nsobject<QLThumbnailGenerationRequest> request(
-        [[QLThumbnailGenerationRequest alloc]
-              initWithFileAtURL:nsurl
-                           size:cg_size
-                          scale:[screen backingScaleFactor]
-            representationTypes:
-                QLThumbnailGenerationRequestRepresentationTypeAll]);
-    __block gin_helper::Promise<gfx::Image> p = std::move(promise);
-    [[QLThumbnailGenerator sharedGenerator]
-        generateBestRepresentationForRequest:request
-                           completionHandler:^(
-                               QLThumbnailRepresentation* thumbnail,
-                               NSError* error) {
-                             if (error || !thumbnail) {
-                               std::string err_msg(
-                                   [error.localizedDescription UTF8String]);
-                               dispatch_async(dispatch_get_main_queue(), ^{
-                                 p.RejectWithErrorMessage(
-                                     "unable to retrieve thumbnail preview "
-                                     "image for the given path: " +
-                                     err_msg);
-                               });
-                             } else {
-                               NSImage* result = [[[NSImage alloc]
-                                   initWithCGImage:[thumbnail CGImage]
-                                              size:cg_size] autorelease];
-                               gfx::Image image(result);
-                               dispatch_async(dispatch_get_main_queue(), ^{
-                                 p.Resolve(image);
-                               });
-                             }
-                           }];
-  } else {
-    base::ScopedCFTypeRef<CFURLRef> cfurl = base::mac::FilePathToCFURL(path);
-    base::ScopedCFTypeRef<QLThumbnailRef> ql_thumbnail(
-        QLThumbnailCreate(kCFAllocatorDefault, cfurl, cg_size, NULL));
-    __block gin_helper::Promise<gfx::Image> p = std::move(promise);
-    // Do not block the main thread waiting for quicklook to generate the
-    // thumbnail.
-    QLThumbnailDispatchAsync(
-        ql_thumbnail,
-        dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_LOW, /*flags*/ 0), ^{
-          base::ScopedCFTypeRef<CGImageRef> cg_thumbnail(
-              QLThumbnailCopyImage(ql_thumbnail));
-          if (cg_thumbnail) {
-            NSImage* result =
-                [[[NSImage alloc] initWithCGImage:cg_thumbnail
-                                             size:cg_size] autorelease];
-            gfx::Image thumbnail(result);
-            dispatch_async(dispatch_get_main_queue(), ^{
-              p.Resolve(thumbnail);
-            });
-          } else {
-            dispatch_async(dispatch_get_main_queue(), ^{
-              p.RejectWithErrorMessage("unable to retrieve thumbnail preview "
-                                       "image for the given path");
-            });
-          }
-        });
+  // We need to explicitly check if the user has passed an invalid path
+  // because QLThumbnailGenerationRequest will generate a stock file icon
+  // and pass silently if we do not.
+  if (![[NSFileManager defaultManager] fileExistsAtPath:[nsurl path]]) {
+    promise.RejectWithErrorMessage(
+        "unable to retrieve thumbnail preview image for the given path");
+    return handle;
   }
+
+  NSScreen* screen = [[NSScreen screens] firstObject];
+  base::scoped_nsobject<QLThumbnailGenerationRequest> request(
+      [[QLThumbnailGenerationRequest alloc]
+            initWithFileAtURL:nsurl
+                         size:cg_size
+                        scale:[screen backingScaleFactor]
+          representationTypes:
+              QLThumbnailGenerationRequestRepresentationTypeAll]);
+  __block gin_helper::Promise<gfx::Image> p = std::move(promise);
+  [[QLThumbnailGenerator sharedGenerator]
+      generateBestRepresentationForRequest:request
+                         completionHandler:^(
+                             QLThumbnailRepresentation* thumbnail,
+                             NSError* error) {
+                           if (error || !thumbnail) {
+                             std::string err_msg(
+                                 [error.localizedDescription UTF8String]);
+                             dispatch_async(dispatch_get_main_queue(), ^{
+                               p.RejectWithErrorMessage(
+                                   "unable to retrieve thumbnail preview "
+                                   "image for the given path: " +
+                                   err_msg);
+                             });
+                           } else {
+                             NSImage* result = [[[NSImage alloc]
+                                 initWithCGImage:[thumbnail CGImage]
+                                            size:cg_size] autorelease];
+                             gfx::Image image(result);
+                             dispatch_async(dispatch_get_main_queue(), ^{
+                               p.Resolve(image);
+                             });
+                           }
+                         }];
 
   return handle;
 }

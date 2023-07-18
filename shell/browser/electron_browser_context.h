@@ -140,6 +140,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
 
+  std::string GetMediaDeviceIDSalt();
+
   // content::BrowserContext:
   base::FilePath GetPath() override;
   bool IsOffTheRecord() override;
@@ -152,7 +154,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::BackgroundSyncController* GetBackgroundSyncController() override;
   content::BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate()
       override;
-  std::string GetMediaDeviceIDSalt() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
   content::PlatformNotificationService* GetPlatformNotificationService()

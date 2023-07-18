@@ -59,7 +59,7 @@ const checkAppInitialized = function () {
 const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogProperties)[]): number => {
   let dialogProperties = 0;
   for (const property of properties) {
-    if (Object.prototype.hasOwnProperty.call(OpenFileDialogProperties, property)) { dialogProperties |= OpenFileDialogProperties[property]; }
+    if (Object.hasOwn(OpenFileDialogProperties, property)) { dialogProperties |= OpenFileDialogProperties[property]; }
   }
   return dialogProperties;
 };
@@ -67,7 +67,7 @@ const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogPrope
 const setupSaveDialogProperties = (properties: (keyof typeof SaveFileDialogProperties)[]): number => {
   let dialogProperties = 0;
   for (const property of properties) {
-    if (Object.prototype.hasOwnProperty.call(SaveFileDialogProperties, property)) { dialogProperties |= SaveFileDialogProperties[property]; }
+    if (Object.hasOwn(SaveFileDialogProperties, property)) { dialogProperties |= SaveFileDialogProperties[property]; }
   }
   return dialogProperties;
 };

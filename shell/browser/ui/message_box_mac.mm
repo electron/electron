@@ -92,8 +92,9 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
     alert.showsSuppressionButton = YES;
     alert.suppressionButton.title =
         base::SysUTF8ToNSString(settings.checkbox_label);
-    alert.suppressionButton.state =
-        settings.checkbox_checked ? NSOnState : NSOffState;
+    alert.suppressionButton.state = settings.checkbox_checked
+                                        ? NSControlStateValueOn
+                                        : NSControlStateValueOff;
   }
 
   if (!settings.icon.isNull()) {
@@ -145,7 +146,8 @@ void ShowMessageBox(const MessageBoxSettings& settings,
   // window to wait for.
   if (!settings.parent_window) {
     int ret = [[alert autorelease] runModal];
-    std::move(callback).Run(ret, alert.suppressionButton.state == NSOnState);
+    std::move(callback).Run(
+        ret, alert.suppressionButton.state == NSControlStateValueOn);
   } else {
     if (settings.id) {
       if (base::Contains(GetDialogsMap(), *settings.id))
@@ -172,7 +174,7 @@ void ShowMessageBox(const MessageBoxSettings& settings,
       // CloseMessageBox API, and we should return cancelId as result.
       if (response < 0)
         response = cancel_id;
-      bool suppressed = alert.suppressionButton.state == NSOnState;
+      bool suppressed = alert.suppressionButton.state == NSControlStateValueOn;
       [alert release];
       // The completionHandler runs inside a transaction commit, and we should
       // not do any runModal inside it. However since we can not control what

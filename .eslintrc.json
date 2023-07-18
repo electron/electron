@@ -10,7 +10,6 @@
     "semi": ["error", "always"],
     "no-var": "error",
     "no-unused-vars": "off",
-    "no-global-assign": "off",
     "guard-for-in": "error",
     "@typescript-eslint/no-unused-vars": ["error", {
       "vars": "all",
@@ -20,20 +19,13 @@
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
-    "standard/no-callback-literal": "off",
-    "node/no-deprecated-api": "off"
+    "standard/no-callback-literal": "off"
   },
   "parserOptions": {
     "ecmaVersion": 6,
     "sourceType": "module"
   },
   "overrides": [
-    {
-      "files": "*.js",
-      "rules": {
-        "@typescript-eslint/no-unused-vars": "off"
-      }
-    },
     {
       "files": "*.ts",
       "rules": {

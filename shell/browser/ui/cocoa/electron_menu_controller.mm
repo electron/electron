@@ -65,6 +65,7 @@ Role kRolesMap[] = {
     {@selector(toggleFullScreenMode:), "togglefullscreen"},
     {@selector(toggleTabBar:), "toggletabbar"},
     {@selector(selectNextTab:), "selectnexttab"},
+    {@selector(toggleTabOverview:), "showalltabs"},
     {@selector(selectPreviousTab:), "selectprevioustab"},
     {@selector(mergeAllWindows:), "mergeallwindows"},
     {@selector(moveTabToNewWindow:), "movetabtonewwindow"},
@@ -467,7 +468,8 @@ static base::scoped_nsobject<NSMenu> recentDocumentsMenuSwap_;
     BOOL checked = model->IsItemCheckedAt(modelIndex);
     DCHECK([(id)item isKindOfClass:[NSMenuItem class]]);
 
-    [(id)item setState:(checked ? NSOnState : NSOffState)];
+    [(id)item
+        setState:(checked ? NSControlStateValueOn : NSControlStateValueOff)];
     [(id)item setHidden:(!model->IsVisibleAt(modelIndex))];
 
     return model->IsEnabledAt(modelIndex);

@@ -11,6 +11,7 @@
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_converters/accelerator_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
+#include "shell/common/gin_converters/content_converter.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -296,6 +297,10 @@ void Menu::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("_getUserAcceleratorAt", &Menu::GetUserAcceleratorAt)
 #endif
       .Build();
+}
+
+const char* Menu::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

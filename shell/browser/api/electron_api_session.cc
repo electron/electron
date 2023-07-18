@@ -804,10 +804,24 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
   return holder->ReadAll(isolate);
 }
 
-void Session::DownloadURL(const GURL& url) {
-  auto* download_manager = browser_context()->GetDownloadManager();
+void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
+  std::map<std::string, std::string> headers;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    if (options.Has("headers") && !options.Get("headers", &headers)) {
+      args->ThrowTypeError("Invalid value for headers - must be an object");
+      return;
+    }
+  }
+
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
+
+  for (const auto& [name, value] : headers) {
+    download_params->add_request_header(name, value);
+  }
+
+  auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -1287,7 +1301,7 @@ gin::Handle<Session> Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Session", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
@@ -1365,7 +1379,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* Session::GetTypeName() {
-  return "Session";
+  return GetClassName();
 }
 
 }  // namespace electron::api

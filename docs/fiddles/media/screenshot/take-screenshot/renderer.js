@@ -1,8 +1,8 @@
 const { desktopCapturer, shell, ipcRenderer } = require('electron')
 
-const fs = require('fs')
-const os = require('os')
-const path = require('path')
+const fs = require('node:fs')
+const os = require('node:os')
+const path = require('node:path')
 
 const screenshot = document.getElementById('screen-shot')
 const screenshotMsg = document.getElementById('screenshot-path')

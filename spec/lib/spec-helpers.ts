@@ -55,7 +55,7 @@ class RemoteControlApp {
         res.on('data', chunk => { chunks.push(chunk); });
         res.on('end', () => {
           const ret = v8.deserialize(Buffer.concat(chunks));
-          if (Object.prototype.hasOwnProperty.call(ret, 'error')) {
+          if (Object.hasOwn(ret, 'error')) {
             reject(new Error(`remote error: ${ret.error}\n\nTriggered at:`));
           } else {
             resolve(ret.result);
@@ -141,11 +141,11 @@ export async function repeatedly<T> (
   opts?: { until?: (x: T) => boolean, timeLimit?: number }
 ) {
   const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
-  const begin = +new Date();
+  const begin = Date.now();
   while (true) {
     const ret = await fn();
     if (until(ret)) { return ret; }
-    if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
+    if (Date.now() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
   }
 }
 

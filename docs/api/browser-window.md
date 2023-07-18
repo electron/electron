@@ -1531,6 +1531,10 @@ tabs in the window.
 Selects the next tab when native tabs are enabled and there are other
 tabs in the window.
 
+#### `win.showAllTabs()` _macOS_
+
+Shows or hides the tab overview when native tabs are enabled.
+
 #### `win.mergeAllWindows()` _macOS_
 
 Merges all windows into one window with multiple tabs when native tabs
@@ -1554,15 +1558,11 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` string | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
+* `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
-
-Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
-deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setBackgroundMaterial(material)` _Windows_
 
@@ -1651,8 +1651,8 @@ Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
 
-Returns `BrowserView[]` - an array of all BrowserViews that have been attached
-with `addBrowserView` or `setBrowserView`.
+Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
+with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.

@@ -8,6 +8,7 @@
 
 #include "components/os_crypt/sync/os_crypt.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/common/gin_converters/base_converter.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
@@ -18,14 +19,7 @@ namespace electron::safestorage {
 
 static const char* kEncryptionVersionPrefixV10 = "v10";
 static const char* kEncryptionVersionPrefixV11 = "v11";
-
-#if DCHECK_IS_ON()
-static bool electron_crypto_ready = false;
-
-void SetElectronCryptoReady(bool ready) {
-  electron_crypto_ready = ready;
-}
-#endif
+static bool use_password_v10 = false;
 
 bool IsEncryptionAvailable() {
 #if BUILDFLAG(IS_LINUX)
@@ -34,9 +28,27 @@ bool IsEncryptionAvailable() {
   // Refs: https://github.com/electron/electron/issues/32206.
   if (!Browser::Get()->is_ready())
     return false;
-#endif
+  return OSCrypt::IsEncryptionAvailable() ||
+         (use_password_v10 &&
+          static_cast<BrowserProcessImpl*>(g_browser_process)
+                  ->GetLinuxStorageBackend() == "basic_text");
+#else
   return OSCrypt::IsEncryptionAvailable();
+#endif
 }
+
+void SetUsePasswordV10(bool use) {
+  use_password_v10 = use;
+}
+
+#if BUILDFLAG(IS_LINUX)
+std::string GetSelectedLinuxBackend() {
+  if (!Browser::Get()->is_ready())
+    return "unknown";
+  return static_cast<BrowserProcessImpl*>(g_browser_process)
+      ->GetLinuxStorageBackend();
+}
+#endif
 
 v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
                                    const std::string& plaintext) {
@@ -47,8 +59,8 @@ v8::Local<v8::Value> EncryptString(v8::Isolate* isolate,
       return v8::Local<v8::Value>();
     }
     gin_helper::ErrorThrower(isolate).ThrowError(
-        "Error while decrypting the ciphertext provided to "
-        "safeStorage.decryptString. "
+        "Error while encrypting the text provided to "
+        "safeStorage.encryptString. "
         "Encryption is not available.");
     return v8::Local<v8::Value>();
   }
@@ -128,6 +140,12 @@ void Initialize(v8::Local<v8::Object> exports,
                  &electron::safestorage::IsEncryptionAvailable);
   dict.SetMethod("encryptString", &electron::safestorage::EncryptString);
   dict.SetMethod("decryptString", &electron::safestorage::DecryptString);
+  dict.SetMethod("setUsePlainTextEncryption",
+                 &electron::safestorage::SetUsePasswordV10);
+#if BUILDFLAG(IS_LINUX)
+  dict.SetMethod("getSelectedStorageBackend",
+                 &electron::safestorage::GetSelectedLinuxBackend);
+#endif
 }
 
 NODE_LINKED_BINDING_CONTEXT_AWARE(electron_browser_safe_storage, Initialize)

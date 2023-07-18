@@ -15,41 +15,195 @@ jobs:
       repository-projects: write  # Required for labels
     runs-on: ubuntu-latest
     steps:
-      - name: New Release Branch Tasks
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: electron/electron
-          NUM_SUPPORTED_VERSIONS: 3
+      - name: Determine Major Version
+        id: check-major-version
         run: |
           if [[ ${{ github.event.ref }} =~ ^([0-9]+)-x-y$ ]]; then
-            MAJOR=${BASH_REMATCH[1]}
-            PREVIOUS_MAJOR=$((MAJOR - 1))
-            UNSUPPORTED_MAJOR=$((MAJOR - NUM_SUPPORTED_VERSIONS - 1))
-
-            # Create new labels
-            gh label create $MAJOR-x-y --color 8d9ee8 || true
-            gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
-            gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
-            gh label create in-flight/$MAJOR-x-y --color db69a6 || true
-            gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
-
-            # Change color of old labels
-            gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || true
-            gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-            gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-            gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-            gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || true
-
-            # Add the new target label to any PRs which:
-            #   * target the previous major
-            #   * are in-flight for the previous major
-            #   * need manual backport for the previous major
-            for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
-              PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --jq .[].number --json number --limit 500)
-              if [[ $PULL_REQUESTS ]]; then
-                echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
-              fi
-            done
+            echo "MAJOR=${BASH_REMATCH[1]}" >> "$GITHUB_OUTPUT"
           else
             echo "Not a release branch: ${{ github.event.ref }}"
           fi
+      - name: New Release Branch Tasks
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: electron/electron
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+          NUM_SUPPORTED_VERSIONS: 3
+        run: |
+          PREVIOUS_MAJOR=$((MAJOR - 1))
+          UNSUPPORTED_MAJOR=$((MAJOR - NUM_SUPPORTED_VERSIONS - 1))
+
+          # Create new labels
+          gh label create $MAJOR-x-y --color 8d9ee8 || true
+          gh label create target/$MAJOR-x-y --color ad244f --description "PR should also be added to the \"${MAJOR}-x-y\" branch." || true
+          gh label create merged/$MAJOR-x-y --color 61a3c6 --description "PR was merged to the \"${MAJOR}-x-y\" branch." || true
+          gh label create in-flight/$MAJOR-x-y --color db69a6 || true
+          gh label create needs-manual-bp/$MAJOR-x-y --color 8b5dba || true
+
+          # Change color of old labels
+          gh label edit $UNSUPPORTED_MAJOR-x-y --color ededed || true
+          gh label edit target/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+          gh label edit merged/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+          gh label edit in-flight/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+          gh label edit needs-manual-bp/$UNSUPPORTED_MAJOR-x-y --color ededed || true
+
+          # Add the new target label to any PRs which:
+          #   * target the previous major
+          #   * are in-flight for the previous major
+          #   * need manual backport for the previous major
+          for PREVIOUS_MAJOR_LABEL in target/$PREVIOUS_MAJOR-x-y in-flight/$PREVIOUS_MAJOR-x-y needs-manual-bp/$PREVIOUS_MAJOR-x-y; do
+            PULL_REQUESTS=$(gh pr list --label $PREVIOUS_MAJOR_LABEL --jq .[].number --json number --limit 500)
+            if [[ $PULL_REQUESTS ]]; then
+              echo $PULL_REQUESTS | xargs -n 1 gh pr edit --add-label target/$MAJOR-x-y || true
+            fi
+          done
+      - name: Generate GitHub App token
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        id: generate-token
+        env:
+          RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
+        run: |
+          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org electron)
+          echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+      - name: Create Release Project Board
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.TOKEN }}
+          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
+          ELECTRON_ORG_ID: "O_kgDOAMybxg"
+          ELECTRON_REPO_ID: "R_kgDOAI8xSw"
+          TEMPLATE_PROJECT_ID: "PVT_kwDOAMybxs4AQvib"
+        run: |
+          # Copy template to create new project board
+          PROJECT_ID=$(gh api graphql -f query='mutation ($ownerId: ID!, $projectId: ID!, $title: String!) {  
+            copyProjectV2(input: {
+              includeDraftIssues: true,
+              ownerId: $ownerId,
+              projectId: $projectId,
+              title: $title
+            }) {
+              projectV2 {
+                id
+              }
+            }
+          }' -f ownerId=$ELECTRON_ORG_ID -f projectId=$TEMPLATE_PROJECT_ID -f title="${MAJOR}-x-y" | jq -r '.data.copyProjectV2.projectV2.id')
+
+          # Make the new project public
+          gh api graphql -f query='mutation ($projectId: ID!) {                                                                                             
+            updateProjectV2(input: {
+              projectId: $projectId,
+              public: true,
+            }) {
+              projectV2 {
+                id
+              }
+            }
+          }' -f projectId=$PROJECT_ID
+
+          # Link the new project to the Electron repository
+          gh api graphql -f query='mutation ($projectId: ID!, $repositoryId: ID!) {                                                                                             
+            linkProjectV2ToRepository(input: {
+              projectId: $projectId,
+              repositoryId: $repositoryId
+            }) {
+              clientMutationId
+            }
+          }' -f projectId=$PROJECT_ID -f repositoryId=$ELECTRON_REPO_ID
+
+          # Get all draft issues on the new project board
+          gh api graphql -f query='query ($id: ID!) {
+            node(id: $id) {
+              ... on ProjectV2 {
+                items(first: 100) {
+                  nodes {
+                    ... on ProjectV2Item {
+                      id
+                      content {
+                        ... on DraftIssue { id title
+                          body
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f id=$PROJECT_ID > issues.json
+          PROJECT_ITEMS=$(jq '.data.node.items.nodes[] | select(.content.id != null) | .id' issues.json)
+
+          # TODO(dsanders11): remove the following "Stable Prep Items" sections once
+          # GitHub extends project template copying to retain the status field value
+          # of draft issues in the template.
+          #
+          # Refs https://github.com/orgs/community/discussions/54576#discussioncomment-6096892
+
+          # Get field ID and option value for "Stable Prep Items"
+          gh api graphql -f query='query ($id: ID!) {
+            node(id: $id) {
+              ... on ProjectV2 {
+                field(name: "Status") {
+                  ... on ProjectV2SingleSelectField {
+                    id
+                    options {
+                      ... on ProjectV2SingleSelectFieldOption {
+                        id
+                        name
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }' -f id=$PROJECT_ID > status_field.json
+          FIELD_ID=$(jq -r '.data.node.field.id' status_field.json)
+          FIELD_OPTION_ID=$(jq -r '.data.node.field.options[] | select(.name == "Stable Prep Items") | .id' status_field.json)
+
+          # Move draft issues to "Stable Prep" column
+          echo "$PROJECT_ITEMS" | xargs -I ITEM_ID -n 1 gh api graphql -f query='mutation ($projectId: ID!, $fieldId: ID!, $itemId: ID!, $value: String!) {                                                                                             
+            updateProjectV2ItemFieldValue(input: {
+              projectId: $projectId,
+              fieldId: $fieldId,
+              itemId: $itemId,
+              value: {
+                singleSelectOptionId: $value
+              }
+            }) {
+              projectV2Item {
+                id
+              }
+            }
+          }' -f projectId=$PROJECT_ID -f fieldId=$FIELD_ID -f itemId=ITEM_ID -f value=$FIELD_OPTION_ID
+
+          #
+          # Do template replacement for draft issues
+          #
+          echo "{\"major\": $MAJOR, \"next-major\": $((MAJOR + 1))}" > variables.json
+
+          # npx mustache is annoyingly slow, so install mustache directly
+          yarn add -D mustache
+
+          for PROJECT_ITEM_ID in $PROJECT_ITEMS; do
+            # These are done with the raw output flag and sent to file to better retain formatting
+            jq -r ".data.node.items.nodes[] | select(.id == $PROJECT_ITEM_ID) | .content.title" issues.json > title.txt
+            jq -r ".data.node.items.nodes[] | select(.id == $PROJECT_ITEM_ID) | .content.body" issues.json > body.txt
+
+            ./node_modules/.bin/mustache variables.json title.txt new_title.txt
+            ./node_modules/.bin/mustache variables.json body.txt new_body.txt
+
+            # Only update draft issues which had content change when interpolated
+            if ! cmp --silent -- new_title.txt title.txt || ! cmp --silent -- new_body.txt body.txt; then
+              DRAFT_ISSUE_ID=$(jq ".data.node.items.nodes[] | select(.id == $PROJECT_ITEM_ID) | .content.id" issues.json)
+              gh api graphql -f query='mutation ($draftIssueId: ID!, $title: String!, $body: String!) {                                                                                             
+                updateProjectV2DraftIssue(input: {
+                  draftIssueId: $draftIssueId,
+                  title: $title,
+                  body: $body
+                }) {
+                  draftIssue {
+                    id
+                  }
+                }
+              }' -f draftIssueId=$DRAFT_ISSUE_ID -f title="$(cat new_title.txt)" -f body="$(cat new_body.txt)"
+            fi
+          done
