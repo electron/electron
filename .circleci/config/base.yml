@@ -526,6 +526,10 @@ step-fix-sync: &step-fix-sync
         sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
 
+        # Fix rustc (wrong binary)
+        rm -rf src/third_party/rust-toolchain
+        python3 src/tools/rust/update_rust.py
+        
         # Fix gn (wrong binary)
         echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
