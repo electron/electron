@@ -23,8 +23,8 @@
   raw_ptr<electron::TrayIconCocoa> trayIcon_;  // weak
   ElectronMenuController* menuController_;     // weak
   BOOL ignoreDoubleClickEvents_;
-  base::scoped_nsobject<NSStatusItem> statusItem_;
-  base::scoped_nsobject<NSTrackingArea> trackingArea_;
+  NSStatusItem* __strong statusItem_;
+  NSTrackingArea* __strong trackingArea_;
 }
 
 @end  // @interface StatusItemView
@@ -34,7 +34,6 @@
 - (void)dealloc {
   trayIcon_ = nil;
   menuController_ = nil;
-  [super dealloc];
 }
 
 - (id)initWithIcon:(electron::TrayIconCocoa*)icon {
@@ -54,7 +53,7 @@
     // Create the status item.
     NSStatusItem* item = [[NSStatusBar systemStatusBar]
         statusItemWithLength:NSVariableStatusItemLength];
-    statusItem_.reset([item retain]);
+    statusItem_ = item;
     [[statusItem_ button] addSubview:self];  // inject custom view
     [self updateDimensions];
   }
@@ -69,12 +68,12 @@
   // Use NSTrackingArea for listening to mouseEnter, mouseExit, and mouseMove
   // events.
   [self removeTrackingArea:trackingArea_];
-  trackingArea_.reset([[NSTrackingArea alloc]
+  trackingArea_ = [[NSTrackingArea alloc]
       initWithRect:[self bounds]
            options:NSTrackingMouseEnteredAndExited | NSTrackingMouseMoved |
                    NSTrackingActiveAlways
              owner:self
-          userInfo:nil]);
+          userInfo:nil];
   [self addTrackingArea:trackingArea_];
 }
 
@@ -82,11 +81,11 @@
   // Turn off tracking events to prevent crash.
   if (trackingArea_) {
     [self removeTrackingArea:trackingArea_];
-    trackingArea_.reset();
+    trackingArea_ = nil;
   }
   [[NSStatusBar systemStatusBar] removeStatusItem:statusItem_];
   [self removeFromSuperview];
-  statusItem_.reset();
+  statusItem_ = nil;
 }
 
 - (void)setImage:(NSImage*)image {
@@ -216,21 +215,13 @@
 
   // Show a custom menu.
   if (menu_model) {
-    base::scoped_nsobject<ElectronMenuController> menuController(
+    ElectronMenuController* menuController =
         [[ElectronMenuController alloc] initWithModel:menu_model
-                                useDefaultAccelerator:NO]);
+                                useDefaultAccelerator:NO];
     // Hacky way to mimic design of ordinary tray menu.
     [statusItem_ setMenu:[menuController menu]];
-    // -performClick: is a blocking call, which will run the task loop inside
-    // itself. This can potentially include running JS, which can result in
-    // this object being released. We take a temporary reference here to make
-    // sure we stay alive long enough to successfully return from this
-    // function.
-    // TODO(nornagon/codebytere): Avoid nesting task loops here.
-    [self retain];
     [[statusItem_ button] performClick:self];
     [statusItem_ setMenu:[menuController_ menu]];
-    [self release];
     return;
   }
 
@@ -326,7 +317,7 @@
 namespace electron {
 
 TrayIconCocoa::TrayIconCocoa() {
-  status_item_view_.reset([[StatusItemView alloc] initWithIcon:this]);
+  status_item_view_ = [[StatusItemView alloc] initWithIcon:this];
 }
 
 TrayIconCocoa::~TrayIconCocoa() {
@@ -382,12 +373,12 @@ void TrayIconCocoa::CloseContextMenu() {
 void TrayIconCocoa::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
   if (menu_model) {
     // Create native menu.
-    menu_.reset([[ElectronMenuController alloc] initWithModel:menu_model
-                                        useDefaultAccelerator:NO]);
+    menu_ = [[ElectronMenuController alloc] initWithModel:menu_model
+                                    useDefaultAccelerator:NO];
   } else {
-    menu_.reset();
+    menu_ = nil;
   }
-  [status_item_view_ setMenuController:menu_.get()];
+  [status_item_view_ setMenuController:menu_];
 }
 
 gfx::Rect TrayIconCocoa::GetBounds() {

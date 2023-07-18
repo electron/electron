@@ -306,13 +306,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
         if (window->window_)
           window->window_ = nil;
         if (window->buttons_proxy_)
-          window->buttons_proxy_.reset();
+          window->buttons_proxy_ = nil;
       },
       this));
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
-  window_delegate_.reset([[ElectronNSWindowDelegate alloc] initWithShell:this]);
+  window_delegate_ = [[ElectronNSWindowDelegate alloc] initWithShell:this];
   [window_ setDelegate:window_delegate_];
 
   // Only use native parent window for non-modal windows.
@@ -352,7 +352,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     if (title_bar_style_ == TitleBarStyle::kNormal) {
       InternalSetWindowButtonVisibility(false);
     } else {
-      buttons_proxy_.reset([[WindowButtonsProxy alloc] initWithWindow:window_]);
+      buttons_proxy_ = [[WindowButtonsProxy alloc] initWithWindow:window_];
       [buttons_proxy_ setHeight:titlebar_overlay_height()];
       if (traffic_light_position_) {
         [buttons_proxy_ setMargin:*traffic_light_position_];
@@ -1555,10 +1555,9 @@ void NativeWindowMac::UpdateFrame() {
 
 void NativeWindowMac::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
-  touch_bar_.reset([[ElectronTouchBar alloc]
-      initWithDelegate:window_delegate_.get()
-                window:this
-              settings:std::move(items)]);
+  touch_bar_ = [[ElectronTouchBar alloc] initWithDelegate:window_delegate_
+                                                   window:this
+                                                 settings:std::move(items)];
   [window_ setTouchBar:nil];
 }
 
@@ -1626,9 +1625,9 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 
 void NativeWindowMac::PreviewFile(const std::string& path,
                                   const std::string& display_name) {
-  preview_item_.reset([[ElectronPreviewItem alloc]
+  preview_item_ = [[ElectronPreviewItem alloc]
       initWithURL:[NSURL fileURLWithPath:base::SysUTF8ToNSString(path)]
-            title:base::SysUTF8ToNSString(display_name)]);
+            title:base::SysUTF8ToNSString(display_name)];
   [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
@@ -1799,7 +1798,7 @@ void NativeWindowMac::AddContentViewLayers() {
     // There is no need to do so for frameless window, and doing so would make
     // titleBarStyle stop working.
     if (has_frame()) {
-      base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+      CALayer* background_layer = [[CALayer alloc] init];
       [background_layer
           setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
       [[window_ contentView] setLayer:background_layer];

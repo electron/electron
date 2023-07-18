@@ -17,7 +17,7 @@ policy->CanCommitOriginAndUrl.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index c4c884d3adfc97cd89ce8ce27af201c3b15fbf70..d2a13a45f274ad58e956d1434b72d805fe5ce4c9 100644
+index 2f5bd34117ebb65c067d5d7fd1ebc79f1384139c..8a50f05c9a07a71125ec3dbd68f7e163f4e53a00 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -7373,10 +7373,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
@@ -37,10 +37,10 @@ index c4c884d3adfc97cd89ce8ce27af201c3b15fbf70..d2a13a45f274ad58e956d1434b72d805
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 8b5c6a5b57770043b4fdec580ef208760cfdb24d..62dbb7d88de5cc30d3944f3e8c5944f7e0a71f99 100644
+index 95e4fce11d972b14a7c5fed2e91424e3a8aed701..d62466b41c65a820fbd20cfc4583aaaaa999aeb4 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
 +++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2944,6 +2944,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -2950,6 +2950,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // last committed document.
    CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
  
@@ -58,7 +58,7 @@ index 8b5c6a5b57770043b4fdec580ef208760cfdb24d..62dbb7d88de5cc30d3944f3e8c5944f7
    // Sets a ResourceCache in the renderer. `this` must be active and there must
    // be no pending navigation. `remote` must have the same and process
    // isolation policy.
-@@ -3326,17 +3337,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
+@@ -3332,17 +3343,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
    // relevant.
    void ResetWaitingState();
  

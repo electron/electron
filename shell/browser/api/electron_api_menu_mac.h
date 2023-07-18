@@ -11,7 +11,9 @@
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
-using base::scoped_nsobject;
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
 
 namespace electron::api {
 
@@ -41,10 +43,10 @@ class MenuMac : public Menu {
   void ClosePopupOnUI(int32_t window_id);
   void OnClosed(int32_t window_id, base::OnceClosure callback);
 
-  scoped_nsobject<ElectronMenuController> menu_controller_;
+  ElectronMenuController* __strong menu_controller_;
 
   // window ID -> open context menu
-  std::map<int32_t, scoped_nsobject<ElectronMenuController>> popup_controllers_;
+  std::map<int32_t, ElectronMenuController*> popup_controllers_;
 
   base::WeakPtrFactory<MenuMac> weak_factory_{this};
 };

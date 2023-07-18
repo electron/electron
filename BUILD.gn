@@ -746,9 +746,18 @@ source_set("electron_lib") {
 
 if (is_mac) {
   source_set("electron_lib_arc") {
+    public_configs = [ ":branding" ]
     include_dirs = [ "." ]
     sources = [
+      "shell/app/electron_main_delegate_mac.h",
+      "shell/app/electron_main_delegate_mac.mm",
+      "shell/browser/api/electron_api_menu_mac.h",
+      "shell/browser/api/electron_api_menu_mac.mm",
+      "shell/browser/api/electron_api_native_theme_mac.mm",
+      "shell/browser/api/electron_api_push_notifications_mac.mm",
+      "shell/browser/api/electron_api_system_preferences_mac.mm",
       "shell/browser/browser_mac.mm",
+      "shell/browser/electron_browser_main_parts_mac.mm",
       "shell/browser/mac/dict_util.h",
       "shell/browser/mac/dict_util.mm",
       "shell/browser/mac/electron_application.h",
@@ -757,8 +766,21 @@ if (is_mac) {
       "shell/browser/mac/electron_application_delegate.mm",
       "shell/browser/native_window_mac.h",
       "shell/browser/native_window_mac.mm",
+      "shell/browser/ui/cocoa/delayed_native_view_host.h",
+      "shell/browser/ui/cocoa/delayed_native_view_host.mm",
+      "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h",
+      "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.mm",
+      "shell/browser/ui/cocoa/electron_menu_controller.mm",
+      "shell/browser/ui/cocoa/electron_ns_window.h",
+      "shell/browser/ui/cocoa/electron_ns_window.mm",
       "shell/browser/ui/cocoa/electron_ns_window_delegate.h",
       "shell/browser/ui/cocoa/electron_ns_window_delegate.mm",
+      "shell/browser/ui/cocoa/electron_touch_bar.h",
+      "shell/browser/ui/cocoa/electron_touch_bar.mm",
+      "shell/browser/ui/inspectable_web_contents_view_mac.h",
+      "shell/browser/ui/inspectable_web_contents_view_mac.mm",
+      "shell/browser/ui/tray_icon_cocoa.h",
+      "shell/browser/ui/tray_icon_cocoa.mm",
     ]
 
     deps = [
@@ -947,7 +969,7 @@ if (is_mac) {
         deps += [ "//sandbox/mac:seatbelt" ]
       }
       defines = [ "HELPER_EXECUTABLE" ]
-      extra_configs = [ "//electron/build/config:mas_build" ]
+      configs += [ "//electron/build/config:mas_build" ]
       sources = [
         "shell/app/electron_main_mac.cc",
         "shell/app/uv_stdio_fix.cc",
@@ -1118,7 +1140,7 @@ if (is_mac) {
       "-rpath",
       "@executable_path/../Frameworks",
     ]
-    extra_configs = [ "//electron/build/config:mas_build" ]
+    configs += [ "//electron/build/config:mas_build" ]
   }
 
   if (enable_dsyms) {

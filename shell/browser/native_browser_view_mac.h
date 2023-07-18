@@ -7,7 +7,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "base/mac/scoped_nsobject.h"
 #include "shell/browser/native_browser_view.h"
 
 namespace electron {

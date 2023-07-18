@@ -77,8 +77,7 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 - (void)setCurrentActivity:(NSString*)type
               withUserInfo:(NSDictionary*)userInfo
             withWebpageURL:(NSURL*)webpageURL {
-  currentActivity_ = base::scoped_nsobject<NSUserActivity>(
-      [[NSUserActivity alloc] initWithActivityType:type]);
+  currentActivity_ = [[NSUserActivity alloc] initWithActivityType:type];
   [currentActivity_ setUserInfo:userInfo];
   [currentActivity_ setWebpageURL:webpageURL];
   [currentActivity_ setDelegate:self];
@@ -87,13 +86,13 @@ inline void dispatch_sync_main(dispatch_block_t block) {
 }
 
 - (NSUserActivity*)getCurrentActivity {
-  return currentActivity_.get();
+  return currentActivity_;
 }
 
 - (void)invalidateCurrentActivity {
   if (currentActivity_) {
     [currentActivity_ invalidate];
-    currentActivity_.reset();
+    currentActivity_ = nil;
   }
 }
 

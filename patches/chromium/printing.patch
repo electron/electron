@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 79cc0c5a844bf7a21b0b1910a3c7b6477f0c082a..d75a7b18de626d836a9044ebb6839ca9b3f2dfb7 100644
+index acd08b3cc7ef4e6a8bf7836a38028d87e3e19710..2fb89b190051949a2605ae7f25567c1df6863fb5 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -973,7 +973,6 @@ if (is_win) {
@@ -601,7 +601,7 @@ index fcee7b58a8eebd9fc044bab51a5d0e540de0de7d..160b5a6ad2d5cb6e0292f9ff1d16ee55
    // Indication that the job is getting canceled.
    bool canceling_job_ = false;
 diff --git a/chrome/browser/printing/printer_query.cc b/chrome/browser/printing/printer_query.cc
-index 85e2d8c9161b4c6b122371a5a17b844c0660bb39..7bcedc3c75e5c77c1c00f0124b44e9d145646e08 100644
+index 83bce57ef52afa2094e294ae6bbe35e5e9e7797c..a32fc474b7db1bfa07443900eac49184036136da 100644
 --- a/chrome/browser/printing/printer_query.cc
 +++ b/chrome/browser/printing/printer_query.cc
 @@ -355,17 +355,19 @@ void PrinterQuery::UpdatePrintSettings(base::Value::Dict new_settings,
@@ -919,7 +919,7 @@ index 0fea424325081a0ef6720000841ea321b89024d0..c700de4b81fc0c157946e76faedaca6b
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 8e96ddd9e574d162f00814a7ae311c49d396819a..9f8f97981311eb58ccc57118fdab978b080f34b6 100644
+index 35b96db98a4c190805d54e4aacb4eb368e5999b6..798498992ae1e8003ed3d9b4ba3b22e31410a065 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -2907,8 +2907,9 @@ source_set("browser") {

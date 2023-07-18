@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index f8b3ded1dba82259f7d536ed5bab1a972d182419..b095843c8b28783bf51c0bf7becb111010651486 100644
+index 7816e1fe32d9a590e5278b62e6e82ae58eb24777..9a472cf3b8f835cebbfb95060eccfdd650dc2097 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -563,6 +563,7 @@ void MenuController::Run(Widget* parent,
@@ -32,7 +32,7 @@ index f8b3ded1dba82259f7d536ed5bab1a972d182419..b095843c8b28783bf51c0bf7becb1110
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2262,19 +2271,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2251,19 +2260,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -58,10 +58,10 @@ index f8b3ded1dba82259f7d536ed5bab1a972d182419..b095843c8b28783bf51c0bf7becb1110
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index e10b92be74908f8d96e421843cb2231f712a4895..82dc2f014d2e333057836290a00c7142b460bb57 100644
+index 1334ad5a759dd582b14711ef609e303613efad65..bf6653cff876205268b000e28b8f3ef0f7a29eb0 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
-@@ -134,6 +134,7 @@ class VIEWS_EXPORT MenuController
+@@ -140,6 +140,7 @@ class VIEWS_EXPORT MenuController
             MenuAnchorPosition position,
             bool context_menu,
             bool is_nested_drag,
@@ -157,7 +157,7 @@ index 68c01b93a973a1910c1cce1e581b5c5e38a8c787..fd82c908886f646327e59a2f4ee8dc34
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index c4c1f9b517927cff4fc573504f8e707433a6c1cc..32ab57972c8935a08919dfffab1ad59a4724b67c 100644
+index 8bbf8104fdb46dc8fdb506d8504a1c9f9376175e..717488a814d122e6b0b285b1b1e49488f981eccb 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 @@ -193,6 +193,7 @@
