@@ -1881,7 +1881,7 @@ bool WebContents::EmitNavigationEvent(
   content::RenderFrameHost* initiator_frame_host =
       navigation_handle->GetInitiatorFrameToken().has_value()
           ? content::RenderFrameHost::FromFrameToken(
-                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorProcessId(),
                 navigation_handle->GetInitiatorFrameToken().value())
           : nullptr;
 
