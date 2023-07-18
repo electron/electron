@@ -59,7 +59,7 @@ if [ ! -f $buildtools/configs/evm.testing.json ]; then
             },
             \"\$schema\": \"file:///home/builduser/.electron_build_tools/evm-config.schema.json\"
         }
-    " >$buildtools/configs/evm.testing1.json
+    " >$buildtools/configs/evm.testing.json
   }
 
   # Start out as cache only
