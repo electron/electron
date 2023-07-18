@@ -281,11 +281,29 @@ void ReadDialogPathsWithBookmarks(NSOpenPanel* dialog,
                                   std::vector<base::FilePath>* paths,
                                   std::vector<std::string>* bookmarks) {
   NSArray* urls = [dialog URLs];
-  for (NSURL* url in urls)
-    if ([url isFileURL]) {
-      paths->push_back(base::FilePath(base::SysNSStringToUTF8([url path])));
-      bookmarks->push_back(GetBookmarkDataFromNSURL(url));
+  for (NSURL* url in urls) {
+    if (![url isFileURL])
+      continue;
+
+    NSString* path = [url path];
+
+    // There's a bug in macOS where despite a request to disallow file
+    // selection, files/packages can be selected. If file selection
+    // was disallowed, drop any files selected. See crbug.com/1357523.
+    if (![dialog canChooseFiles]) {
+      BOOL is_directory;
+      BOOL exists =
+          [[NSFileManager defaultManager] fileExistsAtPath:path
+                                               isDirectory:&is_directory];
+      BOOL is_package =
+          [[NSWorkspace sharedWorkspace] isFilePackageAtPath:path];
+      if (!exists || !is_directory || is_package)
+        continue;
     }
+
+    paths->emplace_back(base::SysNSStringToUTF8(path));
+    bookmarks->push_back(GetBookmarkDataFromNSURL(url));
+  }
 }
 
 void ReadDialogPaths(NSOpenPanel* dialog, std::vector<base::FilePath>* paths) {
