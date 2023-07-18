@@ -192,7 +192,7 @@ ipcMain.on('port', (e, msg) => {
 For more information on using `MessagePort` and `MessageChannel`, see the [MDN
 documentation](https://developer.mozilla.org/en-US/docs/Web/API/MessageChannel).
 
-### `ipcRenderer.sendTo(webContentsId, channel, ...args)`
+### `ipcRenderer.sendTo(webContentsId, channel, ...args)` _Deprecated_
 
 * `webContentsId` number
 * `channel` string
