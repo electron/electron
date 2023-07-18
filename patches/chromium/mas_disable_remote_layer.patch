@@ -16,11 +16,11 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 6c0ab25b4faeee4095beaa10a57932021d690785..09fa4b7fb10790c2349edab7108e9d21536b35bf 100644
+index c4eda85ebb59f2f9fc440c93590b99d1e8a16447..5f518ffa672ef62a94dd043e5bc4a53c8775defa 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -25,7 +25,9 @@
- #include "gpu/ipc/service/gpu_vsync_mac.h"
+@@ -28,7 +28,9 @@
+ #error "This file requires ARC support."
  #endif
  
 +#if !IS_MAS_BUILD()
@@ -29,22 +29,22 @@ index 6c0ab25b4faeee4095beaa10a57932021d690785..09fa4b7fb10790c2349edab7108e9d21
  @class CALayer;
  
  namespace ui {
-@@ -80,8 +82,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
+@@ -83,8 +85,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
  
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
 +#if !IS_MAS_BUILD()
    const bool use_remote_layer_api_;
-   base::scoped_nsobject<CAContext> ca_context_;
+   CAContext* __strong ca_context_;
 +#endif
    std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 8c2c3758cdd7fb194db1360b98b59a08c781fc7b..bc05822738f3984b8c116fac9c152de3d1bee6d3 100644
+index 02e4b8db0ff115cff405373529b417e982d79b4c..d136a2fa73afc891b5f2d9db0d5c53b0ed1790e2 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -55,7 +55,9 @@
+@@ -57,7 +57,9 @@
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL(
      base::WeakPtr<ImageTransportSurfaceDelegate> delegate)
      : delegate_(delegate),
@@ -54,7 +54,7 @@ index 8c2c3758cdd7fb194db1360b98b59a08c781fc7b..bc05822738f3984b8c116fac9c152de3
        scale_factor_(1),
        weak_ptr_factory_(this) {
    static bool av_disabled_at_command_line =
-@@ -67,6 +69,7 @@
+@@ -69,6 +71,7 @@
             ->workarounds()
             .disable_av_sample_buffer_display_layer;
  
@@ -62,9 +62,9 @@ index 8c2c3758cdd7fb194db1360b98b59a08c781fc7b..bc05822738f3984b8c116fac9c152de3
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
-@@ -87,6 +90,10 @@
+@@ -89,6 +92,10 @@
  #endif
-     [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
+     ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
 +#else
 +  ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
@@ -73,7 +73,7 @@ index 8c2c3758cdd7fb194db1360b98b59a08c781fc7b..bc05822738f3984b8c116fac9c152de3
  
  #if BUILDFLAG(IS_MAC)
    if (features::UseGpuVsync()) {
-@@ -177,9 +184,13 @@
+@@ -180,9 +187,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -88,20 +88,20 @@ index 8c2c3758cdd7fb194db1360b98b59a08c781fc7b..bc05822738f3984b8c116fac9c152de3
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 8cd4cd65a02b3ca332f1d4164ff7c16cda10cdb8..bcd99c491085d3bfca4434c65ad53d2f6da51831 100644
+index 9f4869f00f31c6d3ad5081b1e7b67c4cf495fbdd..228b8d2e8835dc3a4f0454521a2bbd523cfd8933 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -119,6 +119,7 @@ - (void)setContentsChanged;
+@@ -124,6 +124,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
 +#if !IS_MAS_BUILD()
    // Early-out if the remote layer has not changed.
-   if ([remote_layer_ contextId] == ca_context_id)
+   if (remote_layer_.contextId == ca_context_id) {
      return;
-@@ -149,6 +150,9 @@ - (void)setContentsChanged;
+@@ -153,6 +154,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
-     io_surface_layer_.reset();
+     io_surface_layer_ = nil;
    }
 +#else
 +  NOTREACHED() << "Remote layer is being used in MAS build";

@@ -9,7 +9,7 @@
 #include <string>
 
 #include "base/memory/raw_ptr.h"
-#include "shell/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "ui/gfx/native_widget_types.h"
 
 class DevToolsContentsResizingStrategy;

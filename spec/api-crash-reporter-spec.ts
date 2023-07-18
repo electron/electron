@@ -426,7 +426,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       );
       expect(firstReport).to.not.be.null();
       expect(firstReport.date).to.be.an.instanceOf(Date);
-      expect((+new Date()) - (+firstReport.date)).to.be.lessThan(30000);
+      expect((Date.now()) - (+firstReport.date)).to.be.lessThan(30000);
     });
   });
 

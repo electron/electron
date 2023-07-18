@@ -1,5 +1,5 @@
 const { shell } = require('electron')
-const os = require('os')
+const os = require('node:os')
 
 const fileManagerBtn = document.getElementById('open-file-manager')
 
