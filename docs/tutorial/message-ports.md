@@ -150,7 +150,7 @@ renderer.
 
 ```js title='renderer.js (Renderer Process)' @ts-nocheck
 // elsewhere in your code to send a message to the other renderers message handler
-window.electronMessagePort.postmessage('ping')
+window.electronMessagePort.postMessage('ping')
 ```
 
 ### Worker process
