@@ -63,10 +63,10 @@ index c0b9be2dcf8ea32af184e7bb93a1577ae369ee27..03960c8074910b17bf8be49c0f477e92
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 5551b9a414585a2f303d1368a83871b98ec46232..6a1a39daf2ef0fecef686d08811844fd0a632b31 100644
+index d2027580a850e8f9f9f6d267320115d7e01d7992..bda167006b14c024030e90dbaf0eadb3ee8db91a 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
-@@ -1213,6 +1213,9 @@ interface NetworkContext {
+@@ -1211,6 +1211,9 @@ interface NetworkContext {
    SetNetworkConditions(mojo_base.mojom.UnguessableToken throttling_profile_id,
                         NetworkConditions? conditions);
  
