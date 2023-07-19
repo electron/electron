@@ -184,8 +184,6 @@ Returns `string` - ETag header value.
 Returns `Double` - Number of seconds since the UNIX epoch when the download was
 started.
 
-[comment]: # (OpenFin Instance Methods)
-
 #### `downloadItem.getLastInterruptReason()`
 
 Returns the most recent interrupt reason for this item, or 'NONE' if there is no previous interrupt reason.
