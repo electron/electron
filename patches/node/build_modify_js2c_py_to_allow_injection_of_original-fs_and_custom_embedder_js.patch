@@ -14,7 +14,7 @@ renderer/browser/worker/sandboxed bootstrap scripts).  These are loaded
 through LoadEmbedderJavaScriptSource()
 
 diff --git a/lib/internal/fs/watchers.js b/lib/internal/fs/watchers.js
-index ce885c154c..229b0d522a 100644
+index ce885c154c81c5703365fa34957697698da9aff6..229b0d522aeee3632145c86715bea1394d496bc4 100644
 --- a/lib/internal/fs/watchers.js
 +++ b/lib/internal/fs/watchers.js
 @@ -293,11 +293,13 @@ function emitCloseNT(self) {
@@ -37,7 +37,7 @@ index ce885c154c..229b0d522a 100644
  async function* watch(filename, options = kEmptyObject) {
    const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 2220869fa7..522670ed5c 100644
+index 2220869fa76f35fdfba72eba993b20748b07c546..522670ed5c9951c506dcdf2745585552ad2a081f 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -33,6 +33,7 @@ BuiltinLoader BuiltinLoader::instance_;
@@ -49,7 +49,7 @@ index 2220869fa7..522670ed5c 100644
    AddExternalizedBuiltin(
        "internal/deps/cjs-module-lexer/lexer",
 diff --git a/src/node_builtins.h b/src/node_builtins.h
-index 90b158b84b..8d9f7c4096 100644
+index 90b158b84bb2a66781cf92f5b4c1a64f9e2ee651..8d9f7c409659a30747e5feeac6cfec4208791370 100644
 --- a/src/node_builtins.h
 +++ b/src/node_builtins.h
 @@ -71,6 +71,7 @@ class NODE_EXTERN_PRIVATE BuiltinLoader {
@@ -61,7 +61,7 @@ index 90b158b84b..8d9f7c4096 100644
  
    std::vector<std::string> GetBuiltinIds();
 diff --git a/tools/js2c.py b/tools/js2c.py
-index 54c7dfce36..7b99ae5e5e 100755
+index 077bba1572f05f1aa16553894703b12abc19a985..bb9f26e3adc863757ad8ede5069d299c2d138369 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -39,6 +39,8 @@ import codecs
@@ -113,7 +113,7 @@ index 54c7dfce36..7b99ae5e5e 100755
    if split[0] == 'deps':
      split = ['internal'] + split
    else:  # `lib/**/*.js` so drop the 'lib' part
-@@ -134,23 +140,36 @@ def NormalizeFileName(filename):
+@@ -142,23 +148,36 @@ def NormalizeFileName(filename):
    return os.path.splitext(filename)[0]
  
  
@@ -159,7 +159,7 @@ index 54c7dfce36..7b99ae5e5e 100755
    write_if_chaged(out, target)
  
  
-@@ -214,6 +233,7 @@ def main():
+@@ -222,6 +241,7 @@ def main():
        default=None,
        help='root directory containing the sources')
    parser.add_argument('--verbose', action='store_true', help='output file')
@@ -167,7 +167,7 @@ index 54c7dfce36..7b99ae5e5e 100755
    parser.add_argument('sources', nargs='*', help='input files')
    options = parser.parse_args()
    global is_verbose
-@@ -230,13 +250,15 @@ def main():
+@@ -238,13 +258,15 @@ def main():
  
    source_files = functools.reduce(SourceFileByExt, sources, {})
  

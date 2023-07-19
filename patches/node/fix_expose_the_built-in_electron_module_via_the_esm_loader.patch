@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index 219ef03a21..7749b37001 100644
+index 219ef03a21214deb8961044cfc18ef9c1e711b60..7749b37001f869fe565d8c450ff7ca2b6f3faa7a 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -30,6 +30,7 @@ const protocolHandlers = {
@@ -18,7 +18,7 @@ index 219ef03a21..7749b37001 100644
  
  /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 2cac6f2d45..ce2d851da2 100644
+index 2cac6f2d450fab014544d15439e51575f86ccb38..ce2d851da2577e6e99980eb75337f629b38fddbf 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -822,6 +822,8 @@ function parsePackageName(specifier, base) {
@@ -42,7 +42,7 @@ index 2cac6f2d45..ce2d851da2 100644
      parsePackageName(specifier, base);
  
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
-index a425749e82..1ceb89da21 100644
+index a425749e82acd7593c9fb1ceffedc119a4e416f2..1ceb89da21610c703f4a18be5888373c7feaa370 100644
 --- a/lib/internal/modules/esm/translators.js
 +++ b/lib/internal/modules/esm/translators.js
 @@ -154,7 +154,7 @@ translators.set('commonjs', async function commonjsStrategy(url, source,
@@ -68,7 +68,7 @@ index a425749e82..1ceb89da21 100644
        // We might trigger a getter -> dont fail.
        let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 51688b8403..36604c9de2 100644
+index 51688b8403076a328c2c62b6434fc310ee4f1ea7..36604c9de2179b5f6941dd9a7af66cdb03facd7f 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -1399,6 +1399,8 @@ function fileURLToPath(path) {

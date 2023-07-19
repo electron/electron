@@ -8,7 +8,7 @@ Updates debugger tests to conform to changes in https://chromium-review.googleso
 This can be removed when Node.js updates to at least V8 11.4.
 
 diff --git a/test/common/debugger.js b/test/common/debugger.js
-index 4aff5b9a0f..d5d77fc7c6 100644
+index 4aff5b9a0f74d99f8f605b68631f820e282091ab..d5d77fc7c648ddb45225f04c6cf23f9816b2186d 100644
 --- a/test/common/debugger.js
 +++ b/test/common/debugger.js
 @@ -4,7 +4,7 @@ const spawn = require('child_process').spawn;
@@ -37,7 +37,7 @@ index 4aff5b9a0f..d5d77fc7c6 100644
  
      ctrlC() {
 diff --git a/test/parallel/test-debugger-break.js b/test/parallel/test-debugger-break.js
-index 65b4355cfe..8e3a290321 100644
+index 65b4355cfe7bc25464626cca6f1c3b0de1dd9a45..8e3a290321a2e70304859eb57a2056c3a70af0f6 100644
 --- a/test/parallel/test-debugger-break.js
 +++ b/test/parallel/test-debugger-break.js
 @@ -27,7 +27,7 @@ const cli = startCLI(['--port=0', script]);
@@ -68,7 +68,7 @@ index 65b4355cfe..8e3a290321 100644
  
    await cli.stepCommand('cont');
 diff --git a/test/parallel/test-debugger-run-after-quit-restart.js b/test/parallel/test-debugger-run-after-quit-restart.js
-index 2c56f7227a..0e10486992 100644
+index 2c56f7227aed69d781392ce2f3f40e489e3501f2..0e1048699206dcc77696974e097e97de6b217811 100644
 --- a/test/parallel/test-debugger-run-after-quit-restart.js
 +++ b/test/parallel/test-debugger-run-after-quit-restart.js
 @@ -25,7 +25,7 @@ const path = require('path');
