@@ -793,6 +793,7 @@ void App::AllowCertificateError(
 }
 
 base::OnceClosure App::SelectClientCertificate(
+    content::BrowserContext* browser_context,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList identities,

@@ -60,6 +60,7 @@
 #include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/ssl/ssl_cert_request_info.h"
+#include "net/ssl/ssl_private_key.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
@@ -617,15 +618,19 @@ void ElectronBrowserClient::AllowCertificateError(
 }
 
 base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
+    content::BrowserContext* browser_context,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
-  if (!client_certs.empty() && delegate_) {
-    delegate_->SelectClientCertificate(web_contents, cert_request_info,
-                                       std::move(client_certs),
-                                       std::move(delegate));
+  if (client_certs.empty()) {
+    delegate->ContinueWithCertificate(nullptr, nullptr);
+  } else if (delegate_) {
+    delegate_->SelectClientCertificate(
+        browser_context, web_contents, cert_request_info,
+        std::move(client_certs), std::move(delegate));
   }
+
   return base::OnceClosure();
 }
 
