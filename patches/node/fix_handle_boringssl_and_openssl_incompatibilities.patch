@@ -104,9 +104,18 @@ index 41e607e9298314bd7dd9e61643650f3ec75caea8..bd3228a67e1bda671488b347bd53ca80
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index 838ee2a68dffc5a2aeca2bdb51b076795b2b145f..64d17d7480ee29390022600fb838b52abe25893d 100644
+index 838ee2a68dffc5a2aeca2bdb51b076795b2b145f..b0b18cd30c854c8c30d74afbf3ed352d3d23f30d 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
+@@ -63,7 +63,7 @@ inline X509_STORE* GetOrCreateRootCertStore() {
+ // Caller responsible for BIO_free_all-ing the returned object.
+ BIOPointer LoadBIO(Environment* env, Local<Value> v) {
+   if (v->IsString() || v->IsArrayBufferView()) {
+-    BIOPointer bio(BIO_new(BIO_s_secmem()));
++    BIOPointer bio(BIO_new(BIO_s_mem()));
+     if (!bio) return nullptr;
+     ByteSource bsrc = ByteSource::FromStringOrBuffer(env, v);
+     if (bsrc.size() > INT_MAX) return nullptr;
 @@ -855,10 +855,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
