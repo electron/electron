@@ -189,8 +189,7 @@ started.
 #### `downloadItem.getLastInterruptReason()`
 
 Returns the most recent interrupt reason for this item, or 'NONE' if there is no previous interrupt reason.
-The list of potential return values and their meanings can be found [here]: https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h
-
+The list of potential return values and their meanings can be found [here][download-interrupt-reason-values] 
 
 ### Instance Properties
 
@@ -203,3 +202,4 @@ If user doesn't set the save path via the property, Electron will use the origin
 routine to determine the save path; this usually prompts a save dialog.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
+[download-interrupt-reason-values]: https://source.chromium.org/chromium/chromium/src/+/main:components/download/public/common/download_interrupt_reason_values.h
