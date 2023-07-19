@@ -187,7 +187,7 @@ started.
 #### `downloadItem.getLastInterruptReason()`
 
 Returns the most recent interrupt reason for this item, or 'NONE' if there is no previous interrupt reason.
-The list of potential return values and their meanings can be found [here][download-interrupt-reason-values] 
+The list of potential return values and their meanings can be found [here][download-interrupt-reason-values]
 
 ### Instance Properties
 
