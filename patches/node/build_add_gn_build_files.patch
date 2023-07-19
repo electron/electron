@@ -887,12 +887,12 @@ index 0000000000000000000000000000000000000000..0daf8c006cef89e76d7eccec3e924bd2
 +}
 diff --git a/deps/histogram/BUILD.gn b/deps/histogram/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..8ba89a379fa2937b4b2fa5092f18727c7d0788a6
+index 0000000000000000000000000000000000000000..02bc887db7c8545e1d8adc57f73f203eec2f2592
 --- /dev/null
 +++ b/deps/histogram/BUILD.gn
 @@ -0,0 +1,19 @@
 +config("histogram_config") {
-+  include_dirs = [ "src" ]
++  include_dirs = [ "include" ]
 +
 +  cflags = [
 +    "-Wno-implicit-function-declaration",
@@ -910,6 +910,7 @@ index 0000000000000000000000000000000000000000..8ba89a379fa2937b4b2fa5092f18727c
 +    "src/hdr_histogram.h",
 +  ]
 +}
+\ No newline at end of file
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb7770d109
