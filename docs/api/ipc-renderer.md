@@ -26,7 +26,7 @@ The `ipcRenderer` module has the following method to listen for events and send 
 
 * `channel` string
 * `listener` Function
-  * `event` IpcRendererEvent
+  * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
 Listens to `channel`, when a new message arrives `listener` would be called with
@@ -36,7 +36,7 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 * `channel` string
 * `listener` Function
-  * `event` IpcRendererEvent
+  * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
 Adds a one time `listener` function for the event. This `listener` is invoked
@@ -208,12 +208,8 @@ Sends a message to a window with `webContentsId` via `channel`.
 Like `ipcRenderer.send` but the event will be sent to the `<webview>` element in
 the host page instead of the main process.
 
-## Event object
-
-The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-renderer-event`](./structures/ipc-renderer-event.md) structure docs.
-
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
 [`window.postMessage`]: https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage
 [`MessagePort`]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
+[ipc-renderer-event]: ./structures/ipc-renderer-event.md
