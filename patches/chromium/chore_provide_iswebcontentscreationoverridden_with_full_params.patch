@@ -99,7 +99,7 @@ index 9125b6d7e3e8771458eaa1675bf0dac8f53f7be2..11fbe3bb7d9ee7b0b1c594c5ae325733
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index b0fdd859647548824f6e33cc1ba6dd835d90a269..bfc6f5156f32386c4b12b4ee447a5607a62fc890 100644
+index e72c913dd49dc4c7d5baa3e98fffa5bd8e4a2d2c..408fd7df491e9a6da0eda174b23b327fe954d21b 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -881,8 +881,7 @@ class Browser : public TabStripModelObserver,
@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 927350f823a4ed3581a1902ea3c1746baae92c37..f30fed3d18b215f0f0315bfe723791611aeb12fb 100644
+index 1049f3eea4e2c74875fe7c61b59e64d49afecb0e..20850c1ca7c838f098deb3d367f86e8cf505538c 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4168,8 +4168,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(

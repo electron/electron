@@ -21,7 +21,7 @@ index 1f7b1a8ea1ed2da433b1e39b091baa3246aaf79f..15011d7efd9f1f239e425904c8c22511
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index ca05449b088d1604b8f85660df2cb2ebd91bc011..90d2b872112c936ddfa8871575ac6124b88d778e 100644
+index 127f2ce0e2e70d9d55d2d63f5d964c5d043c5248..2cf00841c844a9aa58a2ae6cc51470517e06e563 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4261,6 +4261,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -148,7 +148,7 @@ index c5bda327264c330345baf7b44b4ba5c478e58952..989778079d5dc91127989e43f3ce6b25
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 98668c5adb4a16ef77ed6a8a718430310ed8aea4..49d960da588af130304df1b45dda6dc05f58d966 100644
+index f8e6dce7f67424322a6d14c0a188e5ebb7daea7d..6aecc6c215cb33bf4b0f2cd38a79ebeef6be527d 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -6371,6 +6371,10 @@ WebView* RenderFrameImpl::CreateNewWindow(

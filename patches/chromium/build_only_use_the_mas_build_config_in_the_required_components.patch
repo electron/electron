@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index aa7f2d6b3f2ff416ea42e320c6813c45ab38049d..9509ae4fb685a5b2257f34500918fbe777e2dc9b 100644
+index d50dfa6f77a89c60ca27598876a9a2920d65cf11..545ae10df21761de0a9f717b29b0431a88a4d3eb 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1030,6 +1030,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -112,7 +112,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7acee465256990399d3629479f3ef83c3849ae89..512ea9bb291797c6e29fd6742f239c87a2247b57 100644
+index 2b8e44710e00537b96f2ed752d4d9afe9be17fda..7c76856ac6acc3b9c41fe4e42ea0717fce0111b7 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
