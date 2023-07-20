@@ -38,3 +38,4 @@ fix_do_not_resolve_electron_entrypoints.patch
 fix_adapt_generator_tostringtag_prototype_to_v8.patch
 fix_ftbfs_werror_wunreachable-code-break.patch
 fix_ftbfs_werror_wextra-semi.patch
+fix_isurl_implementation.patch
