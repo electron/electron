@@ -6,6 +6,9 @@ const pathToEncryptedString = path.resolve(__dirname, '..', 'encrypted.txt');
 const readFile = fs.readFile;
 
 app.whenReady().then(async () => {
+  if (process.platform === 'linux') {
+    safeStorage.setUsePlainTextEncryption(true);
+  }
   const encryptedString = await readFile(pathToEncryptedString);
   const decrypted = safeStorage.decryptString(encryptedString);
   console.log(decrypted);
