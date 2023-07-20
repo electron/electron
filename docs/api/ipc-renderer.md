@@ -211,7 +211,7 @@ the host page instead of the main process.
 ## Event object
 
 The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-renderer-event`](./structures/ipc-renderer-event.md) structure docs.
+in the [`IpcRendererEvent`](./structures/ipc-renderer-event.md) structure docs.
 
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
 [SCA]: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm

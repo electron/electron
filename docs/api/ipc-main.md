@@ -122,15 +122,15 @@ Handles a single `invoke`able IPC message, then removes the listener. See
 
 Removes any handler for `channel`, if present.
 
-## IpcMainEvent object
+## `IpcMainEvent` object
 
 The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-main-event`][ipc-main-event] structure docs.
+in the [`IpcMainEvent`][ipc-main-event] structure docs.
 
-## IpcMainInvokeEvent object
+## `IpcMainInvokeEvent` object
 
 The documentation for the `event` object passed to `handle` callbacks can be
-found in the [`ipc-main-invoke-event`][ipc-main-invoke-event]
+found in the [`IpcMainInvokeEvent`][ipc-main-invoke-event]
 structure docs.
 
 [IPC tutorial]: ../tutorial/ipc.md
