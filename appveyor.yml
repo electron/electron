@@ -49,6 +49,11 @@ environment:
     - job_name: Test
       job_depends_on: Build
 
+clone_script:
+- ps: git clone -q $("--branch=" + $Env:APPVEYOR_REPO_BRANCH) $("https://github.com/" + $Env:APPVEYOR_REPO_NAME + ".git") $Env:APPVEYOR_BUILD_FOLDER
+- ps: if (!$Env:APPVEYOR_PULL_REQUEST_NUMBER) {$("git checkout -qf " + $Env:APPVEYOR_REPO_COMMIT)}
+- ps: if ($Env:APPVEYOR_PULL_REQUEST_NUMBER) {git fetch -q origin +refs/pull/$($Env:APPVEYOR_PULL_REQUEST_NUMBER)/head; git checkout -qf FETCH_HEAD}
+
 clone_folder: C:\projects\src\electron
 
 skip_branch_with_pr: true
