@@ -140,6 +140,11 @@ ElectronExtensionsBrowserClient::GetContextForOriginalOnly(
   return context->IsOffTheRecord() ? nullptr : context;
 }
 
+bool ElectronExtensionsBrowserClient::AreExtensionsDisabledForContext(
+    content::BrowserContext* context) {
+  return false;
+}
+
 bool ElectronExtensionsBrowserClient::IsGuestSession(
     BrowserContext* context) const {
   return false;

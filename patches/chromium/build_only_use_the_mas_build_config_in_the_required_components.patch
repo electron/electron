@@ -76,7 +76,7 @@ index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 798498992ae1e8003ed3d9b4ba3b22e31410a065..ddec233997c6449d964604bb3746ac37074a4cb9 100644
+index 0bda4e5d18a4d1a3e504a9ced4a6046f31a0a028..abbcd619f96c4cb3245a54747a0fed2b44183281 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -112,7 +112,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index da5183c7ed3eb6219e9d79202ac2e1883a48abdc..78ebaf890b3f1bb7e470573c875a751dedf37f31 100644
+index 7acee465256990399d3629479f3ef83c3849ae89..512ea9bb291797c6e29fd6742f239c87a2247b57 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -124,7 +124,7 @@ index da5183c7ed3eb6219e9d79202ac2e1883a48abdc..78ebaf890b3f1bb7e470573c875a751d
  
    public_deps = [
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 2b276af9c910c21db947469ef8b4ebb74c4f74e9..28a16ada8d70758b6feb90a8a1269e4bae5fc389 100644
+index 382a502c61183862bc2c943f7f8ac3958311754d..79610173fa83cc4d2c2041bd6e8a124836b3a844 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -145,6 +145,8 @@ static_library("web_test_browser") {
@@ -137,10 +137,10 @@ index 2b276af9c910c21db947469ef8b4ebb74c4f74e9..28a16ada8d70758b6feb90a8a1269e4b
      configs += [ "//build/config/compiler:enable_arc" ]
    }
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 52940b9bc43aa96dc0a7f90e63ec123ca41c5fab..7c71b07ca2d4b1418b305e876b6be51921b3ea66 100644
+index f619de1d332d7f0c5d6d30be17f5c6b94dadf6a3..4b1bbe5a804ef0d844eaf246942129e7753ea0f5 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -241,6 +241,7 @@ component("bluetooth") {
+@@ -242,6 +242,7 @@ component("bluetooth") {
        "Foundation.framework",
      ]
      configs += [ "//build/config/compiler:enable_arc" ]
@@ -214,10 +214,10 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 410f09c7b8a50c515eed664f31a54d6aa2d9de26..19517bf957637129c98923c0939e1737561fa42f 100644
+index 6c01341efc1e8a7f3ae13ea5c0abab5f757b104c..2299d118d763193a2500978541d12d5f1aa712ab 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -308,6 +308,7 @@ component("core") {
+@@ -307,6 +307,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]

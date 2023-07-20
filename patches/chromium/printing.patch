@@ -919,10 +919,10 @@ index 0fea424325081a0ef6720000841ea321b89024d0..c700de4b81fc0c157946e76faedaca6b
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 35b96db98a4c190805d54e4aacb4eb368e5999b6..798498992ae1e8003ed3d9b4ba3b22e31410a065 100644
+index 7a7bb8007ed736a44b6f5bf4318b3044c8ab6e89..0bda4e5d18a4d1a3e504a9ced4a6046f31a0a028 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2907,8 +2907,9 @@ source_set("browser") {
+@@ -2911,8 +2911,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
