@@ -16,6 +16,9 @@ cleanup
 # Create Working Dir
 mkdir -p "$dir"
 
+# Allow modification of Trust Settings
+sudo security authorizationdb write com.apple.trust-settings.admin allow
+
 # Generate Certs
 openssl req -new -newkey rsa:2048 -x509 -days 7300 -nodes -config "$(dirname $0)"/codesign.cnf -extensions extended -batch -out "$dir"/certificate.cer -keyout "$dir"/certificate.key
 sudo security add-trusted-cert -d -r trustRoot -k /Library/Keychains/System.keychain "$dir"/certificate.cer

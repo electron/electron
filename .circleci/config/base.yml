@@ -566,7 +566,6 @@ step-install-signing-cert-on-mac: &step-install-signing-cert-on-mac
     name: Import and trust self-signed codesigning cert on MacOS
     command: |
       if  [ "$TARGET_ARCH" != "arm64" ] && [ "`uname`" == "Darwin" ]; then
-        sudo security authorizationdb write com.apple.trust-settings.admin allow
         cd src/electron
         ./script/codesign/generate-identity.sh
       fi
