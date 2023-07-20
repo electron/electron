@@ -22,7 +22,7 @@ index 07c6d5e9351a96aeca1179c20287dc3fb7ec1eab..13ea68c96fd415f976aab0f291a1b7c6
  // release cycle, remove the Proxy and setter and update the
  // getter to either return a read-only object or always return
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 61605a052f976dc7fad224c3c81c2187f3862cdb..f2e8dc028b8b60108f1aa2301d65001b5a3774c7 100644
+index 65e685a7cacf3f70fddf15b1068d59fa604323ea..9783d9235ed43c7919ed2f26e35c96ae7ff1a08b 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -94,7 +94,7 @@ const fs = require('fs');
