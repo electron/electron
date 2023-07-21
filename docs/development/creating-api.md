@@ -131,7 +131,7 @@ In the [`typings/internal-ambient.d.ts`](https://github.com/electron/electron/bl
 
 ```ts title='typings/internal-ambient.d.ts'
 interface Process {
-    _linkedBinding(name: 'electron_browser_{api_name}', Electron.ApiName);
+    _linkedBinding(name: 'electron_browser_{api_name}'): Electron.ApiName;
 }
 ```
 
