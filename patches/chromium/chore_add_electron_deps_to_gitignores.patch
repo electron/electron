@@ -6,10 +6,10 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index bd657c899e9e3bd234a77b592ee0dc12d94fb646..0c2661706a0801acb08eb98c649823f3cd66941d 100644
+index 6241dd501bd423350accd2a2f0b69b5d8b7e45bd..08befddc25e17bfde46bb11e94b646e8619edf54 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -241,6 +241,7 @@ vs-chromium-project.txt
+@@ -243,6 +243,7 @@ vs-chromium-project.txt
  /delegate_execute
  /device/serial/device_serial_mojo.xml
  /docs/website
@@ -18,7 +18,7 @@ index bd657c899e9e3bd234a77b592ee0dc12d94fb646..0c2661706a0801acb08eb98c649823f3
  /google_apis/internal
  /googleurl
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 71fde6424ea0c2220cb79c5c170275874373722b..9fc6e97aa109be0c455614c10bf4bb5c21302fc1 100644
+index 414cd656ba3c210d346f0b2e84aa7a414a3754c3..c2a18f684fb82fea298b11d946946d685c23e753 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -94,6 +94,7 @@
@@ -29,7 +29,7 @@ index 71fde6424ea0c2220cb79c5c170275874373722b..9fc6e97aa109be0c455614c10bf4bb5c
  /elfutils/src
  /emoji-metadata/src
  /emoji-segmenter/src
-@@ -203,6 +204,7 @@
+@@ -204,6 +205,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -37,7 +37,7 @@ index 71fde6424ea0c2220cb79c5c170275874373722b..9fc6e97aa109be0c455614c10bf4bb5c
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -270,6 +272,7 @@
+@@ -271,6 +273,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/

@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index acd08b3cc7ef4e6a8bf7836a38028d87e3e19710..2fb89b190051949a2605ae7f25567c1df6863fb5 100644
+index 357647127147f797663a7ae3b82449f58991c388..cbbb8bc6df74fb932bc669fad2dac950c9d8661f 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -973,7 +973,6 @@ if (is_win) {
+@@ -971,7 +971,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index acd08b3cc7ef4e6a8bf7836a38028d87e3e19710..2fb89b190051949a2605ae7f25567c1d
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -982,6 +981,10 @@ if (is_win) {
+@@ -980,6 +979,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -919,10 +919,10 @@ index 0fea424325081a0ef6720000841ea321b89024d0..c700de4b81fc0c157946e76faedaca6b
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 7a7bb8007ed736a44b6f5bf4318b3044c8ab6e89..0bda4e5d18a4d1a3e504a9ced4a6046f31a0a028 100644
+index 47ae5814fbaf4eee7f057b220de9cd8887ece85b..310d8d1ab8b26bfc2c7aac9213b9af75967650eb 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2911,8 +2911,9 @@ source_set("browser") {
+@@ -2913,8 +2913,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
