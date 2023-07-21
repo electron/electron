@@ -132,49 +132,6 @@ jobs:
           }' -f id=$PROJECT_ID > issues.json
           PROJECT_ITEMS=$(jq '.data.node.items.nodes[] | select(.content.id != null) | .id' issues.json)
 
-          # TODO(dsanders11): remove the following "Stable Prep Items" sections once
-          # GitHub extends project template copying to retain the status field value
-          # of draft issues in the template.
-          #
-          # Refs https://github.com/orgs/community/discussions/54576#discussioncomment-6096892
-
-          # Get field ID and option value for "Stable Prep Items"
-          gh api graphql -f query='query ($id: ID!) {
-            node(id: $id) {
-              ... on ProjectV2 {
-                field(name: "Status") {
-                  ... on ProjectV2SingleSelectField {
-                    id
-                    options {
-                      ... on ProjectV2SingleSelectFieldOption {
-                        id
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }' -f id=$PROJECT_ID > status_field.json
-          FIELD_ID=$(jq -r '.data.node.field.id' status_field.json)
-          FIELD_OPTION_ID=$(jq -r '.data.node.field.options[] | select(.name == "Stable Prep Items") | .id' status_field.json)
-
-          # Move draft issues to "Stable Prep" column
-          echo "$PROJECT_ITEMS" | xargs -I ITEM_ID -n 1 gh api graphql -f query='mutation ($projectId: ID!, $fieldId: ID!, $itemId: ID!, $value: String!) {                                                                                             
-            updateProjectV2ItemFieldValue(input: {
-              projectId: $projectId,
-              fieldId: $fieldId,
-              itemId: $itemId,
-              value: {
-                singleSelectOptionId: $value
-              }
-            }) {
-              projectV2Item {
-                id
-              }
-            }
-          }' -f projectId=$PROJECT_ID -f fieldId=$FIELD_ID -f itemId=ITEM_ID -f value=$FIELD_OPTION_ID
-
           #
           # Do template replacement for draft issues
           #
