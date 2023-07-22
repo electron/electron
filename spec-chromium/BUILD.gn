@@ -1,18 +1,44 @@
+# BUILD.gn
+
+# Import relevant configurations and build flags
 import("//build/config/features.gni")
 import("//printing/buildflags/buildflags.gni")
 
+# Helper function to add dependencies conditionally
+declare_args() {
+  condition = {
+    # Add your platform-specific conditions here if needed
+    # Example: "is_linux": "current_os == \"linux\""
+  }
+
+  deps = []
+  if (condition.get("enable_printing", false)) {
+    deps += [ "//printing:printing_unittests" ]
+  }
+  if (condition.get("is_linux", false)) {
+    deps += [
+      "//net:disk_cache_memory_test",
+      "//sandbox/linux:sandbox_linux_unittests",
+    ]
+    if (condition.get("use_dbus", false)) {
+      deps += [ "//dbus:dbus_unittests" ]
+    }
+  }
+  return deps
+}
+
+# Define a group for "spec" tests
 group("spec") {
   testonly = true
-
   deps = [
     ":chromium_browsertests",
     ":chromium_unittests",
   ]
 }
 
+# Define a group for "chromium_unittests"
 group("chromium_unittests") {
   testonly = true
-
   deps = [
     "//base:base_unittests",
     "//cc:cc_unittests",
@@ -45,26 +71,11 @@ group("chromium_unittests") {
     "//url:url_unittests",
     "//url/ipc:url_ipc_unittests",
     "//v8/test/unittests:unittests",
-  ]
-
-  if (enable_printing) {
-    deps += [ "//printing:printing_unittests" ]
-  }
-
-  if (is_linux) {
-    deps += [
-      "//net:disk_cache_memory_test",
-      "//sandbox/linux:sandbox_linux_unittests",
-    ]
-
-    if (use_dbus) {
-      deps += [ "//dbus:dbus_unittests" ]
-    }
-  }
+  ] + declare_args()
 }
 
+# Define a group for "chromium_browsertests"
 group("chromium_browsertests") {
   testonly = true
-
   deps = [ "//content/test:content_browsertests" ]
 }
