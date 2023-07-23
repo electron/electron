@@ -2539,10 +2539,11 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
-v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRangePolicy(v8::Isolate* isolate) const {
-  uint16_t min = 0, max = 0;  
-  auto *prefs = web_contents()->GetMutableRendererPrefs();
-  
+v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRangePolicy(
+    v8::Isolate* isolate) const {
+  uint16_t min = 0, max = 0;
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+
   min = prefs->webrtc_udp_min_port;
   max = prefs->webrtc_udp_max_port;
 
@@ -2552,35 +2553,37 @@ v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRangePolicy(v8::Isolate* isola
   return dict.GetHandle();
 }
 
-void WebContents::SetWebRTCUDPPortRangePolicy(
-    gin::Arguments* args) {
-  
+void WebContents::SetWebRTCUDPPortRangePolicy(gin::Arguments* args) {
   uint32_t min = 0, max = 0;
   gin_helper::Dictionary range;
 
-  if (!args->GetNext(&range)
-    || !range.Get("min", &min)
-    || !range.Get("max", &max))
-  {
+  if (!args->GetNext(&range) || !range.Get("min", &min) ||
+      !range.Get("max", &max)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Lack of arguments. Note that both min and max port number should be provided and organized as an object");
+        .ThrowError(
+            "Lack of arguments. Note that both min and max port number should "
+            "be provided and organized as an object");
     return;
   }
+
   if (min == 0 || max > UINT16_MAX) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Invalid arguments. Note that either port number should be in (0, 65535]");
+        .ThrowError(
+            "Invalid arguments. Note that either port number should be in (0, "
+            "65535]");
     return;
   }
   if (min > max) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError("Invalid arguments. Note that min should not be greater than max");
+        .ThrowError(
+            "Invalid arguments. Note that min should not be greater than max");
     return;
   }
 
-  auto *prefs = web_contents()->GetMutableRendererPrefs();
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
 
-  if (prefs->webrtc_udp_min_port == static_cast<uint16_t>(min) 
-    && prefs->webrtc_udp_max_port == static_cast<uint16_t>(max)) {
+  if (prefs->webrtc_udp_min_port == static_cast<uint16_t>(min) &&
+      prefs->webrtc_udp_max_port == static_cast<uint16_t>(max)) {
     return;
   }
 
@@ -2589,7 +2592,6 @@ void WebContents::SetWebRTCUDPPortRangePolicy(
 
   web_contents()->SyncRendererPrefs();
 }
-
 
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
