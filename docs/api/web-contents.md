@@ -2066,11 +2066,16 @@ more details.
 
 #### `contents.getWebRTCUDPPortRangePolicy()`
 
-Returns `string` - Returns the WebRTC UDP Port Range Policy. Empty string means the policy is invalid.
+Returns `Object`:
 
-#### `contents.setWebRTCUDPPortRangePolicy(policy)`
+* `min` Integer - The minimum port number of WebRTC UDP Port Range Policy.
+* `max` Integer - The maximum port number of WebRTC UDP Port Range Policy.
 
-* `policy` string - Specify the WebRTC UDP Port Range Policy. The format of the policy arg should be organized as 10000-19999, for example.
+#### `contents.setWebRTCUDPPortRangePolicy(udpPortRange)`
+
+* `udpPortRange` Object
+  * `min` Integer - The minimum port number of WebRTC UDP Port Range Policy.
+  * `max` Integer - The maximum port number of WebRTC UDP Port Range Policy.
 
 Setting the WebRTC UDP Port Range policy allows you to restrict the udp port range assigned to apps via WebRTC.
 

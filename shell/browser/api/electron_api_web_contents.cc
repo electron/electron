@@ -718,47 +718,6 @@ content::RenderFrameHost* GetRenderFrameHost(
   return frame_host;
 }
 
-std::string ToPortRange(uint16_t min_port, uint16_t max_port) {
-  if (min_port == 0 || min_port > max_port || max_port > UINT16_MAX) {
-    return std::string();
-  }
-
-  return base::NumberToString(min_port) + "-" + base::NumberToString(max_port);
-}
-
-void ParsePortRange(const std::string& range,
-                    uint16_t* min_port,
-                    uint16_t* max_port) {
-  // Set to default value 0 which indicats invalid
-  *min_port = 0;
-  *max_port = 0;
-
-  if (range.empty())
-    return;
-
-  size_t separator_index = range.find('-');
-  if (separator_index == std::string::npos)
-    return;
-
-  std::string min_port_string, max_port_string;
-  base::TrimWhitespaceASCII(range.substr(0, separator_index), base::TRIM_ALL,
-                            &min_port_string);
-  base::TrimWhitespaceASCII(range.substr(separator_index + 1), base::TRIM_ALL,
-                            &max_port_string);
-  unsigned min_port_uint, max_port_uint;
-  if (!base::StringToUint(min_port_string, &min_port_uint) ||
-      !base::StringToUint(max_port_string, &max_port_uint)) {
-    return;
-  }
-  if (min_port_uint == 0 || min_port_uint > max_port_uint ||
-      max_port_uint > UINT16_MAX) {
-    return;
-  }
-
-  *min_port = static_cast<uint16_t>(min_port_uint);
-  *max_port = static_cast<uint16_t>(max_port_uint);
-}
-
 }  // namespace
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -2580,27 +2539,57 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
-const std::string WebContents::GetWebRTCUDPPortRangePolicy(void) const {
-  return ToPortRange(
-      web_contents()->GetMutableRendererPrefs()->webrtc_udp_min_port,
-      web_contents()->GetMutableRendererPrefs()->webrtc_udp_max_port);
+v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRangePolicy(v8::Isolate* isolate) const {
+  uint16_t min = 0, max = 0;  
+  auto *prefs = web_contents()->GetMutableRendererPrefs();
+  
+  min = prefs->webrtc_udp_min_port;
+  max = prefs->webrtc_udp_max_port;
+
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.Set("min", static_cast<uint32_t>(min));
+  dict.Set("max", static_cast<uint32_t>(max));
+  return dict.GetHandle();
 }
 
 void WebContents::SetWebRTCUDPPortRangePolicy(
-    const std::string& webrtc_udp_port_range_policy) {
-  uint16_t port_min = 0;
-  uint16_t port_max = 0;
+    gin::Arguments* args) {
+  
+  uint32_t min = 0, max = 0;
+  gin_helper::Dictionary range;
 
-  if (GetWebRTCUDPPortRangePolicy() == webrtc_udp_port_range_policy)
+  if (!args->GetNext(&range)
+    || !range.Get("min", &min)
+    || !range.Get("max", &max))
+  {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Lack of arguments. Note that both min and max port number should be provided and organized as an object");
     return;
+  }
+  if (min == 0 || max > UINT16_MAX) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Invalid arguments. Note that either port number should be in (0, 65535]");
+    return;
+  }
+  if (min > max) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("Invalid arguments. Note that min should not be greater than max");
+    return;
+  }
 
-  ParsePortRange(webrtc_udp_port_range_policy, &port_min, &port_max);
+  auto *prefs = web_contents()->GetMutableRendererPrefs();
 
-  web_contents()->GetMutableRendererPrefs()->webrtc_udp_min_port = port_min;
-  web_contents()->GetMutableRendererPrefs()->webrtc_udp_max_port = port_max;
+  if (prefs->webrtc_udp_min_port == static_cast<uint16_t>(min) 
+    && prefs->webrtc_udp_max_port == static_cast<uint16_t>(max)) {
+    return;
+  }
+
+  prefs->webrtc_udp_min_port = min;
+  prefs->webrtc_udp_max_port = max;
 
   web_contents()->SyncRendererPrefs();
 }
+
 
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
