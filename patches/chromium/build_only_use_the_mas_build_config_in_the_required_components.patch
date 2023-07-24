@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7625685d8216121dea715367296a92b7dd9acb8b..738b0cb24a5c0923f03159fd0e92c07dfceb3446 100644
+index 68076bd94f8b3c8afd3237edcdf6d7ddb3d4ff0e..eb048f0faa701b7e121708a79b77aef74d6f7715 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1034,6 +1034,7 @@ component("base") {
@@ -76,7 +76,7 @@ index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 310d8d1ab8b26bfc2c7aac9213b9af75967650eb..cd3fe7a721708ebe91f05a364780d22962c8bc6c 100644
+index d847be9339f1518acdf165c0d3efb91c7124c445..ee0f6cf0e7f860d36a2976c1b5895b759265129f 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -112,7 +112,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index aff2f0f0f4e400020b29928094cf90335079c858..d8b056de48b8d3c610496eb628ca37a8c473f730 100644
+index 760562eb04ba10a3f980ede5fff7175f43838f21..2dabf109481c1aa0ce50732a9b00180fa66647c2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {

@@ -44,4 +44,3 @@ index b1895ae3b8ddf5820d3dd0c294bd8b36d4b43dc7..38d32a0b11d7cf5c33ef9a481caa6dc5
    if (export_libcxxabi_from_executables) {
      visibility = [ "//build/config:executable_deps" ]
    } else {
-
