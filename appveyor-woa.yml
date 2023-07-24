@@ -203,16 +203,28 @@ for:
     on_finish:
       # Uncomment this lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      - cd C:\projects\src
-      - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
-      - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
-      - if exist out\Default\shell_browser_ui_unittests.exe (appveyor-retry appveyor PushArtifact out\Default\shell_browser_ui_unittests.exe)
-      - if exist out\Default\chromedriver.zip (appveyor-retry appveyor PushArtifact out\Default\chromedriver.zip)
-      - if exist out\ffmpeg\ffmpeg.zip (appveyor-retry appveyor PushArtifact out\ffmpeg\ffmpeg.zip)
-      - if exist node_headers.zip (appveyor-retry appveyor PushArtifact node_headers.zip)
-      - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
-      - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
-      - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
+      - ps: |
+          cd C:\projects\src
+          $missing_artifacts = $false
+          $artifacts_to_upload = @('dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip')
+          foreach($artifact_name in $artifacts_to_upload) {
+            if ($artifact_name -eq 'ffmpeg.zip') {
+              $artifact_file = "out\ffmpeg\ffmpeg.zip"
+            } elseif ($artifact_name -eq 'node_headers.zip') {
+              $artifact_file = $artifact_name
+            } else {
+              $artifact_file = "out\Default\$artifact_name"
+            }
+            if (Test-Path $artifact_file) {
+              appveyor-retry appveyor PushArtifact $artifact_file          
+            } else {
+              Write-warning "$artifact_name is missing and cannot be added to artifacts"
+              $missing_artifacts = $true
+            }
+          }
+          if ($missing_artifacts) {
+            throw "Build failed due to missing artifacts"
+          }
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
@@ -245,7 +257,7 @@ for:
           # Download build artifacts
           $apiUrl = 'https://ci.appveyor.com/api'
           $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-          $artifacts_to_download = @('dist.zip','ffmpeg.zip','node_headers.zip','pdb.zip','electron.lib')
+          $artifacts_to_download = @('dist.zip','ffmpeg.zip','node_headers.zip','electron.lib')
           foreach ($job in $build_info.build.jobs) {
             if ($job.name -eq "Build Arm on X64 Windows") {
               $jobId = $job.jobId
@@ -257,10 +269,13 @@ for:
                 }
                 Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/$artifact_name" -OutFile $outfile
               }
+              # Uncomment the following lines to download the pdb.zip to show real stacktraces when crashes happen during testing
+              # Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/pdb.zip" -OutFile pdb.zip
+              # 7z x -y -osrc pdb.zip
             }
           }
       - ps: |
-          $out_default_zips = @('dist.zip','pdb.zip')
+          $out_default_zips = @('dist.zip')
           foreach($zip_name in $out_default_zips) {
             7z x -y -osrc\out\Default $zip_name
           }
