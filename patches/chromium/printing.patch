@@ -735,25 +735,25 @@ index 5d5144737eace87832ab5c44cd8e2bfdeda5dec2..d9a9b65da336f31f4d302f5363737263
    ScopedIPC scoped_ipc(weak_ptr_factory_.GetWeakPtr());
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
-@@ -1390,7 +1392,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
+@@ -1430,7 +1430,7 @@ void PrintRenderFrameHelper::PrintRequestedPages() {
    // plugin node and print that instead.
    auto plugin = delegate_->GetPdfElement(frame);
  
 -  Print(frame, plugin, PrintRequestType::kRegular);
 +  Print(frame, plugin, PrintRequestType::kRegular, silent, std::move(settings));
  
-   if (!render_frame_gone_)
-     frame->DispatchAfterPrintEvent();
-@@ -1469,7 +1471,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
+   if (!render_frame_gone_) {
+     RecordBeforeAfterPrintEventForDebugging(__LINE__);
+@@ -1514,7 +1514,8 @@ void PrintRenderFrameHelper::PrintForSystemDialog() {
    }
  
    Print(frame, print_preview_context_.source_node(),
 -        PrintRequestType::kRegular);
 +        PrintRequestType::kRegular, false,
 +        base::Value::Dict());
-   if (!render_frame_gone_)
+   if (!render_frame_gone_) {
+     RecordBeforeAfterPrintEventForDebugging(__LINE__);
      print_preview_context_.DispatchAfterPrintEvent();
-   // WARNING: |this| may be gone at this point. Do not do any more work here and
 @@ -1520,6 +1523,8 @@ void PrintRenderFrameHelper::PrintPreview(base::Value::Dict settings) {
    if (ipc_nesting_level_ > kAllowedIpcDepthForPrint)
      return;
