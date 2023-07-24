@@ -68,7 +68,9 @@ The loadBrowserProcessSpecificV8Snapshot fuse changes which V8 snapshot file is 
 We've made a handy module, [`@electron/fuses`](https://npmjs.com/package/@electron/fuses), to make flipping these fuses easy.  Check out the README of that module for more details on usage and potential error cases.
 
 ```js @ts-nocheck
-require('@electron/fuses').flipFuses(
+const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses')
+
+flipFuses(
   // Path to electron
   require('electron'),
   // Fuses to flip
@@ -82,7 +84,7 @@ require('@electron/fuses').flipFuses(
 You can validate the fuses have been flipped or check the fuse status of an arbitrary Electron app using the fuses CLI.
 
 ```bash
- npx @electron/fuses read --app /Applications/Foo.app
+npx @electron/fuses read --app /Applications/Foo.app
 ```
 
 ### The hard way
