@@ -431,7 +431,8 @@ class WebContents : public ExclusiveAccessContext,
       content::RenderFrameHost* render_frame_host);
   void MessageTo(int32_t web_contents_id,
                  const std::string& channel,
-                 blink::CloneableMessage arguments);
+                 blink::CloneableMessage arguments,
+                 content::RenderFrameHost* render_frame_host);
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments,
                    content::RenderFrameHost* render_frame_host);

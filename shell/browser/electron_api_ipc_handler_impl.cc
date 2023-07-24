@@ -81,7 +81,8 @@ void ElectronApiIPCHandlerImpl::MessageTo(int32_t web_contents_id,
                                           blink::CloneableMessage arguments) {
   api::WebContents* api_web_contents = api::WebContents::From(web_contents());
   if (api_web_contents) {
-    api_web_contents->MessageTo(web_contents_id, channel, std::move(arguments));
+    api_web_contents->MessageTo(web_contents_id, channel, std::move(arguments),
+                                GetRenderFrameHost());
   }
 }
 
