@@ -110,7 +110,7 @@ provided to the renderer process. Please refer to
 
 * `channel` string
 * `listener` Function<Promise\<void&#62; | any&#62;
-  * `event` IpcMainInvokeEvent
+  * `event` [IpcMainInvokeEvent][ipc-main-invoke-event]
   * `...args` any[]
 
 Handles a single `invoke`able IPC message, then removes the listener. See
@@ -121,17 +121,6 @@ Handles a single `invoke`able IPC message, then removes the listener. See
 * `channel` string
 
 Removes any handler for `channel`, if present.
-
-## IpcMainEvent object
-
-The documentation for the `event` object passed to the `callback` can be found
-in the [`ipc-main-event`][ipc-main-event] structure docs.
-
-## IpcMainInvokeEvent object
-
-The documentation for the `event` object passed to `handle` callbacks can be
-found in the [`ipc-main-invoke-event`][ipc-main-invoke-event]
-structure docs.
 
 [IPC tutorial]: ../tutorial/ipc.md
 [event-emitter]: https://nodejs.org/api/events.html#events_class_eventemitter
