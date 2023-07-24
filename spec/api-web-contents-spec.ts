@@ -608,6 +608,14 @@ describe('webContents module', () => {
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
+
+    it('can show window with title', async () => {
+      const w = new BrowserWindow({ show: false });
+     const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDecvTools({ mode: 'detach', activate: false, title: 'myTitle' });
+      await devtoolsOpened;
+      expect(w.webContents.getDevToolsTitle()).to.equal('myTitle');
+    });
   });
 
   describe('before-input-event event', () => {

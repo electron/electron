@@ -60,4 +60,6 @@ void InspectableWebContentsViewMac::SetTitle(const std::u16string& title) {
   [view_ setTitle:base::SysUTF16ToNSString(title)];
 }
 
+const std::u16string& InspectableWebContentsViewMac::GetTitle() {}
+
 }  // namespace electron

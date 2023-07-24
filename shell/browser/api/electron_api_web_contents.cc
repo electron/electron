@@ -2678,6 +2678,14 @@ bool WebContents::IsDevToolsOpened() {
   return inspectable_web_contents_->IsDevToolsViewShowing();
 }
 
+std::string WebContents::GetDevToolsTitle() {
+  if (type_ == Type::kRemote)
+    return std::string();
+
+  DCHECK(inspectable_web_contents_);
+  return inspectable_web_contents_->GetDevToolsTitle();
+}
+
 bool WebContents::IsDevToolsFocused() {
   if (type_ == Type::kRemote)
     return false;
@@ -4214,6 +4222,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
+      .SetMethod("getDevToolsTitle", &WebContents::GetDevToolsTitle)
       .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
       .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)

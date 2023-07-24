@@ -57,7 +57,8 @@ class InspectableWebContentsView {
   virtual void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) = 0;
   virtual void SetTitle(const std::u16string& title) = 0;
-
+  virtual const std::u16string& GetTitle() = 0;
+  
  protected:
   // Owns us.
   raw_ptr<InspectableWebContents> inspectable_web_contents_;

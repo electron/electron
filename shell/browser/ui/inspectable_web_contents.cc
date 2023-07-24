@@ -485,6 +485,10 @@ bool InspectableWebContents::IsDevToolsViewShowing() {
   return managed_devtools_web_contents_ && view_->IsDevToolsViewShowing();
 }
 
+std::string InspectableWebContents::GetDevToolsTitle() {
+  return base::UTF16ToUTF8(view_->GetTitle());
+}
+
 void InspectableWebContents::AttachTo(
     scoped_refptr<content::DevToolsAgentHost> host) {
   Detach();
