@@ -41,7 +41,9 @@ Valid `algorithm` values are currently `SHA256` only.  The `hash` is a hash of t
 ASAR integrity checking is currently disabled by default and can be enabled by toggling a fuse. See [Electron Fuses](fuses.md) for more information on what Electron Fuses are and how they work.  When enabling this fuse you typically also want to enable the `onlyLoadAppFromAsar` fuse otherwise the validity checking can be bypassed via the Electron app code search path.
 
 ```js @ts-nocheck
-require('@electron/fuses').flipFuses(
+const { flipFuses, FuseVersion, FuseV1Options } = require('@electron/fuses')
+
+flipFuses(
   // E.g. /a/b/Foo.app
   pathToPackagedApp,
   {
