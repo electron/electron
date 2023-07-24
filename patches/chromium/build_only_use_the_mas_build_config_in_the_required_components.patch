@@ -306,7 +306,7 @@ index f5038c6478eeccc17e061681dbee0f384dac4911..bf23c3576bb7b2d10a840e6eb2a420b7
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index c2c93302e51f629594583e5c2f2b89fe084f819e..363892cfe0d359579cff47f85a0bc60794cee22f 100644
+index a4072a85236ad029ecb292be0085e537a7c482bb..d9250541ab197f625c42feb96d94aca4cd791195 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -682,6 +682,7 @@ component("views") {
