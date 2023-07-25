@@ -52,7 +52,7 @@ export function removeFunction<T extends Function> (fn: T, removedName: string):
   const warn = warnOnce(`${fn.name} function`);
   return function (this: any) {
     warn();
-    fn.apply(this, arguments);
+    Reflect.apply(fn, this, arguments);
   } as unknown as typeof fn;
 }
 
@@ -61,7 +61,7 @@ export function renameFunction<T extends Function> (fn: T, newName: string): T {
   const warn = warnOnce(`${fn.name} function`, `${newName} function`);
   return function (this: any) {
     warn();
-    return fn.apply(this, arguments);
+    return Reflect.apply(fn, this, arguments);
   } as unknown as typeof fn;
 }
 
@@ -138,6 +138,6 @@ export function moveAPI<T extends Function> (fn: T, oldUsage: string, newUsage: 
   const warn = warnOnce(oldUsage, newUsage);
   return function (this: any) {
     warn();
-    return fn.apply(this, arguments);
+    return Reflect.apply(fn, this, arguments);
   } as unknown as typeof fn;
 }

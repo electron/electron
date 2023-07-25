@@ -2,7 +2,7 @@
   "root": true,
   "extends": "standard",
   "parser": "@typescript-eslint/parser",
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "unicorn"],
   "env": {
     "browser": true
   },
@@ -19,7 +19,8 @@
     "prefer-const": ["error", {
       "destructuring": "all"
     }],
-    "standard/no-callback-literal": "off"
+    "standard/no-callback-literal": "off",
+    "unicorn/no-this-assignment": "error"
   },
   "parserOptions": {
     "ecmaVersion": 6,

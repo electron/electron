@@ -133,14 +133,14 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
   const generateConfigs = (webPreferences: any, ...permutations: {name: string, webPreferences: any}[]) => {
     const configs = [{ webPreferences, names: [] as string[] }];
-    for (let i = 0; i < permutations.length; i++) {
+    for (const permutation of permutations) {
       const length = configs.length;
       for (let j = 0; j < length; j++) {
         const newConfig = Object.assign({}, configs[j]);
         newConfig.webPreferences = Object.assign({},
-          newConfig.webPreferences, permutations[i].webPreferences);
+          newConfig.webPreferences, permutation.webPreferences);
         newConfig.names = newConfig.names.slice(0);
-        newConfig.names.push(permutations[i].name);
+        newConfig.names.push(permutation.name);
         configs.push(newConfig);
       }
     }

@@ -33,7 +33,7 @@ const testMap = {
   connectTab (name) {
     chrome.runtime.onConnect.addListener(port => {
       port.onMessage.addListener(message => {
-        console.log([port.name, message].join());
+        console.log([port.name, message].join(','));
       });
     });
     chrome.runtime.sendMessage({ method: 'connectTab', args: [name] });

@@ -319,7 +319,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const wrapRealpathSync = function (realpathSync: Function) {
     return function (this: any, pathArgument: string, options: any) {
       const pathInfo = splitPath(pathArgument);
-      if (!pathInfo.isAsar) return realpathSync.apply(this, arguments);
+      if (!pathInfo.isAsar) return Reflect.apply(realpathSync, this, arguments);
       const { asarPath, filePath } = pathInfo;
 
       const archive = getOrCreateArchive(asarPath);
@@ -343,7 +343,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const wrapRealpath = function (realpath: Function) {
     return function (this: any, pathArgument: string, options: any, callback: any) {
       const pathInfo = splitPath(pathArgument);
-      if (!pathInfo.isAsar) return realpath.apply(this, arguments);
+      if (!pathInfo.isAsar) return Reflect.apply(realpath, this, arguments);
       const { asarPath, filePath } = pathInfo;
 
       if (arguments.length < 3) {
@@ -428,7 +428,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { access } = fs;
   fs.access = function (pathArgument: string, mode: any, callback: any) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return access.apply(this, arguments);
+    if (!pathInfo.isAsar) return Reflect.apply(access, this, arguments);
     const { asarPath, filePath } = pathInfo;
 
     if (typeof mode === 'function') {
@@ -476,7 +476,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { accessSync } = fs;
   fs.accessSync = function (pathArgument: string, mode: any) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return accessSync.apply(this, arguments);
+    if (!pathInfo.isAsar) return Reflect.apply(accessSync, this, arguments);
     const { asarPath, filePath } = pathInfo;
 
     if (mode == null) mode = fs.constants.F_OK;
@@ -567,7 +567,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   fs.readFile = function (pathArgument: string, options: any, callback: any) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) {
-      return readFile.apply(this, arguments);
+      return Reflect.apply(readFile, this, arguments);
     }
 
     return fsReadFileAsar(pathArgument, options, callback);
@@ -577,7 +577,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   fs.promises.readFile = function (pathArgument: string, options: any) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) {
-      return readFilePromise.apply(this, arguments);
+      return Reflect.apply(readFilePromise, this, arguments);
     }
 
     const p = util.promisify(fsReadFileAsar);
@@ -587,7 +587,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { readFileSync } = fs;
   fs.readFileSync = function (pathArgument: string, options: any) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return readFileSync.apply(this, arguments);
+    if (!pathInfo.isAsar) return Reflect.apply(readFileSync, this, arguments);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -628,7 +628,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       callback = options;
       options = undefined;
     }
-    if (!pathInfo.isAsar) return readdir.apply(this, arguments);
+    if (!pathInfo.isAsar) return Reflect.apply(readdir, this, arguments);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -677,7 +677,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   const { readdirSync } = fs;
   fs.readdirSync = function (pathArgument: string, options: ReaddirSyncOptions | BufferEncoding | null) {
     const pathInfo = splitPath(pathArgument);
-    if (!pathInfo.isAsar) return readdirSync.apply(this, arguments);
+    if (!pathInfo.isAsar) return Reflect.apply(readdirSync, this, arguments);
     const { asarPath, filePath } = pathInfo;
 
     const archive = getOrCreateArchive(asarPath);
@@ -793,7 +793,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
       const processNoAsarOriginalValue = process.noAsar;
       process.noAsar = true;
       try {
-        return func.apply(this, arguments);
+        return Reflect.apply(func, this, arguments);
       } finally {
         process.noAsar = processNoAsarOriginalValue;
       }

@@ -10,7 +10,7 @@ if (process.type === 'renderer') {
     if (request === 'vm') {
       console.warn('The vm module of Node.js is deprecated in the renderer process and will be removed.');
     }
-    return _load.apply(this, arguments);
+    return Reflect.apply(_load, this, arguments);
   };
 }
 
