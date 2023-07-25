@@ -198,10 +198,6 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetSizeConstraints(size_constraints);
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-  bool resizable;
-  if (options.Get(options::kResizable, &resizable)) {
-    SetResizable(resizable);
-  }
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
     SetClosable(closable);
@@ -223,6 +219,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
   }
+
   bool fullscreenable = true;
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
@@ -231,12 +228,18 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     fullscreenable = false;
 #endif
   }
-  // Overridden by 'fullscreenable'.
+
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
-  if (fullscreen) {
+
+  if (fullscreen)
     SetFullScreen(true);
+
+  bool resizable;
+  if (options.Get(options::kResizable, &resizable)) {
+    SetResizable(resizable);
   }
+
   bool skip;
   if (options.Get(options::kSkipTaskbar, &skip)) {
     SetSkipTaskbar(skip);
