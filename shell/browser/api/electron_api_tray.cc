@@ -342,7 +342,9 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
       }
     }
   }
-  tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
+
+  tray_icon_->PopUpContextMenu(
+      pos, menu.IsEmpty() ? nullptr : menu->model()->GetWeakPtr());
 }
 
 void Tray::CloseContextMenu() {

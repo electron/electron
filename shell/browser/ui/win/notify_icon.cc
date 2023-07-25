@@ -86,7 +86,7 @@ void NotifyIcon::HandleClickEvent(int modifiers,
     return;
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
-      PopUpContextMenu(gfx::Point(), menu_model_);
+      PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr());
     else
       NotifyRightClicked(bounds, modifiers);
   }
@@ -191,7 +191,7 @@ void NotifyIcon::Focus() {
 }
 
 void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
-                                  raw_ptr<ElectronMenuModel> menu_model) {
+                                  base::WeakPtr<ElectronMenuModel> menu_model) {
   // Returns if context menu isn't set.
   if (menu_model == nullptr && menu_model_ == nullptr)
     return;
@@ -209,9 +209,13 @@ void NotifyIcon::PopUpContextMenu(const gfx::Point& pos,
   if (pos.IsOrigin())
     rect.set_origin(display::Screen::GetScreen()->GetCursorScreenPoint());
 
-  menu_runner_ = std::make_unique<views::MenuRunner>(
-      menu_model != nullptr ? menu_model : menu_model_,
-      views::MenuRunner::HAS_MNEMONICS);
+  if (menu_model) {
+    menu_runner_ = std::make_unique<views::MenuRunner>(
+        menu_model.get(), views::MenuRunner::HAS_MNEMONICS);
+  } else {
+    menu_runner_ = std::make_unique<views::MenuRunner>(
+        menu_model_, views::MenuRunner::HAS_MNEMONICS);
+  }
   menu_runner_->RunMenuAt(nullptr, nullptr, rect,
                           views::MenuAnchorPosition::kTopLeft,
                           ui::MENU_SOURCE_MOUSE);
