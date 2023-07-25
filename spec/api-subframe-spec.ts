@@ -253,7 +253,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
 
         const metrics = app.getAppMetrics();
         const isProcessSandboxed = function (pid: number) {
-          const entry = metrics.filter(metric => metric.pid === pid)[0];
+          const entry = metrics.find(metric => metric.pid === pid);
           return entry && entry.sandboxed;
         };
 
