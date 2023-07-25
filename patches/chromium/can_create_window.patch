@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 40bb9ae505909cc9962082ed7ea6f3da3ffd8ed1..25eb2370315c35041ace75c361ae28a3a5a6c0db 100644
+index d37ab4352f0c49545d8813f87f89344f46e96905..b3895eaffd5ba3c9a9d049300ef2593d470ecd1e 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8013,6 +8013,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8033,6 +8033,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -66,10 +66,10 @@ index b0b0236d58b97bae0c80998c5eff4ede5879de00..c92546b9853219bf601f550416ce392a
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index bd4e7c8c7f8e02484769afd2c1b98f45fe45357d..1ae8c57f29c00c4a5eefc79fb0c96486fc631e92 100644
+index bd9d3b40e9aea64885014cc64f182997fe90dbdd..87bcb651c9361ec51ced9da4c7a2e259c4782ac6 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -673,6 +673,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -674,6 +674,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -210,7 +210,7 @@ index bef5a989bac50c177f15f52fe87ac3790d553e85..65dcd2e3b51929400c8bfb6a98a4fb59
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 22a139de0e2eab33b9e2f3e95bf5156493bf2be9..fdf1196fdaabdeebfcfe1095d139e1643c2a8cff 100644
+index 22811c82015f2ab2b7715ac503c9b5106cfd9d73..cd2336506d5826c827ce0e0fd8e17ad28217e6f7 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
 @@ -2192,6 +2192,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
