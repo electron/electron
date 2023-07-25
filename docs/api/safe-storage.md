@@ -63,3 +63,5 @@ is provided `--password-store="kwallet"`.
 is provided `--password-store="kwallet5"`.
 * `kwallet6` - When the desktop session is `kde6`.
 * `unknown` - When the function is called before app has emitted the `ready` event.
+
+> Warning: safeStorage is not currently supported on Raspberry Pi devices.
