@@ -33,6 +33,21 @@ index 180abdc9f983887c83fd9d4a596472222e9ab472..00842717a7570561ee9e3eca11190ab5
    void SendWebPreferencesToRenderer();
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
+diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
+index 02a3d39508397e90133eb4adad79515d507f14ea..b292c8ced209d49ac668e68ad8ad01a1821802d3 100644
+--- a/content/browser/renderer_host/render_widget_host_view_aura.cc
++++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
+@@ -554,8 +554,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+   // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
+   // which updates `visibility_`, unless the host is hidden. Make sure no update
+   // is needed.
+-  DCHECK(host_->is_hidden() || visibility_ == Visibility::VISIBLE);
+-  OnShowWithPageVisibility(page_visibility);
++  if (host_->is_hidden() || visibility_ == Visibility::VISIBLE)
++    OnShowWithPageVisibility(page_visibility);
+ }
+ 
+ void RenderWidgetHostViewAura::NotifyHostAndDelegateOnWasShown(
 diff --git a/content/public/browser/render_view_host.h b/content/public/browser/render_view_host.h
 index 9979c25ecd57e68331b628a518368635db5c2027..f65bfbbb663a5bb0511ffa389d3163e0fdeb4d1f 100644
 --- a/content/public/browser/render_view_host.h
@@ -84,10 +99,21 @@ index 8a18ecf567cd3a6a2fb1627083a5544a93198bf4..6bb4074e033e045de164bc776f75f152
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 79c3ac1ae8f9a5c643fdf3f8772084afdb8ea0d2..8f834dd2d0eb89b896b704045d7bcee53bd08ec9 100644
+index 79c3ac1ae8f9a5c643fdf3f8772084afdb8ea0d2..379ff57cbfe13a05b0b4dd2341a3cbcfe453c857 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
-@@ -3853,13 +3853,21 @@ PageScheduler* WebViewImpl::Scheduler() const {
+@@ -2392,6 +2392,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(
+   TRACE_EVENT2("navigation", "WebViewImpl::SetPageLifecycleStateInternal",
+                "old_state", old_state, "new_state", new_state);
+ 
++  // If backgroundThrottling is disabled, the page is always visible.
++  if (!scheduler_throttling_allowed_)
++      new_state->visibility = mojom::blink::PageVisibilityState::kVisible;
++
+   bool storing_in_bfcache = new_state->is_in_back_forward_cache &&
+                             !old_state->is_in_back_forward_cache;
+   bool restoring_from_bfcache = !new_state->is_in_back_forward_cache &&
+@@ -3853,17 +3857,31 @@ PageScheduler* WebViewImpl::Scheduler() const {
    return GetPage()->GetPageScheduler();
  }
  
@@ -102,14 +128,30 @@ index 79c3ac1ae8f9a5c643fdf3f8772084afdb8ea0d2..8f834dd2d0eb89b896b704045d7bcee5
      mojom::blink::PageVisibilityState visibility_state,
      bool is_initial_state) {
    DCHECK(GetPage());
-   GetPage()->SetVisibilityState(visibility_state, is_initial_state);
-   GetPage()->GetPageScheduler()->SetPageVisible(
+-  GetPage()->SetVisibilityState(visibility_state, is_initial_state);
+-  GetPage()->GetPageScheduler()->SetPageVisible(
 -      visibility_state == mojom::blink::PageVisibilityState::kVisible);
-+      scheduler_throttling_allowed_ ?
-+          (visibility_state == mojom::blink::PageVisibilityState::kVisible) : true);
-   // Notify observers of the change.
-   if (!is_initial_state) {
-     for (auto& observer : observers_)
+-  // Notify observers of the change.
+-  if (!is_initial_state) {
+-    for (auto& observer : observers_)
+-      observer.OnPageVisibilityChanged(visibility_state);
++
++  // If backgroundThrottling is disabled, the page is always visible.
++  if (!scheduler_throttling_allowed_) {
++    GetPage()->SetVisibilityState(mojom::blink::PageVisibilityState::kVisible, is_initial_state);
++    GetPage()->GetPageScheduler()->SetPageVisible(true);
++  } else {
++    bool is_visible = visibility_state == mojom::blink::PageVisibilityState::kVisible;
++    GetPage()->SetVisibilityState(visibility_state, is_initial_state);
++    GetPage()->GetPageScheduler()->SetPageVisible(is_visible);
++    // Notify observers of the change.
++    if (!is_initial_state) {
++      for (auto& observer : observers_)
++        observer.OnPageVisibilityChanged(visibility_state);
++    }
+   }
+ }
+ 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.h b/third_party/blink/renderer/core/exported/web_view_impl.h
 index 6a180620e00c77d0f4be346d1296f62feb714abb..c0ccf14faa52ab190c5848e8e9b597bcf637d4c0 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.h
