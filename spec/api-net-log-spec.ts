@@ -55,7 +55,7 @@ describe('netLog module', () => {
       if (fs.existsSync(dumpFileDynamic)) {
         fs.unlinkSync(dumpFileDynamic);
       }
-    } catch (e) {
+    } catch {
       // Ignore error
     }
     expect(testNetLog().currentlyLogging).to.be.false('currently logging');

@@ -345,7 +345,7 @@ describe('app module', () => {
           expectedAdditionalData: undefined
         });
         assert(false);
-      } catch (e) {
+      } catch {
         // This is expected.
       }
     });

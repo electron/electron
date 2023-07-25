@@ -32,7 +32,7 @@ describe('debugger module', () => {
     it('fails when protocol version is not supported', done => {
       try {
         w.webContents.debugger.attach('2.0');
-      } catch (err) {
+      } catch {
         expect(w.webContents.debugger.isAttached()).to.be.false();
         done();
       }

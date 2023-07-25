@@ -2032,7 +2032,7 @@ describe('<webview> tag', function () {
             // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
             expect(imgBuffer[25]).to.equal(6);
             return;
-          } catch (e) {
+          } catch {
             /* drop the error */
           }
         }
