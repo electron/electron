@@ -1,1 +1,2 @@
 fix_fallback_to_x11_capturer_on_wayland.patch
+cherry-pick-0e9556a90cec.patch
