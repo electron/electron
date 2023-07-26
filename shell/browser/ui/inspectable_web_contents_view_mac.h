@@ -32,7 +32,7 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
-  const std::u16string& GetTitle() override;
+  const std::u16string GetTitle() override;
 
  private:
   base::scoped_nsobject<ElectronInspectableWebContentsView> view_;

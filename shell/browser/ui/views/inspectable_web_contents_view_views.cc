@@ -209,7 +209,7 @@ void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
   }
 }
 
-const std::u16string& InspectableWebContentsViewViews::GetTitle() {
+const std::u16string InspectableWebContentsViewViews::GetTitle() {
   return title_;
 }
 
