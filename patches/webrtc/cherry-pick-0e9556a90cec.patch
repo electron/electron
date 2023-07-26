@@ -1,0 +1,102 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jan Grulich <grulja@gmail.com>
+Date: Wed, 12 Jul 2023 13:15:40 +0200
+Subject: Desktop capture: introduce capturer requesting both screen and
+ windows
+
+When PipeWire and xdg-desktop-portals are used, we can actually combine
+both source types into one request. Make this part of the API for those
+who want to use it this way, e.g. Firefox or Electron, otherwise they
+will end up making two simultaneous requests, resulting into two dialogs
+at the same time asking, while they can be combined into just one.
+
+Bug: webrtc:15363
+Change-Id: Ib6e1e47f66cb01d5c65096aec378b44c3af5f387
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/311549
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Commit-Queue: Jan Grulich <grulja@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#40425}
+
+diff --git a/modules/desktop_capture/desktop_capture_types.h b/modules/desktop_capture/desktop_capture_types.h
+index 9627076eea3d1272f87b773ada86be6051f1e224..a4e3e897fde1d3c7bb470449448f30ff6e50caea 100644
+--- a/modules/desktop_capture/desktop_capture_types.h
++++ b/modules/desktop_capture/desktop_capture_types.h
+@@ -15,7 +15,7 @@
+ 
+ namespace webrtc {
+ 
+-enum class CaptureType { kWindow, kScreen };
++enum class CaptureType { kWindow, kScreen, kAnyScreenContent };
+ 
+ // Type used to identify windows on the desktop. Values are platform-specific:
+ //   - On Windows: HWND cast to intptr_t.
+diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
+index 5211f1acecaba963e1436c1d04aa953853c79eb7..b99f5ecb803ac0ac0e26fbdb3411c77605f33011 100644
+--- a/modules/desktop_capture/desktop_capturer.cc
++++ b/modules/desktop_capture/desktop_capturer.cc
+@@ -26,6 +26,10 @@
+ #include "rtc_base/win/windows_version.h"
+ #endif  // defined(RTC_ENABLE_WIN_WGC)
+ 
++#if defined(WEBRTC_USE_PIPEWIRE)
++#include "modules/desktop_capture/linux/wayland/base_capturer_pipewire.h"
++#endif
++
+ namespace webrtc {
+ 
+ void LogDesktopCapturerFullscreenDetectorUsage() {
+@@ -101,6 +105,25 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateScreenCapturer(
+   return capturer;
+ }
+ 
++// static
++std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
++    const DesktopCaptureOptions& options) {
++  std::unique_ptr<DesktopCapturer> capturer;
++
++#if defined(WEBRTC_USE_PIPEWIRE)
++  if (options.allow_pipewire() && DesktopCapturer::IsRunningUnderWayland()) {
++    capturer = std::make_unique<BaseCapturerPipeWire>(
++        options, CaptureType::kAnyScreenContent);
++  }
++
++  if (capturer && options.detect_updated_region()) {
++    capturer.reset(new DesktopCapturerDifferWrapper(std::move(capturer)));
++  }
++#endif  // defined(WEBRTC_USE_PIPEWIRE)
++
++  return capturer;
++}
++
+ #if defined(WEBRTC_USE_PIPEWIRE) || defined(WEBRTC_USE_X11)
+ bool DesktopCapturer::IsRunningUnderWayland() {
+   const char* xdg_session_type = getenv("XDG_SESSION_TYPE");
+diff --git a/modules/desktop_capture/desktop_capturer.h b/modules/desktop_capture/desktop_capturer.h
+index fd884f13ff771de2d5ea8b79ba530e9d3b03e913..9c7ecc78f46ea2e2c173416132318f0526714265 100644
+--- a/modules/desktop_capture/desktop_capturer.h
++++ b/modules/desktop_capture/desktop_capturer.h
+@@ -186,6 +186,11 @@ class RTC_EXPORT DesktopCapturer {
+   static std::unique_ptr<DesktopCapturer> CreateScreenCapturer(
+       const DesktopCaptureOptions& options);
+ 
++  // Creates a DesktopCapturer instance which targets to capture windows and
++  // screens.
++  static std::unique_ptr<DesktopCapturer> CreateGenericCapturer(
++      const DesktopCaptureOptions& options);
++
+ #if defined(WEBRTC_USE_PIPEWIRE) || defined(WEBRTC_USE_X11)
+   static bool IsRunningUnderWayland();
+ 
+diff --git a/modules/desktop_capture/linux/wayland/screencast_portal.cc b/modules/desktop_capture/linux/wayland/screencast_portal.cc
+index a473802176a649a62f6d6a377f97daaa9d1e893c..61ed84ebb532521ce9a4af69355807b04f228859 100644
+--- a/modules/desktop_capture/linux/wayland/screencast_portal.cc
++++ b/modules/desktop_capture/linux/wayland/screencast_portal.cc
+@@ -41,6 +41,8 @@ ScreenCastPortal::CaptureSourceType ScreenCastPortal::ToCaptureSourceType(
+       return ScreenCastPortal::CaptureSourceType::kScreen;
+     case CaptureType::kWindow:
+       return ScreenCastPortal::CaptureSourceType::kWindow;
++    case CaptureType::kAnyScreenContent:
++      return ScreenCastPortal::CaptureSourceType::kAnyScreenContent;
+   }
+ }
+ 

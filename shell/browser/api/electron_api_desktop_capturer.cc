@@ -234,6 +234,33 @@ void DesktopCapturer::StartHandling(bool capture_window,
   // clear any existing captured sources.
   captured_sources_.clear();
 
+  if (capture_window && capture_screen) {
+    // Some capturers like PipeWire suppport a single capturer for both screens
+    // and windows. Use it if possible, treating both as window capture
+    if (auto capturer = webrtc::DesktopCapturer::CreateGenericCapturer(
+            content::desktop_capture::CreateDesktopCaptureOptions());
+        capturer && capturer->GetDelegatedSourceListController()) {
+      capture_screen_ = false;
+      capture_window_ = capture_window;
+      window_capturer_ = std::make_unique<NativeDesktopMediaList>(
+          DesktopMediaList::Type::kWindow, std::move(capturer));
+      window_capturer_->SetThumbnailSize(thumbnail_size);
+
+      OnceCallback update_callback = base::BindOnce(
+          &DesktopCapturer::UpdateSourcesList, weak_ptr_factory_.GetWeakPtr(),
+          window_capturer_.get());
+      OnceCallback failure_callback = base::BindOnce(
+          &DesktopCapturer::HandleFailure, weak_ptr_factory_.GetWeakPtr());
+
+      window_listener_ = std::make_unique<DesktopListListener>(
+          std::move(update_callback), std::move(failure_callback),
+          thumbnail_size.IsEmpty());
+      window_capturer_->StartUpdating(window_listener_.get());
+
+      return;
+    }
+  }
+
   // Start listening for captured sources.
   capture_window_ = capture_window;
   capture_screen_ = capture_screen;
