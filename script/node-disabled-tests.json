@@ -17,6 +17,7 @@
   "parallel/test-crypto-modp1-error",
   "parallel/test-crypto-padding-aes256",
   "parallel/test-crypto-secure-heap",
+  "parallel/test-dgram-send-cb-quelches-error",
   "parallel/test-fs-utimes-y2K38",
   "parallel/test-http2-clean-output",
   "parallel/test-https-agent-session-reuse",
