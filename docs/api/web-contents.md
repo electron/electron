@@ -1800,7 +1800,15 @@ Returns `boolean` - Whether the devtools view is focused .
 
 #### `contents.getDevToolsTitle()`
 
-Returns `string` - the title of devtools .
+Returns `string` - the current title of the devtools window. This will only be visible
+if devtools is been open in `undocked` or `detach` mode.
+
+#### `contents.setDevToolsTitle(title)`
+
+* `title` string
+
+Changes the title of devtools to `title`.This will only be visible if devtools is 
+been open in `undocked` or `detach` mode.
 
 #### `contents.toggleDevTools()`
 

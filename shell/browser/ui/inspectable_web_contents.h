@@ -59,7 +59,7 @@ class InspectableWebContents
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
-  void SetTitle(const std::string& title);
+  void SetDevToolsTitle(const std::string& title);
   void ShowDevTools(bool activate);
   void CloseDevTools();
   bool IsDevToolsViewShowing();

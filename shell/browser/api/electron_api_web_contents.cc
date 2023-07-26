@@ -2658,7 +2658,7 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
-  inspectable_web_contents_->SetTitle(title);
+  inspectable_web_contents_->SetDevToolsTitle(title);
   inspectable_web_contents_->ShowDevTools(activate);
 }
 
@@ -2684,6 +2684,10 @@ std::string WebContents::GetDevToolsTitle() {
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->GetDevToolsTitle();
+}
+
+void WebContents::SetDevToolsTitle(const std::string& title) {
+  inspectable_web_contents_->SetDevToolsTitle(title);
 }
 
 bool WebContents::IsDevToolsFocused() {
@@ -4223,6 +4227,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
       .SetMethod("getDevToolsTitle", &WebContents::GetDevToolsTitle)
+      .SetMethod("setDevToolsTitle", &WebContents::SetDevToolsTitle)
       .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
       .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)

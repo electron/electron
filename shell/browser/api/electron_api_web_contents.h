@@ -201,6 +201,7 @@ class WebContents : public ExclusiveAccessContext,
   bool IsDevToolsOpened();
   bool IsDevToolsFocused();
   std::string GetDevToolsTitle();
+  void SetDevToolsTitle(const std::string& title);
   void ToggleDevTools();
   void EnableDeviceEmulation(const blink::DeviceEmulationParams& params);
   void DisableDeviceEmulation();

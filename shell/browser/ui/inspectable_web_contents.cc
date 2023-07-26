@@ -426,8 +426,9 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
-void InspectableWebContents::SetTitle(const std::string& title) {
+void InspectableWebContents::SetDevToolsTitle(const std::string& title) {
   devtools_title_ = title;
+  view_->SetTitle(base::UTF8ToUTF16(devtools_title_));
 }
 
 void InspectableWebContents::SetDevToolsWebContents(
@@ -573,7 +574,9 @@ void InspectableWebContents::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
-    view_->SetTitle(base::UTF8ToUTF16(devtools_title_));
+    if (!devtools_title_.empty()) {
+      view_->SetTitle(base::UTF8ToUTF16(devtools_title_));
+    }
   } else {
     if (dock_state_.empty()) {
       const base::Value::Dict& prefs =
