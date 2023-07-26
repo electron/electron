@@ -612,7 +612,7 @@ describe('webContents module', () => {
     it('can show window with title', async () => {
       const w = new BrowserWindow({ show: false });
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
-      w.webContents.openDecvTools({ mode: 'detach', activate: false, title: 'myTitle' });
+      w.webContents.openDevTools({ mode: 'detach', activate: false, title: 'myTitle' });
       await devtoolsOpened;
       expect(w.webContents.getDevToolsTitle()).to.equal('myTitle');
     });
