@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 68076bd94f8b3c8afd3237edcdf6d7ddb3d4ff0e..eb048f0faa701b7e121708a79b77aef74d6f7715 100644
+index 173283fa984ed8a6d4fc24287e70450d2806a321..2f5b2b23a33924d8d80d2bc3ce5d9d9f550df3bf 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1034,6 +1034,7 @@ component("base") {
@@ -76,7 +76,7 @@ index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d847be9339f1518acdf165c0d3efb91c7124c445..ee0f6cf0e7f860d36a2976c1b5895b759265129f 100644
+index 183c520baa855d3065f34f3bc90c8c590237192c..7f587f6e743e312898ca81908d1f85856ef3bd09 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -112,7 +112,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c25730fd41f0e10352580332338a9583cd2caff9..4d24d00615d14a1139762a250a0080b47ade1519 100644
+index a779b02aefe3d26e5193d6cecef1675ef5937a4d..34ddd9c1b0ef8cd6ed866cd1ba1e033b9fef6023 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -290,7 +290,7 @@ index e66e2339ea3cb8b2b80ef3f0b09dcc53a2240339..07e11afb172ecbb24c04f25f87c11bdc
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 30642c59d4ab84cbe6cc82e6b5b645cdacc07418..ca2e4c1b9064132fa9612339106d3729d79bf3cf 100644
+index 002c180d97ced4c5711f6d432c2c09108bcbc69c..6d52e99b6f9414a907fa3b74fc2930795510d086 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -686,6 +686,7 @@ component("views") {
@@ -301,7 +301,7 @@ index 30642c59d4ab84cbe6cc82e6b5b645cdacc07418..ca2e4c1b9064132fa9612339106d3729
    }
  
    if (is_win) {
-@@ -1103,6 +1104,8 @@ source_set("test_support") {
+@@ -1105,6 +1106,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
