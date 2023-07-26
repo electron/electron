@@ -1,0 +1,252 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cheng Zhao <zcbenz@gmail.com>
+Date: Thu, 18 Oct 2018 17:03:57 -0700
+Subject: Allow overriding source in install-sysroot.py
+
+Upstreamed at:
+https://chromium-review.googlesource.com/c/chromium/src/+/4702051
+
+diff --git a/DEPS b/DEPS
+index 6a3b5c6fc1e43b63580355d16ee3cfbfa50d5b20..494001544baa354ba86e4524e3d0887f29576a26 100644
+--- a/DEPS
++++ b/DEPS
+@@ -284,6 +284,10 @@ vars = {
+   # reclient CIPD package version
+   'reclient_version': 're_client_version:0.110.0.43ec6b1-gomaip',
+ 
++  # The path of the sysroots.json file.
++  # This is used by vendor builds like Electron.
++  'sysroots_json_path': 'build/linux/sysroot_scripts/sysroots.json',
++
+   # siso CIPD package version.
+   'siso_version': 'git_revision:4dda257f62ccf08abc8603bc1d0b811af166aebf',
+ 
+@@ -4568,6 +4572,7 @@ hooks = [
+     'pattern': '.',
+     'condition': 'checkout_linux and checkout_arm',
+     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
++               '--sysroots-json-path=' + Var('sysroots_json_path'),
+                '--arch=arm'],
+   },
+   {
+@@ -4575,6 +4580,7 @@ hooks = [
+     'pattern': '.',
+     'condition': 'checkout_linux and checkout_arm64',
+     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
++               '--sysroots-json-path=' + Var('sysroots_json_path'),
+                '--arch=arm64'],
+   },
+   {
+@@ -4582,6 +4588,7 @@ hooks = [
+     'pattern': '.',
+     'condition': 'checkout_linux and (checkout_x86 or checkout_x64)',
+     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
++               '--sysroots-json-path=' + Var('sysroots_json_path'),
+                '--arch=x86'],
+   },
+   {
+@@ -4589,6 +4596,7 @@ hooks = [
+     'pattern': '.',
+     'condition': 'checkout_linux and checkout_mips',
+     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
++               '--sysroots-json-path=' + Var('sysroots_json_path'),
+                '--arch=mips'],
+   },
+   {
+@@ -4596,14 +4604,15 @@ hooks = [
+     'pattern': '.',
+     'condition': 'checkout_linux and checkout_mips64',
+     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
++               '--sysroots-json-path=' + Var('sysroots_json_path'),
+                '--arch=mips64el'],
+   },
+-
+   {
+     'name': 'sysroot_x64',
+     'pattern': '.',
+     'condition': 'checkout_linux and checkout_x64',
+     'action': ['python3', 'src/build/linux/sysroot_scripts/install-sysroot.py',
++               '--sysroots-json-path=' + Var('sysroots_json_path'),
+                '--arch=x64'],
+   },
+   {
+diff --git a/build/linux/sysroot_scripts/build_and_upload.py b/build/linux/sysroot_scripts/build_and_upload.py
+index 2936ec41b0ee6e1fe46c2a30a1eebcf733603c01..0880364f708ecf94fecc38ef10d68a70bd65c850 100755
+--- a/build/linux/sysroot_scripts/build_and_upload.py
++++ b/build/linux/sysroot_scripts/build_and_upload.py
+@@ -17,6 +17,9 @@ import sys
+ 
+ ARCHES = ("amd64", "i386", "armhf", "arm64", "armel", "mipsel", "mips64el")
+ 
++DEFAULT_URL_PREFIX = "https://commondatastorage.googleapis.com/" \
++                     "chrome-linux-sysroot/toolchain"
++
+ 
+ def sha1sumfile(filename):
+   sha1 = hashlib.sha1()
+@@ -50,6 +53,7 @@ def build_and_upload(script_path, distro, release, key, arch, lock):
+       "Sha1Sum": sha1sum,
+       "SysrootDir": sysroot_dir,
+       "Tarball": tarball,
++      "URL": DEFAULT_URL_PREFIX,
+   }
+   with lock:
+     fname = os.path.join(script_dir, "sysroots.json")
+diff --git a/build/linux/sysroot_scripts/install-sysroot.py b/build/linux/sysroot_scripts/install-sysroot.py
+index 67d52b47a7531453a1baa83b6863441ef1fadea7..a2ac8305d8ca74edf0c4458e2b4a02d91abee39f 100755
+--- a/build/linux/sysroot_scripts/install-sysroot.py
++++ b/build/linux/sysroot_scripts/install-sysroot.py
+@@ -33,9 +33,7 @@ import sys
+ from urllib.request import urlopen
+ 
+ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+-
+-URL_PREFIX = 'https://commondatastorage.googleapis.com'
+-URL_PATH = 'chrome-linux-sysroot/toolchain'
++SRC_DIR = os.path.dirname(os.path.dirname(os.path.dirname(SCRIPT_DIR)))
+ 
+ VALID_ARCHS = ('amd64', 'i386', 'armhf', 'arm64', 'armel', 'mipsel', 'mips64el')
+ 
+@@ -47,6 +45,8 @@ ARCH_TRANSLATIONS = {
+     'mips64': 'mips64el',
+ }
+ 
++DEFAULT_SYSROOTS_PATH = os.path.join(os.path.relpath(SCRIPT_DIR, SRC_DIR),
++                                     'sysroots.json')
+ DEFAULT_TARGET_PLATFORM = 'bullseye'
+ 
+ 
+@@ -68,6 +68,8 @@ def GetSha1(filename):
+ 
+ def main(args):
+   parser = optparse.OptionParser('usage: %prog [OPTIONS]', description=__doc__)
++  parser.add_option('--sysroots-json-path',
++                    help='The location of sysroots.json file')
+   parser.add_option('--arch',
+                     help='Sysroot architecture: %s' % ', '.join(VALID_ARCHS))
+   parser.add_option('--all', action='store_true',
+@@ -77,18 +79,23 @@ def main(args):
+                     help='Print the hash of the sysroot for the given arch.')
+   options, _ = parser.parse_args(args)
+ 
++  if options.sysroots_json_path:
++    sysroots_json_path = options.sysroots_json_path
++  else:
++    sysroots_json_path = DEFAULT_SYSROOTS_PATH
++
+   if options.print_key:
+     arch = options.print_key
+     print(
+-        GetSysrootDict(DEFAULT_TARGET_PLATFORM,
++        GetSysrootDict(sysroots_json_path, DEFAULT_TARGET_PLATFORM,
+                        ARCH_TRANSLATIONS.get(arch, arch))['Key'])
+     return 0
+   if options.arch:
+-    InstallSysroot(DEFAULT_TARGET_PLATFORM,
++    InstallSysroot(sysroots_json_path, DEFAULT_TARGET_PLATFORM,
+                    ARCH_TRANSLATIONS.get(options.arch, options.arch))
+   elif options.all:
+     for arch in VALID_ARCHS:
+-      InstallSysroot(DEFAULT_TARGET_PLATFORM, arch)
++      InstallSysroot(sysroots_json_path, DEFAULT_TARGET_PLATFORM, arch)
+   else:
+     print('You much specify one of the options.')
+     return 1
+@@ -96,11 +103,11 @@ def main(args):
+   return 0
+ 
+ 
+-def GetSysrootDict(target_platform, target_arch):
++def GetSysrootDict(sysroots_json_path, target_platform, target_arch):
+   if target_arch not in VALID_ARCHS:
+     raise Error('Unknown architecture: %s' % target_arch)
+ 
+-  sysroots_file = os.path.join(SCRIPT_DIR, 'sysroots.json')
++  sysroots_file = os.path.join(SRC_DIR, sysroots_json_path)
+   sysroots = json.load(open(sysroots_file))
+   sysroot_key = '%s_%s' % (target_platform, target_arch)
+   if sysroot_key not in sysroots:
+@@ -108,17 +115,18 @@ def GetSysrootDict(target_platform, target_arch):
+   return sysroots[sysroot_key]
+ 
+ 
+-def InstallSysroot(target_platform, target_arch):
+-  sysroot_dict = GetSysrootDict(target_platform, target_arch)
++def InstallSysroot(sysroots_json_path, target_platform, target_arch):
++  sysroot_dict = GetSysrootDict(sysroots_json_path, target_platform,
++                                target_arch)
+   tarball_filename = sysroot_dict['Tarball']
+   tarball_sha1sum = sysroot_dict['Sha1Sum']
++  url_prefix = sysroot_dict['URL']
+   # TODO(thestig) Consider putting this elsewhere to avoid having to recreate
+   # it on every build.
+   linux_dir = os.path.dirname(SCRIPT_DIR)
+   sysroot = os.path.join(linux_dir, sysroot_dict['SysrootDir'])
+ 
+-  url = '%s/%s/%s/%s' % (URL_PREFIX, URL_PATH, tarball_sha1sum,
+-                         tarball_filename)
++  url = '%s/%s/%s' % (url_prefix, tarball_sha1sum, tarball_filename)
+ 
+   stamp = os.path.join(sysroot, '.stamp')
+   if os.path.exists(stamp):
+diff --git a/build/linux/sysroot_scripts/sysroots.json b/build/linux/sysroot_scripts/sysroots.json
+index 247969179d0b0950a4d00aed8f86cb2d14e3df56..156d4c630ec39aae9af4f5c4e76d35aa510704ad 100644
+--- a/build/linux/sysroot_scripts/sysroots.json
++++ b/build/linux/sysroot_scripts/sysroots.json
+@@ -3,42 +3,49 @@
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "4c00ba2ad61ca7cc39392f192aa39420e086777c",
+         "SysrootDir": "debian_bullseye_amd64-sysroot",
+-        "Tarball": "debian_bullseye_amd64_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_amd64_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     },
+     "bullseye_arm64": {
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "41a6c8dec4c4304d6509e30cbaf9218dffb4438e",
+         "SysrootDir": "debian_bullseye_arm64-sysroot",
+-        "Tarball": "debian_bullseye_arm64_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_arm64_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     },
+     "bullseye_armel": {
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "bcff5c5a4060f3be7bff28aa9ff28c100b70a858",
+         "SysrootDir": "debian_bullseye_armel-sysroot",
+-        "Tarball": "debian_bullseye_armel_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_armel_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     },
+     "bullseye_armhf": {
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "c153bf1027a67eec0f6ea2efa190e29c9c06e603",
+         "SysrootDir": "debian_bullseye_armhf-sysroot",
+-        "Tarball": "debian_bullseye_armhf_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_armhf_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     },
+     "bullseye_i386": {
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "cfba9004de1ace04f9604c13c30abad3be90e58f",
+         "SysrootDir": "debian_bullseye_i386-sysroot",
+-        "Tarball": "debian_bullseye_i386_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_i386_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     },
+     "bullseye_mips64el": {
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "3ce49d1c6b5fef17ad512f2d663a175829ae0b72",
+         "SysrootDir": "debian_bullseye_mips64el-sysroot",
+-        "Tarball": "debian_bullseye_mips64el_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_mips64el_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     },
+     "bullseye_mipsel": {
+         "Key": "20230611T210420Z-2",
+         "Sha1Sum": "1b857baabd7999ff0d6949a8973f896836ac45ac",
+         "SysrootDir": "debian_bullseye_mipsel-sysroot",
+-        "Tarball": "debian_bullseye_mipsel_sysroot.tar.xz"
++        "Tarball": "debian_bullseye_mipsel_sysroot.tar.xz",
++        "URL": "https://commondatastorage.googleapis.com/chrome-linux-sysroot/toolchain"
+     }
+ }

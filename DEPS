@@ -24,6 +24,8 @@ vars = {
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
 
+  'sysroots_json_path': 'electron/script/sysroots.json',
+
   # KEEP IN SYNC WITH utils.js FILE
   'yarn_version': '1.15.2',
 
