@@ -838,7 +838,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const originalModuleLoad = Module._load;
     Module._load = (request: string, ...args: any[]) => {
       const loadResult = originalModuleLoad(request, ...args);
-      if (request === 'child_process') {
+      if (request === 'child_process' || request === 'node:child_process') {
         if (!asarReady.has(loadResult)) {
           asarReady.add(loadResult);
           // Just to make it obvious what we are dealing with here
