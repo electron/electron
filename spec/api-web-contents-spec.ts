@@ -626,8 +626,8 @@ describe('webContents module', () => {
       w.webContents.openDevTools({ mode: 'detach', activate: false });
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
-      w.webContents.setDevToolsTitle( "newTitle" );
-      expect(w.webContents.getDevToolsTitle()).to.equal( 'newTitle' );
+      w.webContents.setDevToolsTitle('newTitle');
+      expect(w.webContents.getDevToolsTitle()).to.equal('newTitle');
     });
   });
 
