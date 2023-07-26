@@ -1807,7 +1807,7 @@ if devtools is been open in `undocked` or `detach` mode.
 
 * `title` string
 
-Changes the title of devtools to `title`.This will only be visible if devtools is 
+Changes the title of devtools to `title`.This will only be visible if devtools is
 been open in `undocked` or `detach` mode.
 
 #### `contents.toggleDevTools()`
