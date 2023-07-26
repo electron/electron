@@ -4797,6 +4797,7 @@ describe('BrowserWindow module', () => {
         c.setParentWindow(null);
         expect(c.getParentWindow()).to.be.null('c.parent');
       });
+
       it('adds window to child windows of parent', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
@@ -4806,6 +4807,7 @@ describe('BrowserWindow module', () => {
         c.setParentWindow(null);
         expect(w.getChildWindows()).to.deep.equal([]);
       });
+
       it('removes from child windows of parent when window is closed', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
@@ -4816,6 +4818,25 @@ describe('BrowserWindow module', () => {
         // The child window list is not immediately cleared, so wait a tick until it's ready.
         await setTimeout();
         expect(w.getChildWindows().length).to.equal(0);
+      });
+
+      ifit(process.platform === 'darwin')('can reparent when the first parent is destroyed', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false });
+
+        c.setParentWindow(w1);
+        expect(w1.getChildWindows().length).to.equal(1);
+
+        const closed = once(w1, 'closed');
+        w1.destroy();
+        await closed;
+
+        c.setParentWindow(w2);
+        await setTimeout();
+
+        const children = w2.getChildWindows();
+        expect(children[0]).to.equal(c);
       });
     });
 
