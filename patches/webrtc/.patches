@@ -1,1 +1,2 @@
 fix_fallback_to_x11_capturer_on_wayland.patch
+fix_mark_pipewire_capturer_as_failed_after_session_is_closed.patch

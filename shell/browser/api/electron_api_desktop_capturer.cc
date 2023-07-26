@@ -373,6 +373,9 @@ void DesktopCapturer::UpdateSourcesList(DesktopMediaList* list) {
     v8::HandleScope scope(isolate);
     gin_helper::CallMethod(this, "_onfinished", captured_sources_);
 
+    screen_capturer_.reset();
+    window_capturer_.reset();
+
     Unpin();
   }
 }
@@ -381,6 +384,9 @@ void DesktopCapturer::HandleFailure() {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   gin_helper::CallMethod(this, "_onerror", "Failed to get sources.");
+
+  screen_capturer_.reset();
+  window_capturer_.reset();
 
   Unpin();
 }
