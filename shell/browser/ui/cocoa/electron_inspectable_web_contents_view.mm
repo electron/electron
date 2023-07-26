@@ -242,7 +242,7 @@
 }
 
 - (NSString*)getTitle {
-  return devtools_window_.title;
+  return devtools_window_.Title;
 }
 
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
