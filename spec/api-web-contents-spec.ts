@@ -619,17 +619,17 @@ describe('webContents module', () => {
   });
 
   describe('setDevToolsTitle() API', () => {
-      afterEach(closeAllWindows);
-      it('can set devtools title with function', async () => {
-        const w = new BrowserWindow({ show: false });
-        const devtoolsOpened = once(w.webContents, 'devtools-opened');
-        w.webContents.openDevTools({ mode: 'detach', activate: false });
-        await devtoolsOpened;
-        expect(w.webContents.isDevToolsOpened()).to.be.true();
-        w.webContents.setDevToolsTitle( "newTitle" );
-        expect(w.webContents.getDevToolsTitle()).to.equal( 'newTitle' );
-      });
+    afterEach(closeAllWindows);
+    it('can set devtools title with function', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      w.webContents.setDevToolsTitle( "newTitle" );
+      expect(w.webContents.getDevToolsTitle()).to.equal( 'newTitle' );
     });
+  });
 
   describe('before-input-event event', () => {
     afterEach(closeAllWindows);
