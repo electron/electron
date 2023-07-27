@@ -71,7 +71,7 @@ index 6a3b5c6fc1e43b63580355d16ee3cfbfa50d5b20..494001544baa354ba86e4524e3d0887f
    },
    {
 diff --git a/build/linux/sysroot_scripts/build_and_upload.py b/build/linux/sysroot_scripts/build_and_upload.py
-index 2936ec41b0ee6e1fe46c2a30a1eebcf733603c01..0880364f708ecf94fecc38ef10d68a70bd65c850 100755
+index 2936ec41b0ee6e1fe46c2a30a1eebcf733603c01..9e3338ac23f7f5f88f8b90aa6fcddb913d80fd9c 100755
 --- a/build/linux/sysroot_scripts/build_and_upload.py
 +++ b/build/linux/sysroot_scripts/build_and_upload.py
 @@ -17,6 +17,9 @@ import sys
