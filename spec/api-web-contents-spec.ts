@@ -1786,7 +1786,7 @@ describe('webContents module', () => {
       const cleanup = () => {
         try {
           fs.unlinkSync(filePath);
-        } catch (e) {
+        } catch {
           // ignore error
         }
       };

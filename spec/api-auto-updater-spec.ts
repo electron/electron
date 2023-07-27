@@ -32,7 +32,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         const url = 'http://electronjs.org';
         try {
           (autoUpdater.setFeedURL as any)(url, { header: 'val' });
-        } catch (err) { /* ignore */ }
+        } catch { /* ignore */ }
         expect(autoUpdater.getFeedURL()).to.equal(url);
       });
 
@@ -44,7 +44,7 @@ ifdescribe(!process.mas)('autoUpdater module', function () {
         const url = 'http://mymagicurl.local';
         try {
           autoUpdater.setFeedURL({ url });
-        } catch (err) { /* ignore */ }
+        } catch { /* ignore */ }
         expect(autoUpdater.getFeedURL()).to.equal(url);
       });
 
