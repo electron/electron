@@ -55,3 +55,4 @@ allow_embedder_to_control_codegenerationfromstringscallback.patch
 cherry-pick-09ae62b.patch
 lib_fix_broadcastchannel_initialization_location.patch
 src_allow_optional_isolation_termination_in_node.patch
+fix_do_not_resolve_electron_entrypoints.patch
