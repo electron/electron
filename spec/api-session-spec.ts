@@ -254,8 +254,8 @@ describe('session module', () => {
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
       const options = {
         origin: 'file://',
-        storages: ['localstorage'],
-        quotas: ['persistent']
+        storages: ['localstorage' as const],
+        quotas: ['temporary' as const]
       };
       await w.webContents.session.clearStorageData(options);
       while (await w.webContents.executeJavaScript('localStorage.length') !== 0) {
