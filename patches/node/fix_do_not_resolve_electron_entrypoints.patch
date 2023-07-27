@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Wed, 26 Jul 2023 17:03:15 -0700
+Subject: fix: do not resolve electron entrypoints
+
+This wastes fs cycles and can result in strange behavior if this path actually exists on disk
+
+diff --git a/lib/internal/modules/run_main.js b/lib/internal/modules/run_main.js
+index 5a50d5d6afab6e6648f72a1c0efa1df4cd80bcd9..0be45309028b00a6957ee473322a9452a7fa7d67 100644
+--- a/lib/internal/modules/run_main.js
++++ b/lib/internal/modules/run_main.js
+@@ -13,6 +13,12 @@ const {
+ } = require('internal/modules/esm/handle_process_exit');
+ 
+ function resolveMainPath(main) {
++  // For built-in modules used as the main entry point we _never_
++  // want to waste cycles resolving them to file paths on disk
++  // that actually might exist
++  if (typeof main === 'string' && main.startsWith('electron/js2c')) {
++    return main;
++  }
+   // Note extension resolution for the main entry point can be deprecated in a
+   // future major.
+   // Module._findPath is monkey-patchable here.
