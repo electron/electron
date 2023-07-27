@@ -56,3 +56,7 @@ v8_builtins_profiling_log_file = ""
 # https://chromium.googlesource.com/chromium/src/+/main/docs/dangling_ptr.md
 # TODO(vertedinde): hunt down dangling pointers on Linux
 enable_dangling_raw_ptr_checks = false
+
+# This flag speeds up the performance of fork/execve on linux systems.
+# Ref: https://chromium-review.googlesource.com/c/v8/v8/+/4602858
+v8_enable_private_mapping_fork_optimization = true
