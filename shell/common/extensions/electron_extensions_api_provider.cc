@@ -10,6 +10,7 @@
 #include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
+#include "chrome/common/extensions/manifest_handlers/minimum_chrome_version_checker.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/extensions/api/generated_schemas.h"
 #include "extensions/common/alias.h"
@@ -99,6 +100,8 @@ void ElectronExtensionsAPIProvider::RegisterManifestHandlers() {
       extensions::ManifestHandlerRegistry::Get();
   registry->RegisterHandler(
       std::make_unique<extensions::DevToolsPageHandler>());
+  registry->RegisterHandler(
+      std::make_unique<extensions::MinimumChromeVersionChecker>());
 }
 
 }  // namespace electron
