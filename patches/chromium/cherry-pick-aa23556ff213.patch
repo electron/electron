@@ -1,0 +1,266 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Alex Moshchuk <alexmos@chromium.org>
+Date: Tue, 13 Jun 2023 20:27:29 +0000
+Subject: Remove SiteInstanceDeleting from content/public API.
+
+Currently, two unit tests are relying on
+ContentBrowserClient::SiteInstanceDeleting() to ensure that
+SiteInstance lifetimes are managed properly.  However, it is
+undesirable to allow //content embedders to run arbitrary code during
+SiteInstance destruction, per the linked bug.  Hence, this CL converts
+SiteInstanceDeleting() usage to a test-specific callback instead and
+removes it from ContentBrowserClient.
+
+(cherry picked from commit f149f77b2a4f3416f8f7ea54a8fd972763c4b383)
+
+Bug: 1444438
+Change-Id: I2affcb4a40ccfbf3bd715d7b225976a687405616
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4564316
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Reviewed-by: Charlie Reis <creis@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1149171}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4610071
+Cr-Commit-Position: refs/branch-heads/5790@{#710}
+Cr-Branched-From: 1d71a337b1f6e707a13ae074dca1e2c34905eb9f-refs/heads/main@{#1148114}
+
+diff --git a/content/browser/site_instance_impl.cc b/content/browser/site_instance_impl.cc
+index 3fd0545c6a9a49e064d54d3292187e78a4900040..8ba13311bdd825d6b07b941769af94f6e9002091 100644
+--- a/content/browser/site_instance_impl.cc
++++ b/content/browser/site_instance_impl.cc
+@@ -105,7 +105,9 @@ SiteInstanceImpl::SiteInstanceImpl(BrowsingInstance* browsing_instance)
+ }
+ 
+ SiteInstanceImpl::~SiteInstanceImpl() {
+-  GetContentClient()->browser()->SiteInstanceDeleting(this);
++  if (destruction_callback_for_testing_) {
++    std::move(destruction_callback_for_testing_).Run();
++  }
+ 
+   // Now that no one is referencing us, we can safely remove ourselves from
+   // the BrowsingInstance.  Any future visits to a page from this site
+diff --git a/content/browser/site_instance_impl.h b/content/browser/site_instance_impl.h
+index bea6b211ead2190960a3bf5a52ca888daa7c5797..28d03536c16aad7d4021e6a9efddd1bc06324ace 100644
+--- a/content/browser/site_instance_impl.h
++++ b/content/browser/site_instance_impl.h
+@@ -446,6 +446,12 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance {
+   // BrowsingInstance.
+   RenderProcessHost* GetDefaultProcessForBrowsingInstance();
+ 
++  // Set a callback to be run from this SiteInstance's destructor. Used only in
++  // tests.
++  void set_destruction_callback_for_testing(base::OnceClosure callback) {
++    destruction_callback_for_testing_ = std::move(callback);
++  }
++
+  private:
+   friend class BrowsingInstance;
+   friend class SiteInstanceTestBrowserClient;
+@@ -585,6 +591,12 @@ class CONTENT_EXPORT SiteInstanceImpl final : public SiteInstance {
+   // Keeps track of whether we need to verify that the StoragePartition
+   // information does not change when `site_info_` is set.
+   bool verify_storage_partition_info_ = false;
++
++  // Tracks the number of active documents currently in this SiteInstance.
++  size_t active_document_count_ = 0;
++
++  // Test-only callback to run when this SiteInstance is destroyed.
++  base::OnceClosure destruction_callback_for_testing_;
+ };
+ 
+ }  // namespace content
+diff --git a/content/browser/site_instance_impl_unittest.cc b/content/browser/site_instance_impl_unittest.cc
+index 73a689bb2680bd7d76cf580c1a085923c0e1e464..e89c0866d23d8a6353eed4a5d424113112f3cad7 100644
+--- a/content/browser/site_instance_impl_unittest.cc
++++ b/content/browser/site_instance_impl_unittest.cc
+@@ -91,32 +91,8 @@ class SiteInstanceTestBrowserClient : public TestContentBrowserClient {
+     privileged_process_id_ = process_id;
+   }
+ 
+-  void SiteInstanceDeleting(content::SiteInstance* site_instance) override {
+-    site_instance_delete_count_++;
+-    // Infer deletion of the browsing instance.
+-    if (static_cast<SiteInstanceImpl*>(site_instance)
+-            ->browsing_instance_->HasOneRef()) {
+-      browsing_instance_delete_count_++;
+-    }
+-  }
+-
+-  int GetAndClearSiteInstanceDeleteCount() {
+-    int result = site_instance_delete_count_;
+-    site_instance_delete_count_ = 0;
+-    return result;
+-  }
+-
+-  int GetAndClearBrowsingInstanceDeleteCount() {
+-    int result = browsing_instance_delete_count_;
+-    browsing_instance_delete_count_ = 0;
+-    return result;
+-  }
+-
+  private:
+   int privileged_process_id_ = -1;
+-
+-  int site_instance_delete_count_ = 0;
+-  int browsing_instance_delete_count_ = 0;
+ };
+ 
+ class SiteInstanceTest : public testing::Test {
+@@ -193,6 +169,45 @@ class SiteInstanceTest : public testing::Test {
+                                         /*should_compare_effective_urls=*/true);
+   }
+ 
++  // Helper class to watch whether a particular SiteInstance has been
++  // destroyed.
++  class SiteInstanceDestructionObserver {
++   public:
++    SiteInstanceDestructionObserver() = default;
++
++    explicit SiteInstanceDestructionObserver(SiteInstanceImpl* site_instance) {
++      SetSiteInstance(site_instance);
++    }
++
++    void SetSiteInstance(SiteInstanceImpl* site_instance) {
++      site_instance_ = site_instance;
++      site_instance_->set_destruction_callback_for_testing(
++          base::BindOnce(&SiteInstanceDestructionObserver::SiteInstanceDeleting,
++                         weak_factory_.GetWeakPtr()));
++    }
++
++    void SiteInstanceDeleting() {
++      ASSERT_FALSE(site_instance_deleted_);
++      ASSERT_FALSE(browsing_instance_deleted_);
++
++      site_instance_deleted_ = true;
++      // Infer deletion of the BrowsingInstance.
++      if (site_instance_->browsing_instance_->HasOneRef()) {
++        browsing_instance_deleted_ = true;
++      }
++      site_instance_ = nullptr;
++    }
++
++    bool site_instance_deleted() { return site_instance_deleted_; }
++    bool browsing_instance_deleted() { return browsing_instance_deleted_; }
++
++   private:
++    raw_ptr<SiteInstanceImpl> site_instance_ = nullptr;
++    bool site_instance_deleted_ = false;
++    bool browsing_instance_deleted_ = false;
++    base::WeakPtrFactory<SiteInstanceDestructionObserver> weak_factory_{this};
++  };
++
+  private:
+   BrowserTaskEnvironment task_environment_;
+   TestBrowserContext context_;
+@@ -440,7 +455,8 @@ TEST_F(SiteInstanceTest, SiteInstanceDestructor) {
+ 
+   // Ensure that instances are deleted when their NavigationEntries are gone.
+   scoped_refptr<SiteInstanceImpl> instance = SiteInstanceImpl::Create(&context);
+-  EXPECT_EQ(0, browser_client()->GetAndClearSiteInstanceDeleteCount());
++  SiteInstanceDestructionObserver observer(instance.get());
++  EXPECT_FALSE(observer.site_instance_deleted());
+ 
+   NavigationEntryImpl* e1 = new NavigationEntryImpl(
+       instance, url, Referrer(), /* initiator_origin= */ absl::nullopt,
+@@ -450,8 +466,8 @@ TEST_F(SiteInstanceTest, SiteInstanceDestructor) {
+ 
+   // Redundantly setting e1's SiteInstance shouldn't affect the ref count.
+   e1->set_site_instance(instance);
+-  EXPECT_EQ(0, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-  EXPECT_EQ(0, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++  EXPECT_FALSE(observer.site_instance_deleted());
++  EXPECT_FALSE(observer.browsing_instance_deleted());
+ 
+   // Add a second reference
+   NavigationEntryImpl* e2 = new NavigationEntryImpl(
+@@ -461,36 +477,40 @@ TEST_F(SiteInstanceTest, SiteInstanceDestructor) {
+       false /* is_initial_entry */);
+ 
+   instance = nullptr;
+-  EXPECT_EQ(0, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-  EXPECT_EQ(0, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++
++  EXPECT_FALSE(observer.site_instance_deleted());
++  EXPECT_FALSE(observer.browsing_instance_deleted());
+ 
+   // Now delete both entries and be sure the SiteInstance goes away.
+   delete e1;
+-  EXPECT_EQ(0, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-  EXPECT_EQ(0, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++  EXPECT_FALSE(observer.site_instance_deleted());
++  EXPECT_FALSE(observer.browsing_instance_deleted());
+   delete e2;
+   // instance is now deleted
+-  EXPECT_EQ(1, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-  EXPECT_EQ(1, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++  EXPECT_TRUE(observer.site_instance_deleted());
++  EXPECT_TRUE(observer.browsing_instance_deleted());
+   // browsing_instance is now deleted
+ 
+-  // Ensure that instances are deleted when their RenderViewHosts are gone.
++  // Ensure that instances are deleted when their RenderFrameHosts are gone.
+   std::unique_ptr<TestBrowserContext> browser_context(new TestBrowserContext());
++  SiteInstanceDestructionObserver observer2;
+   {
+     std::unique_ptr<WebContents> web_contents(
+         WebContents::Create(WebContents::CreateParams(
+             browser_context.get(),
+             SiteInstance::Create(browser_context.get()))));
+-    EXPECT_EQ(0, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-    EXPECT_EQ(0, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++    observer2.SetSiteInstance(static_cast<SiteInstanceImpl*>(
++        web_contents->GetPrimaryMainFrame()->GetSiteInstance()));
++    EXPECT_FALSE(observer2.site_instance_deleted());
++    EXPECT_FALSE(observer2.browsing_instance_deleted());
+   }
+ 
+   // Make sure that we flush any messages related to the above WebContentsImpl
+   // destruction.
+   DrainMessageLoop();
+ 
+-  EXPECT_EQ(1, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-  EXPECT_EQ(1, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++  EXPECT_TRUE(observer2.site_instance_deleted());
++  EXPECT_TRUE(observer2.browsing_instance_deleted());
+   // contents is now deleted, along with instance and browsing_instance
+ }
+ 
+@@ -521,7 +541,6 @@ TEST_F(SiteInstanceTest, DefaultSiteInstanceProperties) {
+ 
+   auto site_instance = SiteInstanceImpl::CreateForTesting(
+       &browser_context, GURL("http://foo.com"));
+-
+   EXPECT_TRUE(site_instance->IsDefaultSiteInstance());
+   EXPECT_TRUE(site_instance->HasSite());
+   EXPECT_EQ(site_instance->GetSiteInfo(),
+@@ -547,14 +566,15 @@ TEST_F(SiteInstanceTest, DefaultSiteInstanceDestruction) {
+   // are gone.
+   auto site_instance = SiteInstanceImpl::CreateForTesting(
+       &browser_context, GURL("http://foo.com"));
++  SiteInstanceDestructionObserver observer(site_instance.get());
+ 
+   EXPECT_EQ(AreDefaultSiteInstancesEnabled(),
+             site_instance->IsDefaultSiteInstance());
+ 
+   site_instance.reset();
+ 
+-  EXPECT_EQ(1, browser_client()->GetAndClearSiteInstanceDeleteCount());
+-  EXPECT_EQ(1, browser_client()->GetAndClearBrowsingInstanceDeleteCount());
++  EXPECT_TRUE(observer.site_instance_deleted());
++  EXPECT_TRUE(observer.browsing_instance_deleted());
+ }
+ 
+ // Test to ensure GetProcess returns and creates processes correctly.
+diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
+index 543b1712a9b744598ec6d851bc658e5b7e86d39e..757b20c73826e291c8958cc2bfaded2a8f8cd576 100644
+--- a/content/public/browser/content_browser_client.h
++++ b/content/public/browser/content_browser_client.h
+@@ -582,9 +582,6 @@ class CONTENT_EXPORT ContentBrowserClient {
+   // Called when a site instance is first associated with a process.
+   virtual void SiteInstanceGotProcess(SiteInstance* site_instance) {}
+ 
+-  // Called from a site instance's destructor.
+-  virtual void SiteInstanceDeleting(SiteInstance* site_instance) {}
+-
+   // Returns true if for the navigation from |current_effective_url| to
+   // |destination_effective_url| in |site_instance|, a new SiteInstance and
+   // BrowsingInstance should be created (even if we are in a process model that
