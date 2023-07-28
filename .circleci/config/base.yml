@@ -229,6 +229,32 @@ step-maybe-cleanup-arm64-mac: &step-maybe-cleanup-arm64-mac
 
     when: always
 
+step-maybe-upload-ventifact: &step-maybe-upload-ventifact
+  run:
+    name: Upload test results to ventifact
+    environment:
+      CIRCLE_TRIGGER_TIMESTAMP: << pipeline.trigger_parameters.circleci.event_time >>
+      # TODO: REMOVE THESE BEFORE MERGING
+      VENTIFACT_URL: https://ventifact.herokuapp.com
+      VENTIFACT_AUTH_TOKEN: test
+    command: |
+      if [ -n "$VENTIFACT_URL" -a -n "$VENTIFACT_AUTH_TOKEN" ]; then
+        curl \
+          -g \
+          -X PUT \
+          --url "$VENTIFACT_URL/api/junit" \
+          -H "Content-Type: application/xml" \
+          -H "Authorization: Bearer $VENTIFACT_AUTH_TOKEN" \
+          -d "@src/junit/test-results.xml"
+          --url-query "source=circleci" \
+          --url-query "id=$CIRCLE_WORKFLOW_JOB_ID" \
+          --url-query "timestamp=$CIRCLE_TRIGGER_TIMESTAMP" \
+          --url-query "branch=$CIRCLE_BRANCH" \
+          || true
+      else
+        echo "VENTIFACT_URL or VENTIFACT_AUTH_TOKEN not set, skipping upload"
+      fi
+
 step-checkout-electron: &step-checkout-electron
   checkout:
     path: src/electron
@@ -1487,6 +1513,7 @@ commands:
             fi
       - store_test_results:
           path: src/junit
+      - *step-maybe-upload-ventifact
 
       - *step-verify-mksnapshot
       - *step-verify-chromedriver

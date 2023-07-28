@@ -36,12 +36,16 @@ environment:
   ELECTRON_ENABLE_STACK_DUMPING: 1
   ELECTRON_ALSO_LOG_TO_STDERR: 1
   MOCHA_REPORTER: mocha-multi-reporters
-  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, tap"
+  MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, mocha-junit-reporter, tap"
+  ELECTRON_TEST_RESULTS_DIR: junit
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
   DEPOT_TOOLS_WIN_TOOLCHAIN: 1
   DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
   GYP_MSVS_HASH_27370823e7: 28622d16b1
   PYTHONIOENCODING: UTF-8
+  # TODO: REMOVE THESE BEFORE MERGING
+  VENTIFACT_URL: https://ventifact.herokuapp.com
+  VENTIFACT_AUTH_TOKEN: test
 
   matrix:
 
@@ -292,6 +296,37 @@ for:
             $env:npm_config_arch = "ia32"
           }
       - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
+      - ps: |
+          if (
+            (Test-Path "src/junit/test-results.xml") -and
+            (Test-Path env:VENTIFACT_URL) -and
+            (Test-Path env:VENTIFACT_AUTH_TOKEN)
+          ) {
+            $branch = $env:APPVEYOR_REPO_BRANCH
+            if (Test-Path env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH) {
+              $branch = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
+            }
+
+            $query = [System.Web.HttpUtility]::ParseQueryString("")
+            $query.Set("source", "appveyor")
+            $query.Set("id", $env:APPVEYOR_BUILD_ID)
+            $query.Set("timestamp", Get-Date -Format "o")
+            $query.Set("branch", $branch)
+
+            $uri = [System.UriBuilder]::new("$env:VENTIFACT_URL/api/junit")
+            $uri.Query = $query.ToString()
+
+            $headers = @{
+              "Content-Type" = "application/xml"
+              "Authorization" = "Bearer $env:VENTIFACT_AUTH_TOKEN"
+            }
+
+            Get-Content "src/junit/test-results.xml" |
+            Invoke-RestMethod `
+              -Method Put `
+              -Uri $uri.ToString() `
+              -Headers $headers
+          }
       - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
