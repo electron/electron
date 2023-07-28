@@ -1,0 +1,38 @@
+From 90c9a89aa794d8f6886a277fe88586b8aa1c0c27 Mon Sep 17 00:00:00 2001
+From: Alex Moshchuk <alexmos@chromium.org>
+Date: Tue, 06 Jun 2023 03:58:34 +0000
+Subject: [PATCH] Use &* instead of .get() for BrowserOrResourceContext's raw_ref
+
+Using * is more secure, as get() does not check the pointer for
+validity, whereas * does.
+
+Change-Id: I3ea99de76c68afe3358ddf0d263008129d3ad70f
+Bug: 1444438, 1444204
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4591832
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Alex Moshchuk <alexmos@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#1153662}
+---
+
+diff --git a/content/public/browser/browser_or_resource_context.h b/content/public/browser/browser_or_resource_context.h
+index 9cf4618..04a9d03 100644
+--- a/content/public/browser/browser_or_resource_context.h
++++ b/content/public/browser/browser_or_resource_context.h
+@@ -50,7 +50,7 @@
+   // TODO(dcheng): Change this to return a ref.
+   BrowserContext* ToBrowserContext() const {
+     DCHECK_CURRENTLY_ON(BrowserThread::UI);
+-    return &absl::get<raw_ref<BrowserContext>>(storage_).get();
++    return &*absl::get<raw_ref<BrowserContext>>(storage_);
+   }
+ 
+   // To be called only on the UI thread. Will CHECK() if `this` does not hold a
+@@ -58,7 +58,7 @@
+   // TODO(dcheng): Change this to return a ref.
+   ResourceContext* ToResourceContext() const {
+     DCHECK_CURRENTLY_ON(BrowserThread::IO);
+-    return &absl::get<raw_ref<ResourceContext>>(storage_).get();
++    return &*absl::get<raw_ref<ResourceContext>>(storage_);
+   }
+ 
+  private:

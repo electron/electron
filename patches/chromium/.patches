@@ -166,3 +166,7 @@ m114_merge_fix_a_crash_caused_by_calling_trace_event.patch
 base_do_not_use_va_args_twice_in_asprintf.patch
 cherry-pick-85beff6fd302.patch
 m114_webcodecs_fix_crash_when_changing_temporal_layer_count_in_av1.patch
+cherry-pick-90c9a89aa794.patch
+cherry-pick-933b9fad3a53.patch
+cherry-pick-b03973561862.patch
+cherry-pick-c60a1ab717c7.patch
