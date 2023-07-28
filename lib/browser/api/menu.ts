@@ -82,7 +82,7 @@ Menu.prototype.popup = function (options = {}) {
 
   // find which window to use
   const wins = BaseWindow.getAllWindows();
-  if (!wins || wins.indexOf(window as any) === -1) {
+  if (!wins || !wins.includes(window as any)) {
     window = BaseWindow.getFocusedWindow() as any;
     if (!window && wins && wins.length > 0) {
       window = wins[0] as any;

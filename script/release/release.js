@@ -50,7 +50,7 @@ async function getDraftRelease (version, skipValidation) {
   if (!skipValidation) {
     failureCount = 0;
     check(drafts.length === 1, 'one draft exists', true);
-    if (versionToCheck.indexOf('beta') > -1) {
+    if (versionToCheck.includes('beta')) {
       check(draft.prerelease, 'draft is a prerelease');
     }
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes');

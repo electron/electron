@@ -60,6 +60,10 @@ dependencies, and tools contained in the `electron/electron` repository.
   * [Step 11: Landing](https://electronjs.org/docs/development/pull-requests#step-11-landing)
   * [Continuous Integration Testing](https://electronjs.org/docs/development/pull-requests#continuous-integration-testing)
 
+### Dependencies Upgrades Policy
+
+Dependencies in Electron's `package.json` or `yarn.lock` files should only be altered by maintainers. For security reasons, we will not accept PRs that alter our `package.json` or `yarn.lock` files. We invite contributors to make requests updating these files in our issue tracker. If the change is significantly complicated, draft PRs are welcome, with the understanding that these PRs will be closed in favor of a duplicate PR submitted by an Electron maintainer.
+
 ## Style Guides
 
 See [Coding Style](https://electronjs.org/docs/development/coding-style) for information about which standards Electron adheres to in different parts of its codebase.

@@ -34,19 +34,19 @@ class ForkUtilityProcess extends EventEmitter {
 
     if (options.execArgv != null) {
       if (!Array.isArray(options.execArgv)) {
-        throw new Error('execArgv must be an array of strings.');
+        throw new TypeError('execArgv must be an array of strings.');
       }
     }
 
     if (options.serviceName != null) {
       if (typeof options.serviceName !== 'string') {
-        throw new Error('serviceName must be a string.');
+        throw new TypeError('serviceName must be a string.');
       }
     }
 
     if (options.cwd != null) {
       if (typeof options.cwd !== 'string') {
-        throw new Error('cwd path must be a string.');
+        throw new TypeError('cwd path must be a string.');
       }
     }
 

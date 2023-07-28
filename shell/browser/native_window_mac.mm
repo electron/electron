@@ -434,7 +434,12 @@ void NativeWindowMac::Close() {
   }
 
   // Ensure we're detached from the parent window before closing.
-  RemoveChildFromParentWindow(this);
+  RemoveChildFromParentWindow();
+
+  while (!child_windows_.empty()) {
+    auto* child = child_windows_.back();
+    child->RemoveChildFromParentWindow();
+  }
 
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
@@ -453,7 +458,14 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
-  RemoveChildFromParentWindow(this);
+  // Ensure we're detached from the parent window before closing.
+  RemoveChildFromParentWindow();
+
+  while (!child_windows_.empty()) {
+    auto* child = child_windows_.back();
+    child->RemoveChildFromParentWindow();
+  }
+
   [window_ close];
 }
 
@@ -642,9 +654,11 @@ void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
   [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
 }
 
-void NativeWindowMac::RemoveChildFromParentWindow(NativeWindow* child) {
-  if (parent())
-    parent()->RemoveChildWindow(child);
+void NativeWindowMac::RemoveChildFromParentWindow() {
+  if (parent() && !is_modal()) {
+    parent()->RemoveChildWindow(this);
+    NativeWindow::SetParentWindow(nullptr);
+  }
 }
 
 void NativeWindowMac::AttachChildren() {
@@ -818,7 +832,24 @@ void NativeWindowMac::MoveTop() {
 void NativeWindowMac::SetResizable(bool resizable) {
   ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
+
+  // Right now, resizable and fullscreenable are decoupled in
+  // documentation and on Windows/Linux. Chromium disables
+  // fullscreenability if resizability is false on macOS as well
+  // as disabling the maximize traffic light unless the window
+  // is both resizable and maximizable. To work around this, we want
+  // to match behavior on other platforms by disabiliting the maximize
+  // button but keeping fullscreenability enabled.
+  // TODO(codebytere): refactor this once we have a better solution.
   SetCanResize(resizable);
+  if (!resizable) {
+    SetFullScreenable(true);
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:false];
+  } else {
+    SetFullScreenable(true);
+    [[window_ standardWindowButton:NSWindowZoomButton]
+        setEnabled:IsFullScreenable()];
+  }
 }
 
 bool NativeWindowMac::IsResizable() {
@@ -1825,12 +1856,13 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* new_parent,
     return;
 
   // Remove current parent window.
-  RemoveChildFromParentWindow(this);
+  RemoveChildFromParentWindow();
 
   // Set new parent window.
-  if (new_parent && attach) {
+  if (new_parent) {
     new_parent->add_child_window(this);
-    new_parent->AttachChildren();
+    if (attach)
+      new_parent->AttachChildren();
   }
 
   NativeWindow::SetParentWindow(new_parent);

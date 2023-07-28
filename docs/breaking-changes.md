@@ -21,6 +21,10 @@ macOS 10.13 (High Sierra) and macOS 10.14 (Mojave) are no longer supported by [C
 Older versions of Electron will continue to run on these operating systems, but macOS 10.15 (Catalina)
 or later will be required to run Electron v27.0.0 and higher.
 
+### Deprecated: `ipcRenderer.sendTo()`
+
+The `ipcRenderer.sendTo()` API has been deprecated. It should be replaced by setting up a [`MessageChannel`](tutorial/message-ports.md#setting-up-a-messagechannel-between-two-renderers) between the renderers.
+
 ## Planned Breaking API Changes (25.0)
 
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`

@@ -37,3 +37,4 @@ chore_remove_--no-harmony-atomics_related_code.patch
 fix_account_for_createexternalizablestring_v8_global.patch
 fix_wunreachable-code_warning_in_ares_init_rand_engine.patch
 fix_-wshadow_warning.patch
+fix_do_not_resolve_electron_entrypoints.patch
