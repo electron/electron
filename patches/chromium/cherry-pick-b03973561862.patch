@@ -1,0 +1,129 @@
+From b0397356186229e3aab75991d48ef632bfe276af Mon Sep 17 00:00:00 2001
+From: Tommi <tommi@chromium.org>
+Date: Wed, 05 Jul 2023 10:55:53 +0000
+Subject: [PATCH] [M116] Make RTCDataChannel's channel and observer pointers const.
+
+This allows channel properties to be queried while the RTCDataChannel
+instance exists and avoids potential null deref after entering the
+kClosed state.
+
+(cherry picked from commit 08d5ad011f53a1995bfccef6728bfa62541f7608)
+
+Bug: 1456567, 1457421
+Change-Id: I4747f9c00804b35711667d7320ec6188f20910c4
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4663082
+Commit-Queue: Tomas Gunnarsson <tommi@chromium.org>
+Reviewed-by: Elad Alon <eladalon@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1165406}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4665530
+Cr-Commit-Position: refs/branch-heads/5845@{#300}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+---
+
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc
+index 7312c7e..edf7e09 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc
+@@ -207,11 +207,12 @@
+     rtc::scoped_refptr<webrtc::DataChannelInterface> channel)
+     : main_thread_(main_thread),
+       blink_channel_(blink_channel),
+-      webrtc_channel_(channel) {}
++      webrtc_channel_(std::move(channel)) {
++  CHECK(webrtc_channel_.get());
++}
+ 
+ RTCDataChannel::Observer::~Observer() {
+   DCHECK(!blink_channel_) << "Reference to blink channel hasn't been released.";
+-  DCHECK(!webrtc_channel_.get()) << "Unregister hasn't been called.";
+ }
+ 
+ const rtc::scoped_refptr<webrtc::DataChannelInterface>&
+@@ -221,13 +222,8 @@
+ 
+ void RTCDataChannel::Observer::Unregister() {
+   DCHECK(main_thread_->BelongsToCurrentThread());
++  webrtc_channel_->UnregisterObserver();
+   blink_channel_ = nullptr;
+-  if (webrtc_channel_.get()) {
+-    webrtc_channel_->UnregisterObserver();
+-    // Now that we're guaranteed to not get further OnStateChange callbacks,
+-    // it's safe to release our reference to the channel.
+-    webrtc_channel_ = nullptr;
+-  }
+ }
+ 
+ void RTCDataChannel::Observer::OnStateChange() {
+@@ -279,7 +275,7 @@
+ 
+ RTCDataChannel::RTCDataChannel(
+     ExecutionContext* context,
+-    rtc::scoped_refptr<webrtc::DataChannelInterface> channel,
++    rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel,
+     RTCPeerConnectionHandler* peer_connection_handler)
+     : ActiveScriptWrappable<RTCDataChannel>({}),
+       ExecutionContextLifecycleObserver(context),
+@@ -289,7 +285,7 @@
+       observer_(base::MakeRefCounted<Observer>(
+           context->GetTaskRunner(TaskType::kNetworking),
+           this,
+-          channel)),
++          std::move(data_channel))),
+       signaling_thread_(peer_connection_handler->signaling_thread()) {
+   DCHECK(peer_connection_handler);
+ 
+@@ -298,13 +294,13 @@
+   // on the signaling thread and RTCDataChannel construction posted on the main
+   // thread. Done in a single synchronous call to the signaling thread to ensure
+   // channel state consistency.
+-  // TODO(tommi): Check it this^ is still possible.
+-  channel->RegisterObserver(observer_.get());
+-  if (channel->state() != state_) {
++  // TODO(tommi): Check if this^ is still possible.
++  channel()->RegisterObserver(observer_.get());
++  if (channel()->state() != state_) {
+     observer_->OnStateChange();
+   }
+ 
+-  IncrementCounters(*channel.get());
++  IncrementCounters(*channel().get());
+ }
+ 
+ RTCDataChannel::~RTCDataChannel() = default;
+@@ -663,9 +659,8 @@
+   if (stopped_)
+     return;
+ 
+-  // Clears the weak persistent reference to this on-heap object.
++  // Clear the weak persistent reference to this on-heap object.
+   observer_->Unregister();
+-  observer_ = nullptr;
+ }
+ 
+ void RTCDataChannel::ScheduleDispatchEvent(Event* event) {
+diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h
+index 78240bf8..5998c4c 100644
+--- a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h
++++ b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h
+@@ -151,7 +151,7 @@
+ 
+     const scoped_refptr<base::SingleThreadTaskRunner> main_thread_;
+     WeakPersistent<RTCDataChannel> blink_channel_;
+-    rtc::scoped_refptr<webrtc::DataChannelInterface> webrtc_channel_;
++    const rtc::scoped_refptr<webrtc::DataChannelInterface> webrtc_channel_;
+   };
+ 
+   void OnStateChange(webrtc::DataChannelInterface::DataState state);
+@@ -199,7 +199,11 @@
+   unsigned buffered_amount_ = 0u;
+   bool stopped_ = false;
+   bool closed_from_owner_ = false;
+-  scoped_refptr<Observer> observer_;
++  // Keep the `observer_` reference const to make it clear that we don't want
++  // to free the underlying channel (or callback observer) until the
++  // `RTCDataChannel` instance goes away. This allows properties to be queried
++  // after the state reaches `kClosed`.
++  const scoped_refptr<Observer> observer_;
+   scoped_refptr<base::SingleThreadTaskRunner> signaling_thread_;
+   THREAD_CHECKER(thread_checker_);
+ };
