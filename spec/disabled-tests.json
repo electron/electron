@@ -1,7 +1,6 @@
 [
   "// NOTE: this file is used to disable tests in our test suite by their full title.",
   "BrowserWindow module BrowserWindow.loadURL(url) should emit did-fail-load event for files that do not exist",
-  "BrowserWindow module document.visibilityState/hidden visibilityState remains visible if backgroundThrottling is disabled",
   "Menu module Menu.setApplicationMenu unsets a menu with null",
   "process module main process process.takeHeapSnapshot() returns true on success",
   "protocol module protocol.registerSchemesAsPrivileged cors-fetch disallows CORS and fetch requests when only supportFetchAPI is specified",
