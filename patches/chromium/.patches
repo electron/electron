@@ -135,3 +135,7 @@ mojoipcz_copy_incoming_messages_early.patch
 base_do_not_use_va_args_twice_in_asprintf.patch
 cherry-pick-85beff6fd302.patch
 cherry-pick-60b93798c991.patch
+cherry-pick-90c9a89aa794.patch
+cherry-pick-933b9fad3a53.patch
+cherry-pick-b03973561862.patch
+cherry-pick-c60a1ab717c7.patch
