@@ -308,6 +308,7 @@ for:
             (Test-Path env:VENTIFACT_URL) -and
             (Test-Path env:VENTIFACT_AUTH_TOKEN)
           ) {
+            $ErrorActionPreference = 'SilentlyContinue'
             $branch = $env:APPVEYOR_REPO_BRANCH
             if (Test-Path env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH) {
               $branch = $env:APPVEYOR_PULL_REQUEST_HEAD_REPO_BRANCH
@@ -316,7 +317,7 @@ for:
             $query = [System.Web.HttpUtility]::ParseQueryString("")
             $query.Set("source", "appveyor")
             $query.Set("id", $env:APPVEYOR_BUILD_ID)
-            $query.Set("timestamp", Get-Date -Format "o")
+            $query.Set("timestamp", (Get-Date -Format "o"))
             $query.Set("branch", $branch)
 
             $uri = [System.UriBuilder]::new("$env:VENTIFACT_URL/api/junit")

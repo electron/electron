@@ -233,7 +233,6 @@ step-maybe-upload-ventifact: &step-maybe-upload-ventifact
   run:
     name: Upload test results to ventifact
     environment:
-      CIRCLE_TRIGGER_TIMESTAMP: << pipeline.trigger_parameters.circleci.event_time >>
       # TODO: REMOVE THESE BEFORE MERGING
       VENTIFACT_URL: https://ventifact.herokuapp.com
       VENTIFACT_AUTH_TOKEN: test
@@ -248,7 +247,7 @@ step-maybe-upload-ventifact: &step-maybe-upload-ventifact
           -d "@src/junit/test-results.xml"
           --url-query "source=circleci" \
           --url-query "id=$CIRCLE_WORKFLOW_JOB_ID" \
-          --url-query "timestamp=$CIRCLE_TRIGGER_TIMESTAMP" \
+          --url-query "timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" \
           --url-query "branch=$CIRCLE_BRANCH" \
           || true
       else
