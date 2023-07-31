@@ -512,6 +512,8 @@ A `boolean` property that determines whether the window menu bar should hide its
 If the menu bar is already visible, setting this property to `true` won't
 hide it immediately.
 
+I'm a little check for the doc PR!
+
 #### `win.simpleFullScreen`
 
 A `boolean` property that determines whether the window is in simple (pre-Lion) fullscreen mode.
