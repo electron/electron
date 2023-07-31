@@ -15,10 +15,10 @@ This should be upstreamed, as other uses of MenuController in this
 file do check for menu controller being null.
 
 diff --git a/ui/views/controls/menu/menu_scroll_view_container.cc b/ui/views/controls/menu/menu_scroll_view_container.cc
-index 76bb4863858fb1bde1288b3d1b1d07f151a2f801..dc0dd45da0097330612a0810fcd2bd18f5c42be4 100644
+index 715bdbc16aab70e7feccb45d920ad35852380be8..b9daba6e778f9756b2bec0fabecc03cd7be30041 100644
 --- a/ui/views/controls/menu/menu_scroll_view_container.cc
 +++ b/ui/views/controls/menu/menu_scroll_view_container.cc
-@@ -402,8 +402,7 @@ void MenuScrollViewContainer::CreateDefaultBorder() {
+@@ -391,8 +391,7 @@ void MenuScrollViewContainer::CreateDefaultBorder() {
    MenuController* menu_controller =
        content_view_->GetMenuItem()->GetMenuController();
    const MenuConfig& menu_config = MenuConfig::instance();
@@ -28,7 +28,7 @@ index 76bb4863858fb1bde1288b3d1b1d07f151a2f801..dc0dd45da0097330612a0810fcd2bd18
    int padding = menu_config.use_outer_border && corner_radius_ > 0
                      ? kBorderPaddingDueToRoundedCorners
                      : 0;
-@@ -418,8 +417,9 @@ void MenuScrollViewContainer::CreateDefaultBorder() {
+@@ -407,8 +406,9 @@ void MenuScrollViewContainer::CreateDefaultBorder() {
    int bottom_inset = GetFootnote() ? 0 : vertical_inset;
  
    if (menu_config.use_outer_border) {

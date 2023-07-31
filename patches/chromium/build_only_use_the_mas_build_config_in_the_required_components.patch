@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index aa7f2d6b3f2ff416ea42e320c6813c45ab38049d..9509ae4fb685a5b2257f34500918fbe777e2dc9b 100644
+index 173283fa984ed8a6d4fc24287e70450d2806a321..2f5b2b23a33924d8d80d2bc3ce5d9d9f550df3bf 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1029,6 +1029,7 @@ component("base") {
+@@ -1034,6 +1034,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -76,7 +76,7 @@ index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdb
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 0bda4e5d18a4d1a3e504a9ced4a6046f31a0a028..abbcd619f96c4cb3245a54747a0fed2b44183281 100644
+index 183c520baa855d3065f34f3bc90c8c590237192c..7f587f6e743e312898ca81908d1f85856ef3bd09 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -112,7 +112,7 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 7acee465256990399d3629479f3ef83c3849ae89..512ea9bb291797c6e29fd6742f239c87a2247b57 100644
+index a779b02aefe3d26e5193d6cecef1675ef5937a4d..34ddd9c1b0ef8cd6ed866cd1ba1e033b9fef6023 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -475,6 +475,7 @@ static_library("test_support") {
@@ -149,10 +149,10 @@ index f619de1d332d7f0c5d6d30be17f5c6b94dadf6a3..4b1bbe5a804ef0d844eaf246942129e7
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 5cd85e75040ab619eed724eace4ade1e10b0f4bb..d95c2bb18c624054f2b0702a4fbc339e7aa3c98b 100644
+index 911cc3f4764a7a61e599a41a2dd2812d07b867f7..1257e7de947195ed6f8a9906b5a9e26a7bd6216b 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -135,6 +135,7 @@ component("service") {
+@@ -139,6 +139,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -251,7 +251,7 @@ index 0d3fdc9b8cdff853b54e413de98800142be332d2..de65225a25ce6d6d3ff531c5c53d2259
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 7d0a002dba31c5e5bdc4bbec0ef396280f0f3d89..fe61909e6228b8c2f982035ef2ccee2bef45e4e3 100644
+index 0d07c88cb9fec014b727b5294a03671d183943ea..0d869fbc084773630f63380bb87e2ae6ee5b1ea9 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,7 @@ component("base") {
@@ -290,7 +290,7 @@ index e66e2339ea3cb8b2b80ef3f0b09dcc53a2240339..07e11afb172ecbb24c04f25f87c11bdc
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 30642c59d4ab84cbe6cc82e6b5b645cdacc07418..ca2e4c1b9064132fa9612339106d3729d79bf3cf 100644
+index 002c180d97ced4c5711f6d432c2c09108bcbc69c..6d52e99b6f9414a907fa3b74fc2930795510d086 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -686,6 +686,7 @@ component("views") {
@@ -301,7 +301,7 @@ index 30642c59d4ab84cbe6cc82e6b5b645cdacc07418..ca2e4c1b9064132fa9612339106d3729
    }
  
    if (is_win) {
-@@ -1103,6 +1104,8 @@ source_set("test_support") {
+@@ -1105,6 +1106,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

@@ -8,7 +8,7 @@ Allow registering custom protocols to handle service worker main script fetching
 Refs https://bugs.chromium.org/p/chromium/issues/detail?id=996511
 
 diff --git a/content/browser/service_worker/service_worker_context_wrapper.cc b/content/browser/service_worker/service_worker_context_wrapper.cc
-index e22a9f481b83e04e923cbf4d6878416b958af5c6..855732eedaeef2790fb79102a5778d1226ee192d 100644
+index 0d1a5e0874546d1ead5e84a3fa7b4cbac943d1b7..54a9ca8e45b2f935463f41b68617c959b88f1247 100644
 --- a/content/browser/service_worker/service_worker_context_wrapper.cc
 +++ b/content/browser/service_worker/service_worker_context_wrapper.cc
 @@ -1852,6 +1852,26 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
@@ -36,7 +36,7 @@ index e22a9f481b83e04e923cbf4d6878416b958af5c6..855732eedaeef2790fb79102a5778d12
 +  }
 +
    if (auto* config = content::WebUIConfigMap::GetInstance().GetConfig(
-           browser_context(), scope_origin)) {
+           browser_context(), scope)) {
      // If this is a Service Worker for a WebUI, the WebUI's URLDataSource
 @@ -1871,9 +1891,7 @@ ServiceWorkerContextWrapper::GetLoaderFactoryForBrowserInitiatedRequest(
              features::kEnableServiceWorkersForChromeScheme) &&

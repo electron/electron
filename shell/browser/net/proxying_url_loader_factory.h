@@ -13,6 +13,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ref.h"
 #include "base/memory/weak_ptr.h"
 #include "content/public/browser/content_browser_client.h"
 #include "content/public/browser/render_frame_host.h"
@@ -257,7 +258,7 @@ class ProxyingURLLoaderFactory
   // reference is guaranteed to be valid.
   //
   // In this way we can avoid using code from api namespace in this file.
-  const HandlersMap& intercepted_handlers_;
+  const raw_ref<const HandlersMap> intercepted_handlers_;
 
   const int render_process_id_;
   const int frame_routing_id_;

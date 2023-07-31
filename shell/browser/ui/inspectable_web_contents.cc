@@ -616,6 +616,9 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     extension_info.Set("exposeExperimentalAPIs",
                        extension->permissions_data()->HasAPIPermission(
                            extensions::mojom::APIPermissionID::kExperimental));
+    extension_info.Set("allowFileAccess",
+                       (extension->creation_flags() &
+                        extensions::Extension::ALLOW_FILE_ACCESS) != 0);
     results.Append(std::move(extension_info));
   }
 

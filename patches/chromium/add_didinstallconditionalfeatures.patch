@@ -23,7 +23,7 @@ index 103a9d9fb17e954ecaf0acecaa3eeafc23e39c94..de299316216dba204decba3b0eb57f5c
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 49d960da588af130304df1b45dda6dc05f58d966..a7d6bd40c52ae4e010fbfa846da6f8b785dedd1a 100644
+index 6aecc6c215cb33bf4b0f2cd38a79ebeef6be527d..a1a8cde301a8ea24bae61f816cb0325a04f4994f 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
 @@ -4474,6 +4474,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
@@ -79,7 +79,7 @@ index fbd5c929b323ee9d943615ed8c890d869345165d..af11f266db8d626dfbba6f16d0a906e6
    if (World().IsMainWorld()) {
      probe::DidCreateMainWorldContext(GetFrame());
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client.h b/third_party/blink/renderer/core/frame/local_frame_client.h
-index fb229297df448dbe48e5b0ef2978bce2a8affc83..892d971c749b5bf7499c2fc246bc9d5fe5b63b79 100644
+index 62e611ec3ac95eac88d4665d2640429e9d833594..7bf646d6cd8eaf29267b6136de0952e2545ec503 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client.h
 @@ -319,6 +319,8 @@ class CORE_EXPORT LocalFrameClient : public FrameClient {
@@ -92,7 +92,7 @@ index fb229297df448dbe48e5b0ef2978bce2a8affc83..892d971c749b5bf7499c2fc246bc9d5f
                                          int32_t world_id) = 0;
    virtual bool AllowScriptExtensions() = 0;
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
-index fa8c26e31341b2b53879a8760ad8314a569374c6..76ba9e3761d85acdaeeb017f52e24efc3d40e9b7 100644
+index dbf7fd73a855f7d45eeeeff17582696aac66ff0d..9b489f661f524f380523e38518345e9b22eb8dec 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.cc
 @@ -283,6 +283,13 @@ void LocalFrameClientImpl::DidCreateScriptContext(
@@ -110,7 +110,7 @@ index fa8c26e31341b2b53879a8760ad8314a569374c6..76ba9e3761d85acdaeeb017f52e24efc
      v8::Local<v8::Context> context,
      int32_t world_id) {
 diff --git a/third_party/blink/renderer/core/frame/local_frame_client_impl.h b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
-index 9f6a7e8337a4ade6b902d36919bee58f5e461790..9a73f4ceb6111b7e8bcb607b4e8eb96ebbfb0d42 100644
+index 28e1c00e05e74d5a79f32897e57a854ff14ce7a9..1cd704b1bb53eaf226d1c72c97e3f765a4b1f10e 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 +++ b/third_party/blink/renderer/core/frame/local_frame_client_impl.h
 @@ -84,6 +84,8 @@ class CORE_EXPORT LocalFrameClientImpl final : public LocalFrameClient {
@@ -123,10 +123,10 @@ index 9f6a7e8337a4ade6b902d36919bee58f5e461790..9a73f4ceb6111b7e8bcb607b4e8eb96e
                                  int32_t world_id) override;
  
 diff --git a/third_party/blink/renderer/core/loader/empty_clients.h b/third_party/blink/renderer/core/loader/empty_clients.h
-index 6b695ab181bc7e8a8b6ecb48ca56145ddc63d6e8..4955c7246498139a20be290a48eee234de44530e 100644
+index 1934ca82e3e26e0f5c4f2f7b417df6bcd6e66abf..1277b858f2d5b4b0a0dd1c97282eff0d763cdc2b 100644
 --- a/third_party/blink/renderer/core/loader/empty_clients.h
 +++ b/third_party/blink/renderer/core/loader/empty_clients.h
-@@ -401,6 +401,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
+@@ -403,6 +403,8 @@ class CORE_EXPORT EmptyLocalFrameClient : public LocalFrameClient {
  
    void DidCreateScriptContext(v8::Local<v8::Context>,
                                int32_t world_id) override {}

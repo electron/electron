@@ -7,7 +7,7 @@ This patch comes after Chromium removed the ScopedAllowIO API in favor
 of explicitly adding ScopedAllowBlocking calls as friends.
 
 diff --git a/base/threading/thread_restrictions.h b/base/threading/thread_restrictions.h
-index 385b540b5a4291070eff5e1e6a407223de097cdb..32fec685bc3b6631594ca3ee5922c5f49da83e45 100644
+index b88010ec63528497fc2ae0b7b3fc04c0fdd2e539..51565cbfe42bf17881c13d12facb3d982bbab335 100644
 --- a/base/threading/thread_restrictions.h
 +++ b/base/threading/thread_restrictions.h
 @@ -133,6 +133,7 @@ class FirefoxProfileLock;

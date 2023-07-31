@@ -177,6 +177,7 @@ static_library("chrome") {
     "//chrome/app/vector_icons",
     "//chrome/browser:resource_prefetch_predictor_proto",
     "//chrome/browser/resource_coordinator:mojo_bindings",
+    "//chrome/browser/web_applications/mojom:mojom_web_apps_enum",
     "//components/vector_icons:vector_icons",
     "//ui/snapshot",
     "//ui/views/controls/webview",

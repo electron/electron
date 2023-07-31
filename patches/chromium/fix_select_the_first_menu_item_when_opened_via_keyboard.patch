@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 1bd7d23e8d95389ba1139fdf988d190c95dcb8a5..0670e389e88e354b86837e3263c4dab44cd61c04 100644
+index 8042e113c85f475d44463df93e8c80a19b322d16..3d6b6b45a142419379a574701a0629b5f061dbfd 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -568,6 +568,7 @@ void MenuController::Run(Widget* parent,
+@@ -564,6 +564,7 @@ void MenuController::Run(Widget* parent,
                           MenuAnchorPosition position,
                           bool context_menu,
                           bool is_nested_drag,
@@ -17,7 +17,7 @@ index 1bd7d23e8d95389ba1139fdf988d190c95dcb8a5..0670e389e88e354b86837e3263c4dab4
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -632,6 +633,14 @@ void MenuController::Run(Widget* parent,
+@@ -628,6 +629,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
@@ -32,7 +32,7 @@ index 1bd7d23e8d95389ba1139fdf988d190c95dcb8a5..0670e389e88e354b86837e3263c4dab4
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2256,19 +2265,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2251,19 +2260,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -58,10 +58,10 @@ index 1bd7d23e8d95389ba1139fdf988d190c95dcb8a5..0670e389e88e354b86837e3263c4dab4
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 1334ad5a759dd582b14711ef609e303613efad65..bf6653cff876205268b000e28b8f3ef0f7a29eb0 100644
+index 4c3cda2db04002c65d1a0055214f2775f5678134..3f11ce3d1f9d843b24aec3a028e5ea64ca402024 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
-@@ -140,6 +140,7 @@ class VIEWS_EXPORT MenuController
+@@ -138,6 +138,7 @@ class VIEWS_EXPORT MenuController
             MenuAnchorPosition position,
             bool context_menu,
             bool is_nested_drag,
@@ -83,7 +83,7 @@ index adb22671b94fa16854773baad0e6bff1322c6646..fae32722f1209151fa1da59d0c7892ab
  
  bool MenuRunner::IsRunning() const {
 diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
-index c2513d2889a2baabb1464a53b6b0a32176d52d0c..54f4f863d9ecdf22e3087944f773a866e6c50024 100644
+index d4cf9df424f103680e07778f4fe3e3717bea860a..2b9cfa3d30c6341a941127c9f57983a5b6367b13 100644
 --- a/ui/views/controls/menu/menu_runner_impl.cc
 +++ b/ui/views/controls/menu/menu_runner_impl.cc
 @@ -116,6 +116,7 @@ void MenuRunnerImpl::RunMenuAt(Widget* parent,
