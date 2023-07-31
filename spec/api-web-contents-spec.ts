@@ -377,7 +377,7 @@ describe('webContents module', () => {
 
     it('resolves after browser intendent navigation', async () => {
       let finishedLoading = false;
-      w.webContents.on('did-finish-load', function() {
+      w.webContents.on('did-finish-load', function () {
           finishedLoading = true;
       });
 
