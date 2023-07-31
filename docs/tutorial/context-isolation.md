@@ -84,7 +84,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
 
 You can create a `renderer.d.ts` declaration file and globally augment the `Window` interface:
 
-```typescript title='renderer.d.ts'
+```typescript title='renderer.d.ts' @ts-noisolate
 export interface IElectronAPI {
   loadPreferences: () => Promise<void>,
 }
@@ -98,7 +98,7 @@ declare global {
 
 Doing so will ensure that the TypeScript compiler will know about the `electronAPI` property on your global `window` object when writing scripts in your renderer process:
 
-```typescript title='renderer.ts' @ts-nocheck
+```typescript title='renderer.ts'
 window.electronAPI.loadPreferences()
 ```
 
