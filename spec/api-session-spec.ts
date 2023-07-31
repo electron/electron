@@ -252,12 +252,11 @@ describe('session module', () => {
     it('clears localstorage data', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
-      const options = {
+      await w.webContents.session.clearStorageData({
         origin: 'file://',
         storages: ['localstorage'],
-        quotas: ['persistent']
-      };
-      await w.webContents.session.clearStorageData(options);
+        quotas: ['temporary']
+      });
       while (await w.webContents.executeJavaScript('localStorage.length') !== 0) {
         // The storage clear isn't instantly visible to the renderer, so keep
         // trying until it is.
