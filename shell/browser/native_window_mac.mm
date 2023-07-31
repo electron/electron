@@ -430,7 +430,12 @@ void NativeWindowMac::Close() {
   }
 
   // Ensure we're detached from the parent window before closing.
-  RemoveChildFromParentWindow(this);
+  RemoveChildFromParentWindow();
+
+  while (!child_windows_.empty()) {
+    auto* child = child_windows_.back();
+    child->RemoveChildFromParentWindow();
+  }
 
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
@@ -449,13 +454,20 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
-  RemoveChildFromParentWindow(this);
+  // Ensure we're detached from the parent window before closing.
+  RemoveChildFromParentWindow();
 
   // Retain the child window before closing it. If the last reference to the
   // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
   // See e.g. http://crbug.com/616701.
   base::scoped_nsobject<NSWindow> child_window(window_,
                                                base::scoped_policy::RETAIN);
+
+  while (!child_windows_.empty()) {
+    auto* child = child_windows_.back();
+    child->RemoveChildFromParentWindow();
+  }
+
   [window_ close];
 }
 
@@ -644,9 +656,11 @@ void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
   [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
 }
 
-void NativeWindowMac::RemoveChildFromParentWindow(NativeWindow* child) {
-  if (parent())
-    parent()->RemoveChildWindow(child);
+void NativeWindowMac::RemoveChildFromParentWindow() {
+  if (parent() && !is_modal()) {
+    parent()->RemoveChildWindow(this);
+    NativeWindow::SetParentWindow(nullptr);
+  }
 }
 
 void NativeWindowMac::AttachChildren() {
@@ -1869,12 +1883,13 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* new_parent,
     return;
 
   // Remove current parent window.
-  RemoveChildFromParentWindow(this);
+  RemoveChildFromParentWindow();
 
   // Set new parent window.
-  if (new_parent && attach) {
+  if (new_parent) {
     new_parent->add_child_window(this);
-    new_parent->AttachChildren();
+    if (attach)
+      new_parent->AttachChildren();
   }
 
   NativeWindow::SetParentWindow(new_parent);
