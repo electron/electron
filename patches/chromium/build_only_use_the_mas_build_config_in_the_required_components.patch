@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 173283fa984ed8a6d4fc24287e70450d2806a321..2f5b2b23a33924d8d80d2bc3ce5d9d9f550df3bf 100644
+index ac26cc76c6e78a241b8fb29aa98250b2b99c76cd..8671ecc36caff3a253b2f097f5912298b6ebdf8d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1034,6 +1034,7 @@ component("base") {
@@ -18,7 +18,7 @@ index 173283fa984ed8a6d4fc24287e70450d2806a321..2f5b2b23a33924d8d80d2bc3ce5d9d9f
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 63b32e52a11af599dbc5154ed353e2bf7250e9d3..fc6ed0cdbe211cb29dd5a1dded36b3b0a6912ce9 100644
+index 968276e781288e92ed87eaba43dba67b4475115c..05f2f3084cac5bf3e806a03401475667848afd04 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -30,20 +30,19 @@ index 63b32e52a11af599dbc5154ed353e2bf7250e9d3..fc6ed0cdbe211cb29dd5a1dded36b3b0
  
  if (is_win) {
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index 7ed10085264af6f50b05e51dd93c49e3828d5b3b..d8c77f52376a13af7636e64ff0b5cf58f4fbcf97 100644
+index f3e2ea6d0430df493fcebab6d6271299a2307b69..d01a9f2cbd5aa8de768c9c1e765c464bd31a115a 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
-@@ -48,6 +48,8 @@ component("os_crypt") {
+@@ -47,6 +47,7 @@ component("os_crypt") {
+       "keychain_password_mac.mm",
        "os_crypt_mac.mm",
      ]
-     configs += [ "//build/config/compiler:enable_arc" ]
-+
 +    configs += ["//electron/build/config:mas_build"]
    }
  
    if (is_win) {
 diff --git a/components/remote_cocoa/app_shim/BUILD.gn b/components/remote_cocoa/app_shim/BUILD.gn
-index c52c741205d140fbe8b3be02974c89ea22c2365f..9460c656f71e24044ffccc55053a04b8f23f15e9 100644
+index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6b3d752de 100644
 --- a/components/remote_cocoa/app_shim/BUILD.gn
 +++ b/components/remote_cocoa/app_shim/BUILD.gn
 @@ -16,6 +16,7 @@ component("app_shim") {
@@ -55,10 +54,10 @@ index c52c741205d140fbe8b3be02974c89ea22c2365f..9460c656f71e24044ffccc55053a04b8
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdbf2420b2c 100644
+index 440fa0b3ff9b08016ff19ab54c70a453dc8c5f86..2e2f358829bf0492fd3e44173eeb7d0b5507b388 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -332,6 +332,7 @@ viz_component("service") {
+@@ -331,6 +331,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -66,17 +65,16 @@ index fa72a9170a7e41ae475b05653be99af59d4eaebb..b5c39b57a61a6595b842c52da8489bdb
    }
  
    if (is_android || use_ozone) {
-@@ -590,6 +591,8 @@ viz_source_set("unit_tests") {
+@@ -588,6 +589,7 @@ viz_source_set("unit_tests") {
+       "display_embedder/software_output_device_mac_unittest.mm",
      ]
-     configs += [ "//build/config/compiler:enable_arc" ]
      frameworks = [ "IOSurface.framework" ]
-+
 +    configs += ["//electron/build/config:mas_build"]
    }
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 183c520baa855d3065f34f3bc90c8c590237192c..7f587f6e743e312898ca81908d1f85856ef3bd09 100644
+index 88eca71122353752154a29e4f54693c3ac13f930..4540aff3ac4a06f76d332322fe87618f8a5cb6d0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -88,7 +86,7 @@ index 183c520baa855d3065f34f3bc90c8c590237192c..7f587f6e743e312898ca81908d1f8585
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index aa1ae523aee045fb1db412a42af8aadb97e9ee2a..e5fe6c0212721a67d67b17ee8871eb92e339f845 100644
+index dce27cfa39b52e39a95cee658584ed80ab1953ef..366edd2e86edcdbb30ae4c0fa952b5d9aab38f8a 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -174,6 +174,7 @@ source_set("common") {
@@ -100,10 +98,10 @@ index aa1ae523aee045fb1db412a42af8aadb97e9ee2a..e5fe6c0212721a67d67b17ee8871eb92
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b60304f01e 100644
+index 62117d9c83972003d0483ed9fc6efad6a4490a75..246d7289fd5727886054e182e17520c5ce5a7916 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -228,6 +228,7 @@ target(link_target_type, "renderer") {
+@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -112,10 +110,10 @@ index 65714a5dca013794527640645d8eb2ce36049ac6..b2df50b4cd64816ddf9c5b7e222c47b6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index a779b02aefe3d26e5193d6cecef1675ef5937a4d..34ddd9c1b0ef8cd6ed866cd1ba1e033b9fef6023 100644
+index 23b9f9008046f957c19bc169cc87defa49af46b3..72a11a958c3aecec43737d41d3a2219ac7416f8a 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -475,6 +475,7 @@ static_library("test_support") {
+@@ -477,6 +477,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -124,7 +122,7 @@ index a779b02aefe3d26e5193d6cecef1675ef5937a4d..34ddd9c1b0ef8cd6ed866cd1ba1e033b
  
    public_deps = [
 diff --git a/content/web_test/BUILD.gn b/content/web_test/BUILD.gn
-index 382a502c61183862bc2c943f7f8ac3958311754d..79610173fa83cc4d2c2041bd6e8a124836b3a844 100644
+index 5fcb135fdcdee5022e5caed46dece4e304495bfe..83cc95b1086b0619be019d7b797f3395910884b7 100644
 --- a/content/web_test/BUILD.gn
 +++ b/content/web_test/BUILD.gn
 @@ -145,6 +145,8 @@ static_library("web_test_browser") {
@@ -133,26 +131,26 @@ index 382a502c61183862bc2c943f7f8ac3958311754d..79610173fa83cc4d2c2041bd6e8a1248
  
 +  configs += ["//electron/build/config:mas_build"]
 +
-   if (is_apple) {
-     configs += [ "//build/config/compiler:enable_arc" ]
-   }
+   if (is_mac) {
+     sources += [
+       "browser/web_test_browser_main_platform_support_mac.mm",
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index f619de1d332d7f0c5d6d30be17f5c6b94dadf6a3..4b1bbe5a804ef0d844eaf246942129e7753ea0f5 100644
+index 1a8164c2ef7d6b24c4feb19ce3f3b5e970885541..e9122ac24b7b5f9359a89953fa24364a0115bdf6 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
-@@ -242,6 +242,7 @@ component("bluetooth") {
+@@ -241,6 +241,7 @@ component("bluetooth") {
+       "IOKit.framework",
        "Foundation.framework",
      ]
-     configs += [ "//build/config/compiler:enable_arc" ]
 +    configs += ["//electron/build/config:mas_build"]
    }
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 911cc3f4764a7a61e599a41a2dd2812d07b867f7..1257e7de947195ed6f8a9906b5a9e26a7bd6216b 100644
+index 550cf601dcb65e710e9dab6fb5023119b52b5278..18e60732057a3695858b17d6faef13927f869726 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -139,6 +139,7 @@ component("service") {
+@@ -138,6 +138,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -161,10 +159,10 @@ index 911cc3f4764a7a61e599a41a2dd2812d07b867f7..1257e7de947195ed6f8a9906b5a9e26a
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index fbed855d14713ec3507b62d86d37b7be9969581e..b08bdea30ad4e5caf26f59c66c34fd63cd6207e4 100644
+index 93cf87a37792691f41d7c611104a378d9af45195..2d3a0f923f4991be41534e7f951fe5dfcceda5c9 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -203,6 +203,7 @@ source_set("audio") {
+@@ -199,6 +199,7 @@ source_set("audio") {
        "mac/coreaudio_dispatch_override.h",
      ]
      frameworks += [ "AudioUnit.framework" ]
@@ -214,10 +212,10 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 6c01341efc1e8a7f3ae13ea5c0abab5f757b104c..2299d118d763193a2500978541d12d5f1aa712ab 100644
+index 7b327be8a003ae01f79f71f00979ef0b2f45ac2a..ab84abb8c6ad1250de2beac0370427f84e1cbb41 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -307,6 +307,7 @@ component("core") {
+@@ -308,6 +308,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -226,10 +224,10 @@ index 6c01341efc1e8a7f3ae13ea5c0abab5f757b104c..2299d118d763193a2500978541d12d5f
    public_deps = [
      ":core_generated",
 diff --git a/ui/accelerated_widget_mac/BUILD.gn b/ui/accelerated_widget_mac/BUILD.gn
-index d361b9686e66014f2333f8a4f6b6819bb52ececd..a67c517acbd1d25fe1ac114ef3ca8d481b2184ad 100644
+index 3ead42e14ad9d41a30c5637678a3ac49296ce2a6..8dec61ee6a62e54ec3c8c5dd5e08601c28d04dfe 100644
 --- a/ui/accelerated_widget_mac/BUILD.gn
 +++ b/ui/accelerated_widget_mac/BUILD.gn
-@@ -35,6 +35,8 @@ component("accelerated_widget_mac") {
+@@ -33,6 +33,8 @@ component("accelerated_widget_mac") {
      "QuartzCore.framework",
    ]
  
@@ -239,10 +237,10 @@ index d361b9686e66014f2333f8a4f6b6819bb52ececd..a67c517acbd1d25fe1ac114ef3ca8d48
      sources += [ "ca_layer_frame_sink_provider.h" ]
    }
 diff --git a/ui/accessibility/platform/BUILD.gn b/ui/accessibility/platform/BUILD.gn
-index 0d3fdc9b8cdff853b54e413de98800142be332d2..de65225a25ce6d6d3ff531c5c53d225993f7170a 100644
+index 4e23c38763184840a393589b3f55dcabb0db8121..e4ad30d0d7acecdca3a22fe05935a3406d784a95 100644
 --- a/ui/accessibility/platform/BUILD.gn
 +++ b/ui/accessibility/platform/BUILD.gn
-@@ -253,6 +253,7 @@ component("platform") {
+@@ -251,6 +251,7 @@ component("platform") {
        weak_frameworks = [
          "Accessibility.framework",  # macOS 11
        ]
@@ -251,7 +249,7 @@ index 0d3fdc9b8cdff853b54e413de98800142be332d2..de65225a25ce6d6d3ff531c5c53d2259
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 0d07c88cb9fec014b727b5294a03671d183943ea..0d869fbc084773630f63380bb87e2ae6ee5b1ea9 100644
+index 614ae2d72c934f0f6650a501b7d132f5745f767e..ff4302c344ede0021c7379efeb17e2a1111cdce0 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -355,6 +355,7 @@ component("base") {
@@ -263,7 +261,7 @@ index 0d07c88cb9fec014b727b5294a03671d183943ea..0d869fbc084773630f63380bb87e2ae6
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index e37e8a6f980a9eb522eea2191be2691d49a9638d..8fcfcfdec68e0c591abd58dbde957d2dbccf491f 100644
+index 7e17546f658ce0e6908f7dea499eac31e5295895..85c5fe7e25a84de5342d3d9b8cd20d195dd2b159 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -278,7 +276,7 @@ index e37e8a6f980a9eb522eea2191be2691d49a9638d..8fcfcfdec68e0c591abd58dbde957d2d
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index e66e2339ea3cb8b2b80ef3f0b09dcc53a2240339..07e11afb172ecbb24c04f25f87c11bdc5c91cd58 100644
+index 0829ee9a58400dea171c99e0784607305092aa92..eaa938d159ed43539ca29c863318cd35b94a5531 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -194,6 +194,7 @@ component("gfx") {
@@ -290,10 +288,10 @@ index e66e2339ea3cb8b2b80ef3f0b09dcc53a2240339..07e11afb172ecbb24c04f25f87c11bdc
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 002c180d97ced4c5711f6d432c2c09108bcbc69c..6d52e99b6f9414a907fa3b74fc2930795510d086 100644
+index 06cc420c752d1690ef2864b203721ba4c38e7f89..0fe2cb7ea7f15edd31db9e047fcb0cd9ddb5d1ed 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -686,6 +686,7 @@ component("views") {
+@@ -685,6 +685,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -301,7 +299,7 @@ index 002c180d97ced4c5711f6d432c2c09108bcbc69c..6d52e99b6f9414a907fa3b74fc293079
    }
  
    if (is_win) {
-@@ -1105,6 +1106,8 @@ source_set("test_support") {
+@@ -1104,6 +1105,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
@@ -311,14 +309,13 @@ index 002c180d97ced4c5711f6d432c2c09108bcbc69c..6d52e99b6f9414a907fa3b74fc293079
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index 349d94b5b14e346d5bb73b53567fbfee12198dc6..998178845e241c8b45a3ef8ad542d10a4e687831 100644
+index e3dd4fab3a1cac0138f8dac60247e0ea3343e87e..998178845e241c8b45a3ef8ad542d10a4e687831 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
-@@ -19,7 +19,10 @@ component("webview") {
+@@ -19,6 +19,10 @@ component("webview") {
  
    if (is_mac) {
      sources += [ "unhandled_keyboard_event_handler_mac.mm" ]
--    configs += [ "//build/config/compiler:enable_arc" ]
 +    configs += [
 +      "//build/config/compiler:enable_arc",
 +      "//electron/build/config:mas_build",
