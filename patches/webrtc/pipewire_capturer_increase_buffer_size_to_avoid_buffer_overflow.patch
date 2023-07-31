@@ -1,0 +1,47 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jan Grulich <grulja@gmail.com>
+Date: Mon, 10 Jul 2023 10:07:38 +0200
+Subject: PipeWire capturer: increase buffer size to avoid buffer overflow
+
+Recently added framerate option can cause a buffer overflow and make
+PipeWire to fail on negotiation, which effectively makes screen sharing
+not to work.
+
+Bug: webrtc:15346
+Change-Id: I4a68e26c8f85ca287b06a25da500b6a7009e075f
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/311541
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Commit-Queue: Jan Grulich <grulja@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#40413}
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index 5b4e23c32dc48aa8d76fedebecb4382c12d51f8e..0c26e7a7d5ae28c3533b338e20abca3cfc1af282 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -281,7 +281,7 @@ void SharedScreenCastStreamPrivate::OnStreamParamChanged(
+ 
+   that->stream_size_ = DesktopSize(width, height);
+ 
+-  uint8_t buffer[1024] = {};
++  uint8_t buffer[2048] = {};
+   auto builder = spa_pod_builder{buffer, sizeof(buffer)};
+ 
+   // Setup buffers and meta header for new format.
+@@ -364,7 +364,7 @@ void SharedScreenCastStreamPrivate::OnRenegotiateFormat(void* data, uint64_t) {
+   {
+     PipeWireThreadLoopLock thread_loop_lock(that->pw_main_loop_);
+ 
+-    uint8_t buffer[2048] = {};
++    uint8_t buffer[4096] = {};
+ 
+     spa_pod_builder builder = spa_pod_builder{buffer, sizeof(buffer)};
+ 
+@@ -482,7 +482,7 @@ bool SharedScreenCastStreamPrivate::StartScreenCastStream(
+ 
+     pw_stream_add_listener(pw_stream_, &spa_stream_listener_,
+                            &pw_stream_events_, this);
+-    uint8_t buffer[2048] = {};
++    uint8_t buffer[4096] = {};
+ 
+     spa_pod_builder builder = spa_pod_builder{buffer, sizeof(buffer)};
+ 
