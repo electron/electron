@@ -72,8 +72,10 @@ for:
       - ps: |
           node script/yarn.js install --frozen-lockfile
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
+          $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "false"
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"
+            Write-warning "Skipping build for doc-only change"
+            $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "true"
             Exit-AppveyorBuild
           } else {
             $global:LASTEXITCODE = 0
@@ -204,24 +206,29 @@ for:
       - ps: |
           cd C:\projects\src
           $missing_artifacts = $false
-          $artifacts_to_upload = @('dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip')
-          foreach($artifact_name in $artifacts_to_upload) {
-            if ($artifact_name -eq 'ffmpeg.zip') {
-              $artifact_file = "out\ffmpeg\ffmpeg.zip"
-            } elseif ($artifact_name -eq 'node_headers.zip') {
-              $artifact_file = $artifact_name
-            } else {
-              $artifact_file = "out\Default\$artifact_name"
+
+          if ($env:SHOULD_SKIP_ARTIFACT_VALIDATION -eq 'true') {
+            Write-warning "Skipping artifact validation for doc-only PR"
+          } else {
+            $artifacts_to_upload = @('dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip')
+            foreach($artifact_name in $artifacts_to_upload) {
+              if ($artifact_name -eq 'ffmpeg.zip') {
+                $artifact_file = "out\ffmpeg\ffmpeg.zip"
+              } elseif ($artifact_name -eq 'node_headers.zip') {
+                $artifact_file = $artifact_name
+              } else {
+                $artifact_file = "out\Default\$artifact_name"
+              }
+              if (Test-Path $artifact_file) {
+                appveyor-retry appveyor PushArtifact $artifact_file          
+              } else {
+                Write-warning "$artifact_name is missing and cannot be added to artifacts"
+                $missing_artifacts = $true
+              }
             }
-            if (Test-Path $artifact_file) {
-              appveyor-retry appveyor PushArtifact $artifact_file          
-            } else {
-              Write-warning "$artifact_name is missing and cannot be added to artifacts"
-              $missing_artifacts = $true
+            if ($missing_artifacts) {
+              throw "Build failed due to missing artifacts"
             }
-          }
-          if ($missing_artifacts) {
-            throw "Build failed due to missing artifacts"
           }
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
