@@ -9,10 +9,10 @@ Electron does not support Profiles, so this Profile::FromBrowserContext()
 call is not needed and will not link. This change patches it out.
 
 diff --git a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-index 080e5b64e5fbbe9c126996549dddf7ce312998ee..47a026798a6be7ec8b7cde5b55b29d505d4f2e4c 100644
+index 33efdcfbc8ae731440f53ea270db4718f54b167a..139ef2300a521ed9552c3849e8836a4ee83a53eb 100644
 --- a/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
 +++ b/chrome/browser/pdf/chrome_pdf_stream_delegate.cc
-@@ -39,6 +39,7 @@ namespace {
+@@ -41,6 +41,7 @@ namespace {
  // hierarchy is: enterprise policy > user choice > finch experiment.
  bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
    CHECK(contents);
@@ -20,7 +20,7 @@ index 080e5b64e5fbbe9c126996549dddf7ce312998ee..47a026798a6be7ec8b7cde5b55b29d50
    const PrefService* prefs =
        Profile::FromBrowserContext(contents->GetBrowserContext())->GetPrefs();
  
-@@ -46,6 +47,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
+@@ -48,6 +49,7 @@ bool ShouldEnableSkiaRenderer(content::WebContents* contents) {
    if (prefs->IsManagedPreference(prefs::kPdfUseSkiaRendererEnabled)) {
      return prefs->GetBoolean(prefs::kPdfUseSkiaRendererEnabled);
    }
