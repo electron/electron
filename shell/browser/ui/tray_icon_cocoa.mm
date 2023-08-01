@@ -85,6 +85,11 @@
     [self removeTrackingArea:trackingArea_];
     trackingArea_.reset();
   }
+
+  // Ensure any open menu is closed.
+  if ([statusItem_ menu])
+    [[statusItem_ menu] cancelTracking];
+
   [[NSStatusBar systemStatusBar] removeStatusItem:statusItem_];
   [self removeFromSuperview];
   statusItem_.reset();
@@ -260,7 +265,6 @@
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Ensure the UI can update while the menu is fading out.
     base::ScopedPumpMessagesInPrivateModes pump_private;
-
     [[statusItem_ button] performClick:self];
   }
 }
@@ -382,16 +386,16 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(ElectronMenuModel* menu_model) {
-  [status_item_view_ popUpContextMenu:menu_model];
+void TrayIconCocoa::PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model) {
+  [status_item_view_ popUpContextMenu:menu_model.get()];
 }
 
-void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     ElectronMenuModel* menu_model) {
+void TrayIconCocoa::PopUpContextMenu(
+    const gfx::Point& pos,
+    base::WeakPtr<ElectronMenuModel> menu_model) {
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
-                     base::Unretained(menu_model)));
+      FROM_HERE, base::BindOnce(&TrayIconCocoa::PopUpOnUI,
+                                weak_factory_.GetWeakPtr(), menu_model));
 }
 
 void TrayIconCocoa::CloseContextMenu() {
