@@ -227,9 +227,9 @@ for:
                 $missing_artifacts = $true
               }
             }
-            if ($missing_artifacts) {
-              throw "Build failed due to missing artifacts"
-            }
+          }
+          if ($missing_artifacts) {
+            throw "Build failed due to missing artifacts"
           }
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
