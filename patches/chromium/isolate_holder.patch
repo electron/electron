@@ -15,7 +15,7 @@ for us to register the isolate in between Isolate::Allocate and
 Isolate::Initialize.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index 1c3536a183aad1965e834b1681e36a3fc46ae419..34dc7e97dd64bdc4cf4adcb65a50cd4c8ab9c25c 100644
+index 1c3536a183aad1965e834b1681e36a3fc46ae419..1923f18cf2d4fff5094e6fe60bbef06b3e2cb06b 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
 @@ -73,7 +73,8 @@ IsolateHolder::IsolateHolder(
@@ -33,8 +33,8 @@ index 1c3536a183aad1965e834b1681e36a3fc46ae419..34dc7e97dd64bdc4cf4adcb65a50cd4c
                                               add_histogram_sample_callback),
                      isolate_creation_mode,
 -                    std::move(low_priority_task_runner)) {}
-+                    std::move(low_priority_task_runner,
-+                    isolate)) {}
++                    std::move(low_priority_task_runner),
++                    isolate) {}
  
  IsolateHolder::IsolateHolder(
      scoped_refptr<base::SingleThreadTaskRunner> task_runner,

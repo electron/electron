@@ -97,7 +97,7 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
       base::SingleThreadTaskRunner::GetCurrentDefault(),
       gin::IsolateHolder::kSingleThread,
       gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
-      gin::IsolateHolder::IsolateCreationMode::kNormal, isolate);
+      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, isolate);
 }
 
 }  // namespace
