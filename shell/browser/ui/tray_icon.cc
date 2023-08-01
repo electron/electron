@@ -21,7 +21,7 @@ void TrayIcon::RemoveBalloon() {}
 void TrayIcon::Focus() {}
 
 void TrayIcon::PopUpContextMenu(const gfx::Point& pos,
-                                raw_ptr<ElectronMenuModel> menu_model) {}
+                                base::WeakPtr<ElectronMenuModel> menu_model) {}
 
 void TrayIcon::CloseContextMenu() {}
 
