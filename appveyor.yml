@@ -131,62 +131,62 @@ for:
           }
       - gclient config --name "src\electron" --unmanaged %GCLIENT_EXTRA_ARGS% "https://github.com/electron/electron"
       # Patches are applied in the image bake. Check depshash to see if patches have changed.
-      # - ps: $env:RUN_GCLIENT_SYNC="false"
-      # - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
-      # - ps: cd src\electron
-      # - ps: node script\generate-deps-hash.js
-      # - ps: $depshash = Get-Content .\.depshash -Raw
-      # - ps: cd ..\..
-      # - ps: >-
-      #     if ($depshash_baked -ne $depshash) {
-      #       $env:RUN_GCLIENT_SYNC="true"
-      #     }
-      # - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
-      # - cd src
-      # - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
-      # - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
-      # - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
-      # - gn check out/Default //electron:electron_lib
-      # - gn check out/Default //electron:electron_app
-      # - gn check out/Default //electron/shell/common/api:mojo
-      # - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
-      # - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
-      # - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
-      # - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
-      # - ninja -C out/Default electron:electron_dist_zip
-      # - ninja -C out/Default shell_browser_ui_unittests
-      # - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
-      # # Remove unused args from mksnapshot_args
-      # - ps: >-
-      #     Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') } | Set-Content out/Default/mksnapshot_args
-      # - ninja -C out/Default electron:electron_mksnapshot_zip
-      # - cd out\Default
-      # - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
-      # - cd ..\..
-      # - ninja -C out/Default electron:hunspell_dictionaries_zip
-      # - ninja -C out/Default electron:electron_chromedriver_zip
-      # - ninja -C out/Default third_party/electron_node:headers
-      # - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
-      # - ps: >-
-      #     Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
-      # - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
-      # - 7z a node_headers.zip out\Default\gen\node_headers
-      # - ps: >-
-      #     if ($env:GN_CONFIG -eq 'release') {
-      #       # Needed for msdia140.dll on 64-bit windows
-      #       $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
-      #       ninja -C out/Default electron:electron_symbols
-      #     }
-      # - ps: >-
-      #     if ($env:GN_CONFIG -eq 'release') {
-      #       python3 electron\script\zip-symbols.py
-      #       appveyor-retry appveyor PushArtifact out/Default/symbols.zip
-      #     } else {
-      #       # It's useful to have pdb files when debugging testing builds that are
-      #       # built on CI.
-      #       7z a pdb.zip out\Default\*.pdb
-      #     }
-      # - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+      - ps: $env:RUN_GCLIENT_SYNC="false"
+      - ps: $depshash_baked = Get-Content .\src\.depshash -Raw
+      - ps: cd src\electron
+      - ps: node script\generate-deps-hash.js
+      - ps: $depshash = Get-Content .\.depshash -Raw
+      - ps: cd ..\..
+      - ps: >-
+          if ($depshash_baked -ne $depshash) {
+            $env:RUN_GCLIENT_SYNC="true"
+          }
+      - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
+      - cd src
+      - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
+      - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
+      - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% "
+      - gn check out/Default //electron:electron_lib
+      - gn check out/Default //electron:electron_app
+      - gn check out/Default //electron/shell/common/api:mojo
+      - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
+      - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
+      - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
+      - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
+      - ninja -C out/Default electron:electron_dist_zip
+      - ninja -C out/Default shell_browser_ui_unittests
+      - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
+      # Remove unused args from mksnapshot_args
+      - ps: >-
+          Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') } | Set-Content out/Default/mksnapshot_args
+      - ninja -C out/Default electron:electron_mksnapshot_zip
+      - cd out\Default
+      - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
+      - cd ..\..
+      - ninja -C out/Default electron:hunspell_dictionaries_zip
+      - ninja -C out/Default electron:electron_chromedriver_zip
+      - ninja -C out/Default third_party/electron_node:headers
+      - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - ps: >-
+          Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
+      - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
+      - 7z a node_headers.zip out\Default\gen\node_headers
+      - ps: >-
+          if ($env:GN_CONFIG -eq 'release') {
+            # Needed for msdia140.dll on 64-bit windows
+            $env:Path += ";$pwd\third_party\llvm-build\Release+Asserts\bin"
+            ninja -C out/Default electron:electron_symbols
+          }
+      - ps: >-
+          if ($env:GN_CONFIG -eq 'release') {
+            python3 electron\script\zip-symbols.py
+            appveyor-retry appveyor PushArtifact out/Default/symbols.zip
+          } else {
+            # It's useful to have pdb files when debugging testing builds that are
+            # built on CI.
+            7z a pdb.zip out\Default\*.pdb
+          }
+      - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
 
     deploy_script:
       - cd electron
