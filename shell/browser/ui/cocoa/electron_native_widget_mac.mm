@@ -26,11 +26,10 @@ ElectronNativeWidgetMac::~ElectronNativeWidgetMac() = default;
 NativeWidgetMacNSWindow* ElectronNativeWidgetMac::CreateNSWindow(
     const remote_cocoa::mojom::CreateWindowParams* params) {
   if (window_type_ == "panel") {
-    return [[[ElectronNSPanel alloc] initWithShell:shell_
-                                         styleMask:style_mask_] autorelease];
+    return [[ElectronNSPanel alloc] initWithShell:shell_ styleMask:style_mask_];
   } else {
-    return [[[ElectronNSWindow alloc] initWithShell:shell_
-                                          styleMask:style_mask_] autorelease];
+    return [[ElectronNSWindow alloc] initWithShell:shell_
+                                         styleMask:style_mask_];
   }
 }
 
