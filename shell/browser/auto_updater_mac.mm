@@ -86,9 +86,6 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
         forHTTPHeaderField:base::SysUTF8ToNSString(it.first)];
   }
 
-  if (g_updater)
-    [g_updater release];
-
   // Initialize the SQRLUpdater.
   @try {
     if (serverType == "json") {
