@@ -103,6 +103,7 @@ constexpr CodeAndShiftedChar KeyboardCodeFromKeyIdentifier(
           {"shift", {ui::VKEY_SHIFT, {}}},
           {"space", {ui::VKEY_SPACE, {}}},
           {"super", {ui::VKEY_COMMAND, {}}},
+          {"superscripttwo", {ui::VKEY_SUPERSCRIPT_TWO, {}}},
           {"tab", {ui::VKEY_TAB, {}}},
           {"up", {ui::VKEY_UP, {}}},
           {"volumedown", {ui::VKEY_VOLUME_DOWN, {}}},
@@ -256,6 +257,8 @@ constexpr CodeAndShiftedChar KeyboardCodeFromCharCode(char16_t c) {
       return {ui::VKEY_OEM_6, '}'};
     case '~':
       return {ui::VKEY_OEM_3, '~'};
+    case '²':
+        return {ui::VKEY_SUPERSCRIPT_TWO, '²'};
     case 0x08:
       return {ui::VKEY_BACK, {}};
     case 0x09:

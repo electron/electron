@@ -16,6 +16,7 @@ TEST(AcceleratorUtilTest, StringToAccelerator) {
       {"♫♫♫♫♫♫♫", false},   {"Cmd+Plus", true}, {"Ctrl+Space", true},
       {"CmdOrCtrl", false}, {"Alt+Tab", true},  {"AltGr+Backspace", true},
       {"Super+Esc", true},  {"Super+X", true},  {"Shift+1", true},
+      {"superscripttwo", true},
   };
 
   for (const auto& key : keys) {
