@@ -57,7 +57,6 @@ using InAppTransactionCallback = base::RepeatingCallback<void(
  */
 - (void)dealloc {
   [[SKPaymentQueue defaultQueue] removeTransactionObserver:self];
-  [super dealloc];
 }
 
 /**
@@ -226,7 +225,7 @@ TransactionObserver::TransactionObserver() {
 }
 
 TransactionObserver::~TransactionObserver() {
-  [observer_ release];
+  observer_ = nil;
 }
 
 }  // namespace in_app_purchase
