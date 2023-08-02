@@ -442,7 +442,7 @@ function parseRIFF (string) {
 // basically, the only purpose is for encoding "Duration", which is encoded as
 // a double (considerably more difficult to encode than an integer)
 function doubleToString (num) {
-  return [].slice.call(
+  return Array.prototype.slice.call(
     new Uint8Array(
       (
         new Float64Array([num]) // create a float64 array
