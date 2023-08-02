@@ -1,0 +1,29 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Jan Grulich <grulja@gmail.com>
+Date: Fri, 12 May 2023 20:59:06 +0200
+Subject: PipeWire capturer: fix fcntl call when duplicating a file descriptor
+
+The fcntl() call has variable arguments, therefore we need to pass 0 to
+specify there are no other arguments for this call, otherwise we might
+end up with an argument that is random garbage.
+
+Bug: webrtc:15174
+Change-Id: I34f16a942d80913b667d8ade7eed557b0233be01
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/305120
+Reviewed-by: Alexander Cooper <alcooper@chromium.org>
+Commit-Queue: Jan Grulich <grulja@gmail.com>
+Cr-Commit-Position: refs/heads/main@{#40060}
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index 71bde9b21234e789a84cd3617df054d9a4604992..4e79ecd36982c15219bf4d3d2e337e2157359e88 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -432,7 +432,7 @@ bool SharedScreenCastStreamPrivate::StartScreenCastStream(
+ 
+     if (fd >= 0) {
+       pw_core_ = pw_context_connect_fd(
+-          pw_context_, fcntl(fd, F_DUPFD_CLOEXEC), nullptr, 0);
++          pw_context_, fcntl(fd, F_DUPFD_CLOEXEC, 0), nullptr, 0);
+     } else {
+       pw_core_ = pw_context_connect(pw_context_, nullptr, 0);
+     }
