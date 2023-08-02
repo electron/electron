@@ -2680,7 +2680,7 @@ bool WebContents::IsDevToolsOpened() {
 
 std::u16string WebContents::GetDevToolsTitle() {
   if (type_ == Type::kRemote)
-    return std::string();
+    return std::u16string();
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->GetDevToolsTitle();
