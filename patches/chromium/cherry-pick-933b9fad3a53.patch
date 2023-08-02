@@ -1,0 +1,404 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Ken Rockot <rockot@google.com>
+Date: Fri, 9 Jun 2023 07:49:02 +0000
+Subject: Reland "ipcz: Refactor FragmentDescriptor decode"
+
+This is a reland of commit 17dd18d1f2194089b8433e0ca334c81343b591e2
+
+Original change's description:
+> ipcz: Refactor FragmentDescriptor decode
+>
+> Funnels untrusted FragmentDescriptor mapping through a new
+> Fragment::MappedFromDescriptor helper. See the linked bug
+> for more details.
+>
+> Fixed: 1450899
+> Change-Id: I4c7751b9f4299da4a13c0becc1b889160a0c6e66
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4599218
+> Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+> Commit-Queue: Ken Rockot <rockot@google.com>
+> Cr-Commit-Position: refs/heads/main@{#1155133}
+
+Change-Id: I86ee9118a30dea59d837c377a1f751b20a85a3c3
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4602794
+Reviewed-by: Daniel Cheng <dcheng@chromium.org>
+Commit-Queue: Ken Rockot <rockot@google.com>
+Cr-Commit-Position: refs/heads/main@{#1155397}
+
+diff --git a/third_party/ipcz/src/BUILD.gn b/third_party/ipcz/src/BUILD.gn
+index 8b98d75aaa8f6d4df22c872cb9261381647256eb..7dabb9e9d4f3b0c00ce0acbcb2b7ff0e6085fc58 100644
+--- a/third_party/ipcz/src/BUILD.gn
++++ b/third_party/ipcz/src/BUILD.gn
+@@ -210,6 +210,7 @@ ipcz_source_set("impl") {
+     "ipcz/api_object.h",
+     "ipcz/block_allocator.h",
+     "ipcz/box.h",
++    "ipcz/buffer_id.h",
+     "ipcz/buffer_pool.h",
+     "ipcz/driver_memory.h",
+     "ipcz/driver_memory_mapping.h",
+@@ -253,7 +254,6 @@ ipcz_source_set("impl") {
+     "ipcz/block_allocator_pool.cc",
+     "ipcz/block_allocator_pool.h",
+     "ipcz/box.cc",
+-    "ipcz/buffer_id.h",
+     "ipcz/buffer_pool.cc",
+     "ipcz/driver_memory.cc",
+     "ipcz/driver_memory_mapping.cc",
+@@ -376,6 +376,7 @@ ipcz_source_set("ipcz_tests_sources") {
+     "ipcz/driver_memory_test.cc",
+     "ipcz/driver_object_test.cc",
+     "ipcz/driver_transport_test.cc",
++    "ipcz/fragment_test.cc",
+     "ipcz/message_test.cc",
+     "ipcz/node_connector_test.cc",
+     "ipcz/node_link_memory_test.cc",
+diff --git a/third_party/ipcz/src/ipcz/block_allocator_pool.cc b/third_party/ipcz/src/ipcz/block_allocator_pool.cc
+index bd464f897d1fcbde03941ee334d0e1706bf59868..1b9d50b2c77c046d815a94d7760328c8b379ecab 100644
+--- a/third_party/ipcz/src/ipcz/block_allocator_pool.cc
++++ b/third_party/ipcz/src/ipcz/block_allocator_pool.cc
+@@ -86,7 +86,7 @@ Fragment BlockAllocatorPool::Allocate() {
+       FragmentDescriptor descriptor(
+           entry->buffer_id, checked_cast<uint32_t>(offset),
+           checked_cast<uint32_t>(allocator.block_size()));
+-      return Fragment(descriptor, block);
++      return Fragment::FromDescriptorUnsafe(descriptor, block);
+     }
+ 
+     // Allocation from the active allocator failed. Try another if available.
+diff --git a/third_party/ipcz/src/ipcz/buffer_pool.cc b/third_party/ipcz/src/ipcz/buffer_pool.cc
+index 6881346d8f8532f070e5121da16f064ae4a9bdaf..27b23049848967f29f81b10ba4f8fa4ead14d2e2 100644
+--- a/third_party/ipcz/src/ipcz/buffer_pool.cc
++++ b/third_party/ipcz/src/ipcz/buffer_pool.cc
+@@ -26,15 +26,11 @@ Fragment BufferPool::GetFragment(const FragmentDescriptor& descriptor) {
+   absl::MutexLock lock(&mutex_);
+   auto it = mappings_.find(descriptor.buffer_id());
+   if (it == mappings_.end()) {
+-    return Fragment(descriptor, nullptr);
++    return Fragment::PendingFromDescriptor(descriptor);
+   }
+ 
+   auto& [id, mapping] = *it;
+-  if (descriptor.end() > mapping.bytes().size()) {
+-    return {};
+-  }
+-
+-  return Fragment(descriptor, mapping.address_at(descriptor.offset()));
++  return Fragment::MappedFromDescriptor(descriptor, mapping);
+ }
+ 
+ bool BufferPool::AddBlockBuffer(
+diff --git a/third_party/ipcz/src/ipcz/buffer_pool_test.cc b/third_party/ipcz/src/ipcz/buffer_pool_test.cc
+index a009ffe1c20ade013a19b51eceee4faf334eb591..bff66c452a3e2c38b0f208cca1fa1a082f1ee871 100644
+--- a/third_party/ipcz/src/ipcz/buffer_pool_test.cc
++++ b/third_party/ipcz/src/ipcz/buffer_pool_test.cc
+@@ -194,9 +194,11 @@ TEST_F(BufferPoolTest, BasicBlockAllocation) {
+             pool.GetTotalBlockCapacity(kBlockSize));
+ 
+   // We can't free something that isn't a valid allocation.
+-  EXPECT_FALSE(pool.FreeBlock(Fragment{{}, nullptr}));
+-  EXPECT_FALSE(pool.FreeBlock(Fragment{{BufferId{1000}, 0, 1}, nullptr}));
+-  EXPECT_FALSE(pool.FreeBlock(Fragment{{BufferId{0}, 0, 1}, bytes0.data()}));
++  EXPECT_FALSE(pool.FreeBlock(Fragment::FromDescriptorUnsafe({}, nullptr)));
++  EXPECT_FALSE(pool.FreeBlock(
++      Fragment::FromDescriptorUnsafe({BufferId{1000}, 0, 1}, nullptr)));
++  EXPECT_FALSE(pool.FreeBlock(
++      Fragment::FromDescriptorUnsafe({BufferId{0}, 0, 1}, bytes0.data())));
+ 
+   // Allocate all available capacity.
+   std::vector<Fragment> fragments;
+diff --git a/third_party/ipcz/src/ipcz/fragment.cc b/third_party/ipcz/src/ipcz/fragment.cc
+index 651d1c2fca5fe4fb69cdf61c6062bd8804ebf704..2ef4ed8dcfa0a56a73975a0b7dcc3f86bf5a83a0 100644
+--- a/third_party/ipcz/src/ipcz/fragment.cc
++++ b/third_party/ipcz/src/ipcz/fragment.cc
+@@ -6,10 +6,38 @@
+ 
+ #include <cstdint>
+ 
++#include "ipcz/driver_memory_mapping.h"
++#include "ipcz/fragment_descriptor.h"
+ #include "third_party/abseil-cpp/absl/base/macros.h"
++#include "util/safe_math.h"
+ 
+ namespace ipcz {
+ 
++// static
++Fragment Fragment::MappedFromDescriptor(const FragmentDescriptor& descriptor,
++                                        DriverMemoryMapping& mapping) {
++  if (descriptor.is_null()) {
++    return {};
++  }
++
++  const uint32_t end = SaturatedAdd(descriptor.offset(), descriptor.size());
++  if (end > mapping.bytes().size()) {
++    return {};
++  }
++  return Fragment{descriptor, mapping.address_at(descriptor.offset())};
++}
++
++// static
++Fragment Fragment::PendingFromDescriptor(const FragmentDescriptor& descriptor) {
++  return Fragment{descriptor, nullptr};
++}
++
++// static
++Fragment Fragment::FromDescriptorUnsafe(const FragmentDescriptor& descriptor,
++                                        void* base_address) {
++  return Fragment{descriptor, base_address};
++}
++
+ Fragment::Fragment(const FragmentDescriptor& descriptor, void* address)
+     : descriptor_(descriptor), address_(address) {
+   // If `address` is non-null, the descriptor must also be. Note that the
+diff --git a/third_party/ipcz/src/ipcz/fragment.h b/third_party/ipcz/src/ipcz/fragment.h
+index c0151fdcf4b418680172a29d1c0d28b58a5807cd..de65f087b0bc27fd59ab88e23130d5ce0d345a8a 100644
+--- a/third_party/ipcz/src/ipcz/fragment.h
++++ b/third_party/ipcz/src/ipcz/fragment.h
+@@ -14,21 +14,32 @@
+ 
+ namespace ipcz {
+ 
++class DriverMemoryMapping;
++
+ // Represents a span of memory located within the shared memory regions owned by
+ // a NodeLinkMemory, via BufferPool. This is essentially a FragmentDescriptor
+ // plus the actual mapped address of the given buffer and offset.
+ struct Fragment {
+   constexpr Fragment() = default;
+ 
+-  // Constructs a new Fragment over `descriptor`, mapped to `address`. If
+-  // `address` is null, the Fragment is considered "pending" -- it has a
+-  // potentially valid descriptor, but could not be resolved to a mapped address
+-  // yet (e.g. because the relevant BufferPool doesn't have the identified
+-  // buffer mapped yet.)
+-  Fragment(const FragmentDescriptor& descriptor, void* address);
+   Fragment(const Fragment&);
+   Fragment& operator=(const Fragment&);
+ 
++  // Returns a new concrete Fragment corresponding to `descriptor` within the
++  // context of `mapping`. This validates that the fragment's bounds fall within
++  // the bounds of `mapping`. If `descriptor` was null or validation fails, this
++  // returns a null Fragment.
++  static Fragment MappedFromDescriptor(const FragmentDescriptor& descriptor,
++                                       DriverMemoryMapping& mapping);
++
++  // Returns a pending Fragment corresponding to `descriptor`.
++  static Fragment PendingFromDescriptor(const FragmentDescriptor& descriptor);
++
++  // Returns a Fragment corresponding to `descriptor`, with the starting address
++  // already mapped to `address`.
++  static Fragment FromDescriptorUnsafe(const FragmentDescriptor& descriptor,
++                                       void* address);
++
+   // A null fragment is a fragment with a null descriptor, meaning it does not
+   // reference a valid buffer ID.
+   bool is_null() const { return descriptor_.is_null(); }
+@@ -66,6 +77,13 @@ struct Fragment {
+   }
+ 
+  private:
++  // Constructs a new Fragment over `descriptor`, mapped to `address`. If
++  // `address` is null, the Fragment is considered "pending" -- it has a
++  // potentially valid descriptor, but could not be resolved to a mapped address
++  // yet (e.g. because the relevant BufferPool doesn't have the identified
++  // buffer mapped yet.)
++  Fragment(const FragmentDescriptor& descriptor, void* address);
++
+   FragmentDescriptor descriptor_;
+ 
+   // The actual mapped address corresponding to `descriptor_`.
+diff --git a/third_party/ipcz/src/ipcz/fragment_descriptor.h b/third_party/ipcz/src/ipcz/fragment_descriptor.h
+index b247215fd5e5f7c69e521416614465b0321f5d83..aeaa7da9c82761854948d009e7f245c9c9d042c7 100644
+--- a/third_party/ipcz/src/ipcz/fragment_descriptor.h
++++ b/third_party/ipcz/src/ipcz/fragment_descriptor.h
+@@ -39,7 +39,6 @@ struct IPCZ_ALIGN(8) FragmentDescriptor {
+   BufferId buffer_id() const { return buffer_id_; }
+   uint32_t offset() const { return offset_; }
+   uint32_t size() const { return size_; }
+-  uint32_t end() const { return offset_ + size_; }
+ 
+  private:
+   // Identifies the shared memory buffer in which the memory resides. This ID is
+diff --git a/third_party/ipcz/src/ipcz/fragment_test.cc b/third_party/ipcz/src/ipcz/fragment_test.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..e6b6baa6cb2f1fbdfb89d87d644f63681c797c01
+--- /dev/null
++++ b/third_party/ipcz/src/ipcz/fragment_test.cc
+@@ -0,0 +1,102 @@
++// Copyright 2023 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "ipcz/fragment.h"
++
++#include <algorithm>
++#include <cstring>
++#include <limits>
++#include <string>
++#include <utility>
++
++#include "ipcz/buffer_id.h"
++#include "ipcz/driver_memory.h"
++#include "ipcz/driver_memory_mapping.h"
++#include "reference_drivers/sync_reference_driver.h"
++#include "testing/gtest/include/gtest/gtest.h"
++
++namespace ipcz {
++namespace {
++
++const IpczDriver& kTestDriver = reference_drivers::kSyncReferenceDriver;
++
++using FragmentTest = testing::Test;
++
++TEST_F(FragmentTest, FromDescriptorUnsafe) {
++  char kBuffer[] = "Hello, world!";
++
++  Fragment f = Fragment::FromDescriptorUnsafe({BufferId{0}, 1, 4}, kBuffer + 1);
++  EXPECT_FALSE(f.is_null());
++  EXPECT_FALSE(f.is_pending());
++  EXPECT_EQ(1u, f.offset());
++  EXPECT_EQ(4u, f.size());
++  EXPECT_EQ("ello", std::string(f.bytes().begin(), f.bytes().end()));
++
++  f = Fragment::FromDescriptorUnsafe({BufferId{0}, 7, 6}, kBuffer + 7);
++  EXPECT_FALSE(f.is_null());
++  EXPECT_FALSE(f.is_pending());
++  EXPECT_EQ(7u, f.offset());
++  EXPECT_EQ(6u, f.size());
++  EXPECT_EQ("world!", std::string(f.bytes().begin(), f.bytes().end()));
++}
++
++TEST_F(FragmentTest, PendingFromDescriptor) {
++  Fragment f = Fragment::PendingFromDescriptor({BufferId{0}, 5, 42});
++  EXPECT_TRUE(f.is_pending());
++  EXPECT_FALSE(f.is_null());
++  EXPECT_EQ(5u, f.offset());
++  EXPECT_EQ(42u, f.size());
++
++  f = Fragment::PendingFromDescriptor({kInvalidBufferId, 0, 0});
++  EXPECT_TRUE(f.is_null());
++  EXPECT_FALSE(f.is_pending());
++}
++
++TEST_F(FragmentTest, NullMappedFromDescriptor) {
++  constexpr size_t kDataSize = 32;
++  DriverMemory memory(kTestDriver, kDataSize);
++  auto mapping = memory.Map();
++
++  Fragment f =
++      Fragment::MappedFromDescriptor({kInvalidBufferId, 0, 0}, mapping);
++  EXPECT_TRUE(f.is_null());
++}
++
++TEST_F(FragmentTest, InvalidMappedFromDescriptor) {
++  constexpr size_t kDataSize = 32;
++  DriverMemory memory(kTestDriver, kDataSize);
++  auto mapping = memory.Map();
++
++  Fragment f;
++
++  // Offset out of bounds
++  f = Fragment::MappedFromDescriptor({BufferId{0}, kDataSize, 1}, mapping);
++  EXPECT_TRUE(f.is_null());
++
++  // Tail out of bounds
++  f = Fragment::MappedFromDescriptor({BufferId{0}, 0, kDataSize + 5}, mapping);
++  EXPECT_TRUE(f.is_null());
++
++  // Tail overflow
++  f = Fragment::MappedFromDescriptor(
++      {BufferId{0}, std::numeric_limits<uint32_t>::max(), 2}, mapping);
++  EXPECT_TRUE(f.is_null());
++}
++
++TEST_F(FragmentTest, ValidMappedFromDescriptor) {
++  const char kData[] = "0123456789abcdef";
++  DriverMemory memory(kTestDriver, std::size(kData));
++  auto mapping = memory.Map();
++  memcpy(mapping.bytes().data(), kData, std::size(kData));
++
++  Fragment f = Fragment::MappedFromDescriptor({BufferId{0}, 2, 11}, mapping);
++  EXPECT_FALSE(f.is_null());
++  EXPECT_FALSE(f.is_pending());
++  EXPECT_EQ(2u, f.offset());
++  EXPECT_EQ(11u, f.size());
++  EXPECT_EQ("23456789abc", std::string(f.bytes().begin(), f.bytes().end()));
++}
++
++}  // namespace
++}  // namespace ipcz
+diff --git a/third_party/ipcz/src/ipcz/node_link_memory.cc b/third_party/ipcz/src/ipcz/node_link_memory.cc
+index 0cfadfa02aa4b7058e04c3b0255412a0d11aed87..9f920faf31748a6c4213045e31331af2a865bb4f 100644
+--- a/third_party/ipcz/src/ipcz/node_link_memory.cc
++++ b/third_party/ipcz/src/ipcz/node_link_memory.cc
+@@ -278,8 +278,9 @@ FragmentRef<RouterLinkState> NodeLinkMemory::GetInitialRouterLinkState(
+   FragmentDescriptor descriptor(kPrimaryBufferId,
+                                 ToOffset(state, primary_buffer_memory_.data()),
+                                 sizeof(RouterLinkState));
+-  return FragmentRef<RouterLinkState>(RefCountedFragment::kUnmanagedRef,
+-                                      Fragment(descriptor, state));
++  return FragmentRef<RouterLinkState>(
++      RefCountedFragment::kUnmanagedRef,
++      Fragment::FromDescriptorUnsafe(descriptor, state));
+ }
+ 
+ Fragment NodeLinkMemory::GetFragment(const FragmentDescriptor& descriptor) {
+diff --git a/third_party/ipcz/src/ipcz/ref_counted_fragment_test.cc b/third_party/ipcz/src/ipcz/ref_counted_fragment_test.cc
+index d5a2243a693597e43f87f116f80599fde383cb59..220c3556a261c5caab7194114af4cf375d9af683 100644
+--- a/third_party/ipcz/src/ipcz/ref_counted_fragment_test.cc
++++ b/third_party/ipcz/src/ipcz/ref_counted_fragment_test.cc
+@@ -64,7 +64,8 @@ TEST_F(RefCountedFragmentTest, SimpleRef) {
+ 
+   FragmentRef<TestObject> ref(
+       RefCountedFragment::kUnmanagedRef,
+-      Fragment(FragmentDescriptor(BufferId(0), 0, sizeof(object)), &object));
++      Fragment::FromDescriptorUnsafe(
++          FragmentDescriptor(BufferId(0), 0, sizeof(object)), &object));
+   EXPECT_EQ(1, object.ref_count_for_testing());
+   ref.reset();
+   EXPECT_EQ(0, object.ref_count_for_testing());
+@@ -75,7 +76,8 @@ TEST_F(RefCountedFragmentTest, Copy) {
+ 
+   FragmentRef<TestObject> ref1(
+       RefCountedFragment::kUnmanagedRef,
+-      Fragment(FragmentDescriptor(BufferId(0), 0, sizeof(object1)), &object1));
++      Fragment::FromDescriptorUnsafe(
++          FragmentDescriptor(BufferId(0), 0, sizeof(object1)), &object1));
+   EXPECT_EQ(1, object1.ref_count_for_testing());
+ 
+   FragmentRef<TestObject> other1 = ref1;
+@@ -88,7 +90,8 @@ TEST_F(RefCountedFragmentTest, Copy) {
+   TestObject object2;
+   auto ref2 = FragmentRef<TestObject>(
+       RefCountedFragment::kUnmanagedRef,
+-      Fragment(FragmentDescriptor(BufferId(0), 0, sizeof(object2)), &object2));
++      Fragment::FromDescriptorUnsafe(
++          FragmentDescriptor(BufferId(0), 0, sizeof(object2)), &object2));
+   EXPECT_EQ(1, object1.ref_count_for_testing());
+   EXPECT_EQ(1, object2.ref_count_for_testing());
+   ref2 = ref1;
+@@ -115,7 +118,8 @@ TEST_F(RefCountedFragmentTest, Move) {
+ 
+   FragmentRef<TestObject> ref1(
+       RefCountedFragment::kUnmanagedRef,
+-      Fragment(FragmentDescriptor(BufferId(0), 0, sizeof(object1)), &object1));
++      Fragment::FromDescriptorUnsafe(
++          FragmentDescriptor(BufferId(0), 0, sizeof(object1)), &object1));
+   EXPECT_EQ(1, ref1.ref_count_for_testing());
+ 
+   FragmentRef<TestObject> other1 = std::move(ref1);
+@@ -133,10 +137,12 @@ TEST_F(RefCountedFragmentTest, Move) {
+   TestObject object3;
+   FragmentRef<TestObject> ref2(
+       RefCountedFragment::kUnmanagedRef,
+-      Fragment(FragmentDescriptor(BufferId(0), 0, sizeof(object2)), &object2));
++      Fragment::FromDescriptorUnsafe(
++          FragmentDescriptor(BufferId(0), 0, sizeof(object2)), &object2));
+   FragmentRef<TestObject> ref3(
+       RefCountedFragment::kUnmanagedRef,
+-      Fragment(FragmentDescriptor(BufferId(0), 0, sizeof(object3)), &object3));
++      Fragment::FromDescriptorUnsafe(
++          FragmentDescriptor(BufferId(0), 0, sizeof(object3)), &object3));
+ 
+   EXPECT_FALSE(ref2.is_null());
+   EXPECT_TRUE(ref2.is_addressable());

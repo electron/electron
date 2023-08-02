@@ -1,0 +1,187 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Taylor Bergquist <tbergquist@chromium.org>
+Date: Tue, 11 Jul 2023 01:32:22 +0000
+Subject: Fix UAF when exiting a nested run loop in
+ TabDragContextImpl::OnGestureEvent.
+
+OnGestureEvent may call ContinueDrag, which may run a nested run loop. After the nested run loop returns, multiple seconds of time may have passed, and the world may be in a very different state; in particular, the window that contains this TabDragContext may have closed.
+
+This CL checks if this has happened, and returns early in that case.
+
+(cherry picked from commit 63d6b8ba8126b16215d33670df8c67dcbc6c9bef)
+
+Bug: 1453465
+Change-Id: I6095c0afeb5aa5f422717f1bbd93b96175e52afa
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4657527
+Reviewed-by: Darryl James <dljames@chromium.org>
+Commit-Queue: Taylor Bergquist <tbergquist@chromium.org>
+Code-Coverage: Findit <findit-for-me@appspot.gserviceaccount.com>
+Cr-Original-Commit-Position: refs/heads/main@{#1164449}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4676126
+Reviewed-by: Shibalik Mohapatra <shibalik@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5845@{#410}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+
+diff --git a/chrome/browser/ui/views/tabs/fake_tab_slot_controller.cc b/chrome/browser/ui/views/tabs/fake_tab_slot_controller.cc
+index 94d27ec3ab22f7afb5e265fdcee662e48f36c00e..81348ceb4a415f789dd384988a54662ec3c3d0e0 100644
+--- a/chrome/browser/ui/views/tabs/fake_tab_slot_controller.cc
++++ b/chrome/browser/ui/views/tabs/fake_tab_slot_controller.cc
+@@ -45,6 +45,12 @@ bool FakeTabSlotController::IsFocusInTabs() const {
+   return false;
+ }
+ 
++TabSlotController::Liveness FakeTabSlotController::ContinueDrag(
++    views::View* view,
++    const ui::LocatedEvent& event) {
++  return Liveness::kAlive;
++}
++
+ bool FakeTabSlotController::EndDrag(EndDragReason reason) {
+   return false;
+ }
+diff --git a/chrome/browser/ui/views/tabs/fake_tab_slot_controller.h b/chrome/browser/ui/views/tabs/fake_tab_slot_controller.h
+index ebbae9b19a8f9534e3a86d2bf28875418a7be80d..4795c222651af3a7146a8bf12e824a1480cdbfae 100644
+--- a/chrome/browser/ui/views/tabs/fake_tab_slot_controller.h
++++ b/chrome/browser/ui/views/tabs/fake_tab_slot_controller.h
+@@ -60,8 +60,8 @@ class FakeTabSlotController : public TabSlotController {
+       TabSlotView* source,
+       const ui::LocatedEvent& event,
+       const ui::ListSelectionModel& original_selection) override {}
+-  void ContinueDrag(views::View* view, const ui::LocatedEvent& event) override {
+-  }
++  Liveness ContinueDrag(views::View* view,
++                        const ui::LocatedEvent& event) override;
+   bool EndDrag(EndDragReason reason) override;
+   Tab* GetTabAt(const gfx::Point& point) override;
+   const Tab* GetAdjacentTab(const Tab* tab, int offset) override;
+diff --git a/chrome/browser/ui/views/tabs/tab_slot_controller.h b/chrome/browser/ui/views/tabs/tab_slot_controller.h
+index 6a43f963a22917b9e9b861d3619d9804851dfb5b..d412ad6d5d9a95aa5d635fae5232eddfa87132ae 100644
+--- a/chrome/browser/ui/views/tabs/tab_slot_controller.h
++++ b/chrome/browser/ui/views/tabs/tab_slot_controller.h
+@@ -49,6 +49,8 @@ class TabSlotController {
+     kEvent
+   };
+ 
++  enum class Liveness { kAlive, kDeleted };
++
+   virtual const ui::ListSelectionModel& GetSelectionModel() const = 0;
+ 
+   // Returns the tab at |index|.
+@@ -126,9 +128,10 @@ class TabSlotController {
+       const ui::LocatedEvent& event,
+       const ui::ListSelectionModel& original_selection) = 0;
+ 
+-  // Continues dragging a Tab.
+-  virtual void ContinueDrag(views::View* view,
+-                            const ui::LocatedEvent& event) = 0;
++  // Continues dragging a Tab. May enter a nested event loop - returns
++  // Liveness::kDeleted if `this` was destroyed during this nested event loop,
++  // and Liveness::kAlive if `this` is still alive.
++  virtual Liveness ContinueDrag(views::View* view, const ui::LocatedEvent& event) = 0;
+ 
+   // Ends dragging a Tab. Returns whether the tab has been destroyed.
+   virtual bool EndDrag(EndDragReason reason) = 0;
+diff --git a/chrome/browser/ui/views/tabs/tab_strip.cc b/chrome/browser/ui/views/tabs/tab_strip.cc
+index f2f18c7f21bc249b95dece091716fcb6872b0c12..22a4b6b761058f44cbea029bbc52dd4071e111e9 100644
+--- a/chrome/browser/ui/views/tabs/tab_strip.cc
++++ b/chrome/browser/ui/views/tabs/tab_strip.cc
+@@ -174,7 +174,7 @@ class TabStrip::TabDragContextImpl : public TabDragContext,
+   }
+ 
+   bool OnMouseDragged(const ui::MouseEvent& event) override {
+-    ContinueDrag(this, event);
++    (void)ContinueDrag(this, event);
+     return true;
+   }
+ 
+@@ -185,6 +185,7 @@ class TabStrip::TabDragContextImpl : public TabDragContext,
+   void OnMouseCaptureLost() override { EndDrag(END_DRAG_CAPTURE_LOST); }
+ 
+   void OnGestureEvent(ui::GestureEvent* event) override {
++    Liveness tabstrip_alive = Liveness::kAlive;
+     switch (event->type()) {
+       case ui::ET_GESTURE_SCROLL_END:
+       case ui::ET_SCROLL_FLING_START:
+@@ -198,7 +199,8 @@ class TabStrip::TabDragContextImpl : public TabDragContext,
+       }
+ 
+       case ui::ET_GESTURE_SCROLL_UPDATE:
+-        ContinueDrag(this, *event);
++        // N.B. !! ContinueDrag may enter a nested run loop !!
++        tabstrip_alive = ContinueDrag(this, *event);
+         break;
+ 
+       case ui::ET_GESTURE_TAP_DOWN:
+@@ -210,6 +212,12 @@ class TabStrip::TabDragContextImpl : public TabDragContext,
+     }
+     event->SetHandled();
+ 
++    // If tabstrip was destroyed (during ContinueDrag above), return early to
++    // avoid UAF below.
++    if (tabstrip_alive == Liveness::kDeleted) {
++      return;
++    }
++
+     // TabDragContext gets event capture as soon as a drag session begins, which
+     // precludes TabStrip from ever getting events like tap or long tap. Forward
+     // this on to TabStrip so it can respond to those events.
+@@ -295,20 +303,20 @@ class TabStrip::TabDragContextImpl : public TabDragContext,
+       std::move(drag_controller_set_callback_).Run(drag_controller_.get());
+   }
+ 
+-  void ContinueDrag(views::View* view, const ui::LocatedEvent& event) {
+-    if (drag_controller_.get() &&
+-        drag_controller_->event_source() == EventSourceFromEvent(event)) {
+-      gfx::Point screen_location(event.location());
+-      views::View::ConvertPointToScreen(view, &screen_location);
++  Liveness ContinueDrag(views::View* view, const ui::LocatedEvent& event) {
++    if (!drag_controller_.get() ||
++        drag_controller_->event_source() != EventSourceFromEvent(event)) {
++      return Liveness::kAlive;
++    }
+ 
+-      // Note: |tab_strip_| can be destroyed during drag, also destroying
+-      // |this|.
+-      base::WeakPtr<TabDragContext> weak_ptr(weak_factory_.GetWeakPtr());
+-      drag_controller_->Drag(screen_location);
++    gfx::Point screen_location(event.location());
++    views::View::ConvertPointToScreen(view, &screen_location);
+ 
+-      if (!weak_ptr)
+-        return;
+-    }
++    // Note: `tab_strip_` can be destroyed during drag, also destroying `this`.
++    base::WeakPtr<TabDragContext> weak_ptr(weak_factory_.GetWeakPtr());
++    drag_controller_->Drag(screen_location);
++
++    return weak_ptr ? Liveness::kAlive : Liveness::kDeleted;
+   }
+ 
+   bool EndDrag(EndDragReason reason) {
+@@ -1573,8 +1581,10 @@ void TabStrip::MaybeStartDrag(
+   drag_context_->MaybeStartDrag(source, event, original_selection);
+ }
+ 
+-void TabStrip::ContinueDrag(views::View* view, const ui::LocatedEvent& event) {
+-  drag_context_->ContinueDrag(view, event);
++TabSlotController::Liveness TabStrip::ContinueDrag(
++    views::View* view,
++    const ui::LocatedEvent& event) {
++  return drag_context_->ContinueDrag(view, event);
+ }
+ 
+ bool TabStrip::EndDrag(EndDragReason reason) {
+diff --git a/chrome/browser/ui/views/tabs/tab_strip.h b/chrome/browser/ui/views/tabs/tab_strip.h
+index fce93e7d993434ce1e99c7cbca71c1391798c1a4..de6f20bb978c32d635b4f8b75841c148996df2c6 100644
+--- a/chrome/browser/ui/views/tabs/tab_strip.h
++++ b/chrome/browser/ui/views/tabs/tab_strip.h
+@@ -278,7 +278,8 @@ class TabStrip : public views::View,
+       TabSlotView* source,
+       const ui::LocatedEvent& event,
+       const ui::ListSelectionModel& original_selection) override;
+-  void ContinueDrag(views::View* view, const ui::LocatedEvent& event) override;
++  Liveness ContinueDrag(views::View* view,
++                        const ui::LocatedEvent& event) override;
+   bool EndDrag(EndDragReason reason) override;
+   Tab* GetTabAt(const gfx::Point& point) override;
+   const Tab* GetAdjacentTab(const Tab* tab, int offset) override;
