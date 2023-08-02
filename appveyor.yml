@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-117.0.5897.0
+image: e-117.0.5911.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -203,33 +203,7 @@ for:
     on_finish:
       # Uncomment this lines to enable RDP
       # - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
-      - ps: |
-          cd C:\projects\src
-          $missing_artifacts = $false
-
-          if ($env:SHOULD_SKIP_ARTIFACT_VALIDATION -eq 'true') {
-            Write-warning "Skipping artifact validation for doc-only PR"
-          } else {
-            $artifacts_to_upload = @('dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip')
-            foreach($artifact_name in $artifacts_to_upload) {
-              if ($artifact_name -eq 'ffmpeg.zip') {
-                $artifact_file = "out\ffmpeg\ffmpeg.zip"
-              } elseif ($artifact_name -eq 'node_headers.zip') {
-                $artifact_file = $artifact_name
-              } else {
-                $artifact_file = "out\Default\$artifact_name"
-              }
-              if (Test-Path $artifact_file) {
-                appveyor-retry appveyor PushArtifact $artifact_file          
-              } else {
-                Write-warning "$artifact_name is missing and cannot be added to artifacts"
-                $missing_artifacts = $true
-              }
-            }
-            if ($missing_artifacts) {
-              throw "Build failed due to missing artifacts"
-            }
-          }
+      - ps: "cd C:\\projects\\src\n$missing_artifacts = $false\n\nif ($env:SHOULD_SKIP_ARTIFACT_VALIDATION -eq 'true') {\n  Write-warning \"Skipping artifact validation for doc-only PR\"\n} else {\n  $artifacts_to_upload = @('dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip')\n  foreach($artifact_name in $artifacts_to_upload) {\n    if ($artifact_name -eq 'ffmpeg.zip') {\n      $artifact_file = \"out\\ffmpeg\\ffmpeg.zip\"\n    } elseif ($artifact_name -eq 'node_headers.zip') {\n      $artifact_file = $artifact_name\n    } else {\n      $artifact_file = \"out\\Default\\$artifact_name\"\n    }\n    if (Test-Path $artifact_file) {\n      appveyor-retry appveyor PushArtifact $artifact_file          \n    } else {\n      Write-warning \"$artifact_name is missing and cannot be added to artifacts\"\n      $missing_artifacts = $true\n    }\n  }\n  if ($missing_artifacts) {\n    throw \"Build failed due to missing artifacts\"\n  }\n}\n"
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
