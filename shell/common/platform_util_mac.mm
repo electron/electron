@@ -30,7 +30,7 @@ namespace {
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef cf_url = reinterpret_cast<CFURLRef>(ns_url);
+  CFURLRef cf_url = (__bridge CFURLRef)(ns_url);
   CFURLRef ref =
       LSCopyDefaultApplicationURLForURL(cf_url, kLSRolesAll, nullptr);
 
