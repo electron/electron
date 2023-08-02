@@ -2658,7 +2658,7 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
-  inspectable_web_contents_->SetDevToolsTitle(title);
+  inspectable_web_contents_->SetDevToolsTitle(base::UTF8ToUTF16(title));
   inspectable_web_contents_->ShowDevTools(activate);
 }
 
