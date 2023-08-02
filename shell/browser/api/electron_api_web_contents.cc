@@ -2678,7 +2678,7 @@ bool WebContents::IsDevToolsOpened() {
   return inspectable_web_contents_->IsDevToolsViewShowing();
 }
 
-std::string WebContents::GetDevToolsTitle() {
+std::u16string WebContents::GetDevToolsTitle() {
   if (type_ == Type::kRemote)
     return std::string();
 
@@ -2686,7 +2686,7 @@ std::string WebContents::GetDevToolsTitle() {
   return inspectable_web_contents_->GetDevToolsTitle();
 }
 
-void WebContents::SetDevToolsTitle(const std::string& title) {
+void WebContents::SetDevToolsTitle(const std::u16string& title) {
   inspectable_web_contents_->SetDevToolsTitle(title);
 }
 
