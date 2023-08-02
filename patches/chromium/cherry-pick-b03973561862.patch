@@ -20,7 +20,7 @@ Cr-Commit-Position: refs/branch-heads/5845@{#300}
 Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
 
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc
-index 26879ee20a09044bf1ea914e872599b4a2e65ec8..59d58eccc79709dcb013553996613f6ae053d61e 100644
+index 26879ee20a09044bf1ea914e872599b4a2e65ec8..317023c42431319b20d1cc72bc40f52fffc7708a 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.cc
 @@ -229,11 +229,12 @@ RTCDataChannel::Observer::Observer(
@@ -58,7 +58,7 @@ index 26879ee20a09044bf1ea914e872599b4a2e65ec8..59d58eccc79709dcb013553996613f6a
  RTCDataChannel::RTCDataChannel(
      ExecutionContext* context,
 -    scoped_refptr<webrtc::DataChannelInterface> channel,
-+    rtc::scoped_refptr<webrtc::DataChannelInterface> data_channel,
++    scoped_refptr<webrtc::DataChannelInterface> data_channel,
      RTCPeerConnectionHandler* peer_connection_handler)
      : ExecutionContextLifecycleObserver(context),
        state_(webrtc::DataChannelInterface::kConnecting),
@@ -71,22 +71,12 @@ index 26879ee20a09044bf1ea914e872599b4a2e65ec8..59d58eccc79709dcb013553996613f6a
        signaling_thread_(peer_connection_handler->signaling_thread()) {
    DCHECK(peer_connection_handler);
  
-@@ -333,15 +329,15 @@ RTCDataChannel::RTCDataChannel(
-              webrtc::DataChannelInterface::DataState current_state) {
-             scoped_refptr<webrtc::DataChannelInterface> channel =
-                 observer->channel();
--            channel->RegisterObserver(observer.get());
--            if (channel->state() != current_state) {
-+            channel()->RegisterObserver(observer_.get());
-+            if (channel()->state() != current_state) {
-               observer->OnStateChange();
-             }
-           },
+@@ -341,7 +337,7 @@ RTCDataChannel::RTCDataChannel(
            observer_, state_),
        "RegisterObserverAndGetStateUpdate");
  
 -  IncrementCounters(*channel.get());
-+  IncrementCounters(*channel().get());
++  IncrementCounters(*(observer_->channel()).get());
  }
  
  RTCDataChannel::~RTCDataChannel() = default;
@@ -102,7 +92,7 @@ index 26879ee20a09044bf1ea914e872599b4a2e65ec8..59d58eccc79709dcb013553996613f6a
  
  void RTCDataChannel::ScheduleDispatchEvent(Event* event) {
 diff --git a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h
-index 21bb39382ac0c6acbf984ffbda5f6a4e6c863432..e48c049cc2820b16a8496f08ef6e4b206d5a4cd0 100644
+index 21bb39382ac0c6acbf984ffbda5f6a4e6c863432..6959b8b1e3a0b586be68cb4a8d0389b7926b98fe 100644
 --- a/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h
 +++ b/third_party/blink/renderer/modules/peerconnection/rtc_data_channel.h
 @@ -152,7 +152,7 @@ class MODULES_EXPORT RTCDataChannel final
@@ -110,27 +100,15 @@ index 21bb39382ac0c6acbf984ffbda5f6a4e6c863432..e48c049cc2820b16a8496f08ef6e4b20
      const scoped_refptr<base::SingleThreadTaskRunner> main_thread_;
      WeakPersistent<RTCDataChannel> blink_channel_;
 -    scoped_refptr<webrtc::DataChannelInterface> webrtc_channel_;
-+    const rtc::scoped_refptr<webrtc::DataChannelInterface> webrtc_channel_;
++    const scoped_refptr<webrtc::DataChannelInterface> webrtc_channel_;
    };
  
    void OnStateChange(webrtc::DataChannelInterface::DataState state);
-@@ -191,11 +191,19 @@ class MODULES_EXPORT RTCDataChannel final
-   FrameScheduler::SchedulingAffectingFeatureHandle
-       feature_handle_for_scheduler_;
- 
--  unsigned buffered_amount_low_threshold_;
--  unsigned buffered_amount_;
--  bool stopped_;
--  bool closed_from_owner_;
+@@ -195,7 +195,11 @@ class MODULES_EXPORT RTCDataChannel final
+   unsigned buffered_amount_;
+   bool stopped_;
+   bool closed_from_owner_;
 -  scoped_refptr<Observer> observer_;
-+  // Once an id has been assigned, we'll set this value and use it instead
-+  // of querying the channel (which requires thread hop). This is a cached
-+  // value to optimize a const getter, and therefore `mutable`.
-+  mutable absl::optional<uint16_t> id_;
-+  unsigned buffered_amount_low_threshold_ = 0u;
-+  unsigned buffered_amount_ = 0u;
-+  bool stopped_ = false;
-+  bool closed_from_owner_ = false;
 +  // Keep the `observer_` reference const to make it clear that we don't want
 +  // to free the underlying channel (or callback observer) until the
 +  // `RTCDataChannel` instance goes away. This allows properties to be queried
