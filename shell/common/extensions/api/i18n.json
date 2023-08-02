@@ -1,4 +1,4 @@
-// Copyright (c) 2012 The Chromium Authors. All rights reserved.
+// Copyright 2012 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -18,15 +18,20 @@
         "name": "getAcceptLanguages",
         "type": "function",
         "description": "Gets the accept-languages of the browser. This is different from the locale used by the browser; to get the locale, use $(ref:i18n.getUILanguage).",
-        "parameters": [
-          {
-            "type": "function",
-            "name": "callback",
-            "parameters": [
-              {"name": "languages", "type": "array", "items": {"$ref": "LanguageCode"}, "description": "Array of LanguageCode"}
-            ]
-          }
-        ]
+        "parameters": [],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "languages",
+              "type": "array",
+              "items": {
+                "$ref": "LanguageCode"
+              },
+              "description": "Array of LanguageCode"
+            }
+          ]
+        }
       },
       {
         "name": "getMessage",
@@ -85,44 +90,41 @@
             "name": "text",
             "minimum": 0,
             "description": "User input string to be translated."
-          },
-          {
-            "type": "function",
-            "name": "callback",
-            "parameters": [
-              {
-                "type": "object",
-                "name": "result",
-                "description": "LanguageDetectionResult object that holds detected language reliability and array of DetectedLanguage",
-                "properties": {
-                  "isReliable": { "type": "boolean", "description": "CLD detected language reliability" },
-                  "languages":
-                    {
-                      "type": "array",
-                      "description": "array of detectedLanguage",
-                      "items":
-                        {
-                          "type": "object",
-                          "description": "DetectedLanguage object that holds detected ISO language code and its percentage in the input string",
-                          "properties":
-                            {
-                              "language":
-                                {
-                                  "$ref": "LanguageCode"
-                                },
-                              "percentage":
-                                {
-                                  "type": "integer",
-                                  "description": "The percentage of the detected language"
-                                }
-                            }
-                        }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "type": "object",
+              "name": "result",
+              "description": "LanguageDetectionResult object that holds detected langugae reliability and array of DetectedLanguage",
+              "properties": {
+                "isReliable": {
+                  "type": "boolean",
+                  "description": "CLD detected language reliability"
+                },
+                "languages": {
+                  "type": "array",
+                  "description": "array of detectedLanguage",
+                  "items": {
+                    "type": "object",
+                    "description": "DetectedLanguage object that holds detected ISO language code and its percentage in the input string",
+                    "properties": {
+                      "language": {
+                        "$ref": "LanguageCode"
+                      },
+                      "percentage": {
+                        "type": "integer",
+                        "description": "The percentage of the detected language"
+                      }
                     }
+                  }
                 }
               }
-            ]
-          }
-        ]
+            }
+          ]
+        }
       }
     ],
     "events": []

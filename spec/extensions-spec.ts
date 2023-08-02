@@ -208,7 +208,7 @@ describe('chrome extensions', () => {
     };
     beforeEach(async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'));
+      extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v2'));
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
     });
@@ -725,6 +725,96 @@ describe('chrome extensions', () => {
       const { message } = JSON.parse(responseString);
 
       expect(message).to.equal('Hello from background.js');
+    });
+
+    describe('chrome.i18n', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v3'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession,
+            nodeIntegration: true
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('getAcceptLanguages', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getAcceptLanguages' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.be.an('array').that.is.not.empty('languages array is empty');
+      });
+
+      it('getUILanguage', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getUILanguage' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.be.a('string');
+      });
+
+      it('getMessage', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getMessage' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.equal('Hola mundo!!');
+      });
+
+      it('detectLanguage', async () => {
+        await w.loadURL(url);
+
+        const greetings = [
+          'Ich liebe dich', // German
+          'Mahal kita', // Filipino
+          '愛してます', // Japanese
+          'دوستت دارم', // Persian
+          'Minä rakastan sinua' // Finnish
+        ];
+        const message = { method: 'detectLanguage', args: [greetings] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.be.an('array');
+
+        for (const item of response) {
+          expect(Object.keys(item)).to.deep.equal(['isReliable', 'languages']);
+        }
+
+        const languages = response.map((r: { isReliable: boolean, languages: any[] }) => r.languages[0]);
+        expect(languages).to.deep.equal([
+          { language: 'de', percentage: 100 },
+          { language: 'fil', percentage: 100 },
+          { language: 'ja', percentage: 100 },
+          { language: 'ps', percentage: 100 },
+          { language: 'fi', percentage: 100 }
+        ]);
+      });
     });
   });
 });
