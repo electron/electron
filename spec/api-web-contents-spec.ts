@@ -609,7 +609,7 @@ describe('webContents module', () => {
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
 
-    it('can show window with title', async () => {
+    it('can show a DevTools window with custom title', async () => {
       const w = new BrowserWindow({ show: false });
       const devtoolsOpened = once(w.webContents, 'devtools-opened');
       w.webContents.openDevTools({ mode: 'detach', activate: false, title: 'myTitle' });
