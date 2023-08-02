@@ -646,8 +646,7 @@ void InspectableWebContents::InspectElementCompleted() {}
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
   if (managed_devtools_web_contents_) {
     if (devtools_title_.empty()) {
-      view_->SetTitle(
-          base::StringPrintf(kTitleFormat, url.c_str()));
+      view_->SetTitle(base::StringPrintf(kTitleFormat, url.c_str()));
     }
   }
 }
