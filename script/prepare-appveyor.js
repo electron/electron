@@ -94,7 +94,9 @@ function useAppVeyorImage (targetBranch, options) {
     assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`);
     callAppVeyorBuildJobs(targetBranch, options.job, options);
   } else {
-    validJobs.forEach((job) => callAppVeyorBuildJobs(targetBranch, job, options));
+    for (const job of validJobs) {
+      callAppVeyorBuildJobs(targetBranch, job, options);
+    }
   }
 }
 

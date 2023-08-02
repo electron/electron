@@ -80,11 +80,11 @@ export function parseFeatures (features: string) {
   const parsed = parseCommaSeparatedKeyValue(features);
 
   const webPreferences: { [K in AllowedWebPreference]?: any } = {};
-  allowedWebPreferences.forEach((key) => {
-    if (parsed[key] === undefined) return;
+  for (const key of allowedWebPreferences) {
+    if (parsed[key] === undefined) continue;
     webPreferences[key] = parsed[key];
     delete parsed[key];
-  });
+  }
 
   if (parsed.left !== undefined) parsed.x = parsed.left;
   if (parsed.top !== undefined) parsed.y = parsed.top;
