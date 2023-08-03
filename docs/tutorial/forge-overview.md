@@ -14,7 +14,7 @@ third-party tools you can use to distribute your app.
 These tools are maintained by members of the Electron community,
 and do not come with official support from the Electron project.
 
-## Electron Builder
+**Electron Builder**
 
 A "complete solution to package and build a ready-for-distribution Electron app"
 that focuses on an integrated experience. [`electron-builder`](https://github.com/electron-userland/electron-builder) adds a single dependency and manages all further requirements internally.
@@ -22,7 +22,7 @@ that focuses on an integrated experience. [`electron-builder`](https://github.co
 `electron-builder` replaces features and modules used by the Electron
 maintainers (such as the auto-updater) with custom ones.
 
-## Hydraulic Conveyor
+**Hydraulic Conveyor**
 
 A [desktop app deployment tool](https://hydraulic.dev) that supports
 cross-building/signing of all packages from any OS without the need for
