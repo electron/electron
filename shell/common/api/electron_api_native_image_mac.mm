@@ -65,8 +65,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   }
 
   NSScreen* screen = [[NSScreen screens] firstObject];
-  QLThumbnailGenerationRequest* __strong request([[QLThumbnailGenerationRequest
-      alloc]
+  QLThumbnailGenerationRequest* request([[QLThumbnailGenerationRequest alloc]
         initWithFileAtURL:nsurl
                      size:cg_size
                     scale:[screen backingScaleFactor]

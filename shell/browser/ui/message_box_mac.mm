@@ -114,7 +114,7 @@ NSAlert* CreateNSAlert(const MessageBoxSettings& settings) {
 }  // namespace
 
 int ShowMessageBoxSync(const MessageBoxSettings& settings) {
-  NSAlert* __strong alert(CreateNSAlert(settings));
+  NSAlert* alert(CreateNSAlert(settings));
 
   // Use runModal for synchronous alert without parent, since we don't have a
   // window to wait for. Also use it when window is provided but it is not

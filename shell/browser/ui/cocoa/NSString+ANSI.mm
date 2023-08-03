@@ -148,7 +148,7 @@
 - (NSMutableAttributedString*)attributedStringParsingANSICodes {
   NSMutableAttributedString* result = [[NSMutableAttributedString alloc] init];
 
-  NSMutableDictionary* __strong attributes([[NSMutableDictionary alloc] init]);
+  NSMutableDictionary* attributes([[NSMutableDictionary alloc] init]);
   NSArray* parts = [self componentsSeparatedByString:@"\033["];
   [result appendAttributedString:[[NSAttributedString alloc]
                                      initWithString:parts.firstObject

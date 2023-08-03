@@ -24,7 +24,7 @@ class NotificationPresenterMac : public NotificationPresenter {
   Notification* CreateNotificationObject(
       NotificationDelegate* delegate) override;
 
-  NotificationCenterDelegate* notification_center_delegate_;
+  NotificationCenterDelegate* __strong notification_center_delegate_;
 };
 
 }  // namespace electron

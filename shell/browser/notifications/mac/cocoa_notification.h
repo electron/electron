@@ -35,7 +35,7 @@ class CocoaNotification : public Notification {
  private:
   void LogAction(const char* action);
 
-  NSUserNotification* notification_;
+  NSUserNotification* __strong notification_;
   std::map<std::string, unsigned> additional_action_indices_;
   unsigned action_index_;
 };
