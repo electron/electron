@@ -49,4 +49,5 @@ const dispatchTest = (event) => {
   const { method, args = [] } = JSON.parse(event.data);
   testMap[method](...args);
 };
+
 window.addEventListener('message', dispatchTest, false);
