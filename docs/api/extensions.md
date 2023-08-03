@@ -107,6 +107,11 @@ The following methods of `chrome.tabs` are supported:
 - `chrome.tabs.update` (partial support)
   - supported properties: `url`, `muted`.
 
+The following events of `chrome.tabs` are supported:
+
+- `chrome.tabs.onUpdated`
+- `chrome.tabs.onZoomChanged`
+
 > **Note:** In Chrome, passing `-1` as a tab ID signifies the "currently active
 > tab". Since Electron has no such concept, passing `-1` as a tab ID is not
 > supported and will raise an error.

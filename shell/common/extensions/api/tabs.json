@@ -705,6 +705,90 @@
       }
     ],
     "events": [
+      // Electron does not support tabs.create, so this event will never be fired,
+      // but we have this here to prevent it from causing undefined errors.
+      {
+        "name": "onCreated",
+        "type": "function",
+        "description": "Fired when a tab is created. Note that the tab's URL and tab group membership may not be set at the time this event is fired, but you can listen to onUpdated events so as to be notified when a URL is set or the tab is added to a tab group.",
+        "parameters": [
+          {
+            "$ref": "Tab",
+            "name": "tab",
+            "description": "Details of the tab that was created."
+          }
+        ]
+      },
+      {
+        "name": "onUpdated",
+        "type": "function",
+        "description": "Fired when a tab is updated.",
+        "parameters": [
+          {
+            "type": "integer",
+            "name": "tabId",
+            "minimum": 0
+          },
+          {
+            "type": "object",
+            "name": "changeInfo",
+            "description": "Lists the changes to the state of the tab that was updated.",
+            "properties": {
+              "url": {
+                "type": "string",
+                "optional": true,
+                "description": "The tab's URL if it has changed."
+              },
+              "groupId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": -1,
+                "description": "The tab's new group."
+              },
+              "pinned": {
+                "type": "boolean",
+                "optional": true,
+                "description": "The tab's new pinned state."
+              },
+              "audible": {
+                "type": "boolean",
+                "optional": true,
+                "description": "The tab's new audible state."
+              },
+              "discarded": {
+                "type": "boolean",
+                "optional": true,
+                "description": "The tab's new discarded state."
+              },
+              "autoDiscardable": {
+                "type": "boolean",
+                "optional": true,
+                "description": "The tab's new auto-discardable state."
+              },
+              "mutedInfo": {
+                "$ref": "MutedInfo",
+                "optional": true,
+                "description": "The tab's new muted state and the reason for the change."
+              },
+              "favIconUrl": {
+                "type": "string",
+                "optional": true,
+                "description": "The tab's new favicon URL."
+              },
+              "title": {
+                "type": "string",
+                "optional": true,
+                "description": "The tab's new title."
+              }
+            }
+          },
+          {
+            "$ref": "Tab",
+            "name": "tab",
+            "description": "Gives the state of the tab that was updated."
+          }
+        ]
+      },
       {
         "name": "onZoomChange",
         "type": "function",
