@@ -950,6 +950,23 @@ describe('chrome extensions', () => {
           expect(response.status).to.equal('reloaded');
         });
       });
+
+      it('update', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'update', args: [{ muted: true }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.have.property('mutedInfo').that.is.a('object');
+        const { mutedInfo } = response;
+        expect(mutedInfo).to.deep.eq({
+          muted: true,
+          reason: 'user'
+        });
+      });
     });
   });
 });
