@@ -14,6 +14,11 @@ process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 const { app, protocol } = require('electron');
 
+// Some Linux machines have broken hardware acceleration support.
+if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
+  app.disableHardwareAcceleration();
+}
+
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
 // Prevent the spec runner quitting when the first window closes
@@ -68,6 +73,14 @@ app.whenReady().then(async () => {
     mochaOptions.reporterOptions = {
       reporterEnabled: process.env.MOCHA_MULTI_REPORTERS
     };
+  }
+  // The MOCHA_GREP and MOCHA_INVERT are used in some vendor builds for sharding
+  // tests.
+  if (process.env.MOCHA_GREP) {
+    mochaOptions.grep = process.env.MOCHA_GREP;
+  }
+  if (process.env.MOCHA_INVERT) {
+    mochaOptions.invert = process.env.MOCHA_INVERT === 'true';
   }
   const mocha = new Mocha(mochaOptions);
 
