@@ -108,12 +108,12 @@ async function main () {
 
   const onlyTests = args.only && args.only.split(',');
 
-  const DISABLED_TESTS = [
+  const DISABLED_TESTS = new Set([
     'nannew-test.js',
     'buffer-test.js'
-  ];
+  ]);
   const testsToRun = fs.readdirSync(path.resolve(NAN_DIR, 'test', 'js'))
-    .filter(test => !DISABLED_TESTS.includes(test))
+    .filter(test => !DISABLED_TESTS.has(test))
     .filter(test => {
       return !onlyTests || onlyTests.includes(test) || onlyTests.includes(test.replace('.js', '')) || onlyTests.includes(test.replace('-test.js', ''));
     })
