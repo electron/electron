@@ -386,9 +386,11 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
   }
 };
 
+const getPrintersDeprecated = deprecate.warnOnce('getPrinters', 'getPrintersAsync');
 WebContents.prototype.getPrinters = function () {
   // TODO(nornagon): this API has nothing to do with WebContents and should be
   // moved.
+  getPrintersDeprecated();
   if (printing.getPrinterList) {
     return printing.getPrinterList();
   } else {
