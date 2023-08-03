@@ -357,7 +357,7 @@ describe('chrome extensions', () => {
       const message = { method: 'executeScript', args: ['1 + 2'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+      const [, , responseString] = await emittedOnce(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response).to.equal(3);
@@ -700,6 +700,122 @@ describe('chrome extensions', () => {
       const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
       const scope = await registrationPromise;
       expect(scope).equals(extension.url);
+    });
+
+    describe('chrome.tabs', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'tabs-api-async'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession,
+            nodeIntegration: true
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('getZoom', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getZoom' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(1);
+      });
+
+      it('setZoom', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setZoom', args: [2] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal(2);
+      });
+
+      it('getZoomSettings', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getZoomSettings' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({
+          defaultZoomFactor: 1,
+          mode: 'automatic',
+          scope: 'per-origin'
+        });
+      });
+
+      it('setZoomSettings', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setZoomSettings', args: [{ mode: 'disabled' }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({
+          defaultZoomFactor: 1,
+          mode: 'disabled',
+          scope: 'per-tab'
+        });
+      });
+
+      it('get', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'get' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await emittedOnce(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.have.property('active').that.is.a('boolean');
+        expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
+        expect(response).to.have.property('discarded').that.is.a('boolean');
+        expect(response).to.have.property('groupId').that.is.a('number');
+        expect(response).to.have.property('highlighted').that.is.a('boolean');
+        expect(response).to.have.property('id').that.is.a('number');
+        expect(response).to.have.property('incognito').that.is.a('boolean');
+        expect(response).to.have.property('index').that.is.a('number');
+        expect(response).to.have.property('pinned').that.is.a('boolean');
+        expect(response).to.have.property('selected').that.is.a('boolean');
+        expect(response).to.have.property('url').that.is.a('string');
+        expect(response).to.have.property('windowId').that.is.a('number');
+      });
+
+      it('reload', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'reload' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const consoleMessage = emittedOnce(w.webContents, 'console-message');
+        const finish = emittedOnce(w.webContents, 'did-finish-load');
+
+        await Promise.all([consoleMessage, finish]).then(([[,, responseString]]) => {
+          const response = JSON.parse(responseString);
+          expect(response.status).to.equal('reloaded');
+        });
+      });
     });
   });
 });
