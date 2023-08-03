@@ -145,19 +145,17 @@ for:
       - cd src
       - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
       - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
-      - ps: |
-          $ErrorActionPreference = "Stop";
-          gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% jkargs"
-          gn check out/Default //electron:electron_lib
-          gn check out/Default //electron:electron_app
-          gn check out/Default //electron/shell/common/api:mojo
-          if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
-          if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
-          gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
-          ninja -C out/ffmpeg electron:electron_ffmpeg_zip
-          ninja -C out/Default electron:electron_dist_zip
-          ninja -C out/Default shell_browser_ui_unittests
-          gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
+      - gn gen out/Default "--args=import(\"%BUILD_CONFIG_PATH%\") import(\"%GN_GOMA_FILE%\") %GN_EXTRA_ARGS% jkargs"
+      - gn check out/Default //electron:electron_lib
+      - gn check out/Default //electron:electron_app
+      - gn check out/Default //electron/shell/common/api:mojo
+      - if DEFINED GN_GOMA_FILE (ninja -j 300 -C out/Default electron:electron_app) else (ninja -C out/Default electron:electron_app)
+      - if "%GN_CONFIG%"=="testing" ( python C:\depot_tools\post_build_ninja_summary.py -C out\Default )
+      - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
+      - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
+      - ninja -C out/Default electron:electron_dist_zip
+      - ninja -C out/Default shell_browser_ui_unittests
+      - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
       # Remove unused args from mksnapshot_args
       - ps: >-
           Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') } | Set-Content out/Default/mksnapshot_args
