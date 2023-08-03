@@ -69,6 +69,25 @@ describe('chrome extensions', () => {
     `)).to.eventually.have.property('id');
   });
 
+  it('supports minimum_chrome_version manifest key', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        session: customSession,
+        sandbox: true
+      }
+    });
+
+    await w.loadURL('about:blank');
+
+    const extPath = path.join(fixtures, 'extensions', 'chrome-too-low-version');
+    const load = customSession.loadExtension(extPath);
+    await expect(load).to.eventually.be.rejectedWith(
+      `Loading extension at ${extPath} failed with: This extension requires Chromium version 999 or greater.`
+    );
+  });
+
   it('can open WebSQLDatabase in a background page', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
