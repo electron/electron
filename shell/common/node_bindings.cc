@@ -228,21 +228,30 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
   }
 }
 
-// Only allow DebugOptions in non-ELECTRON_RUN_AS_NODE mode.
+// Only allow a specific subset of options in non-ELECTRON_RUN_AS_NODE mode.
 // If node CLI inspect support is disabled, allow no debug options.
-bool IsAllowedDebugOption(base::StringPiece option) {
-  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
-      "--debug",
-      "--debug-brk",
-      "--debug-port",
-      "--inspect",
-      "--inspect-brk",
-      "--inspect-brk-node",
-      "--inspect-port",
-      "--inspect-publish-uid",
-  });
+bool IsAllowedOption(base::StringPiece option) {
+  static constexpr auto debug_options =
+      base::MakeFixedFlatSet<base::StringPiece>({
+          "--debug",
+          "--debug-brk",
+          "--debug-port",
+          "--inspect",
+          "--inspect-brk",
+          "--inspect-brk-node",
+          "--inspect-port",
+          "--inspect-publish-uid",
+      });
 
-  return electron::fuses::IsNodeCliInspectEnabled() && options.contains(option);
+  // This should be aligned with what's possible to set via the process object.
+  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>(
+      {"--trace-warnings", "--trace-deprecation", "--throw-deprecation",
+       "--no-deprecation"});
+
+  if (debug_options.contains(option))
+    return electron::fuses::IsNodeCliInspectEnabled();
+
+  return options.contains(option);
 }
 
 // Initialize NODE_OPTIONS to pass to Node.js
@@ -396,7 +405,7 @@ void NodeBindings::SetNodeCliFlags() {
     const auto stripped = base::StringPiece(option).substr(0, option.find('='));
 
     // Only allow in no-op (--) option or DebugOptions
-    if (IsAllowedDebugOption(stripped) || stripped == "--")
+    if (IsAllowedOption(stripped) || stripped == "--")
       args.push_back(option);
   }
 
