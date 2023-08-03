@@ -141,7 +141,7 @@ for:
           if ($depshash_baked -ne $depshash) {
             $env:RUN_GCLIENT_SYNC="true"
           }
-      #- if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
+      # - if "%RUN_GCLIENT_SYNC%"=="true" ( gclient sync --with_branch_heads --with_tags ) else ( gclient runhooks )
       - cd src
       - ps: $env:PATH="$pwd\third_party\ninja;$env:PATH"
       - set BUILD_CONFIG_PATH=//electron/build/args/%GN_CONFIG%.gn
