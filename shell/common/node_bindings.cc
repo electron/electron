@@ -414,7 +414,8 @@ void NodeBindings::SetNodeCliFlags() {
 #endif
     const auto stripped = base::StringPiece(option).substr(0, option.find('='));
 
-    // Only allow in no-op (--) option or DebugOptions
+    // Only allow in no-op (--) option or a small set of debug
+    // and trace related options.
     if (IsAllowedOption(stripped) || stripped == "--")
       args.push_back(option);
   }
