@@ -218,7 +218,7 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a41d8c314019ddd26e7c549149053bae25080d68..c302ba2e69b71b58faf40bc3e622b22183b17f26 100644
+index d95743b1ab3461f69326ca904448636de88ea070..a32f963654763cc0c706f752eca96e8cf5d0be54 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4208,8 +4208,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -232,10 +232,10 @@ index a41d8c314019ddd26e7c549149053bae25080d68..c302ba2e69b71b58faf40bc3e622b221
          static_cast<WebContentsImpl*>(delegate_->CreateCustomWebContents(
              opener, source_site_instance, is_new_browsing_instance,
 diff --git a/content/public/browser/web_contents_delegate.cc b/content/public/browser/web_contents_delegate.cc
-index 8019a5c687a87a4257f9f7c0581781095fc20043..d7ccb0f7a7b15fb19640b1b0491750b179a77693 100644
+index db12930a449b38966e63c2274275b1157f38bea7..2d770e9c0c88e5ad1fac15fd13b70e6b5be824c8 100644
 --- a/content/public/browser/web_contents_delegate.cc
 +++ b/content/public/browser/web_contents_delegate.cc
-@@ -136,8 +136,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
+@@ -137,8 +137,7 @@ bool WebContentsDelegate::IsWebContentsCreationOverridden(
      SiteInstance* source_site_instance,
      mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -246,7 +246,7 @@ index 8019a5c687a87a4257f9f7c0581781095fc20043..d7ccb0f7a7b15fb19640b1b0491750b1
  }
  
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 989778079d5dc91127989e43f3ce6b25a9df56d4..71b5a7c30f6546e3172ea31f9b0572c0e6a9f660 100644
+index 413419ac25d62f5058003480bc79d7a75c32a410..009a3d55f59a1ac80402327b43de45b13d5d8cfe 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -322,8 +322,7 @@ class CONTENT_EXPORT WebContentsDelegate {

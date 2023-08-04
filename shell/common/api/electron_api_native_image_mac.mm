@@ -13,7 +13,6 @@
 #import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 
 #include "base/mac/foundation_util.h"
-#include "base/mac/scoped_nsobject.h"
 #include "base/strings/sys_string_conversions.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -66,13 +65,11 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
   }
 
   NSScreen* screen = [[NSScreen screens] firstObject];
-  base::scoped_nsobject<QLThumbnailGenerationRequest> request(
-      [[QLThumbnailGenerationRequest alloc]
-            initWithFileAtURL:nsurl
-                         size:cg_size
-                        scale:[screen backingScaleFactor]
-          representationTypes:
-              QLThumbnailGenerationRequestRepresentationTypeAll]);
+  QLThumbnailGenerationRequest* request([[QLThumbnailGenerationRequest alloc]
+        initWithFileAtURL:nsurl
+                     size:cg_size
+                    scale:[screen backingScaleFactor]
+      representationTypes:QLThumbnailGenerationRequestRepresentationTypeAll]);
   __block gin_helper::Promise<gfx::Image> p = std::move(promise);
   [[QLThumbnailGenerator sharedGenerator]
       generateBestRepresentationForRequest:request
@@ -89,9 +86,9 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
                                    err_msg);
                              });
                            } else {
-                             NSImage* result = [[[NSImage alloc]
+                             NSImage* result = [[NSImage alloc]
                                  initWithCGImage:[thumbnail CGImage]
-                                            size:cg_size] autorelease];
+                                            size:cg_size];
                              gfx::Image image(result);
                              dispatch_async(dispatch_get_main_queue(), ^{
                                p.Resolve(image);

@@ -45,7 +45,6 @@
 - (void)dealloc {
   if (hover_view_)
     [hover_view_ removeFromSuperview];
-  [super dealloc];
 }
 
 - (void)setVisible:(BOOL)visible {

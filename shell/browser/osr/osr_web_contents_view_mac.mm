@@ -14,14 +14,13 @@
 - (void)drawRect:(NSRect)dirtyRect {
   NSString* str = @"No content under offscreen mode";
   NSMutableParagraphStyle* paragraphStyle =
-      [[[NSParagraphStyle defaultParagraphStyle] mutableCopy] autorelease];
+      [[NSParagraphStyle defaultParagraphStyle] mutableCopy];
   [paragraphStyle setAlignment:NSTextAlignmentCenter];
   NSDictionary* attributes =
       [NSDictionary dictionaryWithObject:paragraphStyle
                                   forKey:NSParagraphStyleAttributeName];
   NSAttributedString* text =
-      [[[NSAttributedString alloc] initWithString:str
-                                       attributes:attributes] autorelease];
+      [[NSAttributedString alloc] initWithString:str attributes:attributes];
   NSRect frame = NSMakeRect(0, (self.frame.size.height - text.size.height) / 2,
                             self.frame.size.width, text.size.height);
   [str drawInRect:frame withAttributes:attributes];
@@ -48,7 +47,7 @@ void OffScreenWebContentsView::PlatformCreate() {
 }
 
 void OffScreenWebContentsView::PlatformDestroy() {
-  [offScreenView_ release];
+  offScreenView_ = nil;
 }
 
 }  // namespace electron

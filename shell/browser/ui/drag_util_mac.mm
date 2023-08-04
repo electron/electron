@@ -54,8 +54,8 @@ void DragFileItems(const std::vector<base::FilePath>& files,
   NSMutableArray* file_items = [NSMutableArray array];
   for (auto const& file : files) {
     NSURL* file_url = base::mac::FilePathToNSURL(file);
-    NSDraggingItem* file_item = [[[NSDraggingItem alloc]
-        initWithPasteboardWriter:file_url] autorelease];
+    NSDraggingItem* file_item =
+        [[NSDraggingItem alloc] initWithPasteboardWriter:file_url];
     NSImage* file_image = icon.ToNSImage();
     NSSize image_size = file_image.size;
     NSRect image_rect = NSMakeRect(current_position.x - image_size.width / 2,

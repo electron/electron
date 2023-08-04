@@ -50,7 +50,7 @@ NSString* ContainingDiskImageDevice(NSString* bundlePath) {
       stringWithFileSystemRepresentation:fs.f_mntfromname
                                   length:strlen(fs.f_mntfromname)];
 
-  NSTask* hdiutil = [[[NSTask alloc] init] autorelease];
+  NSTask* hdiutil = [[NSTask alloc] init];
   [hdiutil setLaunchPath:@"/usr/bin/hdiutil"];
   [hdiutil setArguments:[NSArray arrayWithObjects:@"info", @"-plist", nil]];
   [hdiutil setStandardOutput:[NSPipe pipe]];
@@ -286,8 +286,8 @@ tell application "Finder"
 move theFile to trash
 end tell
 )str";
-    NSAppleScript* appleScript = [[[NSAppleScript alloc]
-        initWithSource:[NSString stringWithFormat:@(code), path]] autorelease];
+    NSAppleScript* appleScript = [[NSAppleScript alloc]
+        initWithSource:[NSString stringWithFormat:@(code), path]];
     NSDictionary* errorDict = nil;
     NSAppleEventDescriptor* scriptResult =
         [appleScript executeAndReturnError:&errorDict];

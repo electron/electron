@@ -7,10 +7,10 @@ We don't use gin to create the V8 platform, because we need to inject Node
 things.
 
 diff --git a/gin/isolate_holder.cc b/gin/isolate_holder.cc
-index e8608bb868c82c9af5426cd6f8512ce6b18ff39f..6268851494a0bbc0b3e693782dae6171f6347657 100644
+index 4cb88241eeaaacdd1c1e419759fd56bc003dbaf3..1c3536a183aad1965e834b1681e36a3fc46ae419 100644
 --- a/gin/isolate_holder.cc
 +++ b/gin/isolate_holder.cc
-@@ -136,9 +136,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
+@@ -140,9 +140,10 @@ void IsolateHolder::Initialize(ScriptMode mode,
                                 const intptr_t* reference_table,
                                 const std::string js_command_line_flags,
                                 v8::FatalErrorCallback fatal_error_callback,
@@ -24,10 +24,10 @@ index e8608bb868c82c9af5426cd6f8512ce6b18ff39f..6268851494a0bbc0b3e693782dae6171
    g_reference_table = reference_table;
    g_fatal_error_callback = fatal_error_callback;
 diff --git a/gin/public/isolate_holder.h b/gin/public/isolate_holder.h
-index 2ec6d9820b4cb8d91d47ab319fe6bf89be60300c..12ddcc30397a02df78727f16a02b8e81fd1d9c8e 100644
+index c19eb72e8d37fe8145b813d07875addf793e12dc..a5db8841773618814ac90f740201d4d7e9057b3c 100644
 --- a/gin/public/isolate_holder.h
 +++ b/gin/public/isolate_holder.h
-@@ -109,7 +109,8 @@ class GIN_EXPORT IsolateHolder {
+@@ -113,7 +113,8 @@ class GIN_EXPORT IsolateHolder {
                           const intptr_t* reference_table = nullptr,
                           const std::string js_command_line_flags = {},
                           v8::FatalErrorCallback fatal_error_callback = nullptr,
