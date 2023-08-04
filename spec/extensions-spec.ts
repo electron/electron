@@ -878,7 +878,12 @@ describe('chrome extensions', () => {
         const [,, responseString] = await once(w.webContents, 'console-message');
 
         const response = JSON.parse(responseString);
-        expect(response).to.deep.equal(2);
+        expect(response).to.deep.equal({
+          newZoomFactor: 2,
+          oldZoomFactor: 1.2,
+          tabId: 1,
+          zoomSettings: {}
+        });
       });
 
       it('getZoomSettings', async () => {

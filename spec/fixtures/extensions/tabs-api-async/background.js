@@ -12,10 +12,9 @@ const handleRequest = (request, sender, sendResponse) => {
 
     case 'setZoom': {
       const [zoom] = args;
-      chrome.tabs.setZoom(tabId, zoom).then(async () => {
-        const updatedZoom = await chrome.tabs.getZoom(tabId);
-        sendResponse(updatedZoom);
-      });
+
+      chrome.tabs.onZoomChange.addListener(sendResponse);
+      chrome.tabs.setZoom(tabId, zoom);
       break;
     }
 

@@ -164,6 +164,8 @@
 #include "extensions/browser/script_executor.h"
 #include "extensions/browser/view_type_utils.h"
 #include "extensions/common/mojom/view_type.mojom.h"
+#include "shell/browser/extensions/api/tabs/tabs_event_router.h"
+#include "shell/browser/extensions/api/tabs/tabs_window_api.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
 #endif
 
@@ -892,6 +894,14 @@ void WebContents::InitZoomController(content::WebContents* web_contents,
   double zoom_factor;
   if (options.Get(options::kZoomFactor, &zoom_factor))
     zoom_controller_->SetDefaultZoomFactor(zoom_factor);
+
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
+  auto* tabs_window_api = extensions::TabsWindowsAPI::Get(GetBrowserContext());
+  if (tabs_window_api) {
+    tabs_window_api->tabs_event_router()->RegisterForTabNotifications(
+        web_contents);
+  }
+#endif
 
   // Nothing to do with ZoomController, but this function gets called in all
   // init cases!
