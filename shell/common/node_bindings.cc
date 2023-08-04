@@ -244,9 +244,13 @@ bool IsAllowedOption(base::StringPiece option) {
       });
 
   // This should be aligned with what's possible to set via the process object.
-  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>(
-      {"--trace-warnings", "--trace-deprecation", "--throw-deprecation",
-       "--no-deprecation"});
+  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
+      "--trace-warnings",
+      "--trace-deprecation",
+      "--throw-deprecation",
+      "--no-deprecation",
+      "--dns-result-order",
+  });
 
   if (debug_options.contains(option))
     return electron::fuses::IsNodeCliInspectEnabled();

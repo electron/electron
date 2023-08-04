@@ -291,6 +291,15 @@ Print stack traces for deprecations.
 
 Print stack traces for process warnings (including deprecations).
 
+### `--dns-result-order=order`
+
+Set the default value of verbatim in `dns.lookup()` and `dnsPromises.lookup()`. The value could be:
+
+* ipv4first: sets default verbatim false.
+* verbatim: sets default verbatim true.
+
+The default is verbatim and `dns.setDefaultResultOrder()` have higher priority than `--dns-result-order`.
+
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value
 [debugging-main-process]: ../tutorial/debugging-main-process.md
