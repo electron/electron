@@ -2071,13 +2071,15 @@ Returns `Object`:
 * `min` Integer - The minimum port number of WebRTC UDP Port Range Policy.
 * `max` Integer - The maximum port number of WebRTC UDP Port Range Policy.
 
+Note that as poking round chromium internal , it would default to { min: 0, max: 0 } , which would apply no restriction on udp port range.
+
 #### `contents.setWebRTCUDPPortRangePolicy(udpPortRange)`
 
 * `udpPortRange` Object
   * `min` Integer - The minimum port number of WebRTC UDP Port Range Policy.
   * `max` Integer - The maximum port number of WebRTC UDP Port Range Policy.
 
-Setting the WebRTC UDP Port Range policy allows you to restrict the udp port range assigned to apps via WebRTC.
+Setting the WebRTC UDP Port Range policy allows you to restrict the udp port range assigned to apps via WebRTC. Note that when setting to { min: 0, max: 0 }，no restriction is applied on udp port range.
 
 #### `contents.getMediaSourceId(requestWebContents)`
 

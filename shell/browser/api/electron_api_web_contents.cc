@@ -2566,11 +2566,11 @@ void WebContents::SetWebRTCUDPPortRangePolicy(gin::Arguments* args) {
     return;
   }
 
-  if (min == 0 || max > UINT16_MAX) {
+  if ((0 == min && 0 != max) || max > UINT16_MAX) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError(
             "Invalid arguments. Note that either port number should be in (0, "
-            "65535]");
+            "65535] or both are 0");
     return;
   }
   if (min > max) {
