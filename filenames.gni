@@ -494,6 +494,7 @@ filenames = {
     "shell/browser/web_contents_preferences.h",
     "shell/browser/web_contents_zoom_controller.cc",
     "shell/browser/web_contents_zoom_controller.h",
+    "shell/browser/web_contents_zoom_observer.h",
     "shell/browser/web_view_guest_delegate.cc",
     "shell/browser/web_view_guest_delegate.h",
     "shell/browser/web_view_manager.cc",
