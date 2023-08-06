@@ -312,6 +312,12 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   })
+
+  // Open external links in the default browser
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    shell.openExternal(url)
+  })
 }
 
 // This method will be called when Electron has finished

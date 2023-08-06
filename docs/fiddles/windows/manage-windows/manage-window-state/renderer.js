@@ -1,8 +1,6 @@
-const { shell, ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron')
 
 const manageWindowBtn = document.getElementById('manage-window')
-
-const links = document.querySelectorAll('a[href]')
 
 ipcRenderer.on('bounds-changed', (event, bounds) => {
   const manageWindowReply = document.getElementById('manage-window-reply')
@@ -13,13 +11,3 @@ ipcRenderer.on('bounds-changed', (event, bounds) => {
 manageWindowBtn.addEventListener('click', (event) => {
   ipcRenderer.send('create-demo-window')
 })
-
-for (const link of links) {
-  const url = link.getAttribute('href')
-  if (url.indexOf('http') === 0) {
-    link.addEventListener('click', (e) => {
-      e.preventDefault()
-      shell.openExternal(url)
-    })
-  }
-}

@@ -1,4 +1,4 @@
-const { shell, ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron')
 
 const listenToWindowBtn = document.getElementById('listen-to-window')
 const focusModalBtn = document.getElementById('focus-on-modal-window')
@@ -25,15 +25,3 @@ ipcRenderer.on('window-blur', showFocusBtn)
 listenToWindowBtn.addEventListener('click', () => {
   ipcRenderer.send('show-demo-window')
 })
-
-const links = document.querySelectorAll('a[href]')
-
-for (const link of links) {
-  const url = link.getAttribute('href')
-  if (url.indexOf('http') === 0) {
-    link.addEventListener('click', (e) => {
-      e.preventDefault()
-      shell.openExternal(url)
-    })
-  }
-}
