@@ -20,35 +20,56 @@ There are a few ways that you can set up testing using WebDriver.
 
 [WebdriverIO](https://webdriver.io/) (WDIO) is a test automation framework that provides a
 Node.js package for testing with WebDriver. Its ecosystem also includes various plugins
-(e.g. reporter and services) that can help you put together your test setup.
+(e.g. reporter and services) that can help you put together your test setup, e.g. an [Electron
+service](https://webdriver.io/docs/wdio-electron-service) for testing Electron applications.
 
 #### Install the test runner
 
 First you need to run the WebdriverIO starter toolkit in your project root directory:
 
 ```sh npm2yarn
-npx wdio . --yes
+npm init wdio@latest .
 ```
 
-This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
+This starts a configuration wizard that helps you to put together your setup and install all
+necessary packages for you as well as and generating a `wdio.conf.js` configuration file.
 
-#### Connect WDIO to your Electron app
+Make sure you select __*Desktop Testing - of Electron Applications*__ on the first question
+on __* What type of testing would you like to do?*__. This will make sure your setup will
+be configured for testing Electron application.
 
-Update the capabilities in your configuration file to point to your Electron app binary:
+#### Electron Service Configuration
+
+After the configuration wizard setup your project, you should see a *wdio.conf.js* with the
+following Electron service configuration:
 
 ```javascript title='wdio.conf.js'
-exports.config = {
+import { readFileSync } from 'node:fs'
+
+const packageJson = JSON.parse(readFileSync('./package.json', 'utf-8'))
+const productName = packageJson.build.productName
+
+export const config = {
   // ...
-  capabilities: [{
-    browserName: 'chrome',
-    'goog:chromeOptions': {
-      binary: '/path/to/your/electron/binary', // Path to your Electron binary.
-      args: [/* cli arguments */] // Optional, perhaps 'app=' + /path/to/your/app/
+  services: [[
+    'electron',
+    {
+      appPath: './dist',
+      appName: productName,
+      appArgs: ['foo', 'bar=baz'],
+      chromedriver: {
+        logFileName: 'wdio-chromedriver.log'
+      },
+      electronVersion: '23.1.0'
     }
-  }]
+  ]]
   // ...
 }
 ```
+
+The Electron service takes care of downloading the right Chromedriver version for you, updating
+your capabilities to point to your Electron application as well as offers useful testing features
+such as [mocking Electron APIs](https://webdriver.io/docs/desktop-testing/electron#mocking-electron-apis).
 
 #### Run your tests
 
@@ -57,6 +78,10 @@ To run your tests:
 ```sh
 $ npx wdio run wdio.conf.js
 ```
+
+#### More Documentation
+
+Read more on testing Electron applications with WebdriverIO on their [offical documentation page](https://webdriver.io/docs/desktop-testing/electron).
 
 ### With Selenium
 
