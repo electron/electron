@@ -1,5 +1,6 @@
 const { contextBridge, ipcRenderer } = require('electron/renderer')
 
 contextBridge.exposeInMainWorld('electronAPI', {
-  handleCounter: (callback) => ipcRenderer.on('update-counter', () => callback())
+  openHomeDir: () => ipcRenderer.send('open-home-dir'),
+  openExternal: (url) => ipcRenderer.send('open-external', url)
 })

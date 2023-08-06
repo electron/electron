@@ -1,5 +1,6 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron/main')
+const path = require('node:path')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -11,8 +12,7 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      contextIsolation: false,
-      nodeIntegration: true
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 
@@ -59,16 +59,14 @@ app.on('activate', function () {
   }
 })
 
-ipcMain.on('open-information-dialog', event => {
+ipcMain.handle('open-information-dialog', async () => {
   const options = {
     type: 'info',
     title: 'Information',
     message: "This is an information dialog. Isn't it nice?",
     buttons: ['Yes', 'No']
   }
-  dialog.showMessageBox(options, index => {
-    event.sender.send('information-dialog-selection', index)
-  })
+  return (await dialog.showMessageBox(options)).response
 })
 
 // In this file you can include the rest of your app's specific main process

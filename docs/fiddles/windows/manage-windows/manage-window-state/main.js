@@ -1,5 +1,6 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, ipcMain, shell } = require('electron/main')
+const path = require('node:path')
 
 ipcMain.on('create-demo-window', (event) => {
   const win = new BrowserWindow({ width: 400, height: 275 })
@@ -22,8 +23,7 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      contextIsolation: false,
-      nodeIntegration: true
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 

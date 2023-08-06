@@ -1,4 +1,5 @@
 const { app, BrowserWindow, shell } = require('electron/main')
+const path = require('node:path')
 
 let mainWindow = null
 
@@ -8,8 +9,7 @@ function createWindow () {
     height: 400,
     title: 'Get version information',
     webPreferences: {
-      contextIsolation: false,
-      nodeIntegration: true
+      preload: path.join(__dirname, 'preload.js')
     }
   }
 
