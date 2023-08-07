@@ -57,6 +57,14 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
       break;
   }
 }
+
+api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
+  DCHECK(contents);
+  api::tabs::MutedInfo info;
+  info.muted = contents->IsAudioMuted();
+  info.reason = api::tabs::MUTED_INFO_REASON_USER;
+  return info;
+}
 }  // namespace
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
@@ -502,10 +510,16 @@ ExtensionFunction::ResponseValue TabsUpdateFunction::GetResult() {
 
   auto* api_web_contents = electron::api::WebContents::From(web_contents_);
   tab.id = (api_web_contents ? api_web_contents->ID() : -1);
+
   // TODO(nornagon): in Chrome, the tab URL is only available to extensions
   // that have the "tabs" (or "activeTab") permission. We should do the same
   // permission check here.
   tab.url = web_contents_->GetLastCommittedURL().spec();
+
+  if (api_web_contents)
+    tab.active = api_web_contents->IsFocused();
+  tab.muted_info = CreateMutedInfo(web_contents_);
+  tab.audible = web_contents_->IsCurrentlyAudible();
 
   return ArgumentList(tabs::Get::Results::Create(std::move(tab)));
 }
