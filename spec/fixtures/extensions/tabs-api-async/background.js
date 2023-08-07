@@ -42,6 +42,13 @@ const handleRequest = (request, sender, sendResponse) => {
       chrome.tabs.reload(tabId).then(() => {
         sendResponse({ status: 'reloaded' });
       });
+      break;
+    }
+
+    case 'update': {
+      const [params] = args;
+      chrome.tabs.update(tabId, params).then(sendResponse);
+      break;
     }
   }
 };
