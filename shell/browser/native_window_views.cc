@@ -254,6 +254,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
+
+  // If the taskbar is re-created after we start up, we have to rebuild all of
+  // our buttons.
+  taskbar_created_message_ = RegisterWindowMessage(TEXT("TaskbarCreated"));
 #endif
 
   if (enable_larger_than_screen())
