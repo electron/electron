@@ -309,15 +309,14 @@ index 4ea8e4f4636d555497759d8cf5f6181c4e7a649e..9556c2b11e1c0967fc04e61dba3321bd
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index e3dd4fab3a1cac0138f8dac60247e0ea3343e87e..998178845e241c8b45a3ef8ad542d10a4e687831 100644
+index e3dd4fab3a1cac0138f8dac60247e0ea3343e87e..f31130eaa3719eda0da5b3f0e8c294775faf6bd4 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
-@@ -19,6 +19,10 @@ component("webview") {
+@@ -19,6 +19,9 @@ component("webview") {
  
    if (is_mac) {
      sources += [ "unhandled_keyboard_event_handler_mac.mm" ]
 +    configs += [
-+      "//build/config/compiler:enable_arc",
 +      "//electron/build/config:mas_build",
 +    ]
    }

@@ -794,7 +794,6 @@ if (is_mac) {
     ]
 
     configs += [
-      "//build/config/compiler:enable_arc",
       "//electron/build/config:mas_build",
       "//third_party/electron_node:node_internals",
     ]
