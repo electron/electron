@@ -34,6 +34,11 @@ const testMap = {
     chrome.runtime.sendMessage({ method: 'reload' }, response => {
       console.log(JSON.stringify(response));
     });
+  },
+  update (params) {
+    chrome.runtime.sendMessage({ method: 'update', args: [params] }, response => {
+      console.log(JSON.stringify(response));
+    });
   }
 };
 
