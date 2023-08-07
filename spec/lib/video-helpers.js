@@ -313,16 +313,16 @@ function bitsToBuffer (bits) {
 
 function generateEBML (json) {
   const ebml = [];
-  for (let i = 0; i < json.length; i++) {
-    if (!('id' in json[i])) {
+  for (const item of json) {
+    if (!('id' in item)) {
       // already encoded blob or byteArray
-      ebml.push(json[i]);
+      ebml.push(item);
       continue;
     }
 
-    let data = json[i].data;
+    let data = item.data;
     if (typeof data === 'object') data = generateEBML(data);
-    if (typeof data === 'number') data = ('size' in json[i]) ? numToFixedBuffer(data, json[i].size) : bitsToBuffer(data.toString(2));
+    if (typeof data === 'number') data = ('size' in item) ? numToFixedBuffer(data, item.size) : bitsToBuffer(data.toString(2));
     if (typeof data === 'string') data = strToBuffer(data);
 
     const len = data.size || data.byteLength || data.length;
@@ -335,7 +335,7 @@ function generateEBML (json) {
     // going to fix this, i'm probably just going to write some hacky thing which
     // converts that string into a buffer-esque thing
 
-    ebml.push(numToBuffer(json[i].id));
+    ebml.push(numToBuffer(item.id));
     ebml.push(bitsToBuffer(size));
     ebml.push(data);
   }
@@ -349,13 +349,13 @@ function toFlatArray (arr, outBuffer) {
   if (outBuffer == null) {
     outBuffer = [];
   }
-  for (let i = 0; i < arr.length; i++) {
-    if (typeof arr[i] === 'object') {
+  for (const item of arr) {
+    if (typeof item === 'object') {
       // an array
-      toFlatArray(arr[i], outBuffer);
+      toFlatArray(item, outBuffer);
     } else {
       // a simple element
-      outBuffer.push(arr[i]);
+      outBuffer.push(item);
     }
   }
   return outBuffer;

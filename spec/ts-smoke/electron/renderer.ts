@@ -74,14 +74,14 @@ crashReporter.start({
 // https://github.com/electron/electron/blob/main/docs/api/desktop-capturer.md
 
 getSources({ types: ['window', 'screen'] }).then(sources => {
-  for (let i = 0; i < sources.length; ++i) {
-    if (sources[i].name === 'Electron') {
+  for (const source of sources) {
+    if (source.name === 'Electron') {
       (navigator as any).webkitGetUserMedia({
         audio: false,
         video: {
           mandatory: {
             chromeMediaSource: 'desktop',
-            chromeMediaSourceId: sources[i].id,
+            chromeMediaSourceId: source.id,
             minWidth: 1280,
             maxWidth: 1280,
             minHeight: 720,
