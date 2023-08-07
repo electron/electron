@@ -34,7 +34,7 @@ index 180abdc9f983887c83fd9d4a596472222e9ab472..00842717a7570561ee9e3eca11190ab5
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index ae96b235b8b85abc7a8d5fc9213d90181a82faee..4974d23751093bb918ef3764289937b9da109b24 100644
+index 8fa040071ba1e70890f7dcf8193e83e147679ed7..3cc38ccd2793b801f5debd3d2815c367ce036e6b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
 @@ -565,8 +565,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
@@ -99,7 +99,7 @@ index 8a18ecf567cd3a6a2fb1627083a5544a93198bf4..6bb4074e033e045de164bc776f75f152
    // Visibility -----------------------------------------------------------
  
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 70813fe806ce29cfeeb9ae93c06d714070404521..0913b97dd24270ff2e6e02964ea0c7536de8de22 100644
+index f4bd3d4fa8d85220557b3a2608f8ee5b808468d8..c724ee69385ae9817161a72f82a14c4ac9b5f835 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -2406,6 +2406,10 @@ void WebViewImpl::SetPageLifecycleStateInternal(

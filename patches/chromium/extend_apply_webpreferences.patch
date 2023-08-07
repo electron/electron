@@ -12,7 +12,7 @@ Ideally we could add an embedder observer pattern here but that can be
 done in future work.
 
 diff --git a/third_party/blink/renderer/core/exported/web_view_impl.cc b/third_party/blink/renderer/core/exported/web_view_impl.cc
-index 0913b97dd24270ff2e6e02964ea0c7536de8de22..2829b0855b5cf1499c6146a05b1bed0bb61d9936 100644
+index c724ee69385ae9817161a72f82a14c4ac9b5f835..625a40b764a1cc7eb6f89a7e30a6172861c41cc4 100644
 --- a/third_party/blink/renderer/core/exported/web_view_impl.cc
 +++ b/third_party/blink/renderer/core/exported/web_view_impl.cc
 @@ -165,6 +165,7 @@
