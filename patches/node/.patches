@@ -39,3 +39,4 @@ fix_adapt_generator_tostringtag_prototype_to_v8.patch
 fix_ftbfs_werror_wunreachable-code-break.patch
 fix_ftbfs_werror_wextra-semi.patch
 fix_isurl_implementation.patch
+ci_ensure_node_tests_set_electron_run_as_node.patch
