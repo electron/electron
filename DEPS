@@ -23,6 +23,9 @@ vars = {
   'squirrel_git': 'https://github.com/Squirrel',
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
+  
+  # The path of the sysroots.json file.
+  'sysroots_json_path': 'electron/script/sysroots.json',
 
   # KEEP IN SYNC WITH utils.js FILE
   'yarn_version': '1.15.2',
