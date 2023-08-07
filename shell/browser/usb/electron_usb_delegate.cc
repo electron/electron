@@ -25,6 +25,7 @@
 #include "base/containers/fixed_flat_set.h"
 #include "chrome/common/chrome_features.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
 #include "services/device/public/mojom/usb_device.mojom.h"
@@ -284,6 +285,35 @@ UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
 void ElectronUsbDelegate::DeleteControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   controller_map_.erase(render_frame_host);
+}
+
+bool ElectronUsbDelegate::PageMayUseUsb(content::Page& page) {
+  content::RenderFrameHost& main_rfh = page.GetMainDocument();
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  // WebViewGuests have no mechanism to show permission prompts and their
+  // embedder can't grant USB access through its permissionrequest API. Also
+  // since webviews use a separate StoragePartition, they must not gain access
+  // through permissions granted in non-webview contexts.
+  if (extensions::WebViewGuest::FromRenderFrameHost(&main_rfh)) {
+    return false;
+  }
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+
+  // USB permissions are scoped to a BrowserContext instead of a
+  // StoragePartition, so we need to be careful about usage across
+  // StoragePartitions. Until this is scoped correctly, we'll try to avoid
+  // inappropriate sharing by restricting access to the API. We can't be as
+  // strict as we'd like, as cases like extensions and Isolated Web Apps still
+  // need USB access in non-default partitions, so we'll just guard against
+  // HTTP(S) as that presents a clear risk for inappropriate sharing.
+  // TODO(crbug.com/1469672): USB permissions should be explicitly scoped to
+  // StoragePartitions.
+  if (main_rfh.GetStoragePartition() !=
+      main_rfh.GetBrowserContext()->GetDefaultStoragePartition()) {
+    return !main_rfh.GetLastCommittedURL().SchemeIsHTTPOrHTTPS();
+  }
+
+  return true;
 }
 
 }  // namespace electron
