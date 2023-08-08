@@ -1,5 +1,5 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, shell } = require('electron')
 
 ipcMain.on('create-frameless-window', (event, { url }) => {
   const win = new BrowserWindow({ frame: false })
@@ -19,6 +19,12 @@ function createWindow () {
 
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
+
+  // Open external links in the default browser
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    shell.openExternal(url)
+  })
 }
 
 // This method will be called when Electron has finished
