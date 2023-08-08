@@ -40,19 +40,19 @@ index f3e0047fea1319034bf8b05b8d54d8a4ef181b4b..be0289ea7df50d7c2cb002c6343b7501
          'defines': [
            'V8_COMPRESS_POINTERS',
 diff --git a/configure.py b/configure.py
-index 03ccbae0a1a837a382b98b828990d5a511f7a9d7..b5c747971a10b549007a8a3247aa5bd8058f311f 100755
+index 875d83e5db0037b902cff03c74852ea347513b03..8776cd057607ffe913bdd822a0aed5f9f1aa4a7a 100755
 --- a/configure.py
 +++ b/configure.py
-@@ -1529,6 +1529,7 @@ def configure_library(lib, output, pkgname=None):
+@@ -1524,6 +1524,7 @@ def configure_library(lib, output, pkgname=None):
  
  
  def configure_v8(o):
 +  o['variables']['using_electron_config_gypi'] = 1
-   o['variables']['v8_enable_webassembly'] = 1
+   o['variables']['v8_enable_webassembly'] = 0 if options.v8_lite_mode else 1
    o['variables']['v8_enable_javascript_promise_hooks'] = 1
    o['variables']['v8_enable_lite_mode'] = 1 if options.v8_lite_mode else 0
 diff --git a/src/node.h b/src/node.h
-index 4b9b416e77b07407eae7b9587705b74ad3e6f211..deefda5c684c062f3c707fbdee30878a74d5dbb0 100644
+index c4cce244359d893acf31e78f935152d4d47b14cd..26368061a909e6abc62a4cf261a5dbbd79404f1a 100644
 --- a/src/node.h
 +++ b/src/node.h
 @@ -22,6 +22,12 @@

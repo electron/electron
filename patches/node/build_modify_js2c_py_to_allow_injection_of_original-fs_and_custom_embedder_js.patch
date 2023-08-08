@@ -37,7 +37,7 @@ index ce885c154c81c5703365fa34957697698da9aff6..229b0d522aeee3632145c86715bea139
  async function* watch(filename, options = kEmptyObject) {
    const path = toNamespacedPath(getValidatedPath(filename));
 diff --git a/src/node_builtins.cc b/src/node_builtins.cc
-index 40d9025746d3c39cf9ea27b6cffc8f2eb7e62c1e..d3a0dd7cedb0d239ae427d1af2335e155345a454 100644
+index 2220869fa76f35fdfba72eba993b20748b07c546..522670ed5c9951c506dcdf2745585552ad2a081f 100644
 --- a/src/node_builtins.cc
 +++ b/src/node_builtins.cc
 @@ -33,6 +33,7 @@ BuiltinLoader BuiltinLoader::instance_;
@@ -61,7 +61,7 @@ index 90b158b84bb2a66781cf92f5b4c1a64f9e2ee651..8d9f7c409659a30747e5feeac6cfec42
  
    std::vector<std::string> GetBuiltinIds();
 diff --git a/tools/js2c.py b/tools/js2c.py
-index ef24c4de0aaa2cd5f3c06e5bd8dd90de2b30ffcb..ece70a8d7a1fdca051d4b821ba114be54bd34e4e 100755
+index 077bba1572f05f1aa16553894703b12abc19a985..bb9f26e3adc863757ad8ede5069d299c2d138369 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -39,6 +39,8 @@ import codecs
@@ -159,22 +159,23 @@ index ef24c4de0aaa2cd5f3c06e5bd8dd90de2b30ffcb..ece70a8d7a1fdca051d4b821ba114be5
    write_if_chaged(out, target)
  
  
-@@ -218,6 +237,7 @@ def main():
+@@ -222,6 +241,7 @@ def main():
        default=None,
-       help='input file directory')
+       help='root directory containing the sources')
    parser.add_argument('--verbose', action='store_true', help='output file')
 +  parser.add_argument('--only-js', action='store_true', help='do not require or parse any config.gypi files')
    parser.add_argument('sources', nargs='*', help='input files')
    options = parser.parse_args()
    global is_verbose
-@@ -230,12 +250,15 @@ def main():
+@@ -238,13 +258,15 @@ def main():
  
    source_files = functools.reduce(SourceFileByExt, sources, {})
  
 -  # Should have exactly 3 types: `.js`, `.mjs` and `.gypi`
 -  assert len(source_files) == 3
 -  # Currently config.gypi is the only `.gypi` file allowed
--  assert source_files['.gypi'] == ['config.gypi']
+-  assert len(source_files['.gypi']) == 1
+-  assert os.path.basename(source_files['.gypi'][0]) == 'config.gypi'
 -  source_files['config.gypi'] = source_files.pop('.gypi')[0]
 -  JS2C(source_files, options.target)
 +  if options.only_js:

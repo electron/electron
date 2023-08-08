@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 7 Aug 2023 20:29:10 -0500
+Subject: chore: update fixtures/errors/force_colors.snapshot
+
+The line numbers in the stacktrace from our v8 build don't match what
+Node's tests are expecting, so update the stacktrace to match our build.
+
+The specific probably isn't needed for the force_colors test, which is
+trying to see whether or not the lines are greyed out. One possibility
+would be to upstream a changed test that doesn't hardcode line numbers.
+
+diff --git a/test/fixtures/errors/force_colors.snapshot b/test/fixtures/errors/force_colors.snapshot
+index 0334a0b4faa3633aa8617b9538873e7f3540513b..d8c710e07602b68c9ad4eaaeab2bdf399ed5150b 100644
+--- a/test/fixtures/errors/force_colors.snapshot
++++ b/test/fixtures/errors/force_colors.snapshot
+@@ -4,11 +4,12 @@ throw new Error('Should include grayed stack trace')
+ 
+ Error: Should include grayed stack trace
+     at Object.<anonymous> [90m(/[39mtest*force_colors.js:1:7[90m)[39m
+-[90m    at Module._compile (node:internal*modules*cjs*loader:1256:14)[39m
+-[90m    at Module._extensions..js (node:internal*modules*cjs*loader:1310:10)[39m
+-[90m    at Module.load (node:internal*modules*cjs*loader:1119:32)[39m
+-[90m    at Module._load (node:internal*modules*cjs*loader:960:12)[39m
+-[90m    at Function.executeUserEntryPoint [as runMain] (node:internal*modules*run_main:81:12)[39m
++[90m    at Module._compile (node:internal*modules*cjs*loader:1271:14)[39m
++[90m    at Object..js (node:internal*modules*cjs*loader:1326:10)[39m
++[90m    at Module.load (node:internal*modules*cjs*loader:1126:32)[39m
++[90m    at node:internal*modules*cjs*loader:967:12[39m
++[90m    at Function._load (node:electron*js2c*asar_bundle:756:32)[39m
++[90m    at Function.executeUserEntryPoint [as runMain] (node:internal*modules*run_main:87:12)[39m
+ [90m    at node:internal*main*run_main_module:23:47[39m
+ 
+ Node.js *

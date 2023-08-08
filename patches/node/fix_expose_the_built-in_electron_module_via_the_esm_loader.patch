@@ -6,7 +6,7 @@ Subject: fix: expose the built-in electron module via the ESM loader
 This allows usage of `import { app } from 'electron'` and `import('electron')` natively in the browser + non-sandboxed renderer
 
 diff --git a/lib/internal/modules/esm/get_format.js b/lib/internal/modules/esm/get_format.js
-index eb5f0be49395b0192f18738d549241ae98793df7..522fd5cc6bea3e7fe4089eb25d64d65d2e8784ca 100644
+index 219ef03a21214deb8961044cfc18ef9c1e711b60..7749b37001f869fe565d8c450ff7ca2b6f3faa7a 100644
 --- a/lib/internal/modules/esm/get_format.js
 +++ b/lib/internal/modules/esm/get_format.js
 @@ -30,6 +30,7 @@ const protocolHandlers = {
@@ -18,10 +18,10 @@ index eb5f0be49395b0192f18738d549241ae98793df7..522fd5cc6bea3e7fe4089eb25d64d65d
  
  /**
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index fd7d2feada9bbbba589fe89230e45954fa2dd3be..3c9b1ad93f2c6b5fde5e9ed2a8bf1dc01d94a8de 100644
+index 2cac6f2d450fab014544d15439e51575f86ccb38..ce2d851da2577e6e99980eb75337f629b38fddbf 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -824,6 +824,8 @@ function parsePackageName(specifier, base) {
+@@ -822,6 +822,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
@@ -30,7 +30,7 @@ index fd7d2feada9bbbba589fe89230e45954fa2dd3be..3c9b1ad93f2c6b5fde5e9ed2a8bf1dc0
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -836,6 +838,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -834,6 +836,10 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -41,15 +41,6 @@ index fd7d2feada9bbbba589fe89230e45954fa2dd3be..3c9b1ad93f2c6b5fde5e9ed2a8bf1dc0
    const { packageName, packageSubpath, isScoped } =
      parsePackageName(specifier, base);
  
-@@ -1034,7 +1040,7 @@ function checkIfDisallowedImport(specifier, parsed, parsedParentURL) {
- 
- function throwIfUnsupportedURLProtocol(url) {
-   if (url.protocol !== 'file:' && url.protocol !== 'data:' &&
--      url.protocol !== 'node:') {
-+      url.protocol !== 'node:' && url.protocol !== 'electron:') {
-     throw new ERR_UNSUPPORTED_ESM_URL_SCHEME(url);
-   }
- }
 diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
 index a425749e82acd7593c9fb1ceffedc119a4e416f2..1ceb89da21610c703f4a18be5888373c7feaa370 100644
 --- a/lib/internal/modules/esm/translators.js
@@ -77,12 +68,12 @@ index a425749e82acd7593c9fb1ceffedc119a4e416f2..1ceb89da21610c703f4a18be5888373c
        // We might trigger a getter -> dont fail.
        let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 7b2e0b4ffa6cc71b78dd1a1f64f7f491a6669383..41327e0f33828b1a3f276c9054293d89a7956e1d 100644
+index 51688b8403076a328c2c62b6434fc310ee4f1ea7..36604c9de2179b5f6941dd9a7af66cdb03facd7f 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1221,6 +1221,8 @@ function fileURLToPath(path) {
+@@ -1399,6 +1399,8 @@ function fileURLToPath(path) {
      path = new URL(path);
-   else if (!isURLInstance(path))
+   else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
 +  if (path.protocol === 'electron:')
 +    return 'electron';
