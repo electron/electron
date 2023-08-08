@@ -280,7 +280,9 @@ describe('<webview> tag', function () {
       w.webContents.session.removeExtension('foo');
 
       const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-      await w.webContents.session.loadExtension(extensionPath);
+      await w.webContents.session.loadExtension(extensionPath, {
+        allowFileAccess: true
+      });
 
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
       loadWebView(w.webContents, {
@@ -2032,7 +2034,7 @@ describe('<webview> tag', function () {
             // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
             expect(imgBuffer[25]).to.equal(6);
             return;
-          } catch (e) {
+          } catch {
             /* drop the error */
           }
         }

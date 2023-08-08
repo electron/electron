@@ -14,6 +14,10 @@
 #import <objc/message.h>
 #import <objc/runtime.h>
 
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
 namespace electron {
 
 int ScopedDisableResize::disable_resize_ = 0;
@@ -248,7 +252,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                                        @"NSAccessibilityReparentingCellProxy"];
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
-  NSMutableArray* mutableChildren = [[children mutableCopy] autorelease];
+  NSMutableArray* mutableChildren = [children mutableCopy];
   [mutableChildren filterUsingPredicate:predicate];
 
   return mutableChildren;

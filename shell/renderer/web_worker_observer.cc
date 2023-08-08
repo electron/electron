@@ -41,20 +41,7 @@ WebWorkerObserver::WebWorkerObserver()
       electron_bindings_(
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 
-WebWorkerObserver::~WebWorkerObserver() {
-  // Destroying the node environment will also run the uv loop,
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit`
-  v8::MicrotaskQueue* microtask_queue =
-      node_bindings_->uv_env()->context()->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
-  node::FreeEnvironment(node_bindings_->uv_env());
-  node::FreeIsolateData(node_bindings_->isolate_data());
-  microtask_queue->set_microtasks_policy(old_policy);
-}
+WebWorkerObserver::~WebWorkerObserver() = default;
 
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
@@ -94,6 +81,24 @@ void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env)
     gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
+
+  // Destroying the node environment will also run the uv loop,
+  // Node.js expects `kExplicit` microtasks policy and will run microtasks
+  // checkpoints after every call into JavaScript. Since we use a different
+  // policy in the renderer - switch to `kExplicit`
+  v8::MicrotaskQueue* microtask_queue = context->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+
+  node::FreeEnvironment(env);
+  node::FreeIsolateData(node_bindings_->isolate_data(context));
+  node_bindings_->clear_isolate_data(context);
+
+  microtask_queue->set_microtasks_policy(old_policy);
+
+  // ElectronBindings is tracking node environments.
+  electron_bindings_->EnvironmentDestroyed(env);
 
   if (lazy_tls->Get())
     lazy_tls->Set(nullptr);

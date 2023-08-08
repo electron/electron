@@ -1865,7 +1865,7 @@ bool WebContents::EmitNavigationEvent(
   content::RenderFrameHost* initiator_frame_host =
       navigation_handle->GetInitiatorFrameToken().has_value()
           ? content::RenderFrameHost::FromFrameToken(
-                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorProcessId(),
                 navigation_handle->GetInitiatorFrameToken().value())
           : nullptr;
 
@@ -2031,7 +2031,8 @@ void WebContents::MessageSync(
 
 void WebContents::MessageTo(int32_t web_contents_id,
                             const std::string& channel,
-                            blink::CloneableMessage arguments) {
+                            blink::CloneableMessage arguments,
+                            content::RenderFrameHost* render_frame_host) {
   TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
   auto* target_web_contents = FromID(web_contents_id);
 
@@ -2047,8 +2048,10 @@ void WebContents::MessageTo(int32_t web_contents_id,
       return;
 
     int32_t sender_id = ID();
+    bool sender_is_main_frame = render_frame_host->GetParent() == nullptr;
     web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
-                                              std::move(arguments), sender_id);
+                                              std::move(arguments), sender_id,
+                                              sender_is_main_frame);
   }
 }
 

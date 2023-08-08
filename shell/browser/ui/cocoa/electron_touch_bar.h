@@ -11,10 +11,13 @@
 #include <string>
 #include <vector>
 
-#include "base/mac/scoped_nsobject.h"
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
 
 @interface ElectronTouchBar : NSObject <NSScrubberDelegate,
                                         NSScrubberDataSource,

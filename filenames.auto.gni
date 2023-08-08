@@ -143,6 +143,7 @@ auto_filenames = {
   sandbox_bundle_deps = [
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",
+    "lib/common/deprecate.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/web-view-methods.ts",
     "lib/common/webpack-globals-provider.ts",
@@ -268,6 +269,7 @@ auto_filenames = {
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
+    "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
@@ -306,6 +308,7 @@ auto_filenames = {
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
+    "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",

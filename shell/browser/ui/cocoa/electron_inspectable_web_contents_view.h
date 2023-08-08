@@ -8,10 +8,13 @@
 #import <AppKit/AppKit.h>
 
 #include "base/apple/owned_objc.h"
-#include "base/mac/scoped_nsobject.h"
 #include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/base/cocoa/base_view.h"
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
 
 namespace electron {
 class InspectableWebContentsViewMac;
@@ -27,8 +30,8 @@ using electron::InspectableWebContentsViewMac;
  @private
   raw_ptr<electron::InspectableWebContentsViewMac> inspectableWebContentsView_;
 
-  base::scoped_nsobject<NSView> fake_view_;
-  base::scoped_nsobject<NSWindow> devtools_window_;
+  NSView* __strong fake_view_;
+  NSWindow* __strong devtools_window_;
   BOOL devtools_visible_;
   BOOL devtools_docked_;
   BOOL devtools_is_first_responder_;

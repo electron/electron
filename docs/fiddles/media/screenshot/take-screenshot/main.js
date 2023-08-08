@@ -12,6 +12,7 @@ function createWindow () {
     height: 300,
     title: 'Take a Screenshot',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   }

@@ -45,8 +45,11 @@ bool ShouldUseGlobalMenuBar() {
   dbus::ObjectProxy* object_proxy =
       bus->GetObjectProxy(DBUS_SERVICE_DBUS, dbus::ObjectPath(DBUS_PATH_DBUS));
   dbus::MethodCall method_call(DBUS_INTERFACE_DBUS, "ListNames");
-  std::unique_ptr<dbus::Response> response(object_proxy->CallMethodAndBlock(
-      &method_call, dbus::ObjectProxy::TIMEOUT_USE_DEFAULT));
+  std::unique_ptr<dbus::Response> response =
+      object_proxy
+          ->CallMethodAndBlock(&method_call,
+                               dbus::ObjectProxy::TIMEOUT_USE_DEFAULT)
+          .value_or(nullptr);
   if (!response) {
     bus->ShutdownAndBlock();
     return false;

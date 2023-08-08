@@ -113,7 +113,7 @@ index 9814861ab18fa88bc781f83acb602129b6f3de1f..1c5a2efc2749697aa3d38247f491eabf
  }
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index bbd2aa78722fc0a14ac815ca0243b83965ad8d7c..b6e0a2fce3a0fb9c449aa1bef6a0f970ef5c2d07 100644
+index d0e0d10739b5daf99435a67e18dc51df8e670e09..704f3d6c2fdd27a84d1c4e1b7bf680f62c86c2d0 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -45,6 +45,7 @@ struct NotificationDatabaseData;
@@ -133,10 +133,10 @@ index bbd2aa78722fc0a14ac815ca0243b83965ad8d7c..b6e0a2fce3a0fb9c449aa1bef6a0f970
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 7a873293b0ec83da11241e0ae407583d86efde8b..994b153f6e7e576d31456e2e63c58457c044c1bd 100644
+index fdd7b9f419c597ece34e1a9d7c625e2c2dd67c5e..7a6ac28c250f2c4947f7035a34dccf9b5d9f1918 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
-@@ -2220,7 +2220,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2230,7 +2230,7 @@ void RenderProcessHostImpl::CreateNotificationService(
      case RenderProcessHost::NotificationServiceCreatorType::kSharedWorker:
      case RenderProcessHost::NotificationServiceCreatorType::kDedicatedWorker: {
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(
@@ -145,7 +145,7 @@ index 7a873293b0ec83da11241e0ae407583d86efde8b..994b153f6e7e576d31456e2e63c58457
            creator_type, std::move(receiver));
        break;
      }
-@@ -2228,7 +2228,7 @@ void RenderProcessHostImpl::CreateNotificationService(
+@@ -2238,7 +2238,7 @@ void RenderProcessHostImpl::CreateNotificationService(
        CHECK(rfh);
  
        storage_partition_impl_->GetPlatformNotificationContext()->CreateService(

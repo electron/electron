@@ -6,18 +6,21 @@
 #define ELECTRON_SHELL_BROWSER_MAC_ELECTRON_APPLICATION_H_
 
 #include "base/functional/callback.h"
-#include "base/mac/scoped_nsobject.h"
 #include "base/mac/scoped_sending_event.h"
 
 #import <AVFoundation/AVFoundation.h>
 #import <LocalAuthentication/LocalAuthentication.h>
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
 
 @interface AtomApplication : NSApplication <CrAppProtocol,
                                             CrAppControlProtocol,
                                             NSUserActivityDelegate> {
  @private
   BOOL handlingSendEvent_;
-  base::scoped_nsobject<NSUserActivity> currentActivity_;
+  NSUserActivity* __strong currentActivity_;
   NSCondition* handoffLock_;
   BOOL updateReceived_;
   BOOL userStoppedShutdown_;

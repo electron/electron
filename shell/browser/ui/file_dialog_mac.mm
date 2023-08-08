@@ -73,8 +73,7 @@
 - (void)dealloc {
   auto* popupButton =
       static_cast<NSPopUpButton*>([[self subviews] objectAtIndex:1]);
-  [[popupButton target] release];
-  [super dealloc];
+  popupButton.target = nil;
 }
 
 @end
@@ -148,10 +147,10 @@ void SetAllowedFileTypes(NSSavePanel* dialog, const Filters& filters) {
   [popupButton setTarget:popUpButtonHandler];
   [popupButton setAction:@selector(selectFormat:)];
 
-  [accessoryView addSubview:[label autorelease]];
-  [accessoryView addSubview:[popupButton autorelease]];
+  [accessoryView addSubview:label];
+  [accessoryView addSubview:popupButton];
 
-  [dialog setAccessoryView:[accessoryView autorelease]];
+  [dialog setAccessoryView:accessoryView];
 }
 
 void SetupDialog(NSSavePanel* dialog, const DialogSettings& settings) {

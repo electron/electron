@@ -104,7 +104,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -557,7 +557,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -1106,7 +1106,7 @@ describe('protocol module', () => {
           // In case of failure, make sure we unhandle. But we should succeed
           // :)
           protocol.unhandle('test-scheme');
-        } catch (_ignored) { /* ignore */ }
+        } catch { /* ignore */ }
       });
       const resp1 = await net.fetch('test-scheme://foo');
       expect(resp1.status).to.equal(200);
@@ -1114,11 +1114,32 @@ describe('protocol module', () => {
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
     });
 
-    it('receives requests to an existing scheme', async () => {
+    it('receives requests to the existing https scheme', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));
       defer(() => { protocol.unhandle('https'); });
       const body = await net.fetch('https://foo').then(r => r.text());
       expect(body).to.equal('hello https://foo/');
+    });
+
+    it('receives requests to the existing file scheme', (done) => {
+      const filePath = path.join(__dirname, 'fixtures', 'pages', 'a.html');
+
+      protocol.handle('file', (req) => {
+        let file;
+        if (process.platform === 'win32') {
+          file = `file:///${filePath.replace(/\\/g, '/')}`;
+        } else {
+          file = `file://${filePath}`;
+        }
+
+        if (req.url === file) done();
+        return new Response(req.url);
+      });
+
+      defer(() => { protocol.unhandle('file'); });
+
+      const w = new BrowserWindow();
+      w.loadFile(filePath);
     });
 
     it('receives requests to an existing scheme when navigating', async () => {

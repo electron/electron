@@ -4,6 +4,7 @@
 
 #include "shell/browser/api/electron_api_base_window.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
@@ -756,7 +757,7 @@ void BaseWindow::SetBrowserView(
 }
 
 void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  if (!base::Contains(browser_views_, browser_view->ID())) {
+  if (!base::Contains(browser_views_, browser_view.ToV8())) {
     // If we're reparenting a BrowserView, ensure that it's detached from
     // its previous owner window.
     BaseWindow* owner_window = browser_view->owner_window();
@@ -770,17 +771,19 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
     window_->AddBrowserView(browser_view->view());
     window_->AddDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(this);
-    browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
+    browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
   }
 }
 
 void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
+  auto iter = std::find(browser_views_.begin(), browser_views_.end(),
+                        browser_view.ToV8());
+
   if (iter != browser_views_.end()) {
     window_->RemoveBrowserView(browser_view->view());
     window_->RemoveDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(nullptr);
-    iter->second.Reset();
+    iter->Reset();
     browser_views_.erase(iter);
   }
 }
@@ -788,12 +791,15 @@ void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
 void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                    gin_helper::Arguments* args) {
   BaseWindow* owner_window = browser_view->owner_window();
-  auto iter = browser_views_.find(browser_view->ID());
+  auto iter = std::find(browser_views_.begin(), browser_views_.end(),
+                        browser_view.ToV8());
   if (iter == browser_views_.end() || (owner_window && owner_window != this)) {
     args->ThrowError("Given BrowserView is not attached to the window");
     return;
   }
 
+  browser_views_.erase(iter);
+  browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
   window_->SetTopBrowserView(browser_view->view());
 }
 
@@ -1000,7 +1006,7 @@ v8::Local<v8::Value> BaseWindow::GetBrowserView(
     return v8::Null(isolate());
   } else if (browser_views_.size() == 1) {
     auto first_view = browser_views_.begin();
-    return v8::Local<v8::Value>::New(isolate(), (*first_view).second);
+    return v8::Local<v8::Value>::New(isolate(), *first_view);
   } else {
     args->ThrowError(
         "BrowserWindow have multiple BrowserViews, "
@@ -1012,8 +1018,8 @@ v8::Local<v8::Value> BaseWindow::GetBrowserView(
 std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
   std::vector<v8::Local<v8::Value>> ret;
 
-  for (auto const& views_iter : browser_views_) {
-    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
+  for (auto const& browser_view : browser_views_) {
+    ret.push_back(v8::Local<v8::Value>::New(isolate(), browser_view));
   }
 
   return ret;
@@ -1122,7 +1128,7 @@ void BaseWindow::ResetBrowserViews() {
   for (auto& item : browser_views_) {
     gin::Handle<BrowserView> browser_view;
     if (gin::ConvertFromV8(isolate(),
-                           v8::Local<v8::Value>::New(isolate(), item.second),
+                           v8::Local<v8::Value>::New(isolate(), item),
                            &browser_view) &&
         !browser_view.IsEmpty()) {
       // There's a chance that the BrowserView may have been reparented - only
@@ -1135,7 +1141,7 @@ void BaseWindow::ResetBrowserViews() {
       browser_view->SetOwnerWindow(nullptr);
     }
 
-    item.second.Reset();
+    item.Reset();
   }
 
   browser_views_.clear();

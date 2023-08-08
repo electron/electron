@@ -8,6 +8,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/win/dark_mode.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/base/win/hwnd_metrics.h"
 #include "ui/base/win/shell.h"
 
@@ -35,6 +36,14 @@ bool ElectronDesktopWindowTreeHostWin::PreHandleMSG(UINT message,
   }
 
   return native_window_view_->PreHandleMSG(message, w_param, l_param, result);
+}
+
+bool ElectronDesktopWindowTreeHostWin::ShouldPaintAsActive() const {
+  if (force_should_paint_as_active_.has_value()) {
+    return force_should_paint_as_active_.value();
+  }
+
+  return views::DesktopWindowTreeHostWin::ShouldPaintAsActive();
 }
 
 bool ElectronDesktopWindowTreeHostWin::GetDwmFrameInsetsInPixels(
@@ -102,7 +111,26 @@ bool ElectronDesktopWindowTreeHostWin::HandleMouseEventForCaption(
 
 void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(
     ui::NativeTheme* observed_theme) {
-  win::SetDarkModeForWindow(GetAcceleratedWidget());
+  HWND hWnd = GetAcceleratedWidget();
+  win::SetDarkModeForWindow(hWnd);
+
+  auto* os_info = base::win::OSInfo::GetInstance();
+  auto const version = os_info->version();
+
+  // Toggle the nonclient area active state to force a redraw (Win10 workaround)
+  if (version < base::win::Version::WIN11) {
+    // When handling WM_NCACTIVATE messages, Chromium logical ORs the wParam and
+    // the value of ShouldPaintAsActive() - so if the latter is true, it's not
+    // possible to toggle the title bar to inactive. Force it to false while we
+    // send the message so that the wParam value will always take effect. Refs
+    // https://source.chromium.org/chromium/chromium/src/+/main:ui/views/win/hwnd_message_handler.cc;l=2332-2381;drc=e6361d070be0adc585ebbff89fec76e2df4ad768
+    force_should_paint_as_active_ = false;
+    ::SendMessage(hWnd, WM_NCACTIVATE, hWnd != ::GetActiveWindow(), 0);
+
+    // Clear forced value and tell Chromium the value changed to get a repaint
+    force_should_paint_as_active_.reset();
+    PaintAsActiveChanged();
+  }
 }
 
 }  // namespace electron

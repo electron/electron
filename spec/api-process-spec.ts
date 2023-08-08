@@ -99,7 +99,7 @@ describe('process module', () => {
         defer(() => {
           try {
             fs.unlinkSync(filePath);
-          } catch (e) {
+          } catch {
             // ignore error
           }
         });
@@ -211,7 +211,7 @@ describe('process module', () => {
         defer(() => {
           try {
             fs.unlinkSync(filePath);
-          } catch (e) {
+          } catch {
             // ignore error
           }
         });

@@ -28,7 +28,7 @@ CocoaNotification::~CocoaNotification() {
 }
 
 void CocoaNotification::Show(const NotificationOptions& options) {
-  notification_.reset([[NSUserNotification alloc] init]);
+  notification_ = [[NSUserNotification alloc] init];
 
   NSString* identifier =
       [NSString stringWithFormat:@"%@:notification:%@",
@@ -71,8 +71,7 @@ void CocoaNotification::Show(const NotificationOptions& options) {
 
   int i = 0;
   action_index_ = UINT_MAX;
-  NSMutableArray* additionalActions =
-      [[[NSMutableArray alloc] init] autorelease];
+  NSMutableArray* additionalActions = [[NSMutableArray alloc] init];
   for (const auto& action : options.actions) {
     if (action.type == u"button") {
       // If the notification has both a reply and actions,
@@ -118,7 +117,7 @@ void CocoaNotification::Dismiss() {
 
   NotificationDismissed();
 
-  notification_.reset(nil);
+  notification_ = nil;
 }
 
 void CocoaNotification::NotificationDisplayed() {

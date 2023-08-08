@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index a0d000a3f7d9bfb9e42f5548d5c4c6c0bfe68b71..0d47f92855e41ab06ad2c2c5421820daae01a8a0 100644
+index a463500570c03b0461d625f4a41dfbf76e41d493..a50895d9ef0e3049130b952993d2d572012d542c 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -481,12 +481,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -492,12 +492,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
    return std::make_unique<gtk::NavButtonProviderGtk>();
  }
  
@@ -31,19 +31,19 @@ index a0d000a3f7d9bfb9e42f5548d5c4c6c0bfe68b71..0d47f92855e41ab06ad2c2c5421820da
  }
  
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index adf91ed69c33c5da4ba8cf55d7cbfc482d0762ba..404fccbbe6957ba9309955ef5e7498cdcd0411f0 100644
+index 53c02c50dac536af3f235a9d8192a92449acb9a6..5df5c3fdb62b6aa5c20715fa1d07033d0f36a23e 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -106,7 +106,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
-   void GetInactiveSelectionFgColor(SkColor* color) const override;
+@@ -108,7 +108,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
    bool PreferDarkTheme() const override;
+   void SetDarkTheme(bool dark) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
 -  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame) override;
 +  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame, bool maximized) override;
  
   private:
    using TintMap = std::map<int, color_utils::HSL>;
-@@ -195,6 +195,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -200,6 +200,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
    // while Chrome is running.
    std::unique_ptr<ui::WindowFrameProvider> solid_frame_provider_;
    std::unique_ptr<ui::WindowFrameProvider> transparent_frame_provider_;
@@ -171,10 +171,10 @@ index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf
  
  }  // namespace gtk
 diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
-index 5f5abeeb78372785d57315056fa61fc65a3848a9..f52f436d674ad54c9973488eec59e26d02866847 100644
+index 6d77be047e202d1b1a75c62ab829dd1131ce7f68..ee1f503a679b3e939e3f2d2417aec2182063dbd8 100644
 --- a/ui/linux/fallback_linux_ui.cc
 +++ b/ui/linux/fallback_linux_ui.cc
-@@ -136,7 +136,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
+@@ -135,7 +135,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
  }
  
  ui::WindowFrameProvider* FallbackLinuxUi::GetWindowFrameProvider(
@@ -184,12 +184,12 @@ index 5f5abeeb78372785d57315056fa61fc65a3848a9..f52f436d674ad54c9973488eec59e26d
  }
  
 diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
-index d5b12df3f4e32aef6d974986ceeb666edecc4e11..e836f661a17f2e9916685d497ee5f487c4000661 100644
+index 9901d4939400da87610b1a960ca989eb9da6dc9b..035ab6679f9f6a9083382580bbbe7fa2420ab28d 100644
 --- a/ui/linux/fallback_linux_ui.h
 +++ b/ui/linux/fallback_linux_ui.h
 @@ -67,7 +67,7 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
-   void GetInactiveSelectionFgColor(SkColor* color) const override;
    bool PreferDarkTheme() const override;
+   void SetDarkTheme(bool dark) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
 -  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame) override;
 +  ui::WindowFrameProvider* GetWindowFrameProvider(bool solid_frame, bool maximized) override;
@@ -197,10 +197,10 @@ index d5b12df3f4e32aef6d974986ceeb666edecc4e11..e836f661a17f2e9916685d497ee5f487
   private:
    std::string default_font_family_;
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index 82d40cb5fa1b9ad54e43502793a7d1d3e94e2ebb..6f6296c4f8334e59e1522abe291d65bb508f9541 100644
+index a47134d7fa67213e8928ce98071f85fa1bc66508..2fe17292aee5021864615abc5b60ee38d7fa0e4b 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
-@@ -273,7 +273,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
+@@ -313,7 +313,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
    // if transparency is unsupported and the frame should be rendered opaque.
    // The returned object is not owned by the caller and will remain alive until
    // the process ends.

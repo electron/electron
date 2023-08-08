@@ -52,6 +52,10 @@
 #include "ui/views/widget/widget.h"
 #include "ui/views/window/native_frame_view_mac.h"
 
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
+
 @interface ElectronProgressBar : NSProgressIndicator
 @end
 
@@ -162,6 +166,47 @@ void ViewDidMoveToSuperview(NSView* self, SEL _cmd) {
   [self setFrame:[[self superview] bounds]];
 }
 
+// -[NSWindow orderWindow] does not handle reordering for children
+// windows. Their order is fixed to the attachment order (the last attached
+// window is on the top). Therefore, work around it by re-parenting in our
+// desired order.
+void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
+  NSWindow* parent = [child_window parentWindow];
+  DCHECK(parent);
+
+  // `ordered_children` sorts children windows back to front.
+  NSArray<NSWindow*>* children = [[child_window parentWindow] childWindows];
+  std::vector<std::pair<NSInteger, NSWindow*>> ordered_children;
+  for (NSWindow* child in children)
+    ordered_children.push_back({[child orderedIndex], child});
+  std::sort(ordered_children.begin(), ordered_children.end(), std::greater<>());
+
+  // If `other_window` is nullptr, place `child_window` in front of
+  // all other children windows.
+  if (other_window == nullptr)
+    other_window = ordered_children.back().second;
+
+  if (child_window == other_window)
+    return;
+
+  for (NSWindow* child in children)
+    [parent removeChildWindow:child];
+
+  const bool relative_to_parent = parent == other_window;
+  if (relative_to_parent)
+    [parent addChildWindow:child_window ordered:NSWindowAbove];
+
+  // Re-parent children windows in the desired order.
+  for (auto [ordered_index, child] : ordered_children) {
+    if (child != child_window && child != other_window) {
+      [parent addChildWindow:child ordered:NSWindowAbove];
+    } else if (child == other_window && !relative_to_parent) {
+      [parent addChildWindow:other_window ordered:NSWindowAbove];
+      [parent addChildWindow:child_window ordered:NSWindowAbove];
+    }
+  }
+}
+
 }  // namespace
 
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
@@ -261,13 +306,13 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
         if (window->window_)
           window->window_ = nil;
         if (window->buttons_proxy_)
-          window->buttons_proxy_.reset();
+          window->buttons_proxy_ = nil;
       },
       this));
 
   [window_ setEnableLargerThanScreen:enable_larger_than_screen()];
 
-  window_delegate_.reset([[ElectronNSWindowDelegate alloc] initWithShell:this]);
+  window_delegate_ = [[ElectronNSWindowDelegate alloc] initWithShell:this];
   [window_ setDelegate:window_delegate_];
 
   // Only use native parent window for non-modal windows.
@@ -307,7 +352,7 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
     if (title_bar_style_ == TitleBarStyle::kNormal) {
       InternalSetWindowButtonVisibility(false);
     } else {
-      buttons_proxy_.reset([[WindowButtonsProxy alloc] initWithWindow:window_]);
+      buttons_proxy_ = [[WindowButtonsProxy alloc] initWithWindow:window_];
       [buttons_proxy_ setHeight:titlebar_overlay_height()];
       if (traffic_light_position_) {
         [buttons_proxy_ setMargin:*traffic_light_position_];
@@ -389,7 +434,12 @@ void NativeWindowMac::Close() {
   }
 
   // Ensure we're detached from the parent window before closing.
-  RemoveChildFromParentWindow(this);
+  RemoveChildFromParentWindow();
+
+  while (!child_windows_.empty()) {
+    auto* child = child_windows_.back();
+    child->RemoveChildFromParentWindow();
+  }
 
   // If a sheet is attached to the window when we call
   // [window_ performClose:nil], the window won't close properly
@@ -408,13 +458,14 @@ void NativeWindowMac::Close() {
 }
 
 void NativeWindowMac::CloseImmediately() {
-  RemoveChildFromParentWindow(this);
+  // Ensure we're detached from the parent window before closing.
+  RemoveChildFromParentWindow();
 
-  // Retain the child window before closing it. If the last reference to the
-  // NSWindow goes away inside -[NSWindow close], then bad stuff can happen.
-  // See e.g. http://crbug.com/616701.
-  base::scoped_nsobject<NSWindow> child_window(window_,
-                                               base::scoped_policy::RETAIN);
+  while (!child_windows_.empty()) {
+    auto* child = child_windows_.back();
+    child->RemoveChildFromParentWindow();
+  }
+
   [window_ close];
 }
 
@@ -603,9 +654,11 @@ void NativeWindowMac::RemoveChildWindow(NativeWindow* child) {
   [window_ removeChildWindow:child->GetNativeWindow().GetNativeNSWindow()];
 }
 
-void NativeWindowMac::RemoveChildFromParentWindow(NativeWindow* child) {
-  if (parent())
-    parent()->RemoveChildWindow(child);
+void NativeWindowMac::RemoveChildFromParentWindow() {
+  if (parent() && !is_modal()) {
+    parent()->RemoveChildWindow(this);
+    NativeWindow::SetParentWindow(nullptr);
+  }
 }
 
 void NativeWindowMac::AttachChildren() {
@@ -759,19 +812,44 @@ bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
   if (!webrtc::GetWindowOwnerPid(window_id))
     return false;
 
-  [window_ orderWindow:NSWindowAbove relativeTo:id.id];
+  if (!parent()) {
+    [window_ orderWindow:NSWindowAbove relativeTo:window_id];
+  } else {
+    NSWindow* other_window = [NSApp windowWithWindowNumber:window_id];
+    ReorderChildWindowAbove(window_, other_window);
+  }
 
   return true;
 }
 
 void NativeWindowMac::MoveTop() {
-  [window_ orderWindow:NSWindowAbove relativeTo:0];
+  if (!parent())
+    [window_ orderWindow:NSWindowAbove relativeTo:0];
+  else
+    ReorderChildWindowAbove(window_, nullptr);
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
   ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
+
+  // Right now, resizable and fullscreenable are decoupled in
+  // documentation and on Windows/Linux. Chromium disables
+  // fullscreenability if resizability is false on macOS as well
+  // as disabling the maximize traffic light unless the window
+  // is both resizable and maximizable. To work around this, we want
+  // to match behavior on other platforms by disabiliting the maximize
+  // button but keeping fullscreenability enabled.
+  // TODO(codebytere): refactor this once we have a better solution.
   SetCanResize(resizable);
+  if (!resizable) {
+    SetFullScreenable(true);
+    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:false];
+  } else {
+    SetFullScreenable(true);
+    [[window_ standardWindowButton:NSWindowZoomButton]
+        setEnabled:IsFullScreenable()];
+  }
 }
 
 bool NativeWindowMac::IsResizable() {
@@ -1281,13 +1359,13 @@ void NativeWindowMac::SetProgressBar(double progress,
   // For the first time API invoked, we need to create a ContentView in
   // DockTile.
   if (first_time) {
-    NSImageView* image_view = [[[NSImageView alloc] init] autorelease];
+    NSImageView* image_view = [[NSImageView alloc] init];
     [image_view setImage:[NSApp applicationIconImage]];
     [dock_tile setContentView:image_view];
 
     NSRect frame = NSMakeRect(0.0f, 0.0f, dock_tile.size.width, 15.0);
     NSProgressIndicator* progress_indicator =
-        [[[ElectronProgressBar alloc] initWithFrame:frame] autorelease];
+        [[ElectronProgressBar alloc] initWithFrame:frame];
     [progress_indicator setStyle:NSProgressIndicatorStyleBar];
     [progress_indicator setIndeterminate:NO];
     [progress_indicator setBezeled:YES];
@@ -1434,8 +1512,8 @@ void NativeWindowMac::SetVibrancy(const std::string& type) {
     vibrancy_type_ = type;
 
     if (vibrantView == nil) {
-      vibrantView = [[[NSVisualEffectView alloc]
-          initWithFrame:[[window_ contentView] bounds]] autorelease];
+      vibrantView = [[NSVisualEffectView alloc]
+          initWithFrame:[[window_ contentView] bounds]];
       [window_ setVibrantView:vibrantView];
 
       [vibrantView
@@ -1508,10 +1586,9 @@ void NativeWindowMac::UpdateFrame() {
 
 void NativeWindowMac::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {
-  touch_bar_.reset([[ElectronTouchBar alloc]
-      initWithDelegate:window_delegate_.get()
-                window:this
-              settings:std::move(items)]);
+  touch_bar_ = [[ElectronTouchBar alloc] initWithDelegate:window_delegate_
+                                                   window:this
+                                                 settings:std::move(items)];
   [window_ setTouchBar:nil];
 }
 
@@ -1579,9 +1656,9 @@ void NativeWindowMac::SetAspectRatio(double aspect_ratio,
 
 void NativeWindowMac::PreviewFile(const std::string& path,
                                   const std::string& display_name) {
-  preview_item_.reset([[ElectronPreviewItem alloc]
+  preview_item_ = [[ElectronPreviewItem alloc]
       initWithURL:[NSURL fileURLWithPath:base::SysUTF8ToNSString(path)]
-            title:base::SysUTF8ToNSString(display_name)]);
+            title:base::SysUTF8ToNSString(display_name)];
   [[QLPreviewPanel sharedPreviewPanel] makeKeyAndOrderFront:nil];
 }
 
@@ -1752,7 +1829,7 @@ void NativeWindowMac::AddContentViewLayers() {
     // There is no need to do so for frameless window, and doing so would make
     // titleBarStyle stop working.
     if (has_frame()) {
-      base::scoped_nsobject<CALayer> background_layer([[CALayer alloc] init]);
+      CALayer* background_layer = [[CALayer alloc] init];
       [background_layer
           setAutoresizingMask:kCALayerWidthSizable | kCALayerHeightSizable];
       [[window_ contentView] setLayer:background_layer];
@@ -1779,12 +1856,13 @@ void NativeWindowMac::InternalSetParentWindow(NativeWindow* new_parent,
     return;
 
   // Remove current parent window.
-  RemoveChildFromParentWindow(this);
+  RemoveChildFromParentWindow();
 
   // Set new parent window.
-  if (new_parent && attach) {
+  if (new_parent) {
     new_parent->add_child_window(this);
-    new_parent->AttachChildren();
+    if (attach)
+      new_parent->AttachChildren();
   }
 
   NativeWindow::SetParentWindow(new_parent);

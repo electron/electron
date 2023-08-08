@@ -13,6 +13,7 @@
 #include <string>
 
 #include "base/compiler_specific.h"
+#include "base/memory/weak_ptr.h"
 #include "base/win/scoped_gdi_object.h"
 #include "shell/browser/ui/tray_icon.h"
 #include "shell/browser/ui/win/notify_icon_host.h"
@@ -65,7 +66,7 @@ class NotifyIcon : public TrayIcon {
   void RemoveBalloon() override;
   void Focus() override;
   void PopUpContextMenu(const gfx::Point& pos,
-                        raw_ptr<ElectronMenuModel> menu_model) override;
+                        base::WeakPtr<ElectronMenuModel> menu_model) override;
   void CloseContextMenu() override;
   void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
   gfx::Rect GetBounds() override;

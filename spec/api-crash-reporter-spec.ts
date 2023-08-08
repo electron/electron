@@ -116,7 +116,7 @@ function waitForNewFileInDir (dir: string): Promise<string[]> {
   function readdirIfPresent (dir: string): string[] {
     try {
       return fs.readdirSync(dir);
-    } catch (e) {
+    } catch {
       return [];
     }
   }
@@ -402,7 +402,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       try {
         fs.rmdirSync(dir, { recursive: true });
         fs.mkdirSync(dir);
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
 
       // 1. start the crash reporter.
       await remotely((port: number) => {
@@ -426,7 +426,7 @@ ifdescribe(!isLinuxOnArm && !process.mas && !process.env.DISABLE_CRASH_REPORTER_
       );
       expect(firstReport).to.not.be.null();
       expect(firstReport.date).to.be.an.instanceOf(Date);
-      expect((+new Date()) - (+firstReport.date)).to.be.lessThan(30000);
+      expect((Date.now()) - (+firstReport.date)).to.be.lessThan(30000);
     });
   });
 

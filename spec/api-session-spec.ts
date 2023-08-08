@@ -69,7 +69,7 @@ describe('session module', () => {
       const name = '1';
       const value = '1';
 
-      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
+      await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
       const c = (await cookies.get({ url }))[0];
       expect(c.name).to.equal(name);
       expect(c.value).to.equal(value);
@@ -121,7 +121,7 @@ describe('session module', () => {
       const name = '1';
       const value = '1';
 
-      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
+      await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
       const cs = await cookies.get({ domain: '127.0.0.1' });
       expect(cs.some(c => c.name === name && c.value === value)).to.equal(true);
     });
@@ -150,7 +150,7 @@ describe('session module', () => {
       const { cookies } = session.defaultSession;
       const name = 'DidOverwrite';
       for (const value of ['No', 'Yes']) {
-        await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
+        await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
         const list = await cookies.get({ url });
 
         expect(list.some(cookie => cookie.name === name && cookie.value === value)).to.equal(true);
@@ -162,7 +162,7 @@ describe('session module', () => {
       const name = '2';
       const value = '2';
 
-      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
+      await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
       await cookies.remove(url, name);
       const list = await cookies.get({ url });
 
@@ -177,7 +177,7 @@ describe('session module', () => {
       const name = 'custom';
       const value = '1';
 
-      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
+      await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
       const list = await cookies.get({ url });
 
       expect(list).to.have.lengthOf(1);
@@ -192,7 +192,7 @@ describe('session module', () => {
       const value = 'bar';
 
       const a = once(cookies, 'changed');
-      await cookies.set({ url, name, value, expirationDate: (+new Date()) / 1000 + 120 });
+      await cookies.set({ url, name, value, expirationDate: (Date.now()) / 1000 + 120 });
       const [, setEventCookie, setEventCause, setEventRemoved] = await a;
 
       const b = once(cookies, 'changed');
@@ -252,12 +252,11 @@ describe('session module', () => {
     it('clears localstorage data', async () => {
       const w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true } });
       await w.loadFile(path.join(fixtures, 'api', 'localstorage.html'));
-      const options = {
+      await w.webContents.session.clearStorageData({
         origin: 'file://',
         storages: ['localstorage'],
-        quotas: ['persistent']
-      };
-      await w.webContents.session.clearStorageData(options);
+        quotas: ['temporary']
+      });
       while (await w.webContents.executeJavaScript('localStorage.length') !== 0) {
         // The storage clear isn't instantly visible to the renderer, so keep
         // trying until it is.

@@ -345,7 +345,7 @@ describe('app module', () => {
           expectedAdditionalData: undefined
         });
         assert(false);
-      } catch (e) {
+      } catch {
         // This is expected.
       }
     });
@@ -1184,7 +1184,7 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1193,7 +1193,7 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(false);
     });
 
@@ -1209,7 +1209,7 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1422,7 +1422,7 @@ describe('app module', () => {
         }
       } else {
         // return error if not clean exit
-        return Promise.reject(new Error(errorData));
+        throw new Error(errorData);
       }
     };
     const verifyBasicGPUInfo = async (gpuInfo: any) => {

@@ -52,3 +52,7 @@ use_perfetto_client_library = false
 
 # Disables the builtins PGO for V8
 v8_builtins_profiling_log_file = ""
+
+# https://chromium.googlesource.com/chromium/src/+/main/docs/dangling_ptr.md
+# TODO(vertedinde): hunt down dangling pointers on Linux
+enable_dangling_raw_ptr_checks = false

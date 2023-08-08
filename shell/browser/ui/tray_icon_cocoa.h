@@ -9,11 +9,14 @@
 
 #include <string>
 
-#include "base/mac/scoped_nsobject.h"
 #include "shell/browser/ui/tray_icon.h"
 
 @class ElectronMenuController;
 @class StatusItemView;
+
+#if !defined(__has_feature) || !__has_feature(objc_arc)
+#error "This file requires ARC support."
+#endif
 
 namespace electron {
 
@@ -29,19 +32,19 @@ class TrayIconCocoa : public TrayIcon {
   std::string GetTitle() override;
   void SetIgnoreDoubleClickEvents(bool ignore) override;
   bool GetIgnoreDoubleClickEvents() override;
-  void PopUpOnUI(ElectronMenuModel* menu_model);
+  void PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model);
   void PopUpContextMenu(const gfx::Point& pos,
-                        raw_ptr<ElectronMenuModel>) override;
+                        base::WeakPtr<ElectronMenuModel> menu_model) override;
   void CloseContextMenu() override;
-  void SetContextMenu(raw_ptr<ElectronMenuModel>) override;
+  void SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) override;
   gfx::Rect GetBounds() override;
 
  private:
   // Electron custom view for NSStatusItem.
-  base::scoped_nsobject<StatusItemView> status_item_view_;
+  StatusItemView* __strong status_item_view_;
 
   // Status menu shown when right-clicking the system icon.
-  base::scoped_nsobject<ElectronMenuController> menu_;
+  ElectronMenuController* __strong menu_;
 
   base::WeakPtrFactory<TrayIconCocoa> weak_factory_{this};
 };

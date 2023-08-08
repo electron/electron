@@ -1,5 +1,5 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 async function handleFileOpen () {
   const { canceled, filePaths } = await dialog.showOpenDialog()

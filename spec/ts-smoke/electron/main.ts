@@ -526,6 +526,10 @@ dialog.showMessageBoxSync(win3, { message: 'test', type: 'foo' });
 
 ipcMain.handle('get-sources', (event, options) => desktopCapturer.getSources(options));
 
+desktopCapturer.getSources({ types: ['window', 'screen'] });
+// @ts-expect-error Invalid type value
+desktopCapturer.getSources({ types: ['unknown'] });
+
 // global-shortcut
 // https://github.com/electron/electron/blob/main/docs/api/global-shortcut.md
 
@@ -900,7 +904,8 @@ app.whenReady().then(() => {
 const id = powerSaveBlocker.start('prevent-display-sleep');
 console.log(powerSaveBlocker.isStarted(id));
 
-powerSaveBlocker.stop(id);
+const stopped = powerSaveBlocker.stop(id);
+console.log(`The powerSaveBlocker is ${stopped ? 'stopped' : 'not stopped'}`);
 
 // protocol
 // https://github.com/electron/electron/blob/main/docs/api/protocol.md
@@ -1030,6 +1035,12 @@ appIcon4.destroy();
 const image2 = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 console.log(image2.getSize());
 
+image2.resize({ quality: 'best' });
+image2.resize({ quality: 'better' });
+image2.resize({ quality: 'good' });
+// @ts-expect-error Invalid type value
+image2.resize({ quality: 'bad' });
+
 // process
 // https://github.com/electron/electron/blob/main/docs/api/process.md
 
@@ -1132,6 +1143,16 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
 
 // session
 // https://github.com/electron/electron/blob/main/docs/api/session.md
+
+session.defaultSession.clearStorageData({ storages: ['cookies', 'filesystem'] });
+session.defaultSession.clearStorageData({ storages: ['localstorage', 'indexdb', 'serviceworkers'] });
+session.defaultSession.clearStorageData({ storages: ['shadercache', 'websql', 'cachestorage'] });
+// @ts-expect-error Invalid type value
+session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
+
+session.defaultSession.clearStorageData({ quotas: ['syncable', 'temporary'] });
+// @ts-expect-error Invalid type value
+session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
 
 session.defaultSession.on('will-download', (event, item, webContents) => {
   console.log('will-download', webContents.id);

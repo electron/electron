@@ -69,6 +69,25 @@ describe('chrome extensions', () => {
     `)).to.eventually.have.property('id');
   });
 
+  it('supports minimum_chrome_version manifest key', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        session: customSession,
+        sandbox: true
+      }
+    });
+
+    await w.loadURL('about:blank');
+
+    const extPath = path.join(fixtures, 'extensions', 'chrome-too-low-version');
+    const load = customSession.loadExtension(extPath);
+    await expect(load).to.eventually.be.rejectedWith(
+      `Loading extension at ${extPath} failed with: This extension requires Chromium version 999 or greater.`
+    );
+  });
+
   it('can open WebSQLDatabase in a background page', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
@@ -208,7 +227,7 @@ describe('chrome extensions', () => {
     };
     beforeEach(async () => {
       const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n'));
+      extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v2'));
       w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true, contextIsolation: false } });
       await w.loadURL(url);
     });
@@ -354,7 +373,7 @@ describe('chrome extensions', () => {
       const message = { method: 'executeScript', args: ['1 + 2'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await once(w.webContents, 'console-message');
+      const [, , responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response).to.equal(3);
@@ -710,6 +729,244 @@ describe('chrome extensions', () => {
       const extension = await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
       const scope = await registrationPromise;
       expect(scope).equals(extension.url);
+    });
+
+    it('can run chrome extension APIs', async () => {
+      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
+      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
+      await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
+
+      await w.loadURL(url);
+
+      w.webContents.executeJavaScript('window.postMessage(\'fetch-confirmation\', \'*\')');
+
+      const [, , responseString] = await once(w.webContents, 'console-message');
+      const { message } = JSON.parse(responseString);
+
+      expect(message).to.equal('Hello from background.js');
+    });
+
+    describe('chrome.i18n', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-i18n', 'v3'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession,
+            nodeIntegration: true
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('getAcceptLanguages', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getAcceptLanguages' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.be.an('array').that.is.not.empty('languages array is empty');
+      });
+
+      it('getUILanguage', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getUILanguage' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.be.a('string');
+      });
+
+      it('getMessage', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getMessage' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.equal('Hola mundo!!');
+      });
+
+      it('detectLanguage', async () => {
+        await w.loadURL(url);
+
+        const greetings = [
+          'Ich liebe dich', // German
+          'Mahal kita', // Filipino
+          '愛してます', // Japanese
+          'دوستت دارم', // Persian
+          'Minä rakastan sinua' // Finnish
+        ];
+        const message = { method: 'detectLanguage', args: [greetings] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [, , responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.be.an('array');
+
+        for (const item of response) {
+          expect(Object.keys(item)).to.deep.equal(['isReliable', 'languages']);
+        }
+
+        const languages = response.map((r: { isReliable: boolean, languages: any[] }) => r.languages[0]);
+        expect(languages).to.deep.equal([
+          { language: 'de', percentage: 100 },
+          { language: 'fil', percentage: 100 },
+          { language: 'ja', percentage: 100 },
+          { language: 'ps', percentage: 100 },
+          { language: 'fi', percentage: 100 }
+        ]);
+      });
+    });
+
+    describe('chrome.tabs', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'tabs-api-async'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession,
+            nodeIntegration: true
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('getZoom', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getZoom' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(1);
+      });
+
+      it('setZoom', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setZoom', args: [2] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal(2);
+      });
+
+      it('getZoomSettings', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getZoomSettings' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({
+          defaultZoomFactor: 1,
+          mode: 'automatic',
+          scope: 'per-origin'
+        });
+      });
+
+      it('setZoomSettings', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setZoomSettings', args: [{ mode: 'disabled' }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({
+          defaultZoomFactor: 1,
+          mode: 'disabled',
+          scope: 'per-tab'
+        });
+      });
+
+      it('get', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'get' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.have.property('active').that.is.a('boolean');
+        expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
+        expect(response).to.have.property('discarded').that.is.a('boolean');
+        expect(response).to.have.property('groupId').that.is.a('number');
+        expect(response).to.have.property('highlighted').that.is.a('boolean');
+        expect(response).to.have.property('id').that.is.a('number');
+        expect(response).to.have.property('incognito').that.is.a('boolean');
+        expect(response).to.have.property('index').that.is.a('number');
+        expect(response).to.have.property('pinned').that.is.a('boolean');
+        expect(response).to.have.property('selected').that.is.a('boolean');
+        expect(response).to.have.property('url').that.is.a('string');
+        expect(response).to.have.property('windowId').that.is.a('number');
+      });
+
+      it('reload', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'reload' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const consoleMessage = once(w.webContents, 'console-message');
+        const finish = once(w.webContents, 'did-finish-load');
+
+        await Promise.all([consoleMessage, finish]).then(([[,, responseString]]) => {
+          const response = JSON.parse(responseString);
+          expect(response.status).to.equal('reloaded');
+        });
+      });
+
+      it('update', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'update', args: [{ muted: true }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.have.property('mutedInfo').that.is.a('object');
+        const { mutedInfo } = response;
+        expect(mutedInfo).to.deep.eq({
+          muted: true,
+          reason: 'user'
+        });
+      });
     });
   });
 });
