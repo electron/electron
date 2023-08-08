@@ -29,14 +29,20 @@ The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have bee
 
 ## Planned Breaking API Changes (26.0)
 
-### Deprecated: `systemPreferences.{get,set}AppLevelAppearance`
+### Deprecated: `systemPreferences.{get,set}AppLevelAppearance` and `systemPreferences.appLevelAppearance`
 
 The `systemPreferences.getAppLevelAppearance` and `systemPreferences.setAppLevelAppearance`
-methods have been deprecated. Use the `nativeTheme` module instead.
+methods have been deprecated, as well as the `systemPreferences.appLevelAppearance` property.
+Use the `nativeTheme` module instead.
 
 ```js
 // Deprecated
 systemPreferences.getAppLevelAppearance()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Deprecated
+systemPreferences.appLevelAppearance
 // Replace with
 nativeTheme.shouldUseDarkColors
 
