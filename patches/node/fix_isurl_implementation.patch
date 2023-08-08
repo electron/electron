@@ -17,21 +17,24 @@ https://github.com/electron/electron/pull/39154#issuecomment-1644433388
 This patch can be removed when we update to Node 20.
 
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..e353ad7624ee1c4592baf369372a5e0d8bed912e 100644
+index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..525b18e58a3e2f8e5ddfb138b1c54fd9b23a20cf 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -592,7 +592,9 @@ ObjectDefineProperties(URLSearchParams.prototype, {
+@@ -592,7 +592,12 @@ ObjectDefineProperties(URLSearchParams.prototype, {
   * @returns {self is URL}
   */
  function isURL(self) {
 -  return self != null && ObjectPrototypeHasOwnProperty(self, context);
++  // if it has `context` it is a Node.js URL...
 +  if (self != null && ObjectPrototypeHasOwnProperty(self, context))
-+    return true; // a Node URL
-+  return Boolean(self?.href && self.origin); // another impl's URL
++    return true;
++
++  // ...but also honor 3rd party URLs e.g. from Electron.
++  return Boolean(self?.href && self.protocol && self.auth === undefined && self.path === undefined);
  }
  
  class URL {
-@@ -688,14 +690,10 @@ class URL {
+@@ -688,14 +693,10 @@ class URL {
    }
  
    get href() {
