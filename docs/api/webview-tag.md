@@ -112,7 +112,7 @@ The `src` attribute can also accept data URLs, such as
 ### `nodeintegration`
 
 ```html
-<webview src="http://www.google.com/" nodeintegration></webview>
+<webview src="https://www.google.com/" nodeintegration></webview>
 ```
 
 A `boolean`. When this attribute is present the guest page in `webview` will have node
@@ -123,7 +123,7 @@ page.
 ### `nodeintegrationinsubframes`
 
 ```html
-<webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
+<webview src="https://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
 A `boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
@@ -161,7 +161,7 @@ after this script has finished executing.
 ### `httpreferrer`
 
 ```html
-<webview src="https://www.github.com/" httpreferrer="http://cheng.guru"></webview>
+<webview src="https://www.github.com/" httpreferrer="https://example.com/"></webview>
 ```
 
 A `string` that sets the referrer URL for the guest page.

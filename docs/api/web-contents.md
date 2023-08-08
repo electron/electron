@@ -13,7 +13,7 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 const contents = win.webContents
 console.log(contents)
@@ -895,7 +895,7 @@ const win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
   // updateBitmap(dirty, image.getBitmap())
 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 ```
 
 #### Event: 'devtools-reload-page'
@@ -1071,7 +1071,7 @@ Returns `string` - The URL of the current web page.
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('http://github.com').then(() => {
+win.loadURL('https://github.com').then(() => {
   const currentURL = win.webContents.getURL()
   console.log(currentURL)
 })
@@ -1651,7 +1651,7 @@ const path = require('path')
 const os = require('os')
 
 const win = new BrowserWindow()
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // Use default printing options

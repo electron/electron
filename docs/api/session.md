@@ -13,7 +13,7 @@ property of [`WebContents`](web-contents.md), or from the `session` module.
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 const ses = win.webContents.session
 console.log(ses.getUserAgent())

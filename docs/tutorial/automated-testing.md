@@ -103,7 +103,7 @@ const driver = new webdriver.Builder()
   })
   .forBrowser('chrome') // note: use .forBrowser('electron') for selenium-webdriver <= 3.6.0
   .build()
-driver.get('http://www.google.com')
+driver.get('https://www.google.com')
 driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
 driver.findElement(webdriver.By.name('btnG')).click()
 driver.wait(() => {

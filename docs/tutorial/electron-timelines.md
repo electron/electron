@@ -43,7 +43,7 @@ check out our [Electron Versioning](./electron-versioning.md) doc.
 
 **Historical changes:**
 
-* Since Electron 5, Electron has been publicizing its release dates ([see blog post](https://electronjs.org/blog/electron-5-0-timeline)).
+* Since Electron 5, Electron has been publicizing its release dates ([see blog post](https://www.electronjs.org/blog/electron-5-0-timeline)).
 * Since Electron 6, Electron major versions have been targeting every other Chromium major version. Each Electron stable should happen on the same day as Chrome stable ([see blog post](https://www.electronjs.org/blog/12-week-cadence)).
 * Since Electron 16, Electron has been releasing major versions on an 8-week cadence in accordance to Chrome's change to a 4-week release cadence ([see blog post](https://www.electronjs.org/blog/8-week-cadence)).
 
