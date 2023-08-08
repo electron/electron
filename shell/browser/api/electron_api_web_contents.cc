@@ -2539,7 +2539,7 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
-v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRangePolicy(
+v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
     v8::Isolate* isolate) const {
   uint16_t min = 0, max = 0;
   auto* prefs = web_contents()->GetMutableRendererPrefs();
@@ -2553,7 +2553,7 @@ v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRangePolicy(
   return dict.GetHandle();
 }
 
-void WebContents::SetWebRTCUDPPortRangePolicy(gin::Arguments* args) {
+void WebContents::SetWebRTCUDPPortRange(gin::Arguments* args) {
   uint32_t min = 0, max = 0;
   gin_helper::Dictionary range;
 
@@ -4340,13 +4340,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
-      .SetMethod("setWebRTCUDPPortRangePolicy",
-                 &WebContents::SetWebRTCUDPPortRangePolicy)
+      .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
-      .SetMethod("getWebRTCUDPPortRangePolicy",
-                 &WebContents::GetWebRTCUDPPortRangePolicy)
+      .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)

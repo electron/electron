@@ -188,8 +188,8 @@ class WebContents : public ExclusiveAccessContext,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
-  v8::Local<v8::Value> GetWebRTCUDPPortRangePolicy(v8::Isolate* isolate) const;
-  void SetWebRTCUDPPortRangePolicy(gin::Arguments* args);
+v8::Local<v8::Value> GetWebRTCUDPPortRange(v8::Isolate* isolate) const;
+  void SetWebRTCUDPPortRange(gin::Arguments* args);
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();

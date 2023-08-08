@@ -2064,22 +2064,23 @@ Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
 
-#### `contents.getWebRTCUDPPortRangePolicy()`
+#### `contents.getWebRTCUDPPortRange()`
 
 Returns `Object`:
 
-* `min` Integer - The minimum port number of WebRTC UDP Port Range Policy.
-* `max` Integer - The maximum port number of WebRTC UDP Port Range Policy.
+* `min` Integer - The minimum UDP port number that WebRTC should use.
+* `max` Integer - The maximum UDP port number that WebRTC should use.
 
-Note that as poking round chromium internal , it would default to { min: 0, max: 0 } , which would apply no restriction on udp port range.
+By default this value is `{ min: 0, max: 0 }` , which would apply no restriction on the udp port range.
 
-#### `contents.setWebRTCUDPPortRangePolicy(udpPortRange)`
+#### `contents.setWebRTCUDPPortRange(udpPortRange)`
 
 * `udpPortRange` Object
-  * `min` Integer - The minimum port number of WebRTC UDP Port Range Policy.
-  * `max` Integer - The maximum port number of WebRTC UDP Port Range Policy.
+  * `min` Integer - The minimum UDP port number that WebRTC should use.
+  * `max` Integer - The maximum UDP port number that WebRTC should use.
 
-Setting the WebRTC UDP Port Range policy allows you to restrict the udp port range assigned to apps via WebRTC. Note that when setting to { min: 0, max: 0 }，no restriction is applied on udp port range.
+Setting the WebRTC UDP Port Range allows you to restrict the udp port range used by WebRTC. By default the port range is unrestricted.
+**Note:** To reset to an unrestricted port range this value should be set to `{ min: 0, max: 0 }`.
 
 #### `contents.getMediaSourceId(requestWebContents)`
 
