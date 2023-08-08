@@ -14,7 +14,7 @@ then the `main` version (catching Electron URLs).
 More background w/upstream links at
 https://github.com/electron/electron/pull/39154#issuecomment-1644433388
 
-This patch can be removed if upstreamed.
+This patch can be removed when we update to Node 20.
 
 diff --git a/lib/internal/url.js b/lib/internal/url.js
 index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..e353ad7624ee1c4592baf369372a5e0d8bed912e 100644
@@ -46,3 +46,23 @@ index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..e353ad7624ee1c4592baf369372a5e0d
      value = `${value}`;
      const href = bindingUrl.update(this[context].href, updateActions.kHref, value);
      if (!href) { throw ERR_INVALID_URL(value); }
+diff --git a/test/parallel/test-whatwg-url-invalidthis.js b/test/parallel/test-whatwg-url-invalidthis.js
+index 790c28e37c13ed6763cb61b549ab4a983f384717..bddf48b8302632a275d996a53b09343938dc7dc9 100644
+--- a/test/parallel/test-whatwg-url-invalidthis.js
++++ b/test/parallel/test-whatwg-url-invalidthis.js
+@@ -15,7 +15,6 @@ const assert = require('assert');
+ });
+ 
+ [
+-  'href',
+   'protocol',
+   'username',
+   'password',
+@@ -36,7 +35,6 @@ const assert = require('assert');
+ });
+ 
+ [
+-  'origin',
+   'searchParams',
+ ].forEach((i) => {
+   assert.throws(() => Reflect.get(URL.prototype, i, {}), {
