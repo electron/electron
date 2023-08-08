@@ -2041,7 +2041,7 @@ jobs:
   linux-x64-testing-tests:
     executor:
       name: linux-docker
-      size: xlarge
+      size: medium
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
