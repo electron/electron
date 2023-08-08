@@ -60,8 +60,8 @@ ifdescribe(!process.arch.includes('arm') && process.platform !== 'win32')('deskt
     const sources = await desktopCapturer.getSources({ types: ['screen'] });
     expect(sources).to.be.an('array').of.length(displays.length);
 
-    for (let i = 0; i < sources.length; i++) {
-      expect(sources[i].display_id).to.equal(displays[i].id.toString());
+    for (const [i, source] of sources.entries()) {
+      expect(source.display_id).to.equal(displays[i].id.toString());
     }
   });
 
