@@ -37,10 +37,13 @@ void ElectronRuntimeAPIDelegate::ReloadExtension(
 bool ElectronRuntimeAPIDelegate::CheckForUpdates(
     const std::string& extension_id,
     UpdateCheckCallback callback) {
+  LOG(INFO) << "chrome.runtime.requestUpdateCheck is not supported in Electron";
   return false;
 }
 
-void ElectronRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {}
+void ElectronRuntimeAPIDelegate::OpenURL(const GURL& uninstall_url) {
+  LOG(INFO) << "chrome.runtime.openURL is not supported in Electron";
+}
 
 bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
   const char* os = update_client::UpdateQueryParams::GetOS();
@@ -73,9 +76,6 @@ bool ElectronRuntimeAPIDelegate::GetPlatformInfo(PlatformInfo* info) {
 
   const char* nacl_arch = update_client::UpdateQueryParams::GetNaclArch();
   if (strcmp(nacl_arch, "arm") == 0) {
-    info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kArm;
-  } else if (strcmp(nacl_arch, "arm64") == 0) {
-    // Use ARM for ARM64 NaCl, as ARM64 NaCl is not available.
     info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kArm;
   } else if (strcmp(nacl_arch, "x86-32") == 0) {
     info->nacl_arch = extensions::api::runtime::PlatformNaclArch::kX86_32;
