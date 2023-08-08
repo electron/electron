@@ -44,7 +44,7 @@ executors:
         type: enum
         # aks-linux-medium === 8 core (32 core host, shared with other builds)
         # aks-linux-large === 32 core
-        enum: ["medium", "electronjs/aks-linux-medium", "electronjs/aks-linux-large"]
+        enum: ["medium", "xlarge", "electronjs/aks-linux-medium", "electronjs/aks-linux-large"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -1625,7 +1625,7 @@ jobs:
   linux-make-src-cache:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-medium
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1642,7 +1642,7 @@ jobs:
   mac-checkout:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-medium
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1661,7 +1661,7 @@ jobs:
   mac-make-src-cache-x64:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-medium
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1680,7 +1680,7 @@ jobs:
   mac-make-src-cache-arm64:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-medium
+      size: xlarge
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -2041,7 +2041,7 @@ jobs:
   linux-x64-testing-tests:
     executor:
       name: linux-docker
-      size: medium
+      size: xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2054,7 +2054,7 @@ jobs:
   linux-x64-testing-asan-tests:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-medium
+      size: xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
@@ -2081,7 +2081,7 @@ jobs:
   linux-x64-testing-node:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-medium
+      size: xlarge
     environment:
       <<: *env-linux-medium
       <<: *env-headless-testing
