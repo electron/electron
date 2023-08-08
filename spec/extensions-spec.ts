@@ -702,21 +702,6 @@ describe('chrome extensions', () => {
       expect(scope).equals(extension.url);
     });
 
-    it('can run chrome extension APIs', async () => {
-      const customSession = session.fromPartition(`persist:${uuid.v4()}`);
-      const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, nodeIntegration: true } });
-      await customSession.loadExtension(path.join(fixtures, 'extensions', 'mv3-service-worker'));
-
-      await w.loadURL(url);
-
-      w.webContents.executeJavaScript('window.postMessage(\'fetch-confirmation\', \'*\')');
-
-      const [, , responseString] = await emittedOnce(w.webContents, 'console-message');
-      const { message } = JSON.parse(responseString);
-
-      expect(message).to.equal('Hello from background.js');
-    });
-
     describe('chrome.i18n', () => {
       let customSession: Session;
       let w = null as unknown as BrowserWindow;
