@@ -231,6 +231,7 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(
           initWithInspectableWebContentsViewMac:this]) {}
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
+  [[NSNotificationCenter defaultCenter] removeObserver:view_];
   CloseDevTools();
 }
 
