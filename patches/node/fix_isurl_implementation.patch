@@ -17,7 +17,7 @@ https://github.com/electron/electron/pull/39154#issuecomment-1644433388
 This patch can be removed if upstreamed.
 
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..27c3d1c1909ead49c4384d6d53d60c40115e9542 100644
+index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..e353ad7624ee1c4592baf369372a5e0d8bed912e 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
 @@ -592,7 +592,9 @@ ObjectDefineProperties(URLSearchParams.prototype, {
@@ -31,3 +31,18 @@ index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..27c3d1c1909ead49c4384d6d53d60c40
  }
  
  class URL {
+@@ -688,14 +690,10 @@ class URL {
+   }
+ 
+   get href() {
+-    if (!isURL(this))
+-      throw new ERR_INVALID_THIS('URL');
+     return this[context].href;
+   }
+ 
+   set href(value) {
+-    if (!isURL(this))
+-      throw new ERR_INVALID_THIS('URL');
+     value = `${value}`;
+     const href = bindingUrl.update(this[context].href, updateActions.kHref, value);
+     if (!href) { throw ERR_INVALID_URL(value); }
