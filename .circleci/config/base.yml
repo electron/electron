@@ -1701,7 +1701,7 @@ jobs:
   linux-x64-testing:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: electronjs/aks-linux-large-dedicated
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1718,7 +1718,7 @@ jobs:
   linux-x64-testing-asan:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: electronjs/aks-linux-large-dedicated
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1770,7 +1770,7 @@ jobs:
   linux-arm-testing:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: electronjs/aks-linux-large-dedicated
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1815,7 +1815,7 @@ jobs:
   linux-arm64-testing:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: electronjs/aks-linux-large-dedicated
     environment:
       <<: *env-global
       <<: *env-arm64
