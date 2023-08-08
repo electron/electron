@@ -58,15 +58,3 @@ index fca2149fea32123dc4d4c6f21c64cc3c583454b3..b9a55fb7ea22e62553f69bd035797f7a
      it(name, async () => {
        await snapshot.spawnAndAssert(fixtures.path(name), transform ?? defaultTransform, { env });
      });
-diff --git a/test/pseudo-tty/test-assert-colors.js b/test/pseudo-tty/test-assert-colors.js
-index 9d5a923aa0f8e7104b17fdd214d4ebf4c715cf11..2459000d8e367e181a978533fa85f0db18f7de57 100644
---- a/test/pseudo-tty/test-assert-colors.js
-+++ b/test/pseudo-tty/test-assert-colors.js
-@@ -3,6 +3,7 @@ require('../common');
- const assert = require('assert').strict;
- 
- assert.throws(() => {
-+  process.env.ELECTRON_RUN_AS_NODE = '1';
-   process.env.FORCE_COLOR = '1';
-   delete process.env.NODE_DISABLE_COLORS;
-   delete process.env.NO_COLOR;
