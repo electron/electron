@@ -441,7 +441,7 @@ WebContents.prototype.loadURL = function (url, options) {
     };
 
     let navigationStarted = false;
-    let browserIntendentInPageNavigation = false;
+    let browserInitiatedInPageNavigation = false;
     const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
       if (isMainFrame) {
         if (navigationStarted && !isSameDocument) {
@@ -456,7 +456,7 @@ WebContents.prototype.loadURL = function (url, options) {
           // as the routing does not leave the document
           return rejectAndCleanup(-3, 'ERR_ABORTED', url);
         }
-        browserIntendentInPageNavigation = navigationStarted && isSameDocument;
+        browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
       }
     };
@@ -471,22 +471,22 @@ WebContents.prototype.loadURL = function (url, options) {
       // would be more appropriate.
       rejectAndCleanup(-2, 'ERR_FAILED', url);
     };
-    const finishListenerWhenUserIntendentNavigation = () => {
-      if (!browserIntendentInPageNavigation) {
+    const finishListenerWhenUserInitiatedNavigation = () => {
+      if (!browserInitiatedInPageNavigation) {
         finishListener();
       }
     };
     const removeListeners = () => {
       this.removeListener('did-finish-load', finishListener);
       this.removeListener('did-fail-load', failListener);
-      this.removeListener('did-navigate-in-page', finishListenerWhenUserIntendentNavigation);
+      this.removeListener('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
       this.removeListener('did-start-navigation', navigationListener);
       this.removeListener('did-stop-loading', stopLoadingListener);
       this.removeListener('destroyed', stopLoadingListener);
     };
     this.on('did-finish-load', finishListener);
     this.on('did-fail-load', failListener);
-    this.on('did-navigate-in-page', finishListenerWhenUserIntendentNavigation);
+    this.on('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
     this.on('did-start-navigation', navigationListener);
     this.on('did-stop-loading', stopLoadingListener);
     this.on('destroyed', stopLoadingListener);
