@@ -53,11 +53,13 @@ console.log(clipboard.readText('selection'));
 console.log(clipboard.availableFormats());
 clipboard.clear();
 
-clipboard.write({
-  html: '<html></html>',
-  text: 'Hello World!',
-  bookmark: 'Bookmark name',
-  image: clipboard.readImage()
+clipboard.readImage().then(function (result) {
+  clipboard.write({
+    html: '<html></html>',
+    text: 'Hello World!',
+    bookmark: 'Bookmark name',
+    image: result
+  });
 });
 
 // crash-reporter
@@ -135,8 +137,9 @@ holder.ondrop = function (e) {
 // nativeImage
 // https://github.com/electron/electron/blob/main/docs/api/native-image.md
 
-const image = clipboard.readImage();
-console.log(image.getSize());
+clipboard.readImage().then(function (result) {
+  console.log(result.getSize());
+});
 
 // https://github.com/electron/electron/blob/main/docs/api/process.md
 

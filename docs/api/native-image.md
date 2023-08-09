@@ -18,13 +18,16 @@ const win = new BrowserWindow({ icon: '/Users/somebody/images/window.png' })
 console.log(appIcon, win)
 ```
 
-Or read the image from the clipboard, which returns a `NativeImage`:
+Or read the image from the clipboard, which returns a `Promise<NativeImage>`:
 
 ```javascript
 const { clipboard, Tray } = require('electron')
-const image = clipboard.readImage()
-const appIcon = new Tray(image)
-console.log(appIcon)
+clipboard.readImage().then(image => {
+  const appIcon = new Tray(image)
+  console.log(appIcon)
+}).catch(error => {
+  console.error(error)
+})
 ```
 
 ## Supported Formats

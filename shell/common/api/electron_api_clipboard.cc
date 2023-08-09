@@ -11,6 +11,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
+#include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 #include "third_party/skia/include/core/SkBitmap.h"
 #include "third_party/skia/include/core/SkImageInfo.h"
@@ -219,28 +220,31 @@ void Clipboard::WriteBookmark(const std::u16string& title,
   writer.WriteBookmark(title, url);
 }
 
-gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
-  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
-  absl::optional<gfx::Image> image;
+v8::Local<v8::Promise> Clipboard::ReadImage(gin_helper::Arguments* args) {
+  v8::Isolate* isolate = args->isolate();
+  gin_helper::Promise<gfx::Image> promise(isolate);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::RunLoop run_loop;
-  base::RepeatingClosure callback = run_loop.QuitClosure();
+  ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image, base::RepeatingClosure cb,
+          [](gin_helper::Promise<gfx::Image> promise,
              const std::vector<uint8_t>& result) {
+            if (!result.size()) {
+              promise.RejectWithErrorMessage(
+                  "No image data in clipboard or unsupported image format.");
+              return;
+            }
+
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
-            image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
-            std::move(cb).Run();
+            promise.Resolve(std::move(gfx::Image::CreateFrom1xBitmap(bitmap)));
           },
-          &image, std::move(callback)));
-  run_loop.Run();
+          std::move(promise)));
 
-  DCHECK(image.has_value());
-  return image.value();
+  return handle;
 }
 
 void Clipboard::WriteImage(const gfx::Image& image,

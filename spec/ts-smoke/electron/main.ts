@@ -987,10 +987,12 @@ console.log(clipboard.availableFormats());
 console.log(clipboard.readBookmark().title);
 clipboard.clear();
 
-clipboard.write({
-  html: '<html></html>',
-  text: 'Hello World!',
-  image: clipboard.readImage()
+clipboard.readImage().then(function (result) {
+  clipboard.write({
+    html: '<html></html>',
+    text: 'Hello World!',
+    image: result
+  });
 });
 
 // crash-reporter
@@ -1018,11 +1020,12 @@ appIcon2.destroy();
 const window2 = new BrowserWindow({ icon: '/Users/somebody/images/window.png' });
 console.log(window2.id);
 
-const image = clipboard.readImage();
-console.log(image.getSize());
+clipboard.readImage().then(function (result) {
+  console.log(result.getSize());
 
-const appIcon3 = new Tray(image);
-appIcon3.destroy();
+  const appIcon3 = new Tray(result);
+  appIcon3.destroy();
+});
 
 const appIcon4 = new Tray('/Users/somebody/images/icon.png');
 appIcon4.destroy();
