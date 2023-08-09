@@ -59,9 +59,9 @@ async function main () {
   const cxxflags = [
     '-std=c++17',
     '-nostdinc++',
-    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
+    `-I"${path.resolve(BASE, 'third_party', 'libc++', 'src')}"`,
+    `-isystem"${path.resolve(BASE, 'third_party', 'libc++', 'src', 'include')}"`,
+    `-isystem"${path.resolve(BASE, 'third_party', 'libc++abi', 'src', 'include')}"`,
     '-fPIC',
     '-D_LIBCPP_ABI_NAMESPACE=Cr',
     ...platformFlags
@@ -70,8 +70,8 @@ async function main () {
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',
-    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
-    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
+    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'third_party', 'libc++abi')}"`,
+    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'third_party', 'libc++')}"`,
     '-lc++abi',
     ...platformFlags
   ].join(' ');

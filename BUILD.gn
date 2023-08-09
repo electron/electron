@@ -1534,7 +1534,7 @@ dist_zip("libcxx_headers_zip") {
   deps = data_deps
   flatten = true
   flatten_relative_to = rebase_path(
-          "$target_gen_dir/electron_libcxx_include/buildtools/third_party/libc++/trunk",
+          "$target_gen_dir/electron_libcxx_include/third_party/libc++/src",
           "$root_out_dir")
 
   outputs = [ "$root_build_dir/libcxx_headers.zip" ]
@@ -1550,7 +1550,7 @@ dist_zip("libcxxabi_headers_zip") {
   deps = data_deps
   flatten = true
   flatten_relative_to = rebase_path(
-          "$target_gen_dir/electron_libcxxabi_include/buildtools/third_party/libc++abi/trunk",
+          "$target_gen_dir/electron_libcxxabi_include/third_party/libc++abi/src",
           "$root_out_dir")
 
   outputs = [ "$root_build_dir/libcxxabi_headers.zip" ]
