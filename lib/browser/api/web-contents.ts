@@ -441,7 +441,7 @@ WebContents.prototype.loadURL = function (url, options) {
     };
 
     let navigationStarted = false;
-    let browser_intendent_in_page_navigation = false;
+    let browserIntendentInPageNavigation = false;
     const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
       if (isMainFrame) {
         if (navigationStarted && !isSameDocument) {
@@ -456,7 +456,7 @@ WebContents.prototype.loadURL = function (url, options) {
           // as the routing does not leave the document
           return rejectAndCleanup(-3, 'ERR_ABORTED', url);
         }
-        browser_intendent_in_page_navigation = navigationStarted && isSameDocument;
+        browserIntendentInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
       }
     };
@@ -472,7 +472,7 @@ WebContents.prototype.loadURL = function (url, options) {
       rejectAndCleanup(-2, 'ERR_FAILED', url);
     };
     const finishListenerWhenUserIntendentNavigation = () => {
-      if (!browser_intendent_in_page_navigation) {
+      if (!browserIntendentInPageNavigation) {
         finishListener();
       }
     };
