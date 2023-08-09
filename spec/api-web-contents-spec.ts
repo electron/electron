@@ -375,7 +375,7 @@ describe('webContents module', () => {
       await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
     });
 
-    it('resolves after browser intendent navigation', async () => {
+    it('resolves after browser initiated navigation', async () => {
       let finishedLoading = false;
       w.webContents.on('did-finish-load', function () {
         finishedLoading = true;
