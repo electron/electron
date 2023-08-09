@@ -25,6 +25,8 @@ or later will be required to run Electron v27.0.0 and higher.
 
 The `ipcRenderer.sendTo()` API has been deprecated. It should be replaced by setting up a [`MessageChannel`](tutorial/message-ports.md#setting-up-a-messagechannel-between-two-renderers) between the renderers.
 
+The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have been deprecated as well.
+
 ## Planned Breaking API Changes (25.0)
 
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
