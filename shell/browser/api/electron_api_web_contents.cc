@@ -4474,6 +4474,16 @@ WebContents* WebContents::FromID(int32_t id) {
 }
 
 // static
+std::vector<WebContents*> WebContents::GetWebContentsList() {
+  std::vector<WebContents*> list;
+  for (auto iter = base::IDMap<WebContents*>::iterator(&GetAllWebContents());
+       !iter.IsAtEnd(); iter.Advance()) {
+    list.push_back(iter.GetCurrentValue());
+  }
+  return list;
+}
+
+// static
 gin::WrapperInfo WebContents::kWrapperInfo = {gin::kEmbedderNativeGin};
 
 }  // namespace electron::api

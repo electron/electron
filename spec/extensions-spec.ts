@@ -935,6 +935,27 @@ describe('chrome extensions', () => {
           reason: 'user'
         });
       });
+
+      it('query', async () => {
+        await w.loadURL(url);
+
+        expect(w.webContents.isAudioMuted()).to.be.false('muted');
+        w.webContents.setAudioMuted(true);
+        expect(w.webContents.isAudioMuted()).to.be.true('not muted');
+
+        const message = { method: 'query', args: [{ muted: true }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+        expect(response).to.have.lengthOf(1);
+
+        const tab = response[0];
+        expect(tab.mutedInfo).to.deep.equal({
+          muted: true,
+          reason: 'user'
+        });
+      });
     });
   });
 });
