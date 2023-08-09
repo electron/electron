@@ -91,8 +91,9 @@ The following events of `chrome.runtime` are supported:
 
 ### `chrome.storage`
 
-Only `chrome.storage.local` is supported; `chrome.storage.sync` and
-`chrome.storage.managed` are not.
+The following methods of `chrome.storage` are supported:
+
+- `chrome.storage.local`
 
 ### `chrome.tabs`
 
@@ -101,6 +102,8 @@ The following methods of `chrome.tabs` are supported:
 - `chrome.tabs.sendMessage`
 - `chrome.tabs.reload`
 - `chrome.tabs.executeScript`
+- `chrome.tabs.query` (partial support)
+  - supported properties: `url`, `title`, `audible`, `active`, `muted`.
 - `chrome.tabs.update` (partial support)
   - supported properties: `url`, `muted`.
 
@@ -117,6 +120,9 @@ The following methods of `chrome.management` are supported:
 - `chrome.management.getSelf`
 - `chrome.management.getPermissionWarningsById`
 - `chrome.management.getPermissionWarningsByManifest`
+
+The following events of `chrome.management` are supported:
+
 - `chrome.management.onEnabled`
 - `chrome.management.onDisabled`
 

@@ -15,6 +15,11 @@ const testMap = {
       console.log(JSON.stringify(response));
     });
   },
+  query (params) {
+    chrome.runtime.sendMessage({ method: 'query', args: [params] }, response => {
+      console.log(JSON.stringify(response));
+    });
+  },
   getZoom () {
     chrome.runtime.sendMessage({ method: 'getZoom', args: [] }, response => {
       console.log(JSON.stringify(response));
