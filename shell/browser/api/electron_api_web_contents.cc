@@ -4474,8 +4474,8 @@ WebContents* WebContents::FromID(int32_t id) {
 }
 
 // static
-std::vector<WebContents*> WebContents::GetWebContentsList() {
-  std::vector<WebContents*> list;
+std::list<WebContents*> WebContents::GetWebContentsList() {
+  std::list<WebContents*> list;
   for (auto iter = base::IDMap<WebContents*>::iterator(&GetAllWebContents());
        !iter.IsAtEnd(); iter.Advance()) {
     list.push_back(iter.GetCurrentValue());
