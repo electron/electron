@@ -49,6 +49,8 @@ is used.
 
 Stops the specified power save blocker.
 
+Returns `boolean` - Whether the specified `powerSaveBlocker` has been stopped.
+
 ### `powerSaveBlocker.isStarted(id)`
 
 * `id` Integer - The power save blocker id returned by `powerSaveBlocker.start`.

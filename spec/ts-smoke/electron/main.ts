@@ -892,7 +892,8 @@ app.whenReady().then(() => {
 const id = powerSaveBlocker.start('prevent-display-sleep')
 console.log(powerSaveBlocker.isStarted(id))
 
-powerSaveBlocker.stop(id)
+const stopped = powerSaveBlocker.stop(id)
+console.log(`The powerSaveBlocker is ${stopped ? 'stopped' : 'not stopped'}`)
 
 // protocol
 // https://github.com/electron/electron/blob/master/docs/api/protocol.md
