@@ -378,7 +378,7 @@ describe('webContents module', () => {
     it('resolves after browser intendent navigation', async () => {
       let finishedLoading = false;
       w.webContents.on('did-finish-load', function () {
-          finishedLoading = true;
+        finishedLoading = true;
       });
 
       await w.loadFile(path.join(fixturesPath, 'pages', 'navigate_in_page_and_wait.html'));
