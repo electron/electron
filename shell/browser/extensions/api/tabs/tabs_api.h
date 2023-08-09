@@ -55,6 +55,14 @@ class TabsReloadFunction : public ExtensionFunction {
   DECLARE_EXTENSION_FUNCTION("tabs.reload", TABS_RELOAD)
 };
 
+class TabsQueryFunction : public ExtensionFunction {
+  ~TabsQueryFunction() override {}
+
+  ResponseAction Run() override;
+
+  DECLARE_EXTENSION_FUNCTION("tabs.query", TABS_QUERY)
+};
+
 class TabsGetFunction : public ExtensionFunction {
   ~TabsGetFunction() override {}
 

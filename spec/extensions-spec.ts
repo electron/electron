@@ -967,6 +967,66 @@ describe('chrome extensions', () => {
           reason: 'user'
         });
       });
+
+      describe('query', () => {
+        it('can query for a tab with specific properties', async () => {
+          await w.loadURL(url);
+
+          expect(w.webContents.isAudioMuted()).to.be.false('muted');
+          w.webContents.setAudioMuted(true);
+          expect(w.webContents.isAudioMuted()).to.be.true('not muted');
+
+          const message = { method: 'query', args: [{ muted: true }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
+          expect(response).to.have.lengthOf(1);
+
+          const tab = response[0];
+          expect(tab.mutedInfo).to.deep.equal({
+            muted: true,
+            reason: 'user'
+          });
+        });
+
+        it('only returns tabs in the same session', async () => {
+          await w.loadURL(url);
+          w.webContents.setAudioMuted(true);
+
+          const sameSessionWin = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              session: customSession
+            }
+          });
+
+          sameSessionWin.webContents.setAudioMuted(true);
+
+          const newSession = session.fromPartition(`persist:${uuid.v4()}`);
+          const differentSessionWin = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              session: newSession
+            }
+          });
+
+          differentSessionWin.webContents.setAudioMuted(true);
+
+          const message = { method: 'query', args: [{ muted: true }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
+          expect(response).to.have.lengthOf(2);
+          for (const tab of response) {
+            expect(tab.mutedInfo).to.deep.equal({
+              muted: true,
+              reason: 'user'
+            });
+          }
+        });
+      });
     });
   });
 });
