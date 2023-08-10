@@ -69,6 +69,25 @@ describe('chrome extensions', () => {
     `)).to.eventually.have.property('id');
   });
 
+  it('supports minimum_chrome_version manifest key', async () => {
+    const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+    const w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        session: customSession,
+        sandbox: true
+      }
+    });
+
+    await w.loadURL('about:blank');
+
+    const extPath = path.join(fixtures, 'extensions', 'chrome-too-low-version');
+    const load = customSession.loadExtension(extPath);
+    await expect(load).to.eventually.be.rejectedWith(
+      `Loading extension at ${extPath} failed with: This extension requires Chromium version 999 or greater.`
+    );
+  });
+
   it('can open WebSQLDatabase in a background page', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     const w = new BrowserWindow({ show: false, webPreferences: { session: customSession, sandbox: true } });
@@ -354,7 +373,7 @@ describe('chrome extensions', () => {
       const message = { method: 'executeScript', args: ['1 + 2'] };
       w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-      const [,, responseString] = await once(w.webContents, 'console-message');
+      const [, , responseString] = await once(w.webContents, 'console-message');
       const response = JSON.parse(responseString);
 
       expect(response).to.equal(3);
@@ -814,6 +833,199 @@ describe('chrome extensions', () => {
           { language: 'ps', percentage: 100 },
           { language: 'fi', percentage: 100 }
         ]);
+      });
+    });
+
+    describe('chrome.tabs', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'tabs-api-async'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession,
+            nodeIntegration: true
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('getZoom', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getZoom' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.equal(1);
+      });
+
+      it('setZoom', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setZoom', args: [2] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal(2);
+      });
+
+      it('getZoomSettings', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'getZoomSettings' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({
+          defaultZoomFactor: 1,
+          mode: 'automatic',
+          scope: 'per-origin'
+        });
+      });
+
+      it('setZoomSettings', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'setZoomSettings', args: [{ mode: 'disabled' }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.deep.equal({
+          defaultZoomFactor: 1,
+          mode: 'disabled',
+          scope: 'per-tab'
+        });
+      });
+
+      it('get', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'get' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+
+        const response = JSON.parse(responseString);
+        expect(response).to.have.property('active').that.is.a('boolean');
+        expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
+        expect(response).to.have.property('discarded').that.is.a('boolean');
+        expect(response).to.have.property('groupId').that.is.a('number');
+        expect(response).to.have.property('highlighted').that.is.a('boolean');
+        expect(response).to.have.property('id').that.is.a('number');
+        expect(response).to.have.property('incognito').that.is.a('boolean');
+        expect(response).to.have.property('index').that.is.a('number');
+        expect(response).to.have.property('pinned').that.is.a('boolean');
+        expect(response).to.have.property('selected').that.is.a('boolean');
+        expect(response).to.have.property('url').that.is.a('string');
+        expect(response).to.have.property('windowId').that.is.a('number');
+      });
+
+      it('reload', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'reload' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const consoleMessage = once(w.webContents, 'console-message');
+        const finish = once(w.webContents, 'did-finish-load');
+
+        await Promise.all([consoleMessage, finish]).then(([[,, responseString]]) => {
+          const response = JSON.parse(responseString);
+          expect(response.status).to.equal('reloaded');
+        });
+      });
+
+      it('update', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'update', args: [{ muted: true }] };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+
+        expect(response).to.have.property('mutedInfo').that.is.a('object');
+        const { mutedInfo } = response;
+        expect(mutedInfo).to.deep.eq({
+          muted: true,
+          reason: 'user'
+        });
+      });
+
+      describe('query', () => {
+        it('can query for a tab with specific properties', async () => {
+          await w.loadURL(url);
+
+          expect(w.webContents.isAudioMuted()).to.be.false('muted');
+          w.webContents.setAudioMuted(true);
+          expect(w.webContents.isAudioMuted()).to.be.true('not muted');
+
+          const message = { method: 'query', args: [{ muted: true }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
+          expect(response).to.have.lengthOf(1);
+
+          const tab = response[0];
+          expect(tab.mutedInfo).to.deep.equal({
+            muted: true,
+            reason: 'user'
+          });
+        });
+
+        it('only returns tabs in the same session', async () => {
+          await w.loadURL(url);
+          w.webContents.setAudioMuted(true);
+
+          const sameSessionWin = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              session: customSession
+            }
+          });
+
+          sameSessionWin.webContents.setAudioMuted(true);
+
+          const newSession = session.fromPartition(`persist:${uuid.v4()}`);
+          const differentSessionWin = new BrowserWindow({
+            show: false,
+            webPreferences: {
+              session: newSession
+            }
+          });
+
+          differentSessionWin.webContents.setAudioMuted(true);
+
+          const message = { method: 'query', args: [{ muted: true }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
+          expect(response).to.have.lengthOf(2);
+          for (const tab of response) {
+            expect(tab.mutedInfo).to.deep.equal({
+              muted: true,
+              reason: 'user'
+            });
+          }
+        });
       });
     });
   });
