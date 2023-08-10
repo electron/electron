@@ -1533,7 +1533,8 @@ dist_zip("libcxx_headers_zip") {
   data_deps = [ ":libcxx_headers" ]
   deps = data_deps
   flatten = true
-  flatten_relative_to = rebase_path(
+  flatten_relative_to =
+      rebase_path(
           "$target_gen_dir/electron_libcxx_include/third_party/libc++/src",
           "$root_out_dir")
 
