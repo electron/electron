@@ -9,10 +9,10 @@ This is an experimental commit; but if it's successful,
 This patch should be upstreamed and then removed from electron's code.
 
 diff --git a/chrome/browser/ui/views/frame/browser_view.h b/chrome/browser/ui/views/frame/browser_view.h
-index 05467d4850b5f09ba89860138bda5835d4161c57..7bc261a6fa00e2bcbe4a96327984bafd63bb2b98 100644
+index 58f128d2217a07be876b0878d64ebf593ce6eb37..dedb231d21ead676fd0f568d3cebd3fb8ad2ed6d 100644
 --- a/chrome/browser/ui/views/frame/browser_view.h
 +++ b/chrome/browser/ui/views/frame/browser_view.h
-@@ -44,7 +44,6 @@
+@@ -43,7 +43,6 @@
  #include "chrome/browser/ui/views/user_education/browser_feature_promo_controller.h"
  #include "chrome/common/buildflags.h"
  #include "components/infobars/core/infobar_container.h"
@@ -20,7 +20,7 @@ index 05467d4850b5f09ba89860138bda5835d4161c57..7bc261a6fa00e2bcbe4a96327984bafd
  #include "components/user_education/common/feature_promo_controller.h"
  #include "components/user_education/common/feature_promo_handle.h"
  #include "components/webapps/browser/banners/app_banner_manager.h"
-@@ -63,6 +62,10 @@
+@@ -62,6 +61,10 @@
  #include "ui/views/widget/widget_observer.h"
  #include "ui/views/window/client_view.h"
  
