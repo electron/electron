@@ -1568,6 +1568,7 @@ commands:
             - *step-minimize-workspace-size-from-checkout
       - *step-fix-sync
       - *step-setup-env-for-build
+      - *step-fix-known-hosts-linux
       - *step-setup-goma-for-build
       - *step-wait-for-goma
       - *step-gn-gen-default
