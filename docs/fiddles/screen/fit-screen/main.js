@@ -1,7 +1,7 @@
 // Retrieve information about screen size, displays, cursor position, etc.
 //
 // For more info, see:
-// https://electronjs.org/docs/api/screen
+// https://www.electronjs.org/docs/latest/api/screen
 
 const { app, BrowserWindow } = require('electron')
 

@@ -29,6 +29,22 @@ The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have bee
 
 ## Planned Breaking API Changes (26.0)
 
+### Deprecated: `webContents.getPrinters`
+
+The `webContents.getPrinters` method has been deprecated. Use
+`webContents.getPrintersAsync` instead.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Deprecated
+console.log(w.webContents.getPrinters())
+// Replace with
+w.webContents.getPrintersAsync().then((printers) => {
+  console.log(printers)
+})
+```
+
 ### Deprecated: `systemPreferences.{get,set}AppLevelAppearance` and `systemPreferences.appLevelAppearance`
 
 The `systemPreferences.getAppLevelAppearance` and `systemPreferences.setAppLevelAppearance`
