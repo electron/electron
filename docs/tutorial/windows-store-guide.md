@@ -148,9 +148,9 @@ You will receive two files: `DesktopAppConverter.zip` and `BaseImage-14316.wim`.
 
 Once installation succeeded, you can move on to compiling your Electron app.
 
-[windows-sdk]: https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk
-[app-converter]: https://docs.microsoft.com/en-us/windows/uwp/porting/desktop-to-uwp-run-desktop-app-converter
-[add-appxpackage]: https://technet.microsoft.com/en-us/library/hh856048.aspx
+[windows-sdk]: https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/
+[app-converter]: https://learn.microsoft.com/en-us/windows/msix/packaging-tool/tool-overview
+[add-appxpackage]: https://learn.microsoft.com/en-us/previous-versions//hh856048(v=technet.10)?redirectedfrom=MSDN
 [electron-packager]: https://github.com/electron/electron-packager
 [electron-windows-store]: https://github.com/electron-userland/electron-windows-store
 [background-task]: https://github.com/felixrieseberg/electron-uwp-background
