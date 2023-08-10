@@ -1057,9 +1057,11 @@ const win = new BrowserWindow()
 win.loadFile('src/index.html')
 ```
 
-#### `contents.downloadURL(url)`
+#### `contents.downloadURL(url[, options])`
 
 * `url` string
+* `options` Object (optional)
+  * `headers` Record<string, string> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url` without navigating. The
 `will-download` event of `session` will be triggered.
