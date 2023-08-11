@@ -116,14 +116,20 @@ Ignore the connections limit for `domains` list separated by `,`.
 
 ### --js-flags=`flags`
 
-Specifies the flags passed to the Node.js engine. It has to be passed when starting
-Electron if you want to enable the `flags` in the main process.
+Specifies the flags passed to the [V8 engine](https://v8.dev). In order to enable the `flags` in the main process,
+this switch must be passed on startup.
 
 ```sh
 $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 ```
 
-See the [Node.js documentation][node-cli] or run `node --help` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node.js's V8 JavaScript engine.
+Run `node --v8-options` or `electron --js-flags="--help"` in your terminal for the list of available flags.  These can be used to enable early-stage JavaScript features, or log and manipulate garbage collection, among other things.
+
+For example, to trace V8 optimization and deoptimization:
+
+```sh
+$ electron --js-flags="--trace-opt --trace-deopt" your-app
+```
 
 ### --lang
 
