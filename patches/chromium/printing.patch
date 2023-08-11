@@ -11,7 +11,7 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 9a0b1e068e37dbb5787e599b970620fa7e93750a..b3f8fbc6381bd36205ef98f3da559fe1d4d644fb 100644
+index dfcf0ad8238688f9e25d09cc3842cd8a42cf7316..e7b0bd77727f9c352a287a3100f35f7672d4b4a8 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -974,7 +974,6 @@ if (is_win) {
@@ -520,7 +520,7 @@ index 6e5f0ae32837f5b08ff366b698a262b041b2bb96..bf31824cbeb49ccbe52b81a91edb3c88
    }
    CompleteScriptedPrint(printing_rfh_, std::move(params), std::move(callback));
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2e7c59251 100644
+index eab82d64b186ca820d7c28a1a1060e95fc67fff8..1292c0050f67c09be87f8fd06026412c816b505d 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -44,6 +44,8 @@ namespace printing {
@@ -578,7 +578,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
        base::Value::Dict job_settings,
        std::unique_ptr<PrintSettings> print_settings,
        UpdatePrintSettingsCallback callback);
-@@ -306,7 +322,8 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -312,7 +328,8 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // Runs `callback` with `params` to reply to ScriptedPrint().
    void ScriptedPrintReply(ScriptedPrintCallback callback,
                            int process_id,
@@ -588,7 +588,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
  
    // Requests the RenderView to render all the missing pages for the print job.
    // No-op if no print job is pending. Returns true if at least one page has
-@@ -387,8 +404,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -393,8 +410,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // The current RFH that is printing with a system printing dialog.
    raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
  
@@ -928,10 +928,10 @@ index 731b0fa4c0e1b3a5b4ce73d5bf2322767c70f9be..58921e7fdb9c33e21694186f436f409f
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index aeda95912420895271ecdf1883f04da07b32296e..2f165461b7326b4e426d4b2552766896bb273c29 100644
+index 7ed78907d28c0b79914eae27dac3b3b5184f1540..224a6884ef5070efe1a51fdf1c24662388288432 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2914,8 +2914,9 @@ source_set("browser") {
+@@ -2916,8 +2916,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
