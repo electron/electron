@@ -419,33 +419,33 @@ describe('session module', () => {
     });
 
     it('allows configuring proxy settings with mode `direct`', async () => {
-      const config = { mode: 'direct' as any, proxyRules: 'http=myproxy:80' };
+      const config = { mode: 'direct' as const, proxyRules: 'http=myproxy:80' };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
       expect(proxy).to.equal('DIRECT');
     });
 
     it('allows configuring proxy settings with mode `auto_detect`', async () => {
-      const config = { mode: 'auto_detect' as any };
+      const config = { mode: 'auto_detect' as const };
       await customSession.setProxy(config);
     });
 
     it('allows configuring proxy settings with mode `pac_script`', async () => {
-      const config = { mode: 'pac_script' as any };
+      const config = { mode: 'pac_script' as const };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
       expect(proxy).to.equal('DIRECT');
     });
 
     it('allows configuring proxy settings with mode `fixed_servers`', async () => {
-      const config = { mode: 'fixed_servers' as any, proxyRules: 'http=myproxy:80' };
+      const config = { mode: 'fixed_servers' as const, proxyRules: 'http=myproxy:80' };
       await customSession.setProxy(config);
       const proxy = await customSession.resolveProxy('http://example.com/');
       expect(proxy).to.equal('PROXY myproxy:80');
     });
 
     it('allows configuring proxy settings with mode `system`', async () => {
-      const config = { mode: 'system' as any };
+      const config = { mode: 'system' as const };
       await customSession.setProxy(config);
     });
 
@@ -468,7 +468,7 @@ describe('session module', () => {
         res.end(pac);
       });
       const { url } = await listen(server);
-      const config = { mode: 'pac_script' as any, pacScript: url };
+      const config = { mode: 'pac_script' as const, pacScript: url };
       await customSession.setProxy(config);
       {
         const proxy = await customSession.resolveProxy('https://google.com');

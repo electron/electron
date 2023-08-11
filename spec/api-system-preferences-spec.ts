@@ -29,7 +29,7 @@ describe('systemPreferences module', () => {
         { key: 'one', type: 'string', value: 'ONE' },
         { key: 'two', value: 2, type: 'integer' },
         { key: 'three', value: [1, 2, 3], type: 'array' }
-      ];
+      ] as const;
 
       const defaultsDict: Record<string, any> = {};
       defaultsMap.forEach(row => { defaultsDict[row.key] = row.value; });
@@ -38,7 +38,7 @@ describe('systemPreferences module', () => {
 
       for (const userDefault of defaultsMap) {
         const { key, value: expectedValue, type } = userDefault;
-        const actualValue = systemPreferences.getUserDefault(key, type as any);
+        const actualValue = systemPreferences.getUserDefault(key, type);
         expect(actualValue).to.deep.equal(expectedValue);
       }
     });
@@ -91,12 +91,12 @@ describe('systemPreferences module', () => {
       ['url', 'https://github.com/electron'],
       ['array', [1, 2, 3]],
       ['dictionary', { a: 1, b: 2 }]
-    ];
+    ] as const;
 
     it('sets values', () => {
       for (const [type, value] of TEST_CASES) {
-        systemPreferences.setUserDefault(KEY, type as any, value as any);
-        const retrievedValue = systemPreferences.getUserDefault(KEY, type as any);
+        systemPreferences.setUserDefault(KEY, type, value as any);
+        const retrievedValue = systemPreferences.getUserDefault(KEY, type);
         expect(retrievedValue).to.deep.equal(value);
       }
     });
@@ -104,7 +104,7 @@ describe('systemPreferences module', () => {
     it('throws when type and value conflict', () => {
       for (const [type, value] of TEST_CASES) {
         expect(() => {
-          systemPreferences.setUserDefault(KEY, type as any, typeof value === 'string' ? {} : 'foo' as any);
+          systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : 'foo' as any);
         }).to.throw(`Unable to convert value to: ${type}`);
       }
     });
@@ -158,10 +158,10 @@ describe('systemPreferences module', () => {
     });
 
     it('returns a valid system color', () => {
-      const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow'];
+      const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow'] as const;
 
       colors.forEach(color => {
-        const sysColor = systemPreferences.getSystemColor(color as any);
+        const sysColor = systemPreferences.getSystemColor(color);
         expect(sysColor).to.be.a('string');
       });
     });
