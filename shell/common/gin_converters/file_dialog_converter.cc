@@ -8,6 +8,7 @@
 #include "shell/browser/api/electron_api_browser_window.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/native_window_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin {
 
@@ -27,8 +28,8 @@ bool Converter<file_dialog::Filter>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<file_dialog::Filter>::ToV8(
     v8::Isolate* isolate,
     const file_dialog::Filter& in) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("name", in.first);
   dict.Set("extensions", in.second);
 

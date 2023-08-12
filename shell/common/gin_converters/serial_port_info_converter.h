@@ -17,6 +17,7 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
       v8::Isolate* isolate,
       const device::mojom::SerialPortInfoPtr& port) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
     dict.Set("portId", port->token.ToString());
     dict.Set("portName", port->path.BaseName().LossyDisplayName());
     if (port->display_name && !port->display_name->empty())

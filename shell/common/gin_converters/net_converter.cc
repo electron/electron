@@ -29,6 +29,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/std_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
 
@@ -59,7 +60,8 @@ bool CertFromData(const std::string& data,
 v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
     v8::Isolate* isolate,
     const net::AuthChallengeInfo& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("isProxy", val.is_proxy);
   dict.Set("scheme", val.scheme);
   dict.Set("host", val.challenger.host());
@@ -72,7 +74,7 @@ v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
 v8::Local<v8::Value> Converter<scoped_refptr<net::X509Certificate>>::ToV8(
     v8::Isolate* isolate,
     const scoped_refptr<net::X509Certificate>& val) {
-  gin::Dictionary dict(isolate, v8::Object::New(isolate));
+  gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
   std::string encoded_data;
   net::X509Certificate::GetPEMEncoded(val->cert_buffer(), &encoded_data);
 
@@ -142,8 +144,8 @@ bool Converter<scoped_refptr<net::X509Certificate>>::FromV8(
 v8::Local<v8::Value> Converter<net::CertPrincipal>::ToV8(
     v8::Isolate* isolate,
     const net::CertPrincipal& val) {
-  gin::Dictionary dict(isolate, v8::Object::New(isolate));
-
+  gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
+  dict.SetHidden("simple", true);
   dict.Set("commonName", val.common_name);
   dict.Set("organizations", val.organization_names);
   dict.Set("organizationUnits", val.organization_unit_names);
@@ -610,7 +612,8 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("method", val.method);
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
@@ -624,7 +627,8 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
 v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
     v8::Isolate* isolate,
     electron::VerifyRequestParams val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
   dict.Set("validatedCertificate", val.validated_certificate);
@@ -638,7 +642,8 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
     v8::Isolate* isolate,
     const net::HttpVersion& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("major", static_cast<uint32_t>(val.major_value()));
   dict.Set("minor", static_cast<uint32_t>(val.minor_value()));
   return ConvertToV8(isolate, dict);
@@ -648,8 +653,8 @@ v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
 v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
     v8::Isolate* isolate,
     const net::RedirectInfo& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("statusCode", val.status_code);
   dict.Set("newMethod", val.new_method);
   dict.Set("newUrl", val.new_url);

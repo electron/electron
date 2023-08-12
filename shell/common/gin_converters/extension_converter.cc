@@ -9,6 +9,7 @@
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 namespace gin {
 
@@ -16,7 +17,8 @@ namespace gin {
 v8::Local<v8::Value> Converter<const extensions::Extension*>::ToV8(
     v8::Isolate* isolate,
     const extensions::Extension* extension) {
-  auto dict = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("id", extension->id());
   dict.Set("name", extension->name());
   dict.Set("path", extension->path());

@@ -203,6 +203,7 @@ struct Converter<JumpListItem> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const JumpListItem& val) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
     dict.Set("type", val.type);
 
     switch (val.type) {
@@ -339,6 +340,7 @@ struct Converter<Browser::LaunchItem> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LaunchItem val) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
     dict.Set("name", val.name);
     dict.Set("path", val.path);
     dict.Set("args", val.args);
@@ -372,6 +374,7 @@ struct Converter<Browser::LoginItemSettings> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LoginItemSettings val) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
     dict.Set("openAtLogin", val.open_at_login);
     dict.Set("openAsHidden", val.open_as_hidden);
     dict.Set("restoreState", val.restore_state);
@@ -1264,6 +1267,7 @@ v8::Local<v8::Value> App::GetJumpListSettings() {
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.SetHidden("simple", true);
   dict.Set("minItems", min_items);
   dict.Set("removedItems", gin::ConvertToV8(isolate, removed_items));
   return dict.GetHandle();

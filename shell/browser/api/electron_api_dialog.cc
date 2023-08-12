@@ -30,7 +30,7 @@ void ResolvePromiseObject(gin_helper::Promise<gin_helper::Dictionary> promise,
   v8::Isolate* isolate = promise.isolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-
+  dict.SetHidden("simple", true);
   dict.Set("response", result);
   dict.Set("checkboxChecked", checkbox_checked);
 

@@ -36,7 +36,8 @@ struct Converter<electron::NotificationAction> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    electron::NotificationAction val) {
-    gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    dict.SetHidden("simple", true);
     dict.Set("text", val.text);
     dict.Set("type", val.type);
     return ConvertToV8(isolate, dict);

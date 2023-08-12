@@ -16,6 +16,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
+#include "shell/common/gin_helper/dictionary.h"
 
 using content::BrowserThread;
 
@@ -56,7 +57,8 @@ void LoginHandler::EmitEvent(
     return;
   }
 
-  auto details = gin::Dictionary::CreateEmpty(isolate);
+  gin_helper::Dictionary details = gin::Dictionary::CreateEmpty(isolate);
+  details.SetHidden("simple", true);
   details.Set("url", url);
 
   // These parameters aren't documented, and I'm not sure that they're useful,

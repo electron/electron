@@ -1505,6 +1505,7 @@ void WebContents::FindReply(content::WebContents* web_contents,
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
   gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
+  result.SetHidden("simple", true);
   result.Set("requestId", request_id);
   result.Set("matches", number_of_matches);
   result.Set("selectionArea", selection_rect);
