@@ -1595,25 +1595,6 @@ Passing `null` will reset the position to default.
 Returns `Point | null` - The custom position for the traffic light buttons in
 frameless window, `null` will be returned when there is no custom position.
 
-#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
-
-* `position` [Point](structures/point.md)
-
-Set a custom position for the traffic light buttons in frameless window.
-Passing `{ x: 0, y: 0 }` will reset the position to default.
-
-> **Note**
-> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
-
-#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
-
-Returns `Point` - The custom position for the traffic light buttons in
-frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
-position.
-
-> **Note**
-> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
-
 #### `win.setTouchBar(touchBar)` _macOS_
 
 * `touchBar` TouchBar | null

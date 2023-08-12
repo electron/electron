@@ -1,6 +1,5 @@
 import { EventEmitter } from 'events';
 import type { BaseWindow as TLWT } from 'electron/main';
-import * as deprecate from '@electron/internal/common/deprecate';
 const { BaseWindow } = process._linkedBinding('electron_browser_base_window') as { BaseWindow: typeof TLWT };
 
 Object.setPrototypeOf(BaseWindow.prototype, EventEmitter.prototype);
@@ -14,25 +13,6 @@ BaseWindow.prototype._init = function () {
     const menu = app.applicationMenu;
     if (menu) this.setMenu(menu);
   }
-};
-
-// Deprecation.
-const setTrafficLightPositionDeprecated = deprecate.warnOnce('setTrafficLightPosition', 'setWindowButtonPosition');
-// Converting to any as the methods are defined under BrowserWindow in our docs.
-(BaseWindow as any).prototype.setTrafficLightPosition = function (pos: Electron.Point) {
-  setTrafficLightPositionDeprecated();
-  if (typeof pos === 'object' && pos.x === 0 && pos.y === 0) {
-    this.setWindowButtonPosition(null);
-  } else {
-    this.setWindowButtonPosition(pos);
-  }
-};
-
-const getTrafficLightPositionDeprecated = deprecate.warnOnce('getTrafficLightPosition', 'getWindowButtonPosition');
-(BaseWindow as any).prototype.getTrafficLightPosition = function () {
-  getTrafficLightPositionDeprecated();
-  const pos = this.getWindowButtonPosition();
-  return pos === null ? { x: 0, y: 0 } : pos;
 };
 
 // Properties

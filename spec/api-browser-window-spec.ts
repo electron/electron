@@ -2580,46 +2580,6 @@ describe('BrowserWindow module', () => {
         expect(w.getWindowButtonPosition()).to.deep.equal(newPos);
       });
     });
-
-    // The set/getTrafficLightPosition APIs are deprecated.
-    describe('BrowserWindow.getTrafficLightPosition(pos)', () => {
-      it('returns { x: 0, y: 0 } when there is no custom position', () => {
-        const w = new BrowserWindow({ show: false });
-        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
-      });
-
-      it('gets position property for "hidden" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
-      });
-
-      it('gets position property for "customButtonsOnHover" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
-        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
-      });
-    });
-
-    describe('BrowserWindow.setTrafficLightPosition(pos)', () => {
-      it('resets the position when { x: 0, y: 0 } is passed', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        w.setTrafficLightPosition({ x: 0, y: 0 });
-        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
-      });
-
-      it('sets position property for "hidden" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        const newPos = { x: 20, y: 20 };
-        w.setTrafficLightPosition(newPos);
-        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
-      });
-
-      it('sets position property for "customButtonsOnHover" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
-        const newPos = { x: 20, y: 20 };
-        w.setTrafficLightPosition(newPos);
-        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
-      });
-    });
   });
 
   ifdescribe(process.platform === 'win32')('BrowserWindow.setAppDetails(options)', () => {
