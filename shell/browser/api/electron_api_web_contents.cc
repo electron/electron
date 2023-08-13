@@ -336,6 +336,26 @@ struct Converter<scoped_refptr<content::DevToolsAgentHost>> {
   }
 };
 
+template <>
+struct Converter<content::Visibility> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   content::Visibility val) {
+    std::string visibility;
+    switch (val) {
+      case content::Visibility::VISIBLE:
+        visibility = "visible";
+        break;
+      case content::Visibility::OCCLUDED:
+      case content::Visibility::HIDDEN:
+        visibility = "hidden";
+        break;
+      default:
+        break;
+    }
+    return gin::ConvertToV8(isolate, visibility);
+  }
+};
+
 }  // namespace gin
 
 namespace electron::api {
@@ -1790,6 +1810,12 @@ void WebContents::OnWebContentsFocused(
 void WebContents::OnWebContentsLostFocus(
     content::RenderWidgetHost* render_widget_host) {
   Emit("blur");
+}
+
+void WebContents::OnVisibilityChanged(content::Visibility visibility) {
+  content::Visibility updated_visibility =
+      background_throttling_ ? visibility : content::Visibility::VISIBLE;
+  Emit("-visibility-change", updated_visibility);
 }
 
 void WebContents::DOMContentLoaded(

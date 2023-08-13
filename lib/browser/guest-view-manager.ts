@@ -176,7 +176,7 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
   // FIXME Remove once https://github.com/electron/electron/issues/6828 is fixed
   guest.on('dom-ready', function () {
     const guestInstance = guestInstances.get(guestInstanceId);
-    if (guestInstance != null && guestInstance.visibilityState != null) {
+    if (guestInstance?.visibilityState != null) {
       guest._sendInternal(IPC_MESSAGES.GUEST_INSTANCE_VISIBILITY_CHANGE, guestInstance.visibilityState);
     }
   });
@@ -229,7 +229,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
   watchedEmbedders.add(embedder);
 
   // Forward embedder window visibility change events to guest
-  const onVisibilityChange = function (visibilityState: DocumentVisibilityState) {
+  const onVisibilityChange = (_: Event, visibilityState: DocumentVisibilityState) => {
     for (const guestInstance of guestInstances.values()) {
       guestInstance.visibilityState = visibilityState;
       if (guestInstance.embedder === embedder) {
@@ -237,7 +237,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
       }
     }
   };
-  embedder.on('-window-visibility-change' as any, onVisibilityChange);
+  embedder.on('-visibility-change' as any, onVisibilityChange);
 
   embedder.once('will-destroy' as any, () => {
     // Usually the guestInstances is cleared when guest is destroyed, but it
@@ -248,8 +248,8 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
         detachGuest(embedder, guestInstanceId);
       }
     }
-    // Clear the listeners.
-    embedder.removeListener('-window-visibility-change' as any, onVisibilityChange);
+
+    embedder.removeListener('-visibility-change' as any, onVisibilityChange);
     watchedEmbedders.delete(embedder);
   });
 };

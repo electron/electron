@@ -37,22 +37,6 @@ BrowserWindow.prototype._init = function (this: BWT) {
     app.emit('browser-window-focus', event, this);
   });
 
-  // Subscribe to visibilityState changes and pass to renderer process.
-  let isVisible = this.isVisible() && !this.isMinimized();
-  const visibilityChanged = () => {
-    const newState = this.isVisible() && !this.isMinimized();
-    if (isVisible !== newState) {
-      isVisible = newState;
-      const visibilityState = isVisible ? 'visible' : 'hidden';
-      this.webContents.emit('-window-visibility-change', visibilityState);
-    }
-  };
-
-  const visibilityEvents = ['show', 'hide', 'minimize', 'maximize', 'restore'];
-  for (const event of visibilityEvents) {
-    this.on(event as any, visibilityChanged);
-  }
-
   const warn = deprecate.warnOnceMessage('\'scroll-touch-{begin,end,edge}\' are deprecated and will be removed. Please use the WebContents \'input-event\' event instead.');
   this.webContents.on('input-event', (_, e) => {
     if (e.type === 'gestureScrollBegin') {
