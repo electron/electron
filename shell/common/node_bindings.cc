@@ -258,13 +258,9 @@ bool IsAllowedOption(base::StringPiece option) {
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
-  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
-      "--enable-fips",
-      "--force-fips",
-      "--openssl-config",
-      "--use-bundled-ca",
-      "--use-openssl-ca",
-  });
+  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>(
+      {"--enable-fips", "--force-fips", "--openssl-config", "--use-bundled-ca",
+       "--use-openssl-ca", "--experimental-policy"});
 
   static constexpr auto pkg_opts = base::MakeFixedFlatSet<base::StringPiece>({
       "--http-parser",
