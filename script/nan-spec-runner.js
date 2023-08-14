@@ -68,6 +68,7 @@ async function main () {
     ' -fvisibility-inlines-hidden',
     '-fPIC',
     '-D_LIBCPP_ABI_NAMESPACE=Cr',
+    '-v',
     ...platformFlags
   ].join(' ');
 
