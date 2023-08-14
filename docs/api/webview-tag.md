@@ -983,7 +983,7 @@ ipcRenderer.on('ping', () => {
 })
 ```
 
-### Event: 'crashed'
+### Event: 'crashed' _Deprecated_
 
 Fired when the renderer process is crashed.
 
