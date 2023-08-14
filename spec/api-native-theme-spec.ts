@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as semver from 'semver';
 import { setTimeout } from 'timers/promises';
 
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -61,11 +62,16 @@ describe('nativeTheme module', () => {
     });
 
     ifdescribe(process.platform === 'darwin' && semver.gte(os.release(), '18.0.0'))('on macOS 10.14', () => {
-      it('should update appLevelAppearance when set', () => {
-        nativeTheme.themeSource = 'dark';
-        expect(systemPreferences.appLevelAppearance).to.equal('dark');
-        nativeTheme.themeSource = 'light';
-        expect(systemPreferences.appLevelAppearance).to.equal('light');
+      it('should update appLevelAppearance when set', async () => {
+        await expectDeprecationMessages(
+          () => {
+            nativeTheme.themeSource = 'dark';
+            expect(systemPreferences.appLevelAppearance).to.equal('dark');
+            nativeTheme.themeSource = 'light';
+            expect(systemPreferences.appLevelAppearance).to.equal('light');
+          },
+          "(electron) 'appLevelAppearance' is deprecated and will be removed."
+        );
       });
     });
 
