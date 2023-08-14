@@ -39,8 +39,7 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
     : BaseWindow(args->isolate(), options) {
   // Use options.webPreferences in WebContents.
   v8::Isolate* isolate = args->isolate();
-  gin_helper::Dictionary web_preferences =
-      gin::Dictionary::CreateEmpty(isolate);
+  auto web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
   bool transparent = false;

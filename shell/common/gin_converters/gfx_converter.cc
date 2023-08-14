@@ -17,7 +17,7 @@ namespace gin {
 
 v8::Local<v8::Value> Converter<gfx::Point>::ToV8(v8::Isolate* isolate,
                                                  const gfx::Point& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
@@ -40,7 +40,7 @@ bool Converter<gfx::Point>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::PointF>::ToV8(v8::Isolate* isolate,
                                                   const gfx::PointF& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
@@ -62,7 +62,7 @@ bool Converter<gfx::PointF>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Size>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Size& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("width", val.width());
   dict.Set("height", val.height());
@@ -84,7 +84,7 @@ bool Converter<gfx::Size>::FromV8(v8::Isolate* isolate,
 
 v8::Local<v8::Value> Converter<gfx::Rect>::ToV8(v8::Isolate* isolate,
                                                 const gfx::Rect& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("x", val.x());
   dict.Set("y", val.y());
@@ -141,7 +141,7 @@ struct Converter<display::Display::TouchSupport> {
 v8::Local<v8::Value> Converter<display::Display>::ToV8(
     v8::Isolate* isolate,
     const display::Display& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("id", val.id());
   dict.Set("label", val.label());
