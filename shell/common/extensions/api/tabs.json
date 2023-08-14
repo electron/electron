@@ -4,6 +4,16 @@
     "description": "Use the <code>chrome.tabs</code> API to interact with the browser's tab system. You can use this API to create, modify, and rearrange tabs in the browser.",
     "types": [
       {
+        "id": "TabStatus",
+        "type": "string",
+        "enum": [
+          "unloaded",
+          "loading",
+          "complete"
+        ],
+        "description": "The tab's loading status."
+      },
+      {
         "id": "MutedInfoReason",
         "type": "string",
         "description": "An event that caused a muted state change.",
@@ -210,6 +220,18 @@
             "description": "Used to return the default zoom level for the current tab in calls to tabs.getZoomSettings."
           }
         }
+      },
+      {
+        "id": "WindowType",
+        "type": "string",
+        "enum": [
+          "normal",
+          "popup",
+          "panel",
+          "app",
+          "devtools"
+        ],
+        "description": "The type of window."
       }
     ],
     "functions": [
@@ -485,6 +507,124 @@
               "$ref": "ZoomSettings",
               "name": "zoomSettings",
               "description": "The tab's current zoom settings."
+            }
+          ]
+        }
+      },
+      {
+        "name": "query",
+        "type": "function",
+        "description": "Gets all tabs that have the specified properties, or all tabs if no properties are specified.",
+        "parameters": [
+          {
+            "type": "object",
+            "name": "queryInfo",
+            "properties": {
+              "active": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are active in their windows."
+              },
+              "pinned": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are pinned."
+              },
+              "audible": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are audible."
+              },
+              "muted": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are muted."
+              },
+              "highlighted": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are highlighted."
+              },
+              "discarded": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are discarded. A discarded tab is one whose content has been unloaded from memory, but is still visible in the tab strip. Its content is reloaded the next time it is activated."
+              },
+              "autoDiscardable": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs can be discarded automatically by the browser when resources are low."
+              },
+              "currentWindow": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are in the <a href='windows#current-window'>current window</a>."
+              },
+              "lastFocusedWindow": {
+                "type": "boolean",
+                "optional": true,
+                "description": "Whether the tabs are in the last focused window."
+              },
+              "status": {
+                "$ref": "TabStatus",
+                "optional": true,
+                "description": "The tab loading status."
+              },
+              "title": {
+                "type": "string",
+                "optional": true,
+                "description": "Match page titles against a pattern. This property is ignored if the extension does not have the <code>\"tabs\"</code> permission."
+              },
+              "url": {
+                "choices": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "optional": true,
+                "description": "Match tabs against one or more <a href='match_patterns'>URL patterns</a>. Fragment identifiers are not matched. This property is ignored if the extension does not have the <code>\"tabs\"</code> permission."
+              },
+              "groupId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": -1,
+                "description": "The ID of the group that the tabs are in, or $(ref:tabGroups.TAB_GROUP_ID_NONE) for ungrouped tabs."
+              },
+              "windowId": {
+                "type": "integer",
+                "optional": true,
+                "minimum": -2,
+                "description": "The ID of the parent window, or $(ref:windows.WINDOW_ID_CURRENT) for the <a href='windows#current-window'>current window</a>."
+              },
+              "windowType": {
+                "$ref": "WindowType",
+                "optional": true,
+                "description": "The type of window the tabs are in."
+              },
+              "index": {
+                "type": "integer",
+                "optional": true,
+                "minimum": 0,
+                "description": "The position of the tabs within their windows."
+              }
+            }
+          }
+        ],
+        "returns_async": {
+          "name": "callback",
+          "parameters": [
+            {
+              "name": "result",
+              "type": "array",
+              "items": {
+                "$ref": "Tab"
+              }
             }
           ]
         }

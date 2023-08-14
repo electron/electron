@@ -7,6 +7,7 @@
 #include <memory>
 #include <utility>
 
+#include "base/strings/pattern.h"
 #include "chrome/common/url_constants.h"
 #include "components/url_formatter/url_fixer.h"
 #include "content/public/browser/navigation_entry.h"
@@ -16,7 +17,9 @@
 #include "extensions/common/mojom/host_id.mojom.h"
 #include "extensions/common/permissions/permissions_data.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/native_window.h"
 #include "shell/browser/web_contents_zoom_controller.h"
+#include "shell/browser/window_list.h"
 #include "shell/common/extensions/api/tabs.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
 #include "url/gurl.h"
@@ -58,6 +61,13 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
   }
 }
 
+// Returns true if either |boolean| is disengaged, or if |boolean| and
+// |value| are equal. This function is used to check if a tab's parameters match
+// those of the browser.
+bool MatchesBool(const absl::optional<bool>& boolean, bool value) {
+  return !boolean || *boolean == value;
+}
+
 api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   DCHECK(contents);
   api::tabs::MutedInfo info;
@@ -65,6 +75,7 @@ api::tabs::MutedInfo CreateMutedInfo(content::WebContents* contents) {
   info.reason = api::tabs::MUTED_INFO_REASON_USER;
   return info;
 }
+
 }  // namespace
 
 ExecuteCodeInTabFunction::ExecuteCodeInTabFunction() : execute_tab_id_(-1) {}
@@ -212,6 +223,93 @@ ExtensionFunction::ResponseAction TabsReloadFunction::Run() {
       true);
 
   return RespondNow(NoArguments());
+}
+
+ExtensionFunction::ResponseAction TabsQueryFunction::Run() {
+  absl::optional<tabs::Query::Params> params =
+      tabs::Query::Params::Create(args());
+  EXTENSION_FUNCTION_VALIDATE(params);
+
+  URLPatternSet url_patterns;
+  if (params->query_info.url) {
+    std::vector<std::string> url_pattern_strings;
+    if (params->query_info.url->as_string)
+      url_pattern_strings.push_back(*params->query_info.url->as_string);
+    else if (params->query_info.url->as_strings)
+      url_pattern_strings.swap(*params->query_info.url->as_strings);
+    // It is o.k. to use URLPattern::SCHEME_ALL here because this function does
+    // not grant access to the content of the tabs, only to seeing their URLs
+    // and meta data.
+    std::string error;
+    if (!url_patterns.Populate(url_pattern_strings, URLPattern::SCHEME_ALL,
+                               true, &error)) {
+      return RespondNow(Error(std::move(error)));
+    }
+  }
+
+  std::string title = params->query_info.title.value_or(std::string());
+  absl::optional<bool> audible = params->query_info.audible;
+  absl::optional<bool> muted = params->query_info.muted;
+
+  base::Value::List result;
+
+  // Filter out webContents that don't belong to the current browser context.
+  auto* bc = browser_context();
+  auto all_contents = electron::api::WebContents::GetWebContentsList();
+  all_contents.remove_if([&bc](electron::api::WebContents* wc) {
+    return (bc != wc->web_contents()->GetBrowserContext());
+  });
+
+  for (auto* contents : all_contents) {
+    if (!contents || !contents->web_contents())
+      continue;
+
+    auto* wc = contents->web_contents();
+
+    // Match webContents audible value.
+    if (!MatchesBool(audible, wc->IsCurrentlyAudible()))
+      continue;
+
+    // Match webContents muted value.
+    if (!MatchesBool(muted, wc->IsAudioMuted()))
+      continue;
+
+    // Match webContents active status.
+    if (!MatchesBool(params->query_info.active, contents->IsFocused()))
+      continue;
+
+    if (!title.empty() || !url_patterns.is_empty()) {
+      // "title" and "url" properties are considered privileged data and can
+      // only be checked if the extension has the "tabs" permission or it has
+      // access to the WebContents's origin. Otherwise, this tab is considered
+      // not matched.
+      if (!extension()->permissions_data()->HasAPIPermissionForTab(
+              contents->ID(), mojom::APIPermissionID::kTab) &&
+          !extension()->permissions_data()->HasHostPermission(wc->GetURL())) {
+        continue;
+      }
+
+      // Match webContents title.
+      if (!title.empty() &&
+          !base::MatchPattern(wc->GetTitle(), base::UTF8ToUTF16(title)))
+        continue;
+
+      // Match webContents url.
+      if (!url_patterns.is_empty() && !url_patterns.MatchesURL(wc->GetURL()))
+        continue;
+    }
+
+    tabs::Tab tab;
+    tab.id = contents->ID();
+    tab.url = wc->GetLastCommittedURL().spec();
+    tab.active = contents->IsFocused();
+    tab.audible = contents->IsCurrentlyAudible();
+    tab.muted_info = CreateMutedInfo(wc);
+
+    result.Append(tab.ToValue());
+  }
+
+  return RespondNow(WithArguments(std::move(result)));
 }
 
 ExtensionFunction::ResponseAction TabsGetFunction::Run() {

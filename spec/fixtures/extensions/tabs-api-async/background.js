@@ -38,6 +38,12 @@ const handleRequest = (request, sender, sendResponse) => {
       break;
     }
 
+    case 'query': {
+      const [params] = args;
+      chrome.tabs.query(params).then(sendResponse);
+      break;
+    }
+
     case 'reload': {
       chrome.tabs.reload(tabId).then(() => {
         sendResponse({ status: 'reloaded' });
