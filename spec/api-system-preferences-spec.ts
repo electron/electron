@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { systemPreferences } from 'electron/main';
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 
 describe('systemPreferences module', () => {
@@ -174,9 +175,8 @@ describe('systemPreferences module', () => {
       }).to.throw(`Unknown color: ${color}`);
     });
 
-    it('returns a valid color', () => {
+    it('returns a valid color', async () => {
       const colors = [
-        'alternate-selected-control-text',
         'control-background',
         'control',
         'control-text',
@@ -209,12 +209,20 @@ describe('systemPreferences module', () => {
         'unemphasized-selected-text',
         'window-background',
         'window-frame-text'
-      ];
+      ] as const;
 
       colors.forEach(color => {
-        const sysColor = systemPreferences.getColor(color as any);
+        const sysColor = systemPreferences.getColor(color);
         expect(sysColor).to.be.a('string');
       });
+
+      await expectDeprecationMessages(
+        () => {
+          const sysColor = systemPreferences.getColor('alternate-selected-control-text');
+          expect(sysColor).to.be.a('string');
+        },
+        "'alternate-selected-control-text' is deprecated as an input to getColor.  Use 'selected-content-background' instead."
+      );
     });
   });
 
@@ -233,15 +241,25 @@ describe('systemPreferences module', () => {
     });
 
     describe('with functions', () => {
-      it('returns a valid appearance', () => {
-        const appearance = systemPreferences.getAppLevelAppearance();
-        expect(options).to.include(appearance);
+      it('returns a valid appearance', async () => {
+        await expectDeprecationMessages(
+          () => {
+            const appearance = systemPreferences.getAppLevelAppearance();
+            expect(options).to.include(appearance);
+          },
+          "(electron) 'getAppLevelAppearance function' is deprecated and will be removed."
+        );
       });
 
-      it('can be changed', () => {
-        systemPreferences.setAppLevelAppearance('dark');
-        const appearance = systemPreferences.getAppLevelAppearance();
-        expect(appearance).to.eql('dark');
+      it('can be changed', async () => {
+        await expectDeprecationMessages(
+          () => {
+            systemPreferences.setAppLevelAppearance('dark');
+            const appearance = systemPreferences.getAppLevelAppearance();
+            expect(appearance).to.eql('dark');
+          },
+          "(electron) 'setAppLevelAppearance function' is deprecated and will be removed."
+        );
       });
     });
   });

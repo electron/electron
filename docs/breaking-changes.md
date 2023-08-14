@@ -63,6 +63,41 @@ w.webContents.getPrintersAsync().then((printers) => {
 })
 ```
 
+### Deprecated: `systemPreferences.{get,set}AppLevelAppearance` and `systemPreferences.appLevelAppearance`
+
+The `systemPreferences.getAppLevelAppearance` and `systemPreferences.setAppLevelAppearance`
+methods have been deprecated, as well as the `systemPreferences.appLevelAppearance` property.
+Use the `nativeTheme` module instead.
+
+```js
+// Deprecated
+systemPreferences.getAppLevelAppearance()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Deprecated
+systemPreferences.appLevelAppearance
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Deprecated
+systemPreferences.setAppLevelAppearance('dark')
+// Replace with
+nativeTheme.themeSource = 'dark'
+```
+
+### Deprecated: `alternate-selected-control-text` value for `systemPreferences.getColor`
+
+The `alternate-selected-control-text` value for `systemPreferences.getColor`
+has been deprecated. Use `selected-content-background` instead.
+
+```js
+// Deprecated
+systemPreferences.getColor('alternate-selected-control-text')
+// Replace with
+systemPreferences.getColor('selected-content-background')
+```
+
 ## Planned Breaking API Changes (25.0)
 
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`

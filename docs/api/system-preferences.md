@@ -417,7 +417,7 @@ Returns an object with system animation settings.
 
 ## Properties
 
-### `systemPreferences.appLevelAppearance` _macOS_
+### `systemPreferences.appLevelAppearance` _macOS_ _Deprecated_
 
 A `string` property that can be `dark`, `light` or `unknown`. It determines the macOS appearance setting for
 your application. This maps to values in: [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc). Setting this will override the

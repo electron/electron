@@ -4,6 +4,7 @@ import { once } from 'node:events';
 import * as path from 'node:path';
 import { setTimeout } from 'node:timers/promises';
 
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
@@ -59,11 +60,16 @@ describe('nativeTheme module', () => {
     });
 
     ifdescribe(process.platform === 'darwin')('on macOS', () => {
-      it('should update appLevelAppearance when set', () => {
-        nativeTheme.themeSource = 'dark';
-        expect(systemPreferences.appLevelAppearance).to.equal('dark');
-        nativeTheme.themeSource = 'light';
-        expect(systemPreferences.appLevelAppearance).to.equal('light');
+      it('should update appLevelAppearance when set', async () => {
+        await expectDeprecationMessages(
+          () => {
+            nativeTheme.themeSource = 'dark';
+            expect(systemPreferences.appLevelAppearance).to.equal('dark');
+            nativeTheme.themeSource = 'light';
+            expect(systemPreferences.appLevelAppearance).to.equal('light');
+          },
+          "(electron) 'appLevelAppearance' is deprecated and will be removed."
+        );
       });
     });
 
