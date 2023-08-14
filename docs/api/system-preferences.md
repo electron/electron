@@ -27,24 +27,6 @@ Returns:
 
 * `event` Event
 
-### Event: 'inverted-color-scheme-changed' _Windows_ _Deprecated_
-
-Returns:
-
-* `event` Event
-* `invertedColorScheme` boolean - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is being used, `false` otherwise.
-
-**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
-
-### Event: 'high-contrast-color-scheme-changed' _Windows_ _Deprecated_
-
-Returns:
-
-* `event` Event
-* `highContrastColorScheme` boolean - `true` if a high contrast theme is being used, `false` otherwise.
-
-**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
-
 ## Methods
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_

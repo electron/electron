@@ -27,6 +27,24 @@ The `ipcRenderer.sendTo()` API has been deprecated. It should be replaced by set
 
 The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have been deprecated as well.
 
+### Removed: color scheme events in `systemPreferences`
+
+The following `systemPreferences` events have been removed:
+
+* `inverted-color-scheme-changed`
+* `high-contrast-color-scheme-changed`
+
+Use the new `updated` event on the `nativeTheme` module instead.
+
+```js
+// Removed
+systemPreferences.on('inverted-color-scheme-changed', () => { /* ... */ })
+systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
+
+// Replace with
+nativeTheme.on('updated', () => { /* ... */ })
+```
+
 ## Planned Breaking API Changes (26.0)
 
 ### Deprecated: `webContents.getPrinters`
