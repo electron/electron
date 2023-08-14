@@ -21,6 +21,24 @@ macOS 10.13 (High Sierra) and macOS 10.14 (Mojave) are no longer supported by [C
 Older versions of Electron will continue to run on these operating systems, but macOS 10.15 (Catalina)
 or later will be required to run Electron v27.0.0 and higher.
 
+## Planned Breaking API Changes (26.0)
+
+### Deprecated: `webContents.getPrinters`
+
+The `webContents.getPrinters` method has been deprecated. Use
+`webContents.getPrintersAsync` instead.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Deprecated
+console.log(w.webContents.getPrinters())
+// Replace with
+w.webContents.getPrintersAsync().then((printers) => {
+  console.log(printers)
+})
+```
+
 ## Planned Breaking API Changes (25.0)
 
 ### Deprecated: `protocol.{register,intercept}{Buffer,String,Stream,File,Http}Protocol`
