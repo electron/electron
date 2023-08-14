@@ -14,5 +14,9 @@
   "devtools_page": {
     "channel": "stable",
     "extension_types": ["extension"]
+  },
+  "minimum_chrome_version": {
+    "channel": "stable",
+    "extension_types": ["extension"]
   }
 }
