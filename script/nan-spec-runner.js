@@ -90,7 +90,7 @@ async function main () {
     env.LDFLAGS = ldflags;
   }
 
-  const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', 'max'], {
+  const { status: buildStatus } = cp.spawnSync(NPX_CMD, ['node-gyp', 'rebuild', '--verbose', '--directory', 'test', '-j', '1'], {
     env,
     cwd: NAN_DIR,
     stdio: 'inherit'
