@@ -1510,6 +1510,10 @@ commands:
           name: Run Nan Tests
           command: |
             cd src
+            echo 'NOMERGE(ckerr) looking at out/Default/'
+            ls -R out/Default/
+            echo 'NOMERGE(ckerr) looking at third-party/'
+            ls -R third_party/
             node electron/script/nan-spec-runner.js
 
   node-tests:
