@@ -62,7 +62,7 @@ async function main () {
     '-fno-exceptions',
     '-fno-rtti',
     '-nostdinc++',
-    `-I"${path.resolve(BASE, 'third_party', 'libc++', 'src')}"`,
+    `-isystem "${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
     `-isystem "${path.resolve(BASE, 'third_party', 'libc++', 'src', 'include')}"`,
     `-isystem "${path.resolve(BASE, 'third_party', 'libc++abi', 'src', 'include')}"`,
     ' -fvisibility-inlines-hidden',
