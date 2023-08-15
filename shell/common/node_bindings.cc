@@ -441,11 +441,10 @@ void NodeBindings::Initialize() {
   // Explicitly register electron's builtin bindings.
   RegisterBuiltinBindings();
 
-  // Parse and set Node.js cli flags.
-
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
 
+  // Parse and set Node.js cli flags.
   std::vector<std::string> argv = ParseNodeCliFlags();
   std::vector<std::string> exec_argv;
   std::vector<std::string> errors;
