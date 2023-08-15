@@ -20,7 +20,6 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/task/single_thread_task_runner.h"
-#include "chrome/browser/icon_manager.h"
 #include "chrome/browser/ui/color/chrome_color_mixers.h"
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
@@ -670,13 +669,6 @@ ElectronBrowserMainParts::GetGeolocationControl() {
         geolocation_control_.BindNewPipeAndPassReceiver());
   }
   return geolocation_control_.get();
-}
-
-IconManager* ElectronBrowserMainParts::GetIconManager() {
-  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
-  if (!icon_manager_.get())
-    icon_manager_ = std::make_unique<IconManager>();
-  return icon_manager_.get();
 }
 
 }  // namespace electron

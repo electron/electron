@@ -266,9 +266,9 @@ void GetFileIcon(const base::FilePath& path,
   base::FilePath normalized_path = path.NormalizePathSeparators();
   IconLoader::IconSize icon_size = IconLoader::IconSize::LARGE;
 
-  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
+  auto& icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
+      icon_manager.LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
@@ -276,10 +276,10 @@ void GetFileIcon(const base::FilePath& path,
     dict.Set("path", normalized_path);
     promise.Resolve(dict);
   } else {
-    icon_manager->LoadIcon(normalized_path, icon_size, 1.0f,
-                           base::BindOnce(&OnIconDataAvailable, normalized_path,
-                                          app_display_name, std::move(promise)),
-                           cancelable_task_tracker_);
+    icon_manager.LoadIcon(normalized_path, icon_size, 1.0f,
+                          base::BindOnce(&OnIconDataAvailable, normalized_path,
+                                         app_display_name, std::move(promise)),
+                          cancelable_task_tracker_);
   }
 }
 

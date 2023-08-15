@@ -1324,13 +1324,13 @@ v8::Local<v8::Promise> App::GetFileIcon(const base::FilePath& path,
     icon_size = GetIconSizeByString(icon_size_string);
   }
 
-  auto* icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
+  auto& icon_manager = ElectronBrowserMainParts::Get()->GetIconManager();
   gfx::Image* icon =
-      icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
+      icon_manager.LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
     promise.Resolve(*icon);
   } else {
-    icon_manager->LoadIcon(
+    icon_manager.LoadIcon(
         normalized_path, icon_size, 1.0f,
         base::BindOnce(&OnIconDataAvailable, std::move(promise)),
         &cancelable_task_tracker_);

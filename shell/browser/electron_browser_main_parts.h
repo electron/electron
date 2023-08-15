@@ -11,6 +11,7 @@
 #include "base/functional/callback.h"
 #include "base/task/single_thread_task_runner.h"
 #include "base/timer/timer.h"
+#include "chrome/browser/icon_manager.h"
 #include "content/public/browser/browser_context.h"
 #include "content/public/browser/browser_main_parts.h"
 #include "electron/buildflags/buildflags.h"
@@ -24,7 +25,6 @@
 #include "ui/views/layout/layout_provider.h"
 
 class BrowserProcessImpl;
-class IconManager;
 
 namespace base {
 class FieldTrialList;
@@ -88,7 +88,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   device::mojom::GeolocationControl* GetGeolocationControl();
 
   // Returns handle to the class responsible for extracting file icons.
-  IconManager* GetIconManager();
+  IconManager& GetIconManager() { return icon_manager_; }
 
   Browser* browser() { return &browser_; }
   BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
@@ -163,7 +163,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
       NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)};
   ElectronBindings electron_bindings_{node_bindings_->uv_loop()};
   std::unique_ptr<NodeEnvironment> node_env_;
-  std::unique_ptr<IconManager> icon_manager_;
+  IconManager icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
