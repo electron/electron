@@ -16,6 +16,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
+#include "shell/browser/browser.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/node_bindings.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
@@ -45,7 +46,6 @@ class LinuxUiGetter;
 
 namespace electron {
 
-class Browser;
 class JavascriptEnvironment;
 class NodeEnvironment;
 
@@ -90,7 +90,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Returns handle to the class responsible for extracting file icons.
   IconManager* GetIconManager();
 
-  Browser* browser() { return browser_.get(); }
+  Browser* browser() { return &browser_; }
   BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
 
  protected:
@@ -158,7 +158,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   absl::optional<int> exit_code_;
 
   std::unique_ptr<JavascriptEnvironment> js_env_;
-  std::unique_ptr<Browser> browser_;
+  electron::Browser browser_;
   const std::unique_ptr<NodeBindings> node_bindings_{
       NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)};
   ElectronBindings electron_bindings_{node_bindings_->uv_loop()};

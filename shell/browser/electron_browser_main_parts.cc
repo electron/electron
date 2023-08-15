@@ -203,8 +203,7 @@ class DarkThemeObserver : public ui::NativeThemeObserver {
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts()
-    : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
-      browser_(std::make_unique<Browser>()) {
+    : fake_browser_process_(std::make_unique<BrowserProcessImpl>()) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
