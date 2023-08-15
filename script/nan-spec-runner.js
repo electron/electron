@@ -75,8 +75,8 @@ async function main () {
   const ldflags = [
     '-stdlib=libc++',
     '-fuse-ld=lld',
-    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'third_party', 'libc++abi')}"`,
-    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'third_party', 'libc++')}"`,
+    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++abi')}"`,
+    `-L"${path.resolve(BASE, 'out', outDir, 'obj', 'buildtools', 'third_party', 'libc++')}"`,
     '-lc++abi',
     ...platformFlags
   ].join(' ');
