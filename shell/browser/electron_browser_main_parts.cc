@@ -204,9 +204,7 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
-      browser_(std::make_unique<Browser>()),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+      browser_(std::make_unique<Browser>()) {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
@@ -274,7 +272,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   env->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_.BindTo(js_env_->isolate(), env->process_object());
 
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();

@@ -16,6 +16,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
+#include "shell/common/api/electron_bindings.h"
 #include "shell/common/node_bindings.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/display/screen.h"
@@ -45,7 +46,6 @@ class LinuxUiGetter;
 namespace electron {
 
 class Browser;
-class ElectronBindings;
 class JavascriptEnvironment;
 class NodeEnvironment;
 
@@ -159,8 +159,9 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<Browser> browser_;
-  const std::unique_ptr<NodeBindings> node_bindings_ { NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser) };
-  std::unique_ptr<ElectronBindings> electron_bindings_;
+  const std::unique_ptr<NodeBindings> node_bindings_{
+      NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)};
+  ElectronBindings electron_bindings_{node_bindings_->uv_loop()};
   std::unique_ptr<NodeEnvironment> node_env_;
   std::unique_ptr<IconManager> icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
