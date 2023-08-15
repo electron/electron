@@ -156,12 +156,12 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   // Before then, we just exit() without any intermediate steps.
   absl::optional<int> exit_code_;
 
-  std::unique_ptr<JavascriptEnvironment> js_env_;
   electron::Browser browser_;
   const std::unique_ptr<NodeBindings> node_bindings_{
       NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)};
   ElectronBindings electron_bindings_{node_bindings_->uv_loop()};
-  std::unique_ptr<NodeEnvironment> node_env_;
+  std::unique_ptr<JavascriptEnvironment> js_env_;  // depends-on: node_bindings_
+  std::unique_ptr<NodeEnvironment> node_env_;      // depends-on: js_env_
   IconManager icon_manager_;
   std::unique_ptr<base::FieldTrialList> field_trial_list_;
 
