@@ -50,9 +50,10 @@
 
 namespace {
 
-// Initialize Node.js cli options to pass to Node.js
+// Preparse Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
-int SetNodeCliFlags() {
+std::vector<std::string> ParseNodeCliFlags(
+    const std::vector<std::string>& argv) {
   // Options that are unilaterally disallowed
   static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
       "--enable-fips",
@@ -62,40 +63,26 @@ int SetNodeCliFlags() {
       "--use-openssl-ca",
   });
 
-  const auto argv = base::CommandLine::ForCurrentProcess()->argv();
-  std::vector<std::string> args;
-
   // TODO(codebytere): We need to set the first entry in args to the
   // process name owing to src/node_options-inl.h#L286-L290 but this is
   // redundant and so should be refactored upstream.
-  args.reserve(argv.size() + 1);
-  args.emplace_back("electron");
-
+  std::vector<std::string> args;
   for (const auto& arg : argv) {
-#if BUILDFLAG(IS_WIN)
-    const auto& option = base::WideToUTF8(arg);
-#else
-    const auto& option = arg;
-#endif
-    const auto stripped = base::StringPiece(option).substr(0, option.find('='));
+    const auto stripped = base::StringPiece(arg).substr(0, arg.find('='));
     if (disallowed.contains(stripped)) {
       LOG(ERROR) << "The Node.js cli flag " << stripped
                  << " is not supported in Electron";
       // Node.js returns 9 from ProcessGlobalArgs for any errors encountered
       // when setting up cli flags and env vars. Since we're outlawing these
-      // flags (making them errors) return 9 here for consistency.
-      return 9;
+      // flags (making them errors) exit with the same error code for
+      // consistency.
+      exit(9);
     } else {
-      args.push_back(option);
+      args.push_back(arg);
     }
   }
 
-  std::vector<std::string> errors;
-
-  // Node.js itself will output parsing errors to
-  // console so we don't need to handle that ourselves
-  return ProcessGlobalArgs(&args, nullptr, &errors,
-                           node::kDisallowedInEnvironment);
+  return args;
 }
 
 #if IS_MAS_BUILD()
@@ -116,7 +103,11 @@ v8::Local<v8::Value> GetParameters(v8::Isolate* isolate) {
 }
 
 int NodeMain(int argc, char* argv[]) {
-  base::CommandLine::Init(argc, argv);
+  bool initialized = base::CommandLine::Init(argc, argv);
+  if (!initialized) {
+    LOG(ERROR) << "Failed to initialize CommandLine";
+    exit(1);
+  }
 
 #if BUILDFLAG(IS_WIN)
   v8_crashpad_support::SetUp();
@@ -153,23 +144,20 @@ int NodeMain(int argc, char* argv[]) {
     // Explicitly register electron's builtin bindings.
     NodeBindings::RegisterBuiltinBindings();
 
-    // Parse and set Node.js cli flags.
-    int flags_exit_code = SetNodeCliFlags();
-    if (flags_exit_code != 0)
-      exit(flags_exit_code);
-
     // Hack around with the argv pointer. Used for process.title = "blah".
     argv = uv_setup_args(argc, argv);
 
+    // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args(argv, argv + argc);
+    std::vector<std::string> parsed_args = ParseNodeCliFlags(args);
     std::unique_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
-            args,
+            parsed_args,
             {node::ProcessInitializationFlags::kNoInitializeV8,
              node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
 
     for (const std::string& error : result->errors())
-      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
+      fprintf(stderr, "%s: %s\n", parsed_args[0].c_str(), error.c_str());
 
     if (result->early_return() != 0) {
       return result->exit_code();
