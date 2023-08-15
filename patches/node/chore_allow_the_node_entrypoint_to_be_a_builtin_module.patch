@@ -8,7 +8,7 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 8ce3d78839944ddd15bed299d89aeb61a7fd53e5..b3a54aecb06b07834e38f9c94c5246df31c7a47a 100644
+index 001343b74ce236f89dca030c0fc9dd0299df0b39..6f277daf4ce846f093f634c473daec07939b4558 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -1230,6 +1230,13 @@ Module.prototype._compile = function(content, filename) {
