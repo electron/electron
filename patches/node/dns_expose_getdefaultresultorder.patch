@@ -1,0 +1,141 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: btea <2356281422@qq.com>
+Date: Wed, 26 Apr 2023 16:56:04 +0800
+Subject: dns: expose getDefaultResultOrder
+
+PR-URL: https://github.com/nodejs/node/pull/46973
+Fixes: https://github.com/nodejs/node/issues/46919
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: Paolo Insogna <paolo@cowtech.it>
+
+diff --git a/doc/api/dns.md b/doc/api/dns.md
+index 59a56c7d1c2aa87b4786c5b6397978b195af1f83..2bb997bb0a2b4ebdbb9ae5625762e8c3184ace8d 100644
+--- a/doc/api/dns.md
++++ b/doc/api/dns.md
+@@ -792,6 +792,18 @@ priority than [`--dns-result-order`][]. When using [worker threads][],
+ [`dns.setDefaultResultOrder()`][] from the main thread won't affect the default
+ dns orders in workers.
+ 
++## `dns.getDefaultResultOrder()`
++
++<!-- YAML
++added: REPLACEME
++-->
++
++Get the default value for `verbatim` in [`dns.lookup()`][] and
++[`dnsPromises.lookup()`][]. The value could be:
++
++* `ipv4first`: for `verbatim` defaulting to `false`.
++* `verbatim`: for `verbatim` defaulting to `true`.
++
+ ## `dns.setServers(servers)`
+ 
+ <!-- YAML
+@@ -1351,6 +1363,14 @@ higher priority than [`--dns-result-order`][]. When using [worker threads][],
+ [`dnsPromises.setDefaultResultOrder()`][] from the main thread won't affect the
+ default dns orders in workers.
+ 
++### `dnsPromises.getDefaultResultOrder()`
++
++<!-- YAML
++added: REPLACEME
++-->
++
++Get the value of `dnsOrder`.
++
+ ### `dnsPromises.setServers(servers)`
+ 
+ <!-- YAML
+diff --git a/lib/dns.js b/lib/dns.js
+index c0e6a3332e4d21d85279955ea0514548cc4fd171..ae0e14bab3097d7170d47adedf4fff8ca8871c93 100644
+--- a/lib/dns.js
++++ b/lib/dns.js
+@@ -38,6 +38,7 @@ const {
+   validateHints,
+   emitInvalidHostnameWarning,
+   getDefaultVerbatim,
++  getDefaultResultOrder,
+   setDefaultResultOrder,
+   errorCodes: dnsErrorCodes,
+ } = require('internal/dns/utils');
+@@ -305,6 +306,7 @@ module.exports = {
+   lookupService,
+ 
+   Resolver,
++  getDefaultResultOrder,
+   setDefaultResultOrder,
+   setServers: defaultResolverSetServers,
+ 
+diff --git a/lib/internal/dns/promises.js b/lib/internal/dns/promises.js
+index 494c7ecb242c7b5f14ef136c2caf07711c11f9a5..df41d1267ef4215a44d5119afb01dbbb1211a2c3 100644
+--- a/lib/internal/dns/promises.js
++++ b/lib/internal/dns/promises.js
+@@ -14,6 +14,7 @@ const {
+   emitInvalidHostnameWarning,
+   getDefaultVerbatim,
+   errorCodes: dnsErrorCodes,
++  getDefaultResultOrder,
+   setDefaultResultOrder,
+   setDefaultResolver,
+ } = require('internal/dns/utils');
+@@ -335,6 +336,7 @@ module.exports = {
+   lookup,
+   lookupService,
+   Resolver,
++  getDefaultResultOrder,
+   setDefaultResultOrder,
+   setServers: defaultResolverSetServers,
+ 
+diff --git a/lib/internal/dns/utils.js b/lib/internal/dns/utils.js
+index e2b96011df94f20874aa2a39a7daf29bd8efa85e..56b2b3930b2f6e928eae8b9ab8047a08d6083441 100644
+--- a/lib/internal/dns/utils.js
++++ b/lib/internal/dns/utils.js
+@@ -283,6 +283,10 @@ function setDefaultResultOrder(value) {
+   dnsOrder = value;
+ }
+ 
++function getDefaultResultOrder() {
++  return dnsOrder;
++}
++
+ function createResolverClass(resolver) {
+   const resolveMap = ObjectCreate(null);
+ 
+@@ -345,6 +349,7 @@ module.exports = {
+   validateTries,
+   emitInvalidHostnameWarning,
+   getDefaultVerbatim,
++  getDefaultResultOrder,
+   setDefaultResultOrder,
+   errorCodes,
+   createResolverClass,
+diff --git a/test/internet/test-dns-getDefaultResultOrder.js b/test/internet/test-dns-getDefaultResultOrder.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..ae176f1264508b847ae5dd18f2593d607b2f1a98
+--- /dev/null
++++ b/test/internet/test-dns-getDefaultResultOrder.js
+@@ -0,0 +1,24 @@
++'use strict';
++
++const common = require('../common');
++
++const assert = require('assert');
++const dns = require('dns');
++
++dns.setDefaultResultOrder('ipv4first');
++let dnsOrder = dns.getDefaultResultOrder();
++assert.ok(dnsOrder === 'ipv4first');
++dns.setDefaultResultOrder('verbatim');
++dnsOrder = dns.getDefaultResultOrder();
++assert.ok(dnsOrder === 'verbatim');
++
++{
++  (async function() {
++    const result = await dns.promises.lookup('localhost');
++    const result1 = await dns.promises.lookup('localhost', { verbatim: true });
++    assert.ok(result !== undefined);
++    assert.ok(result1 !== undefined);
++    assert.ok(result.address === result1.address);
++    assert.ok(result.family === result1.family);
++  })().then(common.mustCall());
++}
