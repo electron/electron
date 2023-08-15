@@ -201,8 +201,7 @@ class DarkThemeObserver : public ui::NativeThemeObserver {
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
-ElectronBrowserMainParts::ElectronBrowserMainParts()
-    : fake_browser_process_(std::make_unique<BrowserProcessImpl>()) {
+ElectronBrowserMainParts::ElectronBrowserMainParts() {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
@@ -297,7 +296,7 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
                                /* is_preinit = */ false);
 
   // Initialize after user script environment creation.
-  fake_browser_process_->PostEarlyInitialization();
+  fake_browser_process_.PostEarlyInitialization();
 }
 
 int ElectronBrowserMainParts::PreCreateThreads() {
@@ -307,9 +306,9 @@ int ElectronBrowserMainParts::PreCreateThreads() {
 
   // Fetch the system locale for Electron.
 #if BUILDFLAG(IS_MAC)
-  fake_browser_process_->SetSystemLocale(GetCurrentSystemLocale());
+  fake_browser_process_.SetSystemLocale(GetCurrentSystemLocale());
 #else
-  fake_browser_process_->SetSystemLocale(base::i18n::GetConfiguredLocale());
+  fake_browser_process_.SetSystemLocale(base::i18n::GetConfiguredLocale());
 #endif
 
   auto* command_line = base::CommandLine::ForCurrentProcess();
@@ -350,7 +349,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   // Initialize the app locale for Electron and Chromium.
   std::string app_locale = l10n_util::GetApplicationLocale(loaded_locale);
   ElectronBrowserClient::SetApplicationLocale(app_locale);
-  fake_browser_process_->SetApplicationLocale(app_locale);
+  fake_browser_process_.SetApplicationLocale(app_locale);
 
 #if BUILDFLAG(IS_LINUX)
   // Reset to the original LC_ALL since we should not be changing it.
@@ -373,7 +372,7 @@ int ElectronBrowserMainParts::PreCreateThreads() {
   Browser::Get()->ApplyForcedRTL();
 #endif
 
-  fake_browser_process_->PreCreateThreads();
+  fake_browser_process_.PreCreateThreads();
 
   // Notify observers.
   Browser::Get()->PreCreateThreads();
@@ -408,7 +407,7 @@ void ElectronBrowserMainParts::PostDestroyThreads() {
   device::BluetoothAdapterFactory::Shutdown();
   bluez::DBusBluezManagerWrapperLinux::Shutdown();
 #endif
-  fake_browser_process_->PostDestroyThreads();
+  fake_browser_process_.PostDestroyThreads();
 }
 
 void ElectronBrowserMainParts::ToolkitInitialized() {
@@ -513,7 +512,7 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 
-  fake_browser_process_->PreMainMessageLoopRun();
+  fake_browser_process_.PreMainMessageLoopRun();
 
   return GetExitCode();
 }
@@ -561,7 +560,7 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
       base::nix::GetDesktopEnvironment(env.get());
   os_crypt::SelectedLinuxBackend selected_backend =
       os_crypt::SelectBackend(config->store, use_backend, desktop_env);
-  fake_browser_process_->SetLinuxStorageBackend(selected_backend);
+  fake_browser_process_.SetLinuxStorageBackend(selected_backend);
   OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_MAC)
@@ -632,7 +631,7 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
   ElectronBrowserContext::browser_context_map().clear();
   default_context.reset();
 
-  fake_browser_process_->PostMainMessageLoopRun();
+  fake_browser_process_.PostMainMessageLoopRun();
   content::DevToolsAgentHost::StopRemoteDebuggingPipeHandler();
 
 #if BUILDFLAG(IS_LINUX)

@@ -18,13 +18,12 @@
 #include "mojo/public/cpp/bindings/remote.h"
 #include "services/device/public/mojom/geolocation_control.mojom.h"
 #include "shell/browser/browser.h"
+#include "shell/browser/browser_process_impl.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/node_bindings.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/display/screen.h"
 #include "ui/views/layout/layout_provider.h"
-
-class BrowserProcessImpl;
 
 namespace base {
 class FieldTrialList;
@@ -91,7 +90,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   IconManager& GetIconManager() { return icon_manager_; }
 
   Browser* browser() { return &browser_; }
-  BrowserProcessImpl* browser_process() { return fake_browser_process_.get(); }
+  BrowserProcessImpl* browser_process() { return &fake_browser_process_; }
 
  protected:
   // content::BrowserMainParts:
@@ -151,7 +150,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<views::LayoutProvider> layout_provider_;
 
   // A fake BrowserProcess object that used to feed the source code from chrome.
-  std::unique_ptr<BrowserProcessImpl> fake_browser_process_;
+  BrowserProcessImpl fake_browser_process_;
 
   // A place to remember the exit code once the message loop is ready.
   // Before then, we just exit() without any intermediate steps.
