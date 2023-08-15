@@ -52,9 +52,8 @@ namespace {
 
 // Preparse Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
-std::vector<std::string> ParseNodeCliFlags(
-    const std::vector<std::string>& argv) {
-  // Options that are unilaterally disallowed
+void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
+  // Options that are unilaterally disallowed.
   static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
       "--enable-fips",
       "--force-fips",
@@ -63,26 +62,18 @@ std::vector<std::string> ParseNodeCliFlags(
       "--use-openssl-ca",
   });
 
-  // TODO(codebytere): We need to set the first entry in args to the
-  // process name owing to src/node_options-inl.h#L286-L290 but this is
-  // redundant and so should be refactored upstream.
-  std::vector<std::string> args;
   for (const auto& arg : argv) {
-    const auto stripped = base::StringPiece(arg).substr(0, arg.find('='));
-    if (disallowed.contains(stripped)) {
-      LOG(ERROR) << "The Node.js cli flag " << stripped
+    const auto key = base::StringPiece(arg).substr(0, arg.find('='));
+    if (disallowed.contains(key)) {
+      LOG(ERROR) << "The Node.js cli flag " << key
                  << " is not supported in Electron";
       // Node.js returns 9 from ProcessGlobalArgs for any errors encountered
       // when setting up cli flags and env vars. Since we're outlawing these
       // flags (making them errors) exit with the same error code for
       // consistency.
       exit(9);
-    } else {
-      args.push_back(arg);
     }
   }
-
-  return args;
 }
 
 #if IS_MAS_BUILD()
@@ -149,15 +140,16 @@ int NodeMain(int argc, char* argv[]) {
 
     // Parse Node.js cli flags and strip out disallowed options.
     std::vector<std::string> args(argv, argv + argc);
-    std::vector<std::string> parsed_args = ParseNodeCliFlags(args);
+    ExitIfContainsDisallowedFlags(args);
+
     std::unique_ptr<node::InitializationResult> result =
         node::InitializeOncePerProcess(
-            parsed_args,
+            args,
             {node::ProcessInitializationFlags::kNoInitializeV8,
              node::ProcessInitializationFlags::kNoInitializeNodeV8Platform});
 
     for (const std::string& error : result->errors())
-      fprintf(stderr, "%s: %s\n", parsed_args[0].c_str(), error.c_str());
+      fprintf(stderr, "%s: %s\n", args[0].c_str(), error.c_str());
 
     if (result->early_return() != 0) {
       return result->exit_code();
