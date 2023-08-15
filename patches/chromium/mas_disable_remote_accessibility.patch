@@ -43,10 +43,10 @@ index 5a096477c123a782341115f964c4975301ccaf9a..ecfbb3b405425af346a6ba6788fc1d8f
  
  }  // namespace
 diff --git a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-index c4285bf227abf1536213835ebdb8ca16d2638263..73c27518cab1efbbd2e4ec334b8685bd25d6d693 100644
+index 40cc594101b8872b38b4c3bee31fcae5be5d9f3e..c9a73c823a8810daa140d88d6c36cc445f908a70 100644
 --- a/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_ns_window_bridge.mm
-@@ -587,10 +587,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
+@@ -599,10 +599,12 @@ NSUInteger CountBridgedWindows(NSArray* child_windows) {
    // this should be treated as an error and caught early.
    CHECK(bridged_view_);
  
@@ -121,7 +121,7 @@ index 45aeb6838a859f57287bec51f79a4eb77d69b619..6f5c28de251d4f6db9b07b37d0b513c2
    return false;
  }
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.h b/content/browser/renderer_host/render_widget_host_view_mac.h
-index fd35d3a94113f1337b097cfa4bf40d8330504e5a..04bd16db3b8a23b9e5d90ced459c440a34ffa375 100644
+index 286881d3a0d369e4d4b2c8ef42eda410e1c41951..0e064b773319fbcc86bbc00df60b9919bf61a57c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.h
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.h
 @@ -49,7 +49,9 @@ class ScopedPasswordInputEnabler;
@@ -132,9 +132,9 @@ index fd35d3a94113f1337b097cfa4bf40d8330504e5a..04bd16db3b8a23b9e5d90ced459c440a
  @class NSAccessibilityRemoteUIElement;
 +#endif
  @class RenderWidgetHostViewCocoa;
+ @class CursorAccessibilityScaleFactorObserver;
  
- namespace content {
-@@ -667,9 +669,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
+@@ -672,9 +674,11 @@ class CONTENT_EXPORT RenderWidgetHostViewMac
    // EnsureSurfaceSynchronizedForWebTest().
    uint32_t latest_capture_sequence_number_ = 0u;
  
@@ -147,10 +147,10 @@ index fd35d3a94113f1337b097cfa4bf40d8330504e5a..04bd16db3b8a23b9e5d90ced459c440a
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index b8d1f98c9c7c5831677d4c200aa085a4a168273c..7f2b627031f65ad45a8ad182d3b7421005893ff4 100644
+index a049d431b4657d17a23b2505666c84f94b20bc5e..701b2e4d9e91c138179fde12a21fccf53c02937b 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -263,8 +263,10 @@
+@@ -273,8 +273,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -161,7 +161,7 @@ index b8d1f98c9c7c5831677d4c200aa085a4a168273c..7f2b627031f65ad45a8ad182d3b74210
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1614,8 +1616,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1628,8 +1630,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -172,7 +172,7 @@ index b8d1f98c9c7c5831677d4c200aa085a4a168273c..7f2b627031f65ad45a8ad182d3b74210
    return [GetInProcessNSView() window];
  }
  
-@@ -1659,9 +1663,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1673,9 +1677,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -184,7 +184,7 @@ index b8d1f98c9c7c5831677d4c200aa085a4a168273c..7f2b627031f65ad45a8ad182d3b74210
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2163,12 +2169,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2177,12 +2183,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {
@@ -200,10 +200,10 @@ index b8d1f98c9c7c5831677d4c200aa085a4a168273c..7f2b627031f65ad45a8ad182d3b74210
  
  ///////////////////////////////////////////////////////////////////////////////
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 121d8798571233799624a1e187b0f0edfdb9ca98..9233e89712a12e27d85232fb51f113f41375a08a 100644
+index cda1666e0e360c3d92bfa84d9060b79760762915..22a11fe6cf0ee95e3535d46c80f77a25a5e550b3 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -373,6 +373,13 @@ component("base") {
+@@ -375,6 +375,13 @@ component("base") {
      sources += [ "resource/resource_bundle_lacros.cc" ]
    }
  

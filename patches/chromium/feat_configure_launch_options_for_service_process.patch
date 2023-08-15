@@ -58,10 +58,10 @@ index e515503a0f636d935fdcd779a5ac01bd8f351e74..0669361cb063c9dd15a19486fce1a609
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index b8147fce70f90191f9d4a794f69f32b23eac0e08..89c9d1982b575312ba730ab952b22326c8d83a6a 100644
+index bd80ca431a5c50ac001d7607841c64e90f4fe4c3..befc9666c3901e84b75934c6c98ca6de864eaa19 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -62,6 +62,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -63,6 +63,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
      }
  
@@ -73,7 +73,7 @@ index b8147fce70f90191f9d4a794f69f32b23eac0e08..89c9d1982b575312ba730ab952b22326
      // (For Electron), if we're launching without zygote, that means we're
      // launching an unsandboxed process (since all sandboxed processes are
      // forked from the zygote). Relax the allow_new_privs option to permit
-@@ -71,7 +76,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -72,7 +77,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->allow_new_privs = true;
      }
  
@@ -627,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 2ee0182088f41846f352fae0b67fc90448855355..9dc5630e1e858ef4de91680ad119e5bf5696e1e3 100644
+index da5844e2ef28872d91f76ebbbaee3ca976304568..a4aaeaccb3cb73b7fc3244873d33af1af61a42c6 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -706,11 +706,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

@@ -391,6 +391,11 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
   }
 }
 
+void OffScreenRenderWidgetHostView::
+    InvalidateLocalSurfaceIdAndAllocationGroup() {
+  compositor_allocator_.Invalidate(/*also_invalidate_allocation_group=*/true);
+}
+
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
   GetDelegatedFrameHost()->ResetFallbackToFirstNavigationSurface();
 }

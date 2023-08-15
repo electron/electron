@@ -15,10 +15,10 @@ node does not change in this case.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-index 844797a0f880354f590b84bf354d7f9375b2c31f..d251b241582208b21096d3e2ab650b9e1012c380 100644
+index 7f713269d7234448a7e59c8d3acdeeb74cb6a412..fe042289beb7d0239521f580aff9478a79719477 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-@@ -1000,6 +1000,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
+@@ -1006,6 +1006,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
    return viz::ScopedSurfaceIdAllocator(std::move(allocation_task));
  }
  
@@ -32,10 +32,10 @@ index 844797a0f880354f590b84bf354d7f9375b2c31f..d251b241582208b21096d3e2ab650b9e
    if (!text_input_manager_)
      return ui::TEXT_INPUT_TYPE_NONE;
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.h b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-index ed0641b888c6421b1791c086466bd9c158e9109d..3760b3823d5af3325017bb53f5b1d38e6d9091d8 100644
+index 1e9dcbb9f0a5e401a50d63be490755bc3eeaa1a3..1e2e0a321df6fe9dea4401ed327c93730a4fea07 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.h
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.h
-@@ -181,6 +181,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
+@@ -182,6 +182,8 @@ class CONTENT_EXPORT RenderWidgetHostViewChildFrame
    void DisableAutoResize(const gfx::Size& new_size) override;
    viz::ScopedSurfaceIdAllocator DidUpdateVisualProperties(
        const cc::RenderFrameMetadata& metadata) override;
@@ -45,10 +45,10 @@ index ed0641b888c6421b1791c086466bd9c158e9109d..3760b3823d5af3325017bb53f5b1d38e
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index a515cff65ec418ccd44bccd61b0cf8094cb864db..4345ec56895124c50651462386f3fad45fb651bb 100644
+index 36cd52f18c83adc007d6f896a4136a93f0fa1c83..99f6e45fe48449c2dbe88514648a4d907999e282 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8277,7 +8277,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -8319,7 +8319,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =

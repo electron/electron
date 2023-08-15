@@ -6,10 +6,10 @@ Subject: fix: allow guest webcontents to enter fullscreen
 This can be upstreamed, a guest webcontents can't technically become the focused webContents. This DCHECK should allow all guest webContents to request fullscreen entrance.
 
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 3fef597d18025bd35b4f7af105c6907602958223..a515cff65ec418ccd44bccd61b0cf8094cb864db 100644
+index 8d5a0e6aa6ea3a0965ed6abb76368d1f8e3ea91e..36cd52f18c83adc007d6f896a4136a93f0fa1c83 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -3714,7 +3714,7 @@ void WebContentsImpl::EnterFullscreenMode(
+@@ -3715,7 +3715,7 @@ void WebContentsImpl::EnterFullscreenMode(
    OPTIONAL_TRACE_EVENT0("content", "WebContentsImpl::EnterFullscreenMode");
    DCHECK(CanEnterFullscreenMode(requesting_frame, options));
    DCHECK(requesting_frame->IsActive());
