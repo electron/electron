@@ -10,6 +10,7 @@
 #include "base/memory/raw_ptr.h"
 #include "content/public/browser/browser_plugin_guest_delegate.h"
 #include "shell/browser/web_contents_zoom_controller.h"
+#include "shell/browser/web_contents_zoom_observer.h"
 
 namespace electron {
 
@@ -18,7 +19,7 @@ class WebContents;
 }
 
 class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
-                             public WebContentsZoomController::Observer {
+                             public WebContentsZoomObserver {
  public:
   WebViewGuestDelegate(content::WebContents* embedder,
                        api::WebContents* api_web_contents);
@@ -41,11 +42,11 @@ class WebViewGuestDelegate : public content::BrowserPluginGuestDelegate,
   base::WeakPtr<content::BrowserPluginGuestDelegate> GetGuestDelegateWeakPtr()
       final;
 
-  // WebContentsZoomController::Observer:
-  void OnZoomLevelChanged(content::WebContents* web_contents,
-                          double level,
-                          bool is_temporary) override;
-  void OnZoomControllerWebContentsDestroyed() override;
+  // WebContentsZoomObserver:
+  void OnZoomControllerDestroyed(
+      WebContentsZoomController* zoom_controller) override;
+  void OnZoomChanged(
+      const WebContentsZoomController::ZoomChangedEventData& data) override;
 
  private:
   void ResetZoomController();
