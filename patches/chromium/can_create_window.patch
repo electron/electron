@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index fa8adac96c069c93a0b98ef79c6941a1907503bd..4da6272864fd6709dcb56b9561ec86f4b0e037be 100644
+index 09c322c7a7c653befdb5dc0d974ebca4551296bc..01eb116b51037bff5da7a87d119b78387f5e72c6 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8065,6 +8065,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8064,6 +8064,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,10 +21,10 @@ index fa8adac96c069c93a0b98ef79c6941a1907503bd..4da6272864fd6709dcb56b9561ec86f4
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 1caf3d1f032c407d2309c83d862104a24fcf5749..94d7caadca3d07fe2886715bc9b5eac6a7dfbd46 100644
+index fe8d2992c67233e356d35b98fd28381b92709537..278e45752fe57ea81a4d825d9dd528ca67265808 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4310,6 +4310,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4315,6 +4315,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 1caf3d1f032c407d2309c83d862104a24fcf5749..94d7caadca3d07fe2886715bc9b5eac6
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4351,12 +4357,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4356,12 +4362,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -66,7 +66,7 @@ index a1757960b139dea126e34776e9ec7768d9e3d89d..a3226c9a8080537daa2454b8014a6919
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index af623d96cb4a0d9397cfcc798e3b8d20ed331b1e..40a7acacf1218368245d20e50ecaaa267adabc5c 100644
+index 8727ca6878d50e538e94f13616ac7defb0da9521..1822d2961a6e9dafd6174f331f4e6bcc3a482049 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
 @@ -677,6 +677,8 @@ bool ContentBrowserClient::CanCreateWindow(
@@ -79,7 +79,7 @@ index af623d96cb4a0d9397cfcc798e3b8d20ed331b1e..40a7acacf1218368245d20e50ecaaa26
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 5fec5acd6fac364e815014ac0166c6f241acae37..8e464a60370317ebd8682a0bb2aa983eb54f0c69 100644
+index 7e7f12866a3ce0494dc059e0b6fcb3ed0f62227d..a5361ff2553c9e5c99a65a8f13eb3f5cded9fb78 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -173,6 +173,7 @@ class NetworkService;
@@ -122,7 +122,7 @@ index 688fac1fd874438ad9bc6494691b0eadca7e5bb2..db12930a449b38966e63c2274275b115
                                                   const OpenURLParams& params) {
    return nullptr;
 diff --git a/content/public/browser/web_contents_delegate.h b/content/public/browser/web_contents_delegate.h
-index 791cd97dd0c45055b7b447c733dd25f81cd2ed09..8b5a2052cb2b53b58253d42a36168da2a47ca532 100644
+index 34d3d2feb7d236d8f220da8e2aadda28b6eb4d26..39e142eedd051073a5f31b5455001a37b839a6bc 100644
 --- a/content/public/browser/web_contents_delegate.h
 +++ b/content/public/browser/web_contents_delegate.h
 @@ -16,6 +16,7 @@
@@ -133,7 +133,7 @@ index 791cd97dd0c45055b7b447c733dd25f81cd2ed09..8b5a2052cb2b53b58253d42a36168da2
  #include "content/public/browser/eye_dropper.h"
  #include "content/public/browser/fullscreen_types.h"
  #include "content/public/browser/invalidate_type.h"
-@@ -343,6 +344,13 @@ class CONTENT_EXPORT WebContentsDelegate {
+@@ -344,6 +345,13 @@ class CONTENT_EXPORT WebContentsDelegate {
        const StoragePartitionConfig& partition_config,
        SessionStorageNamespace* session_storage_namespace);
  

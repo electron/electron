@@ -13,7 +13,7 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index cb532ff5d2e653fb1b67ffb8c8d5c75916f912f2..1d387e531a80a3abbfd06d6e4ec16ba30332f0f9 100644
+index f6556e141a76b0766f672bfa5819256e635c60af..06c7ac178cefc149732294ed790f2b7cbb328d34 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
 @@ -153,6 +153,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
@@ -26,10 +26,10 @@ index cb532ff5d2e653fb1b67ffb8c8d5c75916f912f2..1d387e531a80a3abbfd06d6e4ec16ba3
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index 472988beb8048ac30b1a25cbbc5081627a06a7b6..640414b40d589d66a77e6efad7d71e676ca85ead 100644
+index c0a4e3a9f6cb29eead5b1a95da696c92277b3722..97d4db79bcb4a874d0f40f4f0ef0a466a3cfe3b1 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -417,6 +417,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -421,6 +421,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index 472988beb8048ac30b1a25cbbc5081627a06a7b6..640414b40d589d66a77e6efad7d71e67
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -627,6 +644,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -631,6 +648,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool inverted_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
@@ -62,10 +62,10 @@ index 472988beb8048ac30b1a25cbbc5081627a06a7b6..640414b40d589d66a77e6efad7d71e67
    SEQUENCE_CHECKER(sequence_checker_);
  };
 diff --git a/ui/native_theme/native_theme_win.cc b/ui/native_theme/native_theme_win.cc
-index d3f9fcbed28f92a113fc2734cc0789e663ccfff9..7c71f93a8aaff618e59a2477b0608f0e437b9b44 100644
+index faa15be0b3e08360c702b32968d3b1633038d776..7a6c284143e873b408333fa2052e05863935cb89 100644
 --- a/ui/native_theme/native_theme_win.cc
 +++ b/ui/native_theme/native_theme_win.cc
-@@ -632,6 +632,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
+@@ -658,6 +658,8 @@ bool NativeThemeWin::ShouldUseDarkColors() const {
    // ...unless --force-dark-mode was specified in which case caveat emptor.
    if (InForcedColorsMode() && !IsForcedDarkMode())
      return false;
