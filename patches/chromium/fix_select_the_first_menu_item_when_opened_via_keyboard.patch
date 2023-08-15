@@ -6,7 +6,7 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 7abc296e283f15eeec32de1e94b66c24d71ebe13..c0053ae1abb38be03611cf5246d482c6391bd3bc 100644
+index 3f81597c41a3e65454d2181548682e2e9441e9b6..9eac5dc78d68c7f49c594ddbf9935375c538162a 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
 @@ -564,6 +564,7 @@ void MenuController::Run(Widget* parent,
@@ -32,7 +32,7 @@ index 7abc296e283f15eeec32de1e94b66c24d71ebe13..c0053ae1abb38be03611cf5246d482c6
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2266,19 +2275,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2256,19 +2265,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -83,7 +83,7 @@ index adb22671b94fa16854773baad0e6bff1322c6646..fae32722f1209151fa1da59d0c7892ab
  
  bool MenuRunner::IsRunning() const {
 diff --git a/ui/views/controls/menu/menu_runner_impl.cc b/ui/views/controls/menu/menu_runner_impl.cc
-index d4cf9df424f103680e07778f4fe3e3717bea860a..2b9cfa3d30c6341a941127c9f57983a5b6367b13 100644
+index e82249ad5e887180bb5785d06a4084857e0bfe98..3dd47b1c2d9f517939fd8ec92787fb60f58ed5f7 100644
 --- a/ui/views/controls/menu/menu_runner_impl.cc
 +++ b/ui/views/controls/menu/menu_runner_impl.cc
 @@ -116,6 +116,7 @@ void MenuRunnerImpl::RunMenuAt(Widget* parent,
@@ -145,10 +145,10 @@ index e6587d2208a13576af1831b94724a6286f0e0607..91223ef3f099e20aee5cf1d685c45d2c
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.h b/ui/views/controls/menu/menu_runner_impl_cocoa.h
-index 68c01b93a973a1910c1cce1e581b5c5e38a8c787..fd82c908886f646327e59a2f4ee8dc3476fb7db1 100644
+index 2056016df30982e24d4d99271f59e0edb261a16a..2876d3ccedf0e9f041d3f3310cd596de1fb7b000 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.h
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.h
-@@ -45,6 +45,7 @@ class VIEWS_EXPORT MenuRunnerImplCocoa : public MenuRunnerImplInterface {
+@@ -41,6 +41,7 @@ class VIEWS_EXPORT MenuRunnerImplCocoa : public MenuRunnerImplInterface {
        const gfx::Rect& bounds,
        MenuAnchorPosition anchor,
        int32_t run_types,
@@ -157,10 +157,10 @@ index 68c01b93a973a1910c1cce1e581b5c5e38a8c787..fd82c908886f646327e59a2f4ee8dc34
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index 8bbf8104fdb46dc8fdb506d8504a1c9f9376175e..717488a814d122e6b0b285b1b1e49488f981eccb 100644
+index 9d148ed4bd5f13c4a7e266e9c2992a7d33dcc494..3d2c8dbe1a28e35640c6599810b82d2a5fb2fa25 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-@@ -193,6 +193,7 @@
+@@ -189,6 +189,7 @@
      const gfx::Rect& bounds,
      MenuAnchorPosition anchor,
      int32_t run_types,

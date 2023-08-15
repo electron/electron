@@ -150,7 +150,7 @@ v8::Local<v8::Value> Converter<display::Display>::ToV8(
   dict.Set("accelerometerSupport", val.accelerometer_support());
   dict.Set("monochrome", val.is_monochrome());
   dict.Set("colorDepth", val.color_depth());
-  dict.Set("colorSpace", val.color_spaces().GetRasterColorSpace().ToString());
+  dict.Set("colorSpace", val.GetColorSpaces().GetRasterColorSpace().ToString());
   dict.Set("depthPerComponent", val.depth_per_component());
   dict.Set("size", val.size());
   dict.Set("displayFrequency", val.display_frequency());

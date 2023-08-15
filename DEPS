@@ -2,7 +2,7 @@ gclient_gn_args_from = 'src'
 
 vars = {
   'chromium_version':
-    '117.0.5921.0',
+    '117.0.5938.0',
   'node_version':
     'v18.17.1',
   'nan_version':
@@ -23,6 +23,9 @@ vars = {
   'squirrel_git': 'https://github.com/Squirrel',
   'reactiveobjc_git': 'https://github.com/ReactiveCocoa',
   'mantle_git': 'https://github.com/Mantle',
+  
+  # The path of the sysroots.json file.
+  'sysroots_json_path': 'electron/script/sysroots.json',
 
   # KEEP IN SYNC WITH utils.js FILE
   'yarn_version': '1.15.2',

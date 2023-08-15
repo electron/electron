@@ -33,7 +33,7 @@ index 94a028be3c315edc0056408ab9ab41b6b001a1c1..0d830234edb5621f57e39f4a951d357a
  
  }  // namespace base
 diff --git a/content/renderer/renderer_main_platform_delegate_mac.mm b/content/renderer/renderer_main_platform_delegate_mac.mm
-index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ced88f21a5 100644
+index d4db3b179725cb96bcbd0f73db7d52ef8b7522db..6afbf1defb0591d9fe59a81e6c74746d3e15f081 100644
 --- a/content/renderer/renderer_main_platform_delegate_mac.mm
 +++ b/content/renderer/renderer_main_platform_delegate_mac.mm
 @@ -10,9 +10,11 @@
@@ -46,9 +46,9 @@ index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ce
  }
 +#endif
  
- #if !defined(__has_feature) || !__has_feature(objc_arc)
- #error "This file requires ARC support."
-@@ -26,6 +28,7 @@
+ namespace content {
+ 
+@@ -22,6 +24,7 @@
  // verifies there are no existing open connections), and then indicates that
  // Chrome should continue execution without access to launchservicesd.
  void DisableSystemServices() {
@@ -56,7 +56,7 @@ index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ce
    // Tell the WindowServer that we don't want to make any future connections.
    // This will return Success as long as there are no open connections, which
    // is what we want.
-@@ -34,6 +37,7 @@ void DisableSystemServices() {
+@@ -30,6 +33,7 @@ void DisableSystemServices() {
  
    sandbox::DisableLaunchServices();
    sandbox::DisableCoreServicesCheckFix();
@@ -65,12 +65,12 @@ index 22c7e07dffab64061d546aa537620c50948afec0..bf7f32fe6908ad5bf0186b0ad7a5e5ce
  
  }  // namespace
 diff --git a/content/renderer/theme_helper_mac.mm b/content/renderer/theme_helper_mac.mm
-index 75c28eeec5cae1afcefd0f429b151df6334c115b..6fee85efb4149e1b2cfff18404f0451cdc772b9e 100644
+index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019bdd5280c 100644
 --- a/content/renderer/theme_helper_mac.mm
 +++ b/content/renderer/theme_helper_mac.mm
-@@ -12,10 +12,11 @@
- #error "This file requires ARC support."
- #endif
+@@ -8,10 +8,11 @@
+ 
+ #include "base/strings/sys_string_conversions.h"
  
 +#if !IS_MAS_BUILD()
  extern "C" {
@@ -81,7 +81,7 @@ index 75c28eeec5cae1afcefd0f429b151df6334c115b..6fee85efb4149e1b2cfff18404f0451c
  namespace content {
  
  void SystemColorsDidChange(int aqua_color_variant) {
-@@ -28,8 +29,18 @@ void SystemColorsDidChange(int aqua_color_variant) {
+@@ -24,8 +25,18 @@ void SystemColorsDidChange(int aqua_color_variant) {
  }
  
  bool IsSubpixelAntialiasingAvailable() {
@@ -101,18 +101,18 @@ index 75c28eeec5cae1afcefd0f429b151df6334c115b..6fee85efb4149e1b2cfff18404f0451c
  
  }  // namespace content
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index aa93fcc4de03d8032e9090ca8b66019eeb7be8b0..721e7083e94fa977908858c908274c8db49c07a0 100644
+index 4b1d57ef72d6a9235edc7a2591c8c3242c283235..680cf1ee57e0a9748a3b1efa93cb2d1569ac5655 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
-@@ -41,6 +41,7 @@
- #error "This file requires ARC support."
- #endif
+@@ -37,6 +37,7 @@
+ #include "device/bluetooth/bluetooth_socket_mac.h"
+ #include "device/bluetooth/public/cpp/bluetooth_address.h"
  
 +#if !IS_MAS_BUILD()
  extern "C" {
  // Undocumented IOBluetooth Preference API [1]. Used by `blueutil` [2] and
  // `Karabiner` [3] to programmatically control the Bluetooth state. Calling the
-@@ -54,6 +55,7 @@
+@@ -50,6 +51,7 @@
  // [4] https://support.apple.com/kb/PH25091
  void IOBluetoothPreferenceSetControllerPowerState(int state);
  }
@@ -120,7 +120,7 @@ index aa93fcc4de03d8032e9090ca8b66019eeb7be8b0..721e7083e94fa977908858c908274c8d
  
  namespace {
  
-@@ -97,8 +99,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -93,8 +95,10 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
      : controller_state_function_(
            base::BindRepeating(&BluetoothAdapterMac::GetHostControllerState,
                                base::Unretained(this))),
@@ -131,7 +131,7 @@ index aa93fcc4de03d8032e9090ca8b66019eeb7be8b0..721e7083e94fa977908858c908274c8d
        classic_discovery_manager_(
            BluetoothDiscoveryManagerMac::CreateClassic(this)),
        device_paired_status_callback_(
-@@ -247,8 +251,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
+@@ -243,8 +247,12 @@ bool IsDeviceSystemPaired(const std::string& device_address) {
  }
  
  bool BluetoothAdapterMac::SetPoweredImpl(bool powered) {
@@ -426,10 +426,10 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..7d80d7fa8337523c3a70f317f883f0cc
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index fa8915da42d7c16534fd97d75f975d49b2f1cc51..45f7a83beb467f98ff15f60cec685e5fda69ddc7 100644
+index 701b59231f2e5fbd31482775a248a0ff9755a480..271f9d1eebcf29aa7a8b98a0655038e75464a56b 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-@@ -112,6 +112,7 @@
+@@ -108,6 +108,7 @@
      }
    }
  
@@ -437,7 +437,7 @@ index fa8915da42d7c16534fd97d75f975d49b2f1cc51..45f7a83beb467f98ff15f60cec685e5f
    // AXTextMarker
    if (IsAXTextMarker(value)) {
      return AXTextMarkerToBaseValue(value, indexer);
-@@ -121,6 +122,7 @@
+@@ -117,6 +118,7 @@
    if (IsAXTextMarkerRange(value)) {
      return AXTextMarkerRangeToBaseValue(value, indexer);
    }

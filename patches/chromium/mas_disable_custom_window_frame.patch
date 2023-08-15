@@ -7,18 +7,18 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 3234ed46122056d58f33d17f33c8083a0e8e9d0a..6a7c75cddeaf46275a1628e187fd3907aaf53e75 100644
+index b31c3be1895f7ca4a0f5c61f06a66eb1e1fbc5a6..ad4a1ecb02573bb5d34d134c61ec71f3fb092f42 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-@@ -13,6 +13,7 @@
- #error "This file requires ARC support."
- #endif
+@@ -9,6 +9,7 @@
+ #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
+ #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
  
 +#if !IS_MAS_BUILD()
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -73,10 +74,13 @@ - (BOOL)_shouldCenterTrafficLights {
+@@ -69,10 +70,13 @@ - (BOOL)_shouldCenterTrafficLights {
  
  @end
  
@@ -32,7 +32,7 @@ index 3234ed46122056d58f33d17f33c8083a0e8e9d0a..6a7c75cddeaf46275a1628e187fd3907
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -91,6 +95,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -87,6 +91,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -42,19 +42,19 @@ index 3234ed46122056d58f33d17f33c8083a0e8e9d0a..6a7c75cddeaf46275a1628e187fd3907
  // Keyboard -> Shortcuts -> Keyboard. Usually Ctrl+F5. The argument (|unknown|)
  // tends to just be nil.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
-index 2d4be7e4df5a0f6de9046593434eb276e28232f9..c727984807d555b8e6ab8fe37d9a6daa8c091663 100644
+index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6fd9f9e40 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.mm
-@@ -8,6 +8,8 @@
- #error "This file requires ARC support."
- #endif
+@@ -4,6 +4,8 @@
+ 
+ #import "components/remote_cocoa/app_shim/native_widget_mac_frameless_nswindow.h"
  
 +#if !IS_MAS_BUILD()
 +
  @interface NSWindow (PrivateAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -22,8 +24,12 @@ - (CGFloat)_titlebarHeight {
+@@ -18,8 +20,12 @@ - (CGFloat)_titlebarHeight {
  }
  @end
  
@@ -67,7 +67,7 @@ index 2d4be7e4df5a0f6de9046593434eb276e28232f9..c727984807d555b8e6ab8fe37d9a6daa
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    if ([NativeWidgetMacFramelessNSWindowFrame class]) {
      return [NativeWidgetMacFramelessNSWindowFrame class];
-@@ -31,4 +37,6 @@ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
+@@ -27,4 +33,6 @@ + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  
@@ -75,7 +75,7 @@ index 2d4be7e4df5a0f6de9046593434eb276e28232f9..c727984807d555b8e6ab8fe37d9a6daa
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 841358dd85201f4972e4c91a334e55b81867d2ec..0069d4f904c527fa3c280c723574fe2c62c282b8 100644
+index 9d0469a373c1e74d3007fa171459a0d9e831bd02..b0b5ebf56c790f1fb647994cefadf0bce3a11755 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -95,10 +95,10 @@ index 841358dd85201f4972e4c91a334e55b81867d2ec..0069d4f904c527fa3c280c723574fe2c
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 8a89e3e1759b9785f069546aa564520a9375f0c2..fd09550a2f1fe59ba0d38a258107573a052fd784 100644
+index 64ea3046693835ebb263d30f7e30380851bacd38..f834876be0465ea27495814c37489ba6bdbed9bd 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -106,7 +106,9 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -97,7 +97,9 @@ void OrderChildWindow(NSWindow* child_window,
  }  // namespace
  
  @interface NSWindow (Private)
@@ -108,7 +108,7 @@ index 8a89e3e1759b9785f069546aa564520a9375f0c2..fd09550a2f1fe59ba0d38a258107573a
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -150,6 +152,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -135,6 +137,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -117,7 +117,7 @@ index 8a89e3e1759b9785f069546aa564520a9375f0c2..fd09550a2f1fe59ba0d38a258107573a
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -176,6 +180,8 @@ - (BOOL)usesCustomDrawing {
+@@ -161,6 +165,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -126,7 +126,7 @@ index 8a89e3e1759b9785f069546aa564520a9375f0c2..fd09550a2f1fe59ba0d38a258107573a
  @implementation NativeWidgetMacNSWindow {
   @private
    CommandDispatcher* __strong _commandDispatcher;
-@@ -381,6 +387,8 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -355,6 +361,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 8a89e3e1759b9785f069546aa564520a9375f0c2..fd09550a2f1fe59ba0d38a258107573a
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -392,6 +400,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -366,6 +374,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

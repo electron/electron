@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index ac26cc76c6e78a241b8fb29aa98250b2b99c76cd..8671ecc36caff3a253b2f097f5912298b6ebdf8d 100644
+index 6e6f24e479cce61b5f189faed40601e8f3e82ef9..bfad3b64106388a9d5f917bcbd1af646bc47833f 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1039,6 +1039,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -18,7 +18,7 @@ index ac26cc76c6e78a241b8fb29aa98250b2b99c76cd..8671ecc36caff3a253b2f097f5912298
  
    deps = [
 diff --git a/build/config/BUILDCONFIG.gn b/build/config/BUILDCONFIG.gn
-index 968276e781288e92ed87eaba43dba67b4475115c..05f2f3084cac5bf3e806a03401475667848afd04 100644
+index 7f80b6fab53e62296351695429e3a6b9bb717300..420a13c16741037cf81de817c1808603e3fe6490 100644
 --- a/build/config/BUILDCONFIG.gn
 +++ b/build/config/BUILDCONFIG.gn
 @@ -355,7 +355,6 @@ default_compiler_configs = [
@@ -30,7 +30,7 @@ index 968276e781288e92ed87eaba43dba67b4475115c..05f2f3084cac5bf3e806a03401475667
  
  if (is_win) {
 diff --git a/components/os_crypt/sync/BUILD.gn b/components/os_crypt/sync/BUILD.gn
-index f3e2ea6d0430df493fcebab6d6271299a2307b69..d01a9f2cbd5aa8de768c9c1e765c464bd31a115a 100644
+index c4bca6fca7c990222b0bf65087d14b21b01c1b5f..b95e2f3824ac4a029fb98a8d7e24f47e610120bd 100644
 --- a/components/os_crypt/sync/BUILD.gn
 +++ b/components/os_crypt/sync/BUILD.gn
 @@ -47,6 +47,7 @@ component("os_crypt") {
@@ -74,7 +74,7 @@ index 440fa0b3ff9b08016ff19ab54c70a453dc8c5f86..2e2f358829bf0492fd3e44173eeb7d0b
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 88eca71122353752154a29e4f54693c3ac13f930..4540aff3ac4a06f76d332322fe87618f8a5cb6d0 100644
+index 224a6884ef5070efe1a51fdf1c24662388288432..95ea998ec0d00558ef12ebc172671e02e2efdcfc 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index 62117d9c83972003d0483ed9fc6efad6a4490a75..246d7289fd5727886054e182e17520c5
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 23b9f9008046f957c19bc169cc87defa49af46b3..72a11a958c3aecec43737d41d3a2219ac7416f8a 100644
+index 87cb6cc7da672c93271dab01f29b5611a736a6b9..30dd8742a8fbbb60d18988c1ff68cfc51f42a6ca 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -477,6 +477,7 @@ static_library("test_support") {
@@ -135,7 +135,7 @@ index 5fcb135fdcdee5022e5caed46dece4e304495bfe..83cc95b1086b0619be019d7b797f3395
      sources += [
        "browser/web_test_browser_main_platform_support_mac.mm",
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 1a8164c2ef7d6b24c4feb19ce3f3b5e970885541..e9122ac24b7b5f9359a89953fa24364a0115bdf6 100644
+index 4885f927ae2b871cf2911fb5bc5a2aac128b2aae..5f820bd6ef9f91f69e75065f08bd61a72970c2e6 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -241,6 +241,7 @@ component("bluetooth") {
@@ -249,10 +249,10 @@ index 4e23c38763184840a393589b3f55dcabb0db8121..e4ad30d0d7acecdca3a22fe05935a340
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index 614ae2d72c934f0f6650a501b7d132f5745f767e..ff4302c344ede0021c7379efeb17e2a1111cdce0 100644
+index 9233e89712a12e27d85232fb51f113f41375a08a..a73f9cb635a09b44ba35b0d5b1196dfdf921d277 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -355,6 +355,7 @@ component("base") {
+@@ -356,6 +356,7 @@ component("base") {
        "interaction/element_tracker_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]
@@ -288,10 +288,10 @@ index 0829ee9a58400dea171c99e0784607305092aa92..eaa938d159ed43539ca29c863318cd35
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 06cc420c752d1690ef2864b203721ba4c38e7f89..0fe2cb7ea7f15edd31db9e047fcb0cd9ddb5d1ed 100644
+index 4ea8e4f4636d555497759d8cf5f6181c4e7a649e..9556c2b11e1c0967fc04e61dba3321bd5020584b 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -685,6 +685,7 @@ component("views") {
+@@ -683,6 +683,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -299,7 +299,7 @@ index 06cc420c752d1690ef2864b203721ba4c38e7f89..0fe2cb7ea7f15edd31db9e047fcb0cd9
    }
  
    if (is_win) {
-@@ -1104,6 +1105,8 @@ source_set("test_support") {
+@@ -1102,6 +1103,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
@@ -309,15 +309,14 @@ index 06cc420c752d1690ef2864b203721ba4c38e7f89..0fe2cb7ea7f15edd31db9e047fcb0cd9
      sources += [
        "test/desktop_window_tree_host_win_test_api.cc",
 diff --git a/ui/views/controls/webview/BUILD.gn b/ui/views/controls/webview/BUILD.gn
-index e3dd4fab3a1cac0138f8dac60247e0ea3343e87e..998178845e241c8b45a3ef8ad542d10a4e687831 100644
+index e3dd4fab3a1cac0138f8dac60247e0ea3343e87e..f31130eaa3719eda0da5b3f0e8c294775faf6bd4 100644
 --- a/ui/views/controls/webview/BUILD.gn
 +++ b/ui/views/controls/webview/BUILD.gn
-@@ -19,6 +19,10 @@ component("webview") {
+@@ -19,6 +19,9 @@ component("webview") {
  
    if (is_mac) {
      sources += [ "unhandled_keyboard_event_handler_mac.mm" ]
 +    configs += [
-+      "//build/config/compiler:enable_arc",
 +      "//electron/build/config:mas_build",
 +    ]
    }

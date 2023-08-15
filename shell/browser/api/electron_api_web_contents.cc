@@ -3075,6 +3075,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
+  auto generate_tagged_pdf =
+      settings.GetDict().FindBool("shouldGenerateTaggedPDF");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
@@ -3082,7 +3084,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
           landscape, display_header_footer, print_background, scale,
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
           margin_right, absl::make_optional(header_template),
-          absl::make_optional(footer_template), prefer_css_page_size);
+          absl::make_optional(footer_template), prefer_css_page_size,
+          generate_tagged_pdf);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
     auto error = absl::get<std::string>(print_pages_params);

@@ -1432,6 +1432,8 @@ commands:
                         - src/build/linux
                         - src/buildtools/third_party/libc++
                         - src/buildtools/third_party/libc++abi
+                        - src/third_party/libc++
+                        - src/third_party/libc++abi
                         - src/out/Default/obj/buildtools/third_party
                         - src/v8/tools/builtins-pgo
                   - steps: << parameters.after-persist >>

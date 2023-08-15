@@ -150,8 +150,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
-  void ImeCompositionRangeChanged(const gfx::Range&,
-                                  const std::vector<gfx::Rect>&) override;
+  void ImeCompositionRangeChanged(
+      const gfx::Range&,
+      const absl::optional<std::vector<gfx::Rect>>& character_bounds,
+      const absl::optional<std::vector<gfx::Rect>>& line_bounds) override;
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
 

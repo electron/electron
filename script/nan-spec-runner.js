@@ -57,11 +57,15 @@ async function main () {
   // file and pull cflags_cc from it instead of using bespoke code here?
   // I think it's unlikely to work; but if it does, it would be more futureproof
   const cxxflags = [
-    '-std=c++17',
+    '-std=c++20',
+    '-Wno-trigraphs',
+    '-fno-exceptions',
+    '-fno-rtti',
     '-nostdinc++',
-    `-I"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++', 'trunk', 'include')}"`,
-    `-isystem"${path.resolve(BASE, 'buildtools', 'third_party', 'libc++abi', 'trunk', 'include')}"`,
+    `-isystem "${path.resolve(BASE, 'buildtools', 'third_party', 'libc++')}"`,
+    `-isystem "${path.resolve(BASE, 'third_party', 'libc++', 'src', 'include')}"`,
+    `-isystem "${path.resolve(BASE, 'third_party', 'libc++abi', 'src', 'include')}"`,
+    ' -fvisibility-inlines-hidden',
     '-fPIC',
     '-D_LIBCPP_ABI_NAMESPACE=Cr',
     ...platformFlags
