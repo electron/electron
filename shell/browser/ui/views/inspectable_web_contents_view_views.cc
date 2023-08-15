@@ -209,6 +209,10 @@ void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
   }
 }
 
+const std::u16string InspectableWebContentsViewViews::GetTitle() {
+  return title_;
+}
+
 void InspectableWebContentsViewViews::Layout() {
   if (!devtools_web_view_->GetVisible()) {
     contents_web_view_->SetBoundsRect(GetContentsBounds());

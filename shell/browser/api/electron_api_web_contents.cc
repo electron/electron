@@ -2649,16 +2649,19 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 #endif
 
   bool activate = true;
+  std::string title;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
       options.Get("activate", &activate);
+      options.Get("title", &title);
     }
   }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
+  inspectable_web_contents_->SetDevToolsTitle(base::UTF8ToUTF16(title));
   inspectable_web_contents_->ShowDevTools(activate);
 }
 
@@ -2676,6 +2679,18 @@ bool WebContents::IsDevToolsOpened() {
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->IsDevToolsViewShowing();
+}
+
+std::u16string WebContents::GetDevToolsTitle() {
+  if (type_ == Type::kRemote)
+    return std::u16string();
+
+  DCHECK(inspectable_web_contents_);
+  return inspectable_web_contents_->GetDevToolsTitle();
+}
+
+void WebContents::SetDevToolsTitle(const std::u16string& title) {
+  inspectable_web_contents_->SetDevToolsTitle(title);
 }
 
 bool WebContents::IsDevToolsFocused() {
@@ -4214,6 +4229,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
+      .SetMethod("getDevToolsTitle", &WebContents::GetDevToolsTitle)
+      .SetMethod("setDevToolsTitle", &WebContents::SetDevToolsTitle)
       .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
       .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)

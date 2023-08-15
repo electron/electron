@@ -50,6 +50,7 @@ using electron::InspectableWebContentsViewMac;
 - (void)setContentsResizingStrategy:
     (const DevToolsContentsResizingStrategy&)strategy;
 - (void)setTitle:(NSString*)title;
+- (NSString*)getTitle;
 
 - (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)theEvent;
 
