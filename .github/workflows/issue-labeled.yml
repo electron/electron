@@ -19,7 +19,7 @@ jobs:
           RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
         run: |
           set -eo pipefail
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org electron)
+          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org=electron)
           echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: Set status
         if: ${{ steps.generate-token.outputs.TOKEN }}
