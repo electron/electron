@@ -42,19 +42,19 @@ void ZoomModeToZoomSettings(WebContentsZoomController::ZoomMode zoom_mode,
                             api::tabs::ZoomSettings* zoom_settings) {
   DCHECK(zoom_settings);
   switch (zoom_mode) {
-    case WebContentsZoomController::ZoomMode::kDefault:
+    case WebContentsZoomController::ZOOM_MODE_DEFAULT:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN;
       break;
-    case WebContentsZoomController::ZoomMode::kIsolated:
+    case WebContentsZoomController::ZOOM_MODE_ISOLATED:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_AUTOMATIC;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
       break;
-    case WebContentsZoomController::ZoomMode::kManual:
+    case WebContentsZoomController::ZOOM_MODE_MANUAL:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_MANUAL;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
       break;
-    case WebContentsZoomController::ZoomMode::kDisabled:
+    case WebContentsZoomController::ZOOM_MODE_DISABLED:
       zoom_settings->mode = api::tabs::ZOOM_SETTINGS_MODE_DISABLED;
       zoom_settings->scope = api::tabs::ZOOM_SETTINGS_SCOPE_PER_TAB;
       break;
@@ -427,24 +427,24 @@ ExtensionFunction::ResponseAction TabsSetZoomSettingsFunction::Run() {
   // Determine the correct internal zoom mode to set |web_contents| to from the
   // user-specified |zoom_settings|.
   WebContentsZoomController::ZoomMode zoom_mode =
-      WebContentsZoomController::ZoomMode::kDefault;
+      WebContentsZoomController::ZOOM_MODE_DEFAULT;
   switch (params->zoom_settings.mode) {
     case tabs::ZOOM_SETTINGS_MODE_NONE:
     case tabs::ZOOM_SETTINGS_MODE_AUTOMATIC:
       switch (params->zoom_settings.scope) {
         case tabs::ZOOM_SETTINGS_SCOPE_NONE:
         case tabs::ZOOM_SETTINGS_SCOPE_PER_ORIGIN:
-          zoom_mode = WebContentsZoomController::ZoomMode::kDefault;
+          zoom_mode = WebContentsZoomController::ZOOM_MODE_DEFAULT;
           break;
         case tabs::ZOOM_SETTINGS_SCOPE_PER_TAB:
-          zoom_mode = WebContentsZoomController::ZoomMode::kIsolated;
+          zoom_mode = WebContentsZoomController::ZOOM_MODE_ISOLATED;
       }
       break;
     case tabs::ZOOM_SETTINGS_MODE_MANUAL:
-      zoom_mode = WebContentsZoomController::ZoomMode::kManual;
+      zoom_mode = WebContentsZoomController::ZOOM_MODE_MANUAL;
       break;
     case tabs::ZOOM_SETTINGS_MODE_DISABLED:
-      zoom_mode = WebContentsZoomController::ZoomMode::kDisabled;
+      zoom_mode = WebContentsZoomController::ZOOM_MODE_DISABLED;
   }
 
   contents->GetZoomController()->SetZoomMode(zoom_mode);
