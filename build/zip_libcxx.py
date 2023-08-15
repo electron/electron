@@ -30,8 +30,8 @@ def get_object_files(base_path, archive_name):
 def main(argv):
   dist_zip, = argv
   out_dir = os.path.dirname(dist_zip)
-  base_path_libcxx = os.path.join(out_dir, 'obj/buildtools/third_party/libc++')
-  base_path_libcxxabi = os.path.join(out_dir, 'obj/buildtools/third_party/libc++abi')
+  base_path_libcxx = os.path.join(out_dir, 'obj/third_party/libc++')
+  base_path_libcxxabi = os.path.join(out_dir, 'obj/third_party/libc++abi')
   object_files_libcxx = get_object_files(base_path_libcxx, 'libc++.a')
   object_files_libcxxabi = get_object_files(base_path_libcxxabi, 'libc++abi.a')
   with zipfile.ZipFile(
