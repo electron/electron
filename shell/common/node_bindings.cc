@@ -386,7 +386,7 @@ bool NodeBindings::IsInitialized() {
 
 // Initialize Node.js cli options to pass to Node.js
 // See https://nodejs.org/api/cli.html#cli_options
-void NodeBindings::SetNodeCliFlags() {
+std::vector<std::string> NodeBindings::ParseNodeCliFlags() {
   const auto argv = base::CommandLine::ForCurrentProcess()->argv();
   std::vector<std::string> args;
 
@@ -403,9 +403,7 @@ void NodeBindings::SetNodeCliFlags() {
     const auto& option = arg;
 #endif
     const auto stripped = base::StringPiece(option).substr(0, option.find('='));
-
-    // Only allow in no-op (--) option or a small set of debug
-    // and trace related options.
+    // Only allow no-op or a small set of debug/trace related options.
     if (IsAllowedOption(stripped) || stripped == "--")
       args.push_back(option);
   }
@@ -417,16 +415,7 @@ void NodeBindings::SetNodeCliFlags() {
     args.push_back("--no-experimental-fetch");
   }
 
-  std::vector<std::string> errors;
-  const int exit_code = ProcessGlobalArgs(&args, nullptr, &errors,
-                                          node::kDisallowedInEnvironment);
-
-  const std::string err_str = "Error parsing Node.js cli flags ";
-  if (exit_code != 0) {
-    LOG(ERROR) << err_str;
-  } else if (!errors.empty()) {
-    LOG(ERROR) << err_str << base::JoinString(errors, " ");
-  }
+  return args;
 }
 
 void NodeBindings::Initialize(v8::Local<v8::Context> context) {
@@ -442,13 +431,11 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   // Explicitly register electron's builtin bindings.
   RegisterBuiltinBindings();
 
-  // Parse and set Node.js cli flags.
-  SetNodeCliFlags();
-
   auto env = base::Environment::Create();
   SetNodeOptions(env.get());
 
-  std::vector<std::string> argv = {"electron"};
+  // Parse and set Node.js cli flags.
+  std::vector<std::string> argv = ParseNodeCliFlags();
   std::vector<std::string> exec_argv;
   std::vector<std::string> errors;
   uint64_t process_flags = node::ProcessFlags::kNoFlags;
