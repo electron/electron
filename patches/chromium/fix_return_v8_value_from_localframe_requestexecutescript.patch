@@ -64,7 +64,7 @@ index 4cd668a127a50e5462e3878c3f1dcb7384926768..dfbec49249404df8f8ebdbd26e6e865c
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index d50985b2e3fa32c54c2dc8612878cc30dcb2c76a..7d16f6d3eaf53dbd61a7403bfc43ef6f367d0189 100644
+index 3a8269534bec5aee91fb9b6a6a910911d83a065e..8d123fd1dadbd5a0a8110050ed44665ae4767ad7 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
 @@ -2792,6 +2792,7 @@ void LocalFrame::RequestExecuteScript(
@@ -97,7 +97,7 @@ index eb4ce179cb09e28b97ad167b5b6d0e1c25e53c5f..a9cde93321e1afd18e3f742777b31112
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 4729006029227265160abcc32722d0bac3883bc6..28e232423e3ab46eb205af87a461806003ce04c5 100644
+index 0a8ebe8bf43d19d3157d90bc830bfd420628db70..0e23ccfa55fb7a9cda217ab043dc4822242ed92d 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -936,6 +936,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
@@ -204,7 +204,7 @@ index 1e4d9e098463d61dcab787afcc46fea63b27e012..3f1ebf493ddd7d1c209acee2fb1255a0
    const mojom::blink::UserActivationOption user_activation_option_;
    const mojom::blink::LoadEventBlockingOption blocking_option_;
 diff --git a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
-index 1a237daf5f5427089c2f7e1f5dbdd40b451f6b76..727a9a19ded880da22f5bea177b4c13c01f00c68 100644
+index 1681afe83c13ca4257ed414292d7e1b777677011..1818ad26c1e38d3ca16a17405e90456803529b59 100644
 --- a/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 +++ b/third_party/blink/renderer/core/frame/web_local_frame_impl.cc
 @@ -1116,14 +1116,15 @@ void WebLocalFrameImpl::RequestExecuteScript(

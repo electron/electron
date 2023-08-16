@@ -33,10 +33,10 @@ index 401123216fccc830a240b0b473e0426a65e630e6..2c205dd684340ddbed4fd301d5928ce6
   protected:
    // |routing_id| must not be MSG_ROUTING_NONE.
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 8fc7b8a81ddf634efff0f1dfb49723ff44225d2a..10ee30af7650f67d4c27af4df357f2316b992abc 100644
+index ce12c7803316c1dc90a96cb69fee96ee011912ae..588bdd3ec8162fcd49bcf09ec8cfa80ceef2fa20 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -617,7 +617,7 @@ void RenderWidgetHostViewAura::HideImpl() {
+@@ -614,7 +614,7 @@ void RenderWidgetHostViewAura::HideImpl() {
    DCHECK(visibility_ == Visibility::HIDDEN ||
           visibility_ == Visibility::OCCLUDED);
  
