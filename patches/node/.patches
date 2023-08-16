@@ -41,3 +41,4 @@ fix_ftbfs_werror_wextra-semi.patch
 fix_isurl_implementation.patch
 ci_ensure_node_tests_set_electron_run_as_node.patch
 chore_update_fixtures_errors_force_colors_snapshot.patch
+fix_assert_module_in_the_renderer_process.patch
