@@ -1,0 +1,153 @@
+From 285c7712c50654e3d7238b059c4631bc91285514 Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Thu, 13 Jul 2023 15:23:49 -0400
+Subject: [PATCH] M116: Translator: Unconditionally limit variable sizes
+
+... instead of just for WebGL.  This is to avoid hitting driver bugs
+that were prevented with this check for WebGL on a compromised renderer
+that can create non-WebGL contexts.
+
+Bug: chromium:1464682
+Change-Id: I2b1c5a8c51f06225f5f850109d30778d97e574c7
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4717371
+Reviewed-by: Roman Lavrov <romanl@google.com>
+---
+
+diff --git a/src/compiler/translator/Compiler.cpp b/src/compiler/translator/Compiler.cpp
+index 7b1ac4e..383feeb 100644
+--- a/src/compiler/translator/Compiler.cpp
++++ b/src/compiler/translator/Compiler.cpp
+@@ -397,9 +397,10 @@
+ 
+ bool TCompiler::shouldLimitTypeSizes() const
+ {
+-    // WebGL shaders limit the size of variables' types in shaders,
+-    // including arrays, structs and interface blocks.
+-    return IsWebGLBasedSpec(mShaderSpec);
++    // Prevent unrealistically large variable sizes in shaders.  This works around driver bugs
++    // around int-size limits (such as 2GB).  The limits are generously large enough that no real
++    // shader should ever hit it.
++    return true;
+ }
+ 
+ bool TCompiler::Init(const ShBuiltInResources &resources)
+diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+index 2a033ad..19a4821 100644
+--- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
++++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+@@ -23,10 +23,10 @@
+ // Arbitrarily enforce that all types declared with a size in bytes of over 2 GB will cause
+ // compilation failure.
+ //
+-// For local and global variables, the limit is much lower (1MB) as that much memory won't fit in
++// For local and global variables, the limit is much lower (16MB) as that much memory won't fit in
+ // the GPU registers anyway.
+ constexpr size_t kMaxVariableSizeInBytes        = static_cast<size_t>(2) * 1024 * 1024 * 1024;
+-constexpr size_t kMaxPrivateVariableSizeInBytes = static_cast<size_t>(1) * 1024 * 1024;
++constexpr size_t kMaxPrivateVariableSizeInBytes = static_cast<size_t>(16) * 1024 * 1024;
+ 
+ // Traverses intermediate tree to ensure that the shader does not
+ // exceed certain implementation-defined limits on the sizes of types.
+diff --git a/src/compiler/translator/util.cpp b/src/compiler/translator/util.cpp
+index a91f8b0..a866b25 100644
+--- a/src/compiler/translator/util.cpp
++++ b/src/compiler/translator/util.cpp
+@@ -282,6 +282,9 @@
+ 
+             return kBoolGLType[type.getNominalSize() - 1];
+ 
++        case EbtYuvCscStandardEXT:
++            return GL_UNSIGNED_INT;
++
+         case EbtSampler2D:
+             return GL_SAMPLER_2D;
+         case EbtSampler3D:
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index 9ae56f5..a8d2ce4 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -5284,8 +5284,8 @@
+ 
+     constexpr char kVSArrayTooLarge[] =
+         R"(varying vec4 color;
+-// 1 MB / 32 aligned bytes per mat2 = 32768
+-const int array_size = 32769;
++// 16 MB / 32 aligned bytes per mat2 = 524288
++const int array_size = 524289;
+ void main()
+ {
+     mat2 array[array_size];
+@@ -5297,7 +5297,7 @@
+ 
+     constexpr char kVSArrayMuchTooLarge[] =
+         R"(varying vec4 color;
+-const int array_size = 55600;
++const int array_size = 757000;
+ void main()
+ {
+     mat2 array[array_size];
+@@ -5361,9 +5361,9 @@
+     constexpr char kTooLargeGlobalMemory1[] =
+         R"(precision mediump float;
+ 
+-// 1 MB / 16 bytes per vec4 = 65536
+-vec4 array[32768];
+-vec4 array2[32769];
++// 16 MB / 16 bytes per vec4 = 1048576
++vec4 array[524288];
++vec4 array2[524289];
+ 
+ void main()
+ {
+@@ -5376,9 +5376,9 @@
+     constexpr char kTooLargeGlobalMemory2[] =
+         R"(precision mediump float;
+ 
+-// 1 MB / 16 bytes per vec4 = 65536
+-vec4 array[32767];
+-vec4 array2[32767];
++// 16 MB / 16 bytes per vec4 = 1048576
++vec4 array[524287];
++vec4 array2[524287];
+ vec4 x, y, z;
+ 
+ void main()
+@@ -5392,12 +5392,12 @@
+     constexpr char kTooLargeGlobalAndLocalMemory1[] =
+         R"(precision mediump float;
+ 
+-// 1 MB / 16 bytes per vec4 = 65536
+-vec4 array[32768];
++// 16 MB / 16 bytes per vec4 = 1048576
++vec4 array[524288];
+ 
+ void main()
+ {
+-    vec4 array2[32769];
++    vec4 array2[524289];
+     if (array[0].x + array[1].x == 2.0)
+         gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
+     else
+@@ -5408,18 +5408,18 @@
+     constexpr char kTooLargeGlobalAndLocalMemory2[] =
+         R"(precision mediump float;
+ 
+-// 1 MB / 16 bytes per vec4 = 65536
+-vec4 array[32768];
++// 16 MB / 16 bytes per vec4 = 1048576
++vec4 array[524288];
+ 
+ float f()
+ {
+-    vec4 array2[16384];
++    vec4 array2[524288];
+     return array2[0].x;
+ }
+ 
+ float g()
+ {
+-    vec4 array3[16383];
++    vec4 array3[524287];
+     return array3[0].x;
+ }
+ 

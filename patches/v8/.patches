@@ -3,3 +3,6 @@ do_not_export_private_v8_symbols_on_windows.patch
 fix_build_deprecated_attribute_for_older_msvc_versions.patch
 fix_disable_implies_dcheck_for_node_stream_array_buffers.patch
 chore_allow_customizing_microtask_policy_per_context.patch
+cherry-pick-96fc6d931c97.patch
+cherry-pick-896deb576574.patch
+cherry-pick-8d60b1d3b1be.patch

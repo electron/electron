@@ -1,0 +1,286 @@
+From cafe56b591edb77f041be70b58cac3a61565644a Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 23 Jun 2023 14:46:28 -0400
+Subject: [PATCH] M116: GL: Ensure all instanced attributes have a buffer with data
+
+Apple OpenGL drivers sometimes crash when given an instanced draw with
+a buffer that has never been given data.
+
+It's not efficient to check if the attribute is both zero-sized and
+instanced so just ensure that every time a zero-sized buffer is bound
+to an attribute, it gets initialized with some data.
+
+Bug: chromium:1456243
+Change-Id: I66b7c7017843153db2df3bc50010cba765d03c5f
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4642048
+Commit-Queue: Geoff Lang <geofflang@chromium.org>
+Reviewed-by: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit 4e6124dae892690204f8e5996aeaad14f45e0a97)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4727452
+---
+
+diff --git a/include/platform/FeaturesGL_autogen.h b/include/platform/FeaturesGL_autogen.h
+index aa0565c..2f6e094 100644
+--- a/include/platform/FeaturesGL_autogen.h
++++ b/include/platform/FeaturesGL_autogen.h
+@@ -501,6 +501,12 @@
+         "supportsShaderPixelLocalStorageEXT", FeatureCategory::OpenGLFeatures,
+         "Backend GL context supports EXT_shader_pixel_local_storage extension", &members,
+         "http://anglebug.com/7279"};
++
++    FeatureInfo ensureNonEmptyBufferIsBoundForDraw = {
++        "ensureNonEmptyBufferIsBoundForDraw", FeatureCategory::OpenGLFeatures,
++        "Apple OpenGL drivers crash when drawing with a zero-sized buffer bound using a non-zero "
++        "divisor.",
++        &members, "http://crbug.com/1456243"};
+ };
+ 
+ inline FeaturesGL::FeaturesGL()  = default;
+diff --git a/include/platform/gl_features.json b/include/platform/gl_features.json
+index 032f29a..b358cea 100644
+--- a/include/platform/gl_features.json
++++ b/include/platform/gl_features.json
+@@ -699,6 +699,14 @@
+                 "Backend GL context supports EXT_shader_pixel_local_storage extension"
+             ],
+             "issue": "http://anglebug.com/7279"
++        },
++        {
++            "name": "ensure_non_empty_buffer_is_bound_for_draw",
++            "category": "Features",
++            "description": [
++                "Apple OpenGL drivers crash when drawing with a zero-sized buffer bound using a non-zero divisor."
++            ],
++            "issue": "http://crbug.com/1456243"
+         }
+     ]
+ }
+diff --git a/scripts/code_generation_hashes/ANGLE_features.json b/scripts/code_generation_hashes/ANGLE_features.json
+index d4576c2..503001c 100644
+--- a/scripts/code_generation_hashes/ANGLE_features.json
++++ b/scripts/code_generation_hashes/ANGLE_features.json
+@@ -2,7 +2,7 @@
+   "include/platform/FeaturesD3D_autogen.h":
+     "9923fb44d0a6f31948d0c8f46ee1d9e2",
+   "include/platform/FeaturesGL_autogen.h":
+-    "a795a806d71b0e6d1f9e6d95c6e11971",
++    "fef16ab3946346a2a7d5b76bb39471a4",
+   "include/platform/FeaturesMtl_autogen.h":
+     "407426c8874de9295482ace9c94bd812",
+   "include/platform/FeaturesVk_autogen.h":
+@@ -16,13 +16,13 @@
+   "include/platform/gen_features.py":
+     "062989f7a8f3ff3b383f98fc8908dc33",
+   "include/platform/gl_features.json":
+-    "3335055a70e35ebb7bf74c6d7c58897b",
++    "c9aead89696e7fd0c8bfe5c5ca85ca63",
+   "include/platform/mtl_features.json":
+     "c66d170e7a8eb3448030f4c423ed0133",
+   "include/platform/vk_features.json":
+     "416bbb28b9fa1a3c4ef141f243c0a9e6",
+   "util/angle_features_autogen.cpp":
+-    "73169f63c755192c3b4bd27d6f4096ca",
++    "288daaec490eb816883d744f108d74c9",
+   "util/angle_features_autogen.h":
+-    "7aa8120eb8f8fd335946b8c27074745d"
++    "daf25d3e4ffea143d1c082416513f7e7"
+ }
+\ No newline at end of file
+diff --git a/src/libANGLE/renderer/gl/BufferGL.cpp b/src/libANGLE/renderer/gl/BufferGL.cpp
+index c99fd5d..9651838 100644
+--- a/src/libANGLE/renderer/gl/BufferGL.cpp
++++ b/src/libANGLE/renderer/gl/BufferGL.cpp
+@@ -296,6 +296,11 @@
+     return angle::Result::Continue;
+ }
+ 
++size_t BufferGL::getBufferSize() const
++{
++    return mBufferSize;
++}
++
+ GLuint BufferGL::getBufferID() const
+ {
+     return mBufferID;
+diff --git a/src/libANGLE/renderer/gl/BufferGL.h b/src/libANGLE/renderer/gl/BufferGL.h
+index 7b57594..fe9138e 100644
+--- a/src/libANGLE/renderer/gl/BufferGL.h
++++ b/src/libANGLE/renderer/gl/BufferGL.h
+@@ -56,6 +56,7 @@
+                                 bool primitiveRestartEnabled,
+                                 gl::IndexRange *outRange) override;
+ 
++    size_t getBufferSize() const;
+     GLuint getBufferID() const;
+ 
+   private:
+diff --git a/src/libANGLE/renderer/gl/VertexArrayGL.cpp b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+index dc981de..fda9099 100644
+--- a/src/libANGLE/renderer/gl/VertexArrayGL.cpp
++++ b/src/libANGLE/renderer/gl/VertexArrayGL.cpp
+@@ -646,6 +646,7 @@
+ 
+ angle::Result VertexArrayGL::updateAttribPointer(const gl::Context *context, size_t attribIndex)
+ {
++    const angle::FeaturesGL &features = GetFeaturesGL(context);
+ 
+     const VertexAttribute &attrib = mState.getVertexAttribute(attribIndex);
+ 
+@@ -687,8 +688,16 @@
+     // is not NULL.
+ 
+     StateManagerGL *stateManager = GetStateManagerGL(context);
+-    GLuint bufferId              = GetNativeBufferID(arrayBuffer);
++    BufferGL *bufferGL           = GetImplAs<BufferGL>(arrayBuffer);
++    GLuint bufferId              = bufferGL->getBufferID();
+     stateManager->bindBuffer(gl::BufferBinding::Array, bufferId);
++    if (features.ensureNonEmptyBufferIsBoundForDraw.enabled && bufferGL->getBufferSize() == 0)
++    {
++        constexpr uint32_t data = 0;
++        ANGLE_TRY(bufferGL->setData(context, gl::BufferBinding::Array, &data, sizeof(data),
++                                    gl::BufferUsage::StaticDraw));
++        ASSERT(bufferGL->getBufferSize() > 0);
++    }
+     ANGLE_TRY(callVertexAttribPointer(context, static_cast<GLuint>(attribIndex), attrib,
+                                       binding.getStride(), binding.getOffset()));
+ 
+diff --git a/src/libANGLE/renderer/gl/renderergl_utils.cpp b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+index 6911247..ab2a608 100644
+--- a/src/libANGLE/renderer/gl/renderergl_utils.cpp
++++ b/src/libANGLE/renderer/gl/renderergl_utils.cpp
+@@ -2465,6 +2465,9 @@
+     // EXT_shader_pixel_local_storage
+     ANGLE_FEATURE_CONDITION(features, supportsShaderPixelLocalStorageEXT,
+                             functions->hasGLESExtension("GL_EXT_shader_pixel_local_storage"));
++
++    // http://crbug.com/1456243
++    ANGLE_FEATURE_CONDITION(features, ensureNonEmptyBufferIsBoundForDraw, IsApple() || IsAndroid());
+ }
+ 
+ void InitializeFrontendFeatures(const FunctionsGL *functions, angle::FrontendFeatures *features)
+diff --git a/src/tests/angle_end2end_tests_expectations.txt b/src/tests/angle_end2end_tests_expectations.txt
+index 59ec7c2..44ff3e4 100644
+--- a/src/tests/angle_end2end_tests_expectations.txt
++++ b/src/tests/angle_end2end_tests_expectations.txt
+@@ -380,6 +380,7 @@
+ 7294 WIN D3D11 : StateChangeTestES3.StencilWriteMask/* = SKIP
+ 7316 WIN D3D11 : StateChangeTestES3.StencilTestAndFunc/* = SKIP
+ 7329 WIN D3D11 : StateChangeTestES3.PrimitiveRestart/* = SKIP
++1456243 WIN D3D11 : WebGL2CompatibilityTest.DrawWithZeroSizedBuffer/* = SKIP
+ 
+ // Android
+ 6095 ANDROID GLES : GLSLTest_ES3.InitGlobalComplexConstant/* = SKIP
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index 7dc56cd..bd7ecd1 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -1632,10 +1632,10 @@
+ 
+     constexpr GLuint kMaxIntAsGLuint = static_cast<GLuint>(std::numeric_limits<GLint>::max());
+     constexpr GLuint kIndexData[]    = {
+-           kMaxIntAsGLuint,
+-           kMaxIntAsGLuint + 1,
+-           kMaxIntAsGLuint + 2,
+-           kMaxIntAsGLuint + 3,
++        kMaxIntAsGLuint,
++        kMaxIntAsGLuint + 1,
++        kMaxIntAsGLuint + 2,
++        kMaxIntAsGLuint + 3,
+     };
+ 
+     GLBuffer indexBuffer;
+@@ -3687,8 +3687,8 @@
+ 
+     constexpr float readPixelsData[] = {-5000.0f, 0.0f, 0.0f, 1.0f};
+     const GLushort textureData[]     = {
+-            gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
+-            gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
++        gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
++        gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
+ 
+     for (auto extension : FloatingPointTextureExtensions)
+     {
+@@ -3748,8 +3748,8 @@
+ 
+     constexpr float readPixelsData[] = {7108.0f, -10.0f, 0.0f, 1.0f};
+     const GLushort textureData[]     = {
+-            gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
+-            gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
++        gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
++        gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
+ 
+     for (auto extension : FloatingPointTextureExtensions)
+     {
+@@ -3811,8 +3811,8 @@
+ 
+     constexpr float readPixelsData[] = {7000.0f, 100.0f, 33.0f, 1.0f};
+     const GLushort textureData[]     = {
+-            gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
+-            gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
++        gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
++        gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
+ 
+     for (auto extension : FloatingPointTextureExtensions)
+     {
+@@ -3874,8 +3874,8 @@
+ 
+     constexpr float readPixelsData[] = {7000.0f, 100.0f, 33.0f, -1.0f};
+     const GLushort textureData[]     = {
+-            gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
+-            gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
++        gl::float32ToFloat16(readPixelsData[0]), gl::float32ToFloat16(readPixelsData[1]),
++        gl::float32ToFloat16(readPixelsData[2]), gl::float32ToFloat16(readPixelsData[3])};
+ 
+     for (auto extension : FloatingPointTextureExtensions)
+     {
+@@ -5803,6 +5803,26 @@
+     }
+ }
+ 
++// Test for a mishandling of instanced vertex attributes with zero-sized buffers bound on Apple
++// OpenGL drivers.
++TEST_P(WebGL2CompatibilityTest, DrawWithZeroSizedBuffer)
++{
++    ANGLE_GL_PROGRAM(program, essl3_shaders::vs::Simple(), essl3_shaders::fs::Red());
++    glUseProgram(program);
++
++    GLBuffer buffer;
++    glBindBuffer(GL_ARRAY_BUFFER, buffer);
++
++    GLint posLocation = glGetAttribLocation(program, essl3_shaders::PositionAttrib());
++    glEnableVertexAttribArray(posLocation);
++
++    glVertexAttribDivisor(posLocation, 1);
++    glVertexAttribPointer(posLocation, 1, GL_UNSIGNED_BYTE, GL_FALSE, 9,
++                          reinterpret_cast<void *>(0x41424344));
++
++    glDrawArrays(GL_TRIANGLES, 0, 6);
++}
++
+ ANGLE_INSTANTIATE_TEST_ES2_AND_ES3(WebGLCompatibilityTest);
+ 
+ GTEST_ALLOW_UNINSTANTIATED_PARAMETERIZED_TEST(WebGL2CompatibilityTest);
+diff --git a/util/angle_features_autogen.cpp b/util/angle_features_autogen.cpp
+index adb9610..a060dd2 100644
+--- a/util/angle_features_autogen.cpp
++++ b/util/angle_features_autogen.cpp
+@@ -118,6 +118,7 @@
+     {Feature::EnablePrecisionQualifiers, "enablePrecisionQualifiers"},
+     {Feature::EnablePreRotateSurfaces, "enablePreRotateSurfaces"},
+     {Feature::EnableProgramBinaryForCapture, "enableProgramBinaryForCapture"},
++    {Feature::EnsureNonEmptyBufferIsBoundForDraw, "ensureNonEmptyBufferIsBoundForDraw"},
+     {Feature::ExpandIntegerPowExpressions, "expandIntegerPowExpressions"},
+     {Feature::ExplicitlyEnablePerSampleShading, "explicitlyEnablePerSampleShading"},
+     {Feature::ExposeNonConformantExtensionsAndVersions, "exposeNonConformantExtensionsAndVersions"},
+diff --git a/util/angle_features_autogen.h b/util/angle_features_autogen.h
+index 3d8c47f..4064425 100644
+--- a/util/angle_features_autogen.h
++++ b/util/angle_features_autogen.h
+@@ -112,6 +112,7 @@
+     EnablePrecisionQualifiers,
+     EnablePreRotateSurfaces,
+     EnableProgramBinaryForCapture,
++    EnsureNonEmptyBufferIsBoundForDraw,
+     ExpandIntegerPowExpressions,
+     ExplicitlyEnablePerSampleShading,
+     ExposeNonConformantExtensionsAndVersions,

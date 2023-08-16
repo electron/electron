@@ -1,0 +1,96 @@
+From 896deb576574f1dd27d6dccc025fa6ac4b4c5ba7 Mon Sep 17 00:00:00 2001
+From: Toon Verwaest <verwaest@chromium.org>
+Date: Tue, 18 Jul 2023 15:48:29 +0200
+Subject: [PATCH] Merged: [maglev] Fix default constructor instantiation
+
+The new.target may not be in the correct state for fast instantiation.
+
+(cherry picked from commit ed93bef7ab786d5367c2ae7882922c23aa0eda64)
+
+Bug: v8:7700, chromium:1465326
+Change-Id: I09f92576c0b5573e902ae3b2210a7b5fdbd1e415
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4694007
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4711047
+Auto-Submit: Toon Verwaest <verwaest@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.6@{#20}
+Cr-Branched-From: e29c028f391389a7a60ee37097e3ca9e396d6fa4-refs/heads/11.6.189@{#3}
+Cr-Branched-From: 95cbef20e2aa556a1ea75431a48b36c4de6b9934-refs/heads/main@{#88340}
+---
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 2ba3ebb..cb9f566 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -5327,6 +5327,14 @@
+   StoreRegister(iterator_.GetRegisterOperand(0), map_proto);
+ }
+ 
++bool MaglevGraphBuilder::HasValidInitialMap(
++    compiler::JSFunctionRef new_target, compiler::JSFunctionRef constructor) {
++  if (!new_target.map(broker()).has_prototype_slot()) return false;
++  if (!new_target.has_initial_map(broker())) return false;
++  compiler::MapRef initial_map = new_target.initial_map(broker());
++  return initial_map.GetConstructor(broker()).equals(constructor);
++}
++
+ void MaglevGraphBuilder::VisitFindNonDefaultConstructorOrConstruct() {
+   ValueNode* this_function = LoadRegisterTagged(0);
+   ValueNode* new_target = LoadRegisterTagged(1);
+@@ -5360,7 +5368,9 @@
+               TryGetConstant(new_target);
+           if (kind == FunctionKind::kDefaultBaseConstructor) {
+             ValueNode* object;
+-            if (new_target_function && new_target_function->IsJSFunction()) {
++            if (new_target_function && new_target_function->IsJSFunction() &&
++                HasValidInitialMap(new_target_function->AsJSFunction(),
++                                   current_function)) {
+               object = BuildAllocateFastObject(
+                   FastObject(new_target_function->AsJSFunction(), zone(),
+                              broker()),
+diff --git a/src/maglev/maglev-graph-builder.h b/src/maglev/maglev-graph-builder.h
+index 6581b00..50fd82f 100644
+--- a/src/maglev/maglev-graph-builder.h
++++ b/src/maglev/maglev-graph-builder.h
+@@ -1855,6 +1855,9 @@
+   void MergeDeadLoopIntoFrameState(int target);
+   void MergeIntoInlinedReturnFrameState(BasicBlock* block);
+ 
++  bool HasValidInitialMap(compiler::JSFunctionRef new_target,
++                          compiler::JSFunctionRef constructor);
++
+   enum JumpType { kJumpIfTrue, kJumpIfFalse };
+   enum class BranchSpecializationMode { kDefault, kAlwaysBoolean };
+   JumpType NegateJumpType(JumpType jump_type);
+diff --git a/test/mjsunit/maglev/regress/regress-crbug-1465326.js b/test/mjsunit/maglev/regress/regress-crbug-1465326.js
+new file mode 100644
+index 0000000..6e01c1e
+--- /dev/null
++++ b/test/mjsunit/maglev/regress/regress-crbug-1465326.js
+@@ -0,0 +1,25 @@
++// Copyright 2023 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++// Flags: --maglev --allow-natives-syntax
++
++class A {}
++
++var x = Function;
++
++class B extends A {
++  constructor() {
++    x = new.target;
++    super();
++  }
++}
++function construct() {
++  return Reflect.construct(B, [], Function);
++}
++%PrepareFunctionForOptimization(B);
++construct();
++construct();
++%OptimizeMaglevOnNextCall(B);
++var arr = construct();
++console.log(arr.prototype);

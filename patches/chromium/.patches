@@ -132,3 +132,8 @@ potential_fix_for_flaky_desktopcaptureapitest_delegation_unittest.patch
 fix_select_the_first_menu_item_when_opened_via_keyboard.patch
 chore_add_buildflag_guard_around_new_include.patch
 fix_use_delegated_generic_capturer_when_available.patch
+cherry-pick-d0c1b8954a1b.patch
+cherry-pick-abb3ebd3d2ef.patch
+cherry-pick-fa181f8768c9.patch
+cherry-pick-337124b13aaa.patch
+cherry-pick-83b0bdb696d8.patch
