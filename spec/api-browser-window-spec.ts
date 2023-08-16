@@ -921,6 +921,8 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.moveTop()', () => {
+      afterEach(closeAllWindows);
+
       it('should not steal focus', async () => {
         const posDelta = 50;
         const wShownInactive = emittedOnce(w, 'show');
@@ -961,6 +963,15 @@ describe('BrowserWindow module', () => {
 
         await closeWindow(otherWindow, { assertNotWindows: false });
         expect(BrowserWindow.getAllWindows()).to.have.lengthOf(1);
+      });
+
+      it('should not crash when called on a modal child window', async () => {
+        const shown = emittedOnce(w, 'show');
+        w.show();
+        await shown;
+
+        const child = new BrowserWindow({ modal: true, parent: w });
+        expect(() => { child.moveTop(); }).to.not.throw();
       });
     });
 
