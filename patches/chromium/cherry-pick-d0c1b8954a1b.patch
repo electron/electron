@@ -1,0 +1,49 @@
+From d0c1b8954a1be016b8a9725b818b750998fb842f Mon Sep 17 00:00:00 2001
+From: kylechar <kylechar@chromium.org>
+Date: Mon, 17 Jul 2023 23:14:41 +0000
+Subject: [PATCH] Ensure unique entries in frame_timing_details_
+
+CompositorFrameSinkSupport::DidPresentCompositorFrame() keeps
+|frame_timing_details_| map keyed on CompositorFrame frame_tokens. These
+are supposed to be unique but a malicious renderer could violate that
+assumption. Convert some DCHECKs into CHECKs to guard against problems
+related to this.
+
+(cherry picked from commit 9b62ab5a88379b37dbc712171fdfd5530b99a7a9)
+
+Bug: 1458819
+Change-Id: Ib0b9551d18ea421957e0dce49a2593043f4abb12
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4673638
+Reviewed-by: Jonathan Ross <jonross@chromium.org>
+Commit-Queue: Kyle Charbonneau <kylechar@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1169287}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4689943
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5735@{#1481}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+---
+
+diff --git a/components/viz/service/frame_sinks/compositor_frame_sink_support.cc b/components/viz/service/frame_sinks/compositor_frame_sink_support.cc
+index aa83934..f1d7ec3e 100644
+--- a/components/viz/service/frame_sinks/compositor_frame_sink_support.cc
++++ b/components/viz/service/frame_sinks/compositor_frame_sink_support.cc
+@@ -789,7 +789,7 @@
+   DCHECK_LE(pending_received_frame_times_.size(), 25u);
+   auto received_frame_timestamp =
+       pending_received_frame_times_.find(frame_token);
+-  DCHECK(received_frame_timestamp != pending_received_frame_times_.end());
++  CHECK(received_frame_timestamp != pending_received_frame_times_.end());
+ 
+   FrameTimingDetails details;
+   details.received_compositor_frame_timestamp =
+@@ -810,8 +810,7 @@
+   pending_received_frame_times_.erase(received_frame_timestamp);
+ 
+   // We should only ever get one PresentationFeedback per frame_token.
+-  DCHECK(frame_timing_details_.find(frame_token) ==
+-         frame_timing_details_.end());
++  CHECK(!frame_timing_details_.contains(frame_token));
+   frame_timing_details_.emplace(frame_token, details);
+ 
+   if (!feedback.failed() && frame_sink_manager_->frame_counter()) {
