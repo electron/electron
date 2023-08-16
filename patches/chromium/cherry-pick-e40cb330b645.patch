@@ -1,7 +1,11 @@
-From e40cb330b6457a9039966dc3c4e30259670e6af3 Mon Sep 17 00:00:00 2001
-From: Bence Béky <bnc@chromium.org>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bence=20B=C3=A9ky?= <bnc@chromium.org>
 Date: Mon, 31 Jul 2023 15:31:39 +0000
-Subject: [PATCH] Check whether read side is closed when reading QuicChromiumClientStream
+Subject: Check whether read side is closed when reading
+ QuicChromiumClientStream
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
 When quic::QuicSpdyStream receives a RST_STREAM frame it clears the
 underlying read buffer. Subsequent read operations should check
@@ -26,13 +30,12 @@ Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Cr-Commit-Position: refs/branch-heads/5790@{#1904}
 Cr-Branched-From: 1d71a337b1f6e707a13ae074dca1e2c34905eb9f-refs/heads/main@{#1148114}
----
 
 diff --git a/net/quic/quic_chromium_client_stream.cc b/net/quic/quic_chromium_client_stream.cc
-index d37a113..961ec67 100644
+index 726bc45bbc262e3fac36c4ab7ef3272fed1d5693..d7bbaf45bf72aef459407a2b359a39e4089a05c8 100644
 --- a/net/quic/quic_chromium_client_stream.cc
 +++ b/net/quic/quic_chromium_client_stream.cc
-@@ -206,6 +206,10 @@
+@@ -207,6 +207,10 @@ int QuicChromiumClientStream::Handle::ReadBody(
    if (!stream_)
      return net_error_;
  

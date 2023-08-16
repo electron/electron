@@ -1,7 +1,8 @@
-From 83b0bdb696d81b2d94e3aee77b3b6f86b96274c3 Mon Sep 17 00:00:00 2001
-From: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: chromium-autoroll
+ <chromium-autoroll@skia-public.iam.gserviceaccount.com>
 Date: Mon, 24 Jul 2023 17:52:17 +0000
-Subject: [PATCH] Roll SwiftShader from 222e07b368b1 to 8d9a45b1f3ab (12 revisions)
+Subject: Roll SwiftShader from 222e07b368b1 to 8d9a45b1f3ab (12 revisions)
 
 https://swiftshader.googlesource.com/SwiftShader.git/+log/222e07b368b1..8d9a45b1f3ab
 
@@ -41,17 +42,16 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4711308
 Bot-Commit: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
 Commit-Queue: chromium-autoroll <chromium-autoroll@skia-public.iam.gserviceaccount.com>
 Cr-Commit-Position: refs/heads/main@{#1174303}
----
 
 diff --git a/DEPS b/DEPS
-index 43fe726..6a951498 100644
+index 60df78a003e67aa2a000ff25588bf4c5fae40f4a..d630fac22c82317bdb16db4857a1c66c7d8c85b0 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -322,7 +322,7 @@
+@@ -311,7 +311,7 @@ vars = {
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling SwiftShader
    # and whatever else without interference from each other.
--  'swiftshader_revision': '222e07b368b179529b7dddf9069bc83e56988e8e',
+-  'swiftshader_revision': '3575b5479af54e471ea6750a8585e2c9bc87801c',
 +  'swiftshader_revision': '8d9a45b1f3ab73a78e44336d12749929b8539fb6',
    # Three lines of non-changing comments so that
    # the commit queue can handle CLs rolling PDFium

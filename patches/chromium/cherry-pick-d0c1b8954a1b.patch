@@ -1,7 +1,7 @@
-From d0c1b8954a1be016b8a9725b818b750998fb842f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: kylechar <kylechar@chromium.org>
 Date: Mon, 17 Jul 2023 23:14:41 +0000
-Subject: [PATCH] Ensure unique entries in frame_timing_details_
+Subject: Ensure unique entries in frame_timing_details_
 
 CompositorFrameSinkSupport::DidPresentCompositorFrame() keeps
 |frame_timing_details_| map keyed on CompositorFrame frame_tokens. These
@@ -22,13 +22,12 @@ Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
 Commit-Queue: Vasiliy Telezhnikov <vasilyt@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5735@{#1481}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/components/viz/service/frame_sinks/compositor_frame_sink_support.cc b/components/viz/service/frame_sinks/compositor_frame_sink_support.cc
-index aa83934..f1d7ec3e 100644
+index f85e2593eba61fc1e9d42be357b074ec1f6bc9da..96856c170b46a91266b41fb7d2bf04eafe765ee8 100644
 --- a/components/viz/service/frame_sinks/compositor_frame_sink_support.cc
 +++ b/components/viz/service/frame_sinks/compositor_frame_sink_support.cc
-@@ -789,7 +789,7 @@
+@@ -768,7 +768,7 @@ void CompositorFrameSinkSupport::DidPresentCompositorFrame(
    DCHECK_LE(pending_received_frame_times_.size(), 25u);
    auto received_frame_timestamp =
        pending_received_frame_times_.find(frame_token);
@@ -37,7 +36,7 @@ index aa83934..f1d7ec3e 100644
  
    FrameTimingDetails details;
    details.received_compositor_frame_timestamp =
-@@ -810,8 +810,7 @@
+@@ -789,8 +789,7 @@ void CompositorFrameSinkSupport::DidPresentCompositorFrame(
    pending_received_frame_times_.erase(received_frame_timestamp);
  
    // We should only ever get one PresentationFeedback per frame_token.

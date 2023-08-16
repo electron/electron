@@ -1,16 +1,15 @@
-From 2bf945775fe634eb9e420c2263dae6043bbb5ece Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shahbaz Youssefi <syoussefi@chromium.org>
 Date: Fri, 14 Jul 2023 12:30:15 -0400
-Subject: [PATCH] M116: Translator: Limit variable sizes vs uint overflow
+Subject: M116: Translator: Limit variable sizes vs uint overflow
 
 Bug: chromium:1464680
 Change-Id: Iee41a2da7a7a330e6cc4d6da59a6e9836ee9dd36
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4717372
 Reviewed-by: Roman Lavrov <romanl@google.com>
----
 
 diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
-index 19a4821..f0ff9cb 100644
+index 19a48218938c39722aba24948b6b1f3e03ed2231..f0ff9cb11ac39e62672285300c8f41641f12c617 100644
 --- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 +++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
 @@ -7,6 +7,7 @@
@@ -21,7 +20,7 @@ index 19a4821..f0ff9cb 100644
  #include "compiler/translator/Diagnostics.h"
  #include "compiler/translator/Symbol.h"
  #include "compiler/translator/SymbolTable.h"
-@@ -113,7 +114,8 @@
+@@ -113,7 +114,8 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
  
      void validateTotalPrivateVariableSize()
      {
@@ -31,7 +30,7 @@ index 19a4821..f0ff9cb 100644
          {
              mDiagnostics->error(
                  TSourceLoc{},
-@@ -231,7 +233,7 @@
+@@ -231,7 +233,7 @@ class ValidateTypeSizeLimitationsTraverser : public TIntermTraverser
      TDiagnostics *mDiagnostics;
      std::vector<int> mLoopSymbolIds;
  
@@ -41,10 +40,10 @@ index 19a4821..f0ff9cb 100644
  
  }  // namespace
 diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-index a8d2ce4..542d49f 100644
+index 698813fbc0c37a170df34e49f05e08ad3ce51746..add907b608b6c8cffa7b0a6de1504fe380c3b9a3 100644
 --- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
 +++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
-@@ -5426,7 +5426,7 @@
+@@ -5426,7 +5426,7 @@ float g()
  float h()
  {
      vec4 value;
@@ -53,7 +52,7 @@ index a8d2ce4..542d49f 100644
      return value.x + value2;
  }
  
-@@ -5438,6 +5438,131 @@
+@@ -5438,6 +5438,131 @@ void main()
          gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
  })";
  
@@ -185,7 +184,7 @@ index a8d2ce4..542d49f 100644
      GLuint program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalMemory1);
      EXPECT_EQ(0u, program);
  
-@@ -5449,6 +5574,9 @@
+@@ -5449,6 +5574,9 @@ void main()
  
      program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalAndLocalMemory2);
      EXPECT_EQ(0u, program);

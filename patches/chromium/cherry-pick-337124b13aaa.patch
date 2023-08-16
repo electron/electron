@@ -1,7 +1,7 @@
-From 337124b13aaaacc7b247d597c5d5abb954c1e497 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Gabriel Charette <gab@chromium.org>
 Date: Mon, 24 Jul 2023 16:59:44 +0000
-Subject: [PATCH] [Merge M116] [blink] Fix UAF in NonMainThreadTaskQueue
+Subject: Fix UAF in NonMainThreadTaskQueue
 
 The issue is that WorkerThreadScheduler::OnTaskCompleted's
 PerformMicrotaskCheckpoint() might result in a blink heap GC which may
@@ -34,13 +34,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4706171
 Commit-Queue: Alexander Timin <altimin@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5845@{#750}
 Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
----
 
 diff --git a/third_party/blink/renderer/platform/scheduler/worker/non_main_thread_task_queue.cc b/third_party/blink/renderer/platform/scheduler/worker/non_main_thread_task_queue.cc
-index fac6a19..f88419d 100644
+index 0aa78c85b1fe18b5358b0a15f8061b1efae077c4..6809ca546bc1ba17efa7e3e04dfe5c06b15a8729 100644
 --- a/third_party/blink/renderer/platform/scheduler/worker/non_main_thread_task_queue.cc
 +++ b/third_party/blink/renderer/platform/scheduler/worker/non_main_thread_task_queue.cc
-@@ -69,6 +69,10 @@
+@@ -61,6 +61,10 @@ void NonMainThreadTaskQueue::OnTaskCompleted(
      base::LazyNow* lazy_now) {
    // |non_main_thread_scheduler_| can be nullptr in tests.
    if (non_main_thread_scheduler_) {

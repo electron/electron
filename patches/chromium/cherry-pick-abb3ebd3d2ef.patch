@@ -1,7 +1,7 @@
-From abb3ebd3d2ef3614fd888160d81505702b932f2c Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Takumi Fujimoto <takumif@chromium.org>
 Date: Tue, 18 Jul 2023 18:20:16 +0000
-Subject: [PATCH] Destroy CastDeviceListHost during KeyedServices shutdown
+Subject: Destroy CastDeviceListHost during KeyedServices shutdown
 
 This makes MediaNotificationService destroy all the CastDeviceListHosts
 that it's instantiated in its KeyedService shutdown. This is necessary
@@ -20,35 +20,35 @@ Auto-Submit: Takumi Fujimoto <takumif@chromium.org>
 Commit-Queue: Tommy Steimel <steimel@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5790@{#1763}
 Cr-Branched-From: 1d71a337b1f6e707a13ae074dca1e2c34905eb9f-refs/heads/main@{#1148114}
----
 
 diff --git a/chrome/browser/ui/global_media_controls/cast_device_list_host.cc b/chrome/browser/ui/global_media_controls/cast_device_list_host.cc
-index 643bf2a..18cca5d 100644
+index 6184a25698a8679ac5059dab592a4cc9392d94fd..432167ffc2330e92f1d372c7233a7381bd3ab598 100644
 --- a/chrome/browser/ui/global_media_controls/cast_device_list_host.cc
 +++ b/chrome/browser/ui/global_media_controls/cast_device_list_host.cc
-@@ -88,7 +88,8 @@
+@@ -73,7 +73,9 @@ CastDeviceListHost::CastDeviceListHost(
+     MediaRemotingCallback media_remoting_callback)
      : cast_controller_(std::move(dialog_controller)),
        client_(std::move(client)),
-       media_remoting_callback_(std::move(media_remoting_callback)),
--      hide_dialog_callback_(std::move(hide_dialog_callback)) {
+-      media_remoting_callback_(std::move(media_remoting_callback)) {
++      media_remoting_callback_(std::move(media_remoting_callback)),
 +      hide_dialog_callback_(std::move(hide_dialog_callback)),
 +      id_(next_id_++) {
    cast_controller_->AddObserver(this);
    cast_controller_->RegisterDestructor(
        base::BindOnce(&CastDeviceListHost::DestroyCastController,
-@@ -181,3 +182,5 @@
+@@ -155,3 +157,5 @@ void CastDeviceListHost::StartCasting(const media_router::UIMediaSink& sink) {
  void CastDeviceListHost::DestroyCastController() {
    cast_controller_.reset();
  }
 +
 +int CastDeviceListHost::next_id_ = 0;
 diff --git a/chrome/browser/ui/global_media_controls/cast_device_list_host.h b/chrome/browser/ui/global_media_controls/cast_device_list_host.h
-index c3b916e..6b1f1e5 100644
+index 286c930f7f8ca7ea7512e47eac11cf97ef4ce28a..d1355e006c5ce18ab02daec73ba2ce03808d04c2 100644
 --- a/chrome/browser/ui/global_media_controls/cast_device_list_host.h
 +++ b/chrome/browser/ui/global_media_controls/cast_device_list_host.h
-@@ -36,10 +36,15 @@
+@@ -34,15 +34,23 @@ class CastDeviceListHost : public global_media_controls::mojom::DeviceListHost,
+   // media_router::CastDialogController::Observer:
    void OnModelUpdated(const media_router::CastDialogModel& model) override;
-   void OnCastingStarted() override;
  
 +  int id() const { return id_; }
 +
@@ -62,19 +62,19 @@ index c3b916e..6b1f1e5 100644
    std::unique_ptr<media_router::CastDialogController> cast_controller_;
    mojo::Remote<global_media_controls::mojom::DeviceListClient> client_;
    std::vector<media_router::UIMediaSink> sinks_;
-@@ -47,6 +52,7 @@
+   // Called whenever a Media Remoting session is starting.
    MediaRemotingCallback media_remoting_callback_;
-   // Called whenever a tab mirroring session starts.
-   base::RepeatingClosure hide_dialog_callback_;
++  // Called whenever a tab mirroring session starts.
++  base::RepeatingClosure hide_dialog_callback_;
 +  const int id_;
  };
  
  #endif  // CHROME_BROWSER_UI_GLOBAL_MEDIA_CONTROLS_CAST_DEVICE_LIST_HOST_H_
 diff --git a/chrome/browser/ui/global_media_controls/cast_device_list_host_unittest.cc b/chrome/browser/ui/global_media_controls/cast_device_list_host_unittest.cc
-index 2aee3352..8dea6987 100644
+index 7898aff4e210ba1e103ae9a88acb3eeae2c41e80..9de26fdefe9bbd6f035adcf5c4998f710fe9408a 100644
 --- a/chrome/browser/ui/global_media_controls/cast_device_list_host_unittest.cc
 +++ b/chrome/browser/ui/global_media_controls/cast_device_list_host_unittest.cc
-@@ -22,6 +22,9 @@
+@@ -20,6 +20,9 @@ using media_router::UIMediaSinkState;
  using testing::_;
  using testing::NiceMock;
  using testing::Return;
@@ -84,7 +84,7 @@ index 2aee3352..8dea6987 100644
  
  namespace {
  
-@@ -72,24 +75,29 @@
+@@ -68,21 +71,27 @@ class CastDeviceListHostTest : public testing::Test {
      testing::Test::SetUp();
      auto dialog_controller = std::make_unique<MockCastDialogController>();
      dialog_controller_ = dialog_controller.get();
@@ -92,14 +92,12 @@ index 2aee3352..8dea6987 100644
 -        std::move(dialog_controller),
 -        client_receiver_.InitWithNewPipeAndPassRemote(),
 -        base::BindRepeating(&CastDeviceListHostTest::OnMediaRemotingRequested,
--                            base::Unretained(this)),
--        base::BindRepeating(&CastDeviceListHostTest::HideMediaDialog,
 -                            base::Unretained(this)));
 +    host_ = CreateHost(std::move(dialog_controller), &client_receiver_);
    }
  
    MOCK_METHOD(void, OnMediaRemotingRequested, ());
-   MOCK_METHOD(void, HideMediaDialog, ());
++  MOCK_METHOD(void, HideMediaDialog, ());
  
   protected:
 +  std::unique_ptr<CastDeviceListHost> CreateHost(
@@ -109,8 +107,6 @@ index 2aee3352..8dea6987 100644
 +        std::move(dialog_controller),
 +        client_receiver->InitWithNewPipeAndPassRemote(),
 +        base::BindRepeating(&CastDeviceListHostTest::OnMediaRemotingRequested,
-+                            base::Unretained(this)),
-+        base::BindRepeating(&CastDeviceListHostTest::HideMediaDialog,
 +                            base::Unretained(this)));
 +  }
 +
@@ -123,7 +119,7 @@ index 2aee3352..8dea6987 100644
  };
  
  TEST_F(CastDeviceListHostTest, StartPresentation) {
-@@ -183,3 +191,11 @@
+@@ -160,3 +169,11 @@ TEST_F(CastDeviceListHostTest, SelectingDeviceClearsIssue) {
    EXPECT_CALL(*dialog_controller_, ClearIssue(issue.id()));
    host_->SelectDevice(sink.id);
  }
@@ -136,7 +132,7 @@ index 2aee3352..8dea6987 100644
 +  EXPECT_NE(host_->id(), host2->id());
 +}
 diff --git a/chrome/browser/ui/global_media_controls/media_notification_service.cc b/chrome/browser/ui/global_media_controls/media_notification_service.cc
-index 5c98ba69..f46900c 100644
+index 81ead3e29c9cf4862655313ba7a2046df7b39ec7..403414e40f8a6fca08fea8e00e2612f86490889b 100644
 --- a/chrome/browser/ui/global_media_controls/media_notification_service.cc
 +++ b/chrome/browser/ui/global_media_controls/media_notification_service.cc
 @@ -7,7 +7,6 @@
@@ -146,22 +142,22 @@ index 5c98ba69..f46900c 100644
 -#include "base/metrics/field_trial_params.h"
  #include "base/metrics/histogram_functions.h"
  #include "base/ranges/algorithm.h"
- #include "base/unguessable_token.h"
-@@ -25,7 +24,6 @@
+ #include "chrome/browser/media/router/media_router_feature.h"
+@@ -23,7 +22,6 @@
  #include "components/global_media_controls/public/media_dialog_delegate.h"
  #include "components/global_media_controls/public/media_item_manager.h"
  #include "components/global_media_controls/public/media_item_producer.h"
 -#include "components/global_media_controls/public/media_item_ui.h"
  #include "components/media_message_center/media_notification_item.h"
- #include "components/media_router/browser/media_router_factory.h"
  #include "components/media_router/browser/presentation/start_presentation_context.h"
-@@ -211,14 +209,21 @@
+ #include "components/media_router/browser/presentation/web_contents_presentation_manager.h"
+@@ -131,9 +129,11 @@ MediaNotificationService::~MediaNotificationService() {
  }
  
  void MediaNotificationService::Shutdown() {
--  // `cast_notification_producer_` and
--  // `presentation_request_notification_producer_` depend on MediaRouter,
--  // which is another keyed service. So they must be destroyed here.
+-  // |cast_notification_producer_| and
+-  // |presentation_request_notification_producer_| depend on MediaRouter,
+-  // which is another keyed service.
 +  shutdown_has_started_ = true;
 +  // `cast_notification_producer_`,
 +  // `presentation_request_notification_producer_` and `host_receivers_`
@@ -170,6 +166,8 @@ index 5c98ba69..f46900c 100644
    if (cast_notification_producer_) {
      item_manager_->RemoveItemProducer(cast_notification_producer_.get());
    }
+@@ -144,6 +144,11 @@ void MediaNotificationService::Shutdown() {
+ 
    cast_notification_producer_.reset();
    presentation_request_notification_producer_.reset();
 +  for (const auto& host : host_receivers_) {
@@ -180,7 +178,7 @@ index 5c98ba69..f46900c 100644
  }
  
  void MediaNotificationService::OnAudioSinkChosen(const std::string& item_id,
-@@ -445,7 +450,7 @@
+@@ -359,7 +364,7 @@ MediaNotificationService::CreateCastDialogControllerForPresentationRequest() {
  
  void MediaNotificationService::CreateCastDeviceListHost(
      std::unique_ptr<media_router::CastDialogController> dialog_controller,
@@ -189,17 +187,14 @@ index 5c98ba69..f46900c 100644
      mojo::PendingRemote<mojom::DeviceListClient> client_remote,
      absl::optional<std::string> session_id) {
    if (!dialog_controller) {
-@@ -459,14 +464,19 @@
+@@ -373,11 +378,19 @@ void MediaNotificationService::CreateCastDeviceListHost(
                  &MediaNotificationService::OnMediaRemotingRequested,
                  weak_ptr_factory_.GetWeakPtr(), session_id.value())
            : base::DoNothing();
 -  mojo::MakeSelfOwnedReceiver(
--      std::make_unique<CastDeviceListHost>(
--          std::move(dialog_controller), std::move(client_remote),
--          std::move(media_remoting_callback_),
--          base::BindRepeating(
--              &global_media_controls::MediaItemManager::HideDialog,
--              item_manager_->GetWeakPtr())),
+-      std::make_unique<CastDeviceListHost>(std::move(dialog_controller),
+-                                           std::move(client_remote),
+-                                           std::move(media_remoting_callback_)),
 -      std::move(host_receiver));
 +  auto host = std::make_unique<CastDeviceListHost>(
 +      std::move(dialog_controller), std::move(client_remote),
@@ -217,7 +212,7 @@ index 5c98ba69..f46900c 100644
  }
  
  void MediaNotificationService::set_device_provider_for_testing(
-@@ -529,3 +539,12 @@
+@@ -415,3 +428,12 @@ MediaNotificationService::GetActiveControllableSessionForWebContents(
    }
    return "";
  }
@@ -231,30 +226,35 @@ index 5c98ba69..f46900c 100644
 +  }
 +}
 diff --git a/chrome/browser/ui/global_media_controls/media_notification_service.h b/chrome/browser/ui/global_media_controls/media_notification_service.h
-index 595875fb..a3d7488 100644
+index 33c532941f73469a24513d49a4a254128d60bf0f..a65f09c15e2ecd0fb0a5343d8b826fc19367749a 100644
 --- a/chrome/browser/ui/global_media_controls/media_notification_service.h
 +++ b/chrome/browser/ui/global_media_controls/media_notification_service.h
-@@ -24,6 +24,7 @@
+@@ -22,6 +22,8 @@
+ #include "content/public/browser/presentation_observer.h"
  #include "mojo/public/cpp/bindings/pending_receiver.h"
  #include "mojo/public/cpp/bindings/pending_remote.h"
- #include "mojo/public/cpp/bindings/receiver.h"
++#include "mojo/public/cpp/bindings/receiver.h"
 +#include "mojo/public/cpp/bindings/self_owned_receiver.h"
  #include "services/metrics/public/cpp/ukm_source_id.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
  
-@@ -157,6 +158,8 @@
+@@ -143,6 +145,10 @@ class MediaNotificationService
    std::string GetActiveControllableSessionForWebContents(
        content::WebContents* web_contents) const;
  
 +  void RemoveDeviceListHost(int host);
 +
-   const raw_ptr<Profile> profile_;
- 
++  const raw_ptr<Profile> profile_;
++
    std::unique_ptr<global_media_controls::MediaItemManager> item_manager_;
-@@ -181,6 +184,14 @@
  
-   mojo::Receiver<global_media_controls::mojom::DeviceService> receiver_;
+   std::unique_ptr<global_media_controls::MediaSessionItemProducer>
+@@ -161,6 +167,16 @@ class MediaNotificationService
+   // source. We use this to cap the number of UKM recordings per site.
+   std::map<ukm::SourceId, int> actions_recorded_to_ukm_;
  
++  mojo::Receiver<global_media_controls::mojom::DeviceService> receiver_;
++
 +  // Maps from hosts' IDs to hosts.
 +  std::map<
 +      int,
@@ -267,10 +267,10 @@ index 595875fb..a3d7488 100644
  };
  
 diff --git a/chrome/browser/ui/global_media_controls/media_notification_service_unittest.cc b/chrome/browser/ui/global_media_controls/media_notification_service_unittest.cc
-index 80dafff..f99bd29 100644
+index d8281d904946f5c15c06c856f2477f4b36db71e5..013f8f3b47f1981a00f2ff4ff6c90ad3e40f7390 100644
 --- a/chrome/browser/ui/global_media_controls/media_notification_service_unittest.cc
 +++ b/chrome/browser/ui/global_media_controls/media_notification_service_unittest.cc
-@@ -556,7 +556,8 @@
+@@ -526,7 +526,8 @@ TEST_F(MediaNotificationServiceCastTest, GetDeviceListHostForSession) {
    service()->GetDeviceListHostForSession(
        id.ToString(), TakeReceiverAndExpectNoDisconnect(host_remote),
        TakeRemoteAndExpectNoDisconnect(client.receiver()));
@@ -280,7 +280,7 @@ index 80dafff..f99bd29 100644
  }
  
  TEST_F(MediaNotificationServiceCastTest,
-@@ -566,7 +567,8 @@
+@@ -536,7 +537,8 @@ TEST_F(MediaNotificationServiceCastTest,
    service()->GetDeviceListHostForSession(
        "invalid_id", TakeReceiverAndExpectDisconnect(host_remote),
        TakeRemoteAndExpectDisconnect(client.receiver()));
@@ -290,7 +290,7 @@ index 80dafff..f99bd29 100644
  }
  
  TEST_F(MediaNotificationServiceCastTest, GetDeviceListHostForPresentation) {
-@@ -577,7 +579,8 @@
+@@ -547,7 +549,8 @@ TEST_F(MediaNotificationServiceCastTest, GetDeviceListHostForPresentation) {
    service()->GetDeviceListHostForPresentation(
        TakeReceiverAndExpectNoDisconnect(host_remote),
        TakeRemoteAndExpectNoDisconnect(client.receiver()));
@@ -300,7 +300,7 @@ index 80dafff..f99bd29 100644
  }
  
  TEST_F(MediaNotificationServiceCastTest,
-@@ -587,7 +590,23 @@
+@@ -557,7 +560,23 @@ TEST_F(MediaNotificationServiceCastTest,
    service()->GetDeviceListHostForPresentation(
        TakeReceiverAndExpectDisconnect(host_remote),
        TakeRemoteAndExpectDisconnect(client.receiver()));
