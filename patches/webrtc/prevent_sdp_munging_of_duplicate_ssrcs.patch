@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: VerteDinde <vertedinde@electronjs.org>
+Date: Tue, 15 Aug 2023 19:03:11 -0700
+Subject: Prevent SDP munging of duplicate SSRCs
+
+BUG=chromium:1459124
+
+Change-Id: Ifa901955b79dc9ff40d198bc367e89a8a535c3e2
+Reviewed-on: https://webrtc-review.googlesource.com/c/src/+/311802
+Reviewed-by: Taylor Brandstetter <deadbeef@webrtc.org>
+Commit-Queue: Philipp Hancke <phancke@microsoft.com>
+Reviewed-by: Florent Castelli <orphis@webrtc.org>
+Cr-Commit-Position: refs/heads/main@{#40447}
+
+diff --git a/pc/sdp_offer_answer.cc b/pc/sdp_offer_answer.cc
+index 6332d5136cbe73b44a51d5283b6fdf5672c8c8bb..ea24d168f94f804db0f8367e8ebfb1ce55847dfe 100644
+--- a/pc/sdp_offer_answer.cc
++++ b/pc/sdp_offer_answer.cc
+@@ -1709,7 +1709,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
+     if (type == SdpType::kOffer) {
+       // TODO(bugs.webrtc.org/4676) - Handle CreateChannel failure, as new local
+       // description is applied. Restore back to old description.
+-      RTCError error = CreateChannels(*local_description()->description());
++      error = CreateChannels(*local_description()->description());
+       if (!error.ok()) {
+         RTC_LOG(LS_ERROR) << error.message() << " (" << SdpTypeToString(type)
+                           << ")";
+@@ -1744,6 +1744,23 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
+     data_channel_controller()->AllocateSctpSids(role);
+   }
+ 
++  // Validate SSRCs, we do not allow duplicates.
++  if (ConfiguredForMedia()) {
++    std::set<uint32_t> used_ssrcs;
++    for (const auto& content : local_description()->description()->contents()) {
++      for (const auto& stream : content.media_description()->streams()) {
++        for (uint32_t ssrc : stream.ssrcs) {
++          auto result = used_ssrcs.insert(ssrc);
++          if (!result.second) {
++            LOG_AND_RETURN_ERROR(
++                RTCErrorType::INVALID_PARAMETER,
++                "Duplicate ssrc " + rtc::ToString(ssrc) + " is not allowed");
++          }
++        }
++      }
++    }
++  }
++
+   if (IsUnifiedPlan()) {
+     if (ConfiguredForMedia()) {
+       // We must use List and not ListInternal here because
