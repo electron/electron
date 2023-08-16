@@ -16,3 +16,4 @@ cherry-pick-0035a4a8dac2.patch
 cherry-pick-2e76270cf65e.patch
 merged_runtime_set_instance_prototypes_directly_on_maps.patch
 merged_compiler_stackcheck_can_have_side_effects.patch
+cherry-pick-8d60b1d3b1be.patch

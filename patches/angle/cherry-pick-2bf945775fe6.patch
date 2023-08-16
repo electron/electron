@@ -1,0 +1,197 @@
+From 2bf945775fe634eb9e420c2263dae6043bbb5ece Mon Sep 17 00:00:00 2001
+From: Shahbaz Youssefi <syoussefi@chromium.org>
+Date: Fri, 14 Jul 2023 12:30:15 -0400
+Subject: [PATCH] M116: Translator: Limit variable sizes vs uint overflow
+
+Bug: chromium:1464680
+Change-Id: Iee41a2da7a7a330e6cc4d6da59a6e9836ee9dd36
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4717372
+Reviewed-by: Roman Lavrov <romanl@google.com>
+---
+
+diff --git a/src/compiler/translator/ValidateTypeSizeLimitations.cpp b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+index 19a4821..f0ff9cb 100644
+--- a/src/compiler/translator/ValidateTypeSizeLimitations.cpp
++++ b/src/compiler/translator/ValidateTypeSizeLimitations.cpp
+@@ -7,6 +7,7 @@
+ #include "compiler/translator/ValidateTypeSizeLimitations.h"
+ 
+ #include "angle_gl.h"
++#include "common/mathutil.h"
+ #include "compiler/translator/Diagnostics.h"
+ #include "compiler/translator/Symbol.h"
+ #include "compiler/translator/SymbolTable.h"
+@@ -113,7 +114,8 @@
+ 
+     void validateTotalPrivateVariableSize()
+     {
+-        if (mTotalPrivateVariablesSize > kMaxPrivateVariableSizeInBytes)
++        if (mTotalPrivateVariablesSize.ValueOrDefault(std::numeric_limits<size_t>::max()) >
++            kMaxPrivateVariableSizeInBytes)
+         {
+             mDiagnostics->error(
+                 TSourceLoc{},
+@@ -231,7 +233,7 @@
+     TDiagnostics *mDiagnostics;
+     std::vector<int> mLoopSymbolIds;
+ 
+-    size_t mTotalPrivateVariablesSize;
++    angle::base::CheckedNumeric<size_t> mTotalPrivateVariablesSize;
+ };
+ 
+ }  // namespace
+diff --git a/src/tests/gl_tests/WebGLCompatibilityTest.cpp b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+index a8d2ce4..542d49f 100644
+--- a/src/tests/gl_tests/WebGLCompatibilityTest.cpp
++++ b/src/tests/gl_tests/WebGLCompatibilityTest.cpp
+@@ -5426,7 +5426,7 @@
+ float h()
+ {
+     vec4 value;
+-    float value2
++    float value2;
+     return value.x + value2;
+ }
+ 
+@@ -5438,6 +5438,131 @@
+         gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
+ })";
+ 
++    constexpr char kTooLargeGlobalMemoryOverflow[] =
++        R"(precision mediump float;
++
++// 16 MB / 16 bytes per vec4 = 1048576
++// Create 256 arrays so each is small, but the total overflows a 32-bit number
++vec4 array[1048576], array2[1048576], array3[1048576], array4[1048576], array5[1048576];
++vec4 array6[1048576], array7[1048576], array8[1048576], array9[1048576], array10[1048576];
++vec4 array11[1048576], array12[1048576], array13[1048576], array14[1048576], array15[1048576];
++vec4 array16[1048576], array17[1048576], array18[1048576], array19[1048576], array20[1048576];
++vec4 array21[1048576], array22[1048576], array23[1048576], array24[1048576], array25[1048576];
++vec4 array26[1048576], array27[1048576], array28[1048576], array29[1048576], array30[1048576];
++vec4 array31[1048576], array32[1048576], array33[1048576], array34[1048576], array35[1048576];
++vec4 array36[1048576], array37[1048576], array38[1048576], array39[1048576], array40[1048576];
++vec4 array41[1048576], array42[1048576], array43[1048576], array44[1048576], array45[1048576];
++vec4 array46[1048576], array47[1048576], array48[1048576], array49[1048576], array50[1048576];
++vec4 array51[1048576], array52[1048576], array53[1048576], array54[1048576], array55[1048576];
++vec4 array56[1048576], array57[1048576], array58[1048576], array59[1048576], array60[1048576];
++vec4 array61[1048576], array62[1048576], array63[1048576], array64[1048576], array65[1048576];
++vec4 array66[1048576], array67[1048576], array68[1048576], array69[1048576], array70[1048576];
++vec4 array71[1048576], array72[1048576], array73[1048576], array74[1048576], array75[1048576];
++vec4 array76[1048576], array77[1048576], array78[1048576], array79[1048576], array80[1048576];
++vec4 array81[1048576], array82[1048576], array83[1048576], array84[1048576], array85[1048576];
++vec4 array86[1048576], array87[1048576], array88[1048576], array89[1048576], array90[1048576];
++vec4 array91[1048576], array92[1048576], array93[1048576], array94[1048576], array95[1048576];
++vec4 array96[1048576], array97[1048576], array98[1048576], array99[1048576], array100[1048576];
++vec4 array101[1048576], array102[1048576], array103[1048576], array104[1048576], array105[1048576];
++vec4 array106[1048576], array107[1048576], array108[1048576], array109[1048576], array110[1048576];
++vec4 array111[1048576], array112[1048576], array113[1048576], array114[1048576], array115[1048576];
++vec4 array116[1048576], array117[1048576], array118[1048576], array119[1048576], array120[1048576];
++vec4 array121[1048576], array122[1048576], array123[1048576], array124[1048576], array125[1048576];
++vec4 array126[1048576], array127[1048576], array128[1048576], array129[1048576], array130[1048576];
++vec4 array131[1048576], array132[1048576], array133[1048576], array134[1048576], array135[1048576];
++vec4 array136[1048576], array137[1048576], array138[1048576], array139[1048576], array140[1048576];
++vec4 array141[1048576], array142[1048576], array143[1048576], array144[1048576], array145[1048576];
++vec4 array146[1048576], array147[1048576], array148[1048576], array149[1048576], array150[1048576];
++vec4 array151[1048576], array152[1048576], array153[1048576], array154[1048576], array155[1048576];
++vec4 array156[1048576], array157[1048576], array158[1048576], array159[1048576], array160[1048576];
++vec4 array161[1048576], array162[1048576], array163[1048576], array164[1048576], array165[1048576];
++vec4 array166[1048576], array167[1048576], array168[1048576], array169[1048576], array170[1048576];
++vec4 array171[1048576], array172[1048576], array173[1048576], array174[1048576], array175[1048576];
++vec4 array176[1048576], array177[1048576], array178[1048576], array179[1048576], array180[1048576];
++vec4 array181[1048576], array182[1048576], array183[1048576], array184[1048576], array185[1048576];
++vec4 array186[1048576], array187[1048576], array188[1048576], array189[1048576], array190[1048576];
++vec4 array191[1048576], array192[1048576], array193[1048576], array194[1048576], array195[1048576];
++vec4 array196[1048576], array197[1048576], array198[1048576], array199[1048576], array200[1048576];
++vec4 array201[1048576], array202[1048576], array203[1048576], array204[1048576], array205[1048576];
++vec4 array206[1048576], array207[1048576], array208[1048576], array209[1048576], array210[1048576];
++vec4 array211[1048576], array212[1048576], array213[1048576], array214[1048576], array215[1048576];
++vec4 array216[1048576], array217[1048576], array218[1048576], array219[1048576], array220[1048576];
++vec4 array221[1048576], array222[1048576], array223[1048576], array224[1048576], array225[1048576];
++vec4 array226[1048576], array227[1048576], array228[1048576], array229[1048576], array230[1048576];
++vec4 array231[1048576], array232[1048576], array233[1048576], array234[1048576], array235[1048576];
++vec4 array236[1048576], array237[1048576], array238[1048576], array239[1048576], array240[1048576];
++vec4 array241[1048576], array242[1048576], array243[1048576], array244[1048576], array245[1048576];
++vec4 array246[1048576], array247[1048576], array248[1048576], array249[1048576], array250[1048576];
++vec4 array251[1048576], array252[1048576], array253[1048576], array254[1048576], array255[1048576];
++vec4 array256[1048576];
++
++void main()
++{
++    float f = array[0].x; f += array2[0].x; f += array3[0].x; f += array4[0].x; f += array5[0].x;
++    f += array6[0].x; f += array7[0].x; f += array8[0].x; f += array9[0].x; f += array10[0].x;
++    f += array11[0].x; f += array12[0].x; f += array13[0].x; f += array14[0].x; f += array15[0].x;
++    f += array16[0].x; f += array17[0].x; f += array18[0].x; f += array19[0].x; f += array20[0].x;
++    f += array21[0].x; f += array22[0].x; f += array23[0].x; f += array24[0].x; f += array25[0].x;
++    f += array26[0].x; f += array27[0].x; f += array28[0].x; f += array29[0].x; f += array30[0].x;
++    f += array31[0].x; f += array32[0].x; f += array33[0].x; f += array34[0].x; f += array35[0].x;
++    f += array36[0].x; f += array37[0].x; f += array38[0].x; f += array39[0].x; f += array40[0].x;
++    f += array41[0].x; f += array42[0].x; f += array43[0].x; f += array44[0].x; f += array45[0].x;
++    f += array46[0].x; f += array47[0].x; f += array48[0].x; f += array49[0].x; f += array50[0].x;
++    f += array51[0].x; f += array52[0].x; f += array53[0].x; f += array54[0].x; f += array55[0].x;
++    f += array56[0].x; f += array57[0].x; f += array58[0].x; f += array59[0].x; f += array60[0].x;
++    f += array61[0].x; f += array62[0].x; f += array63[0].x; f += array64[0].x; f += array65[0].x;
++    f += array66[0].x; f += array67[0].x; f += array68[0].x; f += array69[0].x; f += array70[0].x;
++    f += array71[0].x; f += array72[0].x; f += array73[0].x; f += array74[0].x; f += array75[0].x;
++    f += array76[0].x; f += array77[0].x; f += array78[0].x; f += array79[0].x; f += array80[0].x;
++    f += array81[0].x; f += array82[0].x; f += array83[0].x; f += array84[0].x; f += array85[0].x;
++    f += array86[0].x; f += array87[0].x; f += array88[0].x; f += array89[0].x; f += array90[0].x;
++    f += array91[0].x; f += array92[0].x; f += array93[0].x; f += array94[0].x; f += array95[0].x;
++    f += array96[0].x; f += array97[0].x; f += array98[0].x; f += array99[0].x; f += array100[0].x;
++    f += array101[0].x; f += array102[0].x; f += array103[0].x; f += array104[0].x;
++    f += array105[0].x; f += array106[0].x; f += array107[0].x; f += array108[0].x;
++    f += array109[0].x; f += array110[0].x; f += array111[0].x; f += array112[0].x;
++    f += array113[0].x; f += array114[0].x; f += array115[0].x; f += array116[0].x;
++    f += array117[0].x; f += array118[0].x; f += array119[0].x; f += array120[0].x;
++    f += array121[0].x; f += array122[0].x; f += array123[0].x; f += array124[0].x;
++    f += array125[0].x; f += array126[0].x; f += array127[0].x; f += array128[0].x;
++    f += array129[0].x; f += array130[0].x; f += array131[0].x; f += array132[0].x;
++    f += array133[0].x; f += array134[0].x; f += array135[0].x; f += array136[0].x;
++    f += array137[0].x; f += array138[0].x; f += array139[0].x; f += array140[0].x;
++    f += array141[0].x; f += array142[0].x; f += array143[0].x; f += array144[0].x;
++    f += array145[0].x; f += array146[0].x; f += array147[0].x; f += array148[0].x;
++    f += array149[0].x; f += array150[0].x; f += array151[0].x; f += array152[0].x;
++    f += array153[0].x; f += array154[0].x; f += array155[0].x; f += array156[0].x;
++    f += array157[0].x; f += array158[0].x; f += array159[0].x; f += array160[0].x;
++    f += array161[0].x; f += array162[0].x; f += array163[0].x; f += array164[0].x;
++    f += array165[0].x; f += array166[0].x; f += array167[0].x; f += array168[0].x;
++    f += array169[0].x; f += array170[0].x; f += array171[0].x; f += array172[0].x;
++    f += array173[0].x; f += array174[0].x; f += array175[0].x; f += array176[0].x;
++    f += array177[0].x; f += array178[0].x; f += array179[0].x; f += array180[0].x;
++    f += array181[0].x; f += array182[0].x; f += array183[0].x; f += array184[0].x;
++    f += array185[0].x; f += array186[0].x; f += array187[0].x; f += array188[0].x;
++    f += array189[0].x; f += array190[0].x; f += array191[0].x; f += array192[0].x;
++    f += array193[0].x; f += array194[0].x; f += array195[0].x; f += array196[0].x;
++    f += array197[0].x; f += array198[0].x; f += array199[0].x; f += array200[0].x;
++    f += array201[0].x; f += array202[0].x; f += array203[0].x; f += array204[0].x;
++    f += array205[0].x; f += array206[0].x; f += array207[0].x; f += array208[0].x;
++    f += array209[0].x; f += array210[0].x; f += array211[0].x; f += array212[0].x;
++    f += array213[0].x; f += array214[0].x; f += array215[0].x; f += array216[0].x;
++    f += array217[0].x; f += array218[0].x; f += array219[0].x; f += array220[0].x;
++    f += array221[0].x; f += array222[0].x; f += array223[0].x; f += array224[0].x;
++    f += array225[0].x; f += array226[0].x; f += array227[0].x; f += array228[0].x;
++    f += array229[0].x; f += array230[0].x; f += array231[0].x; f += array232[0].x;
++    f += array233[0].x; f += array234[0].x; f += array235[0].x; f += array236[0].x;
++    f += array237[0].x; f += array238[0].x; f += array239[0].x; f += array240[0].x;
++    f += array241[0].x; f += array242[0].x; f += array243[0].x; f += array244[0].x;
++    f += array245[0].x; f += array246[0].x; f += array247[0].x; f += array248[0].x;
++    f += array249[0].x; f += array250[0].x; f += array251[0].x; f += array252[0].x;
++    f += array253[0].x; f += array254[0].x; f += array255[0].x; f += array256[0].x;
++    if (f == 2.0)
++        gl_FragColor = vec4(0.0, 1.0, 0.0, 1.0);
++    else
++        gl_FragColor = vec4(1.0, 0.0, 0.0, 1.0);
++})";
++
+     GLuint program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalMemory1);
+     EXPECT_EQ(0u, program);
+ 
+@@ -5449,6 +5574,9 @@
+ 
+     program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalAndLocalMemory2);
+     EXPECT_EQ(0u, program);
++
++    program = CompileProgram(essl1_shaders::vs::Simple(), kTooLargeGlobalMemoryOverflow);
++    EXPECT_EQ(0u, program);
+ }
+ 
+ // Linking should fail when corresponding vertex/fragment uniform blocks have different precision
