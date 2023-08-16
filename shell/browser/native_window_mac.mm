@@ -815,7 +815,7 @@ bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
   if (!webrtc::GetWindowOwnerPid(window_id))
     return false;
 
-  if (!parent()) {
+  if (!parent() || is_modal()) {
     [window_ orderWindow:NSWindowAbove relativeTo:window_id];
   } else {
     NSWindow* other_window = [NSApp windowWithWindowNumber:window_id];
@@ -826,10 +826,11 @@ bool NativeWindowMac::MoveAbove(const std::string& sourceId) {
 }
 
 void NativeWindowMac::MoveTop() {
-  if (!parent())
+  if (!parent() || is_modal()) {
     [window_ orderWindow:NSWindowAbove relativeTo:0];
-  else
+  } else {
     ReorderChildWindowAbove(window_, nullptr);
+  }
 }
 
 void NativeWindowMac::SetResizable(bool resizable) {
