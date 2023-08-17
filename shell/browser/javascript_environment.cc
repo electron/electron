@@ -104,9 +104,10 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
-    : isolate_(Initialize(event_loop, setup_wasm_streaming)),
-      isolate_holder_(CreateIsolateHolder(isolate_)),
-      locker_(isolate_) {
+    : isolate_holder_{CreateIsolateHolder(
+          Initialize(event_loop, setup_wasm_streaming))},
+      isolate_{isolate_holder_.isolate()},
+      locker_{isolate_} {
   isolate_->Enter();
 
   v8::HandleScope scope(isolate_);
