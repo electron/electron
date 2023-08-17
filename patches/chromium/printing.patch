@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index dc86196ebcb7bb630dc3ca5b7e78244ae1e5ddd5..3e2cf78dc14a1d4b3d23ec9db4418a132c8b9df2 100644
+index 3903baaaca00e1d17a203de5d8908ea9b1027eac..4c6fc9f08c988e04b5e1afac807dc6ef3b0d46d5 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -966,7 +966,6 @@ if (is_win) {
+@@ -967,7 +967,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index dc86196ebcb7bb630dc3ca5b7e78244ae1e5ddd5..3e2cf78dc14a1d4b3d23ec9db4418a13
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -975,6 +974,10 @@ if (is_win) {
+@@ -976,6 +975,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -91,7 +91,7 @@ index c27e2d50aa6cd45484c222221c6a8dda50baf8ff..43c48b75806bb08f3a4ea45689fe2469
                 : PdfRenderSettings::Mode::POSTSCRIPT_LEVEL3;
    }
 diff --git a/chrome/browser/printing/print_view_manager_base.cc b/chrome/browser/printing/print_view_manager_base.cc
-index 040a37a9eab2af1491f7f8f4dc2e6ed78ac1d20e..fe4b29c905d89d96e3abf163eb25d7fae20e3b22 100644
+index fbcffb956da93abd7e42eb795db73e85a07c5b29..84d82c462744f241b7d8d13aa7fa4d256dab28a0 100644
 --- a/chrome/browser/printing/print_view_manager_base.cc
 +++ b/chrome/browser/printing/print_view_manager_base.cc
 @@ -23,7 +23,9 @@
@@ -492,7 +492,7 @@ index 040a37a9eab2af1491f7f8f4dc2e6ed78ac1d20e..fe4b29c905d89d96e3abf163eb25d7fa
    }
  
    print_job_->RemoveObserver(*this);
-@@ -1149,7 +1232,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
+@@ -1153,7 +1236,7 @@ bool PrintViewManagerBase::RunInnerMessageLoop() {
  }
  
  bool PrintViewManagerBase::OpportunisticallyCreatePrintJob(int cookie) {
@@ -501,7 +501,7 @@ index 040a37a9eab2af1491f7f8f4dc2e6ed78ac1d20e..fe4b29c905d89d96e3abf163eb25d7fa
      return true;
  
    if (!cookie) {
-@@ -1295,7 +1378,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
+@@ -1299,7 +1382,7 @@ void PrintViewManagerBase::ReleasePrinterQuery() {
  }
  
  void PrintViewManagerBase::CompletePrintNow(content::RenderFrameHost* rfh) {
@@ -510,7 +510,7 @@ index 040a37a9eab2af1491f7f8f4dc2e6ed78ac1d20e..fe4b29c905d89d96e3abf163eb25d7fa
  
    for (auto& observer : GetTestObservers()) {
      observer.OnPrintNow(rfh);
-@@ -1345,7 +1428,7 @@ void PrintViewManagerBase::CompleteScriptedPrintAfterContentAnalysis(
+@@ -1349,7 +1432,7 @@ void PrintViewManagerBase::CompleteScriptedPrintAfterContentAnalysis(
    set_analyzing_content(/*analyzing=*/false);
    if (!allowed || !printing_rfh_ || IsCrashed() ||
        !printing_rfh_->IsRenderFrameLive()) {
@@ -520,7 +520,7 @@ index 040a37a9eab2af1491f7f8f4dc2e6ed78ac1d20e..fe4b29c905d89d96e3abf163eb25d7fa
    }
    CompleteScriptedPrint(printing_rfh_, std::move(params), std::move(callback));
 diff --git a/chrome/browser/printing/print_view_manager_base.h b/chrome/browser/printing/print_view_manager_base.h
-index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2e7c59251 100644
+index 39a7484d9e06bb42906efe1fc2a2959629568d9f..e42876d14f48fb01ae5b5af6b6c422d9a48d20de 100644
 --- a/chrome/browser/printing/print_view_manager_base.h
 +++ b/chrome/browser/printing/print_view_manager_base.h
 @@ -44,6 +44,8 @@ namespace printing {
@@ -532,7 +532,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
  // Base class for managing the print commands for a WebContents.
  class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
   public:
-@@ -77,7 +79,10 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -79,7 +81,10 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // Prints the current document immediately. Since the rendering is
    // asynchronous, the actual printing will not be completed on the return of
    // this function. Returns false if printing is impossible at the moment.
@@ -544,7 +544,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
  
    // Like PrintNow(), but for the node under the context menu, instead of the
    // entire frame.
-@@ -131,8 +136,10 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -133,8 +138,10 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    void IsPrintingEnabled(IsPrintingEnabledCallback callback) override;
    void ScriptedPrint(mojom::ScriptedPrintParamsPtr params,
                       ScriptedPrintCallback callback) override;
@@ -555,7 +555,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
  
    // Adds and removes observers for `PrintViewManagerBase` events. The order in
    // which notifications are sent to observers is undefined. Observers must be
-@@ -140,6 +147,14 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -142,6 +149,14 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    void AddTestObserver(TestObserver& observer);
    void RemoveTestObserver(TestObserver& observer);
  
@@ -570,7 +570,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
   protected:
    explicit PrintViewManagerBase(content::WebContents* web_contents);
  
-@@ -277,6 +292,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -279,6 +294,7 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
                                  bool success);
  #endif
    void CompleteUpdatePrintSettings(
@@ -578,7 +578,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
        base::Value::Dict job_settings,
        std::unique_ptr<PrintSettings> print_settings,
        UpdatePrintSettingsCallback callback);
-@@ -306,7 +322,8 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -308,7 +324,8 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // Runs `callback` with `params` to reply to ScriptedPrint().
    void ScriptedPrintReply(ScriptedPrintCallback callback,
                            int process_id,
@@ -588,7 +588,7 @@ index 9f62238a3f5a73219a604061e434c2a0400fba44..e46800600d53b3f0d1357eaa2fccd7d2
  
    // Requests the RenderView to render all the missing pages for the print job.
    // No-op if no print job is pending. Returns true if at least one page has
-@@ -387,8 +404,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
+@@ -389,8 +406,11 @@ class PrintViewManagerBase : public PrintManager, public PrintJob::Observer {
    // The current RFH that is printing with a system printing dialog.
    raw_ptr<content::RenderFrameHost> printing_rfh_ = nullptr;
  
@@ -927,10 +927,10 @@ index 731b0fa4c0e1b3a5b4ce73d5bf2322767c70f9be..58921e7fdb9c33e21694186f436f409f
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index aeda95912420895271ecdf1883f04da07b32296e..2f165461b7326b4e426d4b2552766896bb273c29 100644
+index 032b82b8dde9cf2117805db30fcfbaa193d8659f..ee17fd6b5db11e9703b0bf24c776a9779abd5638 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2914,8 +2914,9 @@ source_set("browser") {
+@@ -2920,8 +2920,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
