@@ -43,8 +43,12 @@ class JavascriptEnvironment {
   v8::Isolate* Initialize(uv_loop_t* event_loop, bool setup_wasm_streaming);
   std::unique_ptr<node::MultiIsolatePlatform> platform_;
 
-  raw_ptr<v8::Isolate> isolate_;
   gin::IsolateHolder isolate_holder_;
+
+  // owned-by: isolate_holder_
+  const raw_ptr<v8::Isolate> isolate_;
+
+  // depends-on: isolate_
   v8::Locker locker_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
