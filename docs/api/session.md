@@ -1311,7 +1311,7 @@ The API will generate a [DownloadItem](download-item.md) that can be accessed
 with the [will-download](#event-will-download) event.
 
 **Note:** This does not perform any security checks that relate to a page's origin,
-unlike [`webContents.downloadURL`](web-contents.md#contentsdownloadurlurl).
+unlike [`webContents.downloadURL`](web-contents.md#contentsdownloadurlurl-options).
 
 #### `ses.createInterruptedDownload(options)`
 
