@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Takumi Fujimoto <takumif@chromium.org>
+Date: Tue, 18 Jul 2023 18:20:16 +0000
+Subject: Destroy CastDeviceListHost during KeyedServices shutdown
+
+This makes MediaNotificationService destroy all the CastDeviceListHosts
+that it's instantiated in its KeyedService shutdown. This is necessary
+because CastDeviceListHost depends on MediaRouter, another KeyedService.
+
+(cherry picked from commit ffc0dfef649ad5b1149f89bb24c70d43405442ba)
+
+Bug: 1457757
+Change-Id: I453279da77b141ad9cd89310fc8128cc7d2919f2
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4672319
+Reviewed-by: Tommy Steimel <steimel@chromium.org>
+Commit-Queue: Takumi Fujimoto <takumif@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1168361}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4692442
+Auto-Submit: Takumi Fujimoto <takumif@chromium.org>
+Commit-Queue: Tommy Steimel <steimel@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5790@{#1763}
+Cr-Branched-From: 1d71a337b1f6e707a13ae074dca1e2c34905eb9f-refs/heads/main@{#1148114}
+
+diff --git a/chrome/browser/ui/global_media_controls/media_notification_service.h b/chrome/browser/ui/global_media_controls/media_notification_service.h
+index e8cc233cd991cc8aa3936e12a71c9890a7823c32..7e1a432aaf7a8e78c606e1864e25a3d5eb9757f7 100644
+--- a/chrome/browser/ui/global_media_controls/media_notification_service.h
++++ b/chrome/browser/ui/global_media_controls/media_notification_service.h
+@@ -157,6 +157,8 @@ class MediaNotificationService
+ 
+   void RemoveDeviceListHost(int host);
+ 
++  const raw_ptr<Profile> profile_;
++
+   std::unique_ptr<global_media_controls::MediaItemManager> item_manager_;
+ 
+   std::unique_ptr<global_media_controls::MediaSessionItemProducer>

@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Bence=20B=C3=A9ky?= <bnc@chromium.org>
+Date: Mon, 31 Jul 2023 15:31:39 +0000
+Subject: Check whether read side is closed when reading
+ QuicChromiumClientStream
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+When quic::QuicSpdyStream receives a RST_STREAM frame it clears the
+underlying read buffer. Subsequent read operations should check
+quic::QuicStream::read_side_closed() so that it doesn't access the
+cleared read buffer.
+
+This CL is cloned from https://crrev.com/c/4691923 by bashi@chromium.org.
+
+(cherry picked from commit ecf8b698d6ec2a7c4bed49714c80f4ee5516c50d)
+
+Bug: 1465224
+Change-Id: I35a908e11d09c67dea857b34653d6cf1cadbb407
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4728448
+Commit-Queue: Bence Béky <bnc@chromium.org>
+Auto-Submit: Bence Béky <bnc@chromium.org>
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Kenichi Ishibashi <bashi@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1176838}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4733554
+Reviewed-by: Bence Béky <bnc@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5790@{#1904}
+Cr-Branched-From: 1d71a337b1f6e707a13ae074dca1e2c34905eb9f-refs/heads/main@{#1148114}
+
+diff --git a/net/quic/quic_chromium_client_stream.cc b/net/quic/quic_chromium_client_stream.cc
+index d37a113163ff9afc0550276e37d3df788c91e487..961ec679b401d3efd169de8538221fb1a32f9cfa 100644
+--- a/net/quic/quic_chromium_client_stream.cc
++++ b/net/quic/quic_chromium_client_stream.cc
+@@ -206,6 +206,10 @@ int QuicChromiumClientStream::Handle::ReadBody(
+   if (!stream_)
+     return net_error_;
+ 
++  if (stream_->read_side_closed()) {
++    return OK;
++  }
++
+   int rv = stream_->Read(buffer, buffer_len);
+   if (rv != ERR_IO_PENDING)
+     return rv;
