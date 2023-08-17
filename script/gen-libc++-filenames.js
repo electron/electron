@@ -20,8 +20,8 @@ function findAllHeaders (basePath) {
 for (const folder of ['libc++', 'libc++abi']) {
   const prettyName = folder.replace(/\+/g, 'x');
 
-  const libcxxIncludeDir = path.resolve(__dirname, '..', '..', 'buildtools', 'third_party', folder, 'trunk', 'include');
-  const gclientPath = `buildtools/third_party/${folder}/trunk/include`;
+  const libcxxIncludeDir = path.resolve(__dirname, '..', '..', 'third_party', folder, 'src', 'include');
+  const gclientPath = `third_party/${folder}/src/include`;
 
   const headers = findAllHeaders(libcxxIncludeDir).map(absPath => path.relative(path.resolve(__dirname, '../..', gclientPath), absPath));
 
@@ -29,7 +29,7 @@ for (const folder of ['libc++', 'libc++abi']) {
   ${headers.map(f => `"//${path.posix.join(gclientPath, f)}"`).join(',\n  ')},
 ]
 
-${prettyName}_licenses = [ "//buildtools/third_party/${folder}/trunk/LICENSE.TXT" ]
+${prettyName}_licenses = [ "//third_party/${folder}/src/LICENSE.TXT" ]
 `;
 
   const filenamesPath = path.resolve(__dirname, '..', `filenames.${prettyName}.gni`);

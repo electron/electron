@@ -92,7 +92,7 @@ class NodeBindings {
   // Setup V8, libuv.
   void Initialize(v8::Local<v8::Context> context);
 
-  void SetNodeCliFlags();
+  std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.
   node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,

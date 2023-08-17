@@ -7,10 +7,10 @@ Guard usages in chromium code of private Mac APIs by MAS_BUILD, so they can
 be excluded for people who want to submit their apps to the Mac App store.
 
 diff --git a/third_party/blink/renderer/core/editing/kill_ring_mac.mm b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
-index 700a4b58ea17597b41dddb8c552e2f2cfc9aa393..8e79ef2ae958dfbaf9cf928d4e3c76dd4d3ab99b 100644
+index 94afefcee81b87c05bf9b1199d90d3d4b5ea84a6..78e4e0fe20e0fdfeab18b28fe208d5aa38eb0bd1 100644
 --- a/third_party/blink/renderer/core/editing/kill_ring_mac.mm
 +++ b/third_party/blink/renderer/core/editing/kill_ring_mac.mm
-@@ -31,6 +31,7 @@
+@@ -27,6 +27,7 @@
  
  namespace blink {
  
@@ -18,7 +18,7 @@ index 700a4b58ea17597b41dddb8c552e2f2cfc9aa393..8e79ef2ae958dfbaf9cf928d4e3c76dd
  extern "C" {
  
  // Kill ring calls. Would be better to use NSKillRing.h, but that's not
-@@ -43,38 +44,53 @@
+@@ -39,38 +40,53 @@
  void _NSNewKillRingSequence();
  void _NSSetKillRingToYankedState();
  }

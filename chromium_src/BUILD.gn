@@ -354,8 +354,6 @@ if (is_mac) {
       "//third_party/webrtc_overrides:webrtc_component",
       "//v8",
     ]
-
-    configs += [ "//build/config/compiler:enable_arc" ]
   }
 }
 

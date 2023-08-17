@@ -128,9 +128,8 @@ Emitted when the user wants to open a URL with the application. Your application
 set `NSPrincipalClass` to `AtomApplication`.
 
 As with the `open-file` event, be sure to register a listener for the `open-url`
-event early in your application startup to detect if the the application being
-is being opened to handle a URL. If you register the listener in response to a
-`ready` event, you'll miss URLs that trigger the launch of your application.
+event early in your application startup to detect if the application is being opened to handle a URL.
+If you register the listener in response to a `ready` event, you'll miss URLs that trigger the launch of your application.
 
 ### Event: 'activate' _macOS_
 
@@ -413,18 +412,7 @@ Returns:
 
 * `event` Event
 * `webContents` [WebContents](web-contents.md)
-* `details` Object
-  * `reason` string - The reason the render process is gone.  Possible values:
-    * `clean-exit` - Process exited with an exit code of zero
-    * `abnormal-exit` - Process exited with a non-zero exit code
-    * `killed` - Process was sent a SIGTERM or otherwise killed externally
-    * `crashed` - Process crashed
-    * `oom` - Process ran out of memory
-    * `launch-failed` - Process never successfully launched
-    * `integrity-failure` - Windows code integrity checks failed
-  * `exitCode` Integer - The exit code of the process, unless `reason` is
-    `launch-failed`, in which case `exitCode` will be a platform-specific
-    launch failure error code.
+* `details` [RenderProcessGoneDetails](structures/render-process-gone-details.md)
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.

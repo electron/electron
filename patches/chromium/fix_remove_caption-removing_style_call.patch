@@ -18,7 +18,7 @@ or resizing, but Electron does not seem to run into that issue
 for opaque frameless windows even with that block commented out.
 
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 0d39d88d3084bd3f38231e476b215f29623ac1e7..bf967adcc74c1c97036e7f9d01e7afe3eb141a78 100644
+index ec7a05ac5c261c0292684b47db275f7b1ef5daa4..13268bd89c710690eed5296f4b2157e9476f195e 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
 @@ -1873,7 +1873,23 @@ LRESULT HWNDMessageHandler::OnCreate(CREATESTRUCT* create_struct) {

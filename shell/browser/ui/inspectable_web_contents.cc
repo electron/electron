@@ -426,6 +426,11 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
+void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
+  devtools_title_ = title;
+  view_->SetTitle(devtools_title_);
+}
+
 void InspectableWebContents::SetDevToolsWebContents(
     content::WebContents* devtools) {
   if (!managed_devtools_web_contents_)
@@ -479,6 +484,10 @@ void InspectableWebContents::CloseDevTools() {
 
 bool InspectableWebContents::IsDevToolsViewShowing() {
   return managed_devtools_web_contents_ && view_->IsDevToolsViewShowing();
+}
+
+std::u16string InspectableWebContents::GetDevToolsTitle() {
+  return view_->GetTitle();
 }
 
 void InspectableWebContents::AttachTo(
@@ -565,6 +574,9 @@ void InspectableWebContents::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
+    if (!devtools_title_.empty()) {
+      view_->SetTitle(devtools_title_);
+    }
   } else {
     if (dock_state_.empty()) {
       const base::Value::Dict& prefs =
@@ -635,9 +647,12 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectElementCompleted() {}
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
-  if (managed_devtools_web_contents_)
-    view_->SetTitle(
-        base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+  if (managed_devtools_web_contents_) {
+    if (devtools_title_.empty()) {
+      view_->SetTitle(
+          base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+    }
+  }
 }
 
 void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,

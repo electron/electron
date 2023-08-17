@@ -134,6 +134,7 @@ class WebContents : public ExclusiveAccessContext,
   // if there is no associated wrapper.
   static WebContents* From(content::WebContents* web_contents);
   static WebContents* FromID(int32_t id);
+  static std::list<WebContents*> GetWebContentsList();
 
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //
@@ -202,6 +203,8 @@ class WebContents : public ExclusiveAccessContext,
   void CloseDevTools();
   bool IsDevToolsOpened();
   bool IsDevToolsFocused();
+  std::u16string GetDevToolsTitle();
+  void SetDevToolsTitle(const std::u16string& title);
   void ToggleDevTools();
   void EnableDeviceEmulation(const blink::DeviceEmulationParams& params);
   void DisableDeviceEmulation();

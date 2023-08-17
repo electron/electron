@@ -257,6 +257,30 @@ describe('utilityProcess module', () => {
       child.stdout!.on('data', listener);
     });
 
+    it('supports changing dns verbatim with --dns-result-order', (done) => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
+        stdio: 'pipe',
+        execArgv: ['--dns-result-order=ipv4first']
+      });
+
+      let output = '';
+      const cleanup = () => {
+        child.stderr!.removeListener('data', listener);
+        child.stdout!.removeListener('data', listener);
+        child.once('exit', () => { done(); });
+        child.kill();
+      };
+
+      const listener = (data: Buffer) => {
+        output += data;
+        expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
+        cleanup();
+      };
+
+      child.stderr!.on('data', listener);
+      child.stdout!.on('data', listener);
+    });
+
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
       const result = 'Output from utility process';
       const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stdout'), `--payload=${result}`]);

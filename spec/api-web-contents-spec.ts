@@ -608,6 +608,27 @@ describe('webContents module', () => {
       await devtoolsOpened;
       expect(w.webContents.isDevToolsOpened()).to.be.true();
     });
+
+    it('can show a DevTools window with custom title', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false, title: 'myTitle' });
+      await devtoolsOpened;
+      expect(w.webContents.getDevToolsTitle()).to.equal('myTitle');
+    });
+  });
+
+  describe('setDevToolsTitle() API', () => {
+    afterEach(closeAllWindows);
+    it('can set devtools title with function', async () => {
+      const w = new BrowserWindow({ show: false });
+      const devtoolsOpened = once(w.webContents, 'devtools-opened');
+      w.webContents.openDevTools({ mode: 'detach', activate: false });
+      await devtoolsOpened;
+      expect(w.webContents.isDevToolsOpened()).to.be.true();
+      w.webContents.setDevToolsTitle('newTitle');
+      expect(w.webContents.getDevToolsTitle()).to.equal('newTitle');
+    });
   });
 
   describe('before-input-event event', () => {
@@ -1280,9 +1301,9 @@ describe('webContents module', () => {
         'default_public_interface_only',
         'default_public_and_private_interfaces',
         'disable_non_proxied_udp'
-      ];
+      ] as const;
       policies.forEach((policy) => {
-        w.webContents.setWebRTCIPHandlingPolicy(policy as any);
+        w.webContents.setWebRTCIPHandlingPolicy(policy);
         expect(w.webContents.getWebRTCIPHandlingPolicy()).to.equal(policy);
       });
     });
@@ -2301,7 +2322,7 @@ describe('webContents module', () => {
       const promise = once(w.webContents, 'context-menu') as Promise<[any, Electron.ContextMenuParams]>;
 
       // Simulate right-click to create context-menu event.
-      const opts = { x: 0, y: 0, button: 'right' as any };
+      const opts = { x: 0, y: 0, button: 'right' as const };
       w.webContents.sendInputEvent({ ...opts, type: 'mouseDown' });
       w.webContents.sendInputEvent({ ...opts, type: 'mouseUp' });
 

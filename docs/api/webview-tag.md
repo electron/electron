@@ -112,7 +112,7 @@ The `src` attribute can also accept data URLs, such as
 ### `nodeintegration`
 
 ```html
-<webview src="http://www.google.com/" nodeintegration></webview>
+<webview src="https://www.google.com/" nodeintegration></webview>
 ```
 
 A `boolean`. When this attribute is present the guest page in `webview` will have node
@@ -123,7 +123,7 @@ page.
 ### `nodeintegrationinsubframes`
 
 ```html
-<webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
+<webview src="https://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
 A `boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
@@ -161,7 +161,7 @@ after this script has finished executing.
 ### `httpreferrer`
 
 ```html
-<webview src="https://www.github.com/" httpreferrer="http://cheng.guru"></webview>
+<webview src="https://www.github.com/" httpreferrer="https://example.com/"></webview>
 ```
 
 A `string` that sets the referrer URL for the guest page.
@@ -983,9 +983,22 @@ ipcRenderer.on('ping', () => {
 })
 ```
 
-### Event: 'crashed'
+### Event: 'crashed' _Deprecated_
 
-Fired when the renderer process is crashed.
+Fired when the renderer process crashes or is killed.
+
+**Deprecated:** This event is superceded by the `render-process-gone` event
+which contains more information about why the render process disappeared. It
+isn't always because it crashed.
+
+### Event: 'render-process-gone'
+
+Returns:
+
+* `details` [RenderProcessGoneDetails](structures/render-process-gone-details.md)
+
+Fired when the renderer process unexpectedly disappears. This is normally
+because it was crashed or killed.
 
 ### Event: 'plugin-crashed'
 

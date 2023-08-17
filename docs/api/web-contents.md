@@ -13,7 +13,7 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 const contents = win.webContents
 console.log(contents)
@@ -479,18 +479,7 @@ checking `reason === 'killed'` when you switch to that event.
 Returns:
 
 * `event` Event
-* `details` Object
-  * `reason` string - The reason the render process is gone.  Possible values:
-    * `clean-exit` - Process exited with an exit code of zero
-    * `abnormal-exit` - Process exited with a non-zero exit code
-    * `killed` - Process was sent a SIGTERM or otherwise killed externally
-    * `crashed` - Process crashed
-    * `oom` - Process ran out of memory
-    * `launch-failed` - Process never successfully launched
-    * `integrity-failure` - Windows code integrity checks failed
-  * `exitCode` Integer - The exit code of the process, unless `reason` is
-    `launch-failed`, in which case `exitCode` will be a platform-specific
-    launch failure error code.
+* `details` [RenderProcessGoneDetails](structures/render-process-gone-details.md)
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
@@ -895,7 +884,7 @@ const win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
   // updateBitmap(dirty, image.getBitmap())
 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 ```
 
 #### Event: 'devtools-reload-page'
@@ -1071,7 +1060,7 @@ Returns `string` - The URL of the current web page.
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('http://github.com').then(() => {
+win.loadURL('https://github.com').then(() => {
   const currentURL = win.webContents.getURL()
   console.log(currentURL)
 })
@@ -1651,7 +1640,7 @@ const path = require('path')
 const os = require('os')
 
 const win = new BrowserWindow()
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // Use default printing options
@@ -1777,6 +1766,7 @@ app.whenReady().then(() => {
     In `undocked` mode it's possible to dock back. In `detach` mode it's not.
   * `activate` boolean (optional) - Whether to bring the opened devtools window
     to the foreground. The default is `true`.
+  * `title` string (optional) - A title for the DevTools window (only in `undocked` or `detach` mode).
 
 Opens the devtools.
 
@@ -1796,6 +1786,18 @@ Returns `boolean` - Whether the devtools is opened.
 #### `contents.isDevToolsFocused()`
 
 Returns `boolean` - Whether the devtools view is focused .
+
+#### `contents.getDevToolsTitle()`
+
+Returns `string` - the current title of the DevTools window. This will only be visible
+if DevTools is opened in `undocked` or `detach` mode.
+
+#### `contents.setDevToolsTitle(title)`
+
+* `title` string
+
+Changes the title of the DevTools window to `title`. This will only be visible if DevTools is
+opened in `undocked` or `detach` mode.
 
 #### `contents.toggleDevTools()`
 

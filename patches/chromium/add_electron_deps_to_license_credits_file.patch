@@ -7,7 +7,7 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index 81dd367a1a3f0b59832406e97e3eb0b869741a34..2fbe3091c32dd1b3771711b84c86eaab67fd7a0e 100755
+index 15b461326e2ce4bd255cbe779b449261a7f63f09..ae6c83557dc3f299b33a5e42afb3d587c5c72100 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
 @@ -424,6 +424,31 @@ SPECIAL_CASES = {
@@ -41,4 +41,4 @@ index 81dd367a1a3f0b59832406e97e3eb0b869741a34..2fbe3091c32dd1b3771711b84c86eaab
 +    },
  }
  
- # The delimiter used to separate license files specified in the 'License File'
+ # These buildtools/third_party directories only contain

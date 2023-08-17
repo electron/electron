@@ -244,6 +244,10 @@
   [devtools_window_ setTitle:title];
 }
 
+- (NSString*)getTitle {
+  return [devtools_window_ title];
+}
+
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();

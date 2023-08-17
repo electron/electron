@@ -2703,16 +2703,19 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 #endif
 
   bool activate = true;
+  std::string title;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
       options.Get("activate", &activate);
+      options.Get("title", &title);
     }
   }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
+  inspectable_web_contents_->SetDevToolsTitle(base::UTF8ToUTF16(title));
   inspectable_web_contents_->ShowDevTools(activate);
 }
 
@@ -2730,6 +2733,18 @@ bool WebContents::IsDevToolsOpened() {
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->IsDevToolsViewShowing();
+}
+
+std::u16string WebContents::GetDevToolsTitle() {
+  if (type_ == Type::kRemote)
+    return std::u16string();
+
+  DCHECK(inspectable_web_contents_);
+  return inspectable_web_contents_->GetDevToolsTitle();
+}
+
+void WebContents::SetDevToolsTitle(const std::u16string& title) {
+  inspectable_web_contents_->SetDevToolsTitle(title);
 }
 
 bool WebContents::IsDevToolsFocused() {
@@ -3114,6 +3129,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
+  auto generate_tagged_pdf =
+      settings.GetDict().FindBool("shouldGenerateTaggedPDF");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
@@ -3121,7 +3138,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
           landscape, display_header_footer, print_background, scale,
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
           margin_right, absl::make_optional(header_template),
-          absl::make_optional(footer_template), prefer_css_page_size);
+          absl::make_optional(footer_template), prefer_css_page_size,
+          generate_tagged_pdf);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
     auto error = absl::get<std::string>(print_pages_params);
@@ -4268,6 +4286,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
+      .SetMethod("getDevToolsTitle", &WebContents::GetDevToolsTitle)
+      .SetMethod("setDevToolsTitle", &WebContents::SetDevToolsTitle)
       .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
       .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
@@ -4459,6 +4479,16 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
 // static
 WebContents* WebContents::FromID(int32_t id) {
   return GetAllWebContents().Lookup(id);
+}
+
+// static
+std::list<WebContents*> WebContents::GetWebContentsList() {
+  std::list<WebContents*> list;
+  for (auto iter = base::IDMap<WebContents*>::iterator(&GetAllWebContents());
+       !iter.IsAtEnd(); iter.Advance()) {
+    list.push_back(iter.GetCurrentValue());
+  }
+  return list;
 }
 
 // static

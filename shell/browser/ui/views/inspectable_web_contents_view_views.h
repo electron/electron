@@ -39,11 +39,10 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
+  const std::u16string GetTitle() override;
 
   // views::View:
   void Layout() override;
-
-  const std::u16string& GetTitle() const { return title_; }
 
  private:
   std::unique_ptr<views::Widget> devtools_window_;

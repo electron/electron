@@ -18,7 +18,7 @@ to STDOUT_FILENO/STD_OUTPUT_HANDLE and STDERR_FILENO/STD_ERROR_HANDLE allowing t
 parent process to read from the pipe.
 
 diff --git a/content/browser/child_process_launcher.h b/content/browser/child_process_launcher.h
-index 2688eace4c00176ac9d1636641b44b8258c29b08..f8498a45db1158f2cfb7a9f548f290a879e8ab34 100644
+index e515503a0f636d935fdcd779a5ac01bd8f351e74..0669361cb063c9dd15a19486fce1a609171d4cda 100644
 --- a/content/browser/child_process_launcher.h
 +++ b/content/browser/child_process_launcher.h
 @@ -32,6 +32,7 @@
@@ -58,10 +58,10 @@ index 2688eace4c00176ac9d1636641b44b8258c29b08..f8498a45db1158f2cfb7a9f548f290a8
  
  // Launches a process asynchronously and notifies the client of the process
 diff --git a/content/browser/child_process_launcher_helper_linux.cc b/content/browser/child_process_launcher_helper_linux.cc
-index 6d8aa39ab75edcba3e34134566c9fcbe56a7ec57..30912cc39806b13c47b85ba1bfc848a23c83c30d 100644
+index bd80ca431a5c50ac001d7607841c64e90f4fe4c3..befc9666c3901e84b75934c6c98ca6de864eaa19 100644
 --- a/content/browser/child_process_launcher_helper_linux.cc
 +++ b/content/browser/child_process_launcher_helper_linux.cc
-@@ -62,6 +62,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -63,6 +63,11 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->fds_to_remap.emplace_back(sandbox_fd, GetSandboxFD());
      }
  
@@ -73,7 +73,7 @@ index 6d8aa39ab75edcba3e34134566c9fcbe56a7ec57..30912cc39806b13c47b85ba1bfc848a2
      // (For Electron), if we're launching without zygote, that means we're
      // launching an unsandboxed process (since all sandboxed processes are
      // forked from the zygote). Relax the allow_new_privs option to permit
-@@ -71,7 +76,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
+@@ -72,7 +77,9 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
        options->allow_new_privs = true;
      }
  
@@ -84,7 +84,7 @@ index 6d8aa39ab75edcba3e34134566c9fcbe56a7ec57..30912cc39806b13c47b85ba1bfc848a2
      DCHECK(GetZygoteForLaunch());
      // Environment variables could be supported in the future, but are not
 diff --git a/content/browser/child_process_launcher_helper_mac.cc b/content/browser/child_process_launcher_helper_mac.cc
-index 37eb06424d5ab1fc1919dc1cde603d9287014cab..08cd71c5669de94c8aebfc37849cadfcf838cf75 100644
+index 9e5365dc37489dcd9f94d23cf03713492ab20e5f..03206ccc3181eae7776b4f2c076285b8729379b8 100644
 --- a/content/browser/child_process_launcher_helper_mac.cc
 +++ b/content/browser/child_process_launcher_helper_mac.cc
 @@ -123,7 +123,8 @@ bool ChildProcessLauncherHelper::BeforeLaunchOnLauncherThread(
@@ -110,7 +110,7 @@ index 37eb06424d5ab1fc1919dc1cde603d9287014cab..08cd71c5669de94c8aebfc37849cadfc
  }
  
 diff --git a/content/browser/child_process_launcher_helper_win.cc b/content/browser/child_process_launcher_helper_win.cc
-index fee8640ccee0a24e1f1e282e9bad3a26bd721df8..4b6a3e7aaf686ea23500b7e051156e59f252a108 100644
+index fe4006de7c8f5fc26b6981a0ba4db70cd188b8bb..6fe38b4649610179bd840dbee0ad1f0de2636886 100644
 --- a/content/browser/child_process_launcher_helper_win.cc
 +++ b/content/browser/child_process_launcher_helper_win.cc
 @@ -19,6 +19,8 @@
@@ -627,7 +627,7 @@ index cb43aa14c9742f3788ae58c3e49b890cd532f327..6a738f7aade504f2ff3bb6647a0da8f8
  #if BUILDFLAG(IS_MAC)
    // Whether or not to disclaim TCC responsibility for the process, defaults to
 diff --git a/sandbox/policy/win/sandbox_win.cc b/sandbox/policy/win/sandbox_win.cc
-index 2ee0182088f41846f352fae0b67fc90448855355..9dc5630e1e858ef4de91680ad119e5bf5696e1e3 100644
+index da5844e2ef28872d91f76ebbbaee3ca976304568..a4aaeaccb3cb73b7fc3244873d33af1af61a42c6 100644
 --- a/sandbox/policy/win/sandbox_win.cc
 +++ b/sandbox/policy/win/sandbox_win.cc
 @@ -706,11 +706,9 @@ base::win::ScopedHandle CreateUnsandboxedJob() {

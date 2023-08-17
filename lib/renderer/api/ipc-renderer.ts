@@ -18,8 +18,9 @@ ipcRenderer.sendToHost = function (channel, ...args) {
   return ipc.sendToHost(channel, args);
 };
 
+const sendToDeprecated = deprecate.warnOnce('ipcRenderer.sendTo');
 ipcRenderer.sendTo = function (webContentsId, channel, ...args) {
-  deprecate.warnOnce('ipcRenderer.sendTo');
+  sendToDeprecated();
   return ipc.sendTo(webContentsId, channel, args);
 };
 

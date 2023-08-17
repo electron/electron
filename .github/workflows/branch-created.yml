@@ -64,7 +64,7 @@ jobs:
         env:
           RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
         run: |
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org electron)
+          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org=electron)
           echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}

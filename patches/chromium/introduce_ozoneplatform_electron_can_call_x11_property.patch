@@ -21,7 +21,7 @@ index fb665685e3539eb13cde9b213960156634f987b3..e95c5883df89ad119a7229198f628acd
        properties->supports_global_application_menus = true;
        properties->app_modal_dialogs_use_event_blocker = true;
 diff --git a/ui/ozone/public/ozone_platform.h b/ui/ozone/public/ozone_platform.h
-index 85bbebb5507540d00cff2b888c4f0700e6896184..d804753419204f71c94c650527d7fceedc0c0ee3 100644
+index 2d58c44fb731cee1a4830ce3c27f25fe75d690be..5dbffdb3247aa6599720fef843f4567bbd2b7ad4 100644
 --- a/ui/ozone/public/ozone_platform.h
 +++ b/ui/ozone/public/ozone_platform.h
 @@ -124,6 +124,10 @@ class COMPONENT_EXPORT(OZONE) OzonePlatform {
