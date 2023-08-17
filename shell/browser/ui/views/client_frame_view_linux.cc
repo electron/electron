@@ -150,7 +150,13 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
 }
 
 gfx::Insets ClientFrameViewLinux::GetBorderDecorationInsets() const {
-  return frame_provider_->GetFrameThicknessDip();
+  const auto insets = frame_provider_->GetFrameThicknessDip();
+  // We shouldn't draw frame decorations for the tiled edges.
+  // See https://wayland.app/protocols/xdg-shell#xdg_toplevel:enum:state
+  return gfx::Insets::TLBR(tiled_edges().top ? 0 : insets.top(),
+                           tiled_edges().left ? 0 : insets.left(),
+                           tiled_edges().bottom ? 0 : insets.bottom(),
+                           tiled_edges().right ? 0 : insets.right());
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
