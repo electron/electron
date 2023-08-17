@@ -232,7 +232,7 @@ void ErrorMessageListener(v8::Local<v8::Message> message,
 // If node CLI inspect support is disabled, allow no debug options.
 bool IsAllowedOption(base::StringPiece option) {
   static constexpr auto debug_options =
-      base::MakeFixedFlatSet<base::StringPiece>({
+      base::MakeFixedFlatSetSorted<base::StringPiece>({
           "--debug",
           "--debug-brk",
           "--debug-port",
@@ -244,13 +244,14 @@ bool IsAllowedOption(base::StringPiece option) {
       });
 
   // This should be aligned with what's possible to set via the process object.
-  static constexpr auto options = base::MakeFixedFlatSet<base::StringPiece>({
-      "--trace-warnings",
-      "--trace-deprecation",
-      "--throw-deprecation",
-      "--no-deprecation",
-      "--dns-result-order",
-  });
+  static constexpr auto options =
+      base::MakeFixedFlatSetSorted<base::StringPiece>({
+          "--dns-result-order",
+          "--no-deprecation",
+          "--throw-deprecation",
+          "--trace-deprecation",
+          "--trace-warnings",
+      });
 
   if (debug_options.contains(option))
     return electron::fuses::IsNodeCliInspectEnabled();
@@ -262,14 +263,21 @@ bool IsAllowedOption(base::StringPiece option) {
 // See https://nodejs.org/api/cli.html#cli_node_options_options
 void SetNodeOptions(base::Environment* env) {
   // Options that are unilaterally disallowed
-  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>(
-      {"--enable-fips", "--force-fips", "--openssl-config", "--use-bundled-ca",
-       "--use-openssl-ca", "--experimental-policy"});
+  static constexpr auto disallowed =
+      base::MakeFixedFlatSetSorted<base::StringPiece>({
+          "--enable-fips",
+          "--experimental-policy",
+          "--force-fips",
+          "--openssl-config",
+          "--use-bundled-ca",
+          "--use-openssl-ca",
+      });
 
-  static constexpr auto pkg_opts = base::MakeFixedFlatSet<base::StringPiece>({
-      "--http-parser",
-      "--max-http-header-size",
-  });
+  static constexpr auto pkg_opts =
+      base::MakeFixedFlatSetSorted<base::StringPiece>({
+          "--http-parser",
+          "--max-http-header-size",
+      });
 
   if (env->HasVar("NODE_OPTIONS")) {
     if (electron::fuses::IsNodeOptionsEnabled()) {
