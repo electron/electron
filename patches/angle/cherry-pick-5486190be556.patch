@@ -1,7 +1,7 @@
-From 5486190be5565f9b5567fbd252a10425af3d59ee Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Geoff Lang <geofflang@chromium.org>
 Date: Fri, 21 Jul 2023 13:45:52 -0400
-Subject: [PATCH] [M114-LTS] Fix read size validation for RGBX formats.
+Subject: Fix read size validation for RGBX formats.
 
 GL_RGBX8_ANGLE is the only format where the upload format is 3-channel
 RGB, whilethe download format is 4-channel RGBX.  As such, the internal
@@ -17,13 +17,12 @@ Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4765136
 Commit-Queue: Daniel Yip <danielyip@google.com>
 Auto-Submit: Daniel Yip <danielyip@google.com>
 (cherry picked from commit 4a372ad49ceddea6c13f79adb212a777ec770a66)
----
 
 diff --git a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp
-index f2845dc..bb1389aaa 100644
+index 0b8d4eeb537690da830a0d7162e86ea1379c42b4..9e3007fa12189aa8a1bebb33e869cf5f597e04a9 100644
 --- a/src/libANGLE/formatutils.cpp
 +++ b/src/libANGLE/formatutils.cpp
-@@ -1702,7 +1702,15 @@
+@@ -1715,7 +1715,15 @@ const InternalFormat &GetInternalFormatInfo(GLenum internalFormat, GLenum type)
  GLuint InternalFormat::computePixelBytes(GLenum formatType) const
  {
      const auto &typeInfo = GetTypeInfo(formatType);
