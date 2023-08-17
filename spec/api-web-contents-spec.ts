@@ -1310,49 +1310,43 @@ describe('webContents module', () => {
   });
 
   describe('webrtc udp port range policy api', () => {
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+
     afterEach(closeAllWindows);
-    it('check default webrtc udp port range is {min: 0, max: 0}', () => {
-      const w = new BrowserWindow({ show: false });
+
+    it('check default webrtc udp port range is { min: 0, max: 0 }', () => {
       const settings = w.webContents.getWebRTCUDPPortRange();
-      expect(settings).to.be.an('object');
-      expect(settings).to.have.property('min').that.is.equal(0);
-      expect(settings).to.have.property('max').that.is.equal(0);
+      expect(settings).to.deep.equal({ min: 0, max: 0 });
     });
 
     it('can set and get webrtc udp port range policy with correct arguments', () => {
-      const w = new BrowserWindow({ show: false });
       w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65535 });
       const settings = w.webContents.getWebRTCUDPPortRange();
-      expect(settings).to.be.an('object');
-      expect(settings).to.have.property('min').that.is.equal(1);
-      expect(settings).to.have.property('max').that.is.equal(65535);
+      expect(settings).to.deep.equal({ min: 1, max: 65535 });
     });
 
     it('can not set webrtc udp port range policy with invalid arguments', () => {
-      const w = new BrowserWindow({ show: false });
       expect(() => {
         w.webContents.setWebRTCUDPPortRange({ min: 0, max: 65535 });
-      }).to.throw('Invalid arguments. Note that either port number should be in (0, 65535]');
+      }).to.throw("'min' and 'max' must be in the (0, 65535] range or [0, 0]");
       expect(() => {
         w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65536 });
-      }).to.throw('Invalid arguments. Note that either port number should be in (0, 65535]');
+      }).to.throw("'min' and 'max' must be in the (0, 65535] range or [0, 0]");
       expect(() => {
         w.webContents.setWebRTCUDPPortRange({ min: 60000, max: 56789 });
-      }).to.throw('Invalid arguments. Note that min should not be greater than max');
+      }).to.throw("'max' must be greater than or equal to 'min'");
     });
 
-    it('set webrtc udp port range policy can be reset to default by input {min: 0, max: 0}', () => {
-      const w = new BrowserWindow({ show: false });
+    it('can reset webrtc udp port range policy to default with { min: 0, max: 0 }', () => {
       w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65535 });
       const settings = w.webContents.getWebRTCUDPPortRange();
-      expect(settings).to.be.an('object');
-      expect(settings).to.have.property('min').that.is.equal(1);
-      expect(settings).to.have.property('max').that.is.equal(65535);
+      expect(settings).to.deep.equal({ min: 1, max: 65535 });
       w.webContents.setWebRTCUDPPortRange({ min: 0, max: 0 });
       const defaultSetting = w.webContents.getWebRTCUDPPortRange();
-      expect(defaultSetting).to.be.an('object');
-      expect(defaultSetting).to.have.property('min').that.is.equal(0);
-      expect(defaultSetting).to.have.property('max').that.is.equal(0);
+      expect(defaultSetting).to.deep.equal({ min: 0, max: 0 });
     });
   });
 

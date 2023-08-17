@@ -2541,15 +2541,11 @@ void WebContents::SetWebRTCIPHandlingPolicy(
 
 v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
     v8::Isolate* isolate) const {
-  uint16_t min = 0, max = 0;
   auto* prefs = web_contents()->GetMutableRendererPrefs();
 
-  min = prefs->webrtc_udp_min_port;
-  max = prefs->webrtc_udp_max_port;
-
   gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.Set("min", static_cast<uint32_t>(min));
-  dict.Set("max", static_cast<uint32_t>(max));
+  dict.Set("min", static_cast<uint32_t>(prefs->webrtc_udp_min_port));
+  dict.Set("max", static_cast<uint32_t>(prefs->webrtc_udp_max_port));
   return dict.GetHandle();
 }
 
@@ -2560,23 +2556,19 @@ void WebContents::SetWebRTCUDPPortRange(gin::Arguments* args) {
   if (!args->GetNext(&range) || !range.Get("min", &min) ||
       !range.Get("max", &max)) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError(
-            "Lack of arguments. Note that both min and max port number should "
-            "be provided and organized as an object");
+        .ThrowError("'min' and 'max' are both required");
     return;
   }
 
   if ((0 == min && 0 != max) || max > UINT16_MAX) {
     gin_helper::ErrorThrower(args->isolate())
         .ThrowError(
-            "Invalid arguments. Note that either port number should be in (0, "
-            "65535] or both are 0");
+            "'min' and 'max' must be in the (0, 65535] range or [0, 0]");
     return;
   }
   if (min > max) {
     gin_helper::ErrorThrower(args->isolate())
-        .ThrowError(
-            "Invalid arguments. Note that min should not be greater than max");
+        .ThrowError("'max' must be greater than or equal to 'min'");
     return;
   }
 
