@@ -88,7 +88,7 @@ index bd2f1d8a8d82456390a5efb641545e9177727542..c368baeb3b8141a84f461eff5bd84129
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index cdcb1da0c11b07cce895369aba56b78623a0bef5..3765fb5106c8f2fbc1438ad759a173610b5db2aa 100644
+index a5006dba7028857a52d2f7ffd8881201bdffce44..208220fd6dcd7248e6f60607c88749ce1d282ef4 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 @@ -120,6 +120,7 @@ - (void)setContentsChanged;

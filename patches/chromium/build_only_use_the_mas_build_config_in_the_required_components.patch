@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 49c1454f8aac903ac70b0a7e7753b87ed2c50d6e..977484e9186a9737c18dacdf2276bcd9e8ae78a3 100644
+index 6e6e1b1a53f790013a763c1b048aa79e4ffbf03e..7379de27388184b5bc68c2c2c48077407d6e0879 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1038,6 +1038,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 440fa0b3ff9b08016ff19ab54c70a453dc8c5f86..2e2f358829bf0492fd3e44173eeb7d0b
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index ee17fd6b5db11e9703b0bf24c776a9779abd5638..6fc74361c5dbcde6a7c335effd937cfc8fda9813 100644
+index 3e42c0f8c5ed5cfba0bbb8215a8cbe5e6f22ab6a..41b5740ab8fe7bc627a2cfcb83db9e6a6819c249 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -276,7 +276,7 @@ index 7e17546f658ce0e6908f7dea499eac31e5295895..85c5fe7e25a84de5342d3d9b8cd20d19
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 0829ee9a58400dea171c99e0784607305092aa92..eaa938d159ed43539ca29c863318cd35b94a5531 100644
+index b09b4510e9f5b1578e4e8ba18330bed928e7728a..ad3d29a93714080be660b5364ed15a676e153a66 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
 @@ -194,6 +194,7 @@ component("gfx") {
@@ -288,10 +288,10 @@ index 0829ee9a58400dea171c99e0784607305092aa92..eaa938d159ed43539ca29c863318cd35
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 1ca1591daa17bf1c95b0beb3d43405526142f0eb..fcec17bc496c45fc3d69cd51df6969c02f445305 100644
+index 2422a0cbcedbfadd58b7b55449b1a855b273a0e0..329fab443dba349a8e6da4448e103ab1c8bbbfab 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -683,6 +683,7 @@ component("views") {
+@@ -684,6 +684,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]

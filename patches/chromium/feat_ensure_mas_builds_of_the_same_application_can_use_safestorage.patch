@@ -12,7 +12,7 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index 3d712cb6179a917a45f9f0f69ab7436b1ee4d728..2e6901a548134dc4d8e3cd764fd5a23a729ea542 100644
+index a6b736f8be0fb24bd61f291ca60c1a9ccae30db7..2a85433c9c2064d219a31716d28a7a579a3f4dad 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -22,6 +22,12 @@

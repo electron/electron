@@ -218,7 +218,7 @@ index 761eb3e14b5848463b8886a1d1ea2ac603e4f677..6e717449ca7b3b6cdb440f69f7d1c956
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index e12c1d87018a86d763f59e5ac62058cf815fce3a..01f8023811b49797674a0de6e32c358d965789d1 100644
+index 3fa9113e013ace7eb41349d0cabbd2837c827772..643a679a92869278bbe3d43f67ac9d5fb28bc788 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
 @@ -62,6 +62,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
@@ -692,7 +692,7 @@ index 1944ef571b1f12fbee8dff553ad4de913c794efb..529296cbf858d2aaeb7b5fbe1ae8f36e
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index a4296b8e1084197830ca007bd91434607d766ec1..a93b7b04b538ccbba29a09aa2c3321d9a1835acd 100644
+index e1c6ed1b3a456b164945ee7eef34f9d4f0b80e07..87bff4350cdfcca97de6f66946b9cb6155e36634 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(

@@ -145,7 +145,7 @@ index 4b1d57ef72d6a9235edc7a2591c8c3242c283235..680cf1ee57e0a9748a3b1efa93cb2d15
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 4b7b5c5c07f2ec2887d344a7199f18e29b09a527..37b595169ac8c21162973984080d248e85f2910c 100644
+index ddddcfc40892ffbc42fdf65f376135786c068cce..3afa7f557624df5636f6e6fabec619b60cfbf755 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -969,7 +969,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
