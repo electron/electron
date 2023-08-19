@@ -1,2 +1,3 @@
 enforce_program_stack_limits_on_function_parameters.patch
 enforce_size_limits_on_struct_and_array_declarations.patch
+enforce_an_upper_limit_of_715_million_path_verbs_in_skpath.patch

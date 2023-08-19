@@ -1,7 +1,8 @@
-From d671b099a57d0a3e44701e2df67a2303ab187cf2 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tobias Tebbi <tebbi@chromium.org>
 Date: Tue, 13 Jun 2023 11:50:11 +0200
-Subject: [PATCH] Merged: [compiler] check for read-only property on AccessMode::kDefine
+Subject: Merged: [compiler] check for read-only property on
+ AccessMode::kDefine
 
 (cherry picked from commit 95eda07ddbc1839e39b3d1ff5db329c0ceb6dfaa)
 
@@ -13,13 +14,12 @@ Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
 Cr-Commit-Position: refs/branch-heads/11.4@{#53}
 Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
 Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
----
 
 diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
-index f2e03ec..a81ccc3 100644
+index 7c35df243af97d0fe7ae5b25bd31b01afe1d1e6b..b464581f27535207493c6854b4447bab4cbb3a5f 100644
 --- a/src/compiler/access-info.cc
 +++ b/src/compiler/access-info.cc
-@@ -750,8 +750,7 @@
+@@ -758,8 +758,7 @@ PropertyAccessInfo AccessInfoFactory::ComputePropertyAccessInfo(
      }
  
      if (index.is_found()) {
