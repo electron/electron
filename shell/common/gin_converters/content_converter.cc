@@ -342,7 +342,7 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
     return false;
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebKeyboardEvent*>(out)))
     return false;
-  dict.Get("skipInBrowser", &out->skip_in_browser);
+  dict.Get("skipIfUnhandled", &out->skip_if_unhandled);
   return true;
 }
 
