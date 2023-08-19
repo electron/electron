@@ -51,6 +51,8 @@ static_library("chrome") {
     "//chrome/browser/net/proxy_config_monitor.h",
     "//chrome/browser/net/proxy_service_factory.cc",
     "//chrome/browser/net/proxy_service_factory.h",
+    "//chrome/browser/picture_in_picture/auto_pip_setting_helper.cc",
+    "//chrome/browser/picture_in_picture/auto_pip_setting_helper.h",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc",
     "//chrome/browser/picture_in_picture/picture_in_picture_window_manager.h",
     "//chrome/browser/platform_util.cc",
