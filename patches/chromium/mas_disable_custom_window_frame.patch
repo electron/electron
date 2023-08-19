@@ -7,7 +7,7 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index 1332ba3d868fd510a8b7178eaf28b826af139c6e..af7652b6e668113aa4aa48c035bda2e26d9c7be2 100644
+index 9db1a07aabdbc5ebcf5d971664a8783a3d4810a3..eed51d0af307a0bb1c6cbbcbe2dbd3c906d0999c 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 @@ -10,6 +10,7 @@
@@ -75,7 +75,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 90da6ac42ca485884fee8d4f8e55d8f7aff16414..6f84cef4a127e6b90e69b6e182998a12e5795c5d 100644
+index 8c0114f40abcc5998ade78d5bc346e5bd648c912..c6de3ff72a9770375b0f16ffc6c07db588c9646b 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -95,7 +95,7 @@ index 90da6ac42ca485884fee8d4f8e55d8f7aff16414..6f84cef4a127e6b90e69b6e182998a12
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index b07bcaea48fcbf7153c53170a68674e61d195b03..d78a20dd83e8029aa4ac600576470ccf72bc7a98 100644
+index 8eff95b80df15ec9884cb39f8f3af18f1f8b17a7..9af459da8910dc4f9539dce68217d8d5bd717953 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 @@ -113,7 +113,9 @@ void OrderChildWindow(NSWindow* child_window,

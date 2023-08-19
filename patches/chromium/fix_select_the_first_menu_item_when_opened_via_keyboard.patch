@@ -58,7 +58,7 @@ index 4f3ec48c9bc07473a4085dddce6c7b9de1afdefe..c4b7beb3d551130caf87280233161afa
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 4c3cda2db04002c65d1a0055214f2775f5678134..3f11ce3d1f9d843b24aec3a028e5ea64ca402024 100644
+index 96e662f94c1f4090660a4857503fcc20a83de3bf..b96c3bee22823c867fabc8908efa5e26fd1c4a0b 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
 @@ -138,6 +138,7 @@ class VIEWS_EXPORT MenuController

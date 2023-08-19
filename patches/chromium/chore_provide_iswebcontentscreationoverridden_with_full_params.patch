@@ -99,7 +99,7 @@ index 2c98bdd6336762e11b76e8f0d5993dd4d40bf5a2..f91ad8f22b4e5ac3417a536468db2176
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index bc70c70a5b7de2125d29e67f6da14ec20c9dd7f0..66ac84c11a0cf88bd3a87669c3543f3f3073d92c 100644
+index 2cd706cf14ce954289ce789886193e3fdb735801..35881d5d2ad489eb4e57f3fe26f1c58e8f1123cc 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
 @@ -884,8 +884,7 @@ class Browser : public TabStripModelObserver,
@@ -155,7 +155,7 @@ index 69d39ab12f7a1895e1ca50914a4f8dc37e10e6cd..eaa9156721de98d19f6110e7b2ab55af
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index eb2d28e7df5e4430f24799d051ba864b25a4da38..4af0e5792e875d9fcf55293707d2cdcdae5b5007 100644
+index 3ef115a4f625f5a776c880ac85848909683d733b..4e0a58c6a618a32cc269ab98b62389201912210d 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -169,14 +169,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -358,7 +358,7 @@ index 60acb83c8d76f71db689f9d188bb6e8f64a74ffb..aa6cee708d1e451b443bc26528b56cc8
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index aa3148852ff61323cb9bf20817c6677cffe34ded..82790630067f11da8c4eac785b242d5cd131d3e3 100644
+index 0da0750e43157470a25636af3b152f783c8a2f25..6898a8b6844811cccbafd23a483fbfca9b57a25c 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -428,8 +428,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(
