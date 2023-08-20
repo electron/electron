@@ -1,6 +1,6 @@
 /* global chrome */
 
-const handleRequest = (request, sender, sendResponse) => {
+const handleRequest = async (request, sender, sendResponse) => {
   const { method, args = [] } = request;
   const tabId = sender.tab.id;
 
@@ -53,7 +53,12 @@ const handleRequest = (request, sender, sendResponse) => {
 
     case 'update': {
       const [params] = args;
-      chrome.tabs.update(tabId, params).then(sendResponse);
+      try {
+        const response = await chrome.tabs.update(tabId, params);
+        sendResponse(response);
+      } catch (error) {
+        sendResponse({ error: error.message });
+      }
       break;
     }
   }
