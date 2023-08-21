@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -95,12 +96,15 @@ class NodeBindings {
   std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform,
-                                       std::vector<std::string> args,
-                                       std::vector<std::string> exec_args);
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform);
+  std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform,
+      std::vector<std::string> args,
+      std::vector<std::string> exec_args);
+
+  std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);

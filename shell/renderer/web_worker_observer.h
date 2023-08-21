@@ -9,6 +9,12 @@
 
 #include "v8/include/v8.h"
 
+namespace node {
+
+class Environment;
+
+}  // namespace node
+
 namespace electron {
 
 class ElectronBindings;
@@ -33,8 +39,9 @@ class WebWorkerObserver {
   void ContextWillDestroy(v8::Local<v8::Context> context);
 
  private:
-  std::unique_ptr<NodeBindings> node_bindings_;
-  std::unique_ptr<ElectronBindings> electron_bindings_;
+  const std::unique_ptr<NodeBindings> node_bindings_;
+  const std::unique_ptr<ElectronBindings> electron_bindings_;
+  std::set<std::shared_ptr<node::Environment>> environments_;
 };
 
 }  // namespace electron

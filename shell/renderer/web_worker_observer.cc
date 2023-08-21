@@ -36,10 +36,10 @@ WebWorkerObserver* WebWorkerObserver::Create() {
 }
 
 WebWorkerObserver::WebWorkerObserver()
-    : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kWorker)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+    : node_bindings_{NodeBindings::Create(
+          NodeBindings::BrowserEnvironment::kWorker)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
 WebWorkerObserver::~WebWorkerObserver() = default;
 
@@ -61,20 +61,21 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(worker_context, nullptr);
+  auto env = node_bindings_->CreateEnvironment(worker_context, nullptr);
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(env.get());
 
   // Make uv loop being wrapped by window context.
-  node_bindings_->set_uv_env(env);
+  node_bindings_->set_uv_env(env.get());
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->StartPolling();
+
+  // FIXME(ckerr) need to keep `env` and reuse in ContextWillDestroy
 }
 
 void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {

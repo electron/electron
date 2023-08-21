@@ -37,6 +37,10 @@ class Screen;
 }
 #endif
 
+namespace node {
+class Environment;
+}
+
 namespace ui {
 class LinuxUiGetter;
 }
@@ -47,7 +51,6 @@ class Browser;
 class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
-class NodeEnvironment;
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 class ElectronExtensionsClient;
@@ -166,7 +169,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
   std::unique_ptr<JavascriptEnvironment> js_env_;
 
   // depends-on: js_env_'s isolate
-  std::unique_ptr<NodeEnvironment> node_env_;
+  std::shared_ptr<node::Environment> node_env_;
 
   // depends-on: js_env_'s isolate
   std::unique_ptr<Browser> browser_;
