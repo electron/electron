@@ -9,6 +9,7 @@ import("//pdf/features.gni")
 import("//ppapi/buildflags/buildflags.gni")
 import("//printing/buildflags/buildflags.gni")
 import("//testing/test.gni")
+import("//third_party/electron_node/node.gni")
 import("//third_party/ffmpeg/ffmpeg_options.gni")
 import("//tools/generate_library_loader/generate_library_loader.gni")
 import("//tools/grit/grit_rule.gni")
@@ -1566,4 +1567,71 @@ action("libcxx_objects_zip") {
 
 group("electron") {
   public_deps = [ ":electron_app" ]
+}
+
+##### node_headers
+
+node_dir = "../third_party/electron_node"
+node_files = read_file("$node_dir/filenames.json", "json")
+node_headers_dir = "$root_gen_dir/node_headers"
+
+header_group_index = 0
+header_groups = []
+foreach(header_group, node_files.headers) {
+  copy("node_headers_${header_group_index}") {
+    sources = rebase_path(header_group.files, ".", node_dir)
+    outputs =
+        [ "$node_headers_dir/${header_group.dest_dir}/{{source_file_part}}" ]
+  }
+  header_groups += [ ":node_headers_${header_group_index}" ]
+  header_group_index += 1
+}
+
+copy("zlib_headers") {
+  sources = [
+    "$node_dir/deps/zlib/zconf.h",
+    "$node_dir/deps/zlib/zlib.h",
+  ]
+  outputs = [ "$node_headers_dir/include/node/{{source_file_part}}" ]
+}
+
+copy("node_gypi_headers") {
+  deps = [ ":generate_config_gypi" ]
+  sources = [
+    "$node_dir/common.gypi",
+    "$root_gen_dir/config.gypi",
+  ]
+  outputs = [ "$node_headers_dir/include/node/{{source_file_part}}" ]
+}
+
+action("node_version_header") {
+  inputs = [ "$node_dir/src/node_version.h" ]
+  outputs = [ "$node_headers_dir/include/node/node_version.h" ]
+  script = "script/generate_node_version_header.py"
+  args = rebase_path(inputs) + rebase_path(outputs)
+  if (node_module_version != "") {
+    args += [ "$node_module_version" ]
+  }
+}
+
+action("tar_node_headers") {
+  deps = [ ":copy_node_headers" ]
+  outputs = [ "$root_gen_dir/node_headers.tar.gz" ]
+  script = "script/tar.py"
+  args = [
+    rebase_path("$root_gen_dir/node_headers"),
+    rebase_path(outputs[0]),
+  ]
+}
+
+group("copy_node_headers") {
+  public_deps = header_groups + [
+                  ":node_gypi_headers",
+                  ":node_version_header",
+                  ":zlib_headers",
+                ]
+}
+
+group("node_headers") {
+  public_deps = [ ":tar_node_headers" ]
 }

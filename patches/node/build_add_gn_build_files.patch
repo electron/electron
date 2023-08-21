@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..a3e4599c21f2faa92a0dca47b1e0b4e836bb475d
+index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c18272b70
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,443 @@
+@@ -0,0 +1,358 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -50,9 +50,6 @@ index 0000000000000000000000000000000000000000..a3e4599c21f2faa92a0dca47b1e0b4e8
 +  # `sourceUrl` and `headersUrl`. When compiling a release build, this will
 +  # default to https://nodejs.org/download/release/')
 +  node_release_urlbase = ""
-+
-+  # Allows embedders to override the NODE_MODULE_VERSION define
-+  node_module_version = ""
 +
 +  # Allows downstream packagers (eg. Linux distributions) to build Electron against system shared libraries.
 +  use_system_cares = false
@@ -371,88 +368,6 @@ index 0000000000000000000000000000000000000000..a3e4599c21f2faa92a0dca47b1e0b4e8
 +    ]
 +    cflags_cc += [ "-Wno-sign-compare" ]
 +  }
-+}
-+
-+##### node_headers
-+
-+node_headers_dir = "$root_gen_dir/node_headers"
-+
-+header_group_index = 0
-+header_groups = []
-+foreach(header_group, node_files.headers) {
-+  copy("node_headers_${header_group_index}") {
-+    sources = header_group.files
-+    outputs = [
-+      "$node_headers_dir/${header_group.dest_dir}/{{source_file_part}}",
-+    ]
-+  }
-+  header_groups += [ ":node_headers_${header_group_index}" ]
-+  header_group_index += 1
-+}
-+
-+copy("zlib_headers") {
-+  sources = [
-+    "deps/zlib/zconf.h",
-+    "deps/zlib/zlib.h",
-+  ]
-+  outputs = [
-+    "$node_headers_dir/include/node/{{source_file_part}}",
-+  ]
-+}
-+
-+copy("node_gypi_headers") {
-+  deps = [
-+    "//electron:generate_config_gypi",
-+  ]
-+  sources = [
-+    "$root_gen_dir/config.gypi",
-+    "common.gypi",
-+  ]
-+  outputs = [
-+    "$node_headers_dir/include/node/{{source_file_part}}",
-+  ]
-+}
-+
-+action("node_version_header") {
-+  inputs = [
-+    "src/node_version.h",
-+  ]
-+  outputs = [
-+    "$node_headers_dir/include/node/node_version.h",
-+  ]
-+  script = "tools/generate_node_version_header.py"
-+  args = [ rebase_path("src/node_version.h"), rebase_path(outputs[0]) ]
-+  if (node_module_version != "") {
-+    args += [ "$node_module_version" ]
-+  }
-+}
-+
-+action("tar_headers") {
-+  deps = [
-+    ":copy_headers",
-+  ]
-+  outputs = [
-+    "$root_gen_dir/node_headers.tar.gz",
-+  ]
-+  script = "tools/tar.py"
-+  args = [
-+    rebase_path("$root_gen_dir/node_headers"),
-+    rebase_path(outputs[0]),
-+  ]
-+}
-+
-+group("copy_headers") {
-+  public_deps = header_groups + [
-+                  ":zlib_headers",
-+                  ":node_gypi_headers",
-+                  ":node_version_header",
-+                ]
-+}
-+
-+group("headers") {
-+  public_deps = [
-+    ":tar_headers",
-+  ]
 +}
 diff --git a/deps/ada/BUILD.gn b/deps/ada/BUILD.gn
 new file mode 100644
@@ -1932,10 +1847,15 @@ index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef2483
 +}
 diff --git a/node.gni b/node.gni
 new file mode 100644
-index 0000000000000000000000000000000000000000..9b1a4048a4a64c36d88de0bbe1a548c906aaa22c
+index 0000000000000000000000000000000000000000..345327e89d71585c558fabcf11970d7c5363cd3a
 --- /dev/null
 +++ b/node.gni
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,34 @@
++declare_args() {
++  # Allows embedders to override the NODE_MODULE_VERSION define
++  node_module_version = ""
++}
++
 +# Run an action with a given working directory. Behaves identically to the
 +# action() target type, with the exception that it changes directory before
 +# running the script.
@@ -2286,37 +2206,6 @@ index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec5
 +    f.write(FILENAMES_JSON_HEADER)
 +    f.write(json.dumps(out, sort_keys=True, indent=2, separators=(',', ': ')))
 +    f.write('\n')
-diff --git a/tools/generate_node_version_header.py b/tools/generate_node_version_header.py
-new file mode 100755
-index 0000000000000000000000000000000000000000..2a92eccfa582df361f2a889c0d9b32c1059baa7d
---- /dev/null
-+++ b/tools/generate_node_version_header.py
-@@ -0,0 +1,25 @@
-+#!/usr/bin/env python3
-+import re
-+import sys
-+
-+node_version_file = sys.argv[1]
-+out_file = sys.argv[2]
-+NMV = None
-+if len(sys.argv) > 3:
-+  NMV = sys.argv[3]
-+
-+with open(node_version_file, 'r') as in_file, open(out_file, 'w') as out_file:
-+  changed = False
-+  contents = in_file.read()
-+  new_contents = re.sub(
-+    r'^#define NODE_MODULE_VERSION [0-9]+$',
-+    '#define NODE_MODULE_VERSION ' + NMV,
-+    contents,
-+    flags=re.MULTILINE)
-+
-+  changed = contents != new_contents
-+
-+  if not changed and NMV is not None:
-+    raise Exception("Did not modify the NMV from nodes value, this value MUST differ from node")
-+
-+  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
 index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd4c536570 100755
 --- a/tools/install.py
@@ -2477,21 +2366,3 @@ index 54c7dfce3631001e108570b19d34966edafd624f..077bba1572f05f1aa16553894703b12a
    return os.path.splitext(filename)[0]
  
  
-diff --git a/tools/tar.py b/tools/tar.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..eb697be25779db62c829aac45a509804e9fff331
---- /dev/null
-+++ b/tools/tar.py
-@@ -0,0 +1,12 @@
-+import os
-+import sys
-+import tarfile
-+
-+source = sys.argv[1]
-+target = sys.argv[2]
-+
-+os.chdir(os.path.dirname(source))
-+
-+tarball = tarfile.open(name=os.path.basename(target), mode='w:gz')
-+tarball.add(os.path.relpath(source))
-+tarball.close()

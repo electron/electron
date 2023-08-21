@@ -645,7 +645,7 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     name: Build Node.js headers
     command: |
       cd src
-      ninja -C out/Default third_party/electron_node:headers
+      ninja -C out/Default electron:node_headers
 
 step-electron-publish: &step-electron-publish
   run:
@@ -1072,7 +1072,7 @@ commands:
           build-type: << parameters.build-type >>
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build:
-          additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+          additional-targets: shell_browser_ui_unittests electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
 
       - *step-show-goma-stats
 
