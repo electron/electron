@@ -1,0 +1,126 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Wed, 2 Aug 2023 17:41:03 -0700
+Subject: Merged: [builtins] Clear FixedArray slot in Promise builtins
+
+Fixed: chromium:1468943
+(cherry picked from commit a84849ed718932b94dc877bb44a2d38eb8a0aef9)
+
+Change-Id: Ia2b181c373c15bd1840e2a1572c0e930cddcd788
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4753495
+Commit-Queue: Adam Klein <adamk@chromium.org>
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Auto-Submit: Shu-yu Guo <syg@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.6@{#28}
+Cr-Branched-From: e29c028f391389a7a60ee37097e3ca9e396d6fa4-refs/heads/11.6.189@{#3}
+Cr-Branched-From: 95cbef20e2aa556a1ea75431a48b36c4de6b9934-refs/heads/main@{#88340}
+
+diff --git a/src/builtins/promise-all-element-closure.tq b/src/builtins/promise-all-element-closure.tq
+index db3fb0134cf5bf0065174153171ef44a726a6fff..036e3c7b7473eae98f39a6da4472e826420086c8 100644
+--- a/src/builtins/promise-all-element-closure.tq
++++ b/src/builtins/promise-all-element-closure.tq
+@@ -175,11 +175,22 @@ transitioning macro PromiseAllResolveElementClosure<F: type>(
+         *NativeContextSlot(
+         nativeContext, ContextSlot::JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX);
+ 
+-    // If resolve and reject handlers close over values to keep track of whether
+-    // an input promise is already settled, mark the values array as COW before
+-    // letting it escape to user code.
+-    if (hasResolveAndRejectClosures) MakeFixedArrayCOW(values);
+-
++    // After this point, values escapes to user code.
++    //
++    // If resolve and reject handlers close over values to keep track of
++    // whether an input promise is already settled, mark the values array as
++    // COW. The original values array is still needed to guard against resolve
++    // or reject being called multiple times for an element.
++    //
++    // Otherwise, clear the slot.
++    if (hasResolveAndRejectClosures) {
++      MakeFixedArrayCOW(values);
++    } else {
++      *ContextSlot(
++          promiseContext,
++          PromiseAllResolveElementContextSlots::
++              kPromiseAllResolveElementValuesSlot) = kEmptyFixedArray;
++    }
+     const valuesArray = NewJSArray(arrayMap, values);
+     Call(promiseContext, resolve, Undefined, valuesArray);
+   }
+diff --git a/src/builtins/promise-all.tq b/src/builtins/promise-all.tq
+index 4d131abb44b7593d3e361d1d2f971380ee91850c..7205279526fa9edd93f154feb9694c22cae68606 100644
+--- a/src/builtins/promise-all.tq
++++ b/src/builtins/promise-all.tq
+@@ -278,15 +278,16 @@ Reject(JSAny) {
+ 
+   check(remainingElementsCount >= 0);
+ 
++  const valuesRef:&FixedArray = ContextSlot(
++      resolveElementContext,
++      PromiseAllResolveElementContextSlots::
++          kPromiseAllResolveElementValuesSlot);
++  const values = *valuesRef;
++
+   if (remainingElementsCount > 0) {
+     // Pre-allocate the backing store for the {values} to the desired
+     // capacity. We may already have elements in "values" - this happens
+     // when the Thenable calls the resolve callback immediately.
+-    const valuesRef:&FixedArray = ContextSlot(
+-        resolveElementContext,
+-        PromiseAllResolveElementContextSlots::
+-            kPromiseAllResolveElementValuesSlot);
+-    const values = *valuesRef;
+     // 'index' is a 1-based index and incremented after every Promise. Later we
+     // use 'values' as a 0-based array, so capacity 'index - 1' is enough.
+     const newCapacity = SmiUntag(index) - 1;
+@@ -301,19 +302,23 @@ Reject(JSAny) {
+       //     Let valuesArray be CreateArrayFromList(values).
+       //     Perform ? Call(resultCapability.[[Resolve]], undefined,
+       //                    « valuesArray »).
+-
+-      const values: FixedArray = *ContextSlot(
+-          resolveElementContext,
+-          PromiseAllResolveElementContextSlots::
+-              kPromiseAllResolveElementValuesSlot);
+       const arrayMap =
+           *NativeContextSlot(
+           nativeContext, ContextSlot::JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX);
+ 
++      // After this point, values escapes to user code.
++      //
+       // If resolve and reject handlers close over values to keep track of
+       // whether an input promise is already settled, mark the values array as
+-      // COW before letting it escape to user code.
+-      if (hasResolveAndRejectClosures) MakeFixedArrayCOW(values);
++      // COW. The original values array is still needed to guard against resolve
++      // or reject being called multiple times for an element.
++      //
++      // Otherwise, clear the slot.
++      if (hasResolveAndRejectClosures) {
++        MakeFixedArrayCOW(values);
++      } else {
++        *valuesRef = kEmptyFixedArray;
++      }
+ 
+       const valuesArray = NewJSArray(arrayMap, values);
+       Call(nativeContext, UnsafeCast<JSAny>(resolve), Undefined, valuesArray);
+diff --git a/src/builtins/promise-any.tq b/src/builtins/promise-any.tq
+index 7e707e649f11bc946a6d1173180d7293fe94d8ce..45bafac0e6b09143b69b21a7292f9ed6b9c46239 100644
+--- a/src/builtins/promise-any.tq
++++ b/src/builtins/promise-any.tq
+@@ -313,10 +313,14 @@ Reject(JSAny) {
+ 
+       // We may already have elements in "errors" - this happens when the
+       // Thenable calls the reject callback immediately.
+-      const errors: FixedArray = *ContextSlot(
++      const errorsRef:&FixedArray = ContextSlot(
+           rejectElementContext,
+           PromiseAnyRejectElementContextSlots::
+               kPromiseAnyRejectElementErrorsSlot);
++      const errors: FixedArray = *errorsRef;
++
++      // After this point, errors escapes to user code. Clear the slot.
++      *errorsRef = kEmptyFixedArray;
+ 
+       check(errors.length == index - 1);
+       const error = ConstructAggregateError(errors);
