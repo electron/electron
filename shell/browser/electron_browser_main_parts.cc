@@ -204,11 +204,11 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
-      browser_(std::make_unique<Browser>()),
-      node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+      node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())},
+      browser_{std::make_unique<Browser>()} {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
