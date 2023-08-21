@@ -105,7 +105,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
     const GURL& url) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   NSString* ns_app_path = GetAppPathForProtocol(url);
 

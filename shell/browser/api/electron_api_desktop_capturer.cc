@@ -151,7 +151,7 @@ struct Converter<electron::api::DesktopCapturer::Source> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const electron::api::DesktopCapturer::Source& source) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     content::DesktopMediaID id = source.media_list_source.id;
     dict.Set("name", base::UTF16ToUTF8(source.media_list_source.name));
     dict.Set("id", id.ToString());

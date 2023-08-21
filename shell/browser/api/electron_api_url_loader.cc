@@ -50,7 +50,7 @@ struct Converter<network::mojom::HttpRawHeaderPairPtr> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const network::mojom::HttpRawHeaderPairPtr& pair) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("key", pair->key);
     dict.Set("value", pair->value);
     return dict.GetHandle();
@@ -709,7 +709,7 @@ void SimpleURLLoaderWrapper::OnResponseStarted(
     const network::mojom::URLResponseHead& response_head) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("statusCode", response_head.headers->response_code());
   dict.Set("statusMessage", response_head.headers->GetStatusText());
   dict.Set("httpVersion", response_head.headers->GetHttpVersion());

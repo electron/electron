@@ -202,7 +202,7 @@ struct Converter<JumpListItem> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const JumpListItem& val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("type", val.type);
 
     switch (val.type) {
@@ -338,7 +338,7 @@ struct Converter<Browser::LaunchItem> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LaunchItem val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("name", val.name);
     dict.Set("path", val.path);
     dict.Set("args", val.args);
@@ -371,7 +371,7 @@ struct Converter<Browser::LoginItemSettings> {
 
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    Browser::LoginItemSettings val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("openAtLogin", val.open_at_login);
     dict.Set("openAsHidden", val.open_as_hidden);
     dict.Set("restoreState", val.restore_state);
@@ -1263,7 +1263,7 @@ v8::Local<v8::Value> App::GetJumpListSettings() {
   }
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("minItems", min_items);
   dict.Set("removedItems", gin::ConvertToV8(isolate, removed_items));
   return dict.GetHandle();
@@ -1344,8 +1344,8 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
   int processor_count = base::SysInfo::NumberOfProcessors();
 
   for (const auto& process_metric : app_metrics_) {
-    gin_helper::Dictionary pid_dict = gin::Dictionary::CreateEmpty(isolate);
-    gin_helper::Dictionary cpu_dict = gin::Dictionary::CreateEmpty(isolate);
+    auto pid_dict = gin_helper::Dictionary::CreateEmpty(isolate);
+    auto cpu_dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
     pid_dict.SetHidden("simple", true);
     cpu_dict.SetHidden("simple", true);
@@ -1382,7 +1382,7 @@ std::vector<gin_helper::Dictionary> App::GetAppMetrics(v8::Isolate* isolate) {
 #if !BUILDFLAG(IS_LINUX)
     auto memory_info = process_metric.second->GetMemoryInfo();
 
-    gin_helper::Dictionary memory_dict = gin::Dictionary::CreateEmpty(isolate);
+    auto memory_dict = gin_helper::Dictionary::CreateEmpty(isolate);
     memory_dict.SetHidden("simple", true);
     memory_dict.Set("workingSetSize",
                     static_cast<double>(memory_info.working_set_size >> 10));
@@ -1534,7 +1534,7 @@ v8::Local<v8::Value> App::GetDockAPI(v8::Isolate* isolate) {
     // Initialize the Dock API, the methods are bound to "dock" which exists
     // for the lifetime of "app"
     auto browser = base::Unretained(Browser::Get());
-    gin_helper::Dictionary dock_obj = gin::Dictionary::CreateEmpty(isolate);
+    auto dock_obj = gin_helper::Dictionary::CreateEmpty(isolate);
     dock_obj.SetMethod("bounce", &DockBounce);
     dock_obj.SetMethod(
         "cancelBounce",

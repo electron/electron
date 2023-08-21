@@ -126,7 +126,7 @@ v8::Local<v8::Value> CreateFunctionFromTranslater(v8::Isolate* isolate,
       v8::Local<v8::FunctionTemplate>::New(isolate, g_call_translater);
   auto* holder = new TranslaterHolder(isolate);
   holder->translater = translater;
-  gin::Dictionary state = gin::Dictionary::CreateEmpty(isolate);
+  auto state = gin::Dictionary::CreateEmpty(isolate);
   if (one_time)
     state.Set("oneTime", true);
   auto context = isolate->GetCurrentContext();

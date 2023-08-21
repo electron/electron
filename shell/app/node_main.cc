@@ -222,7 +222,7 @@ int NodeMain(int argc, char* argv[]) {
       process.SetMethod("crash", &ElectronBindings::Crash);
 
       // Setup process.crashReporter in child node processes
-      gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
+      auto reporter = gin_helper::Dictionary::CreateEmpty(isolate);
       reporter.SetMethod("getParameters", &GetParameters);
 #if IS_MAS_BUILD()
       reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);

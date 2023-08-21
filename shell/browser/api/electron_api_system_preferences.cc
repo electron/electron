@@ -35,7 +35,7 @@ SystemPreferences::~SystemPreferences() = default;
 
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
     v8::Isolate* isolate) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetHidden("simple", true);
   dict.Set("shouldRenderRichAnimation",
            gfx::Animation::ShouldRenderRichAnimation());

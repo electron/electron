@@ -212,7 +212,7 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
                                     bool* prevent_default) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary info = gin::Dictionary::CreateEmpty(isolate);
+  auto info = gin::Dictionary::CreateEmpty(isolate);
   info.Set("edge", edge);
 
   if (Emit("will-resize", new_bounds, info)) {
