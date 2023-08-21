@@ -8,7 +8,7 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index c830167862edc..cf307567604f5 100644
+index c830167862edc495fe0e5c040801441f1c62ea42..cf307567604f5ad456c0ce2c01ffef5450adbdb6 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
 @@ -517,12 +517,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
@@ -31,7 +31,7 @@ index c830167862edc..cf307567604f5 100644
  }
  
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index c257b869f0c79..5184aa47dda70 100644
+index c257b869f0c790f8af1f29d42e5ceb9e40344d8a..5184aa47dda70beb2f66e6227b17b632970a5a33 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
 @@ -108,7 +108,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
@@ -53,7 +53,7 @@ index c257b869f0c79..5184aa47dda70 100644
    // Objects to notify when the window frame button order changes.
    base::ObserverList<ui::WindowButtonOrderObserver>::Unchecked
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index 1f4eeebe54780..c977bb48751fc 100644
+index 1f4eeebe54780a4927104d7cdaa4f7cfae6e7d2a..c977bb48751fc4771ade09cb2b7db8689913b31d 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
 @@ -42,14 +42,17 @@ std::string GetThemeName() {
@@ -146,7 +146,7 @@ index 1f4eeebe54780..c977bb48751fc 100644
    // In GTK4, there's no way to obtain the frame thickness from CSS values
    // directly, so we must determine it experimentally based on the drawn
 diff --git a/ui/gtk/window_frame_provider_gtk.h b/ui/gtk/window_frame_provider_gtk.h
-index 32c3d63ae4598..91496d957b829 100644
+index 32c3d63ae4598339965c58443a8c2d12b99fb89a..91496d957b8291cd37948e237a1cc4bf605848b0 100644
 --- a/ui/gtk/window_frame_provider_gtk.h
 +++ b/ui/gtk/window_frame_provider_gtk.h
 @@ -14,7 +14,7 @@ namespace gtk {
@@ -169,7 +169,7 @@ index 32c3d63ae4598..91496d957b829 100644
  
  }  // namespace gtk
 diff --git a/ui/linux/fallback_linux_ui.cc b/ui/linux/fallback_linux_ui.cc
-index 6d77be047e202..ee1f503a679b3 100644
+index 6d77be047e202d1b1a75c62ab829dd1131ce7f68..ee1f503a679b3e939e3f2d2417aec2182063dbd8 100644
 --- a/ui/linux/fallback_linux_ui.cc
 +++ b/ui/linux/fallback_linux_ui.cc
 @@ -135,7 +135,7 @@ FallbackLinuxUi::CreateNavButtonProvider() {
@@ -182,7 +182,7 @@ index 6d77be047e202..ee1f503a679b3 100644
  }
  
 diff --git a/ui/linux/fallback_linux_ui.h b/ui/linux/fallback_linux_ui.h
-index 9901d4939400d..035ab6679f9f6 100644
+index 9901d4939400da87610b1a960ca989eb9da6dc9b..035ab6679f9f6a9083382580bbbe7fa2420ab28d 100644
 --- a/ui/linux/fallback_linux_ui.h
 +++ b/ui/linux/fallback_linux_ui.h
 @@ -67,7 +67,7 @@ class FallbackLinuxUi : public LinuxUiAndTheme {
@@ -195,7 +195,7 @@ index 9901d4939400d..035ab6679f9f6 100644
   private:
    std::string default_font_family_;
 diff --git a/ui/linux/linux_ui.h b/ui/linux/linux_ui.h
-index a47134d7fa672..2fe17292aee50 100644
+index a47134d7fa67213e8928ce98071f85fa1bc66508..2fe17292aee5021864615abc5b60ee38d7fa0e4b 100644
 --- a/ui/linux/linux_ui.h
 +++ b/ui/linux/linux_ui.h
 @@ -313,7 +313,7 @@ class COMPONENT_EXPORT(LINUX_UI) LinuxUiTheme {
