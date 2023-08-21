@@ -1,0 +1,41 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Geoff Lang <geofflang@chromium.org>
+Date: Fri, 21 Jul 2023 13:45:52 -0400
+Subject: Fix read size validation for RGBX formats.
+
+GL_RGBX8_ANGLE is the only format where the upload format is 3-channel
+RGB, whilethe download format is 4-channel RGBX.  As such, the internal
+format corresponding to format+type expects 3-byte input/output.  The
+format is fixed here for readPixels to output 4 bytes per pixel.
+
+Bug: chromium:1458046
+Change-Id: Iec737ed64bade003cfab50dc5f595eb4875e81e4
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4706957
+Commit-Queue: Shahbaz Youssefi <syoussefi@chromium.org>
+(cherry picked from commit 430a4f559cbc2bcd5d026e8b36ee46ddd80e9651)
+Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4765136
+Commit-Queue: Daniel Yip <danielyip@google.com>
+Auto-Submit: Daniel Yip <danielyip@google.com>
+(cherry picked from commit 4a372ad49ceddea6c13f79adb212a777ec770a66)
+
+diff --git a/src/libANGLE/formatutils.cpp b/src/libANGLE/formatutils.cpp
+index 4014953311976b0f1ae2d1842e8fced75ffecfc9..6c8d3680b7a8bb78894120ca6cac7882827a98e4 100644
+--- a/src/libANGLE/formatutils.cpp
++++ b/src/libANGLE/formatutils.cpp
+@@ -1710,7 +1710,15 @@ const InternalFormat &GetInternalFormatInfo(GLenum internalFormat, GLenum type)
+ GLuint InternalFormat::computePixelBytes(GLenum formatType) const
+ {
+     const auto &typeInfo = GetTypeInfo(formatType);
+-    GLuint components    = typeInfo.specialInterpretation ? 1u : componentCount;
++    GLuint components    = componentCount;
++    if (sizedInternalFormat == GL_RGBX8_ANGLE)
++    {
++        components = 4;
++    }
++    else if (typeInfo.specialInterpretation)
++    {
++        components = 1;
++    }
+     return components * typeInfo.bytes;
+ }
+ 

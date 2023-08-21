@@ -1,0 +1,105 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Thu, 27 Oct 2022 18:02:55 -0700
+Subject: Mark values array as COW
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Bug: chromium:1377790
+Change-Id: I36bb9e35ca7ecaaa7ed4605f1a19293bc662f341
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3988925
+Auto-Submit: Shu-yu Guo <syg@chromium.org>
+Reviewed-by: Marja Hölttä <marja@chromium.org>
+Commit-Queue: Marja Hölttä <marja@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#83969}
+
+diff --git a/src/builtins/promise-all-element-closure.tq b/src/builtins/promise-all-element-closure.tq
+index 24b9cfb346e022a0ad80f7712b249d1c38ae562d..db3fb0134cf5bf0065174153171ef44a726a6fff 100644
+--- a/src/builtins/promise-all-element-closure.tq
++++ b/src/builtins/promise-all-element-closure.tq
+@@ -174,6 +174,12 @@ transitioning macro PromiseAllResolveElementClosure<F: type>(
+     const arrayMap =
+         *NativeContextSlot(
+         nativeContext, ContextSlot::JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX);
++
++    // If resolve and reject handlers close over values to keep track of whether
++    // an input promise is already settled, mark the values array as COW before
++    // letting it escape to user code.
++    if (hasResolveAndRejectClosures) MakeFixedArrayCOW(values);
++
+     const valuesArray = NewJSArray(arrayMap, values);
+     Call(promiseContext, resolve, Undefined, valuesArray);
+   }
+diff --git a/src/builtins/promise-all.tq b/src/builtins/promise-all.tq
+index 29c468ed3eb34f9f348f115b8b6a77174e708bcc..4d131abb44b7593d3e361d1d2f971380ee91850c 100644
+--- a/src/builtins/promise-all.tq
++++ b/src/builtins/promise-all.tq
+@@ -138,7 +138,8 @@ transitioning macro PerformPromiseAll<F1: type, F2: type>(
+     nativeContext: NativeContext, iter: iterator::IteratorRecord,
+     constructor: Constructor, capability: PromiseCapability,
+     promiseResolveFunction: JSAny, createResolveElementFunctor: F1,
+-    createRejectElementFunctor: F2): JSAny labels
++    createRejectElementFunctor: F2,
++    hasResolveAndRejectClosures: constexpr bool): JSAny labels
+ Reject(JSAny) {
+   const promise = capability.promise;
+   const resolve = capability.resolve;
+@@ -308,6 +309,12 @@ Reject(JSAny) {
+       const arrayMap =
+           *NativeContextSlot(
+           nativeContext, ContextSlot::JS_ARRAY_PACKED_ELEMENTS_MAP_INDEX);
++
++      // If resolve and reject handlers close over values to keep track of
++      // whether an input promise is already settled, mark the values array as
++      // COW before letting it escape to user code.
++      if (hasResolveAndRejectClosures) MakeFixedArrayCOW(values);
++
+       const valuesArray = NewJSArray(arrayMap, values);
+       Call(nativeContext, UnsafeCast<JSAny>(resolve), Undefined, valuesArray);
+     }
+@@ -319,7 +326,8 @@ Reject(JSAny) {
+ transitioning macro GeneratePromiseAll<F1: type, F2: type>(
+     implicit context: Context)(
+     receiver: JSAny, iterable: JSAny, createResolveElementFunctor: F1,
+-    createRejectElementFunctor: F2, message: constexpr string): JSAny {
++    createRejectElementFunctor: F2, message: constexpr string,
++    hasResolveAndRejectClosures: constexpr bool): JSAny {
+   const nativeContext = LoadNativeContext(context);
+   // Let C be the this value.
+   // If Type(C) is not Object, throw a TypeError exception.
+@@ -352,7 +360,8 @@ transitioning macro GeneratePromiseAll<F1: type, F2: type>(
+     //    IfAbruptRejectPromise(result, promiseCapability).
+     return PerformPromiseAll(
+         nativeContext, i, constructor, capability, promiseResolveFunction,
+-        createResolveElementFunctor, createRejectElementFunctor)
++        createResolveElementFunctor, createRejectElementFunctor,
++        hasResolveAndRejectClosures)
+         otherwise Reject;
+   } catch (e, _message) deferred {
+     goto Reject(e);
+@@ -368,7 +377,7 @@ transitioning javascript builtin PromiseAll(
+     js-implicit context: Context, receiver: JSAny)(iterable: JSAny): JSAny {
+   return GeneratePromiseAll(
+       receiver, iterable, PromiseAllResolveElementFunctor{},
+-      PromiseAllRejectElementFunctor{}, 'Promise.all');
++      PromiseAllRejectElementFunctor{}, 'Promise.all', false);
+ }
+ 
+ // ES#sec-promise.allsettled
+@@ -377,7 +386,7 @@ transitioning javascript builtin PromiseAllSettled(
+     js-implicit context: Context, receiver: JSAny)(iterable: JSAny): JSAny {
+   return GeneratePromiseAll(
+       receiver, iterable, PromiseAllSettledResolveElementFunctor{},
+-      PromiseAllSettledRejectElementFunctor{}, 'Promise.allSettled');
++      PromiseAllSettledRejectElementFunctor{}, 'Promise.allSettled', true);
+ }
+ 
+ extern macro PromiseAllResolveElementSharedFunConstant(): SharedFunctionInfo;
+@@ -385,4 +394,6 @@ extern macro PromiseAllSettledRejectElementSharedFunConstant():
+     SharedFunctionInfo;
+ extern macro PromiseAllSettledResolveElementSharedFunConstant():
+     SharedFunctionInfo;
++
++extern macro MakeFixedArrayCOW(FixedArray): void;
+ }

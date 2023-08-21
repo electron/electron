@@ -4,3 +4,4 @@ cherry-pick-ce029c91a662.patch
 cherry-pick-aed05b609629.patch
 translator_limit_the_size_of_private_variables_in_webgl_shaders.patch
 webgl_limit_total_size_of_private_data.patch
+cherry-pick-5486190be556.patch

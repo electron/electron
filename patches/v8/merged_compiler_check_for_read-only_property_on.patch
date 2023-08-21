@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Tue, 13 Jun 2023 11:50:11 +0200
+Subject: Merged: [compiler] check for read-only property on
+ AccessMode::kDefine
+
+(cherry picked from commit 95eda07ddbc1839e39b3d1ff5db329c0ceb6dfaa)
+
+Change-Id: Ic5799a32e7c312e41cd0a7e1e6073a235414d56f
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4665588
+Auto-Submit: Tobias Tebbi <tebbi@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.4@{#53}
+Cr-Branched-From: 8a8a1e7086dacc426965d3875914efa66663c431-refs/heads/11.4.183@{#1}
+Cr-Branched-From: 5483d8e816e0bbce865cbbc3fa0ab357e6330bab-refs/heads/main@{#87241}
+
+diff --git a/src/compiler/access-info.cc b/src/compiler/access-info.cc
+index 7c35df243af97d0fe7ae5b25bd31b01afe1d1e6b..b464581f27535207493c6854b4447bab4cbb3a5f 100644
+--- a/src/compiler/access-info.cc
++++ b/src/compiler/access-info.cc
+@@ -758,8 +758,7 @@ PropertyAccessInfo AccessInfoFactory::ComputePropertyAccessInfo(
+     }
+ 
+     if (index.is_found()) {
+-      if (access_mode == AccessMode::kStore ||
+-          access_mode == AccessMode::kStoreInLiteral) {
++      if (IsAnyStore(access_mode)) {
+         DCHECK(!map.is_dictionary_map());
+ 
+         // Don't bother optimizing stores to read-only properties.

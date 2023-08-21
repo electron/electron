@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Adam Rice <ricea@chromium.org>
+Date: Tue, 8 Aug 2023 08:48:51 +0000
+Subject: NetworkContext: Don't access url_loader_factories_ during destruction
+
+Move the contents of `url_loader_factories_` to a temporary variable in
+the destructor of network::NetworkContext so that re-entrant calls to
+DestroyURLLoaderFactory() don't happen after it has started being
+destroyed.
+
+BUG=1465833
+
+(cherry picked from commit e579b20308290df03f045c5d0ccb852d96b24ce3)
+
+Change-Id: I476f0865256bdcba4ec934688597e69991968f84
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4733351
+Reviewed-by: Kenichi Ishibashi <bashi@chromium.org>
+Commit-Queue: Adam Rice <ricea@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1177648}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4756334
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Auto-Submit: Adam Rice <ricea@chromium.org>
+Commit-Queue: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5845@{#1252}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+
+diff --git a/services/network/network_context.cc b/services/network/network_context.cc
+index 6dc46954b070795de082d8542f8bae56d7b52dd4..2b12040f5ef2b7fd466a9b6d92e75faea8bd1808 100644
+--- a/services/network/network_context.cc
++++ b/services/network/network_context.cc
+@@ -712,6 +712,8 @@ NetworkContext::NetworkContext(
+ }
+ 
+ NetworkContext::~NetworkContext() {
++  is_destructing_ = true;
++
+   // May be nullptr in tests.
+   if (network_service_)
+     network_service_->DeregisterNetworkContext(this);
+@@ -775,6 +777,12 @@ NetworkContext::~NetworkContext() {
+     }
+   }
+ #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
++
++  // Clear `url_loader_factories_` before deleting the contents, as it can
++  // result in re-entrant calls to DestroyURLLoaderFactory().
++  std::set<std::unique_ptr<cors::CorsURLLoaderFactory>,
++           base::UniquePtrComparator>
++      url_loader_factories = std::move(url_loader_factories_);
+ }
+ 
+ // static
+@@ -993,6 +1001,9 @@ void NetworkContext::DisableQuic() {
+ 
+ void NetworkContext::DestroyURLLoaderFactory(
+     cors::CorsURLLoaderFactory* url_loader_factory) {
++  if (is_destructing_) {
++    return;
++  }
+   auto it = url_loader_factories_.find(url_loader_factory);
+   DCHECK(it != url_loader_factories_.end());
+   url_loader_factories_.erase(it);
+diff --git a/services/network/network_context.h b/services/network/network_context.h
+index 402a9de330140e78f14dbfae204f4c637803fcef..9e4db6927a42308b7ac30455f27ad97b92e2b0c3 100644
+--- a/services/network/network_context.h
++++ b/services/network/network_context.h
+@@ -915,6 +915,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+   // DCHECKs on APIs used by external callers.
+   bool require_network_isolation_key_ = false;
+ 
++  // True once the destructor has been called. Used to guard against re-entrant
++  // calls to DestroyURLLoaderFactory().
++  bool is_destructing_ = false;
++
+   // Indicating whether
+   // https://fetch.spec.whatwg.org/#cors-non-wildcard-request-header-name is
+   // supported.
+@@ -923,13 +927,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+ 
+   // CorsURLLoaderFactory assumes that fields owned by the NetworkContext always
+   // live longer than the factory.  Therefore we want the factories to be
+-  // destroyed before other fields above.  In particular:
+-  // - This must be below |url_request_context_| so that the URLRequestContext
+-  //   outlives all the URLLoaderFactories and URLLoaders that depend on it;
+-  //   for the same reason, it must also be below |network_context_|.
+-  // - This must be below |loader_count_per_process_| that is touched by
+-  //   CorsURLLoaderFactory::DestroyURLLoader (see also
+-  //   https://crbug.com/1174943).
++  // destroyed before other fields above.  This is accomplished by explicitly
++  // clearing `url_loader_factories_` in the destructor.
+   std::set<std::unique_ptr<cors::CorsURLLoaderFactory>,
+            base::UniquePtrComparator>
+       url_loader_factories_;
