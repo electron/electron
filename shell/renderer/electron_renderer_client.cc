@@ -88,7 +88,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
 
-  auto env = node_bindings_->CreateEnvironment(renderer_context, nullptr);
+  std::shared_ptr<node::Environment> env =
+      node_bindings_->CreateEnvironment(renderer_context, nullptr);
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.
@@ -122,10 +123,9 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (injected_frames_.erase(render_frame) == 0)
     return;
 
-  node::Environment* const env = node::Environment::GetCurrent(context);
-  auto const iter =
-      std::find_if(environments_.begin(), environments_.end(),
-                   [env](auto& item) { return env == item.get(); });
+  node::Environment* env = node::Environment::GetCurrent(context);
+  const auto iter = base::ranges::find_if(
+      environments_, [env](auto& item) { return env == item.get(); });
   if (iter == environments_.end())
     return;
 
@@ -203,9 +203,7 @@ node::Environment* ElectronRendererClient::GetEnvironment(
   node::Environment* env = node::Environment::GetCurrent(context);
 
   return base::Contains(environments_, env,
-                        [](std::shared_ptr<node::Environment> const& item) {
-                          return item.get();
-                        })
+                        [](auto const& item) { return item.get(); })
              ? env
              : nullptr;
 }

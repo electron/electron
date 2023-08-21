@@ -266,26 +266,25 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
   // Create the global environment.
-  auto env = node_bindings_->CreateEnvironment(
+  node_env_ = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform());
-  node_env_ = env;
 
-  env->set_trace_sync_io(env->options()->trace_sync_io);
+  node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
   // We do not want to crash the main process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn-with-error-code";
+  node_env_->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_->BindTo(js_env_->isolate(), node_env_->process_object());
 
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
-  node_bindings_->set_uv_env(env.get());
+  node_bindings_->set_uv_env(node_env_.get());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env.get());
+  node_bindings_->LoadEnvironment(node_env_.get());
 
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
