@@ -1,5 +1,5 @@
 {
-  "name": "tabs-api-async",
+  "name": "api-async",
   "version": "1.0",
   "content_scripts": [
     {
@@ -8,6 +8,7 @@
       "run_at": "document_start"
     }
   ],
+  "permissions": ["tabs"],
   "background": {
     "service_worker": "background.js"
   },
