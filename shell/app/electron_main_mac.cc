@@ -5,7 +5,7 @@
 #include <cstdlib>
 #include <memory>
 
-#include "base/allocator/early_zone_registration_mac.h"
+#include "base/allocator/early_zone_registration_apple.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_library_main.h"

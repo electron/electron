@@ -962,7 +962,7 @@ if (is_mac) {
       output_name = electron_helper_name + invoker.helper_name_suffix
       deps = [
         ":electron_framework+link",
-        "//base/allocator:early_zone_registration_mac",
+        "//base/allocator:early_zone_registration_apple",
       ]
       if (!is_mas_build) {
         deps += [ "//sandbox/mac:seatbelt" ]
@@ -1124,7 +1124,7 @@ if (is_mac) {
       ":electron_app_plist",
       ":electron_app_resources",
       ":electron_fuses",
-      "//base/allocator:early_zone_registration_mac",
+      "//base/allocator:early_zone_registration_apple",
       "//electron/buildflags",
     ]
     if (is_mas_build) {
