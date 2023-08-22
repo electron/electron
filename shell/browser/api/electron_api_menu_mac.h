@@ -11,10 +11,6 @@
 
 #import "shell/browser/ui/cocoa/electron_menu_controller.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 namespace electron::api {
 
 class MenuMac : public Menu {

@@ -6,10 +6,6 @@
 #include "base/apple/owned_objc.h"
 #include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 namespace electron {
 
 DelayedNativeViewHost::DelayedNativeViewHost(gfx::NativeView native_view)
