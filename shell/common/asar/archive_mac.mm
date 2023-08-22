@@ -12,10 +12,10 @@
 #include <string>
 
 #include "base/apple/bundle_locations.h"
+#include "base/apple/foundation_util.h"
+#include "base/apple/scoped_cftyperef.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/mac/foundation_util.h"
-#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/common/asar/asar_util.h"
 
@@ -45,7 +45,7 @@ absl::optional<IntegrityPayload> Archive::HeaderIntegrity() const {
     return absl::nullopt;
 
   NSString* ns_relative_path =
-      base::mac::FilePathToNSString(relative_path.value());
+      base::apple::FilePathToNSString(relative_path.value());
 
   NSDictionary* integrity_payload = [integrity objectForKey:ns_relative_path];
 

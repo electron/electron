@@ -10,10 +10,10 @@
 
 #include "base/apple/bridging.h"
 #include "base/apple/bundle_locations.h"
+#include "base/apple/scoped_cftyperef.h"
 #include "base/i18n/rtl.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/mac_util.mm"
-#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "chrome/browser/browser_process.h"
@@ -160,7 +160,7 @@ void Browser::Show() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  NSString* path_string = base::mac::FilePathToNSString(path);
+  NSString* path_string = base::apple::FilePathToNSString(path);
   if (!path_string)
     return;
   NSURL* u = [NSURL fileURLWithPath:path_string];
@@ -197,7 +197,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   CFStringRef other = nil;
   for (CFIndex i = 0; i < CFArrayGetCount(bundleList); ++i) {
     other =
-        base::mac::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList, i));
+        base::apple::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList, i));
     if (![identifier isEqualToString:(__bridge NSString*)other]) {
       break;
     }
