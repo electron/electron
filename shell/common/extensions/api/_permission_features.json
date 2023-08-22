@@ -20,5 +20,11 @@
     "extension_types": [
       "extension"
     ]
+  },
+  "tabs": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ]
   }
 }
