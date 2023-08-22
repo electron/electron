@@ -53,11 +53,15 @@ index c257b869f0c790f8af1f29d42e5ceb9e40344d8a..5184aa47dda70beb2f66e6227b17b632
    // Objects to notify when the window frame button order changes.
    base::ObserverList<ui::WindowButtonOrderObserver>::Unchecked
 diff --git a/ui/gtk/window_frame_provider_gtk.cc b/ui/gtk/window_frame_provider_gtk.cc
-index 1f4eeebe54780a4927104d7cdaa4f7cfae6e7d2a..c977bb48751fc4771ade09cb2b7db8689913b31d 100644
+index 1f4eeebe54780a4927104d7cdaa4f7cfae6e7d2a..64d243287a367ff4201efebeda95f553c33f5d9b 100644
 --- a/ui/gtk/window_frame_provider_gtk.cc
 +++ b/ui/gtk/window_frame_provider_gtk.cc
-@@ -42,14 +42,17 @@ std::string GetThemeName() {
- GtkCssContext WindowContext(bool solid_frame, bool focused) {
+@@ -39,17 +39,20 @@ std::string GetThemeName() {
+   return theme_string;
+ }
+ 
+-GtkCssContext WindowContext(bool solid_frame, bool focused) {
++GtkCssContext WindowContext(bool solid_frame, bool maximized, bool focused) {
    std::string selector = "window.background.";
    selector += solid_frame ? "solid-csd" : "csd";
 +  if (maximized) {
