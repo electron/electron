@@ -842,15 +842,14 @@ describe('chrome extensions', () => {
 
       before(async () => {
         customSession = session.fromPartition(`persist:${uuid.v4()}`);
-        await customSession.loadExtension(path.join(fixtures, 'extensions', 'tabs-api-async'));
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-tabs', 'api-async'));
       });
 
       beforeEach(() => {
         w = new BrowserWindow({
           show: false,
           webPreferences: {
-            session: customSession,
-            nodeIntegration: true
+            session: customSession
           }
         });
       });
@@ -913,27 +912,55 @@ describe('chrome extensions', () => {
         });
       });
 
-      it('get', async () => {
-        await w.loadURL(url);
+      describe('get', () => {
+        it('returns tab properties', async () => {
+          await w.loadURL(url);
 
-        const message = { method: 'get' };
-        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+          const message = { method: 'get' };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
+          const [,, responseString] = await once(w.webContents, 'console-message');
 
-        const response = JSON.parse(responseString);
-        expect(response).to.have.property('active').that.is.a('boolean');
-        expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
-        expect(response).to.have.property('discarded').that.is.a('boolean');
-        expect(response).to.have.property('groupId').that.is.a('number');
-        expect(response).to.have.property('highlighted').that.is.a('boolean');
-        expect(response).to.have.property('id').that.is.a('number');
-        expect(response).to.have.property('incognito').that.is.a('boolean');
-        expect(response).to.have.property('index').that.is.a('number');
-        expect(response).to.have.property('pinned').that.is.a('boolean');
-        expect(response).to.have.property('selected').that.is.a('boolean');
-        expect(response).to.have.property('url').that.is.a('string');
-        expect(response).to.have.property('windowId').that.is.a('number');
+          const response = JSON.parse(responseString);
+          expect(response).to.have.property('url').that.is.a('string');
+          expect(response).to.have.property('title').that.is.a('string');
+          expect(response).to.have.property('active').that.is.a('boolean');
+          expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
+          expect(response).to.have.property('discarded').that.is.a('boolean');
+          expect(response).to.have.property('groupId').that.is.a('number');
+          expect(response).to.have.property('highlighted').that.is.a('boolean');
+          expect(response).to.have.property('id').that.is.a('number');
+          expect(response).to.have.property('incognito').that.is.a('boolean');
+          expect(response).to.have.property('index').that.is.a('number');
+          expect(response).to.have.property('pinned').that.is.a('boolean');
+          expect(response).to.have.property('selected').that.is.a('boolean');
+          expect(response).to.have.property('windowId').that.is.a('number');
+        });
+
+        it('does not return privileged properties without tabs permission', async () => {
+          const noPrivilegeSes = session.fromPartition(`persist:${uuid.v4()}`);
+          await noPrivilegeSes.loadExtension(path.join(fixtures, 'extensions', 'chrome-tabs', 'no-privileges'));
+
+          w = new BrowserWindow({ show: false, webPreferences: { session: noPrivilegeSes } });
+          await w.loadURL(url);
+
+          w.webContents.executeJavaScript('window.postMessage(\'{}\', \'*\')');
+          const [,, responseString] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
+          expect(response).not.to.have.property('url');
+          expect(response).not.to.have.property('title');
+          expect(response).to.have.property('active').that.is.a('boolean');
+          expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
+          expect(response).to.have.property('discarded').that.is.a('boolean');
+          expect(response).to.have.property('groupId').that.is.a('number');
+          expect(response).to.have.property('highlighted').that.is.a('boolean');
+          expect(response).to.have.property('id').that.is.a('number');
+          expect(response).to.have.property('incognito').that.is.a('boolean');
+          expect(response).to.have.property('index').that.is.a('number');
+          expect(response).to.have.property('pinned').that.is.a('boolean');
+          expect(response).to.have.property('selected').that.is.a('boolean');
+          expect(response).to.have.property('windowId').that.is.a('number');
+        });
       });
 
       it('reload', async () => {
@@ -960,6 +987,19 @@ describe('chrome extensions', () => {
         const [,, responseString] = await once(w.webContents, 'console-message');
         const response = JSON.parse(responseString);
 
+        expect(response).to.have.property('url').that.is.a('string');
+        expect(response).to.have.property('title').that.is.a('string');
+        expect(response).to.have.property('active').that.is.a('boolean');
+        expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
+        expect(response).to.have.property('discarded').that.is.a('boolean');
+        expect(response).to.have.property('groupId').that.is.a('number');
+        expect(response).to.have.property('highlighted').that.is.a('boolean');
+        expect(response).to.have.property('id').that.is.a('number');
+        expect(response).to.have.property('incognito').that.is.a('boolean');
+        expect(response).to.have.property('index').that.is.a('number');
+        expect(response).to.have.property('pinned').that.is.a('boolean');
+        expect(response).to.have.property('selected').that.is.a('boolean');
+        expect(response).to.have.property('windowId').that.is.a('number');
         expect(response).to.have.property('mutedInfo').that.is.a('object');
         const { mutedInfo } = response;
         expect(mutedInfo).to.deep.eq({
