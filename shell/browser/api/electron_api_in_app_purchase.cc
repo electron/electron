@@ -21,7 +21,6 @@ struct Converter<in_app_purchase::PaymentDiscount> {
       v8::Isolate* isolate,
       const in_app_purchase::PaymentDiscount& paymentDiscount) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
     dict.Set("identifier", paymentDiscount.identifier);
     dict.Set("keyIdentifier", paymentDiscount.keyIdentifier);
     dict.Set("nonce", paymentDiscount.nonce);
@@ -36,7 +35,6 @@ struct Converter<in_app_purchase::Payment> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Payment& payment) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
     dict.Set("productIdentifier", payment.productIdentifier);
     dict.Set("quantity", payment.quantity);
     dict.Set("applicationUsername", payment.applicationUsername);
@@ -52,7 +50,6 @@ struct Converter<in_app_purchase::Transaction> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Transaction& val) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
     dict.Set("transactionIdentifier", val.transactionIdentifier);
     dict.Set("transactionDate", val.transactionDate);
     dict.Set("originalTransactionIdentifier",
@@ -72,7 +69,6 @@ struct Converter<in_app_purchase::ProductSubscriptionPeriod> {
       const in_app_purchase::ProductSubscriptionPeriod&
           productSubscriptionPeriod) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
     dict.Set("numberOfUnits", productSubscriptionPeriod.numberOfUnits);
     dict.Set("unit", productSubscriptionPeriod.unit);
     return dict.GetHandle();
@@ -85,7 +81,6 @@ struct Converter<in_app_purchase::ProductDiscount> {
       v8::Isolate* isolate,
       const in_app_purchase::ProductDiscount& productDiscount) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
     dict.Set("identifier", productDiscount.identifier);
     dict.Set("type", productDiscount.type);
     dict.Set("price", productDiscount.price);
@@ -105,7 +100,6 @@ struct Converter<in_app_purchase::Product> {
   static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
                                    const in_app_purchase::Product& val) {
     auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
-    dict.SetHidden("simple", true);
     dict.Set("productIdentifier", val.productIdentifier);
     dict.Set("localizedDescription", val.localizedDescription);
     dict.Set("localizedTitle", val.localizedTitle);
