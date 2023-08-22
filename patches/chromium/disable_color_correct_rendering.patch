@@ -93,7 +93,7 @@ index 9d7e9780c3ae58b45b2f443e48175254dd3f480b..6a276759550e6f80740875df654a136c
      sandbox::policy::switches::kGpuSandboxAllowSysVShm,
      sandbox::policy::switches::kGpuSandboxFailuresFatal,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index 173871e5ec3fb760669e9120f11cd1a91bcb1459..3fb385e21fd4b2f38e36b7487d5671511040c08a 100644
+index a11bb4b6a2740240bdf325b2b0c609d0bd662fa7..df1fbd9f4a8b365490a4c7d911e227e097aaa4bd 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -3272,6 +3272,7 @@ void RenderProcessHostImpl::PropagateBrowserCommandLineToRenderer(
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index 59c0bf7f6d4a7b4206d9e588b460ebe40ccbef11..f0c06b9cfb4febf4d80c6d22c2505ef20a263e26 100644
+index a1d70a17329ef79be18cbaef9c3da71eca23906b..3886285c729894a5e30ec873bf86b2aa2897361e 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@
@@ -159,7 +159,7 @@ index 59c0bf7f6d4a7b4206d9e588b460ebe40ccbef11..f0c06b9cfb4febf4d80c6d22c2505ef2
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -240,6 +241,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -308,6 +309,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
