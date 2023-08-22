@@ -1186,7 +1186,7 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
       const [, { webContents }] = await once(app, 'browser-window-created');
       const [,, message] = await once(webContents, 'console-message');
-      expect(message).to.equal('{"require":"function","module":"undefined","process":"object","Buffer":"function"}');
+      expect(message).to.equal('{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}');
     });
 
     it('disables the <webview> tag when it is disabled on the parent window', async () => {
