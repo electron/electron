@@ -218,7 +218,7 @@ index 4ceb1a9d9f336f65e15831856d30b45af594dd0f..646ac22f074c3d1827e59170a93807bc
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index 3fa9113e013ace7eb41349d0cabbd2837c827772..643a679a92869278bbe3d43f67ac9d5fb28bc788 100644
+index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d1cd3a7ca 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
 @@ -62,6 +62,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {

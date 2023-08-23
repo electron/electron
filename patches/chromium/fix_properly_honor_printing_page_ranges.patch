@@ -25,7 +25,7 @@ index c9a13aee1e64f359cd1d5c2e440b4df204420997..7790c311400fc84bfda6c99e1ebd8da7
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index fd057c4f4be3184db6395f914a4938d2dac3a048..b2d639f66d0de1842707b9dbea15abe53fdeda86 100644
+index 5acb259643c5d59e95cb958d1a066e9690758107..ed46c63b5a031eae8aaaf975ebb19b0dd1b357e7 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
 @@ -209,7 +209,8 @@ bool IsIppColorModelColorful(mojom::ColorModel color_model) {

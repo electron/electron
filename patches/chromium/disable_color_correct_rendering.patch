@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index a1d70a17329ef79be18cbaef9c3da71eca23906b..3886285c729894a5e30ec873bf86b2aa2897361e 100644
+index 39c7450c8e0f184f0ca482ad6bea8ad68cef19de..9d4198f4f6fa5e3301b267a551a3650a6ef7173b 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@
@@ -159,7 +159,7 @@ index a1d70a17329ef79be18cbaef9c3da71eca23906b..3886285c729894a5e30ec873bf86b2aa
  #include "ui/native_theme/native_theme_features.h"
  #include "ui/native_theme/overlay_scrollbar_constants_aura.h"
  
-@@ -308,6 +309,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
+@@ -331,6 +332,9 @@ cc::LayerTreeSettings GenerateLayerTreeSettings(
    settings.main_frame_before_activation_enabled =
        cmd.HasSwitch(cc::switches::kEnableMainFrameBeforeActivation);
  
@@ -170,7 +170,7 @@ index a1d70a17329ef79be18cbaef9c3da71eca23906b..3886285c729894a5e30ec873bf86b2aa
    // is what the renderer uses if its not threaded.
    settings.enable_checker_imaging =
 diff --git a/ui/gfx/mac/io_surface.cc b/ui/gfx/mac/io_surface.cc
-index ba377324550c7f69992932411d52b3522c6d682d..f51d4f2dea39de21a4cd50097b911fe2aac8885e 100644
+index af19d04e043366a2db07bf6eddfd1fc260590a37..15f6f549bc25b2d8f5da268801e49626089c8709 100644
 --- a/ui/gfx/mac/io_surface.cc
 +++ b/ui/gfx/mac/io_surface.cc
 @@ -20,6 +20,7 @@
@@ -196,7 +196,7 @@ index ba377324550c7f69992932411d52b3522c6d682d..f51d4f2dea39de21a4cd50097b911fe2
    // Allow but ignore invalid color spaces.
    if (!color_space.IsValid())
      return true;
-@@ -317,6 +326,15 @@ base::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
+@@ -318,6 +327,15 @@ base::apple::ScopedCFTypeRef<IOSurfaceRef> CreateIOSurface(
      DCHECK_EQ(kIOReturnSuccess, r);
    }
  

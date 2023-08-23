@@ -11,10 +11,10 @@ majority of changes originally come from these PRs:
 This patch also fixes callback for manual user cancellation and success.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 3903baaaca00e1d17a203de5d8908ea9b1027eac..4c6fc9f08c988e04b5e1afac807dc6ef3b0d46d5 100644
+index 99a80c73248bf54e7478d6038601442645f01158..beb628520129d48019c12a8383c5ab5d7a22e22d 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -967,7 +967,6 @@ if (is_win) {
+@@ -969,7 +969,6 @@ if (is_win) {
        "//media:media_unittests",
        "//media/midi:midi_unittests",
        "//net:net_unittests",
@@ -22,7 +22,7 @@ index 3903baaaca00e1d17a203de5d8908ea9b1027eac..4c6fc9f08c988e04b5e1afac807dc6ef
        "//sql:sql_unittests",
        "//third_party/breakpad:symupload($host_toolchain)",
        "//ui/base:ui_base_unittests",
-@@ -976,6 +975,10 @@ if (is_win) {
+@@ -978,6 +977,10 @@ if (is_win) {
        "//ui/views:views_unittests",
        "//url:url_unittests",
      ]
@@ -34,7 +34,7 @@ index 3903baaaca00e1d17a203de5d8908ea9b1027eac..4c6fc9f08c988e04b5e1afac807dc6ef
  }
  
 diff --git a/chrome/browser/printing/print_job.cc b/chrome/browser/printing/print_job.cc
-index aa4b719e1d19652393d34ff06d51ac11eba38f50..0b4d185df1a67cac8a1cb7ccf0a5c0b0936a560d 100644
+index 819ea8a1902bd4cbf52f6e52622203b34a096aae..c7111b8814cc9260de2201febdcaeb2f588e5d6a 100644
 --- a/chrome/browser/printing/print_job.cc
 +++ b/chrome/browser/printing/print_job.cc
 @@ -93,6 +93,7 @@ bool PrintWithReducedRasterization(PrefService* prefs) {
@@ -66,7 +66,7 @@ index aa4b719e1d19652393d34ff06d51ac11eba38f50..0b4d185df1a67cac8a1cb7ccf0a5c0b0
  #endif
  
    auto new_doc = base::MakeRefCounted<PrintedDocument>(std::move(settings),
-@@ -386,8 +386,10 @@ void PrintJob::StartPdfToEmfConversion(
+@@ -387,8 +387,10 @@ void PrintJob::StartPdfToEmfConversion(
  
    const PrintSettings& settings = document()->settings();
  
@@ -78,7 +78,7 @@ index aa4b719e1d19652393d34ff06d51ac11eba38f50..0b4d185df1a67cac8a1cb7ccf0a5c0b0
  
    using RenderMode = PdfRenderSettings::Mode;
    RenderMode mode = print_with_reduced_rasterization
-@@ -479,8 +481,10 @@ void PrintJob::StartPdfToPostScriptConversion(
+@@ -480,8 +482,10 @@ void PrintJob::StartPdfToPostScriptConversion(
    if (ps_level2) {
      mode = PdfRenderSettings::Mode::POSTSCRIPT_LEVEL2;
    } else {
@@ -927,10 +927,10 @@ index 731b0fa4c0e1b3a5b4ce73d5bf2322767c70f9be..58921e7fdb9c33e21694186f436f409f
  #if BUILDFLAG(ENABLE_PRINT_PREVIEW)
    // Set options for print preset from source PDF document.
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index d95944d1c305c7aa7b2f0afc4efd840c7fd242a5..4693020a1ec2e3d366c5299bb1ffb5b8f68e3dde 100644
+index f2061c2568c95fd62e0a43f1f6c07a03842968ea..f540b9559abf9b900c512c3bf82aa56463df461e 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -2924,8 +2924,9 @@ source_set("browser") {
+@@ -2926,8 +2926,9 @@ source_set("browser") {
        "//ppapi/shared_impl",
      ]
  
