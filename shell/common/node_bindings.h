@@ -5,6 +5,7 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -24,12 +25,6 @@ class SingleThreadTaskRunner;
 }
 
 namespace electron {
-
-// Choose a reasonable unique index that's higher than any Blink uses
-// and thus unlikely to collide with an existing index.
-static constexpr int kElectronContextEmbedderDataIndex =
-    static_cast<int>(gin::kPerContextDataStartIndex) +
-    static_cast<int>(gin::kEmbedderElectron);
 
 // A helper class to manage uv_handle_t types, e.g. uv_async_t.
 //
@@ -95,12 +90,15 @@ class NodeBindings {
   std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform,
-                                       std::vector<std::string> args,
-                                       std::vector<std::string> exec_args);
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform);
+  std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform,
+      std::vector<std::string> args,
+      std::vector<std::string> exec_args);
+
+  std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
@@ -110,12 +108,6 @@ class NodeBindings {
 
   // Notify embed thread to start polling after environment is loaded.
   void StartPolling();
-
-  // Clears the PerIsolateData.
-  void clear_isolate_data(v8::Local<v8::Context> context) {
-    context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                             nullptr);
-  }
 
   node::IsolateData* isolate_data(v8::Local<v8::Context> context) const {
     if (context->GetNumberOfEmbedderDataFields() <=
@@ -167,6 +159,12 @@ class NodeBindings {
   raw_ptr<uv_loop_t> uv_loop_;
 
  private:
+  // Choose a reasonable unique index that's higher than any Blink uses
+  // and thus unlikely to collide with an existing index.
+  static constexpr int kElectronContextEmbedderDataIndex =
+      static_cast<int>(gin::kPerContextDataStartIndex) +
+      static_cast<int>(gin::kEmbedderElectron);
+
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
 
