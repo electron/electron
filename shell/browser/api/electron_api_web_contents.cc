@@ -499,7 +499,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const std::u16string& device_name) {
 #if BUILDFLAG(IS_MAC)
-  base::ScopedCFTypeRef<CFStringRef> new_printer_id(
+  base::apple::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
   bool printer_exists = new_printer != nullptr;

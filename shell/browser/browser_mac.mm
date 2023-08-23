@@ -54,9 +54,9 @@ bool IsAppRTL() {
 NSString* GetAppPathForProtocol(const GURL& url) {
   NSURL* ns_url = [NSURL
       URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
-  base::ScopedCFTypeRef<CFErrorRef> out_err;
+  base::apple::ScopedCFTypeRef<CFErrorRef> out_err;
 
-  base::ScopedCFTypeRef<CFURLRef> openingApp(
+  base::apple::ScopedCFTypeRef<CFURLRef> openingApp(
       LSCopyDefaultApplicationURLForURL(base::apple::NSToCFPtrCast(ns_url),
                                         kLSRolesAll, out_err.InitializeInto()));
 
@@ -86,7 +86,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
   if (!login_items.Initialize())
     return false;
 
-  base::ScopedCFTypeRef<LSSharedFileListItemRef> item(
+  base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
       login_items.GetLoginItemForMainApp());
   if (!item.get())
     return false;
@@ -242,8 +242,9 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 // TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  base::ScopedCFTypeRef<CFStringRef> bundleId(LSCopyDefaultHandlerForURLScheme(
-      base::apple::NSToCFPtrCast(protocol_ns)));
+  base::apple::ScopedCFTypeRef<CFStringRef> bundleId(
+      LSCopyDefaultHandlerForURLScheme(
+          base::apple::NSToCFPtrCast(protocol_ns)));
 #pragma clang diagnostic pop
   if (!bundleId)
     return false;

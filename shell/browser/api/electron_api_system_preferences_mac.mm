@@ -427,8 +427,8 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   LAContext* context = [[LAContext alloc] init];
-  base::ScopedCFTypeRef<SecAccessControlRef> access_control =
-      base::ScopedCFTypeRef<SecAccessControlRef>(
+  base::apple::ScopedCFTypeRef<SecAccessControlRef> access_control =
+      base::apple::ScopedCFTypeRef<SecAccessControlRef>(
           SecAccessControlCreateWithFlags(
               kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
               kSecAccessControlPrivateKeyUsage | kSecAccessControlUserPresence,
