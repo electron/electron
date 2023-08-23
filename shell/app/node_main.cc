@@ -54,13 +54,14 @@ namespace {
 // See https://nodejs.org/api/cli.html#cli_options
 void ExitIfContainsDisallowedFlags(const std::vector<std::string>& argv) {
   // Options that are unilaterally disallowed.
-  static constexpr auto disallowed = base::MakeFixedFlatSet<base::StringPiece>({
-      "--enable-fips",
-      "--force-fips",
-      "--openssl-config",
-      "--use-bundled-ca",
-      "--use-openssl-ca",
-  });
+  static constexpr auto disallowed =
+      base::MakeFixedFlatSetSorted<base::StringPiece>({
+          "--enable-fips",
+          "--force-fips",
+          "--openssl-config",
+          "--use-bundled-ca",
+          "--use-openssl-ca",
+      });
 
   for (const auto& arg : argv) {
     const auto key = base::StringPiece(arg).substr(0, arg.find('='));
@@ -221,7 +222,7 @@ int NodeMain(int argc, char* argv[]) {
       process.SetMethod("crash", &ElectronBindings::Crash);
 
       // Setup process.crashReporter in child node processes
-      gin_helper::Dictionary reporter = gin::Dictionary::CreateEmpty(isolate);
+      auto reporter = gin_helper::Dictionary::CreateEmpty(isolate);
       reporter.SetMethod("getParameters", &GetParameters);
 #if IS_MAS_BUILD()
       reporter.SetMethod("addExtraParameter", &SetCrashKeyStub);

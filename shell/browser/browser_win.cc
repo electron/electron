@@ -113,8 +113,7 @@ void OnIconDataAvailable(const base::FilePath& app_path,
                          gfx::Image icon) {
   if (!icon.IsEmpty()) {
     v8::HandleScope scope(promise.isolate());
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(promise.isolate());
+    auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
 
     dict.Set("path", app_path);
     dict.Set("name", app_display_name);
@@ -270,7 +269,7 @@ void GetFileIcon(const base::FilePath& path,
   gfx::Image* icon =
       icon_manager->LookupIconFromFilepath(normalized_path, icon_size, 1.0f);
   if (icon) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("icon", *icon);
     dict.Set("name", app_display_name);
     dict.Set("path", normalized_path);

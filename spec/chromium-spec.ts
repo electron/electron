@@ -1186,7 +1186,7 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
       const [, { webContents }] = await once(app, 'browser-window-created');
       const [,, message] = await once(webContents, 'console-message');
-      expect(message).to.equal('{"require":"function","module":"undefined","process":"object","Buffer":"function"}');
+      expect(message).to.equal('{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}');
     });
 
     it('disables the <webview> tag when it is disabled on the parent window', async () => {
@@ -2050,10 +2050,32 @@ describe('chromium features', () => {
     });
   });
 
+  describe('chrome://accessibility', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('chrome://accessibility');
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      );
+      expect(pageExists).to.be.true();
+    });
+  });
+
+  describe('chrome://gpu', () => {
+    it('loads the page successfully', async () => {
+      const w = new BrowserWindow({ show: false });
+      await w.loadURL('chrome://gpu');
+      const pageExists = await w.webContents.executeJavaScript(
+        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+      );
+      expect(pageExists).to.be.true();
+    });
+  });
+
   describe('chrome://media-internals', () => {
     it('loads the page successfully', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('chrome://media-internals');
+      await w.loadURL('chrome://media-internals');
       const pageExists = await w.webContents.executeJavaScript(
         "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
       );
@@ -2064,7 +2086,7 @@ describe('chromium features', () => {
   describe('chrome://webrtc-internals', () => {
     it('loads the page successfully', async () => {
       const w = new BrowserWindow({ show: false });
-      w.loadURL('chrome://webrtc-internals');
+      await w.loadURL('chrome://webrtc-internals');
       const pageExists = await w.webContents.executeJavaScript(
         "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
       );

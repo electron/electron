@@ -135,7 +135,7 @@ jobs:
           #
           # Do template replacement for draft issues
           #
-          echo "{\"major\": $MAJOR, \"next-major\": $((MAJOR + 1))}" > variables.json
+          echo "{\"major\": $MAJOR, \"next-major\": $((MAJOR + 1)), \"prev-major\": $((MAJOR - 1))}" > variables.json
 
           # npx mustache is annoyingly slow, so install mustache directly
           yarn add -D mustache

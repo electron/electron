@@ -17,10 +17,6 @@
 #include "ui/views/cocoa/native_widget_mac_ns_window_host.h"
 #include "ui/views/widget/native_widget_mac.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 using TitleBarStyle = electron::NativeWindowMac::TitleBarStyle;
 using FullScreenTransitionState =
     electron::NativeWindow::FullScreenTransitionState;

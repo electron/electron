@@ -55,25 +55,27 @@ void NativeBrowserViewMac::SetBounds(const gfx::Rect& bounds) {
   auto* iwc_view = GetInspectableWebContentsView();
   if (!iwc_view)
     return;
+
   auto* view = iwc_view->GetNativeView().GetNativeNSView();
-  auto* superview = view.superview;
-  const auto superview_height = superview ? superview.frame.size.height : 0;
-  view.frame =
-      NSMakeRect(bounds.x(), superview_height - bounds.y() - bounds.height(),
-                 bounds.width(), bounds.height());
+  const auto superview_height =
+      view.superview ? view.superview.frame.size.height : 0;
+  int y_coord = superview_height - bounds.y() - bounds.height();
+
+  view.frame = NSMakeRect(bounds.x(), y_coord, bounds.width(), bounds.height());
 }
 
 gfx::Rect NativeBrowserViewMac::GetBounds() {
   auto* iwc_view = GetInspectableWebContentsView();
   if (!iwc_view)
     return gfx::Rect();
+
   NSView* view = iwc_view->GetNativeView().GetNativeNSView();
   const int superview_height =
-      (view.superview) ? view.superview.frame.size.height : 0;
-  return gfx::Rect(
-      view.frame.origin.x,
-      superview_height - view.frame.origin.y - view.frame.size.height,
-      view.frame.size.width, view.frame.size.height);
+      view.superview ? view.superview.frame.size.height : 0;
+  int y_coord = superview_height - view.frame.origin.y - view.frame.size.height;
+
+  return gfx::Rect(view.frame.origin.x, y_coord, view.frame.size.width,
+                   view.frame.size.height);
 }
 
 void NativeBrowserViewMac::SetBackgroundColor(SkColor color) {

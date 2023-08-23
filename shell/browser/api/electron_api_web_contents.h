@@ -169,7 +169,7 @@ class WebContents : public ExclusiveAccessContext,
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
   void ReloadIgnoringCache();
-  void DownloadURL(const GURL& url);
+  void DownloadURL(const GURL& url, gin::Arguments* args);
   GURL GetURL() const;
   std::u16string GetTitle() const;
   bool IsLoading() const;

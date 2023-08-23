@@ -643,7 +643,7 @@ void Initialize(v8::Local<v8::Object> exports,
                 void* priv) {
   v8::Isolate* isolate = context->GetIsolate();
   gin_helper::Dictionary dict(isolate, exports);
-  gin_helper::Dictionary native_image = gin::Dictionary::CreateEmpty(isolate);
+  auto native_image = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("nativeImage", native_image);
 
   native_image.SetMethod("createEmpty", &NativeImage::CreateEmpty);

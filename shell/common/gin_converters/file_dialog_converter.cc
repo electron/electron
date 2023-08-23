@@ -27,7 +27,7 @@ bool Converter<file_dialog::Filter>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<file_dialog::Filter>::ToV8(
     v8::Isolate* isolate,
     const file_dialog::Filter& in) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("name", in.first);
   dict.Set("extensions", in.second);
@@ -58,7 +58,7 @@ bool Converter<file_dialog::DialogSettings>::FromV8(
 v8::Local<v8::Value> Converter<file_dialog::DialogSettings>::ToV8(
     v8::Isolate* isolate,
     const file_dialog::DialogSettings& in) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("window",
            electron::api::BrowserWindow::From(isolate, in.parent_window));

@@ -12,14 +12,10 @@
 #include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "services/device/public/cpp/geolocation/system_geolocation_source_mac.h"
 #include "shell/browser/browser_process_impl.h"
-#import "shell/browser/mac/electron_application.h"
+#include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/l10n/l10n_util_mac.h"
-
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
 
 namespace electron {
 

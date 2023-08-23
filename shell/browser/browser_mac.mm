@@ -36,10 +36,6 @@
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 namespace electron {
 
 namespace {
@@ -105,7 +101,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
     const GURL& url) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   NSString* ns_app_path = GetAppPathForProtocol(url);
 

@@ -311,7 +311,7 @@ int GetKeyLocationCode(const blink::WebInputEvent& key) {
 v8::Local<v8::Value> Converter<blink::WebKeyboardEvent>::ToV8(
     v8::Isolate* isolate,
     const blink::WebKeyboardEvent& in) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   dict.Set("type", in.GetType());
   dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
@@ -468,7 +468,7 @@ Converter<blink::mojom::ContextMenuDataInputFieldType>::ToV8(
 }
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("canUndo",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanUndo));
   dict.Set("canRedo",
@@ -497,7 +497,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
 }
 
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("inError", !!(mediaFlags & blink::ContextMenuData::kMediaInError));
   dict.Set("isPaused", !!(mediaFlags & blink::ContextMenuData::kMediaPaused));
   dict.Set("isMuted", !!(mediaFlags & blink::ContextMenuData::kMediaMuted));
@@ -522,7 +522,7 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
 v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStat>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCacheResourceTypeStat& stat) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("count", static_cast<uint32_t>(stat.count));
   dict.Set("size", static_cast<double>(stat.size));
   dict.Set("liveSize", static_cast<double>(stat.decoded_size));
@@ -532,7 +532,7 @@ v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStat>::ToV8(
 v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStats>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCacheResourceTypeStats& stats) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("images", stats.images);
   dict.Set("scripts", stats.scripts);
   dict.Set("cssStyleSheets", stats.css_style_sheets);
@@ -565,7 +565,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
 v8::Local<v8::Value> Converter<blink::mojom::Referrer>::ToV8(
     v8::Isolate* isolate,
     const blink::mojom::Referrer& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
   dict.Set("policy", ConvertToV8(isolate, val.policy));
   return gin::ConvertToV8(isolate, dict);

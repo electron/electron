@@ -5,25 +5,20 @@ Subject: feat: initialize asar support
 
 This patch initializes asar support in Node.js.
 
-diff --git a/lib/internal/process/policy.js b/lib/internal/process/policy.js
-index 8e07cb92118c84b2bc1156532cae8b033b9a48f4..2073a024ad548fe80e84cafee012b003454d6c93 100644
---- a/lib/internal/process/policy.js
-+++ b/lib/internal/process/policy.js
-@@ -39,9 +39,6 @@ module.exports = ObjectFreeze({
-     process.binding = function binding(_module) {
-       throw new ERR_ACCESS_DENIED('process.binding');
-     };
--    process._linkedBinding = function _linkedBinding(_module) {
--      throw new ERR_ACCESS_DENIED('process._linkedBinding');
--    };
-   },
- 
-   get manifest() {
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 250a43c5455b4f9ff72dd3a34d5b0aa270f43cc6..2e35cbba2ac02494c44821af395fe0195b1ab6b5 100644
+index 250a43c5455b4f9ff72dd3a34d5b0aa270f43cc6..4e7a9e7a7585fea2013ff70161672568477172b1 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -117,12 +117,17 @@ function setupUserModules() {
+@@ -49,6 +49,8 @@ function prepareWorkerThreadExecution() {
+   });
+ }
+ 
++
++let processLinkedBinding = process._linkedBinding;
+ function prepareExecution(options) {
+   const { expandArgv1, initializeModules, isMainThread } = options;
+ 
+@@ -117,12 +119,17 @@ function setupUserModules() {
    loadPreloadModules();
    // Need to be done after --require setup.
    initializeFrozenIntrinsics();
@@ -35,20 +30,9 @@ index 250a43c5455b4f9ff72dd3a34d5b0aa270f43cc6..2e35cbba2ac02494c44821af395fe019
  }
  
 +function setupAsarSupport() {
-+  process._linkedBinding('electron_common_asar').initAsarSupport(require);
++  processLinkedBinding('electron_common_asar').initAsarSupport(require);
 +}
 +
  function patchProcessObject(expandArgv1) {
    const binding = internalBinding('process_methods');
    binding.patchProcessObject(process);
-diff --git a/test/fixtures/policy/process-binding/app.js b/test/fixtures/policy/process-binding/app.js
-index 16e26d12a160286b1b6aaeb64b15668b05b9865b..a287d0a2363acbf24077eec040116f96ef18a7b3 100644
---- a/test/fixtures/policy/process-binding/app.js
-+++ b/test/fixtures/policy/process-binding/app.js
-@@ -5,6 +5,3 @@ const assert = require('assert');
- assert.throws(() => { process.binding(); }, {
-   code: 'ERR_ACCESS_DENIED'
- });
--assert.throws(() => { process._linkedBinding(); }, {
--  code: 'ERR_ACCESS_DENIED'
--});

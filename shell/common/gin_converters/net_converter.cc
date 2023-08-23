@@ -59,7 +59,7 @@ bool CertFromData(const std::string& data,
 v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
     v8::Isolate* isolate,
     const net::AuthChallengeInfo& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("isProxy", val.is_proxy);
   dict.Set("scheme", val.scheme);
   dict.Set("host", val.challenger.host());
@@ -610,7 +610,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("method", val.method);
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
@@ -624,7 +624,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
 v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
     v8::Isolate* isolate,
     electron::VerifyRequestParams val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
   dict.Set("validatedCertificate", val.validated_certificate);
@@ -638,7 +638,7 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
     v8::Isolate* isolate,
     const net::HttpVersion& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("major", static_cast<uint32_t>(val.major_value()));
   dict.Set("minor", static_cast<uint32_t>(val.minor_value()));
   return ConvertToV8(isolate, dict);
@@ -648,7 +648,7 @@ v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
 v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
     v8::Isolate* isolate,
     const net::RedirectInfo& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("statusCode", val.status_code);
   dict.Set("newMethod", val.new_method);
