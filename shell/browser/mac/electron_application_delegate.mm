@@ -19,10 +19,6 @@
 
 #import <UserNotifications/UserNotifications.h>
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 static NSDictionary* UNNotificationResponseToNSDictionary(
     UNNotificationResponse* response) {
   if (![response respondsToSelector:@selector(actionIdentifier)] ||

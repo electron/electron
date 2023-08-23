@@ -12,10 +12,6 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 namespace electron::api {
 
 v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
