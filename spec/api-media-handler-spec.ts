@@ -283,6 +283,29 @@ describe('setDisplayMediaRequestHandler', () => {
     expect(ok).to.be.true(message);
   });
 
+  it('returns a MediaStream with BrowserCaptureMediaStreamTrack when the current tab is selected', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      callback({ video: w.webContents.mainFrame });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        preferCurrentTab: true,
+        video: true,
+        audio: false,
+      }).then(stream => {
+        const [videoTrack] = stream.getVideoTracks();
+        return { ok: videoTrack instanceof BrowserCaptureMediaStreamTrack, message: null };
+      }, e => ({ok: false, message: e.message}))
+    `, true);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
   ifit(!(process.platform === 'darwin' && process.arch === 'x64'))('can supply a screen response to preferCurrentTab', async () => {
     const ses = session.fromPartition('' + Math.random());
     let requestHandlerCalled = false;
