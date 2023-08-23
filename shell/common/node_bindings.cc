@@ -477,7 +477,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   g_is_initialized = true;
 }
 
-node::Environment* NodeBindings::CreateEnvironment(
+std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::vector<std::string> args,
@@ -644,10 +644,25 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
-  return env;
+  auto env_deleter = [isolate, isolate_data,
+                      context = v8::Global<v8::Context>{isolate, context}](
+                         node::Environment* nenv) mutable {
+    // When `isolate_data` was created above, a pointer to it was kept
+    // in context's embedder_data[kElectronContextEmbedderDataIndex].
+    // Since we're about to free `isolate_data`, clear that entry
+    v8::HandleScope handle_scope{isolate};
+    context.Get(isolate)->SetAlignedPointerInEmbedderData(
+        kElectronContextEmbedderDataIndex, nullptr);
+    context.Reset();
+
+    node::FreeEnvironment(nenv);
+    node::FreeIsolateData(isolate_data);
+  };
+
+  return {env, std::move(env_deleter)};
 }
 
-node::Environment* NodeBindings::CreateEnvironment(
+std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform) {
 #if BUILDFLAG(IS_WIN)

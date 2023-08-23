@@ -54,22 +54,6 @@ class JavascriptEnvironment {
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
 };
 
-// Manage the Node Environment automatically.
-class NodeEnvironment {
- public:
-  explicit NodeEnvironment(node::Environment* env);
-  ~NodeEnvironment();
-
-  // disable copy
-  NodeEnvironment(const NodeEnvironment&) = delete;
-  NodeEnvironment& operator=(const NodeEnvironment&) = delete;
-
-  node::Environment* env() { return env_; }
-
- private:
-  raw_ptr<node::Environment> env_;
-};
-
 }  // namespace electron
 
 #endif  // ELECTRON_SHELL_BROWSER_JAVASCRIPT_ENVIRONMENT_H_
