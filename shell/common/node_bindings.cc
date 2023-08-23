@@ -477,7 +477,7 @@ void NodeBindings::Initialize(v8::Local<v8::Context> context) {
   g_is_initialized = true;
 }
 
-node::Environment* NodeBindings::CreateEnvironment(
+std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform,
     std::vector<std::string> args,
@@ -522,7 +522,8 @@ node::Environment* NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
+  auto* const isolate_data =
+      node::CreateIsolateData(isolate, uv_loop_, platform);
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                            static_cast<void*>(isolate_data));
 
@@ -644,10 +645,16 @@ node::Environment* NodeBindings::CreateEnvironment(
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
-  return env;
+  return std::shared_ptr<node::Environment>{
+      env, [context, isolate_data](node::Environment* nenv) {
+        node::FreeEnvironment(nenv);
+        node::FreeIsolateData(isolate_data);
+        context->SetAlignedPointerInEmbedderData(
+            kElectronContextEmbedderDataIndex, nullptr);
+      }};
 }
 
-node::Environment* NodeBindings::CreateEnvironment(
+std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
     v8::Handle<v8::Context> context,
     node::MultiIsolatePlatform* platform) {
 #if BUILDFLAG(IS_WIN)

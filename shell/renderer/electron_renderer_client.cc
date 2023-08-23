@@ -88,8 +88,7 @@ void ElectronRendererClient::DidCreateScriptContext(
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
 
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(renderer_context, nullptr);
+  auto env = node_bindings_->CreateEnvironment(renderer_context, nullptr);
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.
@@ -106,11 +105,11 @@ void ElectronRendererClient::DidCreateScriptContext(
   BindProcess(env->isolate(), &process_dict, render_frame);
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(env.get());
 
   if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
-    node_bindings_->set_uv_env(env);
+    node_bindings_->set_uv_env(env.get());
 
     // Give the node loop a run to make sure everything is ready.
     node_bindings_->StartPolling();
@@ -123,8 +122,11 @@ void ElectronRendererClient::WillReleaseScriptContext(
   if (injected_frames_.erase(render_frame) == 0)
     return;
 
-  node::Environment* env = node::Environment::GetCurrent(context);
-  if (environments_.erase(env) == 0)
+  node::Environment* const env = node::Environment::GetCurrent(context);
+  auto const iter =
+      std::find_if(environments_.begin(), environments_.end(),
+                   [env](auto& item) { return env == item.get(); });
+  if (iter == environments_.end())
     return;
 
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
@@ -143,9 +145,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
   DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
   microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
-  node::FreeEnvironment(env);
-  node::FreeIsolateData(node_bindings_->isolate_data(context));
-  node_bindings_->clear_isolate_data(context);
+  environments_.erase(iter);
 
   microtask_queue->set_microtasks_policy(old_policy);
 
@@ -201,7 +201,13 @@ node::Environment* ElectronRendererClient::GetEnvironment(
   auto context =
       GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
   node::Environment* env = node::Environment::GetCurrent(context);
-  return base::Contains(environments_, env) ? env : nullptr;
+
+  return base::Contains(environments_, env,
+                        [](std::shared_ptr<node::Environment> const& item) {
+                          return item.get();
+                        })
+             ? env
+             : nullptr;
 }
 
 }  // namespace electron

@@ -266,9 +266,9 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
   // Create the global environment.
-  node::Environment* env = node_bindings_->CreateEnvironment(
+  auto env = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform());
-  node_env_ = std::make_unique<NodeEnvironment>(env);
+  node_env_ = env;
 
   env->set_trace_sync_io(env->options()->trace_sync_io);
 
@@ -282,10 +282,10 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
   js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
-  node_bindings_->set_uv_env(env);
+  node_bindings_->set_uv_env(env.get());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(env.get());
 
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
@@ -627,9 +627,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
-  node_env_->env()->set_trace_sync_io(false);
+  node_env_->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
-  node::Stop(node_env_->env(), node::StopFlags::kDoNotTerminateIsolate);
+  node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   node_env_.reset();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);
