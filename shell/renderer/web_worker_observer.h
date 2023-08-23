@@ -6,6 +6,7 @@
 #define ELECTRON_SHELL_RENDERER_WEB_WORKER_OBSERVER_H_
 
 #include <memory>
+#include <set>
 
 #include "v8/include/v8.h"
 
@@ -39,8 +40,8 @@ class WebWorkerObserver {
   void ContextWillDestroy(v8::Local<v8::Context> context);
 
  private:
-  const std::unique_ptr<NodeBindings> node_bindings_;
-  const std::unique_ptr<ElectronBindings> electron_bindings_;
+  std::unique_ptr<NodeBindings> node_bindings_;
+  std::unique_ptr<ElectronBindings> electron_bindings_;
   std::set<std::shared_ptr<node::Environment>> environments_;
 };
 

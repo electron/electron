@@ -522,8 +522,7 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
 
   args.insert(args.begin() + 1, init_script);
 
-  auto* const isolate_data =
-      node::CreateIsolateData(isolate, uv_loop_, platform);
+  auto* isolate_data = node::CreateIsolateData(isolate, uv_loop_, platform);
   context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
                                            static_cast<void*>(isolate_data));
 
@@ -645,13 +644,22 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
   base::PathService::Get(content::CHILD_PROCESS_EXE, &helper_exec_path);
   process.Set("helperExecPath", helper_exec_path);
 
-  return std::shared_ptr<node::Environment>{
-      env, [context, isolate_data](node::Environment* nenv) {
-        node::FreeEnvironment(nenv);
-        node::FreeIsolateData(isolate_data);
-        context->SetAlignedPointerInEmbedderData(
-            kElectronContextEmbedderDataIndex, nullptr);
-      }};
+  auto env_deleter = [isolate, isolate_data,
+                      context = v8::Global<v8::Context>{isolate, context}](
+                         node::Environment* nenv) mutable {
+    // When `isolate_data` was created above, a pointer to it was kept
+    // in context's embedder_data[kElectronContextEmbedderDataIndex].
+    // Since we're about to free `isolate_data`, clear that entry
+    v8::HandleScope handle_scope{isolate};
+    context.Get(isolate)->SetAlignedPointerInEmbedderData(
+        kElectronContextEmbedderDataIndex, nullptr);
+    context.Reset();
+
+    node::FreeEnvironment(nenv);
+    node::FreeIsolateData(isolate_data);
+  };
+
+  return {env, std::move(env_deleter)};
 }
 
 std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(

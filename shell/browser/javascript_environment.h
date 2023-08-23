@@ -9,7 +9,6 @@
 
 #include "base/memory/raw_ptr.h"
 #include "gin/public/isolate_holder.h"
-#include "shell/common/node_bindings.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8-locker.h"
 

@@ -26,12 +26,6 @@ class SingleThreadTaskRunner;
 
 namespace electron {
 
-// Choose a reasonable unique index that's higher than any Blink uses
-// and thus unlikely to collide with an existing index.
-static constexpr int kElectronContextEmbedderDataIndex =
-    static_cast<int>(gin::kPerContextDataStartIndex) +
-    static_cast<int>(gin::kEmbedderElectron);
-
 // A helper class to manage uv_handle_t types, e.g. uv_async_t.
 //
 // As per the uv docs: "uv_close() MUST be called on each handle before
@@ -115,12 +109,6 @@ class NodeBindings {
   // Notify embed thread to start polling after environment is loaded.
   void StartPolling();
 
-  // Clears the PerIsolateData.
-  void clear_isolate_data(v8::Local<v8::Context> context) {
-    context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                             nullptr);
-  }
-
   node::IsolateData* isolate_data(v8::Local<v8::Context> context) const {
     if (context->GetNumberOfEmbedderDataFields() <=
         kElectronContextEmbedderDataIndex) {
@@ -171,6 +159,12 @@ class NodeBindings {
   raw_ptr<uv_loop_t> uv_loop_;
 
  private:
+  // Choose a reasonable unique index that's higher than any Blink uses
+  // and thus unlikely to collide with an existing index.
+  static constexpr int kElectronContextEmbedderDataIndex =
+      static_cast<int>(gin::kPerContextDataStartIndex) +
+      static_cast<int>(gin::kEmbedderElectron);
+
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
 
