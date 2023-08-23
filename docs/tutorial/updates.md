@@ -51,7 +51,7 @@ If you're developing a private Electron application, or if you're not
 publishing releases to GitHub Releases, it may be necessary to run your own
 update server.
 
-### Step 1: Deploying an update server
+### Step 1: Deploying and update server
 
 Depending on your needs, you can choose from one of these:
 
