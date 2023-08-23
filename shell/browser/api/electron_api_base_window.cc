@@ -768,10 +768,20 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
       browser_view->SetOwnerWindow(nullptr);
     }
 
+    // If the user set the BrowserView's bounds before adding it to the window,
+    // we need to get those initial bounds *before* adding it to the window
+    // so bounds isn't returned relative despite not being correctly positioned
+    // relative to the window.
+    auto bounds = browser_view->GetBounds();
+
     window_->AddBrowserView(browser_view->view());
     window_->AddDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(this);
     browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
+
+    // Recalibrate bounds relative to the containing window.
+    if (!bounds.IsEmpty())
+      browser_view->SetBounds(bounds);
   }
 }
 
