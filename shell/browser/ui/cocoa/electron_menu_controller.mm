@@ -70,6 +70,7 @@ Role kRolesMap[] = {
     {@selector(mergeAllWindows:), "mergeallwindows"},
     {@selector(moveTabToNewWindow:), "movetabtonewwindow"},
     {@selector(clearRecentDocuments:), "clearrecentdocuments"},
+    {@selector(copyToFindPboard:), "useselectionforfind"},
 };
 
 // Called when adding a submenu to the menu and checks if the submenu, via its

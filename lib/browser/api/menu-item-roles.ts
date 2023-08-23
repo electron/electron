@@ -8,7 +8,7 @@ type RoleId = 'about' | 'close' | 'copy' | 'cut' | 'delete' | 'forcereload' | 'f
   'paste' | 'pasteandmatchstyle' | 'quit' | 'redo' | 'reload' | 'resetzoom' | 'selectall' | 'services' | 'recentdocuments' | 'clearrecentdocuments' |
   'showsubstitutions' | 'togglesmartquotes' | 'togglesmartdashes' | 'toggletextreplacement' | 'startspeaking' | 'stopspeaking' |
   'toggledevtools' | 'togglefullscreen' | 'undo' | 'unhide' | 'window' | 'zoom' | 'zoomin' | 'zoomout' | 'togglespellchecker' |
-  'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu'
+  'appmenu' | 'filemenu' | 'editmenu' | 'viewmenu' | 'windowmenu' | 'sharemenu' | 'useselectionforfind'
 interface Role {
   label: string;
   accelerator?: string;
@@ -211,6 +211,10 @@ export const roleList: Record<RoleId, Role> = {
       ses.spellCheckerEnabled = !ses.spellCheckerEnabled;
     }
   },
+  useselectionforfind: {
+    label: 'Use Selection for Find',
+    accelerator: 'Command+E'
+  },
   // App submenu should be used for Mac only
   appmenu: {
     get label () {
@@ -266,7 +270,8 @@ export const roleList: Record<RoleId, Role> = {
             { role: 'startSpeaking' },
             { role: 'stopSpeaking' }
           ]
-        }
+        },
+        { role: 'useSelectionForFind' }
       ] as MenuItemConstructorOptions[] : [
         { role: 'delete' },
         { type: 'separator' },

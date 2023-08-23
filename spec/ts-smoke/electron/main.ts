@@ -834,7 +834,8 @@ Menu.buildFromTemplate([
   { role: 'showAllTabs' },
   { role: 'mergeAllWindows' },
   { role: 'clearRecentDocuments' },
-  { role: 'moveTabToNewWindow' }
+  { role: 'moveTabToNewWindow' },
+  { role: 'useSelectionForFind' }
 ]);
 
 // net

@@ -359,6 +359,7 @@ describe('MenuItems', () => {
         expect(item.submenu!.items[11].label).to.equal('Speech');
         expect(item.submenu!.items[11].submenu!.items[0].role).to.equal('startspeaking');
         expect(item.submenu!.items[11].submenu!.items[1].role).to.equal('stopspeaking');
+        expect(item.submenu!.items[12].role).to.equal('useselectionforfind');
       } else {
         expect(item.submenu!.items[6].role).to.equal('delete');
         expect(item.submenu!.items[7].type).to.equal('separator');
