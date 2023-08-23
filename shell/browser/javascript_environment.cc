@@ -340,12 +340,4 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
 }
 
-NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}
-
-NodeEnvironment::~NodeEnvironment() {
-  auto* isolate_data = env_->isolate_data();
-  node::FreeEnvironment(env_);
-  node::FreeIsolateData(isolate_data);
-}
-
 }  // namespace electron

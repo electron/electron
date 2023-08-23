@@ -30,10 +30,6 @@
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/native_theme/native_theme.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 namespace gin {
 
 template <>

@@ -11,12 +11,17 @@
 #include "mojo/public/cpp/bindings/receiver.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 
+namespace node {
+
+class Environment;
+
+}  // namespace node
+
 namespace electron {
 
 class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
-class NodeEnvironment;
 
 class NodeService : public node::mojom::NodeService {
  public:
@@ -35,7 +40,7 @@ class NodeService : public node::mojom::NodeService {
   std::unique_ptr<JavascriptEnvironment> js_env_;
   std::unique_ptr<NodeBindings> node_bindings_;
   std::unique_ptr<ElectronBindings> electron_bindings_;
-  std::unique_ptr<NodeEnvironment> node_env_;
+  std::shared_ptr<node::Environment> node_env_;
   mojo::Receiver<node::mojom::NodeService> receiver_{this};
 };
 

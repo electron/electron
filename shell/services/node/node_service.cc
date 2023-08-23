@@ -30,9 +30,9 @@ NodeService::NodeService(
 
 NodeService::~NodeService() {
   if (!node_env_stopped_) {
-    node_env_->env()->set_trace_sync_io(false);
+    node_env_->set_trace_sync_io(false);
     js_env_->DestroyMicrotasksRunner();
-    node::Stop(node_env_->env(), node::StopFlags::kDoNotTerminateIsolate);
+    node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   }
 }
 
@@ -57,13 +57,12 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
 #endif
 
   // Create the global environment.
-  node::Environment* env = node_bindings_->CreateEnvironment(
+  node_env_ = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform(),
       params->args, params->exec_args);
-  node_env_ = std::make_unique<NodeEnvironment>(env);
 
   node::SetProcessExitHandler(
-      env, [this](node::Environment* env, int exit_code) {
+      node_env_.get(), [this](node::Environment* env, int exit_code) {
         // Destroy node platform.
         env->set_trace_sync_io(false);
         js_env_->DestroyMicrotasksRunner();
@@ -72,20 +71,21 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
         receiver_.ResetWithReason(exit_code, "");
       });
 
-  env->set_trace_sync_io(env->options()->trace_sync_io);
+  node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(env->isolate(), env->process_object());
+  electron_bindings_->BindTo(node_env_->isolate(), node_env_->process_object());
 
   // Add entry script to process object.
-  gin_helper::Dictionary process(env->isolate(), env->process_object());
+  gin_helper::Dictionary process(node_env_->isolate(),
+                                 node_env_->process_object());
   process.SetHidden("_serviceStartupScript", params->script);
 
   // Setup microtask runner.
   js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
-  node_bindings_->set_uv_env(env);
+  node_bindings_->set_uv_env(node_env_.get());
 
   // LoadEnvironment should be called after setting up
   // JavaScriptEnvironment including the microtask runner
@@ -94,7 +94,7 @@ void NodeService::Initialize(node::mojom::NodeServiceParamsPtr params) {
   // the exit handler set above will be triggered and it expects
   // both Node Env and JavaScriptEnviroment are setup to perform
   // a clean shutdown of this process.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(node_env_.get());
 
   // Run entry script.
   node_bindings_->PrepareEmbedThread();
