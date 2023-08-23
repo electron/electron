@@ -580,7 +580,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
       blink::MediaStreamDevice video_device(request.video_type, id, name);
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           nullptr, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_video_device_id));
+          content::DesktopMediaID::Parse(video_device.id));
       devices.video_device = video_device;
     } else if (result_dict.Get("video", &rfh)) {
       auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
@@ -592,7 +592,7 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
           base::UTF16ToUTF8(web_contents->GetTitle()));
       video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
           web_contents, url::Origin::Create(request.security_origin),
-          content::DesktopMediaID::Parse(request.requested_video_device_id));
+          content::DesktopMediaID::Parse(video_device.id));
       devices.video_device = video_device;
     } else {
       gin_helper::ErrorThrower(args->isolate())
