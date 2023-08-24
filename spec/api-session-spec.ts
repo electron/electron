@@ -827,277 +827,383 @@ describe('session module', () => {
       fs.unlinkSync(downloadFilePath);
     };
 
-    it('can download using session.downloadURL', (done) => {
-      session.defaultSession.once('will-download', function (e, item) {
-        item.savePath = downloadFilePath;
-        item.on('done', function (e, state) {
-          try {
-            assertDownload(state, item);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
-      session.defaultSession.downloadURL(`${url}:${port}`);
-    });
-
-    it('can download using session.downloadURL with a valid auth header', async () => {
-      const server = http.createServer((req, res) => {
-        const { authorization } = req.headers;
-        if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
-          res.statusCode = 401;
-          res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
-          res.end();
-        } else {
-          res.writeHead(200, {
-            'Content-Length': mockPDF.length,
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
-          });
-          res.end(mockPDF);
-        }
-      });
-
-      const { port } = await listen(server);
-
-      const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
-        session.defaultSession.once('will-download', (e, item) => {
-          item.savePath = downloadFilePath;
-          item.on('done', () => {
-            try {
-              resolve(item);
-            } catch {}
-          });
-        });
-      });
-
-      session.defaultSession.downloadURL(`${url}:${port}`, {
-        headers: {
-          Authorization: 'Basic i-am-an-auth-header'
-        }
-      });
-
-      const item = await downloadDone;
-      expect(item.getState()).to.equal('completed');
-      expect(item.getFilename()).to.equal('mock.pdf');
-      expect(item.getMimeType()).to.equal('application/pdf');
-      expect(item.getReceivedBytes()).to.equal(mockPDF.length);
-      expect(item.getTotalBytes()).to.equal(mockPDF.length);
-      expect(item.getContentDisposition()).to.equal(contentDisposition);
-    });
-
-    it('throws when session.downloadURL is called with invalid headers', () => {
-      expect(() => {
-        session.defaultSession.downloadURL(`${url}:${port}`, {
-          // @ts-ignore this line is intentionally incorrect
-          headers: 'i-am-a-bad-header'
-        });
-      }).to.throw(/Invalid value for headers - must be an object/);
-    });
-
-    it('can download using session.downloadURL with an invalid auth header', async () => {
-      const server = http.createServer((req, res) => {
-        const { authorization } = req.headers;
-        if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
-          res.statusCode = 401;
-          res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
-          res.end();
-        } else {
-          res.writeHead(200, {
-            'Content-Length': mockPDF.length,
-            'Content-Type': 'application/pdf',
-            'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
-          });
-          res.end(mockPDF);
-        }
-      });
-
-      const { port } = await listen(server);
-
-      const downloadFailed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
-        session.defaultSession.once('will-download', (_, item) => {
-          item.savePath = downloadFilePath;
-          item.on('done', (e, state) => {
-            console.log(state);
-            try {
-              resolve(item);
-            } catch {}
-          });
-        });
-      });
-
-      session.defaultSession.downloadURL(`${url}:${port}`, {
-        headers: {
-          Authorization: 'wtf-is-this'
-        }
-      });
-
-      const item = await downloadFailed;
-      expect(item.getState()).to.equal('interrupted');
-      expect(item.getReceivedBytes()).to.equal(0);
-      expect(item.getTotalBytes()).to.equal(0);
-    });
-
-    it('can download using WebContents.downloadURL', (done) => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.session.once('will-download', function (e, item) {
-        item.savePath = downloadFilePath;
-        item.on('done', function (e, state) {
-          try {
-            assertDownload(state, item);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
-      w.webContents.downloadURL(`${url}:${port}`);
-    });
-
-    it('can download from custom protocols using WebContents.downloadURL', (done) => {
-      const protocol = session.defaultSession.protocol;
-      const handler = (ignoredError: any, callback: Function) => {
-        callback({ url: `${url}:${port}` });
-      };
-      protocol.registerHttpProtocol(protocolName, handler);
-      const w = new BrowserWindow({ show: false });
-      w.webContents.session.once('will-download', function (e, item) {
-        item.savePath = downloadFilePath;
-        item.on('done', function (e, state) {
-          try {
-            assertDownload(state, item, true);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-      });
-      w.webContents.downloadURL(`${protocolName}://item`);
-    });
-
-    it('can download using WebView.downloadURL', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
-      await w.loadURL('about:blank');
-      function webviewDownload ({ fixtures, url, port }: {fixtures: string, url: string, port: string}) {
-        const webview = new (window as any).WebView();
-        webview.addEventListener('did-finish-load', () => {
-          webview.downloadURL(`${url}:${port}/`);
-        });
-        webview.src = `file://${fixtures}/api/blank.html`;
-        document.body.appendChild(webview);
-      }
-      const done: Promise<[string, Electron.DownloadItem]> = new Promise(resolve => {
-        w.webContents.session.once('will-download', function (e, item) {
+    describe('session.downloadURL', () => {
+      it('can perform a download', (done) => {
+        session.defaultSession.once('will-download', function (e, item) {
           item.savePath = downloadFilePath;
           item.on('done', function (e, state) {
-            resolve([state, item]);
-          });
-        });
-      });
-      await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({ fixtures, url, port })})`);
-      const [state, item] = await done;
-      assertDownload(state, item);
-    });
-
-    it('can cancel download', (done) => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.session.once('will-download', function (e, item) {
-        item.savePath = downloadFilePath;
-        item.on('done', function (e, state) {
-          try {
-            expect(state).to.equal('cancelled');
-            expect(item.getFilename()).to.equal('mock.pdf');
-            expect(item.getMimeType()).to.equal('application/pdf');
-            expect(item.getReceivedBytes()).to.equal(0);
-            expect(item.getTotalBytes()).to.equal(mockPDF.length);
-            expect(item.getContentDisposition()).to.equal(contentDisposition);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-        item.cancel();
-      });
-      w.webContents.downloadURL(`${url}:${port}/`);
-    });
-
-    it('can generate a default filename', function (done) {
-      if (process.env.APPVEYOR === 'True') {
-        // FIXME(alexeykuzmin): Skip the test.
-        // this.skip()
-        return done();
-      }
-
-      const w = new BrowserWindow({ show: false });
-      w.webContents.session.once('will-download', function (e, item) {
-        item.savePath = downloadFilePath;
-        item.on('done', function () {
-          try {
-            expect(item.getFilename()).to.equal('download.pdf');
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-        item.cancel();
-      });
-      w.webContents.downloadURL(`${url}:${port}/?testFilename`);
-    });
-
-    it('can set options for the save dialog', (done) => {
-      const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
-      const options = {
-        window: null,
-        title: 'title',
-        message: 'message',
-        buttonLabel: 'buttonLabel',
-        nameFieldLabel: 'nameFieldLabel',
-        defaultPath: '/',
-        filters: [{
-          name: '1', extensions: ['.1', '.2']
-        }, {
-          name: '2', extensions: ['.3', '.4', '.5']
-        }],
-        showsTagField: true,
-        securityScopedBookmarks: true
-      };
-
-      const w = new BrowserWindow({ show: false });
-      w.webContents.session.once('will-download', function (e, item) {
-        item.setSavePath(filePath);
-        item.setSaveDialogOptions(options);
-        item.on('done', function () {
-          try {
-            expect(item.getSaveDialogOptions()).to.deep.equal(options);
-            done();
-          } catch (e) {
-            done(e);
-          }
-        });
-        item.cancel();
-      });
-      w.webContents.downloadURL(`${url}:${port}`);
-    });
-
-    describe('when a save path is specified and the URL is unavailable', () => {
-      it('does not display a save dialog and reports the done state as interrupted', (done) => {
-        const w = new BrowserWindow({ show: false });
-        w.webContents.session.once('will-download', function (e, item) {
-          item.savePath = downloadFilePath;
-          if (item.getState() === 'interrupted') {
-            item.resume();
-          }
-          item.on('done', function (e, state) {
             try {
-              expect(state).to.equal('interrupted');
+              assertDownload(state, item);
               done();
             } catch (e) {
               done(e);
             }
           });
         });
-        w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);
+        session.defaultSession.downloadURL(`${url}:${port}`);
+      });
+
+      it('can perform a download with a valid auth header', async () => {
+        const server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          session.defaultSession.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch { }
+            });
+          });
+        });
+
+        session.defaultSession.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'Basic i-am-an-auth-header'
+          }
+        });
+
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
+      it('throws when called with invalid headers', () => {
+        expect(() => {
+          session.defaultSession.downloadURL(`${url}:${port}`, {
+            // @ts-ignore this line is intentionally incorrect
+            headers: 'i-am-a-bad-header'
+          });
+        }).to.throw(/Invalid value for headers - must be an object/);
+      });
+
+      it('correctly handles a download with an invalid auth header', async () => {
+        const server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const downloadFailed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          session.defaultSession.once('will-download', (_, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', (e, state) => {
+              console.log(state);
+              try {
+                resolve(item);
+              } catch { }
+            });
+          });
+        });
+
+        session.defaultSession.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'wtf-is-this'
+          }
+        });
+
+        const item = await downloadFailed;
+        expect(item.getState()).to.equal('interrupted');
+        expect(item.getReceivedBytes()).to.equal(0);
+        expect(item.getTotalBytes()).to.equal(0);
+      });
+    });
+
+    describe('webContents.downloadURL', () => {
+      it('can perform a download', (done) => {
+        const w = new BrowserWindow({ show: false });
+        w.webContents.session.once('will-download', function (e, item) {
+          item.savePath = downloadFilePath;
+          item.on('done', function (e, state) {
+            try {
+              assertDownload(state, item);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        });
+        w.webContents.downloadURL(`${url}:${port}`);
+      });
+
+      it('can perform a download with a valid auth header', async () => {
+        const server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadDone: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (e, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', () => {
+              try {
+                resolve(item);
+              } catch { }
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'Basic i-am-an-auth-header'
+          }
+        });
+
+        const item = await downloadDone;
+        expect(item.getState()).to.equal('completed');
+        expect(item.getFilename()).to.equal('mock.pdf');
+        expect(item.getMimeType()).to.equal('application/pdf');
+        expect(item.getReceivedBytes()).to.equal(mockPDF.length);
+        expect(item.getTotalBytes()).to.equal(mockPDF.length);
+        expect(item.getContentDisposition()).to.equal(contentDisposition);
+      });
+
+      it('throws when called with invalid headers', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(() => {
+          w.webContents.downloadURL(`${url}:${port}`, {
+            // @ts-ignore this line is intentionally incorrect
+            headers: 'i-am-a-bad-header'
+          });
+        }).to.throw(/Invalid value for headers - must be an object/);
+      });
+
+      it('correctly handles a download and an invalid auth header', async () => {
+        const server = http.createServer((req, res) => {
+          const { authorization } = req.headers;
+          if (!authorization || authorization !== 'Basic i-am-an-auth-header') {
+            res.statusCode = 401;
+            res.setHeader('WWW-Authenticate', 'Basic realm="Restricted"');
+            res.end();
+          } else {
+            res.writeHead(200, {
+              'Content-Length': mockPDF.length,
+              'Content-Type': 'application/pdf',
+              'Content-Disposition': req.url === '/?testFilename' ? 'inline' : contentDisposition
+            });
+            res.end(mockPDF);
+          }
+        });
+
+        const { port } = await listen(server);
+
+        const w = new BrowserWindow({ show: false });
+        const downloadFailed: Promise<Electron.DownloadItem> = new Promise((resolve) => {
+          w.webContents.session.once('will-download', (_, item) => {
+            item.savePath = downloadFilePath;
+            item.on('done', (e, state) => {
+              console.log(state);
+              try {
+                resolve(item);
+              } catch { }
+            });
+          });
+        });
+
+        w.webContents.downloadURL(`${url}:${port}`, {
+          headers: {
+            Authorization: 'wtf-is-this'
+          }
+        });
+
+        const item = await downloadFailed;
+        expect(item.getState()).to.equal('interrupted');
+        expect(item.getReceivedBytes()).to.equal(0);
+        expect(item.getTotalBytes()).to.equal(0);
+      });
+
+      it('can download from custom protocols', (done) => {
+        const protocol = session.defaultSession.protocol;
+        const handler = (ignoredError: any, callback: Function) => {
+          callback({ url: `${url}:${port}` });
+        };
+        protocol.registerHttpProtocol(protocolName, handler);
+        const w = new BrowserWindow({ show: false });
+        w.webContents.session.once('will-download', function (e, item) {
+          item.savePath = downloadFilePath;
+          item.on('done', function (e, state) {
+            try {
+              assertDownload(state, item, true);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+        });
+        w.webContents.downloadURL(`${protocolName}://item`);
+      });
+
+      it('can cancel download', (done) => {
+        const w = new BrowserWindow({ show: false });
+        w.webContents.session.once('will-download', function (e, item) {
+          item.savePath = downloadFilePath;
+          item.on('done', function (e, state) {
+            try {
+              expect(state).to.equal('cancelled');
+              expect(item.getFilename()).to.equal('mock.pdf');
+              expect(item.getMimeType()).to.equal('application/pdf');
+              expect(item.getReceivedBytes()).to.equal(0);
+              expect(item.getTotalBytes()).to.equal(mockPDF.length);
+              expect(item.getContentDisposition()).to.equal(contentDisposition);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+          item.cancel();
+        });
+        w.webContents.downloadURL(`${url}:${port}/`);
+      });
+
+      it('can generate a default filename', function (done) {
+        if (process.env.APPVEYOR === 'True') {
+          // FIXME(alexeykuzmin): Skip the test.
+          // this.skip()
+          return done();
+        }
+
+        const w = new BrowserWindow({ show: false });
+        w.webContents.session.once('will-download', function (e, item) {
+          item.savePath = downloadFilePath;
+          item.on('done', function () {
+            try {
+              expect(item.getFilename()).to.equal('download.pdf');
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+          item.cancel();
+        });
+        w.webContents.downloadURL(`${url}:${port}/?testFilename`);
+      });
+
+      it('can set options for the save dialog', (done) => {
+        const filePath = path.join(__dirname, 'fixtures', 'mock.pdf');
+        const options = {
+          window: null,
+          title: 'title',
+          message: 'message',
+          buttonLabel: 'buttonLabel',
+          nameFieldLabel: 'nameFieldLabel',
+          defaultPath: '/',
+          filters: [{
+            name: '1', extensions: ['.1', '.2']
+          }, {
+            name: '2', extensions: ['.3', '.4', '.5']
+          }],
+          showsTagField: true,
+          securityScopedBookmarks: true
+        };
+
+        const w = new BrowserWindow({ show: false });
+        w.webContents.session.once('will-download', function (e, item) {
+          item.setSavePath(filePath);
+          item.setSaveDialogOptions(options);
+          item.on('done', function () {
+            try {
+              expect(item.getSaveDialogOptions()).to.deep.equal(options);
+              done();
+            } catch (e) {
+              done(e);
+            }
+          });
+          item.cancel();
+        });
+        w.webContents.downloadURL(`${url}:${port}`);
+      });
+
+      describe('when a save path is specified and the URL is unavailable', () => {
+        it('does not display a save dialog and reports the done state as interrupted', (done) => {
+          const w = new BrowserWindow({ show: false });
+          w.webContents.session.once('will-download', function (e, item) {
+            item.savePath = downloadFilePath;
+            if (item.getState() === 'interrupted') {
+              item.resume();
+            }
+            item.on('done', function (e, state) {
+              try {
+                expect(state).to.equal('interrupted');
+                done();
+              } catch (e) {
+                done(e);
+              }
+            });
+          });
+          w.webContents.downloadURL(`file://${path.join(__dirname, 'does-not-exist.txt')}`);
+        });
+      });
+    });
+
+    describe('WebView.downloadURL', () => {
+      it('can perform a download', async () => {
+        const w = new BrowserWindow({ show: false, webPreferences: { webviewTag: true } });
+        await w.loadURL('about:blank');
+        function webviewDownload ({ fixtures, url, port }: { fixtures: string, url: string, port: string }) {
+          const webview = new (window as any).WebView();
+          webview.addEventListener('did-finish-load', () => {
+            webview.downloadURL(`${url}:${port}/`);
+          });
+          webview.src = `file://${fixtures}/api/blank.html`;
+          document.body.appendChild(webview);
+        }
+        const done: Promise<[string, Electron.DownloadItem]> = new Promise(resolve => {
+          w.webContents.session.once('will-download', function (e, item) {
+            item.savePath = downloadFilePath;
+            item.on('done', function (e, state) {
+              resolve([state, item]);
+            });
+          });
+        });
+        await w.webContents.executeJavaScript(`(${webviewDownload})(${JSON.stringify({ fixtures, url, port })})`);
+        const [state, item] = await done;
+        assertDownload(state, item);
       });
     });
   });

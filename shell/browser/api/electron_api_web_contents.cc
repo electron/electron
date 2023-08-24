@@ -2444,12 +2444,25 @@ void WebContents::ReloadIgnoringCache() {
                                          /* check_for_repost */ true);
 }
 
-void WebContents::DownloadURL(const GURL& url) {
-  auto* browser_context = web_contents()->GetBrowserContext();
-  auto* download_manager = browser_context->GetDownloadManager();
+void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
+  std::map<std::string, std::string> headers;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    if (options.Has("headers") && !options.Get("headers", &headers)) {
+      args->ThrowTypeError("Invalid value for headers - must be an object");
+      return;
+    }
+  }
+
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
+  for (const auto& [name, value] : headers) {
+    download_params->add_request_header(name, value);
+  }
+
+  auto* download_manager =
+      web_contents()->GetBrowserContext()->GetDownloadManager();
   download_manager->DownloadUrl(std::move(download_params));
 }
 
