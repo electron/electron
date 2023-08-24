@@ -1,7 +1,7 @@
-From 37447eb52a7431195ca73f6d808363048b4a984b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tsuyoshi Horo <horo@chromium.org>
 Date: Thu, 24 Aug 2023 10:50:31 +0000
-Subject: [PATCH] [M114-LTS] Fix ExtensionLocalizationThrottle::WillProcessResponse
+Subject: Fix ExtensionLocalizationThrottle::WillProcessResponse
 
 Synchronous call of `delegate_->CancelWithError()` inside
 blink::URLLoaderThrottle::WillProcessResponse() in Blink can cause UAF.
@@ -22,13 +22,12 @@ Auto-Submit: Tsuyoshi Horo <horo@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5845@{#1471}
 Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
 (cherry picked from commit 28759f24f051b5e79b2ae75f4f39ff63e5607119)
----
 
 diff --git a/extensions/renderer/extension_localization_throttle.cc b/extensions/renderer/extension_localization_throttle.cc
-index d045667..382283c 100644
+index d0456671b7eea52ac6cd7aa89c4b39d5661112f3..382283cea8a8a061f769dc234b67ef8b53b47517 100644
 --- a/extensions/renderer/extension_localization_throttle.cc
 +++ b/extensions/renderer/extension_localization_throttle.cc
-@@ -217,7 +217,14 @@
+@@ -217,7 +217,14 @@ void ExtensionLocalizationThrottle::WillProcessResponse(
        mojo::CreateDataPipe(/*options=*/nullptr, producer_handle, body);
  
    if (create_pipe_result != MOJO_RESULT_OK || force_error_for_test_) {
@@ -44,7 +43,7 @@ index d045667..382283c 100644
      return;
    }
  
-@@ -248,4 +255,10 @@
+@@ -248,4 +255,10 @@ void ExtensionLocalizationThrottle::WillProcessResponse(
                         std::move(producer_handle));
  }
  
@@ -56,10 +55,10 @@ index d045667..382283c 100644
 +
  }  // namespace extensions
 diff --git a/extensions/renderer/extension_localization_throttle.h b/extensions/renderer/extension_localization_throttle.h
-index b697247..69805be 100644
+index b697247caff1af060411b5c2786698266acab269..69805be5db7c9aded2192bc9e190a513cd0481e8 100644
 --- a/extensions/renderer/extension_localization_throttle.h
 +++ b/extensions/renderer/extension_localization_throttle.h
-@@ -39,8 +39,10 @@
+@@ -39,8 +39,10 @@ class ExtensionLocalizationThrottle : public blink::URLLoaderThrottle {
  
   private:
    ExtensionLocalizationThrottle();
@@ -71,10 +70,10 @@ index b697247..69805be 100644
  
  }  // namespace extensions
 diff --git a/extensions/renderer/extension_localization_throttle_unittest.cc b/extensions/renderer/extension_localization_throttle_unittest.cc
-index ef6ec9c..7324023 100644
+index ef6ec9cf84361e08db824757899e73af4e3c9d84..732402366b697e3e982fe5feb3d25cb2e726abdd 100644
 --- a/extensions/renderer/extension_localization_throttle_unittest.cc
 +++ b/extensions/renderer/extension_localization_throttle_unittest.cc
-@@ -382,8 +382,12 @@
+@@ -382,8 +382,12 @@ TEST_F(ExtensionLocalizationThrottleTest, CreateDataPipeError) {
    response_head->mime_type = "text/css";
    bool defer = false;
    throttle->WillProcessResponse(url, response_head.get(), &defer);
