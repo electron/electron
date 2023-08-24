@@ -5456,6 +5456,22 @@ describe('BrowserWindow module', () => {
           expect(w.isFullScreenable()).to.be.true('isFullScreenable');
         });
       });
+
+      it('does not open non-fullscreenable child windows in fullscreen if parent is fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+
+        const child = new BrowserWindow({ parent: w, resizable: false, fullscreenable: false });
+        const shown = once(child, 'show');
+        await shown;
+
+        expect(child.resizable).to.be.false('resizable');
+        expect(child.fullScreen).to.be.false('fullscreen');
+        expect(child.fullScreenable).to.be.false('fullscreenable');
+      });
     });
 
     ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
