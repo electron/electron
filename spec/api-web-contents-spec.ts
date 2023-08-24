@@ -1309,6 +1309,47 @@ describe('webContents module', () => {
     });
   });
 
+  describe('webrtc udp port range policy api', () => {
+    let w: BrowserWindow;
+    beforeEach(() => {
+      w = new BrowserWindow({ show: false });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('check default webrtc udp port range is { min: 0, max: 0 }', () => {
+      const settings = w.webContents.getWebRTCUDPPortRange();
+      expect(settings).to.deep.equal({ min: 0, max: 0 });
+    });
+
+    it('can set and get webrtc udp port range policy with correct arguments', () => {
+      w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65535 });
+      const settings = w.webContents.getWebRTCUDPPortRange();
+      expect(settings).to.deep.equal({ min: 1, max: 65535 });
+    });
+
+    it('can not set webrtc udp port range policy with invalid arguments', () => {
+      expect(() => {
+        w.webContents.setWebRTCUDPPortRange({ min: 0, max: 65535 });
+      }).to.throw("'min' and 'max' must be in the (0, 65535] range or [0, 0]");
+      expect(() => {
+        w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65536 });
+      }).to.throw("'min' and 'max' must be in the (0, 65535] range or [0, 0]");
+      expect(() => {
+        w.webContents.setWebRTCUDPPortRange({ min: 60000, max: 56789 });
+      }).to.throw("'max' must be greater than or equal to 'min'");
+    });
+
+    it('can reset webrtc udp port range policy to default with { min: 0, max: 0 }', () => {
+      w.webContents.setWebRTCUDPPortRange({ min: 1, max: 65535 });
+      const settings = w.webContents.getWebRTCUDPPortRange();
+      expect(settings).to.deep.equal({ min: 1, max: 65535 });
+      w.webContents.setWebRTCUDPPortRange({ min: 0, max: 0 });
+      const defaultSetting = w.webContents.getWebRTCUDPPortRange();
+      expect(defaultSetting).to.deep.equal({ min: 0, max: 0 });
+    });
+  });
+
   describe('opener api', () => {
     afterEach(closeAllWindows);
     it('can get opener with window.open()', async () => {

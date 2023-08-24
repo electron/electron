@@ -2552,6 +2552,52 @@ void WebContents::SetWebRTCIPHandlingPolicy(
   web_contents()->SyncRendererPrefs();
 }
 
+v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
+    v8::Isolate* isolate) const {
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.Set("min", static_cast<uint32_t>(prefs->webrtc_udp_min_port));
+  dict.Set("max", static_cast<uint32_t>(prefs->webrtc_udp_max_port));
+  return dict.GetHandle();
+}
+
+void WebContents::SetWebRTCUDPPortRange(gin::Arguments* args) {
+  uint32_t min = 0, max = 0;
+  gin_helper::Dictionary range;
+
+  if (!args->GetNext(&range) || !range.Get("min", &min) ||
+      !range.Get("max", &max)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("'min' and 'max' are both required");
+    return;
+  }
+
+  if ((0 == min && 0 != max) || max > UINT16_MAX) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError(
+            "'min' and 'max' must be in the (0, 65535] range or [0, 0]");
+    return;
+  }
+  if (min > max) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("'max' must be greater than or equal to 'min'");
+    return;
+  }
+
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+
+  if (prefs->webrtc_udp_min_port == static_cast<uint16_t>(min) &&
+      prefs->webrtc_udp_max_port == static_cast<uint16_t>(max)) {
+    return;
+  }
+
+  prefs->webrtc_udp_min_port = min;
+  prefs->webrtc_udp_max_port = max;
+
+  web_contents()->SyncRendererPrefs();
+}
+
 std::string WebContents::GetMediaSourceID(
     content::WebContents* request_web_contents) {
   auto* frame_host = web_contents()->GetPrimaryMainFrame();
@@ -4319,9 +4365,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
+      .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
+      .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
