@@ -463,7 +463,8 @@ As prerequire, you must have installed rpm.
 - For Linux (Debian-based) : `sudo apt install rpm`
 - For other OS : Follow the official instructions depending your system
 
-1. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
+1. Add a description to your `package.json` file, otherwise rpmbuild will fail. Blank description are not valid.
+2. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
 Forge's scaffolding:
 
    ```sh npm2yarn
@@ -482,7 +483,7 @@ Forge's scaffolding:
    Thanks for using "electron-forge"!!!
    ```
 
-2. Create a distributable using Forge's `make` command:
+3. Create a distributable using Forge's `make` command:
 
    ```sh npm2yarn
    npm run make
