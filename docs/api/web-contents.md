@@ -1626,6 +1626,7 @@ win.webContents.print(options, (success, errorType) => {
   * `headerTemplate` string (optional) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: `date` (formatted print date), `title` (document title), `url` (document location), `pageNumber` (current page number) and `totalPages` (total pages in the document). For example, `<span class=title></span>` would generate span containing the title.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
+  * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 

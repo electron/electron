@@ -2081,6 +2081,28 @@ describe('webContents module', () => {
       // Check that correct # of pages are rendered.
       expect(doc.numPages).to.equal(3);
     });
+
+    it('does not tag PDFs by default', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      const data = await w.webContents.printToPDF({});
+      const doc = await pdfjs.getDocument(data).promise;
+      const markInfo = await doc.getMarkInfo();
+      expect(markInfo).to.be.null();
+    });
+
+    it('can generate tag data for PDFs', async () => {
+      await w.loadFile(path.join(__dirname, 'fixtures', 'api', 'print-to-pdf-small.html'));
+
+      const data = await w.webContents.printToPDF({ generateTaggedPDF: true });
+      const doc = await pdfjs.getDocument(data).promise;
+      const markInfo = await doc.getMarkInfo();
+      expect(markInfo).to.deep.equal({
+        Marked: true,
+        UserProperties: false,
+        Suspects: false
+      });
+    });
   });
 
   describe('PictureInPicture video', () => {

@@ -206,7 +206,8 @@ WebContents.prototype.printToPDF = async function (options) {
     marginLeft: 0.4,
     marginRight: 0.4,
     pageRanges: '',
-    preferCSSPageSize: false
+    preferCSSPageSize: false,
+    shouldGenerateTaggedPDF: false
   };
 
   if (options.landscape !== undefined) {
@@ -320,6 +321,13 @@ WebContents.prototype.printToPDF = async function (options) {
       throw new Error('preferCSSPageSize must be a Boolean');
     }
     printSettings.preferCSSPageSize = options.preferCSSPageSize;
+  }
+
+  if (options.generateTaggedPDF !== undefined) {
+    if (typeof options.generateTaggedPDF !== 'boolean') {
+      throw new Error('generateTaggedPDF must be a Boolean');
+    }
+    printSettings.shouldGenerateTaggedPDF = options.generateTaggedPDF;
   }
 
   if (this._printToPDF) {
