@@ -6,7 +6,7 @@ a single extensible interface so that anyone can jump right into making Electron
 
 <details>
 
-<summary>**Alternative tooling**</summary>
+<summary>Alternative tooling</summary>
 
 If you do not want to use Electron Forge for your project, there are other
 third-party tools you can use to distribute your app.
@@ -24,7 +24,7 @@ maintainers (such as the auto-updater) with custom ones.
 
 ## Hydraulic Conveyor
 
-A [desktop app deployment tool](https://www.hydraulic.dev) that supports
+A [desktop app deployment tool](https://hydraulic.dev) that supports
 cross-building/signing of all packages from any OS without the need for
 multi-platform CI, can do synchronous web-style updates on each start
 of the app, requires no code changes, can use plain HTTP servers for updates and
