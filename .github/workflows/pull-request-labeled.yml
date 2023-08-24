@@ -14,18 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
         id: generate-token
-        env:
-          RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
-        run: |
-          set -eo pipefail
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org=electron)
-          echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+        with:
+          creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
+          org: electron
       - name: Set status
-        if: ${{ steps.generate-token.outputs.TOKEN }}
         uses: dsanders11/update-project-action@7ade91760df70df76770a238abee7a4869e01cf8
         with:
-          github_token: ${{ steps.generate-token.outputs.TOKEN }}
+          github_token: ${{ steps.generate-token.outputs.token }}
           organization: electron
           project_number: 94
           content_id: ${{ github.event.pull_request.node_id }}

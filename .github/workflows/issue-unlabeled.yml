@@ -23,18 +23,16 @@ jobs:
           fi
       - name: Generate GitHub App token
         if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
         id: generate-token
-        env:
-          RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
-        run: |
-          set -eo pipefail
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org=electron)
-          echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
       - name: Set status
-        if: ${{ steps.generate-token.outputs.TOKEN }}
+        if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
         uses: github/update-project-action@2d475e08804f11f4022df7e21f5816531e97cb64 # v2
         with:
-          github_token: ${{ steps.generate-token.outputs.TOKEN }}
+          github_token: ${{ steps.generate-token.outputs.token }}
           organization: electron
           project_number: 90
           content_id: ${{ github.event.issue.node_id }}
