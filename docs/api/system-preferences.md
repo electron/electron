@@ -399,7 +399,7 @@ Returns `Object`:
 
 Returns an object with system animation settings.
 
-### `systemPreferences.accessabilityDisplayShouldReduceTransparency()` _macOS_
+### `systemPreferences.accessibilityDisplayShouldReduceTransparency()` _macOS_
 
 Returns `boolean` - whether the app avoids using semitransparent backgrounds.
 
