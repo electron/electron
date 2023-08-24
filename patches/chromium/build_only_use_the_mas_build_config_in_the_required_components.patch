@@ -54,10 +54,10 @@ index 0625f07f317de46af619fdb279be78d9ecdc0029..5897820839d6d57ada22a83fe753e3a6
      "alert.h",
      "alert.mm",
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 440fa0b3ff9b08016ff19ab54c70a453dc8c5f86..2e2f358829bf0492fd3e44173eeb7d0b5507b388 100644
+index 729753a72edd761ec831f79828742a26f9dd2417..45858456c9c8c82870c41b0edd1359d16ed54537 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -331,6 +331,7 @@ viz_component("service") {
+@@ -332,6 +332,7 @@ viz_component("service") {
          "frame_sinks/external_begin_frame_source_mac.h",
        ]
      }
@@ -65,7 +65,7 @@ index 440fa0b3ff9b08016ff19ab54c70a453dc8c5f86..2e2f358829bf0492fd3e44173eeb7d0b
    }
  
    if (is_android || use_ozone) {
-@@ -588,6 +589,7 @@ viz_source_set("unit_tests") {
+@@ -589,6 +590,7 @@ viz_source_set("unit_tests") {
        "display_embedder/software_output_device_mac_unittest.mm",
      ]
      frameworks = [ "IOSurface.framework" ]
@@ -74,7 +74,7 @@ index 440fa0b3ff9b08016ff19ab54c70a453dc8c5f86..2e2f358829bf0492fd3e44173eeb7d0b
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index f540b9559abf9b900c512c3bf82aa56463df461e..3efbbe52c323a390dad425f11dda034c7bff8e64 100644
+index 740d4cbe222f23de01bed26caee0bfced1c0dee0..e2be4b26ff0ffad4e964806cdbe50291c0f83600 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
