@@ -5042,17 +5042,37 @@ describe('BrowserWindow module', () => {
       it('does not open non-fullscreenable child windows in fullscreen if parent is fullscreen', async () => {
         const w = new BrowserWindow();
 
-        const enterFS = once(w, 'enter-full-screen');
+        const enterFS = emittedOnce(w, 'enter-full-screen');
         w.setFullScreen(true);
         await enterFS;
 
         const child = new BrowserWindow({ parent: w, resizable: false, fullscreenable: false });
-        const shown = once(child, 'show');
+        const shown = emittedOnce(child, 'show');
         await shown;
 
         expect(child.resizable).to.be.false('resizable');
         expect(child.fullScreen).to.be.false('fullscreen');
         expect(child.fullScreenable).to.be.false('fullscreenable');
+      });
+
+      it('is set correctly with different resizable values', async () => {
+        const w1 = new BrowserWindow({
+          resizable: false,
+          fullscreenable: false
+        });
+
+        const w2 = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        const w3 = new BrowserWindow({
+          fullscreenable: false
+        });
+
+        expect(w1.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
       });
     });
 
