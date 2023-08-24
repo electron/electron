@@ -1,7 +1,7 @@
-From e4669a74888d7f9bd93d79f72829d576776dfb8a Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Charlie Lao <cclao@google.com>
-Date: Tue, 08 Aug 2023 10:14:47 -0700
-Subject: [PATCH] [M114-LTS] Vulkan: Fix data race with DynamicDescriptorPool
+Date: Tue, 8 Aug 2023 10:14:47 -0700
+Subject: M116: Vulkan: Fix data race with DynamicDescriptorPool
 
 Right now DynamicDescriptorPool::destroyCachedDescriptorSet can be
 called from garbage clean up thread, while simultaneously accessed from
@@ -17,14 +17,13 @@ is released, while we still had the shared group lock.
 Bug: chromium:1469542
 Change-Id: Ie6235fcfb77dee2a12b2ebde44042c3845fc0aca
 Reviewed-on: https://chromium-review.googlesource.com/c/angle/angle/+/4790523
-(cherry picked from commit b48983ab8c74d2fcd9ef17c80727affb9e690c53)
----
+Reviewed-by: Yuly Novikov <ynovikov@chromium.org>
 
 diff --git a/src/libANGLE/renderer/vulkan/BufferVk.cpp b/src/libANGLE/renderer/vulkan/BufferVk.cpp
-index 2e07deb..93a1092 100644
+index 0898e7d67f47b0d87476a70b9bede290d22ca87a..2957ddf5dede7ffcf7a918ba2f6c8235feb7357b 100644
 --- a/src/libANGLE/renderer/vulkan/BufferVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/BufferVk.cpp
-@@ -305,7 +305,7 @@
+@@ -285,7 +285,7 @@ void BufferVk::release(ContextVk *contextVk)
      RendererVk *renderer = contextVk->getRenderer();
      if (mBuffer.valid())
      {
@@ -33,7 +32,7 @@ index 2e07deb..93a1092 100644
      }
      if (mStagingBuffer.valid())
      {
-@@ -623,7 +623,7 @@
+@@ -628,7 +628,7 @@ angle::Result BufferVk::ghostMappedBuffer(ContextVk *contextVk,
          memcpy(dstMapPtr, srcMapPtr, static_cast<size_t>(mState.getSize()));
      }
  
@@ -42,16 +41,16 @@ index 2e07deb..93a1092 100644
  
      // Return the already mapped pointer with the offset adjustment to avoid the call to unmap().
      *mapPtr = dstMapPtr + offset;
-@@ -1029,7 +1029,7 @@
+@@ -966,7 +966,7 @@ angle::Result BufferVk::acquireAndUpdate(ContextVk *contextVk,
  
-     if (prevBuffer.valid())
+     if (src.valid())
      {
--        prevBuffer.releaseBufferAndDescriptorSetCache(contextVk);
-+        prevBuffer.releaseBufferAndDescriptorSetCache(contextVk->getRenderer());
+-        src.releaseBufferAndDescriptorSetCache(contextVk);
++        src.releaseBufferAndDescriptorSetCache(contextVk->getRenderer());
      }
  
      return angle::Result::Continue;
-@@ -1151,7 +1151,7 @@
+@@ -1073,7 +1073,7 @@ angle::Result BufferVk::acquireBufferHelper(ContextVk *contextVk, size_t sizeInB
  
      if (mBuffer.valid())
      {
@@ -61,10 +60,10 @@ index 2e07deb..93a1092 100644
  
      // Allocate the buffer directly
 diff --git a/src/libANGLE/renderer/vulkan/Suballocation.h b/src/libANGLE/renderer/vulkan/Suballocation.h
-index d25481b..276f6b4 100644
+index d25481bdbbb12d9377eb8ae540a8603a16e453b1..276f6b4c854df2a2a4a353f2893c4bc2df9e8502 100644
 --- a/src/libANGLE/renderer/vulkan/Suballocation.h
 +++ b/src/libANGLE/renderer/vulkan/Suballocation.h
-@@ -86,6 +86,13 @@
+@@ -86,6 +86,13 @@ class BufferBlock final : angle::NonCopyable
      {
          mDescriptorSetCacheManager.addKey(sharedCacheKey);
      }
@@ -79,19 +78,19 @@ index d25481b..276f6b4 100644
    private:
      mutable std::mutex mVirtualBlockMutex;
 diff --git a/src/libANGLE/renderer/vulkan/TextureVk.cpp b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-index d43c172..5e6419f 100644
+index 1375e39971faff88db94c09b50b8c0db761eaba2..903def6e88e8d0f3a16f1f891429b9e088191f32 100644
 --- a/src/libANGLE/renderer/vulkan/TextureVk.cpp
 +++ b/src/libANGLE/renderer/vulkan/TextureVk.cpp
-@@ -1623,7 +1623,7 @@
-         onStateChange(angle::SubjectMessage::SubjectChanged);
-     }
+@@ -1617,7 +1617,7 @@ void TextureVk::releaseAndDeleteImageAndViews(ContextVk *contextVk)
+ 
+     mBufferViews.release(contextVk);
      mRedefinedLevels.reset();
 -    mDescriptorSetCacheManager.releaseKeys(contextVk);
 +    mDescriptorSetCacheManager.releaseKeys(contextVk->getRenderer());
  }
  
  void TextureVk::initImageUsageFlags(ContextVk *contextVk, angle::FormatID actualFormatID)
-@@ -2857,7 +2857,7 @@
+@@ -2845,7 +2845,7 @@ angle::Result TextureVk::syncState(const gl::Context *context,
  
          mBufferViews.release(contextVk);
          mBufferViews.init(renderer, offset, size);
@@ -100,7 +99,7 @@ index d43c172..5e6419f 100644
          return angle::Result::Continue;
      }
  
-@@ -3300,7 +3300,7 @@
+@@ -3285,7 +3285,7 @@ void TextureVk::releaseImageViews(ContextVk *contextVk)
  {
      RendererVk *renderer = contextVk->getRenderer();
  
@@ -110,10 +109,10 @@ index d43c172..5e6419f 100644
      if (mImage == nullptr)
      {
 diff --git a/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp b/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp
-index f750428..ae86b29 100644
+index abab85dcfb5da21630b9e8987543a09e7fb9e6c4..965e6ee4e1f8349c057e7fdbca7ebaa4593823ac 100644
 --- a/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp
 +++ b/src/libANGLE/renderer/vulkan/vk_cache_utils.cpp
-@@ -2589,11 +2589,19 @@
+@@ -2588,11 +2588,19 @@ void ReleaseCachedObject(ContextVk *contextVk, const FramebufferDesc &desc)
  {
      contextVk->getShareGroup()->getFramebufferCache().erase(contextVk, desc);
  }
@@ -123,21 +122,22 @@ index f750428..ae86b29 100644
 +}
  
  void ReleaseCachedObject(ContextVk *contextVk, const DescriptorSetDescAndPool &descAndPool)
- {
++{
 +    UNREACHABLE();
 +}
 +void ReleaseCachedObject(RendererVk *renderer, const DescriptorSetDescAndPool &descAndPool)
-+{
+ {
      ASSERT(descAndPool.mPool != nullptr);
 -    descAndPool.mPool->releaseCachedDescriptorSet(contextVk, descAndPool.mDesc);
 +    descAndPool.mPool->releaseCachedDescriptorSet(renderer, descAndPool.mDesc);
  }
  
  void DestroyCachedObject(RendererVk *renderer, const FramebufferDesc &desc)
-@@ -6261,6 +6269,22 @@
+@@ -6255,6 +6263,22 @@ void SharedCacheKeyManager<SharedCacheKeyT>::releaseKeys(ContextVk *contextVk)
+     mSharedCacheKeys.clear();
  }
  
- template <class SharedCacheKeyT>
++template <class SharedCacheKeyT>
 +void SharedCacheKeyManager<SharedCacheKeyT>::releaseKeys(RendererVk *renderer)
 +{
 +    for (SharedCacheKeyT &sharedCacheKey : mSharedCacheKeys)
@@ -153,15 +153,14 @@ index f750428..ae86b29 100644
 +    mSharedCacheKeys.clear();
 +}
 +
-+template <class SharedCacheKeyT>
+ template <class SharedCacheKeyT>
  void SharedCacheKeyManager<SharedCacheKeyT>::destroyKeys(RendererVk *renderer)
  {
-     for (SharedCacheKeyT &sharedCacheKey : mSharedCacheKeys)
 diff --git a/src/libANGLE/renderer/vulkan/vk_cache_utils.h b/src/libANGLE/renderer/vulkan/vk_cache_utils.h
-index 8c9d452..f85459a 100644
+index 2d9784c1e0db828a5aacefa19168795da85fc5a5..c7213a1193fee21595737047e2379231039b66e9 100644
 --- a/src/libANGLE/renderer/vulkan/vk_cache_utils.h
 +++ b/src/libANGLE/renderer/vulkan/vk_cache_utils.h
-@@ -1932,6 +1932,7 @@
+@@ -1937,6 +1937,7 @@ class SharedCacheKeyManager
      void addKey(const SharedCacheKeyT &key);
      // Iterate over the descriptor array and release the descriptor and cache.
      void releaseKeys(ContextVk *contextVk);
@@ -170,10 +169,10 @@ index 8c9d452..f85459a 100644
      void destroyKeys(RendererVk *renderer);
      void clear();
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.cpp b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
-index 9088e09bf..8bc027d 100644
+index b6efd6855a819d28f60a79848dd811a347704d44..b56e78f8f5335e14826c58bfc521bd7d8e55caeb 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.cpp
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.cpp
-@@ -3798,7 +3798,7 @@
+@@ -3598,7 +3598,7 @@ angle::Result DynamicDescriptorPool::allocateNewPool(Context *context)
      return mDescriptorPools[mCurrentPoolIndex]->get().init(context, mPoolSizes, mMaxSetsPerPool);
  }
  
@@ -182,7 +181,7 @@ index 9088e09bf..8bc027d 100644
                                                         const DescriptorSetDesc &desc)
  {
      VkDescriptorSet descriptorSet;
-@@ -3812,7 +3812,7 @@
+@@ -3612,7 +3612,7 @@ void DynamicDescriptorPool::releaseCachedDescriptorSet(ContextVk *contextVk,
          // Wrap it with helper object so that it can be GPU tracked and add it to resource list.
          DescriptorSetHelper descriptorSetHelper(poolOut->get().getResourceUse(), descriptorSet);
          poolOut->get().addGarbage(std::move(descriptorSetHelper));
@@ -191,7 +190,7 @@ index 9088e09bf..8bc027d 100644
      }
  }
  
-@@ -5016,6 +5016,12 @@
+@@ -4807,6 +4807,12 @@ void BufferHelper::release(RendererVk *renderer)
  
      if (mSuballocation.valid())
      {
@@ -204,7 +203,7 @@ index 9088e09bf..8bc027d 100644
          renderer->collectSuballocationGarbage(mUse, std::move(mSuballocation),
                                                std::move(mBufferForVertexArray));
      }
-@@ -5024,17 +5030,15 @@
+@@ -4815,17 +4821,15 @@ void BufferHelper::release(RendererVk *renderer)
      ASSERT(!mBufferForVertexArray.valid());
  }
  
@@ -225,10 +224,10 @@ index 9088e09bf..8bc027d 100644
  
      release(renderer);
 diff --git a/src/libANGLE/renderer/vulkan/vk_helpers.h b/src/libANGLE/renderer/vulkan/vk_helpers.h
-index d2405b6..962dfe8 100644
+index 29f7d2141fab70e0f542b05004b21701883a39c9..d81f9a4b9b07c6e34094d6d275a04c74c2652d3a 100644
 --- a/src/libANGLE/renderer/vulkan/vk_helpers.h
 +++ b/src/libANGLE/renderer/vulkan/vk_helpers.h
-@@ -252,7 +252,7 @@
+@@ -247,7 +247,7 @@ class DynamicDescriptorPool final : angle::NonCopyable
                                               VkDescriptorSet *descriptorSetOut,
                                               SharedDescriptorSetCacheKey *sharedCacheKeyOut);
  
@@ -237,7 +236,7 @@ index d2405b6..962dfe8 100644
      void destroyCachedDescriptorSet(RendererVk *renderer, const DescriptorSetDesc &desc);
  
      template <typename Accumulator>
-@@ -777,7 +777,7 @@
+@@ -771,7 +771,7 @@ class BufferHelper : public ReadWriteResource
  
      void destroy(RendererVk *renderer);
      void release(RendererVk *renderer);
@@ -247,10 +246,10 @@ index d2405b6..962dfe8 100644
      BufferSerial getBufferSerial() const { return mSerial; }
      BufferSerial getBlockSerial() const
 diff --git a/src/tests/gl_tests/TransformFeedbackTest.cpp b/src/tests/gl_tests/TransformFeedbackTest.cpp
-index ea3eeea..226eb1f 100644
+index ea3eeea4015dcb56f710c873b22c95d168bb287c..226eb1f049bb708e0221c81e9b836a67594eb7b0 100644
 --- a/src/tests/gl_tests/TransformFeedbackTest.cpp
 +++ b/src/tests/gl_tests/TransformFeedbackTest.cpp
-@@ -507,8 +507,8 @@
+@@ -507,8 +507,8 @@ TEST_P(TransformFeedbackTest, UseAsUBOThenUpdateThenCapture)
  
      const std::array<uint32_t, 12> kInitialData = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11};
      const std::array<uint32_t, 12> kUpdateData  = {
@@ -261,7 +260,7 @@ index ea3eeea..226eb1f 100644
      };
  
      GLBuffer buffer;
-@@ -3749,9 +3749,9 @@
+@@ -3749,9 +3749,9 @@ void main()
      constexpr size_t kCapturedVaryingsCount = 3;
      constexpr std::array<size_t, kCapturedVaryingsCount> kCaptureSizes = {8, 9, 4};
      const std::vector<float> kExpected[kCapturedVaryingsCount]         = {
@@ -274,7 +273,7 @@ index ea3eeea..226eb1f 100644
      };
  
      ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(program, kVS, kFS, tfVaryings, GL_INTERLEAVED_ATTRIBS);
-@@ -3848,9 +3848,9 @@
+@@ -3848,9 +3848,9 @@ void main()
      constexpr size_t kCapturedVaryingsCount                            = 3;
      constexpr std::array<size_t, kCapturedVaryingsCount> kCaptureSizes = {1, 2, 1};
      const std::vector<float> kExpected[kCapturedVaryingsCount]         = {
@@ -287,7 +286,7 @@ index ea3eeea..226eb1f 100644
      };
  
      ANGLE_GL_PROGRAM_TRANSFORM_FEEDBACK(program, kVS, kFS, tfVaryings, GL_SEPARATE_ATTRIBS);
-@@ -4392,6 +4392,51 @@
+@@ -4392,6 +4392,51 @@ TEST_P(TransformFeedbackTest, RenderOnceChangeXfbBufferRenderAgain)
      glEndTransformFeedback();
  }
  
@@ -340,10 +339,10 @@ index ea3eeea..226eb1f 100644
  ANGLE_INSTANTIATE_TEST_ES3_AND(TransformFeedbackTest,
                                 ES3_VULKAN()
 diff --git a/src/tests/gl_tests/UniformBufferTest.cpp b/src/tests/gl_tests/UniformBufferTest.cpp
-index 4d005c0..71b8504 100644
+index 4d005c0740d5ff918af103236aa18e8249e00acc..71b85043bd9ca49018e9ed79fa36f24f8499757e 100644
 --- a/src/tests/gl_tests/UniformBufferTest.cpp
 +++ b/src/tests/gl_tests/UniformBufferTest.cpp
-@@ -3422,6 +3422,50 @@
+@@ -3422,6 +3422,50 @@ void main() {
      EXPECT_PIXEL_COLOR_EQ(0, 0, GLColor::green);
  }
  
