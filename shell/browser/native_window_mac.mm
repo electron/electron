@@ -830,23 +830,19 @@ void NativeWindowMac::SetResizable(bool resizable) {
   ScopedDisableResize disable_resize;
   SetStyleMask(resizable, NSWindowStyleMaskResizable);
 
+  bool was_fullscreenable = IsFullScreenable();
+
   // Right now, resizable and fullscreenable are decoupled in
   // documentation and on Windows/Linux. Chromium disables
-  // fullscreenability if resizability is false on macOS as well
-  // as disabling the maximize traffic light unless the window
-  // is both resizable and maximizable. To work around this, we want
-  // to match behavior on other platforms by disabiliting the maximize
-  // button but keeping fullscreenability enabled.
-  // TODO(codebytere): refactor this once we have a better solution.
+  // fullscreen collection behavior as well as the maximize traffic
+  // light in SetCanResize if resizability is false on macOS unless
+  // the window is both resizable and maximizable. We want consistent
+  // cross-platform behavior, so if resizability is disabled we disable
+  // the maximize button and ensure fullscreenability matches user setting.
   SetCanResize(resizable);
-  if (!resizable) {
-    SetFullScreenable(true);
-    [[window_ standardWindowButton:NSWindowZoomButton] setEnabled:false];
-  } else {
-    SetFullScreenable(true);
-    [[window_ standardWindowButton:NSWindowZoomButton]
-        setEnabled:IsFullScreenable()];
-  }
+  SetFullScreenable(was_fullscreenable);
+  [[window_ standardWindowButton:NSWindowZoomButton]
+      setEnabled:resizable ? was_fullscreenable : false];
 }
 
 bool NativeWindowMac::IsResizable() {

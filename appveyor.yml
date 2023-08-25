@@ -116,7 +116,7 @@ for:
       - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
       - ps: >-
           if (Test-Path 'env:RAW_GOMA_AUTH') {
-            $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+            $goma_login = python3 $env:LOCAL_GOMA_DIR\goma_auth.py info
             if ($goma_login -eq 'Login as Fermi Planck') {
               Write-warning "Goma authentication is correct";
             } else {
@@ -166,7 +166,7 @@ for:
       - ninja -C out/Default electron:hunspell_dictionaries_zip
       - ninja -C out/Default electron:electron_chromedriver_zip
       - ninja -C out/Default electron:node_headers
-      - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - python3 %LOCAL_GOMA_DIR%\goma_ctl.py stat
       - ps: >-
           Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
       - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json

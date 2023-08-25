@@ -1626,6 +1626,7 @@ win.webContents.print(options, (success, errorType) => {
   * `headerTemplate` string (optional) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: `date` (formatted print date), `title` (document title), `url` (document location), `pageNumber` (current page number) and `totalPages` (total pages in the document). For example, `<span class=title></span>` would generate span containing the title.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
+  * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -2067,6 +2068,24 @@ Returns `string` - Returns the WebRTC IP Handling Policy.
 Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
+
+#### `contents.getWebRTCUDPPortRange()`
+
+Returns `Object`:
+
+* `min` Integer - The minimum UDP port number that WebRTC should use.
+* `max` Integer - The maximum UDP port number that WebRTC should use.
+
+By default this value is `{ min: 0, max: 0 }` , which would apply no restriction on the udp port range.
+
+#### `contents.setWebRTCUDPPortRange(udpPortRange)`
+
+* `udpPortRange` Object
+  * `min` Integer - The minimum UDP port number that WebRTC should use.
+  * `max` Integer - The maximum UDP port number that WebRTC should use.
+
+Setting the WebRTC UDP Port Range allows you to restrict the udp port range used by WebRTC. By default the port range is unrestricted.
+**Note:** To reset to an unrestricted port range this value should be set to `{ min: 0, max: 0 }`.
 
 #### `contents.getMediaSourceId(requestWebContents)`
 
