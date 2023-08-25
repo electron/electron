@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Shu-yu Guo <syg@chromium.org>
 Date: Thu, 3 Nov 2022 08:48:39 -0700
-Subject: [shared-struct] Fix for-in enumeration
+Subject: Fix for-in enumeration
 
 for-in enumeration creates an EnumCache, which is currently incorrectly
 allocated in the per-thread heap. This CL preallocates the enum cache at
