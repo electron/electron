@@ -23,10 +23,10 @@ index d1e9ad95891487b37e2e03cb2a220eb969e877ab..13bdc6cf7ba4221f0a3219975a0825eb
                                          int32_t world_id) {}
    virtual void DidClearWindowObject() {}
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index e2e794bf00691172448ccd62a990982551913a52..24a20b453a313638bfa385302932d5756afb75d6 100644
+index 650fa1950c70144de62c62e1908a70eee4bffaf3..ee9b9fec80635771f1b33c172372a671a60720b8 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -4476,6 +4476,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
+@@ -4461,6 +4461,12 @@ void RenderFrameImpl::DidCreateScriptContext(v8::Local<v8::Context> context,
      observer.DidCreateScriptContext(context, world_id);
  }
  
@@ -40,10 +40,10 @@ index e2e794bf00691172448ccd62a990982551913a52..24a20b453a313638bfa385302932d575
                                                 int world_id) {
    for (auto& observer : observers_)
 diff --git a/content/renderer/render_frame_impl.h b/content/renderer/render_frame_impl.h
-index ac84582bc50982f210e80f14f426a0ede727b103..dd9562d7e60cc725eb6cc9c74f04b63a2715c156 100644
+index 77583f410b3d537425d7185f4b98724e12dc2961..db44986fa276f03ae989152a0656ddf4e7f3aeda 100644
 --- a/content/renderer/render_frame_impl.h
 +++ b/content/renderer/render_frame_impl.h
-@@ -612,6 +612,8 @@ class CONTENT_EXPORT RenderFrameImpl
+@@ -611,6 +611,8 @@ class CONTENT_EXPORT RenderFrameImpl
    void DidObserveLayoutShift(double score, bool after_input_or_scroll) override;
    void DidCreateScriptContext(v8::Local<v8::Context> context,
                                int world_id) override;

@@ -74,7 +74,7 @@ index 729753a72edd761ec831f79828742a26f9dd2417..45858456c9c8c82870c41b0edd1359d1
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 740d4cbe222f23de01bed26caee0bfced1c0dee0..e2be4b26ff0ffad4e964806cdbe50291c0f83600 100644
+index 50afa292bcfeaa0cabbac9766c69eb5af88190d6..333925a2128008dbc7cf9cb6a26cdfca82696de0 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index 62117d9c83972003d0483ed9fc6efad6a4490a75..246d7289fd5727886054e182e17520c5
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index ee9bc2aa7292509812f2a630e87c0769cd236441..4266acd841f6fd253044c0bcaf7c0e8e043b2918 100644
+index cd31e42ccc4d39548b0ce89f616a9f174731b9e9..c56526fc9c7963dc8c05f988a2d2f48ba1a18212 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -478,6 +478,7 @@ static_library("test_support") {
