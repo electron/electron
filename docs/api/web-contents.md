@@ -1536,14 +1536,6 @@ If you would like the page to stay hidden, you should ensure that `stayHidden` i
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
 
-#### `contents.getPrinters()` _Deprecated_
-
-Get the system printer list.
-
-Returns [`PrinterInfo[]`](structures/printer-info.md)
-
-**Deprecated:** Should use the new [`contents.getPrintersAsync`](web-contents.md#contentsgetprintersasync) API.
-
 #### `contents.getPrintersAsync()`
 
 Get the system printer list.
