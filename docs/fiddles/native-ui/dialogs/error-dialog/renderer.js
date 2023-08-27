@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron/renderer')
 
 const errorBtn = document.getElementById('error-dialog')
 

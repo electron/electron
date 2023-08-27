@@ -6,8 +6,9 @@ const {
   ipcMain,
   app,
   shell,
-  dialog
-} = require('electron')
+  dialog,
+  autoUpdater
+} = require('electron/main')
 
 const menu = new Menu()
 menu.append(new MenuItem({ label: 'Hello' }))
@@ -185,7 +186,7 @@ function addUpdateMenuItems (items, position) {
       visible: false,
       key: 'checkForUpdate',
       click: () => {
-        require('electron').autoUpdater.checkForUpdates()
+        autoUpdater.checkForUpdates()
       }
     },
     {
@@ -194,7 +195,7 @@ function addUpdateMenuItems (items, position) {
       visible: false,
       key: 'restartToUpdate',
       click: () => {
-        require('electron').autoUpdater.quitAndInstall()
+        autoUpdater.quitAndInstall()
       }
     }
   ]

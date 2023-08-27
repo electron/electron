@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron/renderer')
 
 const dragFileLink = document.getElementById('drag-file-link')
 

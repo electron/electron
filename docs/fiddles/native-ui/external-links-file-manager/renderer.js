@@ -1,4 +1,4 @@
-const { shell } = require('electron')
+const { shell } = require('electron/renderer')
 const os = require('node:os')
 
 const exLinksBtn = document.getElementById('open-ex-links')

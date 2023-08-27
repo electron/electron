@@ -1,4 +1,4 @@
-const { shell, ipcRenderer } = require('electron')
+const { shell, ipcRenderer } = require('electron/renderer')
 
 const fs = require('node:fs').promises
 const os = require('node:os')
