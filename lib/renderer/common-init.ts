@@ -17,13 +17,9 @@ const isWebView = mainFrame.getWebPreference('isWebView');
 // ElectronApiServiceImpl will look for the "ipcNative" hidden object when
 // invoking the 'onMessage' callback.
 v8Util.setHiddenValue(global, 'ipcNative', {
-  onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[], senderId: number, senderIsMainFrame: boolean) {
-    if (internal && senderId !== 0) {
-      console.error(`Message ${channel} sent by unexpected WebContents (${senderId})`);
-      return;
-    }
+  onMessage (internal: boolean, channel: string, ports: MessagePort[], args: any[]) {
     const sender = internal ? ipcRendererInternal : ipcRenderer;
-    sender.emit(channel, { sender, senderId, ...(senderId ? { senderIsMainFrame } : {}), ports }, ...args);
+    sender.emit(channel, { sender, ports }, ...args);
   }
 });
 

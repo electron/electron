@@ -2029,32 +2029,6 @@ void WebContents::MessageSync(
                  internal, channel, std::move(arguments));
 }
 
-void WebContents::MessageTo(int32_t web_contents_id,
-                            const std::string& channel,
-                            blink::CloneableMessage arguments,
-                            content::RenderFrameHost* render_frame_host) {
-  TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  auto* target_web_contents = FromID(web_contents_id);
-
-  if (target_web_contents) {
-    content::RenderFrameHost* frame = target_web_contents->MainFrame();
-    DCHECK(frame);
-
-    v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
-    gin::Handle<WebFrameMain> web_frame_main =
-        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
-
-    if (!web_frame_main->CheckRenderFrame())
-      return;
-
-    int32_t sender_id = ID();
-    bool sender_is_main_frame = render_frame_host->GetParent() == nullptr;
-    web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
-                                              std::move(arguments), sender_id,
-                                              sender_is_main_frame);
-  }
-}
-
 void WebContents::MessageHost(const std::string& channel,
                               blink::CloneableMessage arguments,
                               content::RenderFrameHost* render_frame_host) {

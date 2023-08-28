@@ -9,9 +9,7 @@ interface ElectronRenderer {
   Message(
       bool internal,
       string channel,
-      blink.mojom.CloneableMessage arguments,
-      int32 sender_id,
-      bool sender_is_main_frame);
+      blink.mojom.CloneableMessage arguments);
 
   ReceivePostMessage(string channel, blink.mojom.TransferableMessage message);
 
@@ -70,13 +68,6 @@ interface ElectronApiIPC {
     bool internal,
     string channel,
     blink.mojom.CloneableMessage arguments) => (blink.mojom.CloneableMessage result);
-
-  // Emits an event from the |ipcRenderer| JavaScript object in the target
-  // WebContents's main frame, specified by |web_contents_id|.
-  MessageTo(
-    int32 web_contents_id,
-    string channel,
-    blink.mojom.CloneableMessage arguments);
 
   MessageHost(
     string channel,
