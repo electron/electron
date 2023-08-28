@@ -1638,9 +1638,9 @@ An example of `webContents.printToPDF`:
 
 ```javascript
 const { BrowserWindow } = require('electron')
-const fs = require('fs')
-const path = require('path')
-const os = require('os')
+const fs = require('node:fs')
+const path = require('node:path')
+const os = require('node:os')
 
 const win = new BrowserWindow()
 win.loadURL('https://github.com')

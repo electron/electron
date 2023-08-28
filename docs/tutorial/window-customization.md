@@ -184,7 +184,7 @@ allowing events such as `mouseleave` to be emitted:
 
 ```javascript title='main.js'
 const { BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const win = new BrowserWindow({
   webPreferences: {

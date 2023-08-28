@@ -78,7 +78,7 @@ binary. Use this to spawn Electron from Node scripts:
 
 ```javascript
 const electron = require('electron')
-const proc = require('child_process')
+const proc = require('node:child_process')
 
 // will print something similar to /Users/maf/.../Electron
 console.log(electron)
