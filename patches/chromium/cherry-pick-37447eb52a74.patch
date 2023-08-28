@@ -1,0 +1,89 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tsuyoshi Horo <horo@chromium.org>
+Date: Thu, 24 Aug 2023 10:50:31 +0000
+Subject: Fix ExtensionLocalizationThrottle::WillProcessResponse
+
+Synchronous call of `delegate_->CancelWithError()` inside
+blink::URLLoaderThrottle::WillProcessResponse() in Blink can cause UAF.
+To fix this, this CL change ExtensionLocalizationThrottle::
+WillProcessResponse() to set `defer` to true, and asynchronously call
+`delegate_->CancelWithError()`.
+
+(cherry picked from commit 6bb386bf2a6462eb2a33100833d564a2fd0f8225)
+
+Bug: 1469754
+Change-Id: Ic129ba4b39a9c1ab00eb6609db824b065296e66d
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4751579
+Commit-Queue: Tsuyoshi Horo <horo@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1180638}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4777752
+Commit-Queue: David Bertoni <dbertoni@chromium.org>
+Auto-Submit: Tsuyoshi Horo <horo@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5845@{#1471}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+(cherry picked from commit 28759f24f051b5e79b2ae75f4f39ff63e5607119)
+
+diff --git a/extensions/renderer/extension_localization_throttle.cc b/extensions/renderer/extension_localization_throttle.cc
+index d0456671b7eea52ac6cd7aa89c4b39d5661112f3..382283cea8a8a061f769dc234b67ef8b53b47517 100644
+--- a/extensions/renderer/extension_localization_throttle.cc
++++ b/extensions/renderer/extension_localization_throttle.cc
+@@ -217,7 +217,14 @@ void ExtensionLocalizationThrottle::WillProcessResponse(
+       mojo::CreateDataPipe(/*options=*/nullptr, producer_handle, body);
+ 
+   if (create_pipe_result != MOJO_RESULT_OK || force_error_for_test_) {
+-    delegate_->CancelWithError(net::ERR_INSUFFICIENT_RESOURCES, kCancelReason);
++    // Synchronous call of `delegate_->CancelWithError` can cause a UAF error.
++    // So defer the request here.
++    *defer = true;
++    base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
++        FROM_HERE,
++        base::BindOnce(base::BindOnce(
++            &ExtensionLocalizationThrottle::DeferredCancelWithError,
++            weak_factory_.GetWeakPtr(), net::ERR_INSUFFICIENT_RESOURCES)));
+     return;
+   }
+ 
+@@ -248,4 +255,10 @@ void ExtensionLocalizationThrottle::WillProcessResponse(
+                        std::move(producer_handle));
+ }
+ 
++void ExtensionLocalizationThrottle::DeferredCancelWithError(int error_code) {
++  if (delegate_) {
++    delegate_->CancelWithError(error_code, kCancelReason);
++  }
++}
++
+ }  // namespace extensions
+diff --git a/extensions/renderer/extension_localization_throttle.h b/extensions/renderer/extension_localization_throttle.h
+index b697247caff1af060411b5c2786698266acab269..69805be5db7c9aded2192bc9e190a513cd0481e8 100644
+--- a/extensions/renderer/extension_localization_throttle.h
++++ b/extensions/renderer/extension_localization_throttle.h
+@@ -39,8 +39,10 @@ class ExtensionLocalizationThrottle : public blink::URLLoaderThrottle {
+ 
+  private:
+   ExtensionLocalizationThrottle();
++  void DeferredCancelWithError(int error_code);
+ 
+   bool force_error_for_test_ = false;
++  base::WeakPtrFactory<ExtensionLocalizationThrottle> weak_factory_{this};
+ };
+ 
+ }  // namespace extensions
+diff --git a/extensions/renderer/extension_localization_throttle_unittest.cc b/extensions/renderer/extension_localization_throttle_unittest.cc
+index ef6ec9cf84361e08db824757899e73af4e3c9d84..732402366b697e3e982fe5feb3d25cb2e726abdd 100644
+--- a/extensions/renderer/extension_localization_throttle_unittest.cc
++++ b/extensions/renderer/extension_localization_throttle_unittest.cc
+@@ -382,8 +382,12 @@ TEST_F(ExtensionLocalizationThrottleTest, CreateDataPipeError) {
+   response_head->mime_type = "text/css";
+   bool defer = false;
+   throttle->WillProcessResponse(url, response_head.get(), &defer);
+-  EXPECT_FALSE(defer);
++  EXPECT_TRUE(defer);
+   EXPECT_FALSE(delegate->is_intercepted());
++  EXPECT_FALSE(delegate->cancel_error_code());
++
++  // Run loop to call DeferredCancelWithError().
++  base::RunLoop().RunUntilIdle();
+ 
+   ASSERT_TRUE(delegate->cancel_error_code());
+   EXPECT_EQ(net::ERR_INSUFFICIENT_RESOURCES, *delegate->cancel_error_code());
