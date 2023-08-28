@@ -170,3 +170,4 @@ cherry-pick-933b9fad3a53.patch
 cherry-pick-b03973561862.patch
 cherry-pick-c60a1ab717c7.patch
 networkcontext_don_t_access_url_loader_factories_during_destruction.patch
+don_t_keep_pointer_to_popped_stack_memory_for_has.patch

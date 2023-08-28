@@ -1,0 +1,359 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Thu, 3 Nov 2022 08:48:39 -0700
+Subject: Fix for-in enumeration
+
+for-in enumeration creates an EnumCache, which is currently incorrectly
+allocated in the per-thread heap. This CL preallocates the enum cache at
+SharedStructType-creation time.
+
+Also drive-by fixes typos in the enum cache code.
+
+Bug: v8:12547, chromium:1379616
+Change-Id: I1930f88844eca5ccfeebd8dfdcce4ad0bd80ee38
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/3997701
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Reviewed-by: Camillo Bruni <cbruni@chromium.org>
+Cr-Commit-Position: refs/heads/main@{#84047}
+
+diff --git a/src/builtins/builtins-struct.cc b/src/builtins/builtins-struct.cc
+index a0d75e72086592283070d8014cd043ef3bab1ff5..e0b3831cdc69c1c0acb2ec24925adc310303856e 100644
+--- a/src/builtins/builtins-struct.cc
++++ b/src/builtins/builtins-struct.cc
+@@ -94,6 +94,16 @@ BUILTIN(SharedStructTypeConstructor) {
+   // to it.
+   instance_map->set_constructor_or_back_pointer(*factory->null_value());
+ 
++  // Pre-create the enum cache in the shared space, as otherwise for-in
++  // enumeration will incorrectly create an enum cache in the per-thread heap.
++  if (num_properties == 0) {
++    instance_map->SetEnumLength(0);
++  } else {
++    FastKeyAccumulator::InitializeFastPropertyEnumCache(
++        isolate, instance_map, num_properties, AllocationType::kSharedOld);
++    DCHECK_EQ(num_properties, instance_map->EnumLength());
++  }
++
+   return *constructor;
+ }
+ 
+diff --git a/src/heap/factory.cc b/src/heap/factory.cc
+index bcb2f6475ec357cb34f923c51e279641c644957d..d1285ab16f4113acd5cdee154f7b1ef133fd8e14 100644
+--- a/src/heap/factory.cc
++++ b/src/heap/factory.cc
+@@ -415,9 +415,13 @@ Handle<PrototypeInfo> Factory::NewPrototypeInfo() {
+ }
+ 
+ Handle<EnumCache> Factory::NewEnumCache(Handle<FixedArray> keys,
+-                                        Handle<FixedArray> indices) {
+-  auto result =
+-      NewStructInternal<EnumCache>(ENUM_CACHE_TYPE, AllocationType::kOld);
++                                        Handle<FixedArray> indices,
++                                        AllocationType allocation) {
++  DCHECK(allocation == AllocationType::kOld ||
++         allocation == AllocationType::kSharedOld);
++  DCHECK_EQ(allocation == AllocationType::kSharedOld,
++            keys->InSharedHeap() && indices->InSharedHeap());
++  auto result = NewStructInternal<EnumCache>(ENUM_CACHE_TYPE, allocation);
+   DisallowGarbageCollection no_gc;
+   result.set_keys(*keys);
+   result.set_indices(*indices);
+diff --git a/src/heap/factory.h b/src/heap/factory.h
+index 6c9cc2d4d8ed1e9c7e14ccb35f6ad61dfa850cfa..748a3f91c881d8bdc723a4f21fcb6adfe6d3876e 100644
+--- a/src/heap/factory.h
++++ b/src/heap/factory.h
+@@ -183,8 +183,9 @@ class V8_EXPORT_PRIVATE Factory : public FactoryBase<Factory> {
+   Handle<PrototypeInfo> NewPrototypeInfo();
+ 
+   // Create a new EnumCache struct.
+-  Handle<EnumCache> NewEnumCache(Handle<FixedArray> keys,
+-                                 Handle<FixedArray> indices);
++  Handle<EnumCache> NewEnumCache(
++      Handle<FixedArray> keys, Handle<FixedArray> indices,
++      AllocationType allocation = AllocationType::kOld);
+ 
+   // Create a new Tuple2 struct.
+   Handle<Tuple2> NewTuple2(Handle<Object> value1, Handle<Object> value2,
+diff --git a/src/objects/descriptor-array.h b/src/objects/descriptor-array.h
+index 5db091cbfe166a683f3c43273aece6d3d802d448..178e6d03af4be4512fc40257365437482be654eb 100644
+--- a/src/objects/descriptor-array.h
++++ b/src/objects/descriptor-array.h
+@@ -65,10 +65,10 @@ class DescriptorArray
+ 
+   void ClearEnumCache();
+   inline void CopyEnumCacheFrom(DescriptorArray array);
+-  static void InitializeOrChangeEnumCache(Handle<DescriptorArray> descriptors,
+-                                          Isolate* isolate,
+-                                          Handle<FixedArray> keys,
+-                                          Handle<FixedArray> indices);
++  static void InitializeOrChangeEnumCache(
++      Handle<DescriptorArray> descriptors, Isolate* isolate,
++      Handle<FixedArray> keys, Handle<FixedArray> indices,
++      AllocationType allocation_if_initialize);
+ 
+   // Accessors for fetching instance descriptor at descriptor number.
+   inline Name GetKey(InternalIndex descriptor_number) const;
+diff --git a/src/objects/keys.cc b/src/objects/keys.cc
+index ac21fbf9c3d2d22bbd7049a620849e25d1257b4d..a0796864f1ecc6f1f32ca50635b9cb55cd04d7db 100644
+--- a/src/objects/keys.cc
++++ b/src/objects/keys.cc
+@@ -312,7 +312,7 @@ void TrySettingEmptyEnumCache(JSReceiver object) {
+   map.SetEnumLength(0);
+ }
+ 
+-bool CheckAndInitalizeEmptyEnumCache(JSReceiver object) {
++bool CheckAndInitializeEmptyEnumCache(JSReceiver object) {
+   if (object.map().EnumLength() == kInvalidEnumCacheSentinel) {
+     TrySettingEmptyEnumCache(object);
+   }
+@@ -342,7 +342,7 @@ void FastKeyAccumulator::Prepare() {
+         only_own_has_simple_elements_ = false;
+       }
+     }
+-    bool has_no_properties = CheckAndInitalizeEmptyEnumCache(current);
++    bool has_no_properties = CheckAndInitializeEmptyEnumCache(current);
+     if (has_no_properties) continue;
+     last_prototype = current;
+     has_empty_prototype_ = false;
+@@ -368,7 +368,7 @@ Handle<FixedArray> ReduceFixedArrayTo(Isolate* isolate,
+   return isolate->factory()->CopyFixedArrayUpTo(array, length);
+ }
+ 
+-// Initializes and directly returns the enume cache. Users of this function
++// Initializes and directly returns the enum cache. Users of this function
+ // have to make sure to never directly leak the enum cache.
+ Handle<FixedArray> GetFastEnumPropertyKeys(Isolate* isolate,
+                                            Handle<JSObject> object) {
+@@ -398,51 +398,8 @@ Handle<FixedArray> GetFastEnumPropertyKeys(Isolate* isolate,
+     return ReduceFixedArrayTo(isolate, keys, enum_length);
+   }
+ 
+-  Handle<DescriptorArray> descriptors =
+-      Handle<DescriptorArray>(map->instance_descriptors(isolate), isolate);
+-  isolate->counters()->enum_cache_misses()->Increment();
+-
+-  // Create the keys array.
+-  int index = 0;
+-  bool fields_only = true;
+-  keys = isolate->factory()->NewFixedArray(enum_length);
+-  for (InternalIndex i : map->IterateOwnDescriptors()) {
+-    DisallowGarbageCollection no_gc;
+-    PropertyDetails details = descriptors->GetDetails(i);
+-    if (details.IsDontEnum()) continue;
+-    Object key = descriptors->GetKey(i);
+-    if (key.IsSymbol()) continue;
+-    keys->set(index, key);
+-    if (details.location() != PropertyLocation::kField) fields_only = false;
+-    index++;
+-  }
+-  DCHECK_EQ(index, keys->length());
+-
+-  // Optionally also create the indices array.
+-  Handle<FixedArray> indices = isolate->factory()->empty_fixed_array();
+-  if (fields_only) {
+-    indices = isolate->factory()->NewFixedArray(enum_length);
+-    index = 0;
+-    for (InternalIndex i : map->IterateOwnDescriptors()) {
+-      DisallowGarbageCollection no_gc;
+-      PropertyDetails details = descriptors->GetDetails(i);
+-      if (details.IsDontEnum()) continue;
+-      Object key = descriptors->GetKey(i);
+-      if (key.IsSymbol()) continue;
+-      DCHECK_EQ(PropertyKind::kData, details.kind());
+-      DCHECK_EQ(PropertyLocation::kField, details.location());
+-      FieldIndex field_index = FieldIndex::ForDescriptor(*map, i);
+-      indices->set(index, Smi::FromInt(field_index.GetLoadByFieldIndex()));
+-      index++;
+-    }
+-    DCHECK_EQ(index, indices->length());
+-  }
+-
+-  DescriptorArray::InitializeOrChangeEnumCache(descriptors, isolate, keys,
+-                                               indices);
+-  if (map->OnlyHasSimpleProperties()) map->SetEnumLength(enum_length);
+-
+-  return keys;
++  return FastKeyAccumulator::InitializeFastPropertyEnumCache(isolate, map,
++                                                             enum_length);
+ }
+ 
+ template <bool fast_properties>
+@@ -451,7 +408,6 @@ MaybeHandle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
+                                                GetKeysConversion convert,
+                                                bool skip_indices) {
+   Handle<FixedArray> keys;
+-  ElementsAccessor* accessor = object->GetElementsAccessor();
+   if (fast_properties) {
+     keys = GetFastEnumPropertyKeys(isolate, object);
+   } else {
+@@ -463,6 +419,7 @@ MaybeHandle<FixedArray> GetOwnKeysWithElements(Isolate* isolate,
+   if (skip_indices) {
+     result = keys;
+   } else {
++    ElementsAccessor* accessor = object->GetElementsAccessor(isolate);
+     result = accessor->PrependElementIndices(isolate, object, keys, convert,
+                                              ONLY_ENUMERABLE);
+   }
+@@ -518,7 +475,7 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
+   if (enum_length == kInvalidEnumCacheSentinel) {
+     Handle<FixedArray> keys;
+     // Try initializing the enum cache and return own properties.
+-    if (GetOwnKeysWithUninitializedEnumCache().ToHandle(&keys)) {
++    if (GetOwnKeysWithUninitializedEnumLength().ToHandle(&keys)) {
+       if (v8_flags.trace_for_in_enumerate) {
+         PrintF("| strings=%d symbols=0 elements=0 || prototypes>=1 ||\n",
+                keys->length());
+@@ -534,10 +491,70 @@ MaybeHandle<FixedArray> FastKeyAccumulator::GetKeysFast(
+                                       skip_indices_);
+ }
+ 
++// static
++Handle<FixedArray> FastKeyAccumulator::InitializeFastPropertyEnumCache(
++    Isolate* isolate, Handle<Map> map, int enum_length,
++    AllocationType allocation) {
++  DCHECK_EQ(kInvalidEnumCacheSentinel, map->EnumLength());
++  DCHECK_GT(enum_length, 0);
++  DCHECK_EQ(enum_length, map->NumberOfEnumerableProperties());
++  DCHECK(!map->is_dictionary_map());
++
++  Handle<DescriptorArray> descriptors =
++      Handle<DescriptorArray>(map->instance_descriptors(isolate), isolate);
++
++  // The enum cache should have been a hit if the number of enumerable
++  // properties is fewer than what's already in the cache.
++  DCHECK_LT(descriptors->enum_cache().keys().length(), enum_length);
++  isolate->counters()->enum_cache_misses()->Increment();
++
++  // Create the keys array.
++  int index = 0;
++  bool fields_only = true;
++  Handle<FixedArray> keys =
++      isolate->factory()->NewFixedArray(enum_length, allocation);
++  for (InternalIndex i : map->IterateOwnDescriptors()) {
++    DisallowGarbageCollection no_gc;
++    PropertyDetails details = descriptors->GetDetails(i);
++    if (details.IsDontEnum()) continue;
++    Object key = descriptors->GetKey(i);
++    if (key.IsSymbol()) continue;
++    keys->set(index, key);
++    if (details.location() != PropertyLocation::kField) fields_only = false;
++    index++;
++  }
++  DCHECK_EQ(index, keys->length());
++
++  // Optionally also create the indices array.
++  Handle<FixedArray> indices = isolate->factory()->empty_fixed_array();
++  if (fields_only) {
++    indices = isolate->factory()->NewFixedArray(enum_length, allocation);
++    index = 0;
++    for (InternalIndex i : map->IterateOwnDescriptors()) {
++      DisallowGarbageCollection no_gc;
++      PropertyDetails details = descriptors->GetDetails(i);
++      if (details.IsDontEnum()) continue;
++      Object key = descriptors->GetKey(i);
++      if (key.IsSymbol()) continue;
++      DCHECK_EQ(PropertyKind::kData, details.kind());
++      DCHECK_EQ(PropertyLocation::kField, details.location());
++      FieldIndex field_index = FieldIndex::ForDescriptor(*map, i);
++      indices->set(index, Smi::FromInt(field_index.GetLoadByFieldIndex()));
++      index++;
++    }
++    DCHECK_EQ(index, indices->length());
++  }
++
++  DescriptorArray::InitializeOrChangeEnumCache(descriptors, isolate, keys,
++                                               indices, allocation);
++  if (map->OnlyHasSimpleProperties()) map->SetEnumLength(enum_length);
++  return keys;
++}
++
+ MaybeHandle<FixedArray>
+-FastKeyAccumulator::GetOwnKeysWithUninitializedEnumCache() {
++FastKeyAccumulator::GetOwnKeysWithUninitializedEnumLength() {
+   Handle<JSObject> object = Handle<JSObject>::cast(receiver_);
+-  // Uninitalized enum cache
++  // Uninitialized enum length
+   Map map = object->map();
+   if (object->elements() != ReadOnlyRoots(isolate_).empty_fixed_array() &&
+       object->elements() !=
+diff --git a/src/objects/keys.h b/src/objects/keys.h
+index 4497f1211a42fc6dafc906ea9076f7c44995ac4a..031c407620b6af91ef4eb4453f1415c2a608211b 100644
+--- a/src/objects/keys.h
++++ b/src/objects/keys.h
+@@ -174,7 +174,7 @@ class KeyAccumulator final {
+ };
+ 
+ // The FastKeyAccumulator handles the cases where there are no elements on the
+-// prototype chain and forwords the complex/slow cases to the normal
++// prototype chain and forwards the complex/slow cases to the normal
+ // KeyAccumulator. This significantly speeds up the cases where the OWN_ONLY
+ // case where we do not have to walk the prototype chain.
+ class FastKeyAccumulator {
+@@ -200,6 +200,19 @@ class FastKeyAccumulator {
+   MaybeHandle<FixedArray> GetKeys(
+       GetKeysConversion convert = GetKeysConversion::kKeepNumbers);
+ 
++  // Initialize the the enum cache for a map with all of the following:
++  //   - uninitialized enum length
++  //   - fast properties (i.e. !is_dictionary_map())
++  //   - has >0 enumerable own properties
++  //
++  // The number of enumerable properties is passed in as an optimization, for
++  // when the caller has already computed it.
++  //
++  // Returns the keys.
++  static Handle<FixedArray> InitializeFastPropertyEnumCache(
++      Isolate* isolate, Handle<Map> map, int enum_length,
++      AllocationType allocation = AllocationType::kOld);
++
+  private:
+   void Prepare();
+   MaybeHandle<FixedArray> GetKeysFast(GetKeysConversion convert);
+@@ -207,7 +220,7 @@ class FastKeyAccumulator {
+   MaybeHandle<FixedArray> GetKeysWithPrototypeInfoCache(
+       GetKeysConversion convert);
+ 
+-  MaybeHandle<FixedArray> GetOwnKeysWithUninitializedEnumCache();
++  MaybeHandle<FixedArray> GetOwnKeysWithUninitializedEnumLength();
+ 
+   bool MayHaveElements(JSReceiver receiver);
+   bool TryPrototypeInfoCache(Handle<JSReceiver> receiver);
+diff --git a/src/objects/objects.cc b/src/objects/objects.cc
+index a7e1833f730e6e5869cd4925cca6dc908859000c..4a90a9ba970bffc78e38cad6e9e7e9053466a138 100644
+--- a/src/objects/objects.cc
++++ b/src/objects/objects.cc
+@@ -4448,10 +4448,12 @@ void DescriptorArray::Replace(InternalIndex index, Descriptor* descriptor) {
+ // static
+ void DescriptorArray::InitializeOrChangeEnumCache(
+     Handle<DescriptorArray> descriptors, Isolate* isolate,
+-    Handle<FixedArray> keys, Handle<FixedArray> indices) {
++    Handle<FixedArray> keys, Handle<FixedArray> indices,
++    AllocationType allocation_if_initialize) {
+   EnumCache enum_cache = descriptors->enum_cache();
+   if (enum_cache == ReadOnlyRoots(isolate).empty_enum_cache()) {
+-    enum_cache = *isolate->factory()->NewEnumCache(keys, indices);
++    enum_cache = *isolate->factory()->NewEnumCache(keys, indices,
++                                                   allocation_if_initialize);
+     descriptors->set_enum_cache(enum_cache);
+   } else {
+     enum_cache.set_keys(*keys);
+diff --git a/test/mjsunit/shared-memory/shared-struct-surface.js b/test/mjsunit/shared-memory/shared-struct-surface.js
+index 55a08ccec2a56ee9c0df5fa9a778fe22d6e7e1fb..301a8a114df16262d3ce1e228f951eb911593116 100644
+--- a/test/mjsunit/shared-memory/shared-struct-surface.js
++++ b/test/mjsunit/shared-memory/shared-struct-surface.js
+@@ -76,3 +76,15 @@ let S = new SharedStructType(['field']);
+   assertEquals(1, entries.length);
+   assertArrayEquals(['field', 42], entries[0]);
+ })();
++
++(function TestForIn() {
++  let fieldNames = [];
++  for (let i = 0; i < 512; i++) {
++    fieldNames.push('field' + i);
++  }
++  let S2 = new SharedStructType(fieldNames);
++  let s = new S2();
++  let propNames = [];
++  for (let prop in s) propNames.push(prop);
++  assertArrayEquals(propNames, fieldNames);
++})();

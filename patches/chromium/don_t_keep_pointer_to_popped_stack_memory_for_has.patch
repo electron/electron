@@ -1,0 +1,84 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Rune Lillesveen <futhark@chromium.org>
+Date: Tue, 15 Aug 2023 15:04:39 +0000
+Subject: Don't keep pointer to popped stack memory for :has()
+
+The sibling_features pass into UpdateFeaturesFromCombinator may be
+initialized to last_compound_in_adjacent_chain_features if null. The
+outer while loop in
+AddFeaturesToInvalidationSetsForLogicalCombinationInHas() could then
+reference to the last_compound_in_adjacent_chain_features which is
+popped from the stack on every outer iteration. That caused an ASAN
+failure for reading stack memory that had been popped.
+
+Instead make sure each inner iteration restarts with the same
+sibling_features pointer, which seems to have been the intent here.
+
+(cherry picked from commit 5e213507a2f0d6e3c96904a710407b01493670bd)
+
+Bug: 1470477
+Change-Id: I260c93016f8ab0d165e4b29ca1aea810bede5b97
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4759326
+Commit-Queue: Rune Lillesveen <futhark@chromium.org>
+Reviewed-by: Anders Hartvoll Ruud <andruud@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1181365}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4777251
+Cr-Commit-Position: refs/branch-heads/5845@{#1482}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+
+diff --git a/third_party/blink/renderer/core/css/rule_feature_set.cc b/third_party/blink/renderer/core/css/rule_feature_set.cc
+index ec7356285d7fa45b7d9c1701be484a121c2a0017..9cb6084b7fca4fc6ff2edd8defadf8fabf2899b5 100644
+--- a/third_party/blink/renderer/core/css/rule_feature_set.cc
++++ b/third_party/blink/renderer/core/css/rule_feature_set.cc
+@@ -1227,6 +1227,7 @@ void RuleFeatureSet::AddFeaturesToInvalidationSetsForLogicalCombinationInHas(
+         descendant_features);
+ 
+     const CSSSelector* compound_in_logical_combination = complex;
++    InvalidationSetFeatures* inner_sibling_features = sibling_features;
+     InvalidationSetFeatures last_compound_in_adjacent_chain_features;
+     while (compound_in_logical_combination) {
+       AddFeaturesToInvalidationSetsForLogicalCombinationInHasContext context(
+@@ -1238,14 +1239,14 @@ void RuleFeatureSet::AddFeaturesToInvalidationSetsForLogicalCombinationInHas(
+         last_in_compound =
+             SkipAddingAndGetLastInCompoundForLogicalCombinationInHas(
+                 compound_in_logical_combination, compound_containing_has,
+-                sibling_features, descendant_features, previous_combinator,
+-                add_features_method);
++                inner_sibling_features, descendant_features,
++                previous_combinator, add_features_method);
+       } else {
+         last_in_compound =
+             AddFeaturesAndGetLastInCompoundForLogicalCombinationInHas(
+                 compound_in_logical_combination, compound_containing_has,
+-                sibling_features, descendant_features, previous_combinator,
+-                add_features_method);
++                inner_sibling_features, descendant_features,
++                previous_combinator, add_features_method);
+       }
+ 
+       if (!last_in_compound)
+@@ -1259,7 +1260,7 @@ void RuleFeatureSet::AddFeaturesToInvalidationSetsForLogicalCombinationInHas(
+                 ? CSSSelector::kIndirectAdjacent
+                 : previous_combinator,
+             context.last_compound_in_adjacent_chain,
+-            last_compound_in_adjacent_chain_features, sibling_features,
++            last_compound_in_adjacent_chain_features, inner_sibling_features,
+             descendant_features);
+       }
+ 
+diff --git a/third_party/blink/web_tests/external/wpt/css/selectors/has-sibling-chrome-crash.html b/third_party/blink/web_tests/external/wpt/css/selectors/has-sibling-chrome-crash.html
+new file mode 100644
+index 0000000000000000000000000000000000000000..0306e3e39272c321fc3539aa582b4e239ffe2fa1
+--- /dev/null
++++ b/third_party/blink/web_tests/external/wpt/css/selectors/has-sibling-chrome-crash.html
+@@ -0,0 +1,10 @@
++<!DOCTYPE html>
++<title>CSS Selectors Test: Chrome crash issue 1470477</title>
++<link rel="help" href="https://crbug.com/1470477">
++<style>
++  :has(> :where(label:first-child + [a="a"]:only-of-type,
++    [a="a"]:only-of-type + label:last-child)) label:last-child {
++      margin-inline: 1em;
++  }
++</style>
++<p>PASS if this tests does not crash</p>
