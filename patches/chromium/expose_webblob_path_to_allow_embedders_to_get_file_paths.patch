@@ -6,10 +6,10 @@ Subject: expose WebBlob::Path to allow embedders to get file paths
 Used to replace the File.path augmentation Electron currently implements.  This is safer / more web-standard technique.
 
 diff --git a/third_party/blink/public/web/web_blob.h b/third_party/blink/public/web/web_blob.h
-index 0ca4d5f019a5a1c0a900d5fe6aba1e119e68495a..e1a14008fdd4d1ea789daf273994cb3e3f4e6f28 100644
+index c85b4369b0e23c54cd874485ce95b4fa9a1ef318..b495532aefebffc96cfce509a39e929af4c5a3d2 100644
 --- a/third_party/blink/public/web/web_blob.h
 +++ b/third_party/blink/public/web/web_blob.h
-@@ -66,6 +66,7 @@ class BLINK_EXPORT WebBlob {
+@@ -67,6 +67,7 @@ class BLINK_EXPORT WebBlob {
    void Reset();
    void Assign(const WebBlob&);
    WebString Uuid();
@@ -18,18 +18,18 @@ index 0ca4d5f019a5a1c0a900d5fe6aba1e119e68495a..e1a14008fdd4d1ea789daf273994cb3e
    bool IsNull() const { return private_.IsNull(); }
  
 diff --git a/third_party/blink/renderer/core/exported/web_blob.cc b/third_party/blink/renderer/core/exported/web_blob.cc
-index 164c018ee9615a8f680835012c13e186a94e38f5..8ad88f8d68a03221d9d17b7cdc51c01d230ac295 100644
+index 218221d16058d6cc2aaf83d7de117d6d718b1b3e..5c229ff0b99a80a2a68659d8b61cc71b04abc6c6 100644
 --- a/third_party/blink/renderer/core/exported/web_blob.cc
 +++ b/third_party/blink/renderer/core/exported/web_blob.cc
-@@ -38,6 +38,7 @@
- #include "third_party/blink/renderer/bindings/core/v8/v8_binding_for_core.h"
- #include "third_party/blink/renderer/bindings/core/v8/v8_blob.h"
+@@ -40,6 +40,7 @@
+ #include "third_party/blink/renderer/core/execution_context/execution_context.h"
  #include "third_party/blink/renderer/core/fileapi/blob.h"
+ #include "third_party/blink/renderer/core/fileapi/file_backed_blob_factory_dispatcher.h"
 +#include "third_party/blink/renderer/core/fileapi/file.h"
  #include "third_party/blink/renderer/platform/blob/blob_data.h"
  #include "third_party/blink/renderer/platform/file_metadata.h"
  #include "third_party/blink/renderer/platform/heap/garbage_collected.h"
-@@ -77,6 +78,14 @@ WebString WebBlob::Uuid() {
+@@ -83,6 +84,14 @@ WebString WebBlob::Uuid() {
    return private_->Uuid();
  }
  
