@@ -18,3 +18,4 @@ merged_runtime_set_instance_prototypes_directly_on_maps.patch
 merged_compiler_stackcheck_can_have_side_effects.patch
 cherry-pick-8ff63d378f2c.patch
 cherry-pick-d671b099a57d.patch
+merged_squashed_multiple_commits.patch

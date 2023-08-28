@@ -140,3 +140,4 @@ cherry-pick-b03973561862.patch
 cherry-pick-c60a1ab717c7.patch
 cherry-pick-aa23556ff213.patch
 networkcontext_don_t_access_url_loader_factories_during_destruction.patch
+cherry-pick-1939f7b78eda.patch

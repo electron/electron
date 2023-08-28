@@ -1,0 +1,51 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Samuel=20Gro=C3=9F?= <saelo@chromium.org>
+Date: Thu, 17 Aug 2023 09:10:19 +0000
+Subject: Merged: Squashed multiple commits.
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Merged: [runtime] Recreate enum cache on map update
+Revision: 1c623f9ff6e077be1c66f155485ea4005ddb6574
+
+Merged: [runtime] Don't try to create empty enum cache.
+Revision: 5516e06237c9f0013121f47319e8c253c896d52d
+
+BUG=chromium:1470668,chromium:1472317
+R=tebbi@chromium.org
+
+Change-Id: I31d5491aba663661ba68bb55631747a195ed084e
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4788990
+Commit-Queue: Samuel Groß <saelo@chromium.org>
+Reviewed-by: Tobias Tebbi <tebbi@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.6@{#32}
+Cr-Branched-From: e29c028f391389a7a60ee37097e3ca9e396d6fa4-refs/heads/11.6.189@{#3}
+Cr-Branched-From: 95cbef20e2aa556a1ea75431a48b36c4de6b9934-refs/heads/main@{#88340}
+
+diff --git a/src/objects/map-updater.cc b/src/objects/map-updater.cc
+index be6568aac4730d08601e883b80092bbd6ee8081a..2ebfc84d3e326abf2602a1af8309024a46cb9c9d 100644
+--- a/src/objects/map-updater.cc
++++ b/src/objects/map-updater.cc
+@@ -11,6 +11,7 @@
+ #include "src/execution/isolate.h"
+ #include "src/handles/handles.h"
+ #include "src/objects/field-type.h"
++#include "src/objects/keys.h"
+ #include "src/objects/objects-inl.h"
+ #include "src/objects/objects.h"
+ #include "src/objects/property-details.h"
+@@ -1035,6 +1036,13 @@ MapUpdater::State MapUpdater::ConstructNewMap() {
+   // the new descriptors to maintain descriptors sharing invariant.
+   split_map->ReplaceDescriptors(isolate_, *new_descriptors);
+ 
++  // If the old descriptors had an enum cache, make sure the new ones do too.
++  if (old_descriptors_->enum_cache().keys().length() > 0 &&
++      new_map->NumberOfEnumerableProperties() > 0) {
++    FastKeyAccumulator::InitializeFastPropertyEnumCache(
++        isolate_, new_map, new_map->NumberOfEnumerableProperties());
++  }
++
+   if (has_integrity_level_transition_) {
+     target_map_ = new_map;
+     state_ = kAtIntegrityLevelSource;
