@@ -1129,5 +1129,75 @@ describe('chrome extensions', () => {
         });
       });
     });
+
+    describe('chrome.scripting', () => {
+      let customSession: Session;
+      let w = null as unknown as BrowserWindow;
+
+      before(async () => {
+        customSession = session.fromPartition(`persist:${uuid.v4()}`);
+        await customSession.loadExtension(path.join(fixtures, 'extensions', 'chrome-scripting'));
+      });
+
+      beforeEach(() => {
+        w = new BrowserWindow({
+          show: false,
+          webPreferences: {
+            session: customSession,
+            nodeIntegration: true
+          }
+        });
+      });
+
+      afterEach(closeAllWindows);
+
+      it('executeScript', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'executeScript' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const updated = await once(w.webContents, 'page-title-updated');
+        expect(updated[1]).to.equal('HEY HEY HEY');
+      });
+
+      it('registerContentScripts', async () => {
+        await w.loadURL(url);
+
+        const message = { method: 'registerContentScripts' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+        expect(response).to.be.an('array').with.lengthOf(1);
+        expect(response[0]).to.deep.equal({
+          allFrames: false,
+          id: 'session-script',
+          js: ['content.js'],
+          matchOriginAsFallback: false,
+          matches: ['<all_urls>'],
+          persistAcrossSessions: false,
+          runAt: 'document_start',
+          world: 'ISOLATED'
+        });
+      });
+
+      it('insertCSS', async () => {
+        await w.loadURL(url);
+
+        const bgBefore = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).backgroundColor');
+        expect(bgBefore).to.equal('rgba(0, 0, 0, 0)');
+
+        const message = { method: 'insertCSS' };
+        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+        const [,, responseString] = await once(w.webContents, 'console-message');
+        const response = JSON.parse(responseString);
+        expect(response.success).to.be.true();
+
+        const bgAfter = await w.webContents.executeJavaScript('window.getComputedStyle(document.body).backgroundColor');
+        expect(bgAfter).to.equal('rgb(255, 0, 0)');
+      });
+    });
   });
 });
