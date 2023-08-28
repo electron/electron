@@ -79,7 +79,7 @@ index 0895ee43e65c4e25c16d0d79c4f200a216f300b7..69e76b6a9a8d3b8543a138fb018775de
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index 4d89822c5cabc1d487dbf19c07c0be77ef3604c4..34f681f42e7817e0f0f0a8e23c7a1f422cc23b5c 100644
+index 23d172929b465d58aee28965a87462fda8b0b3a9..773c9cf07ac60b8555debe0c2bc9f7c66e897bb7 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -173,6 +173,7 @@ class NetworkService;
@@ -148,10 +148,10 @@ index 34d3d2feb7d236d8f220da8e2aadda28b6eb4d26..39e142eedd051073a5f31b5455001a37
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index bd95a5a93a362e7da5c932e5d06e5086a0ed7840..650fa1950c70144de62c62e1908a70eee4bffaf3 100644
+index eb4fccba88f8aa4b33bc8ff55cc87e6fd82efe3a..662db5f4bcb4fb110817a0cd87888969247c6b6b 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6368,6 +6368,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6372,6 +6372,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
