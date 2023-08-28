@@ -1,4 +1,4 @@
-const { BrowserWindow, app, screen, ipcMain, desktopCapturer } = require('electron')
+const { BrowserWindow, app, screen, ipcMain, desktopCapturer } = require('electron/main')
 
 let mainWindow = null
 

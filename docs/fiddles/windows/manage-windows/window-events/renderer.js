@@ -1,4 +1,4 @@
-const { ipcRenderer } = require('electron')
+const { ipcRenderer } = require('electron/renderer')
 
 const listenToWindowBtn = document.getElementById('listen-to-window')
 const focusModalBtn = document.getElementById('focus-on-modal-window')

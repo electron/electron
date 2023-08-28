@@ -1,5 +1,5 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, shell } = require('electron/main')
 
 ipcMain.on('create-demo-window', (event) => {
   const win = new BrowserWindow({ width: 400, height: 275 })
