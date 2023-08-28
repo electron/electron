@@ -23,7 +23,7 @@ jobs:
           echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
       - name: Set status
         if: ${{ steps.generate-token.outputs.TOKEN }}
-        uses: github/update-project-action@2d475e08804f11f4022df7e21f5816531e97cb64 # v2
+        uses: dsanders11/update-project-action@7ade91760df70df76770a238abee7a4869e01cf8
         with:
           github_token: ${{ steps.generate-token.outputs.TOKEN }}
           organization: electron
