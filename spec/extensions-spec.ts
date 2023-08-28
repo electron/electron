@@ -69,6 +69,67 @@ describe('chrome extensions', () => {
     `)).to.eventually.have.property('id');
   });
 
+  describe('host_permissions', async () => {
+    let customSession: Session;
+    let w: BrowserWindow;
+
+    beforeEach(() => {
+      customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
+      w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          session: customSession,
+          sandbox: true
+        }
+      });
+    });
+
+    afterEach(closeAllWindows);
+
+    it('recognize malformed host permissions', async () => {
+      await w.loadURL(url);
+
+      const extPath = path.join(fixtures, 'extensions', 'host-permissions', 'malformed');
+      customSession.loadExtension(extPath);
+
+      const warning = await new Promise(resolve => { process.on('warning', resolve); });
+
+      const malformedHost = /Permission 'malformed_host' is unknown or URL pattern is malformed/;
+
+      expect(warning).to.match(malformedHost);
+    });
+
+    it('can grant special privileges to urls with host permissions', async () => {
+      const extPath = path.join(fixtures, 'extensions', 'host-permissions', 'privileged-tab-info');
+      await customSession.loadExtension(extPath);
+
+      await w.loadURL(url);
+
+      const message = { method: 'query' };
+      w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+      const [,, responseString] = await once(w.webContents, 'console-message');
+      const response = JSON.parse(responseString);
+
+      expect(response).to.have.lengthOf(1);
+
+      const tab = response[0];
+      expect(tab).to.have.property('url').that.is.a('string');
+      expect(tab).to.have.property('title').that.is.a('string');
+      expect(tab).to.have.property('active').that.is.a('boolean');
+      expect(tab).to.have.property('autoDiscardable').that.is.a('boolean');
+      expect(tab).to.have.property('discarded').that.is.a('boolean');
+      expect(tab).to.have.property('groupId').that.is.a('number');
+      expect(tab).to.have.property('highlighted').that.is.a('boolean');
+      expect(tab).to.have.property('id').that.is.a('number');
+      expect(tab).to.have.property('incognito').that.is.a('boolean');
+      expect(tab).to.have.property('index').that.is.a('number');
+      expect(tab).to.have.property('pinned').that.is.a('boolean');
+      expect(tab).to.have.property('selected').that.is.a('boolean');
+      expect(tab).to.have.property('windowId').that.is.a('number');
+    });
+  });
+
   it('supports minimum_chrome_version manifest key', async () => {
     const customSession = session.fromPartition(`persist:${require('uuid').v4()}`);
     const w = new BrowserWindow({
@@ -81,7 +142,7 @@ describe('chrome extensions', () => {
 
     await w.loadURL('about:blank');
 
-    const extPath = path.join(fixtures, 'extensions', 'chrome-too-low-version');
+    const extPath = path.join(fixtures, 'extensions', 'minimum-chrome-version');
     const load = customSession.loadExtension(extPath);
     await expect(load).to.eventually.be.rejectedWith(
       `Loading extension at ${extPath} failed with: This extension requires Chromium version 999 or greater.`
