@@ -10,7 +10,6 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/views/root_view.h"
@@ -79,6 +78,9 @@ class NativeWindowViews : public NativeWindow,
   SkColor GetBackgroundColor() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
+#if BUILDFLAG(IS_WIN)
+  extensions::SizeConstraints GetContentSizeConstraints() const override;
+#endif
   void SetResizable(bool resizable) override;
   bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
@@ -316,6 +318,10 @@ class NativeWindowViews : public NativeWindow,
   // Controls Overlay if enabled on Windows.
   SkColor overlay_button_color_;
   SkColor overlay_symbol_color_;
+
+  // The message ID of the "TaskbarCreated" message, sent to us when we need to
+  // reset our thumbar buttons.
+  UINT taskbar_created_message_ = 0;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

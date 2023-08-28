@@ -3,8 +3,8 @@ import { expect, assert } from 'chai';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
 import { ifit } from './lib/spec-helpers';
 import { closeAllWindows } from './lib/window-helpers';
-import { once } from 'events';
-import { setTimeout as setTimeoutAsync } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout as setTimeoutAsync } from 'node:timers/promises';
 
 describe('webContents.setWindowOpenHandler', () => {
   let browserWindow: BrowserWindow;
@@ -182,7 +182,7 @@ describe('webContents.setWindowOpenHandler', () => {
   it('can change webPreferences of child windows', async () => {
     browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { defaultFontSize: 30 } } }));
 
-    const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
+    const didCreateWindow = once(browserWindow.webContents, 'did-create-window') as Promise<[BrowserWindow, Electron.DidCreateWindowDetails]>;
     browserWindow.webContents.executeJavaScript("window.open('about:blank', '', 'show=no') && true");
     const [childWindow] = await didCreateWindow;
 

@@ -33,20 +33,9 @@ SystemPreferences::~SystemPreferences() {
 SystemPreferences::~SystemPreferences() = default;
 #endif
 
-bool SystemPreferences::IsInvertedColorScheme() {
-  return ui::NativeTheme::GetInstanceForNativeUi()
-             ->GetPlatformHighContrastColorScheme() ==
-         ui::NativeTheme::PlatformHighContrastColorScheme::kDark;
-}
-
-bool SystemPreferences::IsHighContrastColorScheme() {
-  return ui::NativeTheme::GetInstanceForNativeUi()->UserHasContrastPreference();
-}
-
 v8::Local<v8::Value> SystemPreferences::GetAnimationSettings(
     v8::Isolate* isolate) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("shouldRenderRichAnimation",
            gfx::Animation::ShouldRenderRichAnimation());
   dict.Set("scrollAnimationsEnabledBySystem",

@@ -1,9 +1,13 @@
-const { BrowserWindow, app, screen, ipcMain } = require('electron')
+const { BrowserWindow, app, screen, ipcMain, desktopCapturer } = require('electron/main')
 
 let mainWindow = null
 
 ipcMain.handle('get-screen-size', () => {
   return screen.getPrimaryDisplay().workAreaSize
+})
+
+ipcMain.handle('get-sources', (event, options) => {
+  return desktopCapturer.getSources(options)
 })
 
 function createWindow () {
@@ -12,6 +16,7 @@ function createWindow () {
     height: 300,
     title: 'Take a Screenshot',
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   }

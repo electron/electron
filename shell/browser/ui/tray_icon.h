@@ -89,7 +89,7 @@ class TrayIcon {
 
   // Popups the menu.
   virtual void PopUpContextMenu(const gfx::Point& pos,
-                                raw_ptr<ElectronMenuModel> menu_model);
+                                base::WeakPtr<ElectronMenuModel> menu_model);
 
   virtual void CloseContextMenu();
 

@@ -5,7 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_GPUINFO_MANAGER_H_
 #define ELECTRON_SHELL_BROWSER_API_GPUINFO_MANAGER_H_
 
-#include <memory>
 #include <vector>
 
 #include "base/memory/raw_ptr.h"

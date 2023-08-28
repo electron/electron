@@ -3,7 +3,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE-CHROMIUM file.
 
-#import "shell/common/mac/main_application_bundle.h"
+#include "shell/common/mac/main_application_bundle.h"
 
 #include "base/apple/bundle_locations.h"
 #include "base/files/file_path.h"

@@ -9,7 +9,6 @@
 #include <utility>
 
 #include "base/base64.h"
-#include "base/guid.h"
 #include "base/json/json_reader.h"
 #include "base/json/json_writer.h"
 #include "base/json/string_escape.h"
@@ -20,6 +19,7 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
+#include "base/uuid.h"
 #include "base/values.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "components/prefs/pref_registry_simple.h"
@@ -426,6 +426,11 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
+void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
+  devtools_title_ = title;
+  view_->SetTitle(devtools_title_);
+}
+
 void InspectableWebContents::SetDevToolsWebContents(
     content::WebContents* devtools) {
   if (!managed_devtools_web_contents_)
@@ -479,6 +484,10 @@ void InspectableWebContents::CloseDevTools() {
 
 bool InspectableWebContents::IsDevToolsViewShowing() {
   return managed_devtools_web_contents_ && view_->IsDevToolsViewShowing();
+}
+
+std::u16string InspectableWebContents::GetDevToolsTitle() {
+  return view_->GetTitle();
 }
 
 void InspectableWebContents::AttachTo(
@@ -565,6 +574,9 @@ void InspectableWebContents::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
+    if (!devtools_title_.empty()) {
+      view_->SetTitle(devtools_title_);
+    }
   } else {
     if (dock_state_.empty()) {
       const base::Value::Dict& prefs =
@@ -616,6 +628,9 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     extension_info.Set("exposeExperimentalAPIs",
                        extension->permissions_data()->HasAPIPermission(
                            extensions::mojom::APIPermissionID::kExperimental));
+    extension_info.Set("allowFileAccess",
+                       (extension->creation_flags() &
+                        extensions::Extension::ALLOW_FILE_ACCESS) != 0);
     results.Append(std::move(extension_info));
   }
 
@@ -632,9 +647,12 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectElementCompleted() {}
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
-  if (managed_devtools_web_contents_)
-    view_->SetTitle(
-        base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+  if (managed_devtools_web_contents_) {
+    if (devtools_title_.empty()) {
+      view_->SetTitle(
+          base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+    }
+  }
 }
 
 void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,
@@ -1044,8 +1062,9 @@ void InspectableWebContents::DidFinishNavigation(
   // most likely bug in chromium.
   base::ReplaceFirstSubstringAfterOffset(&it->second, 0, "var chrome",
                                          "var chrome = window.chrome ");
-  auto script = base::StringPrintf("%s(\"%s\")", it->second.c_str(),
-                                   base::GenerateGUID().c_str());
+  auto script = base::StringPrintf(
+      "%s(\"%s\")", it->second.c_str(),
+      base::Uuid::GenerateRandomV4().AsLowercaseString().c_str());
   // Invoking content::DevToolsFrontendHost::SetupExtensionsAPI(frame, script);
   // should be enough, but it seems to be a noop currently.
   frame->ExecuteJavaScriptForTests(base::UTF8ToUTF16(script),

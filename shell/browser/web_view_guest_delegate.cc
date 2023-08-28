@@ -73,23 +73,23 @@ content::WebContents* WebViewGuestDelegate::GetOwnerWebContents() {
   return embedder_web_contents_;
 }
 
-void WebViewGuestDelegate::OnZoomLevelChanged(
-    content::WebContents* web_contents,
-    double level,
-    bool is_temporary) {
-  if (web_contents == GetOwnerWebContents()) {
-    if (is_temporary) {
-      api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(level);
+void WebViewGuestDelegate::OnZoomChanged(
+    const WebContentsZoomController::ZoomChangedEventData& data) {
+  if (data.web_contents == GetOwnerWebContents()) {
+    if (data.temporary) {
+      api_web_contents_->GetZoomController()->SetTemporaryZoomLevel(
+          data.new_zoom_level);
     } else {
-      api_web_contents_->GetZoomController()->SetZoomLevel(level);
+      api_web_contents_->GetZoomController()->SetZoomLevel(data.new_zoom_level);
     }
     // Change the default zoom factor to match the embedders' new zoom level.
-    double zoom_factor = blink::PageZoomLevelToZoomFactor(level);
+    double zoom_factor = blink::PageZoomLevelToZoomFactor(data.new_zoom_level);
     api_web_contents_->GetZoomController()->SetDefaultZoomFactor(zoom_factor);
   }
 }
 
-void WebViewGuestDelegate::OnZoomControllerWebContentsDestroyed() {
+void WebViewGuestDelegate::OnZoomControllerDestroyed(
+    WebContentsZoomController* zoom_controller) {
   ResetZoomController();
 }
 

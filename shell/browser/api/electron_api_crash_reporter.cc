@@ -43,7 +43,7 @@
 #if BUILDFLAG(IS_LINUX)
 #include "base/containers/span.h"
 #include "base/files/file_util.h"
-#include "base/guid.h"
+#include "base/uuid.h"
 #include "components/crash/core/common/crash_keys.h"
 #include "components/upload_list/combining_upload_list.h"
 #include "v8/include/v8-wasm-trap-handler-posix.h"
@@ -117,7 +117,7 @@ std::string GetClientId() {
     return *client_id;
   *client_id = ReadClientId();
   if (client_id->empty()) {
-    *client_id = base::GenerateGUID();
+    *client_id = base::Uuid::GenerateRandomV4().AsLowercaseString();
     WriteClientId(*client_id);
   }
   return *client_id;

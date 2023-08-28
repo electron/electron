@@ -9,7 +9,7 @@ const { registerSchemesAsPrivileged, getStandardSchemes, Protocol } = process._l
 const ERR_FAILED = -2;
 const ERR_UNEXPECTED = -9;
 
-const isBuiltInScheme = (scheme: string) => scheme === 'http' || scheme === 'https';
+const isBuiltInScheme = (scheme: string) => ['http', 'https', 'file'].includes(scheme);
 
 function makeStreamFromPipe (pipe: any): ReadableStream {
   const buf = new Uint8Array(1024 * 1024 /* 1 MB */);
@@ -66,7 +66,7 @@ function validateResponse (res: Response) {
 
   if (res.type === 'error') return true;
 
-  const exists = (key: string) => Object.prototype.hasOwnProperty.call(res, key);
+  const exists = (key: string) => Object.hasOwn(res, key);
 
   if (exists('status') && typeof res.status !== 'number') return false;
   if (exists('statusText') && typeof res.statusText !== 'string') return false;

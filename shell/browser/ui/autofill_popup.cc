@@ -12,6 +12,8 @@
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
+#include "shell/browser/osr/osr_view_proxy.h"
 #include "shell/browser/ui/autofill_popup.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -24,11 +26,6 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/gfx/text_utils.h"
-
-#if BUILDFLAG(ENABLE_OSR)
-#include "shell/browser/osr/osr_render_widget_host_view.h"
-#include "shell/browser/osr/osr_view_proxy.h"
-#endif
 
 namespace electron {
 
@@ -194,7 +191,6 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
 
   view_ = new AutofillPopupView(this, parent->GetWidget());
 
-#if BUILDFLAG(ENABLE_OSR)
   if (offscreen) {
     auto* rwhv = frame_host->GetView();
     if (embedder_frame_host != nullptr) {
@@ -205,7 +201,6 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
     view_->view_proxy_ = std::make_unique<OffscreenViewProxy>(view_);
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
-#endif
 
   // Do this after OSR setup, we check for view_proxy_ when showing
   view_->Show();

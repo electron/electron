@@ -1,5 +1,5 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, ipcMain } = require('electron')
+const { app, BrowserWindow, ipcMain, shell } = require('electron/main')
 
 function createWindow () {
   // Create the browser window.
@@ -7,12 +7,19 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
+      contextIsolation: false,
       nodeIntegration: true
     }
   })
 
   // and load the index.html of the app.
   mainWindow.loadFile('index.html')
+
+  // Open external links in the default browser
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    shell.openExternal(url)
+  })
 
   let demoWindow
   ipcMain.on('show-demo-window', () => {

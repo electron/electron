@@ -20,5 +20,18 @@
     "extension_types": [
       "extension"
     ]
+  },
+  "tabs": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ]
+  },
+  "scripting": {
+    "channel": "stable",
+    "extension_types": [
+      "extension"
+    ],
+    "min_manifest_version": 3
   }
 }

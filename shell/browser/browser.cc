@@ -203,13 +203,6 @@ void Browser::DidFinishLaunching(base::Value::Dict launch_info) {
   }
   for (BrowserObserver& observer : observers_)
     observer.OnFinishLaunching(launch_info.Clone());
-
-#if BUILDFLAG(IS_MAC)
-  if (dock_icon_) {
-    DockSetIconImage(*dock_icon_);
-    dock_icon_.reset();
-  }
-#endif
 }
 
 v8::Local<v8::Value> Browser::WhenReady(v8::Isolate* isolate) {

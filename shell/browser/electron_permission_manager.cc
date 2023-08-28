@@ -55,8 +55,7 @@ class ElectronPermissionManager::PendingRequest {
   PendingRequest(content::RenderFrameHost* render_frame_host,
                  const std::vector<blink::PermissionType>& permissions,
                  StatusesCallback callback)
-      : render_process_id_(render_frame_host->GetProcess()->GetID()),
-        render_frame_id_(render_frame_host->GetGlobalId()),
+      : render_frame_host_id_(render_frame_host->GetGlobalId()),
         callback_(std::move(callback)),
         permissions_(permissions),
         results_(permissions.size(), blink::mojom::PermissionStatus::DENIED),
@@ -70,7 +69,7 @@ class ElectronPermissionManager::PendingRequest {
       const auto permission = permissions_[permission_id];
       if (permission == blink::PermissionType::MIDI_SYSEX) {
         content::ChildProcessSecurityPolicy::GetInstance()
-            ->GrantSendMidiSysExMessage(render_process_id_);
+            ->GrantSendMidiSysExMessage(render_frame_host_id_.child_id);
       } else if (permission == blink::PermissionType::GEOLOCATION) {
         ElectronBrowserMainParts::Get()
             ->GetGeolocationControl()
@@ -83,7 +82,7 @@ class ElectronPermissionManager::PendingRequest {
   }
 
   content::RenderFrameHost* GetRenderFrameHost() {
-    return content::RenderFrameHost::FromID(render_frame_id_);
+    return content::RenderFrameHost::FromID(render_frame_host_id_);
   }
 
   bool IsComplete() const { return remaining_results_ == 0; }
@@ -95,8 +94,7 @@ class ElectronPermissionManager::PendingRequest {
   }
 
  private:
-  int render_process_id_;
-  content::GlobalRenderFrameHostId render_frame_id_;
+  content::GlobalRenderFrameHostId render_frame_host_id_;
   StatusesCallback callback_;
   std::vector<blink::PermissionType> permissions_;
   std::vector<blink::mojom::PermissionStatus> results_;
@@ -284,9 +282,10 @@ blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(
 content::PermissionResult
 ElectronPermissionManager::GetPermissionResultForOriginWithoutContext(
     blink::PermissionType permission,
-    const url::Origin& origin) {
-  blink::mojom::PermissionStatus status =
-      GetPermissionStatus(permission, origin.GetURL(), origin.GetURL());
+    const url::Origin& requesting_origin,
+    const url::Origin& embedding_origin) {
+  blink::mojom::PermissionStatus status = GetPermissionStatus(
+      permission, requesting_origin.GetURL(), embedding_origin.GetURL());
   return content::PermissionResult(
       status, content::PermissionStatusSource::UNSPECIFIED);
 }

@@ -1,8 +1,8 @@
 import { expect } from 'chai';
 import { app, contentTracing, TraceConfig, TraceCategoriesAndOptions } from 'electron/main';
-import * as fs from 'fs';
-import * as path from 'path';
-import { setTimeout } from 'timers/promises';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 import { ifdescribe } from './lib/spec-helpers';
 
 // FIXME: The tests are skipped on arm/arm64 and ia32.
@@ -128,10 +128,10 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
         traceOptions: 'record-until-full'
       });
       {
-        const start = +new Date();
+        const start = Date.now();
         let n = 0;
         const f = () => {};
-        while (+new Date() - start < 200 || n < 500) {
+        while (Date.now() - start < 200 || n < 500) {
           await setTimeout(0);
           f();
           n++;

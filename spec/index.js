@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const v8 = require('v8');
+const fs = require('node:fs');
+const path = require('node:path');
+const v8 = require('node:v8');
 
 // We want to terminate on errors, not throw up a dialog
 process.on('uncaughtException', (err) => {
@@ -13,6 +13,11 @@ process.env.TS_NODE_PROJECT = path.resolve(__dirname, '../tsconfig.spec.json');
 process.env.ELECTRON_DISABLE_SECURITY_WARNINGS = 'true';
 
 const { app, protocol } = require('electron');
+
+// Some Linux machines have broken hardware acceleration support.
+if (process.env.ELECTRON_TEST_DISABLE_HARDWARE_ACCELERATION) {
+  app.disableHardwareAcceleration();
+}
 
 v8.setFlagsFromString('--expose_gc');
 app.commandLine.appendSwitch('js-flags', '--expose_gc');
@@ -68,6 +73,14 @@ app.whenReady().then(async () => {
     mochaOptions.reporterOptions = {
       reporterEnabled: process.env.MOCHA_MULTI_REPORTERS
     };
+  }
+  // The MOCHA_GREP and MOCHA_INVERT are used in some vendor builds for sharding
+  // tests.
+  if (process.env.MOCHA_GREP) {
+    mochaOptions.grep = process.env.MOCHA_GREP;
+  }
+  if (process.env.MOCHA_INVERT) {
+    mochaOptions.invert = process.env.MOCHA_INVERT === 'true';
   }
   const mocha = new Mocha(mochaOptions);
 

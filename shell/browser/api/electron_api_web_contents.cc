@@ -8,11 +8,11 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
 #include "base/containers/contains.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/containers/id_map.h"
 #include "base/files/file_util.h"
 #include "base/json/json_reader.h"
@@ -91,6 +91,8 @@
 #include "shell/browser/electron_navigation_throttle.h"
 #include "shell/browser/file_select_helper.h"
 #include "shell/browser/native_window.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
+#include "shell/browser/osr/osr_web_contents_view.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/browser/ui/drag_util.h"
 #include "shell/browser/ui/file_dialog.h"
@@ -139,11 +141,6 @@
 #include "ui/base/cursor/mojom/cursor_type.mojom-shared.h"
 #include "ui/display/screen.h"
 #include "ui/events/base_event_utils.h"
-
-#if BUILDFLAG(ENABLE_OSR)
-#include "shell/browser/osr/osr_render_widget_host_view.h"
-#include "shell/browser/osr/osr_web_contents_view.h"
-#endif
 
 #if BUILDFLAG(IS_WIN)
 #include "shell/browser/native_window_views.h"
@@ -206,26 +203,15 @@ struct Converter<printing::mojom::MarginType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      printing::mojom::MarginType* out) {
-    std::string type;
-    if (ConvertFromV8(isolate, val, &type)) {
-      if (type == "default") {
-        *out = printing::mojom::MarginType::kDefaultMargins;
-        return true;
-      }
-      if (type == "none") {
-        *out = printing::mojom::MarginType::kNoMargins;
-        return true;
-      }
-      if (type == "printableArea") {
-        *out = printing::mojom::MarginType::kPrintableAreaMargins;
-        return true;
-      }
-      if (type == "custom") {
-        *out = printing::mojom::MarginType::kCustomMargins;
-        return true;
-      }
-    }
-    return false;
+    using Val = printing::mojom::MarginType;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"custom", Val::kCustomMargins},
+            {"default", Val::kDefaultMargins},
+            {"none", Val::kNoMargins},
+            {"printableArea", Val::kPrintableAreaMargins},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -234,22 +220,14 @@ struct Converter<printing::mojom::DuplexMode> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      printing::mojom::DuplexMode* out) {
-    std::string mode;
-    if (ConvertFromV8(isolate, val, &mode)) {
-      if (mode == "simplex") {
-        *out = printing::mojom::DuplexMode::kSimplex;
-        return true;
-      }
-      if (mode == "longEdge") {
-        *out = printing::mojom::DuplexMode::kLongEdge;
-        return true;
-      }
-      if (mode == "shortEdge") {
-        *out = printing::mojom::DuplexMode::kShortEdge;
-        return true;
-      }
-    }
-    return false;
+    using Val = printing::mojom::DuplexMode;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"longEdge", Val::kLongEdge},
+            {"shortEdge", Val::kShortEdge},
+            {"simplex", Val::kSimplex},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -289,20 +267,14 @@ struct Converter<content::SavePageType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      content::SavePageType* out) {
-    std::string save_type;
-    if (!ConvertFromV8(isolate, val, &save_type))
-      return false;
-    save_type = base::ToLowerASCII(save_type);
-    if (save_type == "htmlonly") {
-      *out = content::SAVE_PAGE_TYPE_AS_ONLY_HTML;
-    } else if (save_type == "htmlcomplete") {
-      *out = content::SAVE_PAGE_TYPE_AS_COMPLETE_HTML;
-    } else if (save_type == "mhtml") {
-      *out = content::SAVE_PAGE_TYPE_AS_MHTML;
-    } else {
-      return false;
-    }
-    return true;
+    using Val = content::SavePageType;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"htmlcomplete", Val::SAVE_PAGE_TYPE_AS_COMPLETE_HTML},
+            {"htmlonly", Val::SAVE_PAGE_TYPE_AS_ONLY_HTML},
+            {"mhtml", Val::SAVE_PAGE_TYPE_AS_MHTML},
+        });
+    return FromV8WithLowerLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -340,24 +312,15 @@ struct Converter<electron::api::WebContents::Type> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::api::WebContents::Type* out) {
-    using Type = electron::api::WebContents::Type;
-    std::string type;
-    if (!ConvertFromV8(isolate, val, &type))
-      return false;
-    if (type == "backgroundPage") {
-      *out = Type::kBackgroundPage;
-    } else if (type == "browserView") {
-      *out = Type::kBrowserView;
-    } else if (type == "webview") {
-      *out = Type::kWebView;
-#if BUILDFLAG(ENABLE_OSR)
-    } else if (type == "offscreen") {
-      *out = Type::kOffScreen;
-#endif
-    } else {
-      return false;
-    }
-    return true;
+    using Val = electron::api::WebContents::Type;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"backgroundPage", Val::kBackgroundPage},
+            {"browserView", Val::kBrowserView},
+            {"offscreen", Val::kOffScreen},
+            {"webview", Val::kWebView},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -845,11 +808,9 @@ WebContents::WebContents(v8::Isolate* isolate,
   // Get type
   options.Get("type", &type_);
 
-#if BUILDFLAG(ENABLE_OSR)
   bool b = false;
   if (options.Get(options::kOffscreen, &b) && b)
     type_ = Type::kOffScreen;
-#endif
 
   // Init embedder earlier
   options.Get("embedder", &embedder_);
@@ -886,7 +847,6 @@ WebContents::WebContents(v8::Isolate* isolate,
         std::make_unique<WebViewGuestDelegate>(embedder_->web_contents(), this);
     params.guest_delegate = guest_delegate_.get();
 
-#if BUILDFLAG(ENABLE_OSR)
     if (embedder_ && embedder_->IsOffScreen()) {
       auto* view = new OffScreenWebContentsView(
           false,
@@ -897,9 +857,7 @@ WebContents::WebContents(v8::Isolate* isolate,
       web_contents = content::WebContents::Create(params);
       view->SetWebContents(web_contents.get());
     } else {
-#endif
       web_contents = content::WebContents::Create(params);
-#if BUILDFLAG(ENABLE_OSR)
     }
   } else if (IsOffScreen()) {
     // webPreferences does not have a transparent option, so if the window needs
@@ -918,7 +876,6 @@ WebContents::WebContents(v8::Isolate* isolate,
 
     web_contents = content::WebContents::Create(params);
     view->SetWebContents(web_contents.get());
-#endif
   } else {
     content::WebContents::CreateParams params(session->browser_context());
     params.initially_hidden = !initially_shown;
@@ -1340,7 +1297,9 @@ void WebContents::CloseContents(content::WebContents* source) {
   for (ExtendedWebContentsObserver& observer : observers_)
     observer.OnCloseContents();
 
-  Destroy();
+  // This is handled by the embedder frame.
+  if (!IsGuest())
+    Destroy();
 }
 
 void WebContents::ActivateContents(content::WebContents* source) {
@@ -1545,7 +1504,7 @@ void WebContents::FindReply(content::WebContents* web_contents,
 
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary result = gin::Dictionary::CreateEmpty(isolate);
+  auto result = gin_helper::Dictionary::CreateEmpty(isolate);
   result.Set("requestId", request_id);
   result.Set("matches", number_of_matches);
   result.Set("selectionArea", selection_rect);
@@ -1906,7 +1865,7 @@ bool WebContents::EmitNavigationEvent(
   content::RenderFrameHost* initiator_frame_host =
       navigation_handle->GetInitiatorFrameToken().has_value()
           ? content::RenderFrameHost::FromFrameToken(
-                navigation_handle->GetInitiatorProcessID(),
+                navigation_handle->GetInitiatorProcessId(),
                 navigation_handle->GetInitiatorFrameToken().value())
           : nullptr;
 
@@ -2068,29 +2027,6 @@ void WebContents::MessageSync(
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", render_frame_host, std::move(callback),
                  internal, channel, std::move(arguments));
-}
-
-void WebContents::MessageTo(int32_t web_contents_id,
-                            const std::string& channel,
-                            blink::CloneableMessage arguments) {
-  TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  auto* target_web_contents = FromID(web_contents_id);
-
-  if (target_web_contents) {
-    content::RenderFrameHost* frame = target_web_contents->MainFrame();
-    DCHECK(frame);
-
-    v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
-    gin::Handle<WebFrameMain> web_frame_main =
-        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
-
-    if (!web_frame_main->CheckRenderFrame())
-      return;
-
-    int32_t sender_id = ID();
-    web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
-                                              std::move(arguments), sender_id);
-  }
 }
 
 void WebContents::MessageHost(const std::string& channel,
@@ -2304,11 +2240,9 @@ void WebContents::SetOwnerWindow(content::WebContents* web_contents,
     owner_window_ = nullptr;
     web_contents->RemoveUserData(NativeWindowRelay::UserDataKey());
   }
-#if BUILDFLAG(ENABLE_OSR)
   auto* osr_wcv = GetOffScreenWebContentsView();
   if (osr_wcv)
     osr_wcv->SetNativeWindow(owner_window);
-#endif
 }
 
 content::WebContents* WebContents::GetWebContents() const {
@@ -2484,12 +2418,25 @@ void WebContents::ReloadIgnoringCache() {
                                          /* check_for_repost */ true);
 }
 
-void WebContents::DownloadURL(const GURL& url) {
-  auto* browser_context = web_contents()->GetBrowserContext();
-  auto* download_manager = browser_context->GetDownloadManager();
+void WebContents::DownloadURL(const GURL& url, gin::Arguments* args) {
+  std::map<std::string, std::string> headers;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    if (options.Has("headers") && !options.Get("headers", &headers)) {
+      args->ThrowTypeError("Invalid value for headers - must be an object");
+      return;
+    }
+  }
+
   std::unique_ptr<download::DownloadUrlParameters> download_params(
       content::DownloadRequestUtils::CreateDownloadForWebContentsMainFrame(
           web_contents(), url, MISSING_TRAFFIC_ANNOTATION));
+  for (const auto& [name, value] : headers) {
+    download_params->add_request_header(name, value);
+  }
+
+  auto* download_manager =
+      web_contents()->GetBrowserContext()->GetDownloadManager();
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -2575,6 +2522,52 @@ void WebContents::SetWebRTCIPHandlingPolicy(
     return;
   web_contents()->GetMutableRendererPrefs()->webrtc_ip_handling_policy =
       webrtc_ip_handling_policy;
+
+  web_contents()->SyncRendererPrefs();
+}
+
+v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
+    v8::Isolate* isolate) const {
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+
+  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  dict.Set("min", static_cast<uint32_t>(prefs->webrtc_udp_min_port));
+  dict.Set("max", static_cast<uint32_t>(prefs->webrtc_udp_max_port));
+  return dict.GetHandle();
+}
+
+void WebContents::SetWebRTCUDPPortRange(gin::Arguments* args) {
+  uint32_t min = 0, max = 0;
+  gin_helper::Dictionary range;
+
+  if (!args->GetNext(&range) || !range.Get("min", &min) ||
+      !range.Get("max", &max)) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("'min' and 'max' are both required");
+    return;
+  }
+
+  if ((0 == min && 0 != max) || max > UINT16_MAX) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError(
+            "'min' and 'max' must be in the (0, 65535] range or [0, 0]");
+    return;
+  }
+  if (min > max) {
+    gin_helper::ErrorThrower(args->isolate())
+        .ThrowError("'max' must be greater than or equal to 'min'");
+    return;
+  }
+
+  auto* prefs = web_contents()->GetMutableRendererPrefs();
+
+  if (prefs->webrtc_udp_min_port == static_cast<uint16_t>(min) &&
+      prefs->webrtc_udp_max_port == static_cast<uint16_t>(max)) {
+    return;
+  }
+
+  prefs->webrtc_udp_min_port = min;
+  prefs->webrtc_udp_max_port = max;
 
   web_contents()->SyncRendererPrefs();
 }
@@ -2689,16 +2682,19 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
 #endif
 
   bool activate = true;
+  std::string title;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
     if (args->GetNext(&options)) {
       options.Get("mode", &state);
       options.Get("activate", &activate);
+      options.Get("title", &title);
     }
   }
 
   DCHECK(inspectable_web_contents_);
   inspectable_web_contents_->SetDockState(state);
+  inspectable_web_contents_->SetDevToolsTitle(base::UTF8ToUTF16(title));
   inspectable_web_contents_->ShowDevTools(activate);
 }
 
@@ -2716,6 +2712,18 @@ bool WebContents::IsDevToolsOpened() {
 
   DCHECK(inspectable_web_contents_);
   return inspectable_web_contents_->IsDevToolsViewShowing();
+}
+
+std::u16string WebContents::GetDevToolsTitle() {
+  if (type_ == Type::kRemote)
+    return std::u16string();
+
+  DCHECK(inspectable_web_contents_);
+  return inspectable_web_contents_->GetDevToolsTitle();
+}
+
+void WebContents::SetDevToolsTitle(const std::u16string& title) {
+  inspectable_web_contents_->SetDevToolsTitle(title);
 }
 
 bool WebContents::IsDevToolsFocused() {
@@ -3100,6 +3108,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
   auto header_template = *settings.GetDict().FindString("headerTemplate");
   auto footer_template = *settings.GetDict().FindString("footerTemplate");
   auto prefer_css_page_size = settings.GetDict().FindBool("preferCSSPageSize");
+  auto generate_tagged_pdf =
+      settings.GetDict().FindBool("shouldGenerateTaggedPDF");
 
   absl::variant<printing::mojom::PrintPagesParamsPtr, std::string>
       print_pages_params = print_to_pdf::GetPrintPagesParams(
@@ -3107,7 +3117,8 @@ v8::Local<v8::Promise> WebContents::PrintToPDF(const base::Value& settings) {
           landscape, display_header_footer, print_background, scale,
           paper_width, paper_height, margin_top, margin_bottom, margin_left,
           margin_right, absl::make_optional(header_template),
-          absl::make_optional(footer_template), prefer_css_page_size);
+          absl::make_optional(footer_template), prefer_css_page_size,
+          generate_tagged_pdf);
 
   if (absl::holds_alternative<std::string>(print_pages_params)) {
     auto error = absl::get<std::string>(print_pages_params);
@@ -3330,9 +3341,7 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseEvent mouse_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_event)) {
       if (IsOffScreen()) {
-#if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseEvent(mouse_event);
-#endif
       } else {
         rwh->ForwardMouseEvent(mouse_event);
       }
@@ -3353,10 +3362,8 @@ void WebContents::SendInputEvent(v8::Isolate* isolate,
     blink::WebMouseWheelEvent mouse_wheel_event;
     if (gin::ConvertFromV8(isolate, input_event, &mouse_wheel_event)) {
       if (IsOffScreen()) {
-#if BUILDFLAG(ENABLE_OSR)
         GetOffScreenRenderWidgetHostView()->SendMouseWheelEvent(
             mouse_wheel_event);
-#endif
       } else {
         // Chromium expects phase info in wheel events (and applies a
         // DCHECK to verify it). See: https://crbug.com/756524.
@@ -3524,14 +3531,9 @@ void WebContents::AttachToIframe(content::WebContents* embedder_web_contents,
 }
 
 bool WebContents::IsOffScreen() const {
-#if BUILDFLAG(ENABLE_OSR)
   return type_ == Type::kOffScreen;
-#else
-  return false;
-#endif
 }
 
-#if BUILDFLAG(ENABLE_OSR)
 void WebContents::OnPaint(const gfx::Rect& dirty_rect, const SkBitmap& bitmap) {
   Emit("paint", dirty_rect, gfx::Image::CreateFrom1xBitmap(bitmap));
 }
@@ -3563,15 +3565,12 @@ int WebContents::GetFrameRate() const {
   auto* osr_wcv = GetOffScreenWebContentsView();
   return osr_wcv ? osr_wcv->GetFrameRate() : 0;
 }
-#endif
 
 void WebContents::Invalidate() {
   if (IsOffScreen()) {
-#if BUILDFLAG(ENABLE_OSR)
     auto* osr_rwhv = GetOffScreenRenderWidgetHostView();
     if (osr_rwhv)
       osr_rwhv->Invalidate();
-#endif
   } else {
     auto* const window = owner_window();
     if (window)
@@ -4216,7 +4215,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
                                      v8::Local<v8::ObjectTemplate> templ) {
   gin::InvokerOptions options;
   options.holder_is_first_argument = true;
-  options.holder_type = "WebContents";
+  options.holder_type = GetClassName();
   templ->Set(
       gin::StringToSymbol(isolate, "isDestroyed"),
       gin::CreateFunctionTemplate(
@@ -4266,6 +4265,8 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("closeDevTools", &WebContents::CloseDevTools)
       .SetMethod("isDevToolsOpened", &WebContents::IsDevToolsOpened)
       .SetMethod("isDevToolsFocused", &WebContents::IsDevToolsFocused)
+      .SetMethod("getDevToolsTitle", &WebContents::GetDevToolsTitle)
+      .SetMethod("setDevToolsTitle", &WebContents::SetDevToolsTitle)
       .SetMethod("enableDeviceEmulation", &WebContents::EnableDeviceEmulation)
       .SetMethod("disableDeviceEmulation", &WebContents::DisableDeviceEmulation)
       .SetMethod("toggleDevTools", &WebContents::ToggleDevTools)
@@ -4301,13 +4302,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("attachToIframe", &WebContents::AttachToIframe)
       .SetMethod("detachFromOuterFrame", &WebContents::DetachFromOuterFrame)
       .SetMethod("isOffscreen", &WebContents::IsOffScreen)
-#if BUILDFLAG(ENABLE_OSR)
       .SetMethod("startPainting", &WebContents::StartPainting)
       .SetMethod("stopPainting", &WebContents::StopPainting)
       .SetMethod("isPainting", &WebContents::IsPainting)
       .SetMethod("setFrameRate", &WebContents::SetFrameRate)
       .SetMethod("getFrameRate", &WebContents::GetFrameRate)
-#endif
       .SetMethod("invalidate", &WebContents::Invalidate)
       .SetMethod("setZoomLevel", &WebContents::SetZoomLevel)
       .SetMethod("getZoomLevel", &WebContents::GetZoomLevel)
@@ -4340,9 +4339,11 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("isBeingCaptured", &WebContents::IsBeingCaptured)
       .SetMethod("setWebRTCIPHandlingPolicy",
                  &WebContents::SetWebRTCIPHandlingPolicy)
+      .SetMethod("setWebRTCUDPPortRange", &WebContents::SetWebRTCUDPPortRange)
       .SetMethod("getMediaSourceId", &WebContents::GetMediaSourceID)
       .SetMethod("getWebRTCIPHandlingPolicy",
                  &WebContents::GetWebRTCIPHandlingPolicy)
+      .SetMethod("getWebRTCUDPPortRange", &WebContents::GetWebRTCUDPPortRange)
       .SetMethod("takeHeapSnapshot", &WebContents::TakeHeapSnapshot)
       .SetMethod("setImageAnimationPolicy",
                  &WebContents::SetImageAnimationPolicy)
@@ -4358,7 +4359,7 @@ void WebContents::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* WebContents::GetTypeName() {
-  return "WebContents";
+  return GetClassName();
 }
 
 ElectronBrowserContext* WebContents::GetBrowserContext() const {
@@ -4457,6 +4458,16 @@ gin::Handle<WebContents> WebContents::CreateFromWebPreferences(
 // static
 WebContents* WebContents::FromID(int32_t id) {
   return GetAllWebContents().Lookup(id);
+}
+
+// static
+std::list<WebContents*> WebContents::GetWebContentsList() {
+  std::list<WebContents*> list;
+  for (auto iter = base::IDMap<WebContents*>::iterator(&GetAllWebContents());
+       !iter.IsAtEnd(); iter.Advance()) {
+    list.push_back(iter.GetCurrentValue());
+  }
+  return list;
 }
 
 // static

@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
 #define ELECTRON_SHELL_BROWSER_MEDIA_MEDIA_CAPTURE_DEVICES_DISPATCHER_H_
 
-#include <string>
-
 #include "base/memory/singleton.h"
 #include "components/webrtc/media_stream_device_enumerator_impl.h"
 #include "content/public/browser/media_observer.h"

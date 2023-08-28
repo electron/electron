@@ -8,18 +8,18 @@ accessing Blink internals. Its inverse, which already exists, is used in
 Android WebView.
 
 diff --git a/third_party/blink/public/web/web_message_port_converter.h b/third_party/blink/public/web/web_message_port_converter.h
-index a58ddcc8f6e79d3288d0c645875c8b1bbdaaf209..1283bd18cce78bc5eaad71b3fad01031b54d1ab3 100644
+index 23b17b4a46a31cb005e36bb1bbadba6cc3ea6b3c..b86862dcf5232fc6971293fe2c9f17c97008a3a7 100644
 --- a/third_party/blink/public/web/web_message_port_converter.h
 +++ b/third_party/blink/public/web/web_message_port_converter.h
-@@ -13,6 +13,7 @@ class Isolate;
- template <class T>
- class Local;
+@@ -12,6 +12,7 @@
+ namespace v8 {
+ class Isolate;
  class Value;
 +class Context;
  }  // namespace v8
  
  namespace blink {
-@@ -25,6 +26,9 @@ class BLINK_EXPORT WebMessagePortConverter {
+@@ -24,6 +25,9 @@ class BLINK_EXPORT WebMessagePortConverter {
    // neutered, it will return nullopt.
    static absl::optional<MessagePortChannel>
    DisentangleAndExtractMessagePortChannel(v8::Isolate*, v8::Local<v8::Value>);

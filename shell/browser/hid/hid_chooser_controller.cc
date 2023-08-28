@@ -106,7 +106,7 @@ HidChooserController::~HidChooserController() {
 }
 
 // static
-std::string HidChooserController::PhysicalDeviceIdFromDeviceInfo(
+const std::string& HidChooserController::PhysicalDeviceIdFromDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
   // A single physical device may expose multiple HID interfaces, each
   // represented by a HidDeviceInfo object. When a device exposes multiple
@@ -148,11 +148,10 @@ void HidChooserController::OnDeviceAdded(
 
 void HidChooserController::OnDeviceRemoved(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
-  if (!base::Contains(items_, id))
+  if (!base::Contains(items_, PhysicalDeviceIdFromDeviceInfo(device)))
     return;
-  api::Session* session = GetSession();
-  if (session) {
+
+  if (api::Session* session = GetSession(); session != nullptr) {
     auto* rfh = content::RenderFrameHost::FromID(render_frame_host_id_);
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope scope(isolate);
@@ -306,21 +305,20 @@ bool HidChooserController::IsExcluded(
 
 bool HidChooserController::AddDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
-  auto find_it = device_map_.find(id);
-  if (find_it != device_map_.end()) {
-    find_it->second.push_back(device.Clone());
-    return false;
-  }
-  // A new device was connected. Append it to the end of the chooser list.
-  device_map_[id].push_back(device.Clone());
-  items_.push_back(id);
-  return true;
+  const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
+  auto [iter, is_new_physical_device] = device_map_.try_emplace(id);
+  iter->second.emplace_back(device.Clone());
+
+  // append new devices to the chooser list
+  if (is_new_physical_device)
+    items_.emplace_back(id);
+
+  return is_new_physical_device;
 }
 
 bool HidChooserController::RemoveDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
+  const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
   auto find_it = device_map_.find(id);
   DCHECK(find_it != device_map_.end());
   auto& device_infos = find_it->second;
@@ -338,7 +336,7 @@ bool HidChooserController::RemoveDeviceInfo(
 
 void HidChooserController::UpdateDeviceInfo(
     const device::mojom::HidDeviceInfo& device) {
-  auto id = PhysicalDeviceIdFromDeviceInfo(device);
+  const auto& id = PhysicalDeviceIdFromDeviceInfo(device);
   auto physical_device_it = device_map_.find(id);
   DCHECK(physical_device_it != device_map_.end());
   auto& device_infos = physical_device_it->second;

@@ -1,7 +1,7 @@
 let echo;
 try {
   echo = require('@electron-ci/echo');
-} catch (e) {
+} catch {
   process.exit(1);
 }
 process.exit(echo(0));

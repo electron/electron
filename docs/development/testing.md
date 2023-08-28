@@ -66,7 +66,7 @@ the Node.js source tree.
 2. Node headers have to be compiled for your configuration.
 
    ```powershell
-   ninja -C out\Testing third_party\electron_node:headers
+   ninja -C out\Testing electron:node_headers
    ```
 
 3. The electron.lib has to be copied as node.lib.

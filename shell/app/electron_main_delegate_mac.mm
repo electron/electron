@@ -10,7 +10,6 @@
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
 #include "base/mac/foundation_util.h"
-#include "base/mac/scoped_nsautorelease_pool.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/browser/mac_helpers.h"
@@ -66,18 +65,21 @@ void ElectronMainDelegate::OverrideChildProcessPath() {
     helper_path = GetHelperAppPath(frameworks_path, GetApplicationName());
   if (!base::PathExists(helper_path))
     LOG(FATAL) << "Unable to find helper app";
-  base::PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
+  base::PathService::OverrideAndCreateIfNeeded(
+      content::CHILD_PROCESS_EXE, helper_path, /*is_absolute=*/true,
+      /*create=*/false);
 }
 
 void ElectronMainDelegate::SetUpBundleOverrides() {
-  base::mac::ScopedNSAutoreleasePool pool;
-  NSBundle* bundle = MainApplicationBundle();
-  std::string base_bundle_id =
-      base::SysNSStringToUTF8([bundle bundleIdentifier]);
-  NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
-  if (team_id)
-    base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
-  base::mac::SetBaseBundleID(base_bundle_id.c_str());
+  @autoreleasepool {
+    NSBundle* bundle = MainApplicationBundle();
+    std::string base_bundle_id =
+        base::SysNSStringToUTF8([bundle bundleIdentifier]);
+    NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
+    if (team_id)
+      base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
+    base::mac::SetBaseBundleID(base_bundle_id.c_str());
+  }
 }
 
 void RegisterAtomCrApp() {

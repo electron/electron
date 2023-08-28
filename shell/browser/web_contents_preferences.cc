@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -43,20 +44,15 @@ struct Converter<blink::mojom::AutoplayPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::mojom::AutoplayPolicy* out) {
-    std::string policy_str;
-    if (!ConvertFromV8(isolate, val, &policy_str))
-      return false;
-    if (policy_str == "no-user-gesture-required") {
-      *out = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
-      return true;
-    } else if (policy_str == "user-gesture-required") {
-      *out = blink::mojom::AutoplayPolicy::kUserGestureRequired;
-      return true;
-    } else if (policy_str == "document-user-activation-required") {
-      *out = blink::mojom::AutoplayPolicy::kDocumentUserActivationRequired;
-      return true;
-    }
-    return false;
+    using Val = blink::mojom::AutoplayPolicy;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"document-user-activation-required",
+             Val::kDocumentUserActivationRequired},
+            {"no-user-gesture-required", Val::kNoUserGestureRequired},
+            {"user-gesture-required", Val::kUserGestureRequired},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -65,23 +61,15 @@ struct Converter<blink::mojom::V8CacheOptions> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::mojom::V8CacheOptions* out) {
-    std::string v8_cache_options;
-    if (!ConvertFromV8(isolate, val, &v8_cache_options))
-      return false;
-    if (v8_cache_options == "none") {
-      *out = blink::mojom::V8CacheOptions::kNone;
-      return true;
-    } else if (v8_cache_options == "code") {
-      *out = blink::mojom::V8CacheOptions::kCode;
-      return true;
-    } else if (v8_cache_options == "bypassHeatCheck") {
-      *out = blink::mojom::V8CacheOptions::kCodeWithoutHeatCheck;
-      return true;
-    } else if (v8_cache_options == "bypassHeatCheckAndEagerCompile") {
-      *out = blink::mojom::V8CacheOptions::kFullCodeWithoutHeatCheck;
-      return true;
-    }
-    return false;
+    using Val = blink::mojom::V8CacheOptions;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"bypassHeatCheck", Val::kCodeWithoutHeatCheck},
+            {"bypassHeatCheckAndEagerCompile", Val::kFullCodeWithoutHeatCheck},
+            {"code", Val::kCode},
+            {"none", Val::kNone},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 

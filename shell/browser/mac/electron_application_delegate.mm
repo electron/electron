@@ -19,12 +19,8 @@
 
 #import <UserNotifications/UserNotifications.h>
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 static NSDictionary* UNNotificationResponseToNSDictionary(
-    UNNotificationResponse* response) API_AVAILABLE(macosx(10.14)) {
+    UNNotificationResponse* response) {
   if (![response respondsToSelector:@selector(actionIdentifier)] ||
       ![response respondsToSelector:@selector(notification)]) {
     return nil;
@@ -82,7 +78,7 @@ static NSDictionary* UNNotificationResponseToNSDictionary(
     if ([user_notification isKindOfClass:[NSUserNotification class]]) {
       notification_info =
           [static_cast<NSUserNotification*>(user_notification) userInfo];
-    } else if (@available(macOS 10.14, *)) {
+    } else {
       notification_info = UNNotificationResponseToNSDictionary(
           static_cast<UNNotificationResponse*>(user_notification));
     }

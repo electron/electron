@@ -26,7 +26,7 @@ const keysOfTypeNumberCompileTimeCheck: { [K in IntegerBrowserWindowOptionKeys] 
 };
 // Note `top` / `left` are special cases from the browser which we later convert
 // to y / x.
-const keysOfTypeNumber = ['top', 'left', ...Object.keys(keysOfTypeNumberCompileTimeCheck)];
+const keysOfTypeNumber = new Set(['top', 'left', ...Object.keys(keysOfTypeNumberCompileTimeCheck)]);
 
 /**
  * Note that we only allow "0" and "1" boolean conversion when the type is known
@@ -37,7 +37,7 @@ const keysOfTypeNumber = ['top', 'left', ...Object.keys(keysOfTypeNumberCompileT
  */
 type CoercedValue = string | number | boolean;
 function coerce (key: string, value: string): CoercedValue {
-  if (keysOfTypeNumber.includes(key)) {
+  if (keysOfTypeNumber.has(key)) {
     return parseInt(value, 10);
   }
 

@@ -5,8 +5,6 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_BUNDLE_MOVER_H_
 #define ELECTRON_SHELL_BROWSER_UI_COCOA_ELECTRON_BUNDLE_MOVER_H_
 
-#include <string>
-
 #include "base/mac/foundation_util.h"
 #include "shell/common/gin_helper/error_thrower.h"
 

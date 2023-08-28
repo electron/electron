@@ -5,7 +5,6 @@ declare const ENABLE_VIEWS_API: boolean;
 declare namespace NodeJS {
   interface FeaturesBinding {
     isBuiltinSpellCheckerEnabled(): boolean;
-    isOffscreenRenderingEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
     isFakeLocationProviderEnabled(): boolean;
     isViewApiEnabled(): boolean;
@@ -18,7 +17,6 @@ declare namespace NodeJS {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
-    sendTo(webContentsId: number, channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
   }

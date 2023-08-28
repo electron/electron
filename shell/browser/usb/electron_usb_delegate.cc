@@ -25,6 +25,7 @@
 #include "base/containers/fixed_flat_set.h"
 #include "chrome/common/chrome_features.h"
 #include "extensions/browser/extension_registry.h"
+#include "extensions/browser/guest_view/web_view/web_view_guest.h"
 #include "extensions/common/constants.h"
 #include "extensions/common/extension.h"
 #include "services/device/public/mojom/usb_device.mojom.h"
@@ -44,7 +45,7 @@ electron::UsbChooserContext* GetChooserContext(
 // These extensions can claim the smart card USB class and automatically gain
 // permissions for devices that have an interface with this class.
 constexpr auto kSmartCardPrivilegedExtensionIds =
-    base::MakeFixedFlatSet<base::StringPiece>({
+    base::MakeFixedFlatSetSorted<base::StringPiece>({
         // Smart Card Connector Extension and its Beta version, see
         // crbug.com/1233881.
         "khpfeaanjngmcnplbdlpegiifgpfgdco",
@@ -159,13 +160,13 @@ void ElectronUsbDelegate::AdjustProtectedInterfaceClasses(
 
 std::unique_ptr<UsbChooser> ElectronUsbDelegate::RunChooser(
     content::RenderFrameHost& frame,
-    std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+    blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {
   UsbChooserController* controller = ControllerForFrame(&frame);
   if (controller) {
     DeleteControllerForFrame(&frame);
   }
-  AddControllerForFrame(&frame, std::move(filters), std::move(callback));
+  AddControllerForFrame(&frame, std::move(options), std::move(callback));
   // Return a nullptr because the return value isn't used for anything. The
   // return value is simply used in Chromium to cleanup the chooser UI once the
   // usb service is destroyed.
@@ -269,12 +270,12 @@ UsbChooserController* ElectronUsbDelegate::ControllerForFrame(
 
 UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
     content::RenderFrameHost* render_frame_host,
-    std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+    blink::mojom::WebUsbRequestDeviceOptionsPtr options,
     blink::mojom::WebUsbService::GetPermissionCallback callback) {
   auto* web_contents =
       content::WebContents::FromRenderFrameHost(render_frame_host);
   auto controller = std::make_unique<UsbChooserController>(
-      render_frame_host, std::move(filters), std::move(callback), web_contents,
+      render_frame_host, std::move(options), std::move(callback), web_contents,
       weak_factory_.GetWeakPtr());
   controller_map_.insert(
       std::make_pair(render_frame_host, std::move(controller)));
@@ -284,6 +285,35 @@ UsbChooserController* ElectronUsbDelegate::AddControllerForFrame(
 void ElectronUsbDelegate::DeleteControllerForFrame(
     content::RenderFrameHost* render_frame_host) {
   controller_map_.erase(render_frame_host);
+}
+
+bool ElectronUsbDelegate::PageMayUseUsb(content::Page& page) {
+  content::RenderFrameHost& main_rfh = page.GetMainDocument();
+#if BUILDFLAG(ENABLE_EXTENSIONS)
+  // WebViewGuests have no mechanism to show permission prompts and their
+  // embedder can't grant USB access through its permissionrequest API. Also
+  // since webviews use a separate StoragePartition, they must not gain access
+  // through permissions granted in non-webview contexts.
+  if (extensions::WebViewGuest::FromRenderFrameHost(&main_rfh)) {
+    return false;
+  }
+#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+
+  // USB permissions are scoped to a BrowserContext instead of a
+  // StoragePartition, so we need to be careful about usage across
+  // StoragePartitions. Until this is scoped correctly, we'll try to avoid
+  // inappropriate sharing by restricting access to the API. We can't be as
+  // strict as we'd like, as cases like extensions and Isolated Web Apps still
+  // need USB access in non-default partitions, so we'll just guard against
+  // HTTP(S) as that presents a clear risk for inappropriate sharing.
+  // TODO(crbug.com/1469672): USB permissions should be explicitly scoped to
+  // StoragePartitions.
+  if (main_rfh.GetStoragePartition() !=
+      main_rfh.GetBrowserContext()->GetDefaultStoragePartition()) {
+    return !main_rfh.GetLastCommittedURL().SchemeIsHTTPOrHTTPS();
+  }
+
+  return true;
 }
 
 }  // namespace electron

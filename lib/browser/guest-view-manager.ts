@@ -8,7 +8,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
   elementInstanceId: number;
-  visibilityState?: VisibilityState;
+  visibilityState?: DocumentVisibilityState;
   embedder: Electron.WebContents;
   guest: Electron.WebContents;
 }
@@ -229,7 +229,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
   watchedEmbedders.add(embedder);
 
   // Forward embedder window visibility change events to guest
-  const onVisibilityChange = function (visibilityState: VisibilityState) {
+  const onVisibilityChange = function (visibilityState: DocumentVisibilityState) {
     for (const guestInstance of guestInstances.values()) {
       guestInstance.visibilityState = visibilityState;
       if (guestInstance.embedder === embedder) {

@@ -162,6 +162,7 @@ void WinCaptionButtonContainer::UpdateButtons() {
 
   const bool minimizable = frame_view_->window()->IsMinimizable();
   minimize_button_->SetEnabled(minimizable);
+  minimize_button_->SetVisible(minimizable);
 
   // In touch mode, windows cannot be taken out of fullscreen or tiled mode, so
   // the maximize/restore button should be disabled.

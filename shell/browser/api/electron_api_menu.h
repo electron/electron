@@ -29,9 +29,11 @@ class Menu : public gin::Wrappable<Menu>,
   // gin_helper::Constructible
   static gin::Handle<Menu> New(gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Menu"; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
 #if BUILDFLAG(IS_MAC)
   // Set the global menubar.
@@ -78,6 +80,7 @@ class Menu : public gin::Wrappable<Menu>,
                        int x,
                        int y,
                        int positioning_item,
+                       ui::MenuSourceType source_type,
                        base::OnceClosure callback) = 0;
   virtual void ClosePopupAt(int32_t window_id) = 0;
   virtual std::u16string GetAcceleratorTextAtForTesting(int index) const;

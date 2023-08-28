@@ -8,10 +8,6 @@
 
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 
-#include <vector>
-
-#include "base/mac/scoped_nsobject.h"
-
 @class ElectronInspectableWebContentsView;
 
 namespace electron {
@@ -34,9 +30,10 @@ class InspectableWebContentsViewMac : public InspectableWebContentsView {
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
+  const std::u16string GetTitle() override;
 
  private:
-  base::scoped_nsobject<ElectronInspectableWebContentsView> view_;
+  ElectronInspectableWebContentsView* __strong view_;
 };
 
 }  // namespace electron

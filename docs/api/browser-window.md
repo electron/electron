@@ -820,9 +820,13 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
+**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
+
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
+
+**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
@@ -1531,6 +1535,10 @@ tabs in the window.
 Selects the next tab when native tabs are enabled and there are other
 tabs in the window.
 
+#### `win.showAllTabs()` _macOS_
+
+Shows or hides the tab overview when native tabs are enabled.
+
 #### `win.mergeAllWindows()` _macOS_
 
 Merges all windows into one window with multiple tabs when native tabs
@@ -1554,15 +1562,11 @@ Adds a window as a tab on this window, after the tab for the window instance.
 
 #### `win.setVibrancy(type)` _macOS_
 
-* `type` string | null - Can be `appearance-based`, `light`, `dark`, `titlebar`,
-  `selection`, `menu`, `popover`, `sidebar`, `medium-light`, `ultra-dark`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
+* `type` string | null - Can be `titlebar`, `selection`, `menu`, `popover`, `sidebar`, `header`, `sheet`, `window`, `hud`, `fullscreen-ui`, `tooltip`, `content`, `under-window`, or `under-page`. See
   the [macOS documentation][vibrancy-docs] for more details.
 
 Adds a vibrancy effect to the browser window. Passing `null` or an empty string
 will remove the vibrancy effect on the window.
-
-Note that `appearance-based`, `light`, `dark`, `medium-light`, and `ultra-dark` have been
-deprecated and will be removed in an upcoming version of macOS.
 
 #### `win.setBackgroundMaterial(material)` _Windows_
 
@@ -1590,25 +1594,6 @@ Passing `null` will reset the position to default.
 
 Returns `Point | null` - The custom position for the traffic light buttons in
 frameless window, `null` will be returned when there is no custom position.
-
-#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
-
-* `position` [Point](structures/point.md)
-
-Set a custom position for the traffic light buttons in frameless window.
-Passing `{ x: 0, y: 0 }` will reset the position to default.
-
-> **Note**
-> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
-
-#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
-
-Returns `Point` - The custom position for the traffic light buttons in
-frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
-position.
-
-> **Note**
-> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 
@@ -1651,8 +1636,8 @@ Throws an error if `browserView` is not attached to `win`.
 
 #### `win.getBrowserViews()` _Experimental_
 
-Returns `BrowserView[]` - an array of all BrowserViews that have been attached
-with `addBrowserView` or `setBrowserView`.
+Returns `BrowserView[]` - a sorted by z-index array of all BrowserViews that have been attached
+with `addBrowserView` or `setBrowserView`. The top-most BrowserView is the last element of the array.
 
 **Note:** The BrowserView API is currently experimental and may change or be
 removed in future Electron releases.

@@ -8,9 +8,9 @@
 #include <string>
 #include <utility>
 
+#include "base/apple/bridging.h"
 #include "base/apple/bundle_locations.h"
 #include "base/i18n/rtl.h"
-#include "base/mac/foundation_util.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/mac_util.mm"
 #include "base/mac/scoped_cftyperef.h"
@@ -32,6 +32,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/platform_util.h"
+#include "ui/base/resource/resource_scale_factor.h"
 #include "ui/gfx/image/image.h"
 #include "url/gurl.h"
 
@@ -51,14 +52,15 @@ NSString* GetAppPathForProtocol(const GURL& url) {
       URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
   base::ScopedCFTypeRef<CFErrorRef> out_err;
 
-  base::ScopedCFTypeRef<CFURLRef> openingApp(LSCopyDefaultApplicationURLForURL(
-      (CFURLRef)ns_url, kLSRolesAll, out_err.InitializeInto()));
+  base::ScopedCFTypeRef<CFURLRef> openingApp(
+      LSCopyDefaultApplicationURLForURL(base::apple::NSToCFPtrCast(ns_url),
+                                        kLSRolesAll, out_err.InitializeInto()));
 
   if (out_err) {
     // likely kLSApplicationNotFoundErr
     return nullptr;
   }
-  NSString* app_path = [base::mac::CFToNSCast(openingApp.get()) path];
+  NSString* app_path = [base::apple::CFToNSPtrCast(openingApp.get()) path];
   return app_path;
 }
 
@@ -99,7 +101,7 @@ v8::Local<v8::Promise> Browser::GetApplicationInfoForProtocol(
     const GURL& url) {
   gin_helper::Promise<gin_helper::Dictionary> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   NSString* ns_app_path = GetAppPathForProtocol(url);
 
@@ -177,8 +179,12 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  CFStringRef protocol_cf = base::mac::NSToCFCast(protocol_ns);
+  CFStringRef protocol_cf = base::apple::NSToCFPtrCast(protocol_ns);
+// TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   CFArrayRef bundleList = LSCopyAllHandlersForURLScheme(protocol_cf);
+#pragma clang diagnostic pop
   if (!bundleList) {
     return false;
   }
@@ -195,7 +201,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
 
   // No other app was found set it to none instead of setting it back to itself.
   if ([identifier isEqualToString:(__bridge NSString*)other]) {
-    other = base::mac::NSToCFCast(@"None");
+    other = base::apple::NSToCFPtrCast(@"None");
   }
 
   OSStatus return_code = LSSetDefaultHandlerForURLScheme(protocol_cf, other);
@@ -212,8 +218,9 @@ bool Browser::SetAsDefaultProtocolClient(const std::string& protocol,
     return false;
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
-  OSStatus return_code = LSSetDefaultHandlerForURLScheme(
-      base::mac::NSToCFCast(protocol_ns), base::mac::NSToCFCast(identifier));
+  OSStatus return_code =
+      LSSetDefaultHandlerForURLScheme(base::apple::NSToCFPtrCast(protocol_ns),
+                                      base::apple::NSToCFPtrCast(identifier));
   return return_code == noErr;
 }
 
@@ -228,16 +235,19 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 
   NSString* protocol_ns = [NSString stringWithUTF8String:protocol.c_str()];
 
-  base::ScopedCFTypeRef<CFStringRef> bundleId(
-      LSCopyDefaultHandlerForURLScheme(base::mac::NSToCFCast(protocol_ns)));
-
+// TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+  base::ScopedCFTypeRef<CFStringRef> bundleId(LSCopyDefaultHandlerForURLScheme(
+      base::apple::NSToCFPtrCast(protocol_ns)));
+#pragma clang diagnostic pop
   if (!bundleId)
     return false;
 
   // Ensure the comparison is case-insensitive
   // as LS does not persist the case of the bundle id.
   NSComparisonResult result =
-      [base::mac::CFToNSCast(bundleId) caseInsensitiveCompare:identifier];
+      [base::apple::CFToNSPtrCast(bundleId) caseInsensitiveCompare:identifier];
   return result == NSOrderedSame;
 }
 
@@ -501,14 +511,12 @@ void Browser::DockSetIcon(v8::Isolate* isolate, v8::Local<v8::Value> icon) {
     image = native_image->image();
   }
 
-  DockSetIconImage(image);
-}
-
-void Browser::DockSetIconImage(gfx::Image const& image) {
-  if (!is_ready_) {
-    dock_icon_ = image;
-    return;
-  }
+  // This is needed to avoid a hard CHECK when this fn is called
+  // before the browser process is ready, since supported scales
+  // are normally set by ui::ResourceBundle::InitSharedInstance
+  // during browser process startup.
+  if (!is_ready())
+    ui::SetSupportedResourceScaleFactors({ui::k100Percent});
 
   [[AtomApplication sharedApplication]
       setApplicationIconImage:image.AsNSImage()];
@@ -520,14 +528,10 @@ void Browser::ShowAboutPanel() {
   // Credits must be a NSAttributedString instead of NSString
   NSString* credits = (NSString*)options[@"Credits"];
   if (credits != nil) {
-    base::scoped_nsobject<NSMutableDictionary> mutable_options(
-        [options mutableCopy]);
-    base::scoped_nsobject<NSAttributedString> creditString(
-        [[NSAttributedString alloc]
-            initWithString:credits
-                attributes:@{
-                  NSForegroundColorAttributeName : [NSColor textColor]
-                }]);
+    NSMutableDictionary* mutable_options = [options mutableCopy];
+    NSAttributedString* creditString = [[NSAttributedString alloc]
+        initWithString:credits
+            attributes:@{NSForegroundColorAttributeName : [NSColor textColor]}];
 
     [mutable_options setValue:creditString forKey:@"Credits"];
     options = [NSDictionary dictionaryWithDictionary:mutable_options];

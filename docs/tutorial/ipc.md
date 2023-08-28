@@ -412,7 +412,7 @@ function createWindow () {
 For the purposes of the tutorial, it's important to note that the `click` handler
 sends a message (either `1` or `-1`) to the renderer process through the `update-counter` channel.
 
-```javascript @ts-nocheck
+```javascript @ts-type={mainWindow:Electron.BrowserWindow}
 click: () => mainWindow.webContents.send('update-counter', -1)
 ```
 
@@ -486,13 +486,13 @@ To tie it all together, we'll create an interface in the loaded HTML file that c
 Finally, to make the values update in the HTML document, we'll add a few lines of DOM manipulation
 so that the value of the `#counter` element is updated whenever we fire an `update-counter` event.
 
-```javascript title='renderer.js (Renderer Process)' @ts-nocheck
+```javascript title='renderer.js (Renderer Process)' @ts-window-type={electronAPI:{onUpdateCounter:(callback:(event:Electron.IpcRendererEvent,value:number)=>void)=>void}}
 const counter = document.getElementById('counter')
 
 window.electronAPI.onUpdateCounter((_event, value) => {
   const oldValue = Number(counter.innerText)
   const newValue = oldValue + value
-  counter.innerText = newValue
+  counter.innerText = newValue.toString()
 })
 ```
 
@@ -509,13 +509,13 @@ We can demonstrate this with slight modifications to the code from the previous 
 renderer process, use the `event` parameter to send a reply back to the main process through the
 `counter-value` channel.
 
-```javascript title='renderer.js (Renderer Process)' @ts-nocheck
+```javascript title='renderer.js (Renderer Process)' @ts-window-type={electronAPI:{onUpdateCounter:(callback:(event:Electron.IpcRendererEvent,value:number)=>void)=>void}}
 const counter = document.getElementById('counter')
 
 window.electronAPI.onUpdateCounter((event, value) => {
   const oldValue = Number(counter.innerText)
   const newValue = oldValue + value
-  counter.innerText = newValue
+  counter.innerText = newValue.toString()
   event.sender.send('counter-value', newValue)
 })
 ```

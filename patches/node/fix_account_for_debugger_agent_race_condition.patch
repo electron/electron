@@ -21,6 +21,18 @@ index eab99c9b0e2fb387ef9a716396e41c7fc93e93bc..ef8b20a60df88a0a412c309f597e1b1f
      await cli.waitForPrompt();
      await cli.command('sb("alive.js", 3)');
      await cli.waitFor(/break/);
+diff --git a/test/parallel/test-debugger-random-port-with-inspect-port.js b/test/parallel/test-debugger-random-port-with-inspect-port.js
+index 3acc6bdd733eb002a2592960528bb04eebb2dc60..a9f2d29327464281c10d4c2210277eab47c9a262 100644
+--- a/test/parallel/test-debugger-random-port-with-inspect-port.js
++++ b/test/parallel/test-debugger-random-port-with-inspect-port.js
+@@ -13,6 +13,7 @@ const script = fixtures.path('debugger', 'three-lines.js');
+ const cli = startCLI(['--inspect-port=0', script]);
+ 
+ (async () => {
++  await new Promise(resolve => setTimeout(resolve, 1000));
+   await cli.waitForInitialBreak();
+   await cli.waitForPrompt();
+   assert.match(cli.output, /debug>/, 'prints a prompt');
 diff --git a/test/sequential/test-debugger-pid.js b/test/sequential/test-debugger-pid.js
 index 99062149dfe3374b86439850e0655383e2bad662..78c173f5073818fae7d46413842cb7790130c3f5 100644
 --- a/test/sequential/test-debugger-pid.js

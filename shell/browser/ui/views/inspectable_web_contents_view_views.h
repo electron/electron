@@ -6,7 +6,6 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
-#include <vector>
 
 #include "base/compiler_specific.h"
 #include "base/memory/raw_ptr.h"
@@ -32,7 +31,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   // InspectableWebContentsView:
   views::View* GetView() override;
-  views::View* GetWebView() override;
   void ShowDevTools(bool activate) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
@@ -41,11 +39,10 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
+  const std::u16string GetTitle() override;
 
   // views::View:
   void Layout() override;
-
-  const std::u16string& GetTitle() const { return title_; }
 
  private:
   std::unique_ptr<views::Widget> devtools_window_;

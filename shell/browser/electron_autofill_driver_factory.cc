@@ -6,7 +6,6 @@
 
 #include <memory>
 #include <utility>
-#include <vector>
 
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"

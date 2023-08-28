@@ -4,8 +4,6 @@
 
 #include "shell/browser/api/electron_api_browser_view.h"
 
-#include <vector>
-
 #include "content/browser/renderer_host/render_widget_host_view_base.h"  // nogncheck
 #include "content/public/browser/render_widget_host_view.h"
 #include "shell/browser/api/electron_api_base_window.h"
@@ -133,6 +131,10 @@ void BrowserView::WebContentsDestroyed() {
   Unpin();
 }
 
+void BrowserView::OnCloseContents() {
+  api_web_contents_ = nullptr;
+}
+
 // static
 gin::Handle<BrowserView> BrowserView::New(gin_helper::ErrorThrower thrower,
                                           gin::Arguments* args) {
@@ -196,13 +198,17 @@ v8::Local<v8::Value> BrowserView::GetWebContents(v8::Isolate* isolate) {
 // static
 void BrowserView::FillObjectTemplate(v8::Isolate* isolate,
                                      v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "BrowserView", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("setAutoResize", &BrowserView::SetAutoResize)
       .SetMethod("setBounds", &BrowserView::SetBounds)
       .SetMethod("getBounds", &BrowserView::GetBounds)
       .SetMethod("setBackgroundColor", &BrowserView::SetBackgroundColor)
       .SetProperty("webContents", &BrowserView::GetWebContents)
       .Build();
+}
+
+const char* BrowserView::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

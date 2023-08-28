@@ -164,23 +164,6 @@ void ElectronManagementAPIDelegate::InstallOrLaunchReplacementWebApp(
   // TODO(sentialx)
 }
 
-bool ElectronManagementAPIDelegate::CanContextInstallAndroidApps(
-    content::BrowserContext* context) const {
-  return false;
-}
-
-void ElectronManagementAPIDelegate::CheckAndroidAppInstallStatus(
-    const std::string& package_name,
-    AndroidAppInstallStatusCallback callback) const {
-  std::move(callback).Run(false);
-}
-
-void ElectronManagementAPIDelegate::InstallReplacementAndroidApp(
-    const std::string& package_name,
-    InstallAndroidAppCallback callback) const {
-  std::move(callback).Run(false);
-}
-
 void ElectronManagementAPIDelegate::EnableExtension(
     content::BrowserContext* context,
     const std::string& extension_id) const {

@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import * as childProcess from 'child_process';
-import * as path from 'path';
+import * as childProcess from 'node:child_process';
+import * as path from 'node:path';
 import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -251,6 +251,30 @@ describe('utilityProcess module', () => {
           expect(output.trim()).to.contain(':17364', 'should be listening on port 17364');
           cleanup();
         }
+      };
+
+      child.stderr!.on('data', listener);
+      child.stdout!.on('data', listener);
+    });
+
+    it('supports changing dns verbatim with --dns-result-order', (done) => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
+        stdio: 'pipe',
+        execArgv: ['--dns-result-order=ipv4first']
+      });
+
+      let output = '';
+      const cleanup = () => {
+        child.stderr!.removeListener('data', listener);
+        child.stdout!.removeListener('data', listener);
+        child.once('exit', () => { done(); });
+        child.kill();
+      };
+
+      const listener = (data: Buffer) => {
+        output += data;
+        expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
+        cleanup();
       };
 
       child.stderr!.on('data', listener);

@@ -6,6 +6,7 @@
 
 #include <string>
 
+#include "base/containers/fixed_flat_map.h"
 #include "gin/dictionary.h"
 #include "gin/object_template_builder.h"
 #include "shell/browser/api/electron_api_menu.h"
@@ -29,27 +30,16 @@ struct Converter<electron::TrayIcon::IconType> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      electron::TrayIcon::IconType* out) {
-    using IconType = electron::TrayIcon::IconType;
-    std::string mode;
-    if (ConvertFromV8(isolate, val, &mode)) {
-      if (mode == "none") {
-        *out = IconType::kNone;
-        return true;
-      } else if (mode == "info") {
-        *out = IconType::kInfo;
-        return true;
-      } else if (mode == "warning") {
-        *out = IconType::kWarning;
-        return true;
-      } else if (mode == "error") {
-        *out = IconType::kError;
-        return true;
-      } else if (mode == "custom") {
-        *out = IconType::kCustom;
-        return true;
-      }
-    }
-    return false;
+    using Val = electron::TrayIcon::IconType;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"custom", Val::kCustom},
+            {"error", Val::kError},
+            {"info", Val::kInfo},
+            {"none", Val::kNone},
+            {"warning", Val::kWarning},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -352,7 +342,9 @@ void Tray::PopUpContextMenu(gin::Arguments* args) {
       }
     }
   }
-  tray_icon_->PopUpContextMenu(pos, menu.IsEmpty() ? nullptr : menu->model());
+
+  tray_icon_->PopUpContextMenu(
+      pos, menu.IsEmpty() ? nullptr : menu->model()->GetWeakPtr());
 }
 
 void Tray::CloseContextMenu() {
@@ -396,7 +388,7 @@ bool Tray::CheckAlive() {
 // static
 void Tray::FillObjectTemplate(v8::Isolate* isolate,
                               v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Tray", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("destroy", &Tray::Destroy)
       .SetMethod("isDestroyed", &Tray::IsDestroyed)
       .SetMethod("setImage", &Tray::SetImage)
@@ -416,6 +408,10 @@ void Tray::FillObjectTemplate(v8::Isolate* isolate,
       .SetMethod("setContextMenu", &Tray::SetContextMenu)
       .SetMethod("getBounds", &Tray::GetBounds)
       .Build();
+}
+
+const char* Tray::GetTypeName() {
+  return GetClassName();
 }
 
 }  // namespace electron::api

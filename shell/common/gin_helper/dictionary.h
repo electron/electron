@@ -31,6 +31,10 @@ class Dictionary : public gin::Dictionary {
   Dictionary(const gin::Dictionary& dict)  // NOLINT(runtime/explicit)
       : gin::Dictionary(dict) {}
 
+  static Dictionary CreateEmpty(v8::Isolate* isolate) {
+    return gin::Dictionary::CreateEmpty(isolate);
+  }
+
   // Differences from the Get method in gin::Dictionary:
   // 1. This is a const method;
   // 2. It checks whether the key exists before reading;

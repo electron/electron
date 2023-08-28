@@ -9,6 +9,7 @@
 #include "shell/browser/native_window_observer.h"
 
 #include "base/memory/raw_ptr.h"
+#include "base/memory/raw_ptr_exclusion.h"
 #include "content/browser/renderer_host/render_view_host_delegate_view.h"  // nogncheck
 #include "content/browser/web_contents/web_contents_view.h"  // nogncheck
 #include "content/public/browser/web_contents.h"
@@ -104,7 +105,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
   raw_ptr<content::WebContents> web_contents_ = nullptr;
 
 #if BUILDFLAG(IS_MAC)
-  OffScreenView* offScreenView_;
+  RAW_PTR_EXCLUSION OffScreenView* offScreenView_;
 #endif
 };
 

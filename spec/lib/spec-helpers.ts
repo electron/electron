@@ -1,10 +1,10 @@
-import * as childProcess from 'child_process';
-import * as path from 'path';
-import * as http from 'http';
-import * as https from 'https';
-import * as net from 'net';
-import * as v8 from 'v8';
-import * as url from 'url';
+import * as childProcess from 'node:child_process';
+import * as path from 'node:path';
+import * as http from 'node:http';
+import * as https from 'node:https';
+import * as net from 'node:net';
+import * as v8 from 'node:v8';
+import * as url from 'node:url';
 import { SuiteFunction, TestFunction } from 'mocha';
 import { BrowserWindow } from 'electron/main';
 import { AssertionError } from 'chai';
@@ -55,7 +55,7 @@ class RemoteControlApp {
         res.on('data', chunk => { chunks.push(chunk); });
         res.on('end', () => {
           const ret = v8.deserialize(Buffer.concat(chunks));
-          if (Object.prototype.hasOwnProperty.call(ret, 'error')) {
+          if (Object.hasOwn(ret, 'error')) {
             reject(new Error(`remote error: ${ret.error}\n\nTriggered at:`));
           } else {
             resolve(ret.result);
@@ -141,11 +141,11 @@ export async function repeatedly<T> (
   opts?: { until?: (x: T) => boolean, timeLimit?: number }
 ) {
   const { until = (x: T) => !!x, timeLimit = 10000 } = opts ?? {};
-  const begin = +new Date();
+  const begin = Date.now();
   while (true) {
     const ret = await fn();
     if (until(ret)) { return ret; }
-    if (+new Date() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
+    if (Date.now() - begin > timeLimit) { throw new Error(`repeatedly timed out (limit=${timeLimit})`); }
   }
 }
 
@@ -181,7 +181,7 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
     const { ok, message } = await w.webContents.executeJavaScript(`(async () => {
       try {
         const chai_1 = require('chai')
-        const promises_1 = require('timers/promises')
+        const promises_1 = require('node:timers/promises')
         chai_1.use(require('chai-as-promised'))
         chai_1.use(require('dirty-chai'))
         await (${fn})(...${JSON.stringify(args ?? [])})

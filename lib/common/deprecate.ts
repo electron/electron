@@ -46,7 +46,7 @@ export function log (message: string): void {
 
 // remove a function with no replacement
 export function removeFunction<T extends Function> (fn: T, removedName: string): T {
-  if (!fn) { throw Error(`'${removedName} function' is invalid or does not exist.`); }
+  if (!fn) { throw new Error(`'${removedName} function' is invalid or does not exist.`); }
 
   // wrap the deprecated function to warn user
   const warn = warnOnce(`${fn.name} function`);
@@ -110,7 +110,7 @@ export function removeProperty<T, K extends (keyof T & string)>(object: T, remov
 }
 
 // change the name of a property
-export function renameProperty<T, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T {
+export function renameProperty<T extends Object, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T {
   const warn = warnOnce(oldName, newName);
 
   // if the new property isn't there yet,

@@ -13,7 +13,6 @@
 #include <windows.ui.notifications.h>
 #include <wrl/implements.h>
 #include <string>
-#include <vector>
 
 #include "shell/browser/notifications/notification.h"
 

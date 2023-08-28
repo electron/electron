@@ -1,18 +1,18 @@
 import { expect } from 'chai';
 import { v4 } from 'uuid';
 import { protocol, webContents, WebContents, session, BrowserWindow, ipcMain, net } from 'electron/main';
-import * as ChildProcess from 'child_process';
-import * as path from 'path';
-import * as url from 'url';
-import * as http from 'http';
-import * as fs from 'fs';
-import * as qs from 'querystring';
-import * as stream from 'stream';
-import { EventEmitter, once } from 'events';
+import * as ChildProcess from 'node:child_process';
+import * as path from 'node:path';
+import * as url from 'node:url';
+import * as http from 'node:http';
+import * as fs from 'node:fs';
+import * as qs from 'node:querystring';
+import * as stream from 'node:stream';
+import { EventEmitter, once } from 'node:events';
 import { closeAllWindows, closeWindow } from './lib/window-helpers';
 import { WebmGenerator } from './lib/video-helpers';
 import { listen, defer, ifit } from './lib/spec-helpers';
-import { setTimeout } from 'timers/promises';
+import { setTimeout } from 'node:timers/promises';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -104,7 +104,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -557,7 +557,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -1106,7 +1106,7 @@ describe('protocol module', () => {
           // In case of failure, make sure we unhandle. But we should succeed
           // :)
           protocol.unhandle('test-scheme');
-        } catch (_ignored) { /* ignore */ }
+        } catch { /* ignore */ }
       });
       const resp1 = await net.fetch('test-scheme://foo');
       expect(resp1.status).to.equal(200);
@@ -1114,11 +1114,32 @@ describe('protocol module', () => {
       await expect(net.fetch('test-scheme://foo')).to.eventually.be.rejectedWith(/ERR_UNKNOWN_URL_SCHEME/);
     });
 
-    it('receives requests to an existing scheme', async () => {
+    it('receives requests to the existing https scheme', async () => {
       protocol.handle('https', (req) => new Response('hello ' + req.url));
       defer(() => { protocol.unhandle('https'); });
       const body = await net.fetch('https://foo').then(r => r.text());
       expect(body).to.equal('hello https://foo/');
+    });
+
+    it('receives requests to the existing file scheme', (done) => {
+      const filePath = path.join(__dirname, 'fixtures', 'pages', 'a.html');
+
+      protocol.handle('file', (req) => {
+        let file;
+        if (process.platform === 'win32') {
+          file = `file:///${filePath.replace(/\\/g, '/')}`;
+        } else {
+          file = `file://${filePath}`;
+        }
+
+        if (req.url === file) done();
+        return new Response(req.url);
+      });
+
+      defer(() => { protocol.unhandle('file'); });
+
+      const w = new BrowserWindow();
+      w.loadFile(filePath);
     });
 
     it('receives requests to an existing scheme when navigating', async () => {

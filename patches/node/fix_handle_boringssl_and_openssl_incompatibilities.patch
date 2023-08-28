@@ -104,10 +104,19 @@ index 41e607e9298314bd7dd9e61643650f3ec75caea8..bd3228a67e1bda671488b347bd53ca80
      if (!Set(env->context(),
               obj,
 diff --git a/src/crypto/crypto_context.cc b/src/crypto/crypto_context.cc
-index b9f323035ff543ecb6f7bd577512729f0d60a156..0262dee543359c85c2c293ee22a8697b05f75feb 100644
+index 838ee2a68dffc5a2aeca2bdb51b076795b2b145f..b0b18cd30c854c8c30d74afbf3ed352d3d23f30d 100644
 --- a/src/crypto/crypto_context.cc
 +++ b/src/crypto/crypto_context.cc
-@@ -857,10 +857,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
+@@ -63,7 +63,7 @@ inline X509_STORE* GetOrCreateRootCertStore() {
+ // Caller responsible for BIO_free_all-ing the returned object.
+ BIOPointer LoadBIO(Environment* env, Local<Value> v) {
+   if (v->IsString() || v->IsArrayBufferView()) {
+-    BIOPointer bio(BIO_new(BIO_s_secmem()));
++    BIOPointer bio(BIO_new(BIO_s_mem()));
+     if (!bio) return nullptr;
+     ByteSource bsrc = ByteSource::FromStringOrBuffer(env, v);
+     if (bsrc.size() > INT_MAX) return nullptr;
+@@ -855,10 +855,12 @@ void SecureContext::SetDHParam(const FunctionCallbackInfo<Value>& args) {
    // If the user specified "auto" for dhparams, the JavaScript layer will pass
    // true to this function instead of the original string. Any other string
    // value will be interpreted as custom DH parameters below.
@@ -208,7 +217,7 @@ index dd69323b80076d7333b80453c9cc9ef5b680ce27..6431b768c83fa27b2287588e936f93ae
      UNREACHABLE();
    }
 diff --git a/src/crypto/crypto_dsa.cc b/src/crypto/crypto_dsa.cc
-index 6839283fbf4ca7ee7dd586e749c80671ad965658..4e186abdf13613cbe576da5b7d547408c0ee9f93 100644
+index 3fa4a415dc911a13afd90dfb31c1ed4ad0fd268f..fa48dffc31342c44a1c1207b9d4c3dc72ed93b60 100644
 --- a/src/crypto/crypto_dsa.cc
 +++ b/src/crypto/crypto_dsa.cc
 @@ -40,7 +40,7 @@ namespace crypto {
@@ -232,10 +241,10 @@ index 6839283fbf4ca7ee7dd586e749c80671ad965658..4e186abdf13613cbe576da5b7d547408
      return EVPKeyCtxPointer();
  
 diff --git a/src/crypto/crypto_random.cc b/src/crypto/crypto_random.cc
-index 2f9e9aacb1e652202d72c69b46f8e76d6c5405a8..5f19c38a78e37d3e8d92bcc20ae1357f20349ad4 100644
+index 9850104cd607f877a8e867e83a8d4d4ccd4a4395..f153b3366e2795133ff3df7b7a2153a6106237e4 100644
 --- a/src/crypto/crypto_random.cc
 +++ b/src/crypto/crypto_random.cc
-@@ -146,7 +146,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
+@@ -140,7 +140,7 @@ Maybe<bool> RandomPrimeTraits::AdditionalConfig(
  
    params->bits = bits;
    params->safe = safe;
@@ -265,10 +274,10 @@ index 47a42246eddfc795b735f5efd08edf2832bbf6c1..7e6afaa1d3a4612fd567924b40438a31
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 247067a9908717ba1323bd610eeeedf3aba008a4..0fe7358d3f419f6e6f00eb4cc8422e9c5cb6cb9a 100644
+index 87d6ab3b9970e48db53cf7061d7208679c8b1dfc..4d79fbb4a30a7e57a7456413685706d9af36b1b3 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
-@@ -508,24 +508,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
+@@ -518,24 +518,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
      V(BIO)                                                                    \
      V(PKCS7)                                                                  \
      V(X509V3)                                                                 \
@@ -294,7 +303,7 @@ index 247067a9908717ba1323bd610eeeedf3aba008a4..0fe7358d3f419f6e6f00eb4cc8422e9c
      V(USER)                                                                   \
  
  #define V(name) case ERR_LIB_##name: lib = #name "_"; break;
-@@ -699,7 +690,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -709,7 +700,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
    CHECK(args[0]->IsUint32());
    Environment* env = Environment::GetCurrent(args);
    uint32_t len = args[0].As<Uint32>()->Value();
@@ -303,7 +312,7 @@ index 247067a9908717ba1323bd610eeeedf3aba008a4..0fe7358d3f419f6e6f00eb4cc8422e9c
    if (data == nullptr) {
      // There's no memory available for the allocation.
      // Return nothing.
-@@ -710,7 +701,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -720,7 +711,7 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
            data,
            len,
            [](void* data, size_t len, void* deleter_data) {
@@ -312,7 +321,7 @@ index 247067a9908717ba1323bd610eeeedf3aba008a4..0fe7358d3f419f6e6f00eb4cc8422e9c
            },
            data);
    Local<ArrayBuffer> buffer = ArrayBuffer::New(env->isolate(), store);
-@@ -718,10 +709,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
+@@ -728,10 +719,12 @@ void SecureBuffer(const FunctionCallbackInfo<Value>& args) {
  }
  
  void SecureHeapUsed(const FunctionCallbackInfo<Value>& args) {
@@ -352,7 +361,7 @@ index 1831bfd0baaac70277fc274a72235bf6a04697cb..1c0a3fcdeb44dc947bb8c38459533779
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 6e156fa1ba448f8d0c709eb7ba7112e92909a8fc..8bbee83ddb32a31ada18d7a6e8be7cdf33321b69 100644
+index 47a24ef5e59f049848637afbbfae6c9cfb9b8902..499d048fcb82e50a302d74e2c7f87f3696103a40 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -365,7 +374,7 @@ index 6e156fa1ba448f8d0c709eb7ba7112e92909a8fc..8bbee83ddb32a31ada18d7a6e8be7cdf
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index 665ea4ceb779f7c7747e53aba4beba0494fa7ebe..22a346eb23274374d5a5aa4a1b2219e6ebdee48a 100644
+index c57e7a93b13a856e834b77707feaf691241ebc41..f8bdd016e13a8775520bfee7eb61d1c8d667bb58 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

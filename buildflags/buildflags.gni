@@ -3,8 +3,6 @@
 # found in the LICENSE file.
 
 declare_args() {
-  enable_osr = true
-
   enable_views_api = true
 
   enable_pdf_viewer = true

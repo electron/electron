@@ -1,21 +1,20 @@
 import { expect } from 'chai';
-import * as childProcess from 'child_process';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as qs from 'querystring';
-import * as http from 'http';
-import * as os from 'os';
-import { AddressInfo } from 'net';
+import * as childProcess from 'node:child_process';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as qs from 'node:querystring';
+import * as http from 'node:http';
+import * as os from 'node:os';
+import { AddressInfo } from 'node:net';
 import { app, BrowserWindow, BrowserView, dialog, ipcMain, OnBeforeSendHeadersListenerDetails, protocol, screen, webContents, webFrameMain, session, WebContents, WebFrameMain } from 'electron/main';
 
 import { emittedUntil, emittedNTimes } from './lib/events-helpers';
 import { ifit, ifdescribe, defer, listen } from './lib/spec-helpers';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { areColorsSimilar, captureScreen, HexColors, getPixelColor } from './lib/screen-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
-const features = process._linkedBinding('electron_common_features');
 const fixtures = path.resolve(__dirname, 'fixtures');
 const mainFixtures = path.resolve(__dirname, 'fixtures');
 
@@ -48,6 +47,10 @@ const isBeforeUnload = (event: Event, level: number, message: string) => {
 };
 
 describe('BrowserWindow module', () => {
+  it('sets the correct class name on the prototype', () => {
+    expect(BrowserWindow.prototype.constructor.name).to.equal('BrowserWindow');
+  });
+
   describe('BrowserWindow constructor', () => {
     it('allows passing void 0 as the webContents', async () => {
       expect(() => {
@@ -1280,6 +1283,8 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.moveTop()', () => {
+      afterEach(closeAllWindows);
+
       it('should not steal focus', async () => {
         const posDelta = 50;
         const wShownInactive = once(w, 'show');
@@ -1320,6 +1325,15 @@ describe('BrowserWindow module', () => {
 
         await closeWindow(otherWindow, { assertNotWindows: false });
         expect(BrowserWindow.getAllWindows()).to.have.lengthOf(1);
+      });
+
+      it('should not crash when called on a modal child window', async () => {
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+
+        const child = new BrowserWindow({ modal: true, parent: w });
+        expect(() => { child.moveTop(); }).to.not.throw();
       });
     });
 
@@ -2073,6 +2087,14 @@ describe('BrowserWindow module', () => {
       });
     });
 
+    describe('BrowserWindow.showAllTabs()', () => {
+      it('does not throw', () => {
+        expect(() => {
+          w.showAllTabs();
+        }).to.not.throw();
+      });
+    });
+
     describe('BrowserWindow.mergeAllWindows()', () => {
       it('does not throw', () => {
         expect(() => {
@@ -2313,7 +2335,7 @@ describe('BrowserWindow module', () => {
     });
 
     it('causes the right value to be emitted on `always-on-top-changed`', async () => {
-      const alwaysOnTopChanged = once(w, 'always-on-top-changed');
+      const alwaysOnTopChanged = once(w, 'always-on-top-changed') as Promise<[any, boolean]>;
       expect(w.isAlwaysOnTop()).to.be.false('is alwaysOnTop');
       w.setAlwaysOnTop(true);
       const [, alwaysOnTop] = await alwaysOnTopChanged;
@@ -2500,10 +2522,10 @@ describe('BrowserWindow module', () => {
     it('allows setting, changing, and removing the vibrancy', () => {
       const w = new BrowserWindow({ show: false });
       expect(() => {
-        w.setVibrancy('light');
-        w.setVibrancy('dark');
+        w.setVibrancy('titlebar');
+        w.setVibrancy('selection');
         w.setVibrancy(null);
-        w.setVibrancy('ultra-dark');
+        w.setVibrancy('menu');
         w.setVibrancy('' as any);
       }).to.not.throw();
     });
@@ -2556,46 +2578,6 @@ describe('BrowserWindow module', () => {
         const newPos = { x: 20, y: 20 };
         w.setWindowButtonPosition(newPos);
         expect(w.getWindowButtonPosition()).to.deep.equal(newPos);
-      });
-    });
-
-    // The set/getTrafficLightPosition APIs are deprecated.
-    describe('BrowserWindow.getTrafficLightPosition(pos)', () => {
-      it('returns { x: 0, y: 0 } when there is no custom position', () => {
-        const w = new BrowserWindow({ show: false });
-        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
-      });
-
-      it('gets position property for "hidden" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
-      });
-
-      it('gets position property for "customButtonsOnHover" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
-        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
-      });
-    });
-
-    describe('BrowserWindow.setTrafficLightPosition(pos)', () => {
-      it('resets the position when { x: 0, y: 0 } is passed', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        w.setTrafficLightPosition({ x: 0, y: 0 });
-        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
-      });
-
-      it('sets position property for "hidden" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        const newPos = { x: 20, y: 20 };
-        w.setTrafficLightPosition(newPos);
-        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
-      });
-
-      it('sets position property for "customButtonsOnHover" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
-        const newPos = { x: 20, y: 20 };
-        w.setTrafficLightPosition(newPos);
-        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
       });
     });
   });
@@ -2695,7 +2677,7 @@ describe('BrowserWindow module', () => {
       // https://github.com/electron/electron/issues/25413, and is not integral
       // to the test.
       const p = once(w.webContents, 'did-attach-webview');
-      const [, webviewContents] = await once(app, 'web-contents-created');
+      const [, webviewContents] = await once(app, 'web-contents-created') as [any, WebContents];
       expect(BrowserWindow.fromWebContents(webviewContents)!.id).to.equal(w.id);
       await p;
     });
@@ -3464,7 +3446,7 @@ describe('BrowserWindow module', () => {
         });
         w.loadURL('about:blank');
         const [, rendererEventEmitterProperties] = await once(ipcMain, 'answer');
-        const { EventEmitter } = require('events');
+        const { EventEmitter } = require('node:events');
         const emitter = new EventEmitter();
         const browserEventEmitterProperties = [];
         let currentObj = emitter;
@@ -3497,7 +3479,7 @@ describe('BrowserWindow module', () => {
         const pageUrl = 'file://' + htmlPath;
         const answer = once(ipcMain, 'answer');
         w.loadURL(pageUrl);
-        const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window');
+        const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window') as [BrowserWindow, Electron.DidCreateWindowDetails];
         const expectedUrl = process.platform === 'win32'
           ? 'file:///' + htmlPath.replace(/\\/g, '/')
           : pageUrl;
@@ -3543,7 +3525,7 @@ describe('BrowserWindow module', () => {
 
         // The page is going to open a popup that it won't be able to close.
         // We have to close it from here later.
-        const [, popupWindow] = await once(app, 'browser-window-created');
+        const [, popupWindow] = await once(app, 'browser-window-created') as [any, BrowserWindow];
 
         // Ask the popup window for details.
         const detailsAnswer = once(ipcMain, 'child-loaded');
@@ -3601,11 +3583,11 @@ describe('BrowserWindow module', () => {
         w.webContents.setWindowOpenHandler(() => ({ action: 'allow', overrideBrowserWindowOptions: { webPreferences: { preload: preloadPath, contextIsolation: false } } }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
-          once(app, 'web-contents-created'),
+          once(app, 'web-contents-created') as Promise<[any, WebContents]>,
           once(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.contextIsolation).to.equal(false);
+        expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
       it('should set ipc event sender correctly', async () => {
@@ -3737,7 +3719,7 @@ describe('BrowserWindow module', () => {
             contextIsolation: false
           }
         });
-        const didAttachWebview = once(w.webContents, 'did-attach-webview');
+        const didAttachWebview = once(w.webContents, 'did-attach-webview') as Promise<[any, WebContents]>;
         const webviewDomReady = once(ipcMain, 'webview-dom-ready');
         w.loadFile(path.join(fixtures, 'pages', 'webview-did-attach-event.html'));
 
@@ -3851,11 +3833,11 @@ describe('BrowserWindow module', () => {
         }));
         w.loadFile(path.join(fixtures, 'api', 'new-window.html'));
         const [[, childWebContents]] = await Promise.all([
-          once(app, 'web-contents-created'),
+          once(app, 'web-contents-created') as Promise<[any, WebContents]>,
           once(ipcMain, 'answer')
         ]);
         const webPreferences = childWebContents.getLastWebPreferences();
-        expect(webPreferences.contextIsolation).to.equal(false);
+        expect(webPreferences!.contextIsolation).to.equal(false);
       });
 
       describe('window.location', () => {
@@ -4061,7 +4043,8 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('document.visibilityState/hidden', () => {
+  // TODO(codebytere): figure out how to make these pass in CI on Windows.
+  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', () => {
     afterEach(closeAllWindows);
 
     it('visibilityState is initially visible despite window being hidden', async () => {
@@ -4089,8 +4072,7 @@ describe('BrowserWindow module', () => {
       expect(hidden).to.be.false('hidden');
     });
 
-    // TODO(nornagon): figure out why this is failing on windows
-    ifit(process.platform !== 'win32')('visibilityState changes when window is hidden', async () => {
+    it('visibilityState changes when window is hidden', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -4117,8 +4099,7 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    // TODO(nornagon): figure out why this is failing on windows
-    ifit(process.platform !== 'win32')('visibilityState changes when window is shown', async () => {
+    it('visibilityState changes when window is shown', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -4139,7 +4120,7 @@ describe('BrowserWindow module', () => {
       expect(visibilityState).to.equal('visible');
     });
 
-    ifit(process.platform !== 'win32')('visibilityState changes when window is shown inactive', async () => {
+    it('visibilityState changes when window is shown inactive', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -4159,7 +4140,6 @@ describe('BrowserWindow module', () => {
       expect(visibilityState).to.equal('visible');
     });
 
-    // TODO(nornagon): figure out why this is failing on windows
     ifit(process.platform === 'darwin')('visibilityState changes when window is minimized', async () => {
       const w = new BrowserWindow({
         width: 100,
@@ -4186,8 +4166,6 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    // DISABLED-FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
-    // when we introduced the compositor recycling patch.  Should figure out how to fix this
     it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -4195,10 +4173,13 @@ describe('BrowserWindow module', () => {
         height: 100,
         webPreferences: {
           backgroundThrottling: false,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
+
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
@@ -4786,6 +4767,7 @@ describe('BrowserWindow module', () => {
         c.setParentWindow(null);
         expect(c.getParentWindow()).to.be.null('c.parent');
       });
+
       it('adds window to child windows of parent', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
@@ -4795,6 +4777,7 @@ describe('BrowserWindow module', () => {
         c.setParentWindow(null);
         expect(w.getChildWindows()).to.deep.equal([]);
       });
+
       it('removes from child windows of parent when window is closed', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
@@ -4805,6 +4788,25 @@ describe('BrowserWindow module', () => {
         // The child window list is not immediately cleared, so wait a tick until it's ready.
         await setTimeout();
         expect(w.getChildWindows().length).to.equal(0);
+      });
+
+      ifit(process.platform === 'darwin')('can reparent when the first parent is destroyed', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false });
+
+        c.setParentWindow(w1);
+        expect(w1.getChildWindows().length).to.equal(1);
+
+        const closed = once(w1, 'closed');
+        w1.destroy();
+        await closed;
+
+        c.setParentWindow(w2);
+        await setTimeout();
+
+        const children = w2.getChildWindows();
+        expect(children[0]).to.equal(c);
       });
     });
 
@@ -5414,6 +5416,42 @@ describe('BrowserWindow module', () => {
           expect(w.isFullScreenable()).to.be.true('isFullScreenable');
         });
       });
+
+      it('does not open non-fullscreenable child windows in fullscreen if parent is fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+
+        const child = new BrowserWindow({ parent: w, resizable: false, fullscreenable: false });
+        const shown = once(child, 'show');
+        await shown;
+
+        expect(child.resizable).to.be.false('resizable');
+        expect(child.fullScreen).to.be.false('fullscreen');
+        expect(child.fullScreenable).to.be.false('fullscreenable');
+      });
+
+      it('is set correctly with different resizable values', async () => {
+        const w1 = new BrowserWindow({
+          resizable: false,
+          fullscreenable: false
+        });
+
+        const w2 = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        const w3 = new BrowserWindow({
+          fullscreenable: false
+        });
+
+        expect(w1.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
+      });
     });
 
     ifdescribe(process.platform === 'darwin')('isHiddenInMissionControl state', () => {
@@ -5953,10 +5991,10 @@ describe('BrowserWindow module', () => {
           preload: path.join(fixtures, 'api', 'isolated-preload.js')
         }
       });
-      const browserWindowCreated = once(app, 'browser-window-created');
+      const browserWindowCreated = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       iw.loadFile(path.join(fixtures, 'pages', 'window-open.html'));
       const [, window] = await browserWindowCreated;
-      expect(window.webContents.getLastWebPreferences().contextIsolation).to.be.true('contextIsolation');
+      expect(window.webContents.getLastWebPreferences()!.contextIsolation).to.be.true('contextIsolation');
     });
     it('separates the page context from the Electron/preload context with sandbox on', async () => {
       const ws = new BrowserWindow({
@@ -6071,7 +6109,7 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  ifdescribe(features.isOffscreenRenderingEnabled())('offscreen rendering', () => {
+  describe('offscreen rendering', () => {
     let w: BrowserWindow;
     beforeEach(function () {
       w = new BrowserWindow({
@@ -6087,7 +6125,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
 
     it('creates offscreen window with correct size', async () => {
-      const paint = once(w.webContents, 'paint');
+      const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
       w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
       const [,, data] = await paint;
       expect(data.constructor.name).to.equal('NativeImage');
@@ -6118,7 +6156,7 @@ describe('BrowserWindow module', () => {
 
     describe('window.webContents.isPainting()', () => {
       it('returns whether is currently painting', async () => {
-        const paint = once(w.webContents, 'paint');
+        const paint = once(w.webContents, 'paint') as Promise<[any, Electron.Rectangle, Electron.NativeImage]>;
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
         await paint;
         expect(w.webContents.isPainting()).to.be.true('isPainting');
@@ -6145,7 +6183,7 @@ describe('BrowserWindow module', () => {
         w.webContents.stopPainting();
         w.webContents.startPainting();
 
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.isPainting()).to.be.true('isPainting');
       });
     });
@@ -6153,13 +6191,13 @@ describe('BrowserWindow module', () => {
     describe('frameRate APIs', () => {
       it('has default frame rate (function)', async () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.getFrameRate()).to.equal(60);
       });
 
       it('has default frame rate (property)', async () => {
         w.loadFile(path.join(fixtures, 'api', 'offscreen-rendering.html'));
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(60);
       });
 
@@ -6170,7 +6208,7 @@ describe('BrowserWindow module', () => {
 
         w.webContents.setFrameRate(30);
 
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.getFrameRate()).to.equal(30);
       });
 
@@ -6181,7 +6219,7 @@ describe('BrowserWindow module', () => {
 
         w.webContents.frameRate = 30;
 
-        await once(w.webContents, 'paint');
+        await once(w.webContents, 'paint') as [any, Electron.Rectangle, Electron.NativeImage];
         expect(w.webContents.frameRate).to.equal(30);
       });
     });

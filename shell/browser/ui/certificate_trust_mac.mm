@@ -42,12 +42,9 @@
 @implementation TrustDelegate
 
 - (void)dealloc {
-  [panel_ release];
   CFRelease(trust_);
   CFRelease(cert_chain_);
   CFRelease(sec_policy_);
-
-  [super dealloc];
 }
 
 - (id)initWithPromise:(gin_helper::Promise<void>)promise
@@ -74,10 +71,9 @@
   auto* cert_db = net::CertDatabase::GetInstance();
   // This forces Chromium to reload the certificate since it might be trusted
   // now.
-  cert_db->NotifyObserversCertDBChanged();
+  cert_db->NotifyObserversTrustStoreChanged();
 
   promise_->Resolve();
-  [self autorelease];
 }
 
 @end

@@ -1,7 +1,7 @@
 import { expect } from 'chai';
 import { BrowserWindow, session, desktopCapturer } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
-import * as http from 'http';
+import * as http from 'node:http';
 import { ifit, listen } from './lib/spec-helpers';
 
 describe('setDisplayMediaRequestHandler', () => {
@@ -278,6 +278,29 @@ describe('setDisplayMediaRequestHandler', () => {
         video: true,
         audio: true,
       }).then(x => ({ok: x instanceof MediaStream}), e => ({ok: false, message: e.message}))
+    `, true);
+    expect(requestHandlerCalled).to.be.true();
+    expect(ok).to.be.true(message);
+  });
+
+  it('returns a MediaStream with BrowserCaptureMediaStreamTrack when the current tab is selected', async () => {
+    const ses = session.fromPartition('' + Math.random());
+    let requestHandlerCalled = false;
+    ses.setDisplayMediaRequestHandler((request, callback) => {
+      requestHandlerCalled = true;
+      callback({ video: w.webContents.mainFrame });
+    });
+    const w = new BrowserWindow({ show: false, webPreferences: { session: ses } });
+    await w.loadURL(serverUrl);
+    const { ok, message } = await w.webContents.executeJavaScript(`
+      navigator.mediaDevices.getDisplayMedia({
+        preferCurrentTab: true,
+        video: true,
+        audio: false,
+      }).then(stream => {
+        const [videoTrack] = stream.getVideoTracks();
+        return { ok: videoTrack instanceof BrowserCaptureMediaStreamTrack, message: null };
+      }, e => ({ok: false, message: e.message}))
     `, true);
     expect(requestHandlerCalled).to.be.true();
     expect(ok).to.be.true(message);

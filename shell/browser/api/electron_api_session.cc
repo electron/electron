@@ -15,11 +15,11 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/guid.h"
 #include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -277,7 +277,8 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::Time& start_time,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
-      base::GenerateGUID(), id, path, path, url_chain, GURL(),
+      base::Uuid::GenerateRandomV4().AsLowercaseString(), id, path, path,
+      url_chain, GURL(),
       content::StoragePartitionConfig::CreateDefault(
           download_manager->GetBrowserContext()),
       GURL(), GURL(), absl::nullopt, mime_type, mime_type, start_time,
@@ -803,10 +804,24 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
   return holder->ReadAll(isolate);
 }
 
-void Session::DownloadURL(const GURL& url) {
-  auto* download_manager = browser_context()->GetDownloadManager();
+void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
+  std::map<std::string, std::string> headers;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    if (options.Has("headers") && !options.Get("headers", &headers)) {
+      args->ThrowTypeError("Invalid value for headers - must be an object");
+      return;
+    }
+  }
+
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
+
+  for (const auto& [name, value] : headers) {
+    download_params->add_request_header(name, value);
+  }
+
+  auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -1286,7 +1301,7 @@ gin::Handle<Session> Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Session", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
       .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
@@ -1364,7 +1379,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* Session::GetTypeName() {
-  return "Session";
+  return GetClassName();
 }
 
 }  // namespace electron::api

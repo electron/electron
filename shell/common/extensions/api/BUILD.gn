@@ -39,6 +39,7 @@ generated_json_strings("generated_api_json_strings") {
   sources = [
     "extension.json",
     "resources_private.idl",
+    "scripting.idl",
     "tabs.json",
   ]
 
@@ -59,6 +60,7 @@ generated_json_strings("generated_api_json_strings") {
 generated_types("generated_api_types") {
   sources = [
     "resources_private.idl",
+    "scripting.idl",
     "tabs.json",
   ]
 

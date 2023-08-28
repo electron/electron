@@ -2,7 +2,7 @@
 <body>
 <script type="text/javascript" charset="utf-8">
   window.addEventListener('unload', function (e) {
-    require('fs').writeFileSync(__dirname + '/close', 'close');
+    require('node:fs').writeFileSync(__dirname + '/close', 'close');
   }, false);
   window.onload = () => window.close();
 </script>

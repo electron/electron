@@ -60,6 +60,7 @@
 #include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/ssl/ssl_cert_request_info.h"
+#include "net/ssl/ssl_private_key.h"
 #include "ppapi/buildflags/buildflags.h"
 #include "ppapi/host/ppapi_host.h"
 #include "printing/buildflags/buildflags.h"
@@ -161,6 +162,7 @@
 #include "extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h"
 #include "extensions/browser/process_manager.h"
 #include "extensions/browser/process_map.h"
+#include "extensions/browser/service_worker/service_worker_host.h"
 #include "extensions/browser/url_loader_factory_manager.h"
 #include "extensions/common/api/mime_handler.mojom.h"
 #include "extensions/common/constants.h"
@@ -529,8 +531,7 @@ void ElectronBrowserClient::AppendExtraCommandLineSwitches(
         switches::kCORSSchemes,          switches::kFetchSchemes,
         switches::kServiceWorkerSchemes, switches::kStreamingSchemes};
     command_line->CopySwitchesFrom(*base::CommandLine::ForCurrentProcess(),
-                                   kCommonSwitchNames,
-                                   std::size(kCommonSwitchNames));
+                                   kCommonSwitchNames);
     if (process_type == ::switches::kUtilityProcess ||
         content::RenderProcessHost::FromID(process_id)) {
       MaybeAppendSecureOriginsAllowlistSwitch(command_line);
@@ -617,15 +618,19 @@ void ElectronBrowserClient::AllowCertificateError(
 }
 
 base::OnceClosure ElectronBrowserClient::SelectClientCertificate(
+    content::BrowserContext* browser_context,
     content::WebContents* web_contents,
     net::SSLCertRequestInfo* cert_request_info,
     net::ClientCertIdentityList client_certs,
     std::unique_ptr<content::ClientCertificateDelegate> delegate) {
-  if (!client_certs.empty() && delegate_) {
-    delegate_->SelectClientCertificate(web_contents, cert_request_info,
-                                       std::move(client_certs),
-                                       std::move(delegate));
+  if (client_certs.empty()) {
+    delegate->ContinueWithCertificate(nullptr, nullptr);
+  } else if (delegate_) {
+    delegate_->SelectClientCertificate(
+        browser_context, web_contents, cert_request_info,
+        std::move(client_certs), std::move(delegate));
   }
+
   return base::OnceClosure();
 }
 
@@ -759,12 +764,17 @@ bool ElectronBrowserClient::ShouldUseProcessPerSite(
 #endif
 }
 
-bool ElectronBrowserClient::ArePersistentMediaDeviceIDsAllowed(
-    content::BrowserContext* browser_context,
-    const GURL& scope,
+void ElectronBrowserClient::GetMediaDeviceIDSalt(
+    content::RenderFrameHost* rfh,
     const net::SiteForCookies& site_for_cookies,
-    const absl::optional<url::Origin>& top_frame_origin) {
-  return true;
+    const blink::StorageKey& storage_key,
+    base::OnceCallback<void(bool, const std::string&)> callback) {
+  constexpr bool persistent_media_device_id_allowed = true;
+  std::string persistent_media_device_id_salt =
+      static_cast<ElectronBrowserContext*>(rfh->GetBrowserContext())
+          ->GetMediaDeviceIDSalt();
+  std::move(callback).Run(persistent_media_device_id_allowed,
+                          persistent_media_device_id_salt);
 }
 
 base::FilePath ElectronBrowserClient::GetLoggingFileName(
@@ -1364,7 +1374,9 @@ bool ElectronBrowserClient::WillCreateURLLoaderFactory(
 std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
 ElectronBrowserClient::WillCreateURLLoaderRequestInterceptors(
     content::NavigationUIData* navigation_ui_data,
-    int frame_tree_node_id) {
+    int frame_tree_node_id,
+    int64_t navigation_id,
+    scoped_refptr<base::SequencedTaskRunner> navigation_response_task_runner) {
   std::vector<std::unique_ptr<content::URLLoaderRequestInterceptor>>
       interceptors;
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
@@ -1542,6 +1554,9 @@ void ElectronBrowserClient::ExposeInterfacesToRenderer(
                           render_process_host->GetID()));
   associated_registry->AddInterface<extensions::mojom::GuestView>(
       base::BindRepeating(&extensions::ExtensionsGuestView::CreateForExtensions,
+                          render_process_host->GetID()));
+  associated_registry->AddInterface<extensions::mojom::ServiceWorkerHost>(
+      base::BindRepeating(&extensions::ServiceWorkerHost::BindReceiver,
                           render_process_host->GetID()));
 #endif
 }
