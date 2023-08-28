@@ -205,10 +205,11 @@
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 #include "chrome/browser/pdf/chrome_pdf_stream_delegate.h"
 #include "chrome/browser/plugins/pdf_iframe_navigation_throttle.h"  // nogncheck
+#include "components/pdf/browser/pdf_document_helper.h"             // nogncheck
 #include "components/pdf/browser/pdf_navigation_throttle.h"
 #include "components/pdf/browser/pdf_url_loader_request_interceptor.h"
-#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
 #include "components/pdf/common/internal_plugin_helpers.h"
+#include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
 using content::BrowserThread;
@@ -1483,8 +1484,9 @@ void ElectronBrowserClient::
   associated_registry.AddInterface<pdf::mojom::PdfService>(base::BindRepeating(
       [](content::RenderFrameHost* render_frame_host,
          mojo::PendingAssociatedReceiver<pdf::mojom::PdfService> receiver) {
-        pdf::PDFWebContentsHelper::BindPdfService(std::move(receiver),
-                                                  render_frame_host);
+        pdf::PDFDocumentHelper::BindPdfService(
+            std::move(receiver), render_frame_host,
+            std::make_unique<ElectronPDFDocumentHelperClient>());
       },
       &render_frame_host));
 #endif
