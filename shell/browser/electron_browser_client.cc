@@ -115,6 +115,7 @@
 #include "shell/common/platform_util.h"
 #include "shell/common/thread_restrictions.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
+#include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
 #include "third_party/blink/public/common/web_preferences/web_preferences.h"
 #include "third_party/blink/public/mojom/badging/badging.mojom.h"
@@ -425,7 +426,10 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   prefs->allow_running_insecure_content = false;
   prefs->default_minimum_page_scale_factor = 1.f;
   prefs->default_maximum_page_scale_factor = 1.f;
-  prefs->navigate_on_drag_drop = false;
+
+  blink::RendererPreferences* renderer_prefs =
+      web_contents->GetMutableRendererPrefs();
+  renderer_prefs->can_accept_load_drops = false;
 
   ui::NativeTheme* native_theme = ui::NativeTheme::GetInstanceForNativeUi();
   prefs->preferred_color_scheme =
@@ -438,7 +442,7 @@ void ElectronBrowserClient::OverrideWebkitPrefs(
   // Custom preferences of guest page.
   auto* web_preferences = WebContentsPreferences::From(web_contents);
   if (web_preferences) {
-    web_preferences->OverrideWebkitPrefs(prefs);
+    web_preferences->OverrideWebkitPrefs(prefs, renderer_prefs);
   }
 }
 
