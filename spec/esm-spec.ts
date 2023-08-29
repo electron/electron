@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import * as cp from 'child_process';
+import * as cp from 'node:child_process';
 import { BrowserWindow } from 'electron';
 import * as fs from 'fs-extra';
-import * as os from 'os';
-import * as path from 'path';
-import { pathToFileURL } from 'url';
+import * as os from 'node:os';
+import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 const runFixture = async (appPath: string, args: string[] = []) => {
   const result = cp.spawn(process.execPath, [appPath, ...args], {
