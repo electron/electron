@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index a01852a241f9b4a575360a8464d77e3f5c6a5770..e6d8faa01afa51e33a9450b578278170d7c5b6a6 100644
+index 1178f06074ec8ec02a2e7b5cf8cbe7e68b72f809..1a8acc1c32d2c9c94232ae78867f47d75b174420 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -20,7 +20,7 @@ const experimentalNetworkImports =
@@ -28,10 +28,10 @@ index a01852a241f9b4a575360a8464d77e3f5c6a5770..e6d8faa01afa51e33a9450b578278170
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, parsed.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 3c9b1ad93f2c6b5fde5e9ed2a8bf1dc01d94a8de..3dfa5bad50b8b12291f22bf5e8598b3eba2ced38 100644
+index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea0cb44f8d 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -27,11 +27,7 @@ const {
+@@ -26,11 +26,7 @@ const {
  } = primordials;
  const internalFS = require('internal/fs/utils');
  const { BuiltinModule } = require('internal/bootstrap/loaders');
@@ -44,7 +44,7 @@ index 3c9b1ad93f2c6b5fde5e9ed2a8bf1dc01d94a8de..3dfa5bad50b8b12291f22bf5e8598b3e
  const { getOptionValue } = require('internal/options');
  const pendingDeprecation = getOptionValue('--pending-deprecation');
  // Do not eagerly grab .manifest, it may be in TDZ
-@@ -173,14 +169,14 @@ const realpathCache = new SafeMap();
+@@ -171,14 +167,14 @@ const realpathCache = new SafeMap();
   * @returns {import('fs').Stats}
   */
  const tryStatSync =
@@ -61,7 +61,7 @@ index 3c9b1ad93f2c6b5fde5e9ed2a8bf1dc01d94a8de..3dfa5bad50b8b12291f22bf5e8598b3e
  }
  
  /**
-@@ -328,7 +324,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -326,7 +322,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
