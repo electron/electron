@@ -2050,48 +2050,27 @@ describe('chromium features', () => {
     });
   });
 
-  describe('chrome://accessibility', () => {
-    it('loads the page successfully', async () => {
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL('chrome://accessibility');
-      const pageExists = await w.webContents.executeJavaScript(
-        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
-      );
-      expect(pageExists).to.be.true();
-    });
-  });
+  describe('chrome:// pages', () => {
+    const urls = [
+      'chrome://accessibility',
+      'chrome://gpu',
+      'chrome://media-internals',
+      'chrome://tracing',
+      'chrome://webrtc-internals'
+    ];
 
-  describe('chrome://gpu', () => {
-    it('loads the page successfully', async () => {
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL('chrome://gpu');
-      const pageExists = await w.webContents.executeJavaScript(
-        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
-      );
-      expect(pageExists).to.be.true();
-    });
-  });
-
-  describe('chrome://media-internals', () => {
-    it('loads the page successfully', async () => {
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL('chrome://media-internals');
-      const pageExists = await w.webContents.executeJavaScript(
-        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
-      );
-      expect(pageExists).to.be.true();
-    });
-  });
-
-  describe('chrome://webrtc-internals', () => {
-    it('loads the page successfully', async () => {
-      const w = new BrowserWindow({ show: false });
-      await w.loadURL('chrome://webrtc-internals');
-      const pageExists = await w.webContents.executeJavaScript(
-        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
-      );
-      expect(pageExists).to.be.true();
-    });
+    for (const url of urls) {
+      describe(url, () => {
+        it('loads the page successfully', async () => {
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL(url);
+          const pageExists = await w.webContents.executeJavaScript(
+            "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+          );
+          expect(pageExists).to.be.true();
+        });
+      });
+    }
   });
 
   describe('document.hasFocus', () => {
