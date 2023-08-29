@@ -1,14 +1,7 @@
-const { ipcRenderer } = require('electron/renderer')
-
 const informationBtn = document.getElementById('information-dialog')
 
-informationBtn.addEventListener('click', event => {
-  ipcRenderer.send('open-information-dialog')
-})
-
-ipcRenderer.on('information-dialog-selection', (event, index) => {
-  let message = 'You selected '
-  if (index === 0) message += 'yes.'
-  else message += 'no.'
+informationBtn.addEventListener('click', async () => {
+  const index = await window.electronAPI.openInformationDialog()
+  const message = `You selected: ${index === 0 ? 'yes' : 'no'}`
   document.getElementById('info-selection').innerHTML = message
 })
