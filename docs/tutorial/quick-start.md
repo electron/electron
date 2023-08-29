@@ -459,9 +459,11 @@ To summarize all the steps we've done:
 The fastest way to distribute your newly created app is using
 [Electron Forge](https://www.electronforge.io).
 
-As prerequire, you must have installed rpm.
-- For Linux (Debian-based) : `sudo apt install rpm`
-- For other OS : Follow the official instructions depending your system
+:::info
+
+To build an RPM package for Linux, you will need to [install its required system dependencies](https://www.electronforge.io/config/makers/rpm).
+
+:::
 
 1. Add a description to your `package.json` file, otherwise rpmbuild will fail. Blank description are not valid.
 2. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
