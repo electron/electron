@@ -71,7 +71,6 @@ PowerMonitor::PowerMonitor(v8::Isolate* isolate) {
   base::PowerMonitor::AddPowerStateObserver(this);
   base::PowerMonitor::AddPowerSuspendObserver(this);
   base::PowerMonitor::AddPowerThermalObserver(this);
-  base::PowerMonitor::NotifySpeedLimitChange(int speed_limit);
 
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
   InitPlatformSpecificMonitors();
@@ -109,14 +108,6 @@ void PowerMonitor::OnThermalStateChange(DeviceThermalState new_state) {
   EmitWithoutEvent(
       "thermal-state-change",
       gin::DataObjectBuilder(isolate).Set("state", new_state).Build());
-}
-
-void PowerMonitor::OnSpeedLimitChange(int speed_limit) {
-  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
-  v8::HandleScope scope(isolate);
-  EmitWithoutEvent(
-      "speed-limit-change",
-      gin::DataObjectBuilder(isolate).Set("limit", speed_limit).Build());
 }
 
 #if BUILDFLAG(IS_LINUX)
@@ -197,7 +188,6 @@ void Initialize(v8::Local<v8::Object> exports,
                  base::BindRepeating(&GetCurrentThermalState));
   dict.SetMethod("getSystemIdleTime", base::BindRepeating(&GetSystemIdleTime));
   dict.SetMethod("isOnBatteryPower", base::BindRepeating(&IsOnBatteryPower));
-  dict.SetMethod("setSpeedLimitChange", base::BindRepeating(&NotifySpeedLimitChange));
 }
 
 }  // namespace
