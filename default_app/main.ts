@@ -1,8 +1,8 @@
 import * as electron from 'electron/main';
 
-import * as fs from 'fs';
-import * as path from 'path';
-import * as url from 'url';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as url from 'node:url';
 const { app, dialog } = electron;
 
 type DefaultAppOptions = {
@@ -15,7 +15,7 @@ type DefaultAppOptions = {
   modules: string[];
 }
 
-const Module = require('module');
+const Module = require('node:module');
 
 // Parse command line options.
 const argv = process.argv.slice(1);
@@ -112,7 +112,7 @@ function loadApplicationPackage (packagePath: string) {
       // Set v8 flags, deliberately lazy load so that apps that do not use this
       // feature do not pay the price
       if (packageJson.v8Flags) {
-        require('v8').setFlagsFromString(packageJson.v8Flags);
+        require('node:v8').setFlagsFromString(packageJson.v8Flags);
       }
       appPath = packagePath;
     }
@@ -171,7 +171,7 @@ function startRepl () {
     Using: Node.js ${nodeVersion} and Electron.js ${electronVersion}
   `);
 
-  const { REPLServer } = require('repl');
+  const { REPLServer } = require('node:repl');
   const repl = new REPLServer({
     prompt: '> '
   }).on('exit', () => {

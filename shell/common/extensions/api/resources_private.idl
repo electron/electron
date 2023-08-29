@@ -1,4 +1,4 @@
-// Copyright 2015 The Chromium Authors. All rights reserved.
+// Copyright 2015 The Chromium Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -15,9 +15,9 @@ namespace resourcesPrivate {
     // chrome/browser/extensions/api/resources_private/resources_private_api.cc
     // for instructions on adding a new component to this API.
     //
-    // |component| : Internal chrome component to get strings for.
+    // |component| : Internal Chrome component to get strings for.
     // |callback| : Called with a dictionary mapping names to strings.
-    static void getStrings(Component component,
-                           GetStringsCallback callback);
+    [supportsPromises] static void getStrings(Component component,
+                                              GetStringsCallback callback);
   };
 };

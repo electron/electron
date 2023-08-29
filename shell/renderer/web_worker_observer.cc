@@ -6,7 +6,9 @@
 
 #include <utility>
 
+#include "base/containers/cxx20_erase_set.h"
 #include "base/no_destructor.h"
+#include "base/ranges/algorithm.h"
 #include "base/threading/thread_local.h"
 #include "shell/common/api/electron_bindings.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
@@ -41,20 +43,7 @@ WebWorkerObserver::WebWorkerObserver()
       electron_bindings_(
           std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
 
-WebWorkerObserver::~WebWorkerObserver() {
-  // Destroying the node environment will also run the uv loop,
-  // Node.js expects `kExplicit` microtasks policy and will run microtasks
-  // checkpoints after every call into JavaScript. Since we use a different
-  // policy in the renderer - switch to `kExplicit`
-  v8::MicrotaskQueue* microtask_queue =
-      node_bindings_->uv_env()->context()->GetMicrotaskQueue();
-  auto old_policy = microtask_queue->microtasks_policy();
-  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
-  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
-  node::FreeEnvironment(node_bindings_->uv_env());
-  node::FreeIsolateData(node_bindings_->isolate_data());
-  microtask_queue->set_microtasks_policy(old_policy);
-}
+WebWorkerObserver::~WebWorkerObserver() = default;
 
 void WebWorkerObserver::WorkerScriptReadyForEvaluation(
     v8::Local<v8::Context> worker_context) {
@@ -74,26 +63,46 @@ void WebWorkerObserver::WorkerScriptReadyForEvaluation(
   // Setup node environment for each window.
   v8::Maybe<bool> initialized = node::InitializeContext(worker_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
-  node::Environment* env =
+  std::shared_ptr<node::Environment> env =
       node_bindings_->CreateEnvironment(worker_context, nullptr);
 
   // Add Electron extended APIs.
   electron_bindings_->BindTo(env->isolate(), env->process_object());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(env.get());
 
   // Make uv loop being wrapped by window context.
-  node_bindings_->set_uv_env(env);
+  node_bindings_->set_uv_env(env.get());
 
   // Give the node loop a run to make sure everything is ready.
   node_bindings_->StartPolling();
+
+  // Keep the environment alive until we free it in ContextWillDestroy()
+  environments_.insert(std::move(env));
 }
 
 void WebWorkerObserver::ContextWillDestroy(v8::Local<v8::Context> context) {
   node::Environment* env = node::Environment::GetCurrent(context);
   if (env)
     gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
+
+  // Destroying the node environment will also run the uv loop,
+  // Node.js expects `kExplicit` microtasks policy and will run microtasks
+  // checkpoints after every call into JavaScript. Since we use a different
+  // policy in the renderer - switch to `kExplicit`
+  v8::MicrotaskQueue* microtask_queue = context->GetMicrotaskQueue();
+  auto old_policy = microtask_queue->microtasks_policy();
+  DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
+  microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
+
+  base::EraseIf(environments_,
+                [env](auto const& item) { return item.get() == env; });
+
+  microtask_queue->set_microtasks_policy(old_policy);
+
+  // ElectronBindings is tracking node environments.
+  electron_bindings_->EnvironmentDestroyed(env);
 
   if (lazy_tls->Get())
     lazy_tls->Set(nullptr);

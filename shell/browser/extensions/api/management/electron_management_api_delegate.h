@@ -17,7 +17,7 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
   ~ElectronManagementAPIDelegate() override;
 
   // ManagementAPIDelegate.
-  void LaunchAppFunctionDelegate(
+  bool LaunchAppFunctionDelegate(
       const extensions::Extension* extension,
       content::BrowserContext* context) const override;
   GURL GetFullLaunchURL(const extensions::Extension* extension) const override;
@@ -54,15 +54,6 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
       const GURL& web_app_url,
       ManagementAPIDelegate::InstallOrLaunchWebAppCallback callback)
       const override;
-  bool CanContextInstallAndroidApps(
-      content::BrowserContext* context) const override;
-  void CheckAndroidAppInstallStatus(
-      const std::string& package_name,
-      ManagementAPIDelegate::AndroidAppInstallStatusCallback callback)
-      const override;
-  void InstallReplacementAndroidApp(
-      const std::string& package_name,
-      ManagementAPIDelegate::InstallAndroidAppCallback callback) const override;
   void EnableExtension(content::BrowserContext* context,
                        const std::string& extension_id) const override;
   void DisableExtension(

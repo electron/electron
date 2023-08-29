@@ -22,7 +22,8 @@
 #include "chrome/common/chrome_features.h"
 #include "chrome/common/pref_names.h"
 #include "chrome/common/webui_url_constants.h"
-#include "chrome/grit/dev_ui_browser_resources.h"  // nogncheck
+#include "chrome/grit/accessibility_resources.h"      // nogncheck
+#include "chrome/grit/accessibility_resources_map.h"  // nogncheck
 #include "components/pref_registry/pref_registry_syncable.h"
 #include "components/prefs/pref_service.h"
 #include "content/public/browser/ax_event_notification_details.h"
@@ -152,7 +153,7 @@ void AddPropertyFilters(std::vector<ui::AXPropertyFilter>* property_filters,
                         ui::AXPropertyFilter::Type type) {
   for (const std::string& attribute : base::SplitString(
            attributes, " ", base::KEEP_WHITESPACE, base::SPLIT_WANT_NONEMPTY)) {
-    property_filters->push_back(ui::AXPropertyFilter(attribute, type));
+    property_filters->emplace_back(attribute, type);
   }
 }
 
@@ -313,13 +314,17 @@ ElectronAccessibilityUI::ElectronAccessibilityUI(content::WebUI* web_ui)
 
   // Add required resources.
   html_source->UseStringsJs();
-  html_source->AddResourcePath("accessibility.css", IDR_ACCESSIBILITY_CSS);
-  html_source->AddResourcePath("accessibility.js", IDR_ACCESSIBILITY_JS);
-  html_source->SetDefaultResource(IDR_ACCESSIBILITY_HTML);
+  html_source->AddResourcePaths(
+      base::make_span(kAccessibilityResources, kAccessibilityResourcesSize));
+  html_source->SetDefaultResource(IDR_ACCESSIBILITY_ACCESSIBILITY_HTML);
   html_source->SetRequestFilter(
       base::BindRepeating(&ShouldHandleAccessibilityRequestCallback),
       base::BindRepeating(&HandleAccessibilityRequestCallback,
                           web_ui->GetWebContents()->GetBrowserContext()));
+
+  html_source->OverrideContentSecurityPolicy(
+      network::mojom::CSPDirectiveName::TrustedTypes,
+      "trusted-types parse-html-subset sanitize-inner-html;");
 
   web_ui->AddMessageHandler(
       std::make_unique<ElectronAccessibilityUIMessageHandler>());

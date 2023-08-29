@@ -1,0 +1,71 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Thu, 20 Jul 2023 14:18:19 -0500
+Subject: fix: isURL() implementation
+
+Modify Node's lib/internal/url.js isURL() to return the correct value for
+URLs created both inside and outside of Node.
+
+The isURL() impl in `main` is Electron-safe but can't be backported in
+isolation because it relies on other changes from 18 to main. But we can
+safely get there by trying the 18 version first (catching Node URLs),
+then the `main` version (catching Electron URLs).
+
+More background w/upstream links at
+https://github.com/electron/electron/pull/39154#issuecomment-1644433388
+
+This patch can be removed when we update to Node 20.
+
+diff --git a/lib/internal/url.js b/lib/internal/url.js
+index 36604c9de2179b5f6941dd9a7af66cdb03facd7f..525b18e58a3e2f8e5ddfb138b1c54fd9b23a20cf 100644
+--- a/lib/internal/url.js
++++ b/lib/internal/url.js
+@@ -592,7 +592,12 @@ ObjectDefineProperties(URLSearchParams.prototype, {
+  * @returns {self is URL}
+  */
+ function isURL(self) {
+-  return self != null && ObjectPrototypeHasOwnProperty(self, context);
++  // if it has `context` it is a Node.js URL...
++  if (self != null && ObjectPrototypeHasOwnProperty(self, context))
++    return true;
++
++  // ...but also honor 3rd party URLs e.g. from Electron.
++  return Boolean(self?.href && self.protocol && self.auth === undefined && self.path === undefined);
+ }
+ 
+ class URL {
+@@ -688,14 +693,10 @@ class URL {
+   }
+ 
+   get href() {
+-    if (!isURL(this))
+-      throw new ERR_INVALID_THIS('URL');
+     return this[context].href;
+   }
+ 
+   set href(value) {
+-    if (!isURL(this))
+-      throw new ERR_INVALID_THIS('URL');
+     value = `${value}`;
+     const href = bindingUrl.update(this[context].href, updateActions.kHref, value);
+     if (!href) { throw ERR_INVALID_URL(value); }
+diff --git a/test/parallel/test-whatwg-url-invalidthis.js b/test/parallel/test-whatwg-url-invalidthis.js
+index 790c28e37c13ed6763cb61b549ab4a983f384717..bddf48b8302632a275d996a53b09343938dc7dc9 100644
+--- a/test/parallel/test-whatwg-url-invalidthis.js
++++ b/test/parallel/test-whatwg-url-invalidthis.js
+@@ -15,7 +15,6 @@ const assert = require('assert');
+ });
+ 
+ [
+-  'href',
+   'protocol',
+   'username',
+   'password',
+@@ -36,7 +35,6 @@ const assert = require('assert');
+ });
+ 
+ [
+-  'origin',
+   'searchParams',
+ ].forEach((i) => {
+   assert.throws(() => Reflect.get(URL.prototype, i, {}), {

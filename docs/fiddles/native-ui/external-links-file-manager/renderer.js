@@ -1,5 +1,5 @@
-const { shell } = require('electron')
-const os = require('os')
+const { shell } = require('electron/renderer')
+const os = require('node:os')
 
 const exLinksBtn = document.getElementById('open-ex-links')
 const fileManagerBtn = document.getElementById('open-file-manager')

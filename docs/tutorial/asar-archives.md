@@ -55,7 +55,7 @@ fs.readdirSync('/path/to/example.asar')
 
 Use a module from the archive:
 
-```javascript
+```javascript @ts-nocheck
 require('./path/to/example.asar/dir/module.js')
 ```
 

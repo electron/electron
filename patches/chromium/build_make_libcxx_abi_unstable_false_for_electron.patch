@@ -6,13 +6,13 @@ Subject: build: make libcxx_abi_unstable false for electron
 https://nornagon.medium.com/a-libc-odyssey-973e51649063
 
 diff --git a/buildtools/third_party/libc++/__config_site b/buildtools/third_party/libc++/__config_site
-index a60cbbaabf9f3e37c4e78685a188f329177647d6..bb14f842a0b03c1b58d00c8b3c8ea2e7de926dff 100644
+index 54e6b7e39b0e79843a2d128135f0ed19e14a85c6..1decbe4d26b2a62cd254d253202c245f4e73b423 100644
 --- a/buildtools/third_party/libc++/__config_site
 +++ b/buildtools/third_party/libc++/__config_site
 @@ -12,7 +12,6 @@
  //    limit for PDBs (https://crbug.com/1327710#c5). To fix this, we set
  //    _LIBCPP_ABI_NAMESPACE to a shorter value.
- #define _LIBCPP_ABI_NAMESPACE Cr
+ #define _LIBCPP_ABI_NAMESPACE __Cr
 -#define _LIBCPP_ABI_VERSION 2
  
  /* #undef _LIBCPP_ABI_FORCE_ITANIUM */

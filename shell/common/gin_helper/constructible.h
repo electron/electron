@@ -55,6 +55,7 @@ class Constructible {
       }
       constructor->InstanceTemplate()->SetInternalFieldCount(
           gin::kNumberOfInternalFields);
+      constructor->SetClassName(gin::StringToV8(isolate, T::GetClassName()));
       T::FillObjectTemplate(isolate, constructor->PrototypeTemplate());
       data->SetObjectTemplate(wrapper_info, constructor->InstanceTemplate());
       data->SetFunctionTemplate(wrapper_info, constructor);

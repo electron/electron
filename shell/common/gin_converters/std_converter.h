@@ -5,12 +5,16 @@
 #ifndef ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 #define ELECTRON_SHELL_COMMON_GIN_CONVERTERS_STD_CONVERTER_H_
 
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <set>
+#include <type_traits>
 #include <utility>
 
 #include "gin/converter.h"
 
+#include "base/strings/string_util.h"
 #if BUILDFLAG(IS_WIN)
 #include "base/strings/string_util_win.h"
 #endif
@@ -209,6 +213,61 @@ struct Converter<std::wstring> {
   }
 };
 #endif
+
+namespace detail {
+
+// Get a key from `key_val` and check `lookup` for a matching entry.
+// Return true iff a match is found, and set `*out` to the entry's value.
+template <typename KeyType, typename Out, typename Map>
+bool FromV8WithLookup(v8::Isolate* isolate,
+                      v8::Local<v8::Value> key_val,
+                      const Map& table,
+                      Out* out,
+                      std::function<void(KeyType&)> key_transform = {}) {
+  static_assert(std::is_same_v<typename Map::mapped_type, Out>);
+
+  auto key = KeyType{};
+  if (!ConvertFromV8(isolate, key_val, &key))
+    return false;
+
+  if (key_transform)
+    key_transform(key);
+
+  if (const auto* iter = table.find(key); iter != table.end()) {
+    *out = iter->second;
+    return true;
+  }
+
+  return false;
+}
+
+}  // namespace detail
+
+// Convert `key_val to a string key and check `lookup` for a matching entry.
+// Return true iff a match is found, and set `*out` to the entry's value.
+template <typename Out, typename Map>
+bool FromV8WithLookup(v8::Isolate* isolate,
+                      v8::Local<v8::Value> key_val,
+                      const Map& table,
+                      Out* out) {
+  return detail::FromV8WithLookup<std::string>(isolate, key_val, table, out);
+}
+
+// Convert `key_val` to a lowercase string key and check `lookup` for a matching
+// entry. Return true iff a match is found, and set `*out` to the entry's value.
+template <typename Out, typename Map>
+bool FromV8WithLowerLookup(v8::Isolate* isolate,
+                           v8::Local<v8::Value> key_val,
+                           const Map& table,
+                           Out* out) {
+  static constexpr auto to_lower_ascii_inplace = [](std::string& str) {
+    for (auto& ch : str)
+      ch = base::ToLowerASCII(ch);
+  };
+
+  return detail::FromV8WithLookup<std::string>(isolate, key_val, table, out,
+                                               to_lower_ascii_inplace);
+}
 
 }  // namespace gin
 

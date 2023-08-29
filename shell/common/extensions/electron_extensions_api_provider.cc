@@ -10,6 +10,7 @@
 #include "base/containers/span.h"
 #include "base/strings/utf_string_conversions.h"
 #include "chrome/common/extensions/chrome_manifest_url_handlers.h"
+#include "chrome/common/extensions/manifest_handlers/minimum_chrome_version_checker.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/extensions/api/generated_schemas.h"
 #include "extensions/common/alias.h"
@@ -34,7 +35,14 @@ constexpr APIPermissionInfo::InitInfo permissions_to_register[] = {
          APIPermissionInfo::kFlagInternal},
     {mojom::APIPermissionID::kResourcesPrivate, "resourcesPrivate",
      APIPermissionInfo::kFlagCannotBeOptional},
+#if BUILDFLAG(ENABLE_PDF_VIEWER)
+    {mojom::APIPermissionID::kPdfViewerPrivate, "pdfViewerPrivate"},
+#endif
     {mojom::APIPermissionID::kManagement, "management"},
+    {mojom::APIPermissionID::kTab, "tabs",
+     APIPermissionInfo::kFlagRequiresManagementUIWarning},
+    {mojom::APIPermissionID::kScripting, "scripting",
+     APIPermissionInfo::kFlagRequiresManagementUIWarning},
 };
 base::span<const APIPermissionInfo::InitInfo> GetPermissionInfos() {
   return base::make_span(permissions_to_register);
@@ -96,6 +104,8 @@ void ElectronExtensionsAPIProvider::RegisterManifestHandlers() {
       extensions::ManifestHandlerRegistry::Get();
   registry->RegisterHandler(
       std::make_unique<extensions::DevToolsPageHandler>());
+  registry->RegisterHandler(
+      std::make_unique<extensions::MinimumChromeVersionChecker>());
 }
 
 }  // namespace electron

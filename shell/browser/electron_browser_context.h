@@ -9,7 +9,7 @@
 #include <memory>
 #include <string>
 #include <vector>
-
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "chrome/browser/predictors/preconnect_manager.h"
 #include "content/public/browser/browser_context.h"
@@ -140,6 +140,8 @@ class ElectronBrowserContext : public content::BrowserContext {
   predictors::PreconnectManager* GetPreconnectManager();
   scoped_refptr<network::SharedURLLoaderFactory> GetURLLoaderFactory();
 
+  std::string GetMediaDeviceIDSalt();
+
   // content::BrowserContext:
   base::FilePath GetPath() override;
   bool IsOffTheRecord() override;
@@ -152,7 +154,6 @@ class ElectronBrowserContext : public content::BrowserContext {
   content::BackgroundSyncController* GetBackgroundSyncController() override;
   content::BrowsingDataRemoverDelegate* GetBrowsingDataRemoverDelegate()
       override;
-  std::string GetMediaDeviceIDSalt() override;
   content::DownloadManagerDelegate* GetDownloadManagerDelegate() override;
   content::BrowserPluginGuestManager* GetGuestManager() override;
   content::PlatformNotificationService* GetPlatformNotificationService()
@@ -259,7 +260,7 @@ class ElectronBrowserContext : public content::BrowserContext {
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // Owned by the KeyedService system.
-  extensions::ElectronExtensionSystem* extension_system_;
+  raw_ptr<extensions::ElectronExtensionSystem> extension_system_;
 #endif
 
   // Shared URLLoaderFactory.

@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron/main')
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
@@ -24,9 +24,7 @@ function createWindow () {
     event.preventDefault()
     if (details.deviceList && details.deviceList.length > 0) {
       const deviceToReturn = details.deviceList.find((device) => {
-        if (!grantedDeviceThroughPermHandler || (device.deviceId !== grantedDeviceThroughPermHandler.deviceId)) {
-          return true
-        }
+        return !grantedDeviceThroughPermHandler || (device.deviceId !== grantedDeviceThroughPermHandler.deviceId)
       })
       if (deviceToReturn) {
         callback(deviceToReturn.deviceId)
@@ -51,6 +49,13 @@ function createWindow () {
         return false
       }
     }
+  })
+
+  mainWindow.webContents.session.setUSBProtectedClassesHandler((details) => {
+    return details.protectedClasses.filter((usbClass) => {
+      // Exclude classes except for audio classes
+      return usbClass.indexOf('audio') === -1
+    })
   })
 
   mainWindow.loadFile('index.html')

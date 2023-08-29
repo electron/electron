@@ -30,8 +30,9 @@ namespace {
 // thread safe, including LSGetApplicationForURL (> 10.2) and
 // NSWorkspace#openURLs.
 std::string OpenURL(NSURL* ns_url, bool activate) {
-  CFURLRef ref = LSCopyDefaultApplicationURLForURL(
-      base::mac::NSToCFCast(ns_url), kLSRolesAll, nullptr);
+  CFURLRef cf_url = (__bridge CFURLRef)(ns_url);
+  CFURLRef ref =
+      LSCopyDefaultApplicationURLForURL(cf_url, kLSRolesAll, nullptr);
 
   // If no application could be found, NULL is returned and outError
   // (if not NULL) is populated with kLSApplicationNotFoundErr.
@@ -116,18 +117,6 @@ void OpenExternal(const GURL& url,
                      std::move(c).Run(error);
                    });
                  });
-}
-
-// The following function helps with debug builds on the Mac
-gfx::NativeView GetViewForWindow(gfx::NativeWindow native_window) {
-  NOTREACHED();
-  return nil;
-}
-
-// The following function helps with debug builds on the Mac
-gfx::NativeView GetParent(gfx::NativeView view) {
-  NOTREACHED();
-  return nil;
 }
 
 bool MoveItemToTrashWithError(const base::FilePath& full_path,

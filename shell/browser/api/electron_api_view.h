@@ -5,9 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 #define ELECTRON_SHELL_BROWSER_API_ELECTRON_API_VIEW_H_
 
-#include <vector>
-
-#include "electron/buildflags/buildflags.h"
+#include "base/memory/raw_ptr.h"
 #include "gin/handle.h"
 #include "shell/common/color_util.h"
 #include "shell/common/gin_helper/event_emitter.h"
@@ -57,10 +55,8 @@ class View : public gin_helper::EventEmitter<View>, public views::ViewObserver {
   void set_delete_view(bool should) { delete_view_ = should; }
 
  private:
-  std::vector<v8::Global<v8::Object>> child_views_;
-
   bool delete_view_ = true;
-  views::View* view_ = nullptr;
+  raw_ptr<views::View> view_ = nullptr;
 };
 
 }  // namespace electron::api

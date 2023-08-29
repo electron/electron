@@ -6,7 +6,7 @@ Process: [Main](../glossary.md#main-process)
 
 ```javascript
 const { systemPreferences } = require('electron')
-console.log(systemPreferences.isDarkMode())
+console.log(systemPreferences.isAeroGlassEnabled())
 ```
 
 ## Events
@@ -27,31 +27,7 @@ Returns:
 
 * `event` Event
 
-### Event: 'inverted-color-scheme-changed' _Windows_ _Deprecated_
-
-Returns:
-
-* `event` Event
-* `invertedColorScheme` boolean - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is being used, `false` otherwise.
-
-**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
-
-### Event: 'high-contrast-color-scheme-changed' _Windows_ _Deprecated_
-
-Returns:
-
-* `event` Event
-* `highContrastColorScheme` boolean - `true` if a high contrast theme is being used, `false` otherwise.
-
-**Deprecated:** Should use the new [`updated`](native-theme.md#event-updated) event on the `nativeTheme` module.
-
 ## Methods
-
-### `systemPreferences.isDarkMode()` _macOS_ _Windows_ _Deprecated_
-
-Returns `boolean` - Whether the system is in Dark Mode.
-
-**Deprecated:** Should use the new [`nativeTheme.shouldUseDarkColors`](native-theme.md#nativethemeshouldusedarkcolors-readonly) API.
 
 ### `systemPreferences.isSwipeTrackingFromScrollEventsEnabled()` _macOS_
 
@@ -228,10 +204,10 @@ const win = new BrowserWindow(browserOptions)
 
 // Navigate.
 if (browserOptions.transparent) {
-  win.loadURL(`file://${__dirname}/index.html`)
+  win.loadFile('index.html')
 } else {
   // No transparency, so we load a fallback that uses basic styles.
-  win.loadURL(`file://${__dirname}/fallback.html`)
+  win.loadFile('fallback.html')
 }
 ```
 
@@ -297,7 +273,7 @@ This API is only available on macOS 10.14 Mojave or newer.
     * `window-frame` - Window frame.
     * `window-text` - Text in windows.
   * On **macOS**
-    * `alternate-selected-control-text` - The text on a selected surface in a list or table. _deprecated_
+    * `alternate-selected-control-text` - The text on a selected surface in a list or table. _Deprecated_
     * `control-background` - The background of a large interface element, such as a browser or table.
     * `control` - The surface of a control.
     * `control-text` -The text of a control that isn’t disabled.
@@ -355,18 +331,6 @@ The following colors are only available on macOS 10.14: `find-highlight`, `selec
 Returns `string` - The standard system color formatted as `#RRGGBBAA`.
 
 Returns one of several standard system colors that automatically adapt to vibrancy and changes in accessibility settings like 'Increase contrast' and 'Reduce transparency'. See [Apple Documentation](https://developer.apple.com/design/human-interface-guidelines/macos/visual-design/color#system-colors) for  more details.
-
-### `systemPreferences.isInvertedColorScheme()` _Windows_ _Deprecated_
-
-Returns `boolean` - `true` if an inverted color scheme (a high contrast color scheme with light text and dark backgrounds) is active, `false` otherwise.
-
-**Deprecated:** Should use the new [`nativeTheme.shouldUseInvertedColorScheme`](native-theme.md#nativethemeshoulduseinvertedcolorscheme-macos-windows-readonly) API.
-
-### `systemPreferences.isHighContrastColorScheme()` _macOS_ _Windows_ _Deprecated_
-
-Returns `boolean` - `true` if a high contrast theme is active, `false` otherwise.
-
-**Deprecated:** Should use the new [`nativeTheme.shouldUseHighContrastColors`](native-theme.md#nativethemeshouldusehighcontrastcolors-macos-windows-readonly) API.
 
 ### `systemPreferences.getEffectiveAppearance()` _macOS_
 
@@ -453,7 +417,7 @@ Returns an object with system animation settings.
 
 ## Properties
 
-### `systemPreferences.appLevelAppearance` _macOS_
+### `systemPreferences.appLevelAppearance` _macOS_ _Deprecated_
 
 A `string` property that can be `dark`, `light` or `unknown`. It determines the macOS appearance setting for
 your application. This maps to values in: [NSApplication.appearance](https://developer.apple.com/documentation/appkit/nsapplication/2967170-appearance?language=objc). Setting this will override the

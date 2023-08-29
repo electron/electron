@@ -24,8 +24,6 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
     // Process spawned, different args:   Return with error
     // No process spawned:                Spawn new process
     if (spawnedProcess && !isSameArgs(args)) {
-      // Disabled for backwards compatibility:
-      // eslint-disable-next-line standard/no-callback-literal
       return callback(`AutoUpdater process with arguments ${args} is already running`);
     } else if (!spawnedProcess) {
       spawnedProcess = spawn(updateExe, args, {
@@ -66,8 +64,6 @@ const spawnUpdate = function (args: string[], detached: boolean, callback: Funct
 
     // Process terminated with error.
     if (code !== 0) {
-      // Disabled for backwards compatibility:
-      // eslint-disable-next-line standard/no-callback-literal
       return callback(`Command failed: ${signal ?? code}\n${stderr}`);
     }
 
@@ -93,8 +89,6 @@ export function checkForUpdate (updateURL: string, callback: (error: Error | nul
       const json = stdout.trim().split('\n').pop();
       update = (ref = JSON.parse(json!)) != null ? (ref1 = ref.releasesToApply) != null ? typeof ref1.pop === 'function' ? ref1.pop() : undefined : undefined : undefined;
     } catch {
-      // Disabled for backwards compatibility:
-      // eslint-disable-next-line standard/no-callback-literal
       return callback(new Error(`Invalid result:\n${stdout}`));
     }
     return callback(null, update);

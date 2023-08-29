@@ -59,8 +59,7 @@ void WinFrameView::InvalidateCaptionButtons() {
   if (!caption_button_container_)
     return;
 
-  caption_button_container_->SetBackground(
-      views::CreateSolidBackground(window()->overlay_button_color()));
+  caption_button_container_->UpdateBackground();
   caption_button_container_->InvalidateLayout();
   caption_button_container_->SchedulePaint();
 }

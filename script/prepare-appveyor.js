@@ -1,9 +1,9 @@
 if (!process.env.CI) require('dotenv-safe').load();
 
-const assert = require('assert');
-const fs = require('fs');
+const assert = require('node:assert');
+const fs = require('node:fs');
 const got = require('got');
-const path = require('path');
+const path = require('node:path');
 const { handleGitCall, ELECTRON_DIR } = require('./lib/utils.js');
 const { Octokit } = require('@octokit/rest');
 const octokit = new Octokit();
@@ -182,8 +182,7 @@ async function prepareAppVeyorImage (opts) {
   if (ROLLER_BRANCH_PATTERN.test(branch)) {
     useAppVeyorImage(branch, { ...opts, version: DEFAULT_BUILD_IMAGE, cloudId: DEFAULT_BUILD_CLOUD_ID });
   } else {
-    // eslint-disable-next-line no-control-regex
-    const versionRegex = new RegExp('chromium_version\':\n +\'(.+?)\',', 'm');
+    const versionRegex = /chromium_version':\n +'(.+?)',/m;
     const deps = fs.readFileSync(path.resolve(__dirname, '..', 'DEPS'), 'utf8');
     const [, CHROMIUM_VERSION] = versionRegex.exec(deps);
 

@@ -8,9 +8,8 @@
 #include <memory>
 #include <vector>
 
-#include "shell/common/api/api.mojom.h"
+#include "electron/shell/common/api/api.mojom.h"
 #include "third_party/skia/include/core/SkRegion.h"
-#include "ui/gfx/geometry/rect.h"
 #include "ui/gfx/image/image.h"
 
 namespace base {
@@ -22,11 +21,6 @@ namespace electron {
 void DragFileItems(const std::vector<base::FilePath>& files,
                    const gfx::Image& icon,
                    gfx::NativeView view);
-
-std::vector<gfx::Rect> CalculateNonDraggableRegions(
-    std::unique_ptr<SkRegion> draggable,
-    int width,
-    int height);
 
 // Convert draggable regions in raw format to SkRegion format.
 std::unique_ptr<SkRegion> DraggableRegionsToSkRegion(

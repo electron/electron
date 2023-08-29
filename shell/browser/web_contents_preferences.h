@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "electron/buildflags/buildflags.h"
@@ -92,7 +93,7 @@ class WebContentsPreferences
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref
-  content::WebContents* web_contents_;
+  raw_ptr<content::WebContents> web_contents_;
 
   bool plugins_;
   bool experimental_features_;

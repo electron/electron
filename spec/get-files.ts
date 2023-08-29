@@ -1,4 +1,4 @@
-import { once } from 'events';
+import { once } from 'node:events';
 import * as walkdir from 'walkdir';
 
 export async function getFiles (directoryPath: string, { filter = null }: {filter?: ((file: string) => boolean) | null} = {}) {

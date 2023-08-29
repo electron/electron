@@ -7,7 +7,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "base/mac/scoped_nsobject.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 #include "ui/gfx/geometry/point.h"
 
@@ -36,8 +35,8 @@
   // Track mouse moves above window buttons.
   BOOL show_on_hover_;
   BOOL mouse_inside_;
-  base::scoped_nsobject<NSTrackingArea> tracking_area_;
-  base::scoped_nsobject<ButtonsAreaHoverView> hover_view_;
+  NSTrackingArea* __strong tracking_area_;
+  ButtonsAreaHoverView* __strong hover_view_;
 }
 
 - (id)initWithWindow:(NSWindow*)window;

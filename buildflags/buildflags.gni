@@ -3,20 +3,7 @@
 # found in the LICENSE file.
 
 declare_args() {
-  enable_desktop_capturer = true
-
-  # Allow running Electron as a node binary.
-  enable_run_as_node = true
-
-  enable_osr = true
-
   enable_pdf_viewer = true
-
-  enable_tts = true
-
-  enable_color_chooser = true
-
-  enable_picture_in_picture = true
 
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you

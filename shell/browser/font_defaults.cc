@@ -103,13 +103,11 @@ const FontDefault kFontDefaults[] = {
      IDS_FIXED_FONT_FAMILY_TRADITIONAL_HAN},
 #endif
 };
-const size_t kFontDefaultsLength = std::size(kFontDefaults);
 
 // ^^^^^ DO NOT EDIT ^^^^^
 
 std::string GetDefaultFontForPref(const char* pref_name) {
-  for (size_t i = 0; i < kFontDefaultsLength; ++i) {
-    FontDefault pref = kFontDefaults[i];
+  for (auto pref : kFontDefaults) {
     if (strcmp(pref.pref_name, pref_name) == 0) {
       return l10n_util::GetStringUTF8(pref.resource_id);
     }

@@ -6,9 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_INSPECTABLE_WEB_CONTENTS_VIEW_VIEWS_H_
 
 #include <memory>
-#include <vector>
 
 #include "base/compiler_specific.h"
+#include "base/memory/raw_ptr.h"
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "third_party/skia/include/core/SkRegion.h"
@@ -31,7 +31,6 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
 
   // InspectableWebContentsView:
   views::View* GetView() override;
-  views::View* GetWebView() override;
   void ShowDevTools(bool activate) override;
   void CloseDevTools() override;
   bool IsDevToolsViewShowing() override;
@@ -40,21 +39,20 @@ class InspectableWebContentsViewViews : public InspectableWebContentsView,
   void SetContentsResizingStrategy(
       const DevToolsContentsResizingStrategy& strategy) override;
   void SetTitle(const std::u16string& title) override;
+  const std::u16string GetTitle() override;
 
   // views::View:
   void Layout() override;
 
-  const std::u16string& GetTitle() const { return title_; }
-
  private:
   std::unique_ptr<views::Widget> devtools_window_;
-  views::WebView* devtools_window_web_view_ = nullptr;
-  views::View* contents_web_view_ = nullptr;
-  views::WebView* devtools_web_view_ = nullptr;
+  raw_ptr<views::WebView> devtools_window_web_view_ = nullptr;
+  raw_ptr<views::View> contents_web_view_ = nullptr;
+  raw_ptr<views::WebView> devtools_web_view_ = nullptr;
 
   DevToolsContentsResizingStrategy strategy_;
   bool devtools_visible_ = false;
-  views::WidgetDelegate* devtools_window_delegate_ = nullptr;
+  raw_ptr<views::WidgetDelegate> devtools_window_delegate_ = nullptr;
   std::u16string title_;
 };
 

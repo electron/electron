@@ -26,7 +26,7 @@ struct Converter<device::mojom::SerialPortInfoPtr> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const device::mojom::SerialPortInfoPtr& port) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("portId", port->token.ToString());
     dict.Set("portName", port->path.BaseName().LossyDisplayName());
     if (port->display_name && !port->display_name->empty()) {
@@ -156,11 +156,10 @@ void SerialChooserController::OnGetDevices(
   bool prevent_default = false;
   api::Session* session = GetSession();
   if (session) {
-    prevent_default =
-        session->Emit("select-serial-port", ports_, web_contents(),
-                      base::AdaptCallbackForRepeating(base::BindOnce(
-                          &SerialChooserController::OnDeviceChosen,
-                          weak_factory_.GetWeakPtr())));
+    prevent_default = session->Emit(
+        "select-serial-port", ports_, web_contents(),
+        base::BindRepeating(&SerialChooserController::OnDeviceChosen,
+                            weak_factory_.GetWeakPtr()));
   }
   if (!prevent_default) {
     RunCallback(/*port=*/nullptr);

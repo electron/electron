@@ -1,5 +1,5 @@
 const { app, utilityProcess } = require('electron');
-const path = require('path');
+const path = require('node:path');
 
 app.whenReady().then(() => {
   const payload = app.commandLine.getSwitchValue('payload');

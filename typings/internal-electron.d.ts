@@ -123,7 +123,7 @@ declare namespace Electron {
     commandsMap: Record<string, MenuItem>;
     groupsMap: Record<string, MenuItem[]>;
     getItemCount(): number;
-    popupAt(window: BaseWindow, x: number, y: number, positioning: number, callback: () => void): void;
+    popupAt(window: BaseWindow, x: number, y: number, positioning: number, sourceType: Required<Electron.PopupOptions>['sourceType'], callback: () => void): void;
     closePopupAt(id: number): void;
     setSublabel(index: number, label: string): void;
     setToolTip(index: number, tooltip: string): void;
@@ -229,6 +229,10 @@ declare namespace ElectronInternal {
     custom_display_name: string,
     height_microns: number,
     width_microns: number,
+    imageable_area_left_microns?: number,
+    imageable_area_bottom_microns?: number,
+    imageable_area_right_microns?: number,
+    imageable_area_top_microns?: number,
     is_default?: 'true',
   }
 

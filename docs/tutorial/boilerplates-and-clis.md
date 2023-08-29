@@ -52,7 +52,7 @@ You can find more information and documentation in [the repository](https://gith
 ## electron-react-boilerplate
 
 If you don't want any tools but only a solid boilerplate to build from,
-CT Lin's [`electron-react-boilerplate`](https://github.com/chentsulin/electron-react-boilerplate) might be worth
+CT Lin's [`electron-react-boilerplate`](https://github.com/electron-react-boilerplate/electron-react-boilerplate) might be worth
 a look. It's quite popular in the community and uses `electron-builder`
 internally.
 

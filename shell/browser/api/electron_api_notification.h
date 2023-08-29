@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/wrappable.h"
 #include "shell/browser/event_emitter_mixin.h"
@@ -39,6 +40,7 @@ class Notification : public gin::Wrappable<Notification>,
   static gin::Handle<Notification> New(gin_helper::ErrorThrower thrower,
                                        gin::Arguments* args);
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Notification"; }
 
   // NotificationDelegate:
   void NotificationAction(int index) override;
@@ -51,6 +53,7 @@ class Notification : public gin::Wrappable<Notification>,
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
   // disable copy
   Notification(const Notification&) = delete;
@@ -108,7 +111,7 @@ class Notification : public gin::Wrappable<Notification>,
   std::u16string close_button_text_;
   std::u16string toast_xml_;
 
-  electron::NotificationPresenter* presenter_;
+  raw_ptr<electron::NotificationPresenter> presenter_;
 
   base::WeakPtr<electron::Notification> notification_;
 };

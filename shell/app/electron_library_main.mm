@@ -6,9 +6,9 @@
 
 #include "shell/app/electron_library_main.h"
 
+#include "base/apple/bundle_locations.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
-#include "base/mac/bundle_locations.h"
 #include "base/mac/scoped_nsautorelease_pool.h"
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
@@ -26,7 +26,6 @@ int ElectronMain(int argc, char* argv[]) {
   return content::ContentMain(std::move(params));
 }
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   if (!electron::fuses::IsRunAsNodeEnabled()) {
     CHECK(false) << "run_as_node fuse is disabled";
@@ -35,7 +34,7 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
 
   base::AtExitManager atexit_manager;
   base::mac::ScopedNSAutoreleasePool pool;
-  base::mac::SetOverrideFrameworkBundlePath(
+  base::apple::SetOverrideFrameworkBundlePath(
       electron::MainApplicationBundlePath()
           .Append("Contents")
           .Append("Frameworks")
@@ -43,4 +42,3 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   base::i18n::InitializeICU();
   return electron::NodeMain(argc, argv);
 }
-#endif

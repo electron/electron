@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-114.0.5684.0
+image: e-118.0.5949.0
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -38,7 +38,9 @@ environment:
   MOCHA_REPORTER: mocha-multi-reporters
   MOCHA_MULTI_REPORTERS: "@marshallofsound/mocha-appveyor-reporter, tap"
   GOMA_FALLBACK_ON_AUTH_FAILURE: true
-  DEPOT_TOOLS_WIN_TOOLCHAIN: 0
+  DEPOT_TOOLS_WIN_TOOLCHAIN: 1
+  DEPOT_TOOLS_WIN_TOOLCHAIN_BASE_URL: "https://dev-cdn.electronjs.org/windows-toolchains/_"
+  GYP_MSVS_HASH_27370823e7: 28622d16b1
   PYTHONIOENCODING: UTF-8
 
   matrix:
@@ -46,6 +48,11 @@ environment:
     - job_name: Build
     - job_name: Test
       job_depends_on: Build
+
+clone_script:
+- ps: git clone -q $("--branch=" + $Env:APPVEYOR_REPO_BRANCH) $("https://github.com/" + $Env:APPVEYOR_REPO_NAME + ".git") $Env:APPVEYOR_BUILD_FOLDER
+- ps: if (!$Env:APPVEYOR_PULL_REQUEST_NUMBER) {$("git checkout -qf " + $Env:APPVEYOR_REPO_COMMIT)}
+- ps: if ($Env:APPVEYOR_PULL_REQUEST_NUMBER) {git fetch -q origin +refs/pull/$($Env:APPVEYOR_PULL_REQUEST_NUMBER)/head; git checkout -qf FETCH_HEAD}
 
 clone_folder: C:\projects\src\electron
 
@@ -64,11 +71,15 @@ for:
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
+          $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "false"
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc-only change"
+            $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "true"
+            Exit-AppveyorBuild
+          } else {
+            $global:LASTEXITCODE = 0
           }
-          $global:LASTEXITCODE = 0
       - cd ..
       - ps: Write-Host "Building $env:GN_CONFIG build"
       - git config --global core.longpaths true
@@ -81,6 +92,8 @@ for:
             Remove-Item -Recurse -Force $pwd\build-tools
           }
       - git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      - ps: New-Item -Name depot_tools\.disable_auto_update -ItemType File
+      - depot_tools\bootstrap\win_tools.bat
       - ps: $env:PATH="$pwd\depot_tools;$env:PATH"
       - ps: >-
           if (Test-Path -Path "$pwd\src\electron") {
@@ -103,7 +116,7 @@ for:
       - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
       - ps: >-
           if (Test-Path 'env:RAW_GOMA_AUTH') {
-            $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+            $goma_login = python3 $env:LOCAL_GOMA_DIR\goma_auth.py info
             if ($goma_login -eq 'Login as Fermi Planck') {
               Write-warning "Goma authentication is correct";
             } else {
@@ -152,8 +165,8 @@ for:
       - cd ..\..
       - ninja -C out/Default electron:hunspell_dictionaries_zip
       - ninja -C out/Default electron:electron_chromedriver_zip
-      - ninja -C out/Default third_party/electron_node:headers
-      - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - ninja -C out/Default electron:node_headers
+      - python3 %LOCAL_GOMA_DIR%\goma_ctl.py stat
       - ps: >-
           Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
       - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
@@ -174,6 +187,31 @@ for:
             7z a pdb.zip out\Default\*.pdb
           }
       - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+      - ps: |
+          cd C:\projects\src
+          $missing_artifacts = $false
+          if ($env:SHOULD_SKIP_ARTIFACT_VALIDATION -eq 'true') {
+            Write-warning "Skipping artifact validation for doc-only $env:APPVEYOR_PROJECT_NAME"
+          } else {
+            $artifacts_to_validate = 'dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip'
+            foreach($artifact_name in $artifacts_to_validate) {
+              if ($artifact_name -eq 'ffmpeg.zip') {
+                $artifact_file = "out\ffmpeg\ffmpeg.zip"
+              } elseif (
+                $artifact_name -eq 'node_headers.zip') {
+                $artifact_file = $artifact_name
+              } else {
+                $artifact_file = "out\Default\$artifact_name"
+              }
+              if (-not(Test-Path $artifact_file)) {
+                Write-warning "$artifact_name is missing and cannot be added to artifacts"
+                $missing_artifacts = $true
+              }
+            }
+          }
+          if ($missing_artifacts) {
+            throw "Build failed due to missing artifacts"
+          }
 
     deploy_script:
       - cd electron
@@ -199,7 +237,7 @@ for:
       - if exist node_headers.zip (appveyor-retry appveyor PushArtifact node_headers.zip)
       - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
       - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
-      - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
+      - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)        
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
@@ -216,11 +254,13 @@ for:
     build_script:
       - ps: |
           node script/yarn.js install --frozen-lockfile
-          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER --prBranch=$env:APPVEYOR_REPO_BRANCH
+          node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"; Exit-AppveyorBuild
+            Write-warning "Skipping build for doc only change"
+            Exit-AppveyorBuild
+          } else {
+            $global:LASTEXITCODE = 0
           }
-          $global:LASTEXITCODE = 0
       - cd ..
       - mkdir out\Default
       - cd ..
@@ -240,6 +280,9 @@ for:
                 }
                 Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/$artifact_name" -OutFile $outfile
               }
+              # Uncomment the following lines to download the pdb.zip to show real stacktraces when crashes happen during testing
+              # Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/pdb.zip" -OutFile pdb.zip
+              # 7z x -y -osrc pdb.zip
             }
           }
       - ps: |

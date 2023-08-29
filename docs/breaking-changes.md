@@ -12,7 +12,60 @@ This document uses the following convention to categorize breaking changes:
 * **Deprecated:** An API was marked as deprecated. The API will continue to function, but will emit a deprecation warning, and will be removed in a future release.
 * **Removed:** An API or feature was removed, and is no longer supported by Electron.
 
-## Planned Breaking API Changes (26.0)
+## Planned Breaking API Changes (28.0)
+
+### Removed: `BrowserWindow.setTrafficLightPosition(position)`
+
+`BrowserWindow.setTrafficLightPosition(position)` has been removed, the
+`BrowserWindow.setWindowButtonPosition(position)` API should be used instead
+which accepts `null` instead of `{ x: 0, y: 0 }` to reset the position to
+system default.
+
+```js
+// Removed in Electron 28
+win.setTrafficLightPosition({ x: 10, y: 10 })
+win.setTrafficLightPosition({ x: 0, y: 0 })
+
+// Replace with
+win.setWindowButtonPosition({ x: 10, y: 10 })
+win.setWindowButtonPosition(null)
+```
+
+### Removed: `BrowserWindow.getTrafficLightPosition()`
+
+`BrowserWindow.getTrafficLightPosition()` has been removed, the
+`BrowserWindow.getWindowButtonPosition()` API should be used instead
+which returns `null` instead of `{ x: 0, y: 0 }` when there is no custom
+position.
+
+```js
+// Removed in Electron 28
+const pos = win.getTrafficLightPosition()
+if (pos.x === 0 && pos.y === 0) {
+  // No custom position.
+}
+
+// Replace with
+const ret = win.getWindowButtonPosition()
+if (ret === null) {
+  // No custom position.
+}
+```
+
+### Removed: `ipcRenderer.sendTo()`
+
+The `ipcRenderer.sendTo()` API has been removed. It should be replaced by setting up a [`MessageChannel`](tutorial/message-ports.md#setting-up-a-messagechannel-between-two-renderers) between the renderers.
+
+The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have been removed as well.
+
+## Planned Breaking API Changes (27.0)
+
+### Removed: macOS 10.13 / 10.14 support
+
+macOS 10.13 (High Sierra) and macOS 10.14 (Mojave) are no longer supported by [Chromium](https://chromium-review.googlesource.com/c/chromium/src/+/4629466).
+
+Older versions of Electron will continue to run on these operating systems, but macOS 10.15 (Catalina)
+or later will be required to run Electron v27.0.0 and higher.
 
 ### Behavior Changed: `BrowserView.setAutoResize` behavior on macOS
 
@@ -23,6 +76,83 @@ However, in more advanced cases, BrowserViews would be autoresized differently o
 In Electron 26, BrowserView is now a wrapper around the new [WebContentsView](api/web-contents-view.md) API.
 As part of this work, the autoresizing behavior is now standardized across all platforms.
 BrowserView autoresizing on macOS now uses the same algorithm that is used on Windows and Linux.
+
+### Deprecated: `ipcRenderer.sendTo()`
+
+The `ipcRenderer.sendTo()` API has been deprecated. It should be replaced by setting up a [`MessageChannel`](tutorial/message-ports.md#setting-up-a-messagechannel-between-two-renderers) between the renderers.
+
+The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have been deprecated as well.
+
+### Removed: color scheme events in `systemPreferences`
+
+The following `systemPreferences` events have been removed:
+
+* `inverted-color-scheme-changed`
+* `high-contrast-color-scheme-changed`
+
+Use the new `updated` event on the `nativeTheme` module instead.
+
+```js
+// Removed
+systemPreferences.on('inverted-color-scheme-changed', () => { /* ... */ })
+systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
+
+// Replace with
+nativeTheme.on('updated', () => { /* ... */ })
+```
+
+## Planned Breaking API Changes (26.0)
+
+### Deprecated: `webContents.getPrinters`
+
+The `webContents.getPrinters` method has been deprecated. Use
+`webContents.getPrintersAsync` instead.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Deprecated
+console.log(w.webContents.getPrinters())
+// Replace with
+w.webContents.getPrintersAsync().then((printers) => {
+  console.log(printers)
+})
+```
+
+### Deprecated: `systemPreferences.{get,set}AppLevelAppearance` and `systemPreferences.appLevelAppearance`
+
+The `systemPreferences.getAppLevelAppearance` and `systemPreferences.setAppLevelAppearance`
+methods have been deprecated, as well as the `systemPreferences.appLevelAppearance` property.
+Use the `nativeTheme` module instead.
+
+```js
+// Deprecated
+systemPreferences.getAppLevelAppearance()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Deprecated
+systemPreferences.appLevelAppearance
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Deprecated
+systemPreferences.setAppLevelAppearance('dark')
+// Replace with
+nativeTheme.themeSource = 'dark'
+```
+
+### Deprecated: `alternate-selected-control-text` value for `systemPreferences.getColor`
+
+The `alternate-selected-control-text` value for `systemPreferences.getColor`
+has been deprecated. Use `selected-content-background` instead.
+
+```js
+// Deprecated
+systemPreferences.getColor('alternate-selected-control-text')
+// Replace with
+systemPreferences.getColor('selected-content-background')
+```
 
 ## Planned Breaking API Changes (25.0)
 
@@ -287,6 +417,39 @@ webContents.on('new-window', (event) => {
 // Replace with
 webContents.setWindowOpenHandler((details) => {
   return { action: 'deny' }
+})
+```
+
+### Removed: `<webview>` `new-window` event
+
+The `new-window` event of `<webview>` has been removed. There is no direct replacement.
+
+```js
+// Removed in Electron 22
+webview.addEventListener('new-window', (event) => {})
+```
+
+```javascript fiddle='docs/fiddles/ipc/webview-new-window'
+// Replace with
+
+// main.js
+mainWindow.webContents.on('did-attach-webview', (event, wc) => {
+  wc.setWindowOpenHandler((details) => {
+    mainWindow.webContents.send('webview-new-window', wc.id, details)
+    return { action: 'deny' }
+  })
+})
+
+// preload.js
+const { ipcRenderer } = require('electron')
+ipcRenderer.on('webview-new-window', (e, webContentsId, details) => {
+  console.log('webview-new-window', webContentsId, details)
+  document.getElementById('webview').dispatchEvent(new Event('new-window'))
+})
+
+// renderer.js
+document.getElementById('webview').addEventListener('new-window', () => {
+  console.log('got new-window event')
 })
 ```
 

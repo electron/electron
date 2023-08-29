@@ -116,6 +116,7 @@ class App : public ElectronBrowserClient::Delegate,
                                  base::Value::Dict user_info) override;
   void OnNewWindowForTab() override;
   void OnDidBecomeActive() override;
+  void OnDidResignActive() override;
 #endif
 
   // content::ContentBrowserClient:
@@ -129,6 +130,7 @@ class App : public ElectronBrowserClient::Delegate,
       base::OnceCallback<void(content::CertificateRequestResultType)> callback)
       override;
   base::OnceClosure SelectClientCertificate(
+      content::BrowserContext* browser_context,
       content::WebContents* web_contents,
       net::SSLCertRequestInfo* cert_request_info,
       net::ClientCertIdentityList identities,

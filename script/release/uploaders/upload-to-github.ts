@@ -1,5 +1,5 @@
 import { Octokit } from '@octokit/rest';
-import * as fs from 'fs';
+import * as fs from 'node:fs';
 
 const octokit = new Octokit({
   auth: process.env.ELECTRON_GITHUB_TOKEN
@@ -18,7 +18,7 @@ const releaseId = parseInt(process.argv[4], 10);
 const releaseVersion = process.argv[5];
 
 if (isNaN(releaseId)) {
-  throw new Error('Provided release ID was not a valid integer');
+  throw new TypeError('Provided release ID was not a valid integer');
 }
 
 const getHeaders = (filePath: string, fileName: string) => {

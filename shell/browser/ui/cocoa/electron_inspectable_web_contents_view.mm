@@ -28,7 +28,7 @@
   attached_to_window_ = NO;
 
   if (inspectableWebContentsView_->inspectable_web_contents()->IsGuest()) {
-    fake_view_.reset([[NSView alloc] init]);
+    fake_view_ = [[NSView alloc] init];
     [fake_view_ setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
     [self addSubview:fake_view_];
   } else {
@@ -47,7 +47,6 @@
 
 - (void)dealloc {
   [[NSNotificationCenter defaultCenter] removeObserver:self];
-  [super dealloc];
 }
 
 - (void)resizeSubviewsWithOldSize:(NSSize)oldBoundsSize {
@@ -126,7 +125,7 @@
     } else {
       [devtools_window_ setDelegate:nil];
       [devtools_window_ close];
-      devtools_window_.reset();
+      devtools_window_ = nil;
     }
   }
 }
@@ -160,11 +159,11 @@
                      NSWindowStyleMaskResizable |
                      NSWindowStyleMaskTexturedBackground |
                      NSWindowStyleMaskUnifiedTitleAndToolbar;
-    devtools_window_.reset([[EventDispatchingWindow alloc]
+    devtools_window_ = [[EventDispatchingWindow alloc]
         initWithContentRect:NSMakeRect(0, 0, 800, 600)
                   styleMask:styleMask
                     backing:NSBackingStoreBuffered
-                      defer:YES]);
+                      defer:YES];
     [devtools_window_ setDelegate:self];
     [devtools_window_ setFrameAutosaveName:@"electron.devtools"];
     [devtools_window_ setTitle:@"Developer Tools"];
@@ -241,6 +240,10 @@
   [devtools_window_ setTitle:title];
 }
 
+- (NSString*)getTitle {
+  return [devtools_window_ title];
+}
+
 - (void)viewDidBecomeFirstResponder:(NSNotification*)notification {
   auto* inspectable_web_contents =
       inspectableWebContentsView_->inspectable_web_contents();
@@ -275,10 +278,10 @@
     [self notifyDevToolsFocused];
 }
 
-- (void)redispatchContextMenuEvent:(NSEvent*)event {
-  DCHECK(event.type == NSEventTypeRightMouseDown ||
-         (event.type == NSEventTypeLeftMouseDown &&
-          (event.modifierFlags & NSEventModifierFlagControl)));
+- (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)event {
+  DCHECK(event.Get().type == NSEventTypeRightMouseDown ||
+         (event.Get().type == NSEventTypeLeftMouseDown &&
+          (event.Get().modifierFlags & NSEventModifierFlagControl)));
   content::WebContents* contents =
       inspectableWebContentsView_->inspectable_web_contents()->GetWebContents();
   electron::api::WebContents* api_contents =
@@ -287,12 +290,14 @@
     // Temporarily pretend that the WebContents is fully non-draggable while we
     // re-send the mouse event. This allows the re-dispatched event to "land"
     // on the WebContents, instead of "falling through" back to the window.
-    api_contents->SetForceNonDraggable(true);
-    BaseView* contentsView = (BaseView*)contents->GetRenderWidgetHostView()
-                                 ->GetNativeView()
-                                 .GetNativeNSView();
-    [contentsView mouseEvent:event];
-    api_contents->SetForceNonDraggable(false);
+    auto* rwhv = contents->GetRenderWidgetHostView();
+    if (rwhv) {
+      api_contents->SetForceNonDraggable(true);
+      BaseView* contentsView =
+          (BaseView*)rwhv->GetNativeView().GetNativeNSView();
+      [contentsView mouseEvent:event.Get()];
+      api_contents->SetForceNonDraggable(false);
+    }
   }
 }
 

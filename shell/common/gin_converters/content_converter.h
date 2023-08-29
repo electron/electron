@@ -13,6 +13,7 @@
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 #include "third_party/blink/public/mojom/choosers/popup_menu.mojom.h"
 #include "third_party/blink/public/mojom/permissions/permission_status.mojom.h"
+#include "ui/base/ui_base_types.h"
 
 namespace content {
 struct ContextMenuParams;
@@ -37,6 +38,15 @@ struct Converter<ContextMenuParamsWithRenderFrameHost> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const ContextMenuParamsWithRenderFrameHost& val);
+};
+
+template <>
+struct Converter<ui::MenuSourceType> {
+  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
+                                   const ui::MenuSourceType& val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Local<v8::Value> val,
+                     ui::MenuSourceType* out);
 };
 
 template <>

@@ -2,6 +2,7 @@ name: Bug Report
 description: Report an Electron bug
 title: "[Bug]: "
 labels: "bug :beetle:"
+projects: ["electron/90"]
 body:
 - type: checkboxes
   attributes:

@@ -8,7 +8,7 @@
 
 namespace electron {
 
-GPUInfoEnumerator::GPUInfoEnumerator() : value_stack_(), current_{} {}
+GPUInfoEnumerator::GPUInfoEnumerator() = default;
 
 GPUInfoEnumerator::~GPUInfoEnumerator() = default;
 

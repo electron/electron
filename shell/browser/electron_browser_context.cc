@@ -56,6 +56,7 @@
 #include "shell/common/gin_helper/error_thrower.h"
 #include "shell/common/options_switches.h"
 #include "shell/common/thread_restrictions.h"
+#include "third_party/blink/public/mojom/media/capture_handle_config.mojom.h"
 #include "third_party/blink/public/mojom/mediastream/media_stream.mojom.h"
 
 #if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
@@ -90,6 +91,105 @@ using content::BrowserThread;
 namespace electron {
 
 namespace {
+
+// Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
+media::mojom::CaptureHandlePtr CreateCaptureHandle(
+    content::WebContents* capturer,
+    const url::Origin& capturer_origin,
+    const content::DesktopMediaID& captured_id) {
+  if (capturer_origin.opaque()) {
+    return nullptr;
+  }
+
+  content::RenderFrameHost* const captured_rfh =
+      content::RenderFrameHost::FromID(
+          captured_id.web_contents_id.render_process_id,
+          captured_id.web_contents_id.main_render_frame_id);
+  if (!captured_rfh || !captured_rfh->IsActive()) {
+    return nullptr;
+  }
+
+  content::WebContents* const captured =
+      content::WebContents::FromRenderFrameHost(captured_rfh);
+  if (!captured) {
+    return nullptr;
+  }
+
+  const auto& captured_config = captured->GetCaptureHandleConfig();
+  if (!captured_config.all_origins_permitted &&
+      base::ranges::none_of(
+          captured_config.permitted_origins,
+          [capturer_origin](const url::Origin& permitted_origin) {
+            return capturer_origin.IsSameOriginWith(permitted_origin);
+          })) {
+    return nullptr;
+  }
+
+  // Observing CaptureHandle when either the capturing or the captured party
+  // is incognito is disallowed, except for self-capture.
+  if (capturer->GetPrimaryMainFrame() != captured->GetPrimaryMainFrame()) {
+    if (capturer->GetBrowserContext()->IsOffTheRecord() ||
+        captured->GetBrowserContext()->IsOffTheRecord()) {
+      return nullptr;
+    }
+  }
+
+  if (!captured_config.expose_origin &&
+      captured_config.capture_handle.empty()) {
+    return nullptr;
+  }
+
+  auto result = media::mojom::CaptureHandle::New();
+  if (captured_config.expose_origin) {
+    result->origin = captured->GetPrimaryMainFrame()->GetLastCommittedOrigin();
+  }
+  result->capture_handle = captured_config.capture_handle;
+
+  return result;
+}
+
+// Copied from chrome/browser/media/webrtc/desktop_capture_devices_util.cc.
+media::mojom::DisplayMediaInformationPtr
+DesktopMediaIDToDisplayMediaInformation(
+    content::WebContents* capturer,
+    const url::Origin& capturer_origin,
+    const content::DesktopMediaID& media_id) {
+  media::mojom::DisplayCaptureSurfaceType display_surface =
+      media::mojom::DisplayCaptureSurfaceType::MONITOR;
+  bool logical_surface = true;
+  media::mojom::CursorCaptureType cursor =
+      media::mojom::CursorCaptureType::NEVER;
+#if defined(USE_AURA)
+  const bool uses_aura =
+      media_id.window_id != content::DesktopMediaID::kNullId ? true : false;
+#else
+  const bool uses_aura = false;
+#endif  // defined(USE_AURA)
+
+  media::mojom::CaptureHandlePtr capture_handle;
+  switch (media_id.type) {
+    case content::DesktopMediaID::TYPE_SCREEN:
+      display_surface = media::mojom::DisplayCaptureSurfaceType::MONITOR;
+      cursor = uses_aura ? media::mojom::CursorCaptureType::MOTION
+                         : media::mojom::CursorCaptureType::ALWAYS;
+      break;
+    case content::DesktopMediaID::TYPE_WINDOW:
+      display_surface = media::mojom::DisplayCaptureSurfaceType::WINDOW;
+      cursor = uses_aura ? media::mojom::CursorCaptureType::MOTION
+                         : media::mojom::CursorCaptureType::ALWAYS;
+      break;
+    case content::DesktopMediaID::TYPE_WEB_CONTENTS:
+      display_surface = media::mojom::DisplayCaptureSurfaceType::BROWSER;
+      cursor = media::mojom::CursorCaptureType::MOTION;
+      capture_handle = CreateCaptureHandle(capturer, capturer_origin, media_id);
+      break;
+    case content::DesktopMediaID::TYPE_NONE:
+      break;
+  }
+
+  return media::mojom::DisplayMediaInformation::New(
+      display_surface, logical_surface, cursor, std::move(capture_handle));
+}
 
 // Convert string to lower case and escape it.
 std::string MakePartitionName(const std::string& input) {
@@ -229,10 +329,8 @@ void ElectronBrowserContext::InitPrefs() {
 #endif
 
 #if BUILDFLAG(ENABLE_BUILTIN_SPELLCHECKER)
-  base::Value::List current_dictionaries =
-      prefs()->GetList(spellcheck::prefs::kSpellCheckDictionaries).Clone();
   // No configured dictionaries, the default will be en-US
-  if (current_dictionaries.empty()) {
+  if (prefs()->GetList(spellcheck::prefs::kSpellCheckDictionaries).empty()) {
     std::string default_code = spellcheck::GetCorrespondingSpellCheckLanguage(
         base::i18n::GetConfiguredLocale());
     if (!default_code.empty()) {
@@ -348,7 +446,8 @@ ElectronBrowserContext::GetURLLoaderFactory() {
           this, nullptr, -1,
           content::ContentBrowserClient::URLLoaderFactoryType::kNavigation,
           url::Origin(), absl::nullopt, ukm::kInvalidSourceIdObj,
-          &factory_receiver, &header_client, nullptr, nullptr, nullptr);
+          &factory_receiver, &header_client, nullptr, nullptr, nullptr,
+          nullptr);
 
   network::mojom::URLLoaderFactoryParamsPtr params =
       network::mojom::URLLoaderFactoryParams::New();
@@ -478,16 +577,23 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     content::RenderFrameHost* rfh;
     if (result_dict.Get("video", &video_dict) && video_dict.Get("id", &id) &&
         video_dict.Get("name", &name)) {
-      devices.video_device =
-          blink::MediaStreamDevice(request.video_type, id, name);
+      blink::MediaStreamDevice video_device(request.video_type, id, name);
+      video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+          nullptr, url::Origin::Create(request.security_origin),
+          content::DesktopMediaID::Parse(video_device.id));
+      devices.video_device = video_device;
     } else if (result_dict.Get("video", &rfh)) {
-      devices.video_device = blink::MediaStreamDevice(
+      auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+      blink::MediaStreamDevice video_device(
           request.video_type,
           content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
                                              rfh->GetRoutingID())
               .ToString(),
-          base::UTF16ToUTF8(
-              content::WebContents::FromRenderFrameHost(rfh)->GetTitle()));
+          base::UTF16ToUTF8(web_contents->GetTitle()));
+      video_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+          web_contents, url::Origin::Create(request.security_origin),
+          content::DesktopMediaID::Parse(video_device.id));
+      devices.video_device = video_device;
     } else {
       gin_helper::ErrorThrower(args->isolate())
           .ThrowTypeError(
@@ -509,22 +615,34 @@ void ElectronBrowserContext::DisplayMediaDeviceChosen(
     // future.
     if (result_dict.Get("audio", &audio_dict) && audio_dict.Get("id", &id) &&
         audio_dict.Get("name", &name)) {
-      devices.audio_device =
-          blink::MediaStreamDevice(request.audio_type, id, name);
+      blink::MediaStreamDevice audio_device(request.audio_type, id, name);
+      audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+          nullptr, url::Origin::Create(request.security_origin),
+          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+      devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &rfh)) {
       bool enable_local_echo = false;
       result_dict.Get("enableLocalEcho", &enable_local_echo);
       bool disable_local_echo = !enable_local_echo;
-      devices.audio_device =
-          blink::MediaStreamDevice(request.audio_type,
-                                   content::WebContentsMediaCaptureId(
-                                       rfh->GetProcess()->GetID(),
-                                       rfh->GetRoutingID(), disable_local_echo)
-                                       .ToString(),
-                                   "Tab audio");
+      auto* web_contents = content::WebContents::FromRenderFrameHost(rfh);
+      blink::MediaStreamDevice audio_device(
+          request.audio_type,
+          content::WebContentsMediaCaptureId(rfh->GetProcess()->GetID(),
+                                             rfh->GetRoutingID(),
+                                             disable_local_echo)
+              .ToString(),
+          "Tab audio");
+      audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+          web_contents, url::Origin::Create(request.security_origin),
+          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+      devices.audio_device = audio_device;
     } else if (result_dict.Get("audio", &id)) {
-      devices.audio_device =
-          blink::MediaStreamDevice(request.audio_type, id, "System audio");
+      blink::MediaStreamDevice audio_device(request.audio_type, id,
+                                            "System audio");
+      audio_device.display_media_info = DesktopMediaIDToDisplayMediaInformation(
+          nullptr, url::Origin::Create(request.security_origin),
+          content::DesktopMediaID::Parse(request.requested_audio_device_id));
+      devices.audio_device = audio_device;
     } else {
       gin_helper::ErrorThrower(args->isolate())
           .ThrowTypeError(

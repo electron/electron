@@ -7,6 +7,8 @@
 
 #import <Foundation/Foundation.h>
 
+#include "base/memory/raw_ptr.h"
+
 namespace electron {
 class NotificationPresenterMac;
 }
@@ -14,7 +16,7 @@ class NotificationPresenterMac;
 @interface NotificationCenterDelegate
     : NSObject <NSUserNotificationCenterDelegate> {
  @private
-  electron::NotificationPresenterMac* presenter_;
+  raw_ptr<electron::NotificationPresenterMac> presenter_;
 }
 - (instancetype)initWithPresenter:
     (electron::NotificationPresenterMac*)presenter;

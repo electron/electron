@@ -4,6 +4,15 @@
     "extension_types": ["extension"],
     "contexts": ["blessed_extension"]
   },
+  "tabs.executeScript": {
+    "max_manifest_version": 2
+  },
+  "tabs.insertCSS": {
+    "max_manifest_version": 2
+  },
+  "tabs.removeCSS": {
+    "max_manifest_version": 2
+  },
   "extension": {
     "channel": "stable",
     "extension_types": ["extension"],
@@ -14,7 +23,8 @@
     "disallow_for_service_workers": true
   },
   "extension.getURL": {
-    "contexts": ["blessed_extension", "unblessed_extension", "content_script"]
+    "contexts": ["blessed_extension", "unblessed_extension", "content_script"],
+    "max_manifest_version": 2
   },
   "i18n": {
     "channel": "stable",
@@ -28,6 +38,10 @@
     "channel": "stable",
     "matches": ["<all_urls>"]
   },
+  "pdfViewerPrivate": {
+    "dependencies": ["permission:pdfViewerPrivate"],
+    "contexts": ["blessed_extension"]
+  },
   "resourcesPrivate": [{
     "dependencies": ["permission:resourcesPrivate"],
     "contexts": ["blessed_extension"]
@@ -37,5 +51,9 @@
     "matches": [
       "chrome://print/*"
     ]
-  }]
+  }],
+  "scripting": {
+    "dependencies": ["permission:scripting"],
+    "contexts": ["blessed_extension"]
+  }
 }

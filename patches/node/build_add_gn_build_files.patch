@@ -7,10 +7,10 @@ This adds GN build files for Node, so we don't have to build with GYP.
 
 diff --git a/BUILD.gn b/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17f44b0f88
+index 0000000000000000000000000000000000000000..e2b19b7500b4710e3a55e08f662d989c18272b70
 --- /dev/null
 +++ b/BUILD.gn
-@@ -0,0 +1,439 @@
+@@ -0,0 +1,358 @@
 +import("//v8/gni/v8.gni")
 +import("node.gni")
 +
@@ -50,9 +50,6 @@ index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17
 +  # `sourceUrl` and `headersUrl`. When compiling a release build, this will
 +  # default to https://nodejs.org/download/release/')
 +  node_release_urlbase = ""
-+
-+  # Allows embedders to override the NODE_MODULE_VERSION define
-+  node_module_version = ""
 +
 +  # Allows downstream packagers (eg. Linux distributions) to build Electron against system shared libraries.
 +  use_system_cares = false
@@ -223,6 +220,7 @@ index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17
 +  deps = [
 +    ":node_js2c",
 +    "deps/googletest:gtest",
++    "deps/ada",
 +    "deps/base64",
 +    "deps/simdutf",
 +    "deps/uvwasi",
@@ -248,7 +246,10 @@ index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17
 +  ]
 +  configs += [ ":node_internal_config" ]
 +  public_configs = [ ":node_lib_config" ]
-+  include_dirs = [ "src" ]
++  include_dirs = [
++    "src",
++    "deps/postject"
++  ]
 +  libs = []
 +  if (use_system_llhttp) {
 +    libs += [ "llhttp" ]
@@ -368,87 +369,39 @@ index 0000000000000000000000000000000000000000..5e8577795316984f3073204523d82a17
 +    cflags_cc += [ "-Wno-sign-compare" ]
 +  }
 +}
+diff --git a/deps/ada/BUILD.gn b/deps/ada/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..a564653c3f05608d59fed5aa071d63b81f4e0e42
+--- /dev/null
++++ b/deps/ada/BUILD.gn
+@@ -0,0 +1,28 @@
++import("//v8/gni/v8.gni")
 +
-+##### node_headers
++config("ada_config") {
++  include_dirs = [ "." ]
++}
 +
-+node_headers_dir = "$root_gen_dir/node_headers"
++static_library("ada") {
++  include_dirs = [ "." ]
++  sources = [ "ada.cpp" ]
 +
-+header_group_index = 0
-+header_groups = []
-+foreach(header_group, node_files.headers) {
-+  copy("node_headers_${header_group_index}") {
-+    sources = header_group.files
-+    outputs = [
-+      "$node_headers_dir/${header_group.dest_dir}/{{source_file_part}}",
++  public_configs = [ ":ada_config" ]
++
++  defines = []
++  deps = []
++
++  if (v8_enable_i18n_support) {
++    deps += [
++      "//third_party/icu:icui18n",
++      "//third_party/icu:icuuc",
 +    ]
++
++    if (is_win) {
++      deps += [ "//third_party/icu:icudata" ]
++    }
++  } else {
++    defines += [ "ADA_HAS_ICU=0" ]
 +  }
-+  header_groups += [ ":node_headers_${header_group_index}" ]
-+  header_group_index += 1
-+}
-+
-+copy("zlib_headers") {
-+  sources = [
-+    "deps/zlib/zconf.h",
-+    "deps/zlib/zlib.h",
-+  ]
-+  outputs = [
-+    "$node_headers_dir/include/node/{{source_file_part}}",
-+  ]
-+}
-+
-+copy("node_gypi_headers") {
-+  deps = [
-+    "//electron:generate_config_gypi",
-+  ]
-+  sources = [
-+    "$root_gen_dir/config.gypi",
-+    "common.gypi",
-+  ]
-+  outputs = [
-+    "$node_headers_dir/include/node/{{source_file_part}}",
-+  ]
-+}
-+
-+action("node_version_header") {
-+  inputs = [
-+    "src/node_version.h",
-+  ]
-+  outputs = [
-+    "$node_headers_dir/include/node/node_version.h",
-+  ]
-+  script = "tools/generate_node_version_header.py"
-+  args = [ rebase_path("src/node_version.h"), rebase_path(outputs[0]) ]
-+  if (node_module_version != "") {
-+    args += [ "$node_module_version" ]
-+  }
-+}
-+
-+action("tar_headers") {
-+  deps = [
-+    ":copy_headers",
-+  ]
-+  outputs = [
-+    "$root_gen_dir/node_headers.tar.gz",
-+  ]
-+  script = "tools/tar.py"
-+  args = [
-+    rebase_path("$root_gen_dir/node_headers"),
-+    rebase_path(outputs[0]),
-+  ]
-+}
-+
-+group("copy_headers") {
-+  public_deps = header_groups + [
-+                  ":zlib_headers",
-+                  ":node_gypi_headers",
-+                  ":node_version_header",
-+                ]
-+}
-+
-+group("headers") {
-+  public_deps = [
-+    ":tar_headers",
-+  ]
 +}
 diff --git a/deps/base64/BUILD.gn b/deps/base64/BUILD.gn
 new file mode 100644
@@ -638,10 +591,10 @@ rename from deps/base64/base64/lib/arch/ssse3/codec.c
 rename to deps/base64/base64/lib/arch/ssse3/ssse3_codec.c
 diff --git a/deps/cares/BUILD.gn b/deps/cares/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..71a37834f4e693c190eb7e7d04e3f5ce67c487ad
+index 0000000000000000000000000000000000000000..2a902c68ca445b8451e442c314c60ee5a30719e4
 --- /dev/null
 +++ b/deps/cares/BUILD.gn
-@@ -0,0 +1,134 @@
+@@ -0,0 +1,135 @@
 +config("cares_config") {
 +  include_dirs = [ "include", "src/lib" ]
 +}
@@ -712,6 +665,7 @@ index 0000000000000000000000000000000000000000..71a37834f4e693c190eb7e7d04e3f5ce
 +    "src/lib/ares_private.h",
 +    "src/lib/ares_process.c",
 +    "src/lib/ares_query.c",
++    "src/lib/ares_rand.c",
 +    "src/lib/ares__read_line.c",
 +    "src/lib/ares__readaddrinfo.c",
 +    "src/lib/ares_search.c",
@@ -848,12 +802,12 @@ index 0000000000000000000000000000000000000000..0daf8c006cef89e76d7eccec3e924bd2
 +}
 diff --git a/deps/histogram/BUILD.gn b/deps/histogram/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..8ba89a379fa2937b4b2fa5092f18727c7d0788a6
+index 0000000000000000000000000000000000000000..02bc887db7c8545e1d8adc57f73f203eec2f2592
 --- /dev/null
 +++ b/deps/histogram/BUILD.gn
 @@ -0,0 +1,19 @@
 +config("histogram_config") {
-+  include_dirs = [ "src" ]
++  include_dirs = [ "include" ]
 +
 +  cflags = [
 +    "-Wno-implicit-function-declaration",
@@ -871,6 +825,7 @@ index 0000000000000000000000000000000000000000..8ba89a379fa2937b4b2fa5092f18727c
 +    "src/hdr_histogram.h",
 +  ]
 +}
+\ No newline at end of file
 diff --git a/deps/llhttp/BUILD.gn b/deps/llhttp/BUILD.gn
 new file mode 100644
 index 0000000000000000000000000000000000000000..fb000f8ee7647c375bc190d1729d67bb7770d109
@@ -974,10 +929,10 @@ index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..d6bed57461820ce08391fc424a1f842bd282fa75
+index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e546b39ef
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,196 @@
+@@ -0,0 +1,198 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -1047,6 +1002,8 @@ index 0000000000000000000000000000000000000000..d6bed57461820ce08391fc424a1f842b
 +    "src/random.c",
 +    "src/strscpy.c",
 +    "src/strscpy.h",
++    "src/strtok.c",
++    "src/strtok.h",
 +    "src/threadpool.c",
 +    "src/timer.c",
 +    "src/uv-common.c",
@@ -1220,10 +1177,10 @@ index 0000000000000000000000000000000000000000..2c9d2826c85bdd033f1df1d6188df636
 +}
 diff --git a/filenames.json b/filenames.json
 new file mode 100644
-index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d31e054c4
+index 0000000000000000000000000000000000000000..7d86765bf229275ba55d37a452ef24832a7afadb
 --- /dev/null
 +++ b/filenames.json
-@@ -0,0 +1,658 @@
+@@ -0,0 +1,664 @@
 +// This file is automatically generated by generate_gn_filenames_json.py
 +// DO NOT EDIT
 +{
@@ -1286,6 +1243,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +        "//v8/include/v8-regexp.h",
 +        "//v8/include/v8-script.h",
 +        "//v8/include/v8-snapshot.h",
++        "//v8/include/v8-source-location.h",
 +        "//v8/include/v8-statistics.h",
 +        "//v8/include/v8-template.h",
 +        "//v8/include/v8-traced-handle.h",
@@ -1428,6 +1386,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "lib/internal/crypto/sig.js",
 +    "lib/internal/crypto/util.js",
 +    "lib/internal/crypto/webcrypto.js",
++    "lib/internal/crypto/webidl.js",
 +    "lib/internal/crypto/x509.js",
 +    "lib/internal/debugger/inspect.js",
 +    "lib/internal/debugger/inspect_client.js",
@@ -1477,6 +1436,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "lib/internal/main/prof_process.js",
 +    "lib/internal/main/repl.js",
 +    "lib/internal/main/run_main_module.js",
++    "lib/internal/main/single_executable_application.js",
 +    "lib/internal/main/test_runner.js",
 +    "lib/internal/main/watch_mode.js",
 +    "lib/internal/main/worker_thread.js",
@@ -1497,6 +1457,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "lib/internal/modules/esm/package_config.js",
 +    "lib/internal/modules/esm/resolve.js",
 +    "lib/internal/modules/esm/translators.js",
++    "lib/internal/modules/esm/utils.js",
 +    "lib/internal/modules/package_json_reader.js",
 +    "lib/internal/modules/run_main.js",
 +    "lib/internal/net.js",
@@ -1572,14 +1533,11 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "lib/internal/test_runner/reporter/dot.js",
 +    "lib/internal/test_runner/reporter/spec.js",
 +    "lib/internal/test_runner/reporter/tap.js",
++    "lib/internal/test_runner/reporter/v8-serializer.js",
 +    "lib/internal/test_runner/runner.js",
-+    "lib/internal/test_runner/tap_checker.js",
-+    "lib/internal/test_runner/tap_lexer.js",
-+    "lib/internal/test_runner/tap_parser.js",
 +    "lib/internal/test_runner/test.js",
 +    "lib/internal/test_runner/tests_stream.js",
 +    "lib/internal/test_runner/utils.js",
-+    "lib/internal/test_runner/yaml_to_js.js",
 +    "lib/internal/timers.js",
 +    "lib/internal/tls/secure-context.js",
 +    "lib/internal/tls/secure-pair.js",
@@ -1605,6 +1563,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "lib/internal/wasm_web_api.js",
 +    "lib/internal/watch_mode/files_watcher.js",
 +    "lib/internal/watchdog.js",
++    "lib/internal/webidl.js",
 +    "lib/internal/webstreams/adapters.js",
 +    "lib/internal/webstreams/compression.js",
 +    "lib/internal/webstreams/encoding.js",
@@ -1637,6 +1596,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "lib/string_decoder.js",
 +    "lib/sys.js",
 +    "lib/test.js",
++    "lib/test/reporters.js",
 +    "lib/timers.js",
 +    "lib/timers/promises.js",
 +    "lib/tls.js",
@@ -1663,6 +1623,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "//v8/tools/tickprocessor-driver.mjs",
 +    "deps/acorn/acorn/dist/acorn.js",
 +    "deps/acorn/acorn-walk/dist/walk.js",
++    "deps/minimatch/index.js",
 +    "deps/cjs-module-lexer/lexer.js",
 +    "deps/cjs-module-lexer/dist/lexer.js",
 +    "deps/undici/undici.js"
@@ -1730,6 +1691,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "src/node_report.cc",
 +    "src/node_report_module.cc",
 +    "src/node_report_utils.cc",
++    "src/node_sea.cc",
 +    "src/node_serdes.cc",
 +    "src/node_shadow_realm.cc",
 +    "src/node_snapshotable.cc",
@@ -1740,7 +1702,6 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "src/node_trace_events.cc",
 +    "src/node_types.cc",
 +    "src/node_url.cc",
-+    "src/node_url_tables.cc",
 +    "src/node_util.cc",
 +    "src/node_v8.cc",
 +    "src/node_wasi.cc",
@@ -1839,6 +1800,7 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "src/node_report.h",
 +    "src/node_revert.h",
 +    "src/node_root_certs.h",
++    "src/node_sea.h",
 +    "src/node_shadow_realm.h",
 +    "src/node_snapshotable.h",
 +    "src/node_snapshot_builder.h",
@@ -1879,15 +1841,21 @@ index 0000000000000000000000000000000000000000..3a600cbf16506cbf94919139b266b72d
 +    "src/udp_wrap.h",
 +    "src/util.h",
 +    "src/util-inl.h",
-+    "//v8/include/v8.h"
++    "//v8/include/v8.h",
++    "deps/postject/postject-api.h"
 +  ]
 +}
 diff --git a/node.gni b/node.gni
 new file mode 100644
-index 0000000000000000000000000000000000000000..9b1a4048a4a64c36d88de0bbe1a548c906aaa22c
+index 0000000000000000000000000000000000000000..345327e89d71585c558fabcf11970d7c5363cd3a
 --- /dev/null
 +++ b/node.gni
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,34 @@
++declare_args() {
++  # Allows embedders to override the NODE_MODULE_VERSION define
++  node_module_version = ""
++}
++
 +# Run an action with a given working directory. Behaves identically to the
 +# action() target type, with the exception that it changes directory before
 +# running the script.
@@ -1917,12 +1885,25 @@ index 0000000000000000000000000000000000000000..9b1a4048a4a64c36d88de0bbe1a548c9
 +    args += invoker.args
 +  }
 +}
+diff --git a/node.gyp b/node.gyp
+index 6b554d75d89077f0fcfcaaf1636c8a537478f679..7f88a4466cb4a6b55b91345bb3af6b3600afd47a 100644
+--- a/node.gyp
++++ b/node.gyp
+@@ -688,7 +688,7 @@
+         'src/util-inl.h',
+         # Dependency headers
+         'deps/v8/include/v8.h',
+-        'deps/postject/postject-api.h'
++        'deps/postject/postject-api.h',
+         # javascript files to make for an even more pleasant IDE experience
+         '<@(library_files)',
+         '<@(deps_files)',
 diff --git a/src/inspector/BUILD.gn b/src/inspector/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb3048361d9d591
+index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868bd1321be2
 --- /dev/null
 +++ b/src/inspector/BUILD.gn
-@@ -0,0 +1,199 @@
+@@ -0,0 +1,200 @@
 +import("//v8/gni/v8.gni")
 +
 +inspector_protocol_dir = "../../tools/inspector_protocol"
@@ -1982,6 +1963,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +    ":protocol_generated_sources",
 +    ":v8_inspector_compress_protocol_json",
 +    "../../deps/uv",
++    "../../deps/simdutf",
 +    "//third_party/icu:icuuc",
 +  ]
 +  configs += [ "../..:node_internal_config" ]
@@ -2123,7 +2105,7 @@ index 0000000000000000000000000000000000000000..d1d6b51e8c0c5bc6a5d09e217eb30483
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
 diff --git a/src/node_version.h b/src/node_version.h
-index ee035efadf123464a7b4696a6351364a642cd947..afb9c47cc9324a6197a66e58bc59d40afc37dcf8 100644
+index 1e898ffcc9104bc50079a9850dc89767199c646e..0f5c5f1cc0845b5d005697d8ab1ab6167c541ced 100644
 --- a/src/node_version.h
 +++ b/src/node_version.h
 @@ -89,7 +89,10 @@
@@ -2224,42 +2206,11 @@ index 0000000000000000000000000000000000000000..616dc0c61ed4ea1bf2fb9e4768ba2ec5
 +    f.write(FILENAMES_JSON_HEADER)
 +    f.write(json.dumps(out, sort_keys=True, indent=2, separators=(',', ': ')))
 +    f.write('\n')
-diff --git a/tools/generate_node_version_header.py b/tools/generate_node_version_header.py
-new file mode 100755
-index 0000000000000000000000000000000000000000..2a92eccfa582df361f2a889c0d9b32c1059baa7d
---- /dev/null
-+++ b/tools/generate_node_version_header.py
-@@ -0,0 +1,25 @@
-+#!/usr/bin/env python3
-+import re
-+import sys
-+
-+node_version_file = sys.argv[1]
-+out_file = sys.argv[2]
-+NMV = None
-+if len(sys.argv) > 3:
-+  NMV = sys.argv[3]
-+
-+with open(node_version_file, 'r') as in_file, open(out_file, 'w') as out_file:
-+  changed = False
-+  contents = in_file.read()
-+  new_contents = re.sub(
-+    r'^#define NODE_MODULE_VERSION [0-9]+$',
-+    '#define NODE_MODULE_VERSION ' + NMV,
-+    contents,
-+    flags=re.MULTILINE)
-+
-+  changed = contents != new_contents
-+
-+  if not changed and NMV is not None:
-+    raise Exception("Did not modify the NMV from nodes value, this value MUST differ from node")
-+
-+  out_file.writelines(new_contents)
 diff --git a/tools/install.py b/tools/install.py
-index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..411bd956ce0d3ff47ba1c48ae932e2d21b78047a 100755
+index f13f2ecd662a5fb985839b394b45319c091b56d4..21bc48324946d52ed2b1c9eec35c1fcd4c536570 100755
 --- a/tools/install.py
 +++ b/tools/install.py
-@@ -202,60 +202,73 @@ def files(action):
+@@ -202,60 +202,74 @@ def files(action):
  def headers(action):
    def wanted_v8_headers(files_arg, dest):
      v8_headers = [
@@ -2363,6 +2314,7 @@ index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..411bd956ce0d3ff47ba1c48ae932e2d2
 +      '../../v8/include/v8-regexp.h',
 +      '../../v8/include/v8-script.h',
 +      '../../v8/include/v8-snapshot.h',
++      '../../v8/include/v8-source-location.h',
 +      '../../v8/include/v8-statistics.h',
 +      '../../v8/include/v8-template.h',
 +      '../../v8/include/v8-traced-handle.h',
@@ -2386,8 +2338,8 @@ index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..411bd956ce0d3ff47ba1c48ae932e2d2
      files_arg = [name for name in files_arg if name in v8_headers]
      action(files_arg, dest)
  
-@@ -282,7 +295,7 @@ def headers(action):
-   if sys.platform.startswith('aix'):
+@@ -282,7 +296,7 @@ def headers(action):
+   if sys.platform.startswith('aix') or sys.platform == "os400":
      action(['out/Release/node.exp'], 'include/node/')
  
 -  subdir_files('deps/v8/include', 'include/node/', wanted_v8_headers)
@@ -2396,7 +2348,7 @@ index 9d5f4a48bca2c926b3ffb3c51c070222d4f7ce7b..411bd956ce0d3ff47ba1c48ae932e2d2
    if 'false' == variables.get('node_shared_libuv'):
      subdir_files('deps/uv/include', 'include/node/', action)
 diff --git a/tools/js2c.py b/tools/js2c.py
-index e295949a18508d7989f0925093a9dd6a284fecd6..8ba46c5d78c5c86d9f7b8b6972f3febbe87de61e 100755
+index 54c7dfce3631001e108570b19d34966edafd624f..077bba1572f05f1aa16553894703b12abc19a985 100755
 --- a/tools/js2c.py
 +++ b/tools/js2c.py
 @@ -131,6 +131,14 @@ def NormalizeFileName(filename):
@@ -2414,21 +2366,3 @@ index e295949a18508d7989f0925093a9dd6a284fecd6..8ba46c5d78c5c86d9f7b8b6972f3febb
    return os.path.splitext(filename)[0]
  
  
-diff --git a/tools/tar.py b/tools/tar.py
-new file mode 100644
-index 0000000000000000000000000000000000000000..eb697be25779db62c829aac45a509804e9fff331
---- /dev/null
-+++ b/tools/tar.py
-@@ -0,0 +1,12 @@
-+import os
-+import sys
-+import tarfile
-+
-+source = sys.argv[1]
-+target = sys.argv[2]
-+
-+os.chdir(os.path.dirname(source))
-+
-+tarball = tarfile.open(name=os.path.basename(target), mode='w:gz')
-+tarball.add(os.path.relpath(source))
-+tarball.close()

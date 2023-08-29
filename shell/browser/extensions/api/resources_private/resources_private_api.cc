@@ -19,55 +19,17 @@
 #include "ui/base/webui/web_ui_util.h"
 
 #if BUILDFLAG(ENABLE_PDF)
+#include "chrome/browser/pdf/pdf_extension_util.h"
 #include "pdf/pdf_features.h"
 #endif  // BUILDFLAG(ENABLE_PDF)
 
 // To add a new component to this API, simply:
 // 1. Add your component to the Component enum in
-//      chrome/common/extensions/api/resources_private.idl
+//      shell/common/extensions/api/resources_private.idl
 // 2. Create an AddStringsForMyComponent(base::Value::Dict* dict) method.
 // 3. Tie in that method to the switch statement in Run()
 
 namespace extensions {
-
-namespace {
-
-void AddStringsForPdf(base::Value::Dict* dict) {
-#if BUILDFLAG(ENABLE_PDF)
-  static constexpr webui::LocalizedString kPdfResources[] = {
-      {"passwordDialogTitle", IDS_PDF_PASSWORD_DIALOG_TITLE},
-      {"passwordPrompt", IDS_PDF_NEED_PASSWORD},
-      {"passwordSubmit", IDS_PDF_PASSWORD_SUBMIT},
-      {"thumbnailPageAriaLabel", IDS_PDF_THUMBNAIL_PAGE_ARIA_LABEL},
-      {"passwordInvalid", IDS_PDF_PASSWORD_INVALID},
-      {"pageLoading", IDS_PDF_PAGE_LOADING},
-      {"pageLoadFailed", IDS_PDF_PAGE_LOAD_FAILED},
-      {"errorDialogTitle", IDS_PDF_ERROR_DIALOG_TITLE},
-      {"pageReload", IDS_PDF_PAGE_RELOAD_BUTTON},
-      {"bookmarks", IDS_PDF_BOOKMARKS},
-      {"labelPageNumber", IDS_PDF_LABEL_PAGE_NUMBER},
-      {"tooltipDownload", IDS_PDF_TOOLTIP_DOWNLOAD},
-      {"tooltipPrint", IDS_PDF_TOOLTIP_PRINT},
-      {"tooltipFitToPage", IDS_PDF_TOOLTIP_FIT_PAGE},
-      {"tooltipFitToWidth", IDS_PDF_TOOLTIP_FIT_WIDTH},
-      {"tooltipZoomIn", IDS_PDF_TOOLTIP_ZOOM_IN},
-      {"tooltipZoomOut", IDS_PDF_TOOLTIP_ZOOM_OUT},
-  };
-  for (const auto& resource : kPdfResources)
-    dict->Set(resource.name, l10n_util::GetStringUTF16(resource.id));
-
-  dict->Set("presetZoomFactors", zoom::GetPresetZoomFactorsAsJSON());
-#endif  // BUILDFLAG(ENABLE_PDF)
-}
-
-void AddAdditionalDataForPdf(base::Value::Dict* dict) {
-#if BUILDFLAG(ENABLE_PDF)
-  dict->Set("pdfAnnotationsEnabled", base::Value(false));
-  dict->Set("printingEnabled", base::Value(true));
-#endif  // BUILDFLAG(ENABLE_PDF)
-}
-
-}  // namespace
 
 namespace get_strings = api::resources_private::GetStrings;
 
@@ -86,8 +48,11 @@ ExtensionFunction::ResponseAction ResourcesPrivateGetStringsFunction::Run() {
 
   switch (component) {
     case api::resources_private::COMPONENT_PDF:
-      AddStringsForPdf(&dict);
-      AddAdditionalDataForPdf(&dict);
+#if BUILDFLAG(ENABLE_PDF)
+      pdf_extension_util::AddStrings(
+          pdf_extension_util::PdfViewerContext::kPdfViewer, &dict);
+      pdf_extension_util::AddAdditionalData(true, false, &dict);
+#endif
       break;
     case api::resources_private::COMPONENT_IDENTITY:
       NOTREACHED();

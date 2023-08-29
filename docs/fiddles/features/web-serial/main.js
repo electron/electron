@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron/main')
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
@@ -23,6 +23,7 @@ function createWindow () {
     if (portList && portList.length > 0) {
       callback(portList[0].portId)
     } else {
+      // eslint-disable-next-line n/no-callback-literal
       callback('') // Could not find any matching devices
     }
   })

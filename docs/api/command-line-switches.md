@@ -116,14 +116,20 @@ Ignore the connections limit for `domains` list separated by `,`.
 
 ### --js-flags=`flags`
 
-Specifies the flags passed to the Node.js engine. It has to be passed when starting
-Electron if you want to enable the `flags` in the main process.
+Specifies the flags passed to the [V8 engine](https://v8.dev). In order to enable the `flags` in the main process,
+this switch must be passed on startup.
 
 ```sh
 $ electron --js-flags="--harmony_proxies --harmony_collections" your-app
 ```
 
-See the [Node.js documentation][node-cli] or run `node --help` in your terminal for a list of available flags. Additionally, run `node --v8-options` to see a list of flags that specifically refer to Node.js's V8 JavaScript engine.
+Run `node --v8-options` or `electron --js-flags="--help"` in your terminal for the list of available flags.  These can be used to enable early-stage JavaScript features, or log and manipulate garbage collection, among other things.
+
+For example, to trace V8 optimization and deoptimization:
+
+```sh
+$ electron --js-flags="--trace-opt --trace-deopt" your-app
+```
 
 ### --lang
 
@@ -241,19 +247,25 @@ Electron supports some of the [CLI flags][node-cli] supported by Node.js.
 
 **Note:** Passing unsupported command line switches to Electron when it is not running in `ELECTRON_RUN_AS_NODE` will have no effect.
 
-### --inspect-brk\[=\[host:]port]
+### `--inspect-brk\[=\[host:]port]`
 
 Activate inspector on host:port and break at start of user script. Default host:port is 127.0.0.1:9229.
 
 Aliased to `--debug-brk=[host:]port`.
 
-### --inspect-port=\[host:]port
+#### `--inspect-brk-node[=[host:]port]`
+
+Activate inspector on `host:port` and break at start of the first internal
+JavaScript script executed when the inspector is available.
+Default `host:port` is `127.0.0.1:9229`.
+
+### `--inspect-port=\[host:]port`
 
 Set the `host:port` to be used when the inspector is activated. Useful when activating the inspector by sending the SIGUSR1 signal. Default host is `127.0.0.1`.
 
 Aliased to `--debug-port=[host:]port`.
 
-### --inspect\[=\[host:]port]
+### `--inspect\[=\[host:]port]`
 
 Activate inspector on `host:port`. Default is `127.0.0.1:9229`.
 
@@ -263,11 +275,36 @@ See the [Debugging the Main Process][debugging-main-process] guide for more deta
 
 Aliased to `--debug[=[host:]port`.
 
-### --inspect-publish-uid=stderr,http
+### `--inspect-publish-uid=stderr,http`
 
 Specify ways of the inspector web socket url exposure.
 
 By default inspector websocket url is available in stderr and under /json/list endpoint on http://host:port/json/list.
+
+### `--no-deprecation`
+
+Silence deprecation warnings.
+
+### `--throw-deprecation`
+
+Throw errors for deprecations.
+
+### `--trace-deprecation`
+
+Print stack traces for deprecations.
+
+### `--trace-warnings`
+
+Print stack traces for process warnings (including deprecations).
+
+### `--dns-result-order=order`
+
+Set the default value of the `verbatim` parameter in the Node.js [`dns.lookup()`](https://nodejs.org/api/dns.html#dnslookuphostname-options-callback) and [`dnsPromises.lookup()`](https://nodejs.org/api/dns.html#dnspromiseslookuphostname-options) functions. The value could be:
+
+* `ipv4first`: sets default `verbatim` `false`.
+* `verbatim`: sets default `verbatim` `true`.
+
+The default is `verbatim` and `dns.setDefaultResultOrder()` have higher priority than `--dns-result-order`.
 
 [app]: app.md
 [append-switch]: command-line.md#commandlineappendswitchswitch-value

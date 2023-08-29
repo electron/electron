@@ -90,7 +90,7 @@ class WinFrameView : public FramelessView {
   // The container holding the caption buttons (minimize, maximize, close, etc.)
   // May be null if the caption button container is destroyed before the frame
   // view. Always check for validity before using!
-  WinCaptionButtonContainer* caption_button_container_;
+  raw_ptr<WinCaptionButtonContainer> caption_button_container_;
 };
 
 }  // namespace electron
