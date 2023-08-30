@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 1178f06074ec8ec02a2e7b5cf8cbe7e68b72f809..1a8acc1c32d2c9c94232ae78867f47d75b174420 100644
+index d64d4452a50bc4469b2d2fcc3251b3df31cda6ec..8d8f1b24fb68cce2b37e43f92aac200b4ee73cea 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -20,7 +20,7 @@ const experimentalNetworkImports =
