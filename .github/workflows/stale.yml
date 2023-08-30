@@ -5,15 +5,20 @@ on:
     # 1:30am every day
     - cron: '30 1 * * *'
 
-permissions:
-  issues: write
+permissions: {}
 
 jobs:
   stale:
     runs-on: ubuntu-latest
     steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - uses: actions/stale@5ebf00ea0e4c1561e9b43a292ed34424fb1d4578 # tag: v6.0.1
         with:
+          repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: 90
           days-before-close: 30
           stale-issue-label: stale
@@ -29,8 +34,14 @@ jobs:
     if: ${{ always() }}
     needs: stale
     steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - uses: actions/stale@5ebf00ea0e4c1561e9b43a292ed34424fb1d4578 # tag: v6.0.1
         with:
+          repo-token: ${{ steps.generate-token.outputs.token }}
           days-before-stale: -1
           days-before-close: 10
           remove-stale-when-updated: false

@@ -60,16 +60,15 @@ jobs:
           done
       - name: Generate GitHub App token
         if: ${{ steps.check-major-version.outputs.MAJOR }}
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
         id: generate-token
-        env:
-          RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
-        run: |
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org=electron)
-          echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+        with:
+          creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
+          org: electron
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
           ELECTRON_ORG_ID: "O_kgDOAMybxg"
           ELECTRON_REPO_ID: "R_kgDOAI8xSw"

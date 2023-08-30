@@ -14,18 +14,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
         id: generate-token
-        env:
-          RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
-        run: |
-          set -eo pipefail
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org=electron)
-          echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
       - name: Set status
-        if: ${{ steps.generate-token.outputs.TOKEN }}
         uses: github/update-project-action@2d475e08804f11f4022df7e21f5816531e97cb64 # v2
         with:
-          github_token: ${{ steps.generate-token.outputs.TOKEN }}
+          github_token: ${{ steps.generate-token.outputs.token }}
           organization: electron
           project_number: 90
           content_id: ${{ github.event.issue.node_id }}
@@ -49,11 +46,18 @@ jobs:
           if [[ $COMMENT_COUNT -eq 0 ]]; then
             echo "SHOULD_COMMENT=1" >> "$GITHUB_OUTPUT"
           fi
+      - name: Generate GitHub App token
+        if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
       - name: Create comment
         if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
         uses: actions-cool/issues-helper@275328970dbc3bfc3bc43f5fe741bf3638300c0a # v3.3.3
         with:
           actions: 'create-comment'
+          token: ${{ steps.generate-token.outputs.token }}
           body: |
             <!-- blocked/need-repro -->
 
