@@ -1,0 +1,93 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: deepak1556 <hop2deep@gmail.com>
+Date: Wed, 30 Aug 2023 15:56:53 +0900
+Subject: fix: move AutoPipSettingsHelper behind branding buildflag
+
+The class was added in https://chromium-review.googlesource.com/c/chromium/src/+/4688277
+which is primarily used for providing an overlay view in a PIP window
+to support content settings UI. The support pulls in chrome content settings
+and UI code which are not valid in the scope of Electron.
+
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
+index dbf7fedc002726f27e5e69bc13e5326ea26a3d85..452fb41d97060776e5434394ad5dee6a39b02ac8 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
+@@ -18,7 +18,9 @@
+ #include "ui/gfx/geometry/size.h"
+ #if !BUILDFLAG(IS_ANDROID)
+ #include "base/task/sequenced_task_runner.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "chrome/browser/picture_in_picture/auto_pip_setting_helper.h"
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "third_party/blink/public/common/features.h"
+ #include "ui/views/view.h"
+ #endif  // !BUILDFLAG(IS_ANDROID)
+@@ -287,7 +289,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
+   video_web_contents_observer_.reset();
+   pip_window_controller_->Close(false /* should_pause_video */);
+   pip_window_controller_ = nullptr;
+-#if !BUILDFLAG(IS_ANDROID)
++#if !BUILDFLAG(IS_ANDROID) && BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   auto_pip_setting_helper_.reset();
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ }
+@@ -298,8 +300,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+   // contents, so we only need to forget the controller here when user closes
+   // the parent web contents with the PiP window open.
+   document_web_contents_observer_.reset();
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   // `setting_helper_` depends on the opener's WebContents.
+   auto_pip_setting_helper_.reset();
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (pip_window_controller_)
+     pip_window_controller_ = nullptr;
+ }
+@@ -319,6 +323,7 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
+     return nullptr;
+   }
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   auto auto_pip_setting_helper = AutoPipSettingHelper::CreateForWebContents(
+       pip_window_controller_->GetWebContents(),
+       base::BindOnce(&PictureInPictureWindowManager::ExitPictureInPictureSoon));
+@@ -330,6 +335,8 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
+   }
+ 
+   return overlay_view;
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
++  return nullptr;
+ }
+ #endif  // !BUILDFLAG(IS_ANDROID)
+ 
+diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
+index 560f2901ef6860811c783c1eed9277223072aabf..f5a5e3d883e0186961bd5560b4429e19abf0df49 100644
+--- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
++++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
+@@ -9,6 +9,7 @@
+ #include "base/memory/singleton.h"
+ #include "base/observer_list.h"
+ #include "base/observer_list_types.h"
++#include "build/branding_buildflags.h"
+ #include "build/build_config.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
+@@ -25,7 +26,9 @@ class Display;
+ }  // namespace display
+ 
+ #if !BUILDFLAG(IS_ANDROID)
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ class AutoPipSettingHelper;
++#endif
+ 
+ namespace views {
+ class View;
+@@ -193,7 +196,9 @@ class PictureInPictureWindowManager {
+ #if !BUILDFLAG(IS_ANDROID)
+   std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
+ 
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   std::unique_ptr<AutoPipSettingHelper> auto_pip_setting_helper_;
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #endif  //! BUILDFLAG(IS_ANDROID)
+ 
+   raw_ptr<content::PictureInPictureWindowController, DanglingUntriaged>
