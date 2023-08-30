@@ -96,7 +96,7 @@ class SystemPreferences
                       gin::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
-  bool AccessibilityDisplayShouldReduceTransparency();
+  bool GetAccessibilityDisplayShouldReduceTransparency();
 
   std::string GetSystemColor(gin_helper::ErrorThrower thrower,
                              const std::string& color);

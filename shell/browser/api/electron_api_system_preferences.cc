@@ -95,12 +95,9 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
       .SetMethod("isTrustedAccessibilityClient",
                  &SystemPreferences::IsTrustedAccessibilityClient)
       .SetMethod("askForMediaAccess", &SystemPreferences::AskForMediaAccess)
-      .SetMethod(
-          "getAccessibilityDisplayShouldReduceTransparency",
-          &SystemPreferences::getAccessibilityDisplayShouldReduceTransparency)
       .SetProperty(
           "accessibilityDisplayShouldReduceTransparency",
-          &SystemPreferences::getAccessibilityDisplayShouldReduceTransparency)
+          &SystemPreferences::GetAccessibilityDisplayShouldReduceTransparency)
 #endif
       .SetMethod("getAnimationSettings",
                  &SystemPreferences::GetAnimationSettings);
