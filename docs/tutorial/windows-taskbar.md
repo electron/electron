@@ -126,7 +126,7 @@ following lines:
 
 ```javascript
 const { BrowserWindow, nativeImage } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const win = new BrowserWindow()
 

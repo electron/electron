@@ -33,7 +33,7 @@ to register it to that session explicitly.
 
 ```javascript
 const { app, BrowserWindow, net, protocol, session } = require('electron')
-const path = require('path')
+const path = require('node:path')
 const url = require('url')
 
 app.whenReady().then(() => {
@@ -122,7 +122,7 @@ Example:
 
 ```js
 const { app, net, protocol } = require('electron')
-const { join } = require('path')
+const { join } = require('node:path')
 const { pathToFileURL } = require('url')
 
 protocol.registerSchemesAsPrivileged([

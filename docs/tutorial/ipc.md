@@ -52,7 +52,7 @@ In the main process, set an IPC listener on the `set-title` channel with the `ip
 
 ```javascript {6-10,22} title='main.js (Main Process)'
 const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 // ...
 
@@ -183,7 +183,7 @@ provided to the renderer process. Please refer to
 
 ```javascript {6-13,25} title='main.js (Main Process)'
 const { app, BrowserWindow, dialog, ipcMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 // ...
 
@@ -378,7 +378,7 @@ target renderer.
 
 ```javascript {11-26} title='main.js (Main Process)'
 const { app, BrowserWindow, Menu, ipcMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
