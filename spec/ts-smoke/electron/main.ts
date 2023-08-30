@@ -377,6 +377,14 @@ if (process.platform === 'darwin') {
   console.log(value);
   const value2 = systemPreferences.getUserDefault('Foo', 'boolean');
   console.log(value2);
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.getAppLevelAppearance());
+  // @ts-expect-error Removed API
+  systemPreferences.setAppLevelAppearance('dark');
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.appLevelAppearance);
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.getColor('alternate-selected-control-text'));
 }
 
 // Create the window.
