@@ -1492,6 +1492,15 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
                             &backdrop_type, sizeof(backdrop_type));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set background material to " << material;
+
+  // TODO: set to _NONE only when material is translucent and no frame;
+  // otherwise keep as _DEFAULT
+  COLORREF caption_color = DWMWA_COLOR_NONE;
+  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
+                                 &caption_color, sizeof(caption_color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color to transparent";
 #endif
 }
 
