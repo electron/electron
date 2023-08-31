@@ -65,9 +65,9 @@ async function validateReleaseAssets (release, validatingRelease) {
   const downloadUrls = release.assets.map(asset => ({ url: asset.browser_download_url, file: asset.name })).sort((a, b) => a.file.localeCompare(b.file));
 
   failureCount = 0;
-  requiredAssets.forEach(asset => {
+  for (const asset of requiredAssets) {
     check(extantAssets.includes(asset), asset);
-  });
+  }
   check((failureCount === 0), 'All required GitHub assets exist for release', true);
 
   if (!validatingRelease || !release.draft) {

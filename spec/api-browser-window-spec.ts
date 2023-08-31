@@ -276,9 +276,9 @@ describe('BrowserWindow module', () => {
         }
       };
       const windows = Array.from(Array(windowCount)).map(() => new BrowserWindow(windowOptions));
-      windows.forEach(win => win.show());
-      windows.forEach(win => win.focus());
-      windows.forEach(win => win.destroy());
+      for (const win of windows) win.show();
+      for (const win of windows) win.focus();
+      for (const win of windows) win.destroy();
       app.removeListener('browser-window-focus', focusListener);
     });
   });
@@ -1342,31 +1342,31 @@ describe('BrowserWindow module', () => {
         const fakeSourceIds = [
           'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
         ];
-        fakeSourceIds.forEach((sourceId) => {
+        for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
           }).to.throw(/Invalid media source id/);
-        });
+        }
       });
 
       it('should throw an exception if wrong type', async () => {
         const fakeSourceIds = [null as any, 123 as any];
-        fakeSourceIds.forEach((sourceId) => {
+        for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
           }).to.throw(/Error processing argument at index 0 */);
-        });
+        }
       });
 
       it('should throw an exception if invalid window', async () => {
         // It is very unlikely that these window id exist.
         const fakeSourceIds = ['window:99999999:0', 'window:123456:1',
           'window:123456:9'];
-        fakeSourceIds.forEach((sourceId) => {
+        for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
           }).to.throw(/Invalid media source id/);
-        });
+        }
       });
 
       it('should not throw an exception', async () => {

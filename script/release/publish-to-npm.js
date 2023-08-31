@@ -58,18 +58,18 @@ new Promise((resolve, reject) => {
   .then((dirPath) => {
     tempDir = dirPath;
     // copy files from `/npm` to temp directory
-    files.forEach((name) => {
+    for (const name of files) {
       const noThirdSegment = name === 'README.md' || name === 'LICENSE';
       fs.writeFileSync(
         path.join(tempDir, name),
         fs.readFileSync(path.join(ELECTRON_DIR, noThirdSegment ? '' : 'npm', name))
       );
-    });
+    }
     // copy from root package.json to temp/package.json
     const packageJson = require(path.join(tempDir, 'package.json'));
-    jsonFields.forEach((fieldName) => {
+    for (const fieldName of jsonFields) {
       packageJson[fieldName] = rootPackageJson[fieldName];
-    });
+    }
     packageJson.version = currentElectronVersion;
     fs.writeFileSync(
       path.join(tempDir, 'package.json'),

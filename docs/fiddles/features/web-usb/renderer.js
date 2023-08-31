@@ -7,9 +7,9 @@ async function testIt () {
   const grantedDevices = await navigator.usb.getDevices()
   let grantedDeviceList = ''
   if (grantedDevices.length > 0) {
-    grantedDevices.forEach(device => {
+    for (const device of grantedDevices) {
       grantedDeviceList += `<hr>${getDeviceDetails(device)}</hr>`
-    })
+    }
   } else {
     grantedDeviceList = noDevicesFoundMsg
   }

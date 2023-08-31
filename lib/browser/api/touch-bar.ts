@@ -323,13 +323,15 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
       this.items.set(item.id, item);
       item.on('change', this.changeListener);
       if (item.child instanceof TouchBar) {
-        item.child.orderedItems.forEach(registerItem);
+        for (const child of item.child.orderedItems) {
+          registerItem(child);
+        }
       }
     };
 
     let hasOtherItemsProxy = false;
     const idSet = new Set();
-    items.forEach((item) => {
+    for (const item of items) {
       if (!(item instanceof TouchBarItem)) {
         throw new TypeError('Each item must be an instance of TouchBarItem');
       }
@@ -347,7 +349,7 @@ class TouchBar extends EventEmitter implements Electron.TouchBar {
       } else {
         throw new Error('Cannot add a single instance of TouchBarItem multiple times in a TouchBar');
       }
-    });
+    }
 
     // register in separate loop after all items are validated
     for (const item of (items as TouchBarItem<any>[])) {

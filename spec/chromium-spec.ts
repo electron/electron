@@ -904,7 +904,7 @@ describe('chromium features', () => {
       await closeAllWindows();
     });
 
-    [true, false].forEach((isSandboxEnabled) =>
+    for (const isSandboxEnabled of [true, false]) {
       describe(`sandbox=${isSandboxEnabled}`, () => {
         it('posts data in the same window', async () => {
           const w = new BrowserWindow({
@@ -954,8 +954,8 @@ describe('chromium features', () => {
           const res = await newWin.webContents.executeJavaScript('document.body.innerText');
           expect(res).to.equal('body:greeting=hello');
         });
-      })
-    );
+      });
+    }
   });
 
   describe('window.open', () => {
@@ -1913,7 +1913,7 @@ describe('chromium features', () => {
     });
 
     describe('DOM storage quota increase', () => {
-      ['localStorage', 'sessionStorage'].forEach((storageName) => {
+      for (const storageName of ['localStorage', 'sessionStorage']) {
         it(`allows saving at least 40MiB in ${storageName}`, async () => {
           const w = new BrowserWindow({ show: false });
           w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
@@ -1959,7 +1959,7 @@ describe('chromium features', () => {
             }
           })()).to.eventually.be.rejected();
         });
-      });
+      }
     });
 
     describe('persistent storage', () => {
