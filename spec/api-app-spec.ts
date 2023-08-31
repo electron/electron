@@ -240,7 +240,7 @@ describe('app module', () => {
       expect(code).to.equal(0);
     });
 
-    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
+    async function testArgumentPassing(testArgs: SingleInstanceLockTestArgs) {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = once(first, 'exit');
@@ -564,8 +564,8 @@ describe('app module', () => {
 
   describe('app.badgeCount', () => {
     const platformIsNotSupported =
-        (process.platform === 'win32') ||
-        (process.platform === 'linux' && !app.isUnityRunning());
+      (process.platform === 'win32') ||
+      (process.platform === 'linux' && !app.isUnityRunning());
 
     const expectedBadgeCount = 42;
 
@@ -946,25 +946,37 @@ describe('app module', () => {
 
   describe('getAppPath', () => {
     it('works for directories with package.json', async () => {
-      const { appPath } = await runTestApp('app-path');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path'));
+      const { appPath } = await runTestApp('get-app-path');
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/get-app-path'));
     });
 
     it('works for directories with index.js', async () => {
-      const { appPath } = await runTestApp('app-path/lib');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'));
+      const { appPath } = await runTestApp('get-app-path/lib');
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/get-app-path/lib'));
     });
 
     it('works for files without extension', async () => {
-      const { appPath } = await runTestApp('app-path/lib/index');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'));
+      const { appPath } = await runTestApp('get-app-path/lib/index');
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/get-app-path/lib'));
     });
 
     it('works for files', async () => {
-      const { appPath } = await runTestApp('app-path/lib/index.js');
-      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/app-path/lib'));
+      const { appPath } = await runTestApp('get-app-path/lib/index.js');
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/get-app-path/lib'));
     });
   });
+
+  describe('setAppPath', () => {
+    it('overrides the app path', async () => {
+      const { appPath, error } = await runTestApp('set-app-path');
+
+      if (error) {
+        throw new Error(error)
+      }
+
+      expect(appPath).to.equal(path.resolve(fixturesPath, 'api/get-app-path/lib_alt'));
+    });
+  })
 
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
@@ -1954,7 +1966,7 @@ describe('default behavior', () => {
   });
 });
 
-async function runTestApp (name: string, ...args: any[]) {
+async function runTestApp(name: string, ...args: any[]) {
   const appPath = path.join(fixturesPath, 'api', name);
   const electronPath = process.execPath;
   const appProcess = cp.spawn(electronPath, [appPath, ...args]);
