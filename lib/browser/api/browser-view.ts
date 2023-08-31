@@ -3,12 +3,12 @@ import { BrowserWindow, AutoResizeOptions, Rectangle, WebContentsView, WebPrefer
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 export default class BrowserView {
-  #webContentsView: WebContentsView
+  #webContentsView: WebContentsView;
 
   // AutoResize state
-  #resizeListener: ((...args: any[]) => void) | null = null
-  #lastWindowSize: {width: number, height: number} = { width: 0, height: 0 }
-  #autoResizeFlags: AutoResizeOptions = {}
+  #resizeListener: ((...args: any[]) => void) | null = null;
+  #lastWindowSize: {width: number, height: number} = { width: 0, height: 0 };
+  #autoResizeFlags: AutoResizeOptions = {};
 
   constructor (options: {webPreferences: WebPreferences, webContents?: WebContents} = { webPreferences: {} }) {
     const { webPreferences = {}, webContents } = options;
@@ -67,8 +67,8 @@ export default class BrowserView {
     }
   }
 
-  #autoHorizontalProportion: {width: number, left: number} | null = null
-  #autoVerticalProportion: {height: number, top: number} | null = null
+  #autoHorizontalProportion: {width: number, left: number} | null = null;
+  #autoVerticalProportion: {height: number, top: number} | null = null;
   #autoResize () {
     if (!this.ownerWindow) throw new Error('Electron bug: #autoResize called without owner window');
     if (this.#autoResizeFlags.horizontal && this.#autoHorizontalProportion == null) {
