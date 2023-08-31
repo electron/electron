@@ -240,7 +240,7 @@ describe('app module', () => {
       expect(code).to.equal(0);
     });
 
-    async function testArgumentPassing(testArgs: SingleInstanceLockTestArgs) {
+    async function testArgumentPassing (testArgs: SingleInstanceLockTestArgs) {
       const appPath = path.join(fixturesPath, 'api', 'singleton-data');
       const first = cp.spawn(process.execPath, [appPath, ...testArgs.args]);
       const firstExited = once(first, 'exit');
@@ -971,12 +971,12 @@ describe('app module', () => {
       const { appPath, error } = await runTestApp('set-app-path');
 
       if (error) {
-        throw new Error(error)
+        throw new Error(error);
       }
 
       expect(appPath).to.equal(path.resolve(fixturesPath, 'api/get-app-path/lib_alt'));
     });
-  })
+  });
 
   describe('getPath(name)', () => {
     it('returns paths that exist', () => {
@@ -1966,7 +1966,7 @@ describe('default behavior', () => {
   });
 });
 
-async function runTestApp(name: string, ...args: any[]) {
+async function runTestApp (name: string, ...args: any[]) {
   const appPath = path.join(fixturesPath, 'api', name);
   const electronPath = process.execPath;
   const appProcess = cp.spawn(electronPath, [appPath, ...args]);

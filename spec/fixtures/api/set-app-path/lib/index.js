@@ -1,12 +1,12 @@
 const { app, BrowserWindow } = require('electron');
-const path = require('path')
+const path = require('node:path');
 
 const appPathBase = path.basename(app.getAppPath());
 const newPath = path.join(appPathBase, 'lib_alt');
 
 app.setAppPath(newPath);
 
-function report(payload, exitStatus = 0) {
+function report (payload, exitStatus = 0) {
   process.stdout.write(JSON.stringify(payload));
   process.stdout.end();
 
@@ -24,7 +24,7 @@ app.on('ready', () => {
     };
 
     report(payload);
-  })
+  });
 
   win.webContents.on('did-fail-load', (error) => {
     const payload = {
@@ -32,7 +32,7 @@ app.on('ready', () => {
     };
 
     report(payload, 1);
-  })
+  });
 
   win.loadFile('index.html');
 });
