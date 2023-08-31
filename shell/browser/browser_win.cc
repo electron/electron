@@ -410,8 +410,9 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
     }
 
     // If now empty, delete the whole key
-    if (classesKey.GetValueCount().value_or(1) == 0) {
-      classesKey.DeleteKey(wprotocol.c_str());
+    if (protocolKey.GetValueCount().value_or(1) == 0) {
+      classesKey.DeleteKey(wprotocol.c_str(),
+                           base::win::RegKey::RecursiveDelete(false));
     }
 
     return true;
