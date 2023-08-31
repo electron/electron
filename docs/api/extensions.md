@@ -40,6 +40,23 @@ We support the following extensions APIs, with some caveats. Other APIs may
 additionally be supported, but support for any APIs not listed here is
 provisional and may be removed.
 
+### Supported Manifest Keys
+
+- `name`
+- `version`
+- `author`
+- `permissions`
+- `content_scripts`
+- `default_locale`
+- `devtools_page`
+- `short_name`
+- `host_permissions` (Manifest V3)
+- `manifest_version`
+- `background` (Manifest V2)
+- `minimum_chrome_version`
+
+See [Manifest file format](https://developer.chrome.com/docs/extensions/mv3/manifest/) for more information about the purpose of each possible key.
+
 ### `chrome.devtools.inspectedWindow`
 
 All features of this API are supported.

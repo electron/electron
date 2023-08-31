@@ -1,0 +1,9 @@
+{
+  "name": "malformed",
+  "version": "0.1",
+  "manifest_version": 3,
+  "description": "Extension with invalid host_permissions",
+  "host_permissions": [
+    "malformed_host"
+  ]
+}
