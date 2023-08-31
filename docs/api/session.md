@@ -1491,7 +1491,7 @@ is emitted.
 
 * `extensionId` string - ID of extension to query
 
-Returns `Extension` | `null` - The loaded extension with the given ID.
+Returns `Extension | null` - The loaded extension with the given ID.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
