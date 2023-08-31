@@ -13,6 +13,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "include/core/SkColor.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
@@ -259,15 +260,14 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetBackgroundMaterial(material);
   }
 #endif
-  std::string color;
-  if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(ParseCSSColor(color));
-  } else if (!transparent()) {
-    // For normal window, use white as default background.
-    SetBackgroundColor(SK_ColorWHITE);
+
+  SkColor background_color = SK_ColorWHITE;
+  if (std::string color; options.Get(options::kBackgroundColor, &color)) {
+    background_color = ParseCSSColor(color);
+  } else if (transparent()) {
+    background_color = SK_ColorTRANSPARENT;
   }
-  // TODO: figure out the right condition for this
-  SetBackgroundColor(SK_ColorTRANSPARENT);
+  SetBackgroundColor(background_color);
 
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
