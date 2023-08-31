@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 7 Mar 2023 16:17:41 -0800
+Subject: fix: lazyload fs in esm loaders to apply asar patches
+
+Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
+
+diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
+index d64d4452a50bc4469b2d2fcc3251b3df31cda6ec..8d8f1b24fb68cce2b37e43f92aac200b4ee73cea 100644
+--- a/lib/internal/modules/esm/load.js
++++ b/lib/internal/modules/esm/load.js
+@@ -20,7 +20,7 @@ const experimentalNetworkImports =
+ 
+ const { Buffer: { from: BufferFrom } } = require('buffer');
+ 
+-const { readFile: readFileAsync } = require('internal/fs/promises').exports;
++const fs = require('fs');
+ const { URL } = require('internal/url');
+ const {
+   ERR_INVALID_URL,
+@@ -34,7 +34,7 @@ async function getSource(url, context) {
+   let responseURL = url;
+   let source;
+   if (parsed.protocol === 'file:') {
+-    source = await readFileAsync(parsed);
++    source = await fs.promises.readFile(parsed);
+   } else if (parsed.protocol === 'data:') {
+     const match = RegExpPrototypeExec(DATA_URL_PATTERN, parsed.pathname);
+     if (!match) {
+diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
+index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea0cb44f8d 100644
+--- a/lib/internal/modules/esm/resolve.js
++++ b/lib/internal/modules/esm/resolve.js
+@@ -26,11 +26,7 @@ const {
+ } = primordials;
+ const internalFS = require('internal/fs/utils');
+ const { BuiltinModule } = require('internal/bootstrap/loaders');
+-const {
+-  realpathSync,
+-  statSync,
+-  Stats,
+-} = require('fs');
++const fs = require('fs');
+ const { getOptionValue } = require('internal/options');
+ const pendingDeprecation = getOptionValue('--pending-deprecation');
+ // Do not eagerly grab .manifest, it may be in TDZ
+@@ -171,14 +167,14 @@ const realpathCache = new SafeMap();
+  * @returns {import('fs').Stats}
+  */
+ const tryStatSync =
+-  (path) => statSync(path, { throwIfNoEntry: false }) ?? new Stats();
++  (path) => fs.statSync(path, { throwIfNoEntry: false }) ?? new fs.Stats();
+ 
+ /**
+  * @param {string | URL} url
+  * @returns {boolean}
+  */
+ function fileExists(url) {
+-  return statSync(url, { throwIfNoEntry: false })?.isFile() ?? false;
++  return fs.statSync(url, { throwIfNoEntry: false })?.isFile() ?? false;
+ }
+ 
+ /**
+@@ -326,7 +322,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+   }
+ 
+   if (!preserveSymlinks) {
+-    const real = realpathSync(path, {
++    const real = fs.realpathSync(path, {
+       [internalFS.realpathCacheKey]: realpathCache,
+     });
+     const { search, hash } = resolved;
+diff --git a/lib/internal/modules/esm/translators.js b/lib/internal/modules/esm/translators.js
+index 1ceb89da21610c703f4a18be5888373c7feaa370..347558c805c8ecd3f7ff4f6324ef7df68badc52f 100644
+--- a/lib/internal/modules/esm/translators.js
++++ b/lib/internal/modules/esm/translators.js
+@@ -24,7 +24,7 @@ function lazyTypes() {
+   return _TYPES = require('internal/util/types');
+ }
+ 
+-const { readFileSync } = require('fs');
++const fs = require('fs');
+ const { extname, isAbsolute } = require('path');
+ const {
+   hasEsmSyntax,
+@@ -131,7 +131,7 @@ translators.set('module', async function moduleStrategy(url, source, isMain) {
+  */
+ function enrichCJSError(err, content, filename) {
+   if (err != null && ObjectGetPrototypeOf(err) === SyntaxErrorPrototype &&
+-      hasEsmSyntax(content || readFileSync(filename, 'utf-8'))) {
++      hasEsmSyntax(content || fs.readFileSync(filename, 'utf-8'))) {
+     // Emit the warning synchronously because we are in the middle of handling
+     // a SyntaxError that will throw and likely terminate the process before an
+     // asynchronous warning would be emitted.
+@@ -207,7 +207,7 @@ function cjsPreparseModuleExports(filename) {
+ 
+   let source;
+   try {
+-    source = readFileSync(filename, 'utf8');
++    source = fs.readFileSync(filename, 'utf8');
+   } catch {
+     // Continue regardless of error.
+   }

@@ -11,12 +11,14 @@
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
 
@@ -94,11 +96,15 @@ class NodeBindings {
       v8::Handle<v8::Context> context,
       node::MultiIsolatePlatform* platform,
       std::vector<std::string> args,
-      std::vector<std::string> exec_args);
+      std::vector<std::string> exec_args,
+      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          absl::nullopt);
 
   std::shared_ptr<node::Environment> CreateEnvironment(
       v8::Handle<v8::Context> context,
-      node::MultiIsolatePlatform* platform);
+      node::MultiIsolatePlatform* platform,
+      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          absl::nullopt);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
@@ -134,6 +140,10 @@ class NodeBindings {
   NodeBindings(const NodeBindings&) = delete;
   NodeBindings& operator=(const NodeBindings&) = delete;
 
+  // Blocks until app code is signaled to be loaded via |SetAppCodeLoaded|.
+  // Only has an effect if called in the browser process
+  void JoinAppCode();
+
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
 
@@ -168,8 +178,16 @@ class NodeBindings {
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
 
+  // Default callback to indicate when the node environment has finished
+  // initializing and the primary import chain is fully resolved and executed
+  void SetAppCodeLoaded();
+
   // Indicates whether polling thread has been created.
   bool initialized_ = false;
+
+  // Indicates whether the app code has finished loading
+  // for ESM this is async after the module is loaded
+  bool app_code_loaded_ = false;
 
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;

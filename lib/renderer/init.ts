@@ -1,4 +1,5 @@
 import * as path from 'path';
+import { pathToFileURL } from 'url';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
@@ -122,18 +123,39 @@ if (nodeIntegration) {
   }
 }
 
-const { preloadPaths } = ipcRendererUtils.invokeSync<{
-  preloadPaths: string[]
-}>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+const { appCodeLoaded } = process;
+delete process.appCodeLoaded;
 
-// Load the preload scripts.
-for (const preloadScript of preloadPaths) {
-  try {
-    Module._load(preloadScript);
-  } catch (error) {
-    console.error(`Unable to load preload script: ${preloadScript}`);
-    console.error(error);
+const { preloadPaths } = ipcRendererUtils.invokeSync<{ preloadPaths: string[] }>(IPC_MESSAGES.BROWSER_NONSANDBOX_LOAD);
+const cjsPreloads = preloadPaths.filter(p => path.extname(p) !== '.mjs');
+const esmPreloads = preloadPaths.filter(p => path.extname(p) === '.mjs');
+if (cjsPreloads.length) {
+  // Load the preload scripts.
+  for (const preloadScript of cjsPreloads) {
+    try {
+      Module._load(preloadScript);
+    } catch (error) {
+      console.error(`Unable to load preload script: ${preloadScript}`);
+      console.error(error);
 
-    ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
+      ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, error);
+    }
   }
+}
+if (esmPreloads.length) {
+  const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
+
+  loadESM(async (esmLoader: any) => {
+    // Load the preload scripts.
+    for (const preloadScript of esmPreloads) {
+      await esmLoader.import(pathToFileURL(preloadScript).toString(), undefined, Object.create(null)).catch((err: Error) => {
+        console.error(`Unable to load preload script: ${preloadScript}`);
+        console.error(err);
+
+        ipcRendererInternal.send(IPC_MESSAGES.BROWSER_PRELOAD_ERROR, preloadScript, err);
+      });
+    }
+  }).finally(() => appCodeLoaded!());
+} else {
+  appCodeLoaded!();
 }
