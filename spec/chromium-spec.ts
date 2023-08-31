@@ -13,6 +13,7 @@ import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 import { setTimeout } from 'node:timers/promises';
+import { AddressInfo } from 'node:net';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -56,12 +57,12 @@ describe('reporting api', () => {
       res.end('<script>window.navigator.vibrate(1)</script>');
     });
 
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    await listen(server);
     const bw = new BrowserWindow({ show: false });
 
     try {
       const reportGenerated = once(reporting, 'report');
-      await bw.loadURL(`https://localhost:${(server.address() as any).port}/a`);
+      await bw.loadURL(`https://localhost:${(server.address() as AddressInfo).port}/a`);
 
       const [reports] = await reportGenerated;
       expect(reports).to.be.an('array').with.lengthOf(1);

@@ -589,7 +589,7 @@ describe('BrowserWindow module', () => {
       describe('will-frame-navigate event', () => {
         let server = null as unknown as http.Server;
         let url = null as unknown as string;
-        before((done) => {
+        before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate-top') {
               res.end('<a target=_top href="/">navigate _top</a>');
@@ -609,10 +609,7 @@ describe('BrowserWindow module', () => {
               res.end('');
             }
           });
-          server.listen(0, '127.0.0.1', () => {
-            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-            done();
-          });
+          url = (await listen(server)).url;
         });
 
         after(() => {
@@ -683,7 +680,7 @@ describe('BrowserWindow module', () => {
               resolve(e.url);
             });
           });
-          expect(navigatedTo).to.equal(url);
+          expect(navigatedTo).to.equal(url + '/');
           expect(w.webContents.getURL()).to.match(/^file:/);
         });
 
@@ -696,7 +693,7 @@ describe('BrowserWindow module', () => {
               resolve(e.url);
             });
           });
-          expect(navigatedTo).to.equal(url);
+          expect(navigatedTo).to.equal(url + '/');
           expect(w.webContents.getURL()).to.equal('about:blank');
         });
 
@@ -883,7 +880,7 @@ describe('BrowserWindow module', () => {
           'did-frame-navigate',
           'did-navigate'
         ];
-        before((done) => {
+        before(async () => {
           server = http.createServer((req, res) => {
             if (req.url === '/navigate') {
               res.end('<a href="/">navigate</a>');
@@ -899,10 +896,7 @@ describe('BrowserWindow module', () => {
               res.end('');
             }
           });
-          server.listen(0, '127.0.0.1', () => {
-            url = `http://127.0.0.1:${(server.address() as AddressInfo).port}/`;
-            done();
-          });
+          url = (await listen(server)).url;
         });
         it('for initial navigation, event order is consistent', async () => {
           const firedEvents: string[] = [];
@@ -929,7 +923,7 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          w.loadURL(`${url}navigate`);
+          w.loadURL(url + '/navigate');
           await once(w.webContents, 'did-navigate');
           await setTimeout(2000);
           Promise.all(navigationEvents.map(event =>
@@ -972,7 +966,7 @@ describe('BrowserWindow module', () => {
             'did-frame-navigate',
             'did-navigate'
           ];
-          w.loadURL(`${url}redirect`);
+          w.loadURL(url + '/redirect');
           await once(w.webContents, 'did-navigate');
           await setTimeout(2000);
           Promise.all(navigationEvents.map(event =>
@@ -1010,7 +1004,7 @@ describe('BrowserWindow module', () => {
             'did-start-navigation',
             'did-navigate-in-page'
           ];
-          w.loadURL(`${url}in-page`);
+          w.loadURL(url + '/in-page');
           await once(w.webContents, 'did-navigate');
           await setTimeout(2000);
           Promise.all(navigationEvents.map(event =>
@@ -4729,7 +4723,7 @@ describe('BrowserWindow module', () => {
         expect(c.isVisible()).to.be.true('child is visible');
       });
 
-      it('closes a grandchild window when a middle child window is destroyed', (done) => {
+      it('closes a grandchild window when a middle child window is destroyed', async () => {
         const w = new BrowserWindow();
 
         w.loadFile(path.join(fixtures, 'pages', 'base-page.html'));
@@ -4739,12 +4733,12 @@ describe('BrowserWindow module', () => {
           const childWindow = new BrowserWindow({ parent: window });
 
           await setTimeout();
-          window.close();
 
-          childWindow.on('closed', () => {
-            expect(() => { BrowserWindow.getFocusedWindow(); }).to.not.throw();
-            done();
-          });
+          const closed = once(childWindow, 'closed');
+          window.close();
+          await closed;
+
+          expect(() => { BrowserWindow.getFocusedWindow(); }).to.not.throw();
         });
       });
 

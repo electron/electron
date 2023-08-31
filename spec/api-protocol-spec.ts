@@ -263,7 +263,7 @@ describe('protocol module', () => {
         expect(r.headers).to.have.property('x-great-header', 'sogreat');
       });
 
-      it('can load iframes with custom protocols', (done) => {
+      it('can load iframes with custom protocols', async () => {
         registerFileProtocol('custom', (request, callback) => {
           const filename = request.url.substring(9);
           const p = path.join(__dirname, 'fixtures', 'pages', filename);
@@ -278,8 +278,9 @@ describe('protocol module', () => {
           }
         });
 
+        const loaded = once(ipcMain, 'loaded-iframe-custom-protocol');
         w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
-        ipcMain.once('loaded-iframe-custom-protocol', () => done());
+        await loaded;
       });
 
       it('sends object as response', async () => {
