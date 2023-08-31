@@ -22,7 +22,7 @@ session.defaultSession.cookies.get({})
   })
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url: 'http://www.github.com' })
+session.defaultSession.cookies.get({ url: 'https://www.github.com' })
   .then((cookies) => {
     console.log(cookies)
   }).catch((error) => {
@@ -31,7 +31,7 @@ session.defaultSession.cookies.get({ url: 'http://www.github.com' })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
-const cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
+const cookie = { url: 'https://www.github.com', name: 'dummy_name', value: 'dummy' }
 session.defaultSession.cookies.set(cookie)
   .then(() => {
     // success

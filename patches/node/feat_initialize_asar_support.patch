@@ -6,10 +6,19 @@ Subject: feat: initialize asar support
 This patch initializes asar support in Node.js.
 
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index 44a9183d77614c55246a513ec8d47c3f5ec6e41b..158daaf93446d99d21dd001a3ab614b1036c0b02 100644
+index 250a43c5455b4f9ff72dd3a34d5b0aa270f43cc6..4e7a9e7a7585fea2013ff70161672568477172b1 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -118,12 +118,17 @@ function setupUserModules() {
+@@ -49,6 +49,8 @@ function prepareWorkerThreadExecution() {
+   });
+ }
+ 
++
++let processLinkedBinding = process._linkedBinding;
+ function prepareExecution(options) {
+   const { expandArgv1, initializeModules, isMainThread } = options;
+ 
+@@ -117,12 +119,17 @@ function setupUserModules() {
    loadPreloadModules();
    // Need to be done after --require setup.
    initializeFrozenIntrinsics();
@@ -21,7 +30,7 @@ index 44a9183d77614c55246a513ec8d47c3f5ec6e41b..158daaf93446d99d21dd001a3ab614b1
  }
  
 +function setupAsarSupport() {
-+  process._linkedBinding('electron_common_asar').initAsarSupport(require);
++  processLinkedBinding('electron_common_asar').initAsarSupport(require);
 +}
 +
  function patchProcessObject(expandArgv1) {

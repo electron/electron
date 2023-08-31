@@ -111,10 +111,6 @@ HICON ViewsDelegate::GetSmallWindowIcon() const {
   return GetDefaultWindowIcon();
 }
 
-bool ViewsDelegate::IsWindowInMetro(gfx::NativeWindow window) const {
-  return false;
-}
-
 int ViewsDelegate::GetAppbarAutohideEdges(HMONITOR monitor,
                                           base::OnceClosure callback) {
   // Initialize the map with EDGE_BOTTOM. This is important, as if we return an

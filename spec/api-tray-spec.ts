@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { Menu, Tray } from 'electron/main';
 import { nativeImage } from 'electron/common';
 import { ifdescribe, ifit } from './lib/spec-helpers';
-import * as path from 'path';
+import * as path from 'node:path';
 
 describe('tray module', () => {
   let tray: Tray;
@@ -15,6 +15,10 @@ describe('tray module', () => {
   });
 
   describe('new Tray', () => {
+    it('sets the correct class name on the prototype', () => {
+      expect(Tray.prototype.constructor.name).to.equal('Tray');
+    });
+
     it('throws a descriptive error for a missing file', () => {
       const badPath = path.resolve('I', 'Do', 'Not', 'Exist');
       expect(() => {

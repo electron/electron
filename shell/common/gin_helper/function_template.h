@@ -9,6 +9,7 @@
 
 #include "base/functional/bind.h"
 #include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_helper/arguments.h"
 #include "shell/common/gin_helper/destroyable.h"
@@ -241,7 +242,7 @@ class Invoker<IndicesHolder<indices...>, ArgTypes...>
     return arg1 && And(args...);
   }
 
-  gin::Arguments* args_;
+  raw_ptr<gin::Arguments> args_;
 };
 
 // DispatchToCallback converts all the JavaScript arguments to C++ types and

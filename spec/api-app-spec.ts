@@ -1,15 +1,15 @@
 import { assert, expect } from 'chai';
-import * as cp from 'child_process';
-import * as https from 'https';
-import * as http from 'http';
-import * as net from 'net';
+import * as cp from 'node:child_process';
+import * as https from 'node:https';
+import * as http from 'node:http';
+import * as net from 'node:net';
 import * as fs from 'fs-extra';
-import * as path from 'path';
-import { promisify } from 'util';
-import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
+import * as path from 'node:path';
+import { promisify } from 'node:util';
+import { app, BrowserWindow, Menu, session, net as electronNet, WebContents } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -345,7 +345,7 @@ describe('app module', () => {
           expectedAdditionalData: undefined
         });
         assert(false);
-      } catch (e) {
+      } catch {
         // This is expected.
       }
     });
@@ -495,7 +495,7 @@ describe('app module', () => {
     afterEach(() => closeWindow(w).then(() => { w = null as any; }));
 
     it('should emit browser-window-focus event when window is focused', async () => {
-      const emitted = once(app, 'browser-window-focus');
+      const emitted = once(app, 'browser-window-focus') as Promise<[any, BrowserWindow]>;
       w = new BrowserWindow({ show: false });
       w.emit('focus');
       const [, window] = await emitted;
@@ -503,7 +503,7 @@ describe('app module', () => {
     });
 
     it('should emit browser-window-blur event when window is blurred', async () => {
-      const emitted = once(app, 'browser-window-blur');
+      const emitted = once(app, 'browser-window-blur') as Promise<[any, BrowserWindow]>;
       w = new BrowserWindow({ show: false });
       w.emit('blur');
       const [, window] = await emitted;
@@ -511,14 +511,14 @@ describe('app module', () => {
     });
 
     it('should emit browser-window-created event when window is created', async () => {
-      const emitted = once(app, 'browser-window-created');
+      const emitted = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       w = new BrowserWindow({ show: false });
       const [, window] = await emitted;
       expect(window.id).to.equal(w.id);
     });
 
     it('should emit web-contents-created event when a webContents is created', async () => {
-      const emitted = once(app, 'web-contents-created');
+      const emitted = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       w = new BrowserWindow({ show: false });
       const [, webContents] = await emitted;
       expect(webContents.id).to.equal(w.webContents.id);
@@ -535,7 +535,7 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const emitted = once(app, 'renderer-process-crashed');
+      const emitted = once(app, 'renderer-process-crashed') as Promise<[any, WebContents]>;
       w.webContents.executeJavaScript('process.crash()');
 
       const [, webContents] = await emitted;
@@ -553,7 +553,7 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const emitted = once(app, 'render-process-gone');
+      const emitted = once(app, 'render-process-gone') as Promise<[any, WebContents, Electron.RenderProcessGoneDetails]>;
       w.webContents.executeJavaScript('process.crash()');
 
       const [, webContents, details] = await emitted;
@@ -1184,7 +1184,7 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1193,7 +1193,7 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(false);
     });
 
@@ -1209,7 +1209,7 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1422,7 +1422,7 @@ describe('app module', () => {
         }
       } else {
         // return error if not clean exit
-        return Promise.reject(new Error(errorData));
+        throw new Error(errorData);
       }
     };
     const verifyBasicGPUInfo = async (gpuInfo: any) => {
@@ -1935,7 +1935,7 @@ describe('default behavior', () => {
     it('should emit a login event on app when a WebContents hits a 401', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(serverUrl);
-      const [, webContents] = await once(app, 'login');
+      const [, webContents] = await once(app, 'login') as [any, WebContents];
       expect(webContents).to.equal(w.webContents);
     });
   });

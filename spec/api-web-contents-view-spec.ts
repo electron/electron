@@ -5,6 +5,12 @@ import { BaseWindow, WebContentsView } from 'electron/main';
 
 describe('WebContentsView', () => {
   afterEach(closeAllWindows);
+  // let w: BaseWindow;
+
+  // afterEach(async () => {
+  //   await closeWindow(w as any);
+  //   w = null as unknown as BaseWindow;
+  // });
 
   it('can be used as content view', () => {
     const w = new BaseWindow({ show: false });

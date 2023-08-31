@@ -36,7 +36,11 @@ void AutofillDriver::ShowAutofillPopup(
   v8::HandleScope scope(isolate);
   auto* web_contents = api::WebContents::From(
       content::WebContents::FromRenderFrameHost(render_frame_host_));
-  if (!web_contents || !web_contents->owner_window())
+  if (!web_contents)
+    return;
+
+  auto* owner_window = web_contents->owner_window();
+  if (!owner_window)
     return;
 
   auto* embedder = web_contents->embedder();
@@ -55,9 +59,23 @@ void AutofillDriver::ShowAutofillPopup(
     embedder_frame_host = embedder->web_contents()->GetPrimaryMainFrame();
   }
 
+  // Ensure that if the WebContents belongs to a BrowserView,
+  // the popup is positioned relative to the BrowserView's bounds.
+  // for (WebContentsView* bv : owner_window->browser_views()) {
+  //   auto* iwc = bv->GetInspectableWebContents();
+  //   if (!iwc)
+  //     continue;
+
+  //   auto* awc = api::WebContents::From(iwc->GetWebContents());
+  //   if (awc == web_contents) {
+  //     auto bv_origin = bv->GetBounds().origin();
+  //     popup_bounds.Offset(gfx::Vector2dF(bv_origin.x(), bv_origin.y()));
+  //     break;
+  //   }
+  // }
+
   autofill_popup_->CreateView(render_frame_host_, embedder_frame_host, osr,
-                              web_contents->owner_window()->content_view(),
-                              popup_bounds);
+                              owner_window->content_view(), popup_bounds);
   autofill_popup_->SetItems(values, labels);
 }
 

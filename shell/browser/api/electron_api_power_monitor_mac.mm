@@ -63,7 +63,6 @@
 
 - (void)dealloc {
   [[NSDistributedNotificationCenter defaultCenter] removeObserver:self];
-  [super dealloc];
 }
 
 - (void)addEmitter:(electron::api::PowerMonitor*)monitor_ {

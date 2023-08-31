@@ -5,6 +5,7 @@
 #include "electron/shell/renderer/electron_api_service_impl.h"
 
 #include <memory>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -81,8 +82,7 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
                   bool internal,
                   const std::string& channel,
                   std::vector<v8::Local<v8::Value>> ports,
-                  v8::Local<v8::Value> args,
-                  int32_t sender_id) {
+                  v8::Local<v8::Value> args) {
   auto* isolate = context->GetIsolate();
 
   v8::HandleScope handle_scope(isolate);
@@ -92,8 +92,7 @@ void EmitIPCEvent(v8::Local<v8::Context> context,
 
   std::vector<v8::Local<v8::Value>> argv = {
       gin::ConvertToV8(isolate, internal), gin::ConvertToV8(isolate, channel),
-      gin::ConvertToV8(isolate, ports), args,
-      gin::ConvertToV8(isolate, sender_id)};
+      gin::ConvertToV8(isolate, ports), args};
 
   InvokeIpcCallback(context, "onMessage", argv);
 }
@@ -155,8 +154,7 @@ void ElectronApiServiceImpl::OnConnectionError() {
 
 void ElectronApiServiceImpl::Message(bool internal,
                                      const std::string& channel,
-                                     blink::CloneableMessage arguments,
-                                     int32_t sender_id) {
+                                     blink::CloneableMessage arguments) {
   blink::WebLocalFrame* frame = render_frame()->GetWebFrame();
   if (!frame)
     return;
@@ -169,7 +167,7 @@ void ElectronApiServiceImpl::Message(bool internal,
 
   v8::Local<v8::Value> args = gin::ConvertToV8(isolate, arguments);
 
-  EmitIPCEvent(context, internal, channel, {}, args, sender_id);
+  EmitIPCEvent(context, internal, channel, {}, args);
 }
 
 void ElectronApiServiceImpl::ReceivePostMessage(
@@ -196,8 +194,7 @@ void ElectronApiServiceImpl::ReceivePostMessage(
 
   std::vector<v8::Local<v8::Value>> args = {message_value};
 
-  EmitIPCEvent(context, false, channel, ports, gin::ConvertToV8(isolate, args),
-               0);
+  EmitIPCEvent(context, false, channel, ports, gin::ConvertToV8(isolate, args));
 }
 
 void ElectronApiServiceImpl::TakeHeapSnapshot(

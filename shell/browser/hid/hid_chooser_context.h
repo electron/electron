@@ -6,13 +6,12 @@
 #define ELECTRON_SHELL_BROWSER_HID_HID_CHOOSER_CONTEXT_H_
 
 #include <map>
-#include <memory>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include "base/containers/queue.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/observer_list.h"
 #include "base/unguessable_token.h"
@@ -117,7 +116,7 @@ class HidChooserContext : public KeyedService,
       const url::Origin& origin,
       const device::mojom::HidDeviceInfo& device);
 
-  ElectronBrowserContext* browser_context_;
+  raw_ptr<ElectronBrowserContext> browser_context_;
 
   bool is_initialized_ = false;
   base::queue<device::mojom::HidManager::GetDevicesCallback>

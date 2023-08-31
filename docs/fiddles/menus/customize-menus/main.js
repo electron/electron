@@ -6,8 +6,10 @@ const {
   ipcMain,
   app,
   shell,
-  dialog
-} = require('electron')
+  dialog,
+  autoUpdater
+} = require('electron/main')
+const path = require('node:path')
 
 const menu = new Menu()
 menu.append(new MenuItem({ label: 'Hello' }))
@@ -185,7 +187,7 @@ function addUpdateMenuItems (items, position) {
       visible: false,
       key: 'checkForUpdate',
       click: () => {
-        require('electron').autoUpdater.checkForUpdates()
+        autoUpdater.checkForUpdates()
       }
     },
     {
@@ -194,7 +196,7 @@ function addUpdateMenuItems (items, position) {
       visible: false,
       key: 'restartToUpdate',
       click: () => {
-        require('electron').autoUpdater.quitAndInstall()
+        autoUpdater.quitAndInstall()
       }
     }
   ]
@@ -294,7 +296,7 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 
@@ -310,6 +312,12 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
+  })
+
+  // Open external links in the default browser
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    shell.openExternal(url)
   })
 }
 

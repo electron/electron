@@ -6,13 +6,14 @@
 #include <memory>
 #include <vector>
 
-#include "base/cxx17_backports.h"
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "components/autofill/core/common/autofill_features.h"
 #include "electron/buildflags/buildflags.h"
 #include "mojo/public/cpp/bindings/associated_remote.h"
 #include "shell/browser/native_window_views.h"
+#include "shell/browser/osr/osr_render_widget_host_view.h"
+#include "shell/browser/osr/osr_view_proxy.h"
 #include "shell/browser/ui/autofill_popup.h"
 #include "shell/common/api/api.mojom.h"
 #include "third_party/blink/public/common/associated_interfaces/associated_interface_provider.h"
@@ -25,11 +26,6 @@
 #include "ui/gfx/geometry/rect_conversions.h"
 #include "ui/gfx/geometry/vector2d.h"
 #include "ui/gfx/text_utils.h"
-
-#if BUILDFLAG(ENABLE_OSR)
-#include "shell/browser/osr/osr_render_widget_host_view.h"
-#include "shell/browser/osr/osr_view_proxy.h"
-#endif
 
 namespace electron {
 
@@ -44,8 +40,8 @@ void CalculatePopupXAndWidthHorizontallyCentered(
   // The preferred horizontal starting point for the pop-up is at the horizontal
   // center of the field.
   int preferred_starting_point =
-      base::clamp(element_bounds.x() + (element_bounds.size().width() / 2),
-                  content_area_bounds.x(), content_area_bounds.right());
+      std::clamp(element_bounds.x() + (element_bounds.size().width() / 2),
+                 content_area_bounds.x(), content_area_bounds.right());
 
   // The space available to the left and to the right.
   int space_to_right = content_area_bounds.right() - preferred_starting_point;
@@ -85,11 +81,11 @@ void CalculatePopupXAndWidth(int popup_preferred_width,
                              const gfx::Rect& element_bounds,
                              bool is_rtl,
                              gfx::Rect* popup_bounds) {
-  int right_growth_start = base::clamp(
+  int right_growth_start = std::clamp(
       element_bounds.x(), content_area_bounds.x(), content_area_bounds.right());
   int left_growth_end =
-      base::clamp(element_bounds.right(), content_area_bounds.x(),
-                  content_area_bounds.right());
+      std::clamp(element_bounds.right(), content_area_bounds.x(),
+                 content_area_bounds.right());
 
   int right_available = content_area_bounds.right() - right_growth_start;
   int left_available = left_growth_end - content_area_bounds.x();
@@ -118,11 +114,11 @@ void CalculatePopupYAndHeight(int popup_preferred_height,
                               const gfx::Rect& content_area_bounds,
                               const gfx::Rect& element_bounds,
                               gfx::Rect* popup_bounds) {
-  int top_growth_end = base::clamp(element_bounds.y(), content_area_bounds.y(),
-                                   content_area_bounds.bottom());
+  int top_growth_end = std::clamp(element_bounds.y(), content_area_bounds.y(),
+                                  content_area_bounds.bottom());
   int bottom_growth_start =
-      base::clamp(element_bounds.bottom(), content_area_bounds.y(),
-                  content_area_bounds.bottom());
+      std::clamp(element_bounds.bottom(), content_area_bounds.y(),
+                 content_area_bounds.bottom());
 
   int top_available = top_growth_end - content_area_bounds.y();
   int bottom_available = content_area_bounds.bottom() - bottom_growth_start;
@@ -195,7 +191,6 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
 
   view_ = new AutofillPopupView(this, parent->GetWidget());
 
-#if BUILDFLAG(ENABLE_OSR)
   if (offscreen) {
     auto* rwhv = frame_host->GetView();
     if (embedder_frame_host != nullptr) {
@@ -206,7 +201,6 @@ void AutofillPopup::CreateView(content::RenderFrameHost* frame_host,
     view_->view_proxy_ = std::make_unique<OffscreenViewProxy>(view_);
     osr_rwhv->AddViewProxy(view_->view_proxy_.get());
   }
-#endif
 
   // Do this after OSR setup, we check for view_proxy_ when showing
   view_->Show();

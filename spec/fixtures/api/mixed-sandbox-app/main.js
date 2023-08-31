@@ -1,6 +1,6 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
-const net = require('net');
-const path = require('path');
+const net = require('node:net');
+const path = require('node:path');
 
 process.on('uncaughtException', () => {
   app.exit(1);

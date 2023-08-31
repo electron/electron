@@ -1,10 +1,10 @@
 import { expect } from 'chai';
-import * as childProcess from 'child_process';
-import * as path from 'path';
+import * as childProcess from 'node:child_process';
+import * as path from 'node:path';
 import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main';
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -13,41 +13,33 @@ describe('utilityProcess module', () => {
   describe('UtilityProcess constructor', () => {
     it('throws when empty script path is provided', async () => {
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork('');
-        /* eslint-disable no-new */
       }).to.throw();
     });
 
     it('throws when options.stdio is not valid', async () => {
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: 'ipc'
         });
-        /* eslint-disable no-new */
       }).to.throw(/stdio must be of the following values: inherit, pipe, ignore/);
 
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['ignore', 'ignore']
         });
-        /* eslint-disable no-new */
       }).to.throw(/configuration missing for stdin, stdout or stderr/);
 
       expect(() => {
-        /* eslint-disable no-new */
         utilityProcess.fork(path.join(fixturesPath, 'empty.js'), [], {
           execArgv: ['--test', '--test2'],
           serviceName: 'test',
           stdio: ['pipe', 'inherit', 'inherit']
         });
-        /* eslint-disable no-new */
       }).to.throw(/stdin value other than ignore is not supported/);
     });
   });
@@ -265,6 +257,30 @@ describe('utilityProcess module', () => {
       child.stdout!.on('data', listener);
     });
 
+    it('supports changing dns verbatim with --dns-result-order', (done) => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'dns-result-order.js'), [], {
+        stdio: 'pipe',
+        execArgv: ['--dns-result-order=ipv4first']
+      });
+
+      let output = '';
+      const cleanup = () => {
+        child.stderr!.removeListener('data', listener);
+        child.stdout!.removeListener('data', listener);
+        child.once('exit', () => { done(); });
+        child.kill();
+      };
+
+      const listener = (data: Buffer) => {
+        output += data;
+        expect(output.trim()).to.contain('ipv4first', 'default verbatim should be ipv4first');
+        cleanup();
+      };
+
+      child.stderr!.on('data', listener);
+      child.stdout!.on('data', listener);
+    });
+
     ifit(process.platform !== 'win32')('supports redirecting stdout to parent process', async () => {
       const result = 'Output from utility process';
       const appProcess = childProcess.spawn(process.execPath, [path.join(fixturesPath, 'inherit-stdout'), `--payload=${result}`]);
@@ -359,6 +375,20 @@ describe('utilityProcess module', () => {
       });
       await once(child, 'exit');
       expect(log).to.equal('hello\n');
+    });
+
+    it('does not crash when running eval', async () => {
+      const child = utilityProcess.fork('./eval.js', [], {
+        cwd: fixturesPath,
+        stdio: 'ignore'
+      });
+      await once(child, 'spawn');
+      const [data] = await once(child, 'message');
+      expect(data).to.equal(42);
+      // Cleanup.
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
     });
   });
 });

@@ -182,7 +182,7 @@ In Electron, browser windows can only be created after the `app` module's
 [`app.whenReady()`][app-when-ready] API. Call `createWindow()` after `whenReady()`
 resolves its Promise.
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 })
@@ -239,7 +239,7 @@ from within your existing `whenReady()` callback.
 
 [activate]: ../api/app.md#event-activate-macos
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 
@@ -290,8 +290,9 @@ To attach this script to your renderer process, pass in the path to your preload
 to the `webPreferences.preload` option in your existing `BrowserWindow` constructor.
 
 ```js
+const { app, BrowserWindow } = require('electron')
 // include the Node.js 'path' module at the top of your file
-const path = require('path')
+const path = require('node:path')
 
 // modify your existing createWindow() function
 const createWindow = () => {
@@ -357,7 +358,7 @@ The full code is available below:
 
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const createWindow = () => {
   // Create the browser window.

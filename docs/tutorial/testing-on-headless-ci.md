@@ -32,18 +32,7 @@ xvfb-maybe electron-mocha ./test/*.js
 
 ### Travis CI
 
-On Travis, your `.travis.yml` should look roughly like this:
-
-```yml
-addons:
-  apt:
-    packages:
-      - xvfb
-
-install:
-  - export DISPLAY=':99.0'
-  - Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
-```
+For Travis, see its [docs on using Xvfb](https://docs.travis-ci.com/user/gui-and-headless-browsers/#using-xvfb-to-run-tests-that-require-a-gui).
 
 ### Jenkins
 

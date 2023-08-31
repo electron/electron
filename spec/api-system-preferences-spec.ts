@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { systemPreferences } from 'electron/main';
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 
 describe('systemPreferences module', () => {
@@ -28,7 +29,7 @@ describe('systemPreferences module', () => {
         { key: 'one', type: 'string', value: 'ONE' },
         { key: 'two', value: 2, type: 'integer' },
         { key: 'three', value: [1, 2, 3], type: 'array' }
-      ];
+      ] as const;
 
       const defaultsDict: Record<string, any> = {};
       defaultsMap.forEach(row => { defaultsDict[row.key] = row.value; });
@@ -37,7 +38,7 @@ describe('systemPreferences module', () => {
 
       for (const userDefault of defaultsMap) {
         const { key, value: expectedValue, type } = userDefault;
-        const actualValue = systemPreferences.getUserDefault(key, type as any);
+        const actualValue = systemPreferences.getUserDefault(key, type);
         expect(actualValue).to.deep.equal(expectedValue);
       }
     });
@@ -90,12 +91,12 @@ describe('systemPreferences module', () => {
       ['url', 'https://github.com/electron'],
       ['array', [1, 2, 3]],
       ['dictionary', { a: 1, b: 2 }]
-    ];
+    ] as const;
 
     it('sets values', () => {
       for (const [type, value] of TEST_CASES) {
-        systemPreferences.setUserDefault(KEY, type as any, value as any);
-        const retrievedValue = systemPreferences.getUserDefault(KEY, type as any);
+        systemPreferences.setUserDefault(KEY, type, value as any);
+        const retrievedValue = systemPreferences.getUserDefault(KEY, type);
         expect(retrievedValue).to.deep.equal(value);
       }
     });
@@ -103,7 +104,7 @@ describe('systemPreferences module', () => {
     it('throws when type and value conflict', () => {
       for (const [type, value] of TEST_CASES) {
         expect(() => {
-          systemPreferences.setUserDefault(KEY, type as any, typeof value === 'string' ? {} : 'foo' as any);
+          systemPreferences.setUserDefault(KEY, type, typeof value === 'string' ? {} : 'foo' as any);
         }).to.throw(`Unable to convert value to: ${type}`);
       }
     });
@@ -157,10 +158,10 @@ describe('systemPreferences module', () => {
     });
 
     it('returns a valid system color', () => {
-      const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow'];
+      const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow'] as const;
 
       colors.forEach(color => {
-        const sysColor = systemPreferences.getSystemColor(color as any);
+        const sysColor = systemPreferences.getSystemColor(color);
         expect(sysColor).to.be.a('string');
       });
     });
@@ -174,9 +175,8 @@ describe('systemPreferences module', () => {
       }).to.throw(`Unknown color: ${color}`);
     });
 
-    it('returns a valid color', () => {
+    it('returns a valid color', async () => {
       const colors = [
-        'alternate-selected-control-text',
         'control-background',
         'control',
         'control-text',
@@ -209,12 +209,20 @@ describe('systemPreferences module', () => {
         'unemphasized-selected-text',
         'window-background',
         'window-frame-text'
-      ];
+      ] as const;
 
       colors.forEach(color => {
-        const sysColor = systemPreferences.getColor(color as any);
+        const sysColor = systemPreferences.getColor(color);
         expect(sysColor).to.be.a('string');
       });
+
+      await expectDeprecationMessages(
+        () => {
+          const sysColor = systemPreferences.getColor('alternate-selected-control-text');
+          expect(sysColor).to.be.a('string');
+        },
+        "'alternate-selected-control-text' is deprecated as an input to getColor.  Use 'selected-content-background' instead."
+      );
     });
   });
 
@@ -233,15 +241,25 @@ describe('systemPreferences module', () => {
     });
 
     describe('with functions', () => {
-      it('returns a valid appearance', () => {
-        const appearance = systemPreferences.getAppLevelAppearance();
-        expect(options).to.include(appearance);
+      it('returns a valid appearance', async () => {
+        await expectDeprecationMessages(
+          () => {
+            const appearance = systemPreferences.getAppLevelAppearance();
+            expect(options).to.include(appearance);
+          },
+          "(electron) 'getAppLevelAppearance function' is deprecated and will be removed."
+        );
       });
 
-      it('can be changed', () => {
-        systemPreferences.setAppLevelAppearance('dark');
-        const appearance = systemPreferences.getAppLevelAppearance();
-        expect(appearance).to.eql('dark');
+      it('can be changed', async () => {
+        await expectDeprecationMessages(
+          () => {
+            systemPreferences.setAppLevelAppearance('dark');
+            const appearance = systemPreferences.getAppLevelAppearance();
+            expect(appearance).to.eql('dark');
+          },
+          "(electron) 'setAppLevelAppearance function' is deprecated and will be removed."
+        );
       });
     });
   });

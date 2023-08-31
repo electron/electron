@@ -125,7 +125,7 @@ main process entry point is configured correctly. Create a `main.js` file in the
 of your project with a single line of code:
 
 ```js title='main.js'
-console.log(`Hello from Electron 👋`)
+console.log('Hello from Electron 👋')
 ```
 
 Because Electron's main process is a Node.js runtime, you can execute arbitrary Node.js code
@@ -134,7 +134,7 @@ add `electron .` to the `start` command in the [`scripts`][package-scripts]
 field of your package.json. This command will tell the Electron executable to look for the main
 script in the current directory and run it in dev mode.
 
-```json {8-10} title='package.json'
+```json {7} title='package.json'
 {
   "name": "my-electron-app",
   "version": "1.0.0",
@@ -199,7 +199,7 @@ const { app, BrowserWindow } = require('electron')
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
 
   win.loadFile('index.html')
@@ -247,7 +247,7 @@ The `createWindow()` function loads your web page into a new BrowserWindow insta
 const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
-    height: 600,
+    height: 600
   })
 
   win.loadFile('index.html')
@@ -256,7 +256,7 @@ const createWindow = () => {
 
 ### Calling your function when the app is ready
 
-```js title='main.js (Lines 12-14)'
+```js title='main.js (Lines 12-14)' @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 })
@@ -274,7 +274,7 @@ calling `createWindow()` once its promise is fulfilled.
 You typically listen to Node.js events by using an emitter's `.on` function.
 
 ```diff
-+ app.on('ready').then(() => {
++ app.on('ready', () => {
 - app.whenReady().then(() => {
   createWindow()
 })
@@ -336,7 +336,7 @@ Because windows cannot be created before the `ready` event, you should only list
 `activate` events after your app is initialized. Do this by only listening for activate
 events inside your existing `whenReady()` callback.
 
-```js
+```js @ts-type={createWindow:()=>void}
 app.whenReady().then(() => {
   createWindow()
 

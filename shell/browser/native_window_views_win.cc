@@ -221,6 +221,12 @@ bool NativeWindowViews::PreHandleMSG(UINT message,
     return true;
   }
 
+  if (message == taskbar_created_message_) {
+    // We need to reset all of our buttons because the taskbar went away.
+    taskbar_host_.RestoreThumbarButtons(GetAcceleratedWidget());
+    return true;
+  }
+
   switch (message) {
     // Screen readers send WM_GETOBJECT in order to get the accessibility
     // object, so take this opportunity to push Chromium into accessible

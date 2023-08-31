@@ -50,7 +50,7 @@ void TrayIconLinux::SetToolTip(const std::string& tool_tip) {
     status_icon->SetToolTip(tool_tip_);
 }
 
-void TrayIconLinux::SetContextMenu(ElectronMenuModel* menu_model) {
+void TrayIconLinux::SetContextMenu(raw_ptr<ElectronMenuModel> menu_model) {
   menu_model_ = menu_model;
   if (auto* status_icon = GetStatusIcon())
     status_icon->UpdatePlatformContextMenu(menu_model_);

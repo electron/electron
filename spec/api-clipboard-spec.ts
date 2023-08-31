@@ -1,6 +1,6 @@
 import { expect } from 'chai';
-import * as path from 'path';
-import { Buffer } from 'buffer';
+import * as path from 'node:path';
+import { Buffer } from 'node:buffer';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import { clipboard, nativeImage } from 'electron/common';
 
@@ -15,6 +15,11 @@ ifdescribe(process.platform !== 'win32' || process.arch !== 'arm64')('clipboard 
       clipboard.writeImage(i);
       const readImage = clipboard.readImage();
       expect(readImage.toDataURL()).to.equal(i.toDataURL());
+    });
+
+    it('works for empty image', () => {
+      clipboard.writeText('Not an Image');
+      expect(clipboard.readImage().isEmpty()).to.be.true();
     });
   });
 

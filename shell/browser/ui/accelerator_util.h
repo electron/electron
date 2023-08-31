@@ -8,6 +8,7 @@
 #include <map>
 #include <string>
 
+#include "base/memory/raw_ptr.h"
 #include "shell/browser/ui/electron_menu_model.h"
 #include "ui/base/accelerators/accelerator.h"
 
@@ -15,7 +16,7 @@ namespace accelerator_util {
 
 typedef struct {
   size_t position;
-  electron::ElectronMenuModel* model;
+  raw_ptr<electron::ElectronMenuModel> model;
 } MenuItem;
 typedef std::map<ui::Accelerator, MenuItem> AcceleratorTable;
 

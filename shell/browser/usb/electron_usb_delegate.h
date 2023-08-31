@@ -45,7 +45,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
                                        std::vector<uint8_t>& classes) override;
   std::unique_ptr<content::UsbChooser> RunChooser(
       content::RenderFrameHost& frame,
-      std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+      blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback) override;
   bool CanRequestDevicePermission(content::BrowserContext* browser_context,
                                   const url::Origin& origin) override;
@@ -73,9 +73,19 @@ class ElectronUsbDelegate : public content::UsbDelegate {
                    Observer* observer) override;
   void RemoveObserver(content::BrowserContext* browser_context,
                       Observer* observer) override;
+
+  // TODO: See if we can separate these from Profiles upstream.
+  void IncrementConnectionCount(content::BrowserContext* browser_context,
+                                const url::Origin& origin) override {}
+
+  void DecrementConnectionCount(content::BrowserContext* browser_context,
+                                const url::Origin& origin) override {}
+
   bool IsServiceWorkerAllowedForOrigin(const url::Origin& origin) override;
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
+
+  bool PageMayUseUsb(content::Page& page) override;
 
  private:
   UsbChooserController* ControllerForFrame(
@@ -83,7 +93,7 @@ class ElectronUsbDelegate : public content::UsbDelegate {
 
   UsbChooserController* AddControllerForFrame(
       content::RenderFrameHost* render_frame_host,
-      std::vector<device::mojom::UsbDeviceFilterPtr> filters,
+      blink::mojom::WebUsbRequestDeviceOptionsPtr options,
       blink::mojom::WebUsbService::GetPermissionCallback callback);
 
   class ContextObservation;

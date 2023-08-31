@@ -19,16 +19,16 @@ export interface WebViewImplHooks {
 
 // Represents the internal state of the WebView node.
 export class WebViewImpl {
-  public beforeFirstNavigation = true
-  public elementAttached = false
-  public guestInstanceId?: number
-  public hasFocus = false
+  public beforeFirstNavigation = true;
+  public elementAttached = false;
+  public guestInstanceId?: number;
+  public hasFocus = false;
   public internalInstanceId?: number;
-  public viewInstanceId: number
+  public viewInstanceId: number;
 
   // on* Event handlers.
-  public on: Record<string, any> = {}
-  public internalElement: HTMLIFrameElement
+  public on: Record<string, any> = {};
+  public internalElement: HTMLIFrameElement;
 
   public attributes: Map<string, WebViewAttribute>;
 
@@ -197,8 +197,6 @@ export class WebViewImpl {
   }
 }
 
-// I wish eslint wasn't so stupid, but it is
-// eslint-disable-next-line
 export const setupMethods = (WebViewElement: typeof ElectronInternal.WebViewElement, hooks: WebViewImplHooks) => {
   // Focusing the webview should move page focus to the underlying iframe.
   WebViewElement.prototype.focus = function () {

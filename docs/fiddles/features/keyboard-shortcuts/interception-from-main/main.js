@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow } = require('electron/main')
 
 app.whenReady().then(() => {
   const win = new BrowserWindow({ width: 800, height: 600 })

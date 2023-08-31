@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Charles Kerr <charles@charleskerr.com>
+Date: Mon, 7 Aug 2023 13:12:29 -0500
+Subject: ci: ensure node tests set ELECTRON_RUN_AS_NODE=1
+
+Some node tests / test fixtures spawn other tests that clobber env,
+which causes the `ELECTRON_RUN_AS_NODE` variable to be lost. This patch
+re-injects it.
+
+diff --git a/test/common/assertSnapshot.js b/test/common/assertSnapshot.js
+index c403751ac3ef5e39e7c0b1a1a8fb704ebf843dd7..83ee45f5f906adddcbc701112f373332dd1f66f9 100644
+--- a/test/common/assertSnapshot.js
++++ b/test/common/assertSnapshot.js
+@@ -62,6 +62,7 @@ async function spawnAndAssert(filename, transform = (x) => x, { tty = false, ...
+   const flags = common.parseTestFlags(filename);
+   const executable = tty ? 'tools/pseudo-tty.py' : process.execPath;
+   const args = tty ? [process.execPath, ...flags, filename] : [...flags, filename];
++  if (options && options.env) options.env.ELECTRON_RUN_AS_NODE = 1;
+   const { stdout, stderr } = await common.spawnPromisified(executable, args, options);
+   await assertSnapshot(transform(`${stdout}${stderr}`), filename);
+ }
+diff --git a/test/fixtures/test-runner/output/arbitrary-output-colored.js b/test/fixtures/test-runner/output/arbitrary-output-colored.js
+index b09eeeb9971cf6dfbdccc700757487fe2236e5a8..dd8296e63133eec6babac9b35e77da301a44b86f 100644
+--- a/test/fixtures/test-runner/output/arbitrary-output-colored.js
++++ b/test/fixtures/test-runner/output/arbitrary-output-colored.js
+@@ -6,6 +6,6 @@ const fixtures = require('../../../common/fixtures');
+ 
+ (async function run() {
+   const test = fixtures.path('test-runner/output/arbitrary-output-colored-1.js');
+-  await once(spawn(process.execPath, ['--test', test], { stdio: 'inherit', env: { FORCE_COLOR: 1 } }), 'exit');
+-  await once(spawn(process.execPath, ['--test', '--test-reporter', 'tap', test], { stdio: 'inherit', env: { FORCE_COLOR: 1 }  }), 'exit');
+-})().then(common.mustCall());
++  await once(spawn(process.execPath, ['--test', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1, FORCE_COLOR: 1 } }), 'exit');
++  await once(spawn(process.execPath, ['--test', '--test-reporter', 'tap', test], { stdio: 'inherit', env: { ELECTRON_RUN_AS_NODE: 1, FORCE_COLOR: 1 }  }), 'exit');
++})().then(common.mustCall());
+\ No newline at end of file
+diff --git a/test/parallel/test-node-output-console.mjs b/test/parallel/test-node-output-console.mjs
+index 5a1b9feb6c8bedb50b89f5c4f3c5983455bb042d..efca7811dc0b6a590c5ee023c71801703a642882 100644
+--- a/test/parallel/test-node-output-console.mjs
++++ b/test/parallel/test-node-output-console.mjs
+@@ -31,6 +31,7 @@ describe('console output', { concurrency: true }, () => {
+     .transform(snapshot.replaceWindowsLineEndings, snapshot.replaceWindowsPaths, replaceStackTrace);
+   for (const { name, transform, env } of tests) {
+     it(name, async () => {
++      if (env) env.ELECTRON_RUN_AS_NODE = 1;
+       await snapshot.spawnAndAssert(fixtures.path(name), transform ?? defaultTransform, { env });
+     });
+   }
+diff --git a/test/parallel/test-node-output-errors.mjs b/test/parallel/test-node-output-errors.mjs
+index fca2149fea32123dc4d4c6f21c64cc3c583454b3..b9a55fb7ea22e62553f69bd035797f7aaee1fc38 100644
+--- a/test/parallel/test-node-output-errors.mjs
++++ b/test/parallel/test-node-output-errors.mjs
+@@ -53,6 +53,7 @@ describe('errors output', { concurrency: true }, () => {
+     !skipForceColors ? { name: 'errors/force_colors.js', env: { FORCE_COLOR: 1 } } : null,
+   ].filter(Boolean);
+   for (const { name, transform, env } of tests) {
++    if (env) env.ELECTRON_RUN_AS_NODE = 1;
+     it(name, async () => {
+       await snapshot.spawnAndAssert(fixtures.path(name), transform ?? defaultTransform, { env });
+     });

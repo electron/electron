@@ -15,24 +15,12 @@ namespace electron {
 extern const char kBrowserForward[];
 extern const char kBrowserBackward[];
 
-// Strings describing Chrome security policy for DevTools security panel.
-extern const char kSHA1Certificate[];
-extern const char kSHA1MajorDescription[];
-extern const char kSHA1MinorDescription[];
-extern const char kCertificateError[];
-extern const char kValidCertificate[];
-extern const char kValidCertificateDescription[];
-extern const char kSecureProtocol[];
-extern const char kSecureProtocolDescription[];
-
 // Keys for Device APIs
 extern const char kDeviceVendorIdKey[];
 extern const char kDeviceProductIdKey[];
 extern const char kDeviceSerialNumberKey[];
 
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 extern const char kRunAsNode[];
-#endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
 extern const char kPDFExtensionPluginName[];

@@ -1,5 +1,5 @@
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const utils = require('./lib/utils');
 const branding = require('../shell/app/BRANDING.json');

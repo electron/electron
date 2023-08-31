@@ -23,7 +23,7 @@ store from `.pdb` files.
   SDK, open Visual Studio Installer, select
   `Modify` → `Individual Components`, scroll down and select the appropriate
   Windows SDK to install. Another option would be to look at the
-  [Windows SDK and emulator archive](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive)
+  [Windows SDK and emulator archive](https://developer.microsoft.com/en-us/windows/downloads/sdk-archive/)
   and download the standalone version of the SDK respectively.
   * The SDK Debugging Tools must also be installed. If the Windows 10 SDK was installed
   via the Visual Studio installer, then they can be installed by going to:
@@ -32,7 +32,7 @@ store from `.pdb` files.
   Or, you can download the standalone SDK installer and use it to install the Debugging Tools.
 
 If you don't currently have a Windows installation,
-[dev.microsoftedge.com](https://developer.microsoft.com/en-us/microsoft-edge/tools/vms/)
+[developer.microsoft.com](https://developer.microsoft.com/en-us/windows/downloads/virtual-machines/)
 has timebombed versions of Windows that you can use to build Electron.
 
 Building Electron is done entirely with command-line scripts and cannot be done

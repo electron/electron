@@ -3,7 +3,7 @@
  * with events in async/await manner.
  */
 
-import { on } from 'events';
+import { on } from 'node:events';
 
 export const emittedNTimes = async (emitter: NodeJS.EventEmitter, eventName: string, times: number, trigger?: () => void) => {
   const events: any[][] = [];

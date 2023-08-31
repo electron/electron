@@ -225,7 +225,7 @@ generate build headers for the modules to compile against, run the following
 under `src/` directory.
 
 ```sh
-$ ninja -C out/Testing third_party/electron_node:headers
+$ ninja -C out/Testing electron:node_headers
 ```
 
 You can now [run the tests](testing.md#unit-tests).

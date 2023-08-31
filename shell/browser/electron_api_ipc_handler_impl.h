@@ -6,9 +6,9 @@
 #define ELECTRON_SHELL_BROWSER_ELECTRON_API_IPC_HANDLER_IMPL_H_
 
 #include <string>
-#include <vector>
 
 #include "base/memory/weak_ptr.h"
+#include "content/public/browser/global_routing_id.h"
 #include "content/public/browser/web_contents_observer.h"
 #include "electron/shell/common/api/api.mojom.h"
 #include "mojo/public/cpp/bindings/associated_receiver.h"
@@ -49,9 +49,6 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
                    const std::string& channel,
                    blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
-  void MessageTo(int32_t web_contents_id,
-                 const std::string& channel,
-                 blink::CloneableMessage arguments) override;
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments) override;
 
@@ -69,8 +66,7 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
 
   content::RenderFrameHost* GetRenderFrameHost();
 
-  const int render_process_id_;
-  const int render_frame_id_;
+  content::GlobalRenderFrameHostId render_frame_host_id_;
 
   mojo::AssociatedReceiver<mojom::ElectronApiIPC> receiver_{this};
 

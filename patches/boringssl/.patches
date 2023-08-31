@@ -1,6 +1,3 @@
 expose_ripemd160.patch
-expose_aes-cfb.patch
-expose_des-ede3.patch
-fix_sync_evp_get_cipherbynid_and_evp_get_cipherbyname.patch
-expose_blowfish_ciphers.patch
 revert_track_ssl_error_zero_return_explicitly.patch
+feat_expose_several_extra_cipher_functions.patch

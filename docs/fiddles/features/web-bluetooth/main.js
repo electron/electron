@@ -1,7 +1,7 @@
-const { app, BrowserWindow, ipcMain } = require('electron')
-const path = require('path')
+const { app, BrowserWindow, ipcMain } = require('electron/main')
+const path = require('node:path')
 
-let bluetoothPinCallback 
+let bluetoothPinCallback
 let selectBluetoothCallback
 
 function createWindow () {
@@ -24,13 +24,12 @@ function createWindow () {
     } else {
       // The device wasn't found so we need to either wait longer (eg until the
       // device is turned on) or until the user cancels the request
-    }     
+    }
   })
 
   ipcMain.on('cancel-bluetooth-request', (event) => {
     selectBluetoothCallback('')
   })
-  
 
   // Listen for a message from the renderer to get the response for the Bluetooth pairing.
   ipcMain.on('bluetooth-pairing-response', (event, response) => {

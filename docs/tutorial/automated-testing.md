@@ -37,7 +37,7 @@ This installs all necessary packages for you and generates a `wdio.conf.js` conf
 Update the capabilities in your configuration file to point to your Electron app binary:
 
 ```javascript title='wdio.conf.js'
-export.config = {
+exports.config = {
   // ...
   capabilities: [{
     browserName: 'chrome',
@@ -90,7 +90,7 @@ Usage of `selenium-webdriver` with Electron is the same as with
 normal websites, except that you have to manually specify how to connect
 ChromeDriver and where to find the binary of your Electron app:
 
-```js title='test.js'
+```js title='test.js' @ts-expect-error=[1]
 const webdriver = require('selenium-webdriver')
 const driver = new webdriver.Builder()
   // The "9515" is the port opened by ChromeDriver.
@@ -103,7 +103,7 @@ const driver = new webdriver.Builder()
   })
   .forBrowser('chrome') // note: use .forBrowser('electron') for selenium-webdriver <= 3.6.0
   .build()
-driver.get('http://www.google.com')
+driver.get('https://www.google.com')
 driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
 driver.findElement(webdriver.By.name('btnG')).click()
 driver.wait(() => {
@@ -155,7 +155,7 @@ Playwright launches your app in development mode through the `_electron.launch` 
 To point this API to your Electron app, you can pass the path to your main process
 entry point (here, it is `main.js`).
 
-```js {5}
+```js {5} @ts-nocheck
 const { _electron: electron } = require('playwright')
 const { test } = require('@playwright/test')
 
@@ -169,7 +169,7 @@ test('launch app', async () => {
 After that, you will access to an instance of Playwright's `ElectronApp` class. This
 is a powerful class that has access to main process modules for example:
 
-```js {6-11}
+```js {6-11} @ts-nocheck
 const { _electron: electron } = require('playwright')
 const { test } = require('@playwright/test')
 
@@ -189,7 +189,7 @@ test('get isPackaged', async () => {
 It can also create individual [Page][playwright-page] objects from Electron BrowserWindow instances.
 For example, to grab the first BrowserWindow and save a screenshot:
 
-```js {6-7}
+```js {6-7} @ts-nocheck
 const { _electron: electron } = require('playwright')
 const { test } = require('@playwright/test')
 
@@ -205,7 +205,7 @@ test('save screenshot', async () => {
 Putting all this together using the PlayWright Test runner, let's create a `example.spec.js`
 test file with a single test and assertion:
 
-```js title='example.spec.js'
+```js title='example.spec.js' @ts-nocheck
 const { _electron: electron } = require('playwright')
 const { test, expect } = require('@playwright/test')
 
@@ -214,10 +214,10 @@ test('example test', async () => {
   const isPackaged = await electronApp.evaluate(async ({ app }) => {
     // This runs in Electron's main process, parameter here is always
     // the result of the require('electron') in the main app script.
-    return app.isPackaged;
-  });
+    return app.isPackaged
+  })
 
-  expect(isPackaged).toBe(false);
+  expect(isPackaged).toBe(false)
 
   // Wait for the first BrowserWindow to open
   // and return its Page object
@@ -226,7 +226,7 @@ test('example test', async () => {
 
   // close app
   await electronApp.close()
-});
+})
 ```
 
 Then, run Playwright Test using `npx playwright test`. You should see the test pass in your
@@ -259,8 +259,8 @@ expose custom methods to your test suite.
 To create a custom driver, we'll use Node.js' [`child_process`](https://nodejs.org/api/child_process.html) API.
 The test suite will spawn the Electron process, then establish a simple messaging protocol:
 
-```js title='testDriver.js'
-const childProcess = require('child_process')
+```js title='testDriver.js' @ts-nocheck
+const childProcess = require('node:child_process')
 const electronPath = require('electron')
 
 // spawn the process
@@ -296,7 +296,7 @@ For convenience, you may want to wrap `appProcess` in a driver object that provi
 high-level functions. Here is an example of how you can do this. Let's start by creating
 a `TestDriver` class:
 
-```js title='testDriver.js'
+```js title='testDriver.js' @ts-nocheck
 class TestDriver {
   constructor ({ path, args, env }) {
     this.rpcCalls = []
@@ -338,7 +338,7 @@ class TestDriver {
   }
 }
 
-module.exports = { TestDriver };
+module.exports = { TestDriver }
 ```
 
 In your app code, can then write a simple handler to receive RPC calls:
@@ -378,7 +378,7 @@ framework of your choosing. The following example uses
 [`ava`](https://www.npmjs.com/package/ava), but other popular choices like Jest
 or Mocha would work as well:
 
-```js title='test.js'
+```js title='test.js' @ts-nocheck
 const test = require('ava')
 const electronPath = require('electron')
 const { TestDriver } = require('./testDriver')

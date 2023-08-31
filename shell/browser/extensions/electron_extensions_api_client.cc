@@ -32,8 +32,7 @@ namespace extensions {
 class ElectronGuestViewManagerDelegate
     : public ExtensionsGuestViewManagerDelegate {
  public:
-  explicit ElectronGuestViewManagerDelegate(content::BrowserContext* context)
-      : ExtensionsGuestViewManagerDelegate(context) {}
+  ElectronGuestViewManagerDelegate() : ExtensionsGuestViewManagerDelegate() {}
   ~ElectronGuestViewManagerDelegate() override = default;
 
   // disable copy
@@ -65,10 +64,19 @@ class ElectronMimeHandlerViewGuestDelegate
   // MimeHandlerViewGuestDelegate.
   bool HandleContextMenu(content::RenderFrameHost& render_frame_host,
                          const content::ContextMenuParams& params) override {
-    // TODO(nornagon): surface this event to JS
-    LOG(INFO) << "HCM";
+    auto* web_contents =
+        content::WebContents::FromRenderFrameHost(&render_frame_host);
+    if (!web_contents)
+      return true;
+
+    electron::api::WebContents* api_web_contents =
+        electron::api::WebContents::From(
+            web_contents->GetOutermostWebContents());
+    if (api_web_contents)
+      api_web_contents->HandleContextMenu(render_frame_host, params);
     return true;
   }
+
   void RecordLoadMetric(bool in_main_frame,
                         const std::string& mime_type) override {}
 };
@@ -109,9 +117,8 @@ ElectronExtensionsAPIClient::CreateMimeHandlerViewGuestDelegate(
 }
 
 std::unique_ptr<guest_view::GuestViewManagerDelegate>
-ElectronExtensionsAPIClient::CreateGuestViewManagerDelegate(
-    content::BrowserContext* context) const {
-  return std::make_unique<ElectronGuestViewManagerDelegate>(context);
+ElectronExtensionsAPIClient::CreateGuestViewManagerDelegate() const {
+  return std::make_unique<ElectronGuestViewManagerDelegate>();
 }
 
 }  // namespace extensions

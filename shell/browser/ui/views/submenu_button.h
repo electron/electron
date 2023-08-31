@@ -5,7 +5,7 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 #define ELECTRON_SHELL_BROWSER_UI_VIEWS_SUBMENU_BUTTON_H_
 
-#include <memory>
+#include <string>
 
 #include "ui/accessibility/ax_node_data.h"
 #include "ui/views/animation/ink_drop_highlight.h"

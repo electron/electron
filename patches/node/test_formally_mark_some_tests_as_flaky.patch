@@ -1,0 +1,48 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <samuel.r.attard@gmail.com>
+Date: Wed, 8 Feb 2023 02:54:05 -0800
+Subject: test: formally mark some tests as flaky
+
+Instead of disabling the tests, flag them as flaky so they still run
+but don't cause CI failures on flakes.
+
+diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
+index 913ae4b0b10a7d508d864539cf075fa9c2f9362c..985f1c0d0c0c6afc049bf1d89f91412ecf431215 100644
+--- a/test/parallel/parallel.status
++++ b/test/parallel/parallel.status
+@@ -5,6 +5,12 @@ prefix parallel
+ # sample-test                        : PASS,FLAKY
+ 
+ [true] # This section applies to all platforms
++test-inspector-multisession-ws: PASS, FLAKY
++test-heapsnapshot-near-heap-limit-by-api-in-worker: PASS, FLAKY
++test-heapsnapshot-near-heap-limit-worker: PASS, FLAKY
++test-fetch: PASS, FLAKY
++test-cluster-bind-privileged-port: PASS, FLAKY
++test-cluster-shared-handle-bind-privileged-port: PASS, FLAKY
+ 
+ [$system==win32]
+ # https://github.com/nodejs/node/issues/24497
+diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
+index 5cefcb95773bedc80bc462e058a11045be176741..33f50be5898754af696468499bcfa8e3c721434d 100644
+--- a/test/sequential/sequential.status
++++ b/test/sequential/sequential.status
+@@ -7,6 +7,18 @@ prefix sequential
+ [true] # This section applies to all platforms
+ # https://github.com/nodejs/node/issues/27611#issuecomment-613100468
+ test-cpu-prof-dir-worker: PASS, FLAKY
++test-cpu-prof-dir-and-name: PASS, FLAKY
++test-cpu-prof-drained: PASS, FLAKY
++test-cpu-prof-default: PASS, FLAKY
++test-cpu-prof-dir-absolute: PASS, FLAKY
++test-cpu-prof-dir-relative: PASS, FLAKY
++test-cpu-prof-exit: PASS, FLAKY
++test-cpu-prof-kill: PASS, FLAKY
++test-cpu-prof-name: PASS, FLAKY
++test-cpu-prof-worker-argv: PASS, FLAKY
++test-diagnostic-dir-cpu-prof: PASS, FLAKY
++test-worker-prof: PASS, FLAKY
++test-inspector-stop-profile-after-done: PASS, FLAKY
+ # https://github.com/nodejs/node/issues/44898
+ test-watch-mode: PASS, FLAKY
+ test-watch-mode-inspect: PASS, FLAKY

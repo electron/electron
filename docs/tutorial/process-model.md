@@ -158,13 +158,13 @@ A preload script can be attached to the main process in the `BrowserWindow` cons
 
 ```js title='main.js'
 const { BrowserWindow } = require('electron')
-//...
+// ...
 const win = new BrowserWindow({
   webPreferences: {
-    preload: 'path/to/preload.js',
-  },
+    preload: 'path/to/preload.js'
+  }
 })
-//...
+// ...
 ```
 
 Because the preload script shares a global [`Window`][window-mdn] interface with the
@@ -175,13 +175,13 @@ Although preload scripts share a `window` global with the renderer they're attac
 you cannot directly attach any variables from the preload script to `window` because of
 the [`contextIsolation`][context-isolation] default.
 
-```js title='preload.js'
+```js title='preload.js' @ts-nocheck
 window.myAPI = {
-  desktop: true,
+  desktop: true
 }
 ```
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-nocheck
 console.log(window.myAPI)
 // => undefined
 ```
@@ -196,11 +196,11 @@ securely:
 const { contextBridge } = require('electron')
 
 contextBridge.exposeInMainWorld('myAPI', {
-  desktop: true,
+  desktop: true
 })
 ```
 
-```js title='renderer.js'
+```js title='renderer.js' @ts-nocheck
 console.log(window.myAPI)
 // => { desktop: true }
 ```

@@ -7,10 +7,10 @@ With WCO, allow chromium to handle synthetic mouse events generated for touch
 actions in the non-client caption area.
 
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-index b2e8e4127d73d1c8f0f3698fe9c7f37a03868c06..79e00fd9f83dc6cb4114ceac53ea025dcb7595b7 100644
+index d90c652d7c572686bf54c4d282960ea49525fd5a..73e76c0d940f09336bbec6db47f1afee5153ced0 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.cc
-@@ -1209,6 +1209,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
+@@ -1213,6 +1213,10 @@ void DesktopWindowTreeHostWin::HandleHeadlessWindowBoundsChanged(
    window()->SetProperty(aura::client::kHeadlessBoundsKey, bounds);
  }
  
@@ -22,10 +22,10 @@ index b2e8e4127d73d1c8f0f3698fe9c7f37a03868c06..79e00fd9f83dc6cb4114ceac53ea025d
  DesktopWindowTreeHostWin::GetSingletonDesktopNativeCursorManager() {
    return new DesktopNativeCursorManagerWin();
 diff --git a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-index 2b935ac09209c1b043aa416f886a84dff742826e..04b586a7fd15bc2e85cb62cd6cefe63461a2539e 100644
+index 2e4bacce52a45b5d9d7829c1f88f82aa0bb1b4bb..f3537e89191bd2c6d9b06c9b741a168071eb8662 100644
 --- a/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
 +++ b/ui/views/widget/desktop_aura/desktop_window_tree_host_win.h
-@@ -259,6 +259,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
+@@ -261,6 +261,7 @@ class VIEWS_EXPORT DesktopWindowTreeHostWin
    void HandleWindowSizeUnchanged() override;
    void HandleWindowScaleFactorChanged(float window_scale_factor) override;
    void HandleHeadlessWindowBoundsChanged(const gfx::Rect& bounds) override;
@@ -34,10 +34,10 @@ index 2b935ac09209c1b043aa416f886a84dff742826e..04b586a7fd15bc2e85cb62cd6cefe634
    Widget* GetWidget();
    const Widget* GetWidget() const;
 diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
-index 66444599384981681a3018b5de516e2242324285..c55e27bfc275ff63282f8d703dcdf723b5b2385d 100644
+index 7a913d4714ae571505111d5fdf8303793bde629b..ec7a05ac5c261c0292684b47db275f7b1ef5daa4 100644
 --- a/ui/views/win/hwnd_message_handler.cc
 +++ b/ui/views/win/hwnd_message_handler.cc
-@@ -3209,15 +3209,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
+@@ -3253,15 +3253,19 @@ LRESULT HWNDMessageHandler::HandleMouseEventInternal(UINT message,
        SetMsgHandled(FALSE);
      // We must let Windows handle the caption buttons if it's drawing them, or
      // they won't work.

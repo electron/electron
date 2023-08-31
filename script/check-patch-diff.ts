@@ -1,5 +1,5 @@
-import { spawnSync } from 'child_process';
-import * as path from 'path';
+import { spawnSync } from 'node:child_process';
+import * as path from 'node:path';
 
 const srcPath = path.resolve(__dirname, '..', '..', '..');
 const patchExportFnPath = path.resolve(__dirname, 'export_all_patches.py');

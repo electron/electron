@@ -25,7 +25,7 @@ namespace auto_updater {
 namespace {
 
 // The global SQRLUpdater object.
-SQRLUpdater* g_updater = nil;
+SQRLUpdater* __strong g_updater = nil;
 
 }  // namespace
 
@@ -87,7 +87,7 @@ void AutoUpdater::SetFeedURL(gin::Arguments* args) {
   }
 
   if (g_updater)
-    [g_updater release];
+    g_updater = nil;
 
   // Initialize the SQRLUpdater.
   @try {

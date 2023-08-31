@@ -6,11 +6,11 @@ const args = require('minimist')(process.argv.slice(2), {
 });
 const ciReleaseBuild = require('./ci-release-build');
 const { Octokit } = require('@octokit/rest');
-const { execSync } = require('child_process');
+const { execSync } = require('node:child_process');
 const { GitProcess } = require('dugite');
 
-const path = require('path');
-const readline = require('readline');
+const path = require('node:path');
+const readline = require('node:readline');
 const releaseNotesGenerator = require('./notes/index.js');
 const { getCurrentBranch, ELECTRON_DIR } = require('../lib/utils.js');
 const bumpType = args._[0];
@@ -117,7 +117,7 @@ async function createRelease (branchToTarget, isBeta) {
     name: `electron ${newVersion}`,
     body: releaseBody,
     prerelease: releaseIsPrelease,
-    target_commitish: newVersion.indexOf('nightly') !== -1 ? 'main' : branchToTarget
+    target_commitish: newVersion.includes('nightly') ? 'main' : branchToTarget
   }).catch(err => {
     console.log(`${fail} Error creating new release: `, err);
     process.exit(1);
@@ -173,7 +173,7 @@ async function verifyNewVersion () {
 }
 
 async function promptForVersion (version) {
-  return new Promise((resolve, reject) => {
+  return new Promise(resolve => {
     const rl = readline.createInterface({
       input: process.stdin,
       output: process.stdout
@@ -187,8 +187,7 @@ async function promptForVersion (version) {
 
 // function to determine if there have been commits to main since the last release
 async function changesToRelease () {
-  // eslint-disable-next-line no-useless-escape
-  const lastCommitWasRelease = new RegExp('^Bump v[0-9]+\.[0-9]+\.[0-9]+(-beta\.[0-9]+)?(-alpha\.[0-9]+)?(-nightly\.[0-9]+)?$', 'g');
+  const lastCommitWasRelease = /^Bump v[0-9]+.[0-9]+.[0-9]+(-beta.[0-9]+)?(-alpha.[0-9]+)?(-nightly.[0-9]+)?$/g;
   const lastCommit = await GitProcess.exec(['log', '-n', '1', '--pretty=format:\'%s\''], ELECTRON_DIR);
   return !lastCommitWasRelease.test(lastCommit.stdout);
 }

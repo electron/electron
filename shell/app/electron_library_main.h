@@ -11,12 +11,9 @@
 #if BUILDFLAG(IS_MAC)
 extern "C" {
 __attribute__((visibility("default"))) int ElectronMain(int argc, char* argv[]);
-
-#if BUILDFLAG(ENABLE_RUN_AS_NODE)
 __attribute__((visibility("default"))) int ElectronInitializeICUandStartNode(
     int argc,
     char* argv[]);
-#endif
 }
 #endif
 

@@ -60,7 +60,7 @@ WebContentsView::~WebContentsView() {
 
 gin::Handle<WebContents> WebContentsView::GetWebContents(v8::Isolate* isolate) {
   if (api_web_contents_)
-    return gin::CreateHandle(isolate, api_web_contents_);
+    return gin::CreateHandle(isolate, api_web_contents_.get());
   else
     return gin::Handle<WebContents>();
 }

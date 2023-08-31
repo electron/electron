@@ -1,6 +1,6 @@
-const crypto = require('crypto');
-const fs = require('fs');
-const path = require('path');
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 
 // Fallback to blow away old cache keys
 const FALLBACK_HASH_VERSION = 3;

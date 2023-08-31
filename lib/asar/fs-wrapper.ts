@@ -574,7 +574,6 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
   };
 
   const { readFile: readFilePromise } = fs.promises;
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   fs.promises.readFile = function (pathArgument: string, options: any) {
     const pathInfo = splitPath(pathArgument);
     if (!pathInfo.isAsar) {
@@ -839,7 +838,7 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
     const originalModuleLoad = Module._load;
     Module._load = (request: string, ...args: any[]) => {
       const loadResult = originalModuleLoad(request, ...args);
-      if (request === 'child_process') {
+      if (request === 'child_process' || request === 'node:child_process') {
         if (!asarReady.has(loadResult)) {
           asarReady.add(loadResult);
           // Just to make it obvious what we are dealing with here

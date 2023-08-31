@@ -5,7 +5,6 @@
 #include "shell/browser/net/resolve_host_function.h"
 
 #include <utility>
-#include <vector>
 
 #include "base/functional/bind.h"
 #include "base/values.h"

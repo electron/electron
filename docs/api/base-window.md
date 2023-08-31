@@ -191,10 +191,6 @@ It creates a new `BaseWindow` with native properties as set by the `options`.
     tabbing identifier will be grouped together. This also adds a native new
     tab button to your window's tab bar and allows your `app` and window to
     receive the `new-window-for-tab` event.
-  * `titleBarOverlay` Object | Boolean (optional) -  When using a frameless window in conjunction with `win.setWindowButtonVisibility(true)` on macOS or using a `titleBarStyle` so that the standard window controls ("traffic lights" on macOS) are visible, this property enables the Window Controls Overlay [JavaScript APIs][overlay-javascript-apis] and [CSS Environment Variables][overlay-css-env-vars]. Specifying `true` will result in an overlay with default system colors. Default is `false`.
-    * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled. Default is the system color.
-    * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled. Default is the system color.
-    * `height` Integer (optional) _macOS_ _Windows_ - The height of the title bar and Window Controls Overlay in pixels. Default is system height.
 
 When setting minimum or maximum window size with `minWidth`/`maxWidth`/
 `minHeight`/`maxHeight`, it only constrains the users. It won't prevent you from
@@ -381,12 +377,16 @@ Commands are lowercased, underscores are replaced with hyphens, and the
 e.g. `APPCOMMAND_BROWSER_BACKWARD` is emitted as `browser-backward`.
 
 ```javascript
-const { BaseWindow } = require('electron')
+const { BaseWindow, WebContentsView } = require('electron')
+
 const win = new BaseWindow()
+const view = new WebContentsView()
+win.contentView.addChildView(view)
+
 win.on('app-command', (e, cmd) => {
   // Navigate the window back when the user hits their mouse back button
-  if (cmd === 'browser-backward' && win.webContents.canGoBack()) {
-    win.webContents.goBack()
+  if (cmd === 'browser-backward' && view.webContents.canGoBack()) {
+    view.webContents.goBack()
   }
 })
 ```
@@ -580,6 +580,7 @@ On Linux the setter is a no-op, although the getter returns `true`.
 A `boolean` property that determines whether the window is excluded from the application’s Windows menu. `false` by default.
 
 ```js
+const { BaseWindow } = require('electron')
 const win = new BaseWindow({ height: 600, width: 600 })
 
 const template = [

@@ -84,7 +84,7 @@ std::string ElectronBluetoothDelegate::GetDeviceAddress(
     RenderFrameHost* frame,
     const WebBluetoothDeviceId& device_id) {
   NOTIMPLEMENTED();
-  return nullptr;
+  return "";
 }
 
 WebBluetoothDeviceId ElectronBluetoothDelegate::AddScannedDevice(
@@ -179,9 +179,9 @@ void ElectronBluetoothDelegate::ShowDevicePairPrompt(
     }
 
     permission_manager->CheckBluetoothDevicePair(
-        details, base::AdaptCallbackForRepeating(base::BindOnce(
-                     &ElectronBluetoothDelegate::OnDevicePairPromptResponse,
-                     weak_factory_.GetWeakPtr(), std::move(callback))));
+        details,
+        base::BindOnce(&ElectronBluetoothDelegate::OnDevicePairPromptResponse,
+                       weak_factory_.GetWeakPtr(), std::move(callback)));
   }
 }
 

@@ -16,9 +16,9 @@
 #include <windows.h>
 #endif
 
+#include "base/memory/raw_ptr.h"
 #include "base/process/kill.h"
 #include "base/threading/thread.h"
-#include "base/time/time.h"
 #include "components/viz/common/quads/compositor_frame.h"
 #include "components/viz/common/surfaces/parent_local_surface_id_allocator.h"
 #include "content/browser/renderer_host/delegated_frame_host.h"  // nogncheck
@@ -119,6 +119,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   // content::RenderWidgetHostViewBase:
 
+  void InvalidateLocalSurfaceIdAndAllocationGroup() override;
   void ResetFallbackToFirstNavigationSurface() override;
   void InitAsPopup(content::RenderWidgetHostView* parent_host_view,
                    const gfx::Rect& bounds,
@@ -150,8 +151,10 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   viz::SurfaceId GetCurrentSurfaceId() const override;
   std::unique_ptr<content::SyntheticGestureTarget>
   CreateSyntheticGestureTarget() override;
-  void ImeCompositionRangeChanged(const gfx::Range&,
-                                  const std::vector<gfx::Rect>&) override;
+  void ImeCompositionRangeChanged(
+      const gfx::Range&,
+      const absl::optional<std::vector<gfx::Rect>>& character_bounds,
+      const absl::optional<std::vector<gfx::Rect>>& line_bounds) override;
   gfx::Size GetCompositorViewportPixelSize() override;
   ui::Compositor* GetCompositor() override;
 
@@ -243,11 +246,11 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   void UpdateBackgroundColorFromRenderer(SkColor color);
 
   // Weak ptrs.
-  content::RenderWidgetHostImpl* render_widget_host_;
+  raw_ptr<content::RenderWidgetHostImpl> render_widget_host_;
 
-  OffScreenRenderWidgetHostView* parent_host_view_ = nullptr;
-  OffScreenRenderWidgetHostView* popup_host_view_ = nullptr;
-  OffScreenRenderWidgetHostView* child_host_view_ = nullptr;
+  raw_ptr<OffScreenRenderWidgetHostView> parent_host_view_ = nullptr;
+  raw_ptr<OffScreenRenderWidgetHostView> popup_host_view_ = nullptr;
+  raw_ptr<OffScreenRenderWidgetHostView> child_host_view_ = nullptr;
   std::set<OffScreenRenderWidgetHostView*> guest_host_views_;
   std::set<OffscreenViewProxy*> proxy_views_;
 
@@ -258,9 +261,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
   int frame_rate_ = 0;
   int frame_rate_threshold_us_ = 0;
 
-  base::Time last_time_ = base::Time::Now();
-
-  gfx::Vector2dF last_scroll_offset_;
   gfx::Size size_;
   bool painting_;
 
@@ -270,8 +270,6 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   bool hold_resize_ = false;
   bool pending_resize_ = false;
-
-  bool paint_callback_running_ = false;
 
   viz::LocalSurfaceId delegated_frame_host_surface_id_;
   viz::ParentLocalSurfaceIdAllocator delegated_frame_host_allocator_;
@@ -285,7 +283,7 @@ class OffScreenRenderWidgetHostView : public content::RenderWidgetHostViewBase,
 
   std::unique_ptr<content::CursorManager> cursor_manager_;
 
-  OffScreenHostDisplayClient* host_display_client_;
+  raw_ptr<OffScreenHostDisplayClient> host_display_client_;
   std::unique_ptr<OffScreenVideoConsumer> video_consumer_;
 
   std::unique_ptr<ElectronDelegatedFrameHostClient>

@@ -2,10 +2,10 @@ import { app } from 'electron';
 import { expect } from 'chai';
 import { startRemoteControlApp, ifdescribe } from './lib/spec-helpers';
 
-import * as fs from 'fs/promises';
-import * as path from 'path';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import * as uuid from 'uuid';
-import { once } from 'events';
+import { once } from 'node:events';
 
 function isTestingBindingAvailable () {
   try {

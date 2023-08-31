@@ -8,9 +8,9 @@
 // python-dbusmock.
 import { expect } from 'chai';
 import * as dbus from 'dbus-native';
-import { ifdescribe } from './lib/spec-helpers';
-import { promisify } from 'util';
-import { setTimeout } from 'timers/promises';
+import { ifdescribe, startRemoteControlApp } from './lib/spec-helpers';
+import { promisify } from 'node:util';
+import { setTimeout } from 'node:timers/promises';
 
 describe('powerMonitor', () => {
   let logindMock: any, dbusMockPowerMonitor: any, getCalls: any, emitSignal: any, reset: any;
@@ -135,8 +135,12 @@ describe('powerMonitor', () => {
     });
   });
 
+  it('is usable before app ready', async () => {
+    const remoteApp = await startRemoteControlApp(['--boot-eval=globalThis.initialValue=require("electron").powerMonitor.getSystemIdleTime()']);
+    expect(await remoteApp.remoteEval('globalThis.initialValue')).to.be.a('number');
+  });
+
   describe('when powerMonitor module is loaded', () => {
-    // eslint-disable-next-line no-undef
     let powerMonitor: typeof Electron.powerMonitor;
     before(() => {
       powerMonitor = require('electron').powerMonitor;
@@ -170,6 +174,12 @@ describe('powerMonitor', () => {
       it('returns current system idle time', () => {
         const idleTime = powerMonitor.getSystemIdleTime();
         expect(idleTime).to.be.at.least(0);
+      });
+    });
+
+    describe('powerMonitor.getCurrentThermalState', () => {
+      it('returns a valid state', () => {
+        expect(powerMonitor.getCurrentThermalState()).to.be.oneOf(['unknown', 'nominal', 'fair', 'serious', 'critical']);
       });
     });
 

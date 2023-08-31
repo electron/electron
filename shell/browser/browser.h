@@ -278,8 +278,11 @@ class Browser : public WindowListObserver {
   // Tell the application to create a new window for a tab.
   void NewWindowForTab();
 
-  // Tell the application that application did become active
+  // Indicate that the app is now active.
   void DidBecomeActive();
+  // Indicate that the app is no longer active and doesn’t have focus.
+  void DidResignActive();
+
 #endif  // BUILDFLAG(IS_MAC)
 
   // Tell the application that application is activated with visible/invisible

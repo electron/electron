@@ -809,8 +809,8 @@ void ProxyingURLLoaderFactory::CreateLoaderAndStart(
   bool bypass_custom_protocol_handlers =
       options & kBypassCustomProtocolHandlers;
   if (!bypass_custom_protocol_handlers) {
-    auto it = intercepted_handlers_.find(request.url.scheme());
-    if (it != intercepted_handlers_.end()) {
+    auto it = intercepted_handlers_->find(request.url.scheme());
+    if (it != intercepted_handlers_->end()) {
       mojo::PendingRemote<network::mojom::URLLoaderFactory> loader_remote;
       this->Clone(loader_remote.InitWithNewPipeAndPassReceiver());
 

@@ -1,5 +1,5 @@
 const got = require('got');
-const url = require('url');
+const url = require('node:url');
 
 module.exports = async function getUrlHash (targetUrl, algorithm = 'sha256', attempts = 3) {
   const options = {

@@ -22,7 +22,7 @@ v8::Local<v8::Value> Converter<const extensions::Extension*>::ToV8(
   dict.Set("path", extension->path());
   dict.Set("url", extension->url());
   dict.Set("version", extension->VersionString());
-  dict.Set("manifest", extension->manifest()->value()->Clone());
+  dict.Set("manifest", *extension->manifest()->value());
 
   return gin::ConvertToV8(isolate, dict);
 }
