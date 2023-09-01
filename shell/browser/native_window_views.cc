@@ -283,37 +283,13 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.type = views::Widget::InitParams::TYPE_WINDOW;
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
-  // Whether or not the view should be translucent
-  bool translucent = false;
-
-  // First, check if transparent is set in the options
-  options.Get(options::kTransparent, &translucent);
-
-#if BUILDFLAG(IS_MAC)
-  // Make the window transparent if the vibrancy is set
-  if (!translucent) {
-    std::string vibrancy_type;
-    options.Get(options::kVibrancyType, &vibrancy_type);
-    translucent = !vibrancy_type.empty();
-  }
-#endif
-
-#if BUILDFLAG(IS_WIN)
-  // Make the window transparent if the background material is set
-  if (!translucent) {
-    std::string bgMaterial;
-    options.Get(options::kBackgroundMaterial, &bgMaterial);
-    translucent = !bgMaterial.empty() && bgMaterial != "none";
-  }
-#endif
-
   // If a client frame, we need to draw our own shadows.
-  if (translucent || has_client_frame())
+  if (IsTranslucent() || has_client_frame())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
   // The given window is most likely not rectangular since it is translucent and
   // has no standard frame, don't show a shadow for it.
-  if (translucent && !has_frame())
+  if (IsTranslucent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
 
   bool focusable;
@@ -1481,6 +1457,8 @@ bool NativeWindowViews::IsMenuBarVisible() {
 }
 
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
+  NativeWindow::SetBackgroundMaterial(material);
+
 #if BUILDFLAG(IS_WIN)
   // DWMWA_USE_HOSTBACKDROPBRUSH is only supported on Windows 11 22H2 and up.
   if (base::win::GetVersion() < base::win::Version::WIN11_22H2)

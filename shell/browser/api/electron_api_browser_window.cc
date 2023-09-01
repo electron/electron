@@ -42,35 +42,11 @@ BrowserWindow::BrowserWindow(gin::Arguments* args,
   auto web_preferences = gin_helper::Dictionary::CreateEmpty(isolate);
   options.Get(options::kWebPreferences, &web_preferences);
 
-  // Whether or not the web contents should be transparent
-  bool transparent = false;
-
-  // First, check if transparent is set in the options
-  options.Get(options::kTransparent, &transparent);
-
-#if BUILDFLAG(IS_MAC)
-  // Make the window transparent if the vibrancy is set
-  if (!transparent) {
-    std::string vibrancy_type;
-    options.Get(options::kVibrancyType, &vibrancy_type);
-    transparent = !vibrancy_type.empty();
-  }
-#endif
-
-#if BUILDFLAG(IS_WIN)
-  // Make the window transparent if the background material is set
-  if (!transparent) {
-    std::string bgMaterial;
-    options.Get(options::kBackgroundMaterial, &bgMaterial);
-    transparent = !bgMaterial.empty() && bgMaterial != "none";
-  }
-#endif
-
   // Copy the backgroundColor to webContents.
   std::string color;
   if (options.Get(options::kBackgroundColor, &color)) {
     web_preferences.SetHidden(options::kBackgroundColor, color);
-  } else if (transparent) {
+  } else if (window_->IsTranslucent()) {
     // If the BrowserWindow is transparent or a vibrancy type has been set,
     // also propagate transparency to the WebContents unless a separate
     // backgroundColor has been set.
