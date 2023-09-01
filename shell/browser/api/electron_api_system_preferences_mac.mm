@@ -36,7 +36,7 @@ template <>
 struct Converter<NSAppearance*> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
-                     NSAppearance** out) {
+                     NSAppearance* __strong* out) {
     if (val->IsNull()) {
       *out = nil;
       return true;
@@ -409,7 +409,7 @@ std::string SystemPreferences::GetSystemColor(gin_helper::ErrorThrower thrower,
 }
 
 bool SystemPreferences::CanPromptTouchID() {
-  base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+  LAContext* context = [[LAContext alloc] init];
   LAPolicy auth_policy = LAPolicyDeviceOwnerAuthenticationWithBiometricsOrWatch;
   if (![context canEvaluatePolicy:auth_policy error:nil])
     return false;
@@ -422,7 +422,7 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   gin_helper::Promise<void> promise(isolate);
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
-  base::scoped_nsobject<LAContext> context([[LAContext alloc] init]);
+  LAContext* context = [[LAContext alloc] init];
   base::ScopedCFTypeRef<SecAccessControlRef> access_control =
       base::ScopedCFTypeRef<SecAccessControlRef>(
           SecAccessControlCreateWithFlags(
@@ -463,7 +463,8 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
 
 // static
 bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
-  NSDictionary* options = @{(id)kAXTrustedCheckOptionPrompt : @(prompt)};
+  NSDictionary* options =
+      @{(__bridge id)kAXTrustedCheckOptionPrompt : @(prompt)};
   return AXIsProcessTrustedWithOptions((CFDictionaryRef)options);
 }
 

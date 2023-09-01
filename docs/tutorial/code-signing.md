@@ -167,11 +167,11 @@ const supportBinaries = await msiCreator.create()
 
 // 🆕 Step 2a: optionally sign support binaries if you
 // sign you binaries as part of of your packaging script
-supportBinaries.forEach(async (binary) => {
+for (const binary of supportBinaries) {
   // Binaries are the new stub executable and optionally
   // the Squirrel auto updater.
   await signFile(binary)
-})
+}
 
 // Step 3: Compile the template to a .msi file
 await msiCreator.compile()

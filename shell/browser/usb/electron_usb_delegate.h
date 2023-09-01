@@ -73,9 +73,19 @@ class ElectronUsbDelegate : public content::UsbDelegate {
                    Observer* observer) override;
   void RemoveObserver(content::BrowserContext* browser_context,
                       Observer* observer) override;
+
+  // TODO: See if we can separate these from Profiles upstream.
+  void IncrementConnectionCount(content::BrowserContext* browser_context,
+                                const url::Origin& origin) override {}
+
+  void DecrementConnectionCount(content::BrowserContext* browser_context,
+                                const url::Origin& origin) override {}
+
   bool IsServiceWorkerAllowedForOrigin(const url::Origin& origin) override;
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
+
+  bool PageMayUseUsb(content::Page& page) override;
 
  private:
   UsbChooserController* ControllerForFrame(

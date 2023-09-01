@@ -8,7 +8,7 @@ Refs https://chromium-review.googlesource.com/c/v8/v8/+/3702449
 This can be removed when Electron upgrades to Node.js v20.
 
 diff --git a/src/inspector_agent.cc b/src/inspector_agent.cc
-index e5307b529c88d0e4db7fd7c6bd1b032d219b8c31..f6923be7a9ccdac2396cb625b227094f2686e54b 100644
+index 4c9f7f636aeeb19a87150ac5a05e28159503f051..6f3821247f7a1b9e4615c2f21d4098114e64d798 100644
 --- a/src/inspector_agent.cc
 +++ b/src/inspector_agent.cc
 @@ -219,7 +219,8 @@ class ChannelImpl final : public v8_inspector::V8Inspector::Channel,

@@ -193,7 +193,9 @@ function buildAppVeyor (targetBranch, options) {
     assert(validJobs.includes(options.job), `Unknown AppVeyor CI job name: ${options.job}.  Valid values are: ${validJobs}.`);
     callAppVeyor(targetBranch, options.job, options);
   } else {
-    validJobs.forEach((job) => callAppVeyor(targetBranch, job, options));
+    for (const job of validJobs) {
+      callAppVeyor(targetBranch, job, options);
+    }
   }
 }
 
@@ -243,7 +245,9 @@ function buildCircleCI (targetBranch, options) {
   } else {
     assert(!options.arch, 'Cannot provide a single architecture while building all workflows, please specify a single workflow via --workflow');
     options.runningPublishWorkflows = true;
-    circleCIPublishWorkflows.forEach((job) => circleCIcall(targetBranch, job, options));
+    for (const job of circleCIPublishWorkflows) {
+      circleCIcall(targetBranch, job, options);
+    }
   }
 }
 

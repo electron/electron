@@ -24,11 +24,12 @@ InspectableWebContentsViewMac::InspectableWebContentsViewMac(
           initWithInspectableWebContentsViewMac:this]) {}
 
 InspectableWebContentsViewMac::~InspectableWebContentsViewMac() {
+  [[NSNotificationCenter defaultCenter] removeObserver:view_];
   CloseDevTools();
 }
 
 gfx::NativeView InspectableWebContentsViewMac::GetNativeView() const {
-  return view_.get();
+  return view_;
 }
 
 void InspectableWebContentsViewMac::ShowDevTools(bool activate) {
@@ -58,6 +59,10 @@ void InspectableWebContentsViewMac::SetContentsResizingStrategy(
 
 void InspectableWebContentsViewMac::SetTitle(const std::u16string& title) {
   [view_ setTitle:base::SysUTF16ToNSString(title)];
+}
+
+const std::u16string InspectableWebContentsViewMac::GetTitle() {
+  return base::SysNSStringToUTF16([view_ getTitle]);
 }
 
 }  // namespace electron

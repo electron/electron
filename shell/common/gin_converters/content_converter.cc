@@ -125,7 +125,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     const ContextMenuParamsWithRenderFrameHost& val) {
   const auto& params = val.first;
   content::RenderFrameHost* render_frame_host = val.second;
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
@@ -309,7 +309,7 @@ bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
     v8::Isolate* isolate,
     const content::Referrer& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
   dict.Set("policy", ConvertToV8(isolate, val.policy));
   return gin::ConvertToV8(isolate, dict);

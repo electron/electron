@@ -71,6 +71,6 @@ Are you getting stuck anywhere? Here are a few links to places to look:
 [chromium]: https://www.chromium.org/
 [discord]: https://discord.gg/electronjs
 [examples]: examples.md
-[fiddle]: https://electronjs.org/fiddle
+[fiddle]: https://www.electronjs.org/fiddle
 [issue-tracker]: https://github.com/electron/electron/issues
 [node]: https://nodejs.org/

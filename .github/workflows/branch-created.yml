@@ -60,16 +60,15 @@ jobs:
           done
       - name: Generate GitHub App token
         if: ${{ steps.check-major-version.outputs.MAJOR }}
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
         id: generate-token
-        env:
-          RELEASE_BOARD_GH_APP_CREDS: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
-        run: |
-          TOKEN=$(npx @electron/github-app-auth --creds=$RELEASE_BOARD_GH_APP_CREDS --org electron)
-          echo "TOKEN=$TOKEN" >> "$GITHUB_OUTPUT"
+        with:
+          creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
+          org: electron
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
         env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.TOKEN }}
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
           MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
           ELECTRON_ORG_ID: "O_kgDOAMybxg"
           ELECTRON_REPO_ID: "R_kgDOAI8xSw"
@@ -132,53 +131,10 @@ jobs:
           }' -f id=$PROJECT_ID > issues.json
           PROJECT_ITEMS=$(jq '.data.node.items.nodes[] | select(.content.id != null) | .id' issues.json)
 
-          # TODO(dsanders11): remove the following "Stable Prep Items" sections once
-          # GitHub extends project template copying to retain the status field value
-          # of draft issues in the template.
-          #
-          # Refs https://github.com/orgs/community/discussions/54576#discussioncomment-6096892
-
-          # Get field ID and option value for "Stable Prep Items"
-          gh api graphql -f query='query ($id: ID!) {
-            node(id: $id) {
-              ... on ProjectV2 {
-                field(name: "Status") {
-                  ... on ProjectV2SingleSelectField {
-                    id
-                    options {
-                      ... on ProjectV2SingleSelectFieldOption {
-                        id
-                        name
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }' -f id=$PROJECT_ID > status_field.json
-          FIELD_ID=$(jq -r '.data.node.field.id' status_field.json)
-          FIELD_OPTION_ID=$(jq -r '.data.node.field.options[] | select(.name == "Stable Prep Items") | .id' status_field.json)
-
-          # Move draft issues to "Stable Prep" column
-          echo "$PROJECT_ITEMS" | xargs -I ITEM_ID -n 1 gh api graphql -f query='mutation ($projectId: ID!, $fieldId: ID!, $itemId: ID!, $value: String!) {                                                                                             
-            updateProjectV2ItemFieldValue(input: {
-              projectId: $projectId,
-              fieldId: $fieldId,
-              itemId: $itemId,
-              value: {
-                singleSelectOptionId: $value
-              }
-            }) {
-              projectV2Item {
-                id
-              }
-            }
-          }' -f projectId=$PROJECT_ID -f fieldId=$FIELD_ID -f itemId=ITEM_ID -f value=$FIELD_OPTION_ID
-
           #
           # Do template replacement for draft issues
           #
-          echo "{\"major\": $MAJOR, \"next-major\": $((MAJOR + 1))}" > variables.json
+          echo "{\"major\": $MAJOR, \"next-major\": $((MAJOR + 1)), \"prev-major\": $((MAJOR - 1))}" > variables.json
 
           # npx mustache is annoyingly slow, so install mustache directly
           yarn add -D mustache

@@ -234,7 +234,6 @@ void WebContentsPreferences::SetFromDictionary(
     disable_blink_features_ = disable_blink_features;
 
   base::FilePath::StringType preload_path;
-  std::string preload_url_str;
   if (web_preferences.Get(options::kPreloadScript, &preload_path)) {
     base::FilePath preload(preload_path);
     if (preload.IsAbsolute()) {

@@ -11,7 +11,6 @@
 #include <string>
 #include <vector>
 
-#include "base/mac/scoped_nsobject.h"
 #include "base/memory/raw_ptr.h"
 #include "shell/browser/native_window.h"
 #include "shell/common/gin_helper/persistent_dictionary.h"

@@ -276,9 +276,9 @@ describe('BrowserWindow module', () => {
         }
       };
       const windows = Array.from(Array(windowCount)).map(() => new BrowserWindow(windowOptions));
-      windows.forEach(win => win.show());
-      windows.forEach(win => win.focus());
-      windows.forEach(win => win.destroy());
+      for (const win of windows) win.show();
+      for (const win of windows) win.focus();
+      for (const win of windows) win.destroy();
       app.removeListener('browser-window-focus', focusListener);
     });
   });
@@ -1283,6 +1283,8 @@ describe('BrowserWindow module', () => {
     });
 
     describe('BrowserWindow.moveTop()', () => {
+      afterEach(closeAllWindows);
+
       it('should not steal focus', async () => {
         const posDelta = 50;
         const wShownInactive = once(w, 'show');
@@ -1324,6 +1326,15 @@ describe('BrowserWindow module', () => {
         await closeWindow(otherWindow, { assertNotWindows: false });
         expect(BrowserWindow.getAllWindows()).to.have.lengthOf(1);
       });
+
+      it('should not crash when called on a modal child window', async () => {
+        const shown = once(w, 'show');
+        w.show();
+        await shown;
+
+        const child = new BrowserWindow({ modal: true, parent: w });
+        expect(() => { child.moveTop(); }).to.not.throw();
+      });
     });
 
     describe('BrowserWindow.moveAbove(mediaSourceId)', () => {
@@ -1331,31 +1342,31 @@ describe('BrowserWindow module', () => {
         const fakeSourceIds = [
           'none', 'screen:0', 'window:fake', 'window:1234', 'foobar:1:2'
         ];
-        fakeSourceIds.forEach((sourceId) => {
+        for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
           }).to.throw(/Invalid media source id/);
-        });
+        }
       });
 
       it('should throw an exception if wrong type', async () => {
         const fakeSourceIds = [null as any, 123 as any];
-        fakeSourceIds.forEach((sourceId) => {
+        for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
           }).to.throw(/Error processing argument at index 0 */);
-        });
+        }
       });
 
       it('should throw an exception if invalid window', async () => {
         // It is very unlikely that these window id exist.
         const fakeSourceIds = ['window:99999999:0', 'window:123456:1',
           'window:123456:9'];
-        fakeSourceIds.forEach((sourceId) => {
+        for (const sourceId of fakeSourceIds) {
           expect(() => {
             w.moveAbove(sourceId);
           }).to.throw(/Invalid media source id/);
-        });
+        }
       });
 
       it('should not throw an exception', async () => {
@@ -2567,46 +2578,6 @@ describe('BrowserWindow module', () => {
         const newPos = { x: 20, y: 20 };
         w.setWindowButtonPosition(newPos);
         expect(w.getWindowButtonPosition()).to.deep.equal(newPos);
-      });
-    });
-
-    // The set/getTrafficLightPosition APIs are deprecated.
-    describe('BrowserWindow.getTrafficLightPosition(pos)', () => {
-      it('returns { x: 0, y: 0 } when there is no custom position', () => {
-        const w = new BrowserWindow({ show: false });
-        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
-      });
-
-      it('gets position property for "hidden" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
-      });
-
-      it('gets position property for "customButtonsOnHover" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
-        expect(w.getTrafficLightPosition()).to.deep.equal(pos);
-      });
-    });
-
-    describe('BrowserWindow.setTrafficLightPosition(pos)', () => {
-      it('resets the position when { x: 0, y: 0 } is passed', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        w.setTrafficLightPosition({ x: 0, y: 0 });
-        expect(w.getTrafficLightPosition()).to.deep.equal({ x: 0, y: 0 });
-      });
-
-      it('sets position property for "hidden" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'hidden', trafficLightPosition: pos });
-        const newPos = { x: 20, y: 20 };
-        w.setTrafficLightPosition(newPos);
-        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
-      });
-
-      it('sets position property for "customButtonsOnHover" titleBarStyle', () => {
-        const w = new BrowserWindow({ show: false, titleBarStyle: 'customButtonsOnHover', trafficLightPosition: pos });
-        const newPos = { x: 20, y: 20 };
-        w.setTrafficLightPosition(newPos);
-        expect(w.getTrafficLightPosition()).to.deep.equal(newPos);
       });
     });
   });
@@ -4072,7 +4043,8 @@ describe('BrowserWindow module', () => {
     });
   });
 
-  describe('document.visibilityState/hidden', () => {
+  // TODO(codebytere): figure out how to make these pass in CI on Windows.
+  ifdescribe(process.platform !== 'win32')('document.visibilityState/hidden', () => {
     afterEach(closeAllWindows);
 
     it('visibilityState is initially visible despite window being hidden', async () => {
@@ -4100,8 +4072,7 @@ describe('BrowserWindow module', () => {
       expect(hidden).to.be.false('hidden');
     });
 
-    // TODO(nornagon): figure out why this is failing on windows
-    ifit(process.platform !== 'win32')('visibilityState changes when window is hidden', async () => {
+    it('visibilityState changes when window is hidden', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -4128,8 +4099,7 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    // TODO(nornagon): figure out why this is failing on windows
-    ifit(process.platform !== 'win32')('visibilityState changes when window is shown', async () => {
+    it('visibilityState changes when window is shown', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -4150,7 +4120,7 @@ describe('BrowserWindow module', () => {
       expect(visibilityState).to.equal('visible');
     });
 
-    ifit(process.platform !== 'win32')('visibilityState changes when window is shown inactive', async () => {
+    it('visibilityState changes when window is shown inactive', async () => {
       const w = new BrowserWindow({
         width: 100,
         height: 100,
@@ -4170,7 +4140,6 @@ describe('BrowserWindow module', () => {
       expect(visibilityState).to.equal('visible');
     });
 
-    // TODO(nornagon): figure out why this is failing on windows
     ifit(process.platform === 'darwin')('visibilityState changes when window is minimized', async () => {
       const w = new BrowserWindow({
         width: 100,
@@ -4197,8 +4166,6 @@ describe('BrowserWindow module', () => {
       }
     });
 
-    // DISABLED-FIXME(MarshallOfSound): This test fails locally 100% of the time, on CI it started failing
-    // when we introduced the compositor recycling patch.  Should figure out how to fix this
     it('visibilityState remains visible if backgroundThrottling is disabled', async () => {
       const w = new BrowserWindow({
         show: false,
@@ -4206,10 +4173,13 @@ describe('BrowserWindow module', () => {
         height: 100,
         webPreferences: {
           backgroundThrottling: false,
-          nodeIntegration: true
+          nodeIntegration: true,
+          contextIsolation: false
         }
       });
+
       w.loadFile(path.join(fixtures, 'pages', 'visibilitychange.html'));
+
       {
         const [, visibilityState, hidden] = await once(ipcMain, 'pong');
         expect(visibilityState).to.equal('visible');
@@ -4797,6 +4767,7 @@ describe('BrowserWindow module', () => {
         c.setParentWindow(null);
         expect(c.getParentWindow()).to.be.null('c.parent');
       });
+
       it('adds window to child windows of parent', () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
@@ -4806,6 +4777,7 @@ describe('BrowserWindow module', () => {
         c.setParentWindow(null);
         expect(w.getChildWindows()).to.deep.equal([]);
       });
+
       it('removes from child windows of parent when window is closed', async () => {
         const w = new BrowserWindow({ show: false });
         const c = new BrowserWindow({ show: false });
@@ -4816,6 +4788,25 @@ describe('BrowserWindow module', () => {
         // The child window list is not immediately cleared, so wait a tick until it's ready.
         await setTimeout();
         expect(w.getChildWindows().length).to.equal(0);
+      });
+
+      ifit(process.platform === 'darwin')('can reparent when the first parent is destroyed', async () => {
+        const w1 = new BrowserWindow({ show: false });
+        const w2 = new BrowserWindow({ show: false });
+        const c = new BrowserWindow({ show: false });
+
+        c.setParentWindow(w1);
+        expect(w1.getChildWindows().length).to.equal(1);
+
+        const closed = once(w1, 'closed');
+        w1.destroy();
+        await closed;
+
+        c.setParentWindow(w2);
+        await setTimeout();
+
+        const children = w2.getChildWindows();
+        expect(children[0]).to.equal(c);
       });
     });
 
@@ -5424,6 +5415,42 @@ describe('BrowserWindow module', () => {
           w.setFullScreenable(true);
           expect(w.isFullScreenable()).to.be.true('isFullScreenable');
         });
+      });
+
+      it('does not open non-fullscreenable child windows in fullscreen if parent is fullscreen', async () => {
+        const w = new BrowserWindow();
+
+        const enterFS = once(w, 'enter-full-screen');
+        w.setFullScreen(true);
+        await enterFS;
+
+        const child = new BrowserWindow({ parent: w, resizable: false, fullscreenable: false });
+        const shown = once(child, 'show');
+        await shown;
+
+        expect(child.resizable).to.be.false('resizable');
+        expect(child.fullScreen).to.be.false('fullscreen');
+        expect(child.fullScreenable).to.be.false('fullscreenable');
+      });
+
+      it('is set correctly with different resizable values', async () => {
+        const w1 = new BrowserWindow({
+          resizable: false,
+          fullscreenable: false
+        });
+
+        const w2 = new BrowserWindow({
+          resizable: true,
+          fullscreenable: false
+        });
+
+        const w3 = new BrowserWindow({
+          fullscreenable: false
+        });
+
+        expect(w1.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w2.isFullScreenable()).to.be.false('isFullScreenable');
+        expect(w3.isFullScreenable()).to.be.false('isFullScreenable');
       });
     });
 

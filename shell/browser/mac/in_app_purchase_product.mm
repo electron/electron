@@ -67,9 +67,6 @@
  */
 - (void)productsRequest:(SKProductsRequest*)request
      didReceiveResponse:(SKProductsResponse*)response {
-  // Release request object.
-  [request release];
-
   // Get the products.
   NSArray* products = response.products;
 
@@ -84,8 +81,6 @@
   // Send the callback to the browser thread.
   content::GetUIThreadTaskRunner({})->PostTask(
       FROM_HERE, base::BindOnce(std::move(callback_), converted));
-
-  [self release];
 }
 
 /**

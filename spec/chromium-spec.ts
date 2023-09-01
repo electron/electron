@@ -904,7 +904,7 @@ describe('chromium features', () => {
       await closeAllWindows();
     });
 
-    [true, false].forEach((isSandboxEnabled) =>
+    for (const isSandboxEnabled of [true, false]) {
       describe(`sandbox=${isSandboxEnabled}`, () => {
         it('posts data in the same window', async () => {
           const w = new BrowserWindow({
@@ -954,8 +954,8 @@ describe('chromium features', () => {
           const res = await newWin.webContents.executeJavaScript('document.body.innerText');
           expect(res).to.equal('body:greeting=hello');
         });
-      })
-    );
+      });
+    }
   });
 
   describe('window.open', () => {
@@ -1114,6 +1114,28 @@ describe('chromium features', () => {
       expect(frameName).to.equal('__proto__');
     });
 
+    it('works when used in conjunction with the vm module', async () => {
+      const w = new BrowserWindow({
+        show: false,
+        webPreferences: {
+          nodeIntegration: true,
+          contextIsolation: false
+        }
+      });
+
+      await w.loadFile(path.resolve(__dirname, 'fixtures', 'blank.html'));
+
+      const { contextObject } = await w.webContents.executeJavaScript(`(async () => {
+        const vm = require('node:vm');
+        const contextObject = { count: 1, type: 'gecko' };
+        window.open('');
+        vm.runInNewContext('count += 1; type = "chameleon";', contextObject);
+        return { contextObject };
+      })()`);
+
+      expect(contextObject).to.deep.equal({ count: 2, type: 'chameleon' });
+    });
+
     // FIXME(nornagon): I'm not sure this ... ever was correct?
     xit('inherit options of parent window', async () => {
       const w = new BrowserWindow({ show: false, width: 123, height: 456 });
@@ -1164,7 +1186,7 @@ describe('chromium features', () => {
       w.webContents.executeJavaScript('window.child = window.open(); child.opener = null');
       const [, { webContents }] = await once(app, 'browser-window-created');
       const [,, message] = await once(webContents, 'console-message');
-      expect(message).to.equal('{"require":"function","module":"undefined","process":"object","Buffer":"function"}');
+      expect(message).to.equal('{"require":"function","module":"object","exports":"object","process":"object","Buffer":"function"}');
     });
 
     it('disables the <webview> tag when it is disabled on the parent window', async () => {
@@ -1301,6 +1323,94 @@ describe('chromium features', () => {
         `);
         expect(data).to.equal('deliver');
       });
+    });
+  });
+
+  describe('IdleDetection', () => {
+    afterEach(closeAllWindows);
+    afterEach(() => {
+      session.defaultSession.setPermissionCheckHandler(null);
+      session.defaultSession.setPermissionRequestHandler(null);
+    });
+
+    it('can grant a permission request', async () => {
+      session.defaultSession.setPermissionRequestHandler(
+        (_wc, permission, callback) => {
+          callback(permission === 'idle-detection');
+        }
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
+      const permission = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const button = document.getElementById('button');
+          button.addEventListener("click", async () => {
+            const permission = await IdleDetector.requestPermission();
+            resolve(permission);
+          });
+          button.click();
+        });
+      `, true);
+
+      expect(permission).to.eq('granted');
+    });
+
+    it('can deny a permission request', async () => {
+      session.defaultSession.setPermissionRequestHandler(
+        (_wc, permission, callback) => {
+          callback(permission !== 'idle-detection');
+        }
+      );
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'button.html'));
+      const permission = await w.webContents.executeJavaScript(`
+        new Promise((resolve, reject) => {
+          const button = document.getElementById('button');
+          button.addEventListener("click", async () => {
+            const permission = await IdleDetector.requestPermission();
+            resolve(permission);
+          });
+          button.click();
+        });
+      `, true);
+
+      expect(permission).to.eq('denied');
+    });
+
+    it('can allow the IdleDetector to start', async () => {
+      session.defaultSession.setPermissionCheckHandler((wc, permission) => {
+        return permission === 'idle-detection';
+      });
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const result = await w.webContents.executeJavaScript(`
+        const detector = new IdleDetector({ threshold: 60000 });
+        detector.start().then(() => {
+          return 'success';
+        }).catch(e => e.message);
+      `, true);
+
+      expect(result).to.eq('success');
+    });
+
+    it('can prevent the IdleDetector from starting', async () => {
+      session.defaultSession.setPermissionCheckHandler((wc, permission) => {
+        return permission !== 'idle-detection';
+      });
+
+      const w = new BrowserWindow({ show: false });
+      await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
+      const result = await w.webContents.executeJavaScript(`
+        const detector = new IdleDetector({ threshold: 60000 });
+        detector.start().then(() => {
+          console.log('success')
+        }).catch(e => e.message);
+      `, true);
+
+      expect(result).to.eq('Idle detection permission denied');
     });
   });
 
@@ -1803,7 +1913,7 @@ describe('chromium features', () => {
     });
 
     describe('DOM storage quota increase', () => {
-      ['localStorage', 'sessionStorage'].forEach((storageName) => {
+      for (const storageName of ['localStorage', 'sessionStorage']) {
         it(`allows saving at least 40MiB in ${storageName}`, async () => {
           const w = new BrowserWindow({ show: false });
           w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
@@ -1849,7 +1959,7 @@ describe('chromium features', () => {
             }
           })()).to.eventually.be.rejected();
         });
-      });
+      }
     });
 
     describe('persistent storage', () => {
@@ -1940,26 +2050,27 @@ describe('chromium features', () => {
     });
   });
 
-  describe('chrome://media-internals', () => {
-    it('loads the page successfully', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadURL('chrome://media-internals');
-      const pageExists = await w.webContents.executeJavaScript(
-        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
-      );
-      expect(pageExists).to.be.true();
-    });
-  });
+  describe('chrome:// pages', () => {
+    const urls = [
+      'chrome://accessibility',
+      'chrome://gpu',
+      'chrome://media-internals',
+      'chrome://tracing',
+      'chrome://webrtc-internals'
+    ];
 
-  describe('chrome://webrtc-internals', () => {
-    it('loads the page successfully', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.loadURL('chrome://webrtc-internals');
-      const pageExists = await w.webContents.executeJavaScript(
-        "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
-      );
-      expect(pageExists).to.be.true();
-    });
+    for (const url of urls) {
+      describe(url, () => {
+        it('loads the page successfully', async () => {
+          const w = new BrowserWindow({ show: false });
+          await w.loadURL(url);
+          const pageExists = await w.webContents.executeJavaScript(
+            "window.hasOwnProperty('chrome') && window.chrome.hasOwnProperty('send')"
+          );
+          expect(pageExists).to.be.true();
+        });
+      });
+    }
   });
 
   describe('document.hasFocus', () => {

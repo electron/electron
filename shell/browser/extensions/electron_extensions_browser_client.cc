@@ -121,26 +121,28 @@ BrowserContext* ElectronExtensionsBrowserClient::GetOriginalContext(
 }
 
 content::BrowserContext*
-ElectronExtensionsBrowserClient::GetRedirectedContextInIncognito(
+ElectronExtensionsBrowserClient::GetContextRedirectedToOriginal(
     content::BrowserContext* context,
-    bool force_guest_profile,
-    bool force_system_profile) {
+    bool force_guest_profile) {
   return GetOriginalContext(context);
 }
 
-content::BrowserContext*
-ElectronExtensionsBrowserClient::GetContextForRegularAndIncognito(
+content::BrowserContext* ElectronExtensionsBrowserClient::GetContextOwnInstance(
     content::BrowserContext* context,
-    bool force_guest_profile,
-    bool force_system_profile) {
+    bool force_guest_profile) {
   return context;
 }
 
-content::BrowserContext* ElectronExtensionsBrowserClient::GetRegularProfile(
+content::BrowserContext*
+ElectronExtensionsBrowserClient::GetContextForOriginalOnly(
     content::BrowserContext* context,
-    bool force_guest_profile,
-    bool force_system_profile) {
+    bool force_guest_profile) {
   return context->IsOffTheRecord() ? nullptr : context;
+}
+
+bool ElectronExtensionsBrowserClient::AreExtensionsDisabledForContext(
+    content::BrowserContext* context) {
+  return false;
 }
 
 bool ElectronExtensionsBrowserClient::IsGuestSession(

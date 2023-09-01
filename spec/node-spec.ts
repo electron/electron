@@ -195,9 +195,9 @@ describe('node feature', () => {
       emitter.removeAllListeners(eventName);
       emitter.once(eventName, (...args) => {
         emitter.removeAllListeners(eventName);
-        listeners.forEach((listener) => {
+        for (const listener of listeners) {
           emitter.on(eventName, listener);
-        });
+        }
 
         callback(...args);
       });

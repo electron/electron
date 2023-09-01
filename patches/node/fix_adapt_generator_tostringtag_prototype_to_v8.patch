@@ -1,0 +1,20 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 31 Jul 2023 14:17:40 +0200
+Subject: fix: adapt generator toStringTag prototype to V8
+
+https://chromium-review.googlesource.com/c/v8/v8/+/4670615
+
+diff --git a/test/parallel/test-util-inspect.js b/test/parallel/test-util-inspect.js
+index 9b57fd4a99b10e6509eb319878283b7e24c7d7a3..1a972090cc9c5e174141108bf5b406cb57080ad2 100644
+--- a/test/parallel/test-util-inspect.js
++++ b/test/parallel/test-util-inspect.js
+@@ -3212,7 +3212,7 @@ assert.strictEqual(
+     '[GeneratorFunction: generator] {\n' +
+     '  [length]: 0,\n' +
+     "  [name]: 'generator',\n" +
+-    "  [prototype]: Object [Generator] { [Symbol(Symbol.toStringTag)]: 'Generator' },\n" + // eslint-disable-line max-len
++    "  [prototype]: Iterator [Generator] { [Symbol(Symbol.toStringTag)]: 'Generator' },\n" + // eslint-disable-line max-len
+     "  [Symbol(Symbol.toStringTag)]: 'GeneratorFunction'\n" +
+     '}'
+   );

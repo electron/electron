@@ -12,18 +12,19 @@
 #include "services/device/public/cpp/geolocation/geolocation_manager.h"
 #include "services/device/public/cpp/geolocation/system_geolocation_source_mac.h"
 #include "shell/browser/browser_process_impl.h"
-#import "shell/browser/mac/electron_application.h"
+#include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
 #include "shell/common/electron_paths.h"
 #include "ui/base/l10n/l10n_util_mac.h"
 
 namespace electron {
 
+static ElectronApplicationDelegate* __strong delegate_;
+
 void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
   // Set our own application delegate.
-  ElectronApplicationDelegate* delegate =
-      [[ElectronApplicationDelegate alloc] init];
-  [NSApp setDelegate:delegate];
+  delegate_ = [[ElectronApplicationDelegate alloc] init];
+  [NSApp setDelegate:delegate_];
 
   PreCreateMainMessageLoopCommon();
 
@@ -40,7 +41,7 @@ void ElectronBrowserMainParts::PreCreateMainMessageLoop() {
 }
 
 void ElectronBrowserMainParts::FreeAppDelegate() {
-  [[NSApp delegate] release];
+  delegate_ = nil;
   [NSApp setDelegate:nil];
 }
 
@@ -78,7 +79,6 @@ void ElectronBrowserMainParts::InitializeMainNib() {
   }
 
   [mainNib instantiateWithOwner:application topLevelObjects:nil];
-  [mainNib release];
 }
 
 std::string ElectronBrowserMainParts::GetCurrentSystemLocale() {

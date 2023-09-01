@@ -146,14 +146,14 @@ require('@electron/internal/browser/api/web-frame-main');
 // Set main startup script of the app.
 const mainStartupScript = packageJson.main || 'index.js';
 
-const KNOWN_XDG_DESKTOP_VALUES = ['Pantheon', 'Unity:Unity7', 'pop:GNOME'];
+const KNOWN_XDG_DESKTOP_VALUES = new Set(['Pantheon', 'Unity:Unity7', 'pop:GNOME']);
 
 function currentPlatformSupportsAppIndicator () {
   if (process.platform !== 'linux') return false;
   const currentDesktop = process.env.XDG_CURRENT_DESKTOP;
 
   if (!currentDesktop) return false;
-  if (KNOWN_XDG_DESKTOP_VALUES.includes(currentDesktop)) return true;
+  if (KNOWN_XDG_DESKTOP_VALUES.has(currentDesktop)) return true;
   // ubuntu based or derived session (default ubuntu one, communitheme…) supports
   // indicator too.
   if (/ubuntu/ig.test(currentDesktop)) return true;
@@ -182,11 +182,31 @@ const { setDefaultApplicationMenu } = require('@electron/internal/browser/defaul
 // menu is set before any user window is created.
 app.once('will-finish-launching', setDefaultApplicationMenu);
 
+const { appCodeLoaded } = process;
+delete process.appCodeLoaded;
+
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
-  process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
-  Module._load(path.join(packagePath, mainStartupScript), Module, true);
+  if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
+    const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
+    const main = require('url').pathToFileURL(path.join(packagePath, mainStartupScript));
+    loadESM(async (esmLoader: any) => {
+      try {
+        await esmLoader.import(main.toString(), undefined, Object.create(null));
+        appCodeLoaded!();
+      } catch (err) {
+        appCodeLoaded!();
+        process.emit('uncaughtException', err as Error);
+      }
+    });
+  } else {
+    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is syncronous
+    appCodeLoaded!();
+    process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
+    Module._load(path.join(packagePath, mainStartupScript), Module, true);
+  }
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)');
   console.error('This normally means you\'ve damaged the Electron package somehow');
+  appCodeLoaded!();
 }

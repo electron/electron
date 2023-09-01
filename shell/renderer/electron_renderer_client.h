@@ -35,6 +35,8 @@ class ElectronRendererClient : public RendererClientBase {
                                 content::RenderFrame* render_frame) override;
 
  private:
+  void UndeferLoad(content::RenderFrame* render_frame);
+
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
@@ -55,7 +57,7 @@ class ElectronRendererClient : public RendererClientBase {
   // The node::Environment::GetCurrent API does not return nullptr when it
   // is called for a context without node::Environment, so we have to keep
   // a book of the environments created.
-  std::set<node::Environment*> environments_;
+  std::set<std::shared_ptr<node::Environment>> environments_;
 
   // Getting main script context from web frame would lazily initializes
   // its script context. Doing so in a web page without scripts would trigger

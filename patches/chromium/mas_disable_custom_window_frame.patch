@@ -75,7 +75,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 58e974137f318b0f990e0b77630fe3a51db62c8c..8638f9ee32bea5fca67a377f27f3e24b00982e44 100644
+index 05a2f3730ea65510a9afc3522ededb1378232716..a5b4925530ce02d0f5bbe576a027d8dd893dd524 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -95,10 +95,10 @@ index 58e974137f318b0f990e0b77630fe3a51db62c8c..8638f9ee32bea5fca67a377f27f3e24b
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index ac6d18837e81339fd885ce93079362147406b595..669520e8782e5cab7bd53eb547f5faf78910a700 100644
+index a8c96509886c2b4c32b01524907edc9892709d9f..b5088a3217cb4a78c89526d3fc006431070ec959 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -97,7 +97,9 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -113,7 +113,9 @@ void OrderChildWindow(NSWindow* child_window,
  }  // namespace
  
  @interface NSWindow (Private)
@@ -108,7 +108,7 @@ index ac6d18837e81339fd885ce93079362147406b595..669520e8782e5cab7bd53eb547f5faf7
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -135,6 +137,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -161,6 +163,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -117,7 +117,7 @@ index ac6d18837e81339fd885ce93079362147406b595..669520e8782e5cab7bd53eb547f5faf7
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -161,6 +165,8 @@ - (BOOL)usesCustomDrawing {
+@@ -187,6 +191,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -125,8 +125,8 @@ index ac6d18837e81339fd885ce93079362147406b595..669520e8782e5cab7bd53eb547f5faf7
 +
  @implementation NativeWidgetMacNSWindow {
   @private
-   base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -357,6 +363,8 @@ - (NSAccessibilityRole)accessibilityRole {
+   CommandDispatcher* __strong _commandDispatcher;
+@@ -401,6 +407,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index ac6d18837e81339fd885ce93079362147406b595..669520e8782e5cab7bd53eb547f5faf7
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -368,6 +376,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -412,6 +420,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

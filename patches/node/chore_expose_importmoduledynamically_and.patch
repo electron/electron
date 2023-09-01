@@ -1,0 +1,103 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Wed, 8 Mar 2023 13:02:17 -0800
+Subject: chore: expose ImportModuleDynamically and
+ HostInitializeImportMetaObjectCallback to embedders
+
+This also subtly changes the behavior of shouldNotRegisterESMLoader to ensure that node sets up the handlers
+internally but simply avoids setting its own handlers on the Isolate.  This is so that Electron can set it to
+its own blended handler between Node and Blink.
+
+Not upstreamable.
+
+diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
+index f96d19969aa59a9964d947a9fd6295cf25ad3b03..15116b78f82c977bba67ce98ce57232500dfaef8 100644
+--- a/lib/internal/process/pre_execution.js
++++ b/lib/internal/process/pre_execution.js
+@@ -554,7 +554,7 @@ function initializeESMLoader() {
+   // Create this WeakMap in js-land because V8 has no C++ API for WeakMap.
+   internalBinding('module_wrap').callbackMap = new SafeWeakMap();
+ 
+-  if (getEmbedderOptions().shouldNotRegisterESMLoader) return;
++  const shouldSetOnIsolate = !getEmbedderOptions().shouldNotRegisterESMLoader;
+ 
+   const {
+     setImportModuleDynamicallyCallback,
+@@ -563,8 +563,8 @@ function initializeESMLoader() {
+   const esm = require('internal/process/esm_loader');
+   // Setup per-isolate callbacks that locate data or callbacks that we keep
+   // track of for different ESM modules.
+-  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject);
+-  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback);
++  setInitializeImportMetaObjectCallback(esm.initializeImportMetaObject, shouldSetOnIsolate);
++  setImportModuleDynamicallyCallback(esm.importModuleDynamicallyCallback, shouldSetOnIsolate);
+ 
+   // Patch the vm module when --experimental-vm-modules is on.
+   // Please update the comments in vm.js when this block changes.
+diff --git a/src/module_wrap.cc b/src/module_wrap.cc
+index 0645b3ddf506df2a76f5661f0ec6bb35d5d8b94e..e0f1b2d51f3055b2250f2c0dc1dfd1048b645dd9 100644
+--- a/src/module_wrap.cc
++++ b/src/module_wrap.cc
+@@ -547,7 +547,7 @@ MaybeLocal<Module> ModuleWrap::ResolveModuleCallback(
+   return module->module_.Get(isolate);
+ }
+ 
+-static MaybeLocal<Promise> ImportModuleDynamically(
++MaybeLocal<Promise> ImportModuleDynamically(
+     Local<Context> context,
+     Local<v8::Data> host_defined_options,
+     Local<Value> resource_name,
+@@ -629,12 +629,13 @@ void ModuleWrap::SetImportModuleDynamicallyCallback(
+   Environment* env = Environment::GetCurrent(args);
+   HandleScope handle_scope(isolate);
+ 
+-  CHECK_EQ(args.Length(), 1);
++  CHECK_EQ(args.Length(), 2);
+   CHECK(args[0]->IsFunction());
+   Local<Function> import_callback = args[0].As<Function>();
+   env->set_host_import_module_dynamically_callback(import_callback);
+ 
+-  isolate->SetHostImportModuleDynamicallyCallback(ImportModuleDynamically);
++  if (args[1]->IsBoolean() && args[1]->BooleanValue(isolate))
++    isolate->SetHostImportModuleDynamicallyCallback(ImportModuleDynamically);
+ }
+ 
+ void ModuleWrap::HostInitializeImportMetaObjectCallback(
+@@ -665,13 +666,14 @@ void ModuleWrap::SetInitializeImportMetaObjectCallback(
+   Environment* env = Environment::GetCurrent(args);
+   Isolate* isolate = env->isolate();
+ 
+-  CHECK_EQ(args.Length(), 1);
++  CHECK_EQ(args.Length(), 2);
+   CHECK(args[0]->IsFunction());
+   Local<Function> import_meta_callback = args[0].As<Function>();
+   env->set_host_initialize_import_meta_object_callback(import_meta_callback);
+ 
+-  isolate->SetHostInitializeImportMetaObjectCallback(
+-      HostInitializeImportMetaObjectCallback);
++  if (args[1]->IsBoolean() && args[1]->BooleanValue(isolate))
++    isolate->SetHostInitializeImportMetaObjectCallback(
++        HostInitializeImportMetaObjectCallback);
+ }
+ 
+ MaybeLocal<Value> ModuleWrap::SyntheticModuleEvaluationStepsCallback(
+diff --git a/src/module_wrap.h b/src/module_wrap.h
+index 58b233d036515c52d9bd5574c776c2ea65d2ecb1..5f7ef75480a76761c6fa62061c8700c812a3fc6f 100644
+--- a/src/module_wrap.h
++++ b/src/module_wrap.h
+@@ -30,7 +30,14 @@ enum HostDefinedOptions : int {
+   kLength = 10,
+ };
+ 
+-class ModuleWrap : public BaseObject {
++NODE_EXTERN v8::MaybeLocal<v8::Promise> ImportModuleDynamically(
++    v8::Local<v8::Context> context,
++    v8::Local<v8::Data> host_defined_options,
++    v8::Local<v8::Value> resource_name,
++    v8::Local<v8::String> specifier,
++    v8::Local<v8::FixedArray> import_assertions);
++
++class NODE_EXTERN ModuleWrap : public BaseObject {
+  public:
+   enum InternalFields {
+     kModuleWrapBaseField = BaseObject::kInternalFieldCount,

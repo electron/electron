@@ -42,7 +42,9 @@ executors:
       size:
         description: "Docker executor size"
         type: enum
-        enum: ["medium", "xlarge", "2xlarge"]
+        # aks-linux-medium === 8 core (32 core host, shared with other builds)
+        # aks-linux-large === 32 core
+        enum: ["medium", "xlarge", "electronjs/aks-linux-medium", "electronjs/aks-linux-large"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -526,6 +528,10 @@ step-fix-sync: &step-fix-sync
         sed -i '' "s/Updating depot_tools... //g" esbuild_ensure_file
         cipd ensure --root src/third_party/devtools-frontend/src/third_party/esbuild -ensure-file esbuild_ensure_file
 
+        # Fix rustc (wrong binary)
+        rm -rf src/third_party/rust-toolchain
+        python3 src/tools/rust/update_rust.py
+        
         # Fix gn (wrong binary)
         echo 'gn/gn/mac-${arch}' `gclient getdep --deps-file=src/DEPS -r 'src/buildtools/mac:gn/gn/mac-${arch}'` > gn_ensure_file
         # Remove extra output from calling gclient getdep which always calls update_depot_tools
@@ -639,7 +645,7 @@ step-nodejs-headers-build: &step-nodejs-headers-build
     name: Build Node.js headers
     command: |
       cd src
-      ninja -C out/Default third_party/electron_node:headers
+      ninja -C out/Default electron:node_headers
 
 step-electron-publish: &step-electron-publish
   run:
@@ -1066,7 +1072,7 @@ commands:
           build-type: << parameters.build-type >>
       - *step-maybe-electron-dist-strip
       - step-electron-dist-build:
-          additional-targets: shell_browser_ui_unittests third_party/electron_node:headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
+          additional-targets: shell_browser_ui_unittests electron:node_headers third_party/electron_node:overlapped-checker electron:hunspell_dictionaries_zip
 
       - *step-show-goma-stats
 
@@ -1426,6 +1432,8 @@ commands:
                         - src/build/linux
                         - src/buildtools/third_party/libc++
                         - src/buildtools/third_party/libc++abi
+                        - src/third_party/libc++
+                        - src/third_party/libc++abi
                         - src/out/Default/obj/buildtools/third_party
                         - src/v8/tools/builtins-pgo
                   - steps: << parameters.after-persist >>
@@ -1562,6 +1570,7 @@ commands:
             - *step-minimize-workspace-size-from-checkout
       - *step-fix-sync
       - *step-setup-env-for-build
+      - *step-fix-known-hosts-linux
       - *step-setup-goma-for-build
       - *step-wait-for-goma
       - *step-gn-gen-default
@@ -1694,7 +1703,7 @@ jobs:
   linux-x64-testing:
     executor:
       name: linux-docker
-      size: xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1711,7 +1720,7 @@ jobs:
   linux-x64-testing-asan:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1740,7 +1749,7 @@ jobs:
   linux-x64-publish:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
@@ -1763,7 +1772,7 @@ jobs:
   linux-arm-testing:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1783,7 +1792,7 @@ jobs:
   linux-arm-publish:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
@@ -1808,7 +1817,7 @@ jobs:
   linux-arm64-testing:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -1839,7 +1848,7 @@ jobs:
   linux-arm64-publish:
     executor:
       name: linux-docker
-      size: 2xlarge
+      size: electronjs/aks-linux-large
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64

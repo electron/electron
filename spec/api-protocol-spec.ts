@@ -104,7 +104,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -557,7 +557,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -1106,7 +1106,7 @@ describe('protocol module', () => {
           // In case of failure, make sure we unhandle. But we should succeed
           // :)
           protocol.unhandle('test-scheme');
-        } catch (_ignored) { /* ignore */ }
+        } catch { /* ignore */ }
       });
       const resp1 = await net.fetch('test-scheme://foo');
       expect(resp1.status).to.equal(200);

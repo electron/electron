@@ -820,9 +820,13 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
+**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
+
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
+
+**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
@@ -1207,7 +1211,7 @@ const win = new BrowserWindow()
 const url = require('url').format({
   protocol: 'file',
   slashes: true,
-  pathname: require('path').join(__dirname, 'index.html')
+  pathname: require('node:path').join(__dirname, 'index.html')
 })
 
 win.loadURL(url)
@@ -1590,25 +1594,6 @@ Passing `null` will reset the position to default.
 
 Returns `Point | null` - The custom position for the traffic light buttons in
 frameless window, `null` will be returned when there is no custom position.
-
-#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
-
-* `position` [Point](structures/point.md)
-
-Set a custom position for the traffic light buttons in frameless window.
-Passing `{ x: 0, y: 0 }` will reset the position to default.
-
-> **Note**
-> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
-
-#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
-
-Returns `Point` - The custom position for the traffic light buttons in
-frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
-position.
-
-> **Note**
-> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
 
 #### `win.setTouchBar(touchBar)` _macOS_
 

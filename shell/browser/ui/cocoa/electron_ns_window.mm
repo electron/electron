@@ -248,7 +248,7 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
                                        @"NSAccessibilityReparentingCellProxy"];
 
   NSArray* children = [super accessibilityAttributeValue:attribute];
-  NSMutableArray* mutableChildren = [[children mutableCopy] autorelease];
+  NSMutableArray* mutableChildren = [children mutableCopy];
   [mutableChildren filterUsingPredicate:predicate];
 
   return mutableChildren;

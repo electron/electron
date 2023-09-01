@@ -29,7 +29,7 @@ To set the represented file of window, you can use the
 
 ```javascript fiddle='docs/fiddles/features/represented-file'
 const { app, BrowserWindow } = require('electron')
-const os = require('os')
+const os = require('node:os')
 
 const createWindow = () => {
   const win = new BrowserWindow({

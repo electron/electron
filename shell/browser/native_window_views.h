@@ -318,6 +318,10 @@ class NativeWindowViews : public NativeWindow,
   // Controls Overlay if enabled on Windows.
   SkColor overlay_button_color_;
   SkColor overlay_symbol_color_;
+
+  // The message ID of the "TaskbarCreated" message, sent to us when we need to
+  // reset our thumbar buttons.
+  UINT taskbar_created_message_ = 0;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.

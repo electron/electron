@@ -89,10 +89,10 @@ index 99efa6b245b9944710b76a342ec9a37947078a48..e55df93f17560a566e1dd2a63c560054
                                annotations, arguments, false, false));
    } else {
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index d7351f4a912b36bb541c59a408bae85dda537fc4..49e3e819f51621ce9b5f52eeed561983533783c8 100644
+index e6c1805bfd52f0b855f6b7db4ceda9a5a78dea44..eb388b3af595d4db07c8d3e050b892a4093263c6 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
-@@ -91,6 +91,8 @@
+@@ -87,6 +87,8 @@
      }  // @autoreleasepool
      return process_annotations;
    }();
@@ -101,7 +101,7 @@ index d7351f4a912b36bb541c59a408bae85dda537fc4..49e3e819f51621ce9b5f52eeed561983
    return annotations;
  }
  
-@@ -161,6 +163,13 @@ bool PlatformCrashpadInitialization(
+@@ -157,6 +159,13 @@ bool PlatformCrashpadInitialization(
  
        std::vector<std::string> arguments;
  

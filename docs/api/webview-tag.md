@@ -112,7 +112,7 @@ The `src` attribute can also accept data URLs, such as
 ### `nodeintegration`
 
 ```html
-<webview src="http://www.google.com/" nodeintegration></webview>
+<webview src="https://www.google.com/" nodeintegration></webview>
 ```
 
 A `boolean`. When this attribute is present the guest page in `webview` will have node
@@ -123,7 +123,7 @@ page.
 ### `nodeintegrationinsubframes`
 
 ```html
-<webview src="http://www.google.com/" nodeintegrationinsubframes></webview>
+<webview src="https://www.google.com/" nodeintegrationinsubframes></webview>
 ```
 
 A `boolean` for the experimental option for enabling NodeJS support in sub-frames such as iframes
@@ -161,7 +161,7 @@ after this script has finished executing.
 ### `httpreferrer`
 
 ```html
-<webview src="https://www.github.com/" httpreferrer="http://cheng.guru"></webview>
+<webview src="https://www.github.com/" httpreferrer="https://example.com/"></webview>
 ```
 
 A `string` that sets the referrer URL for the guest page.
@@ -280,9 +280,11 @@ if the page fails to load (see
 Loads the `url` in the webview, the `url` must contain the protocol prefix,
 e.g. the `http://` or `file://`.
 
-### `<webview>.downloadURL(url)`
+### `<webview>.downloadURL(url[, options])`
 
 * `url` string
+* `options` Object (optional)
+  * `headers` Record<string, string> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url` without navigating.
 
@@ -601,10 +603,11 @@ Prints `webview`'s web page. Same as `webContents.print([options])`.
     * `bottom` number (optional) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
     * `left` number (optional) - Left margin in inches. Defaults to 1cm (~0.4 inches).
     * `right` number (optional) - Right margin in inches. Defaults to 1cm (~0.4 inches).
-  * `pageRanges` string (optional) - Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
+  * `pageRanges` string (optional) - Page ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
   * `headerTemplate` string (optional) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: `date` (formatted print date), `title` (document title), `url` (document location), `pageNumber` (current page number) and `totalPages` (total pages in the document). For example, `<span class=title></span>` would generate span containing the title.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
+  * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
 
 Returns `Promise<Uint8Array>` - Resolves with the generated PDF data.
 
@@ -983,9 +986,22 @@ ipcRenderer.on('ping', () => {
 })
 ```
 
-### Event: 'crashed'
+### Event: 'crashed' _Deprecated_
 
-Fired when the renderer process is crashed.
+Fired when the renderer process crashes or is killed.
+
+**Deprecated:** This event is superceded by the `render-process-gone` event
+which contains more information about why the render process disappeared. It
+isn't always because it crashed.
+
+### Event: 'render-process-gone'
+
+Returns:
+
+* `details` [RenderProcessGoneDetails](structures/render-process-gone-details.md)
+
+Fired when the renderer process unexpectedly disappears. This is normally
+because it was crashed or killed.
 
 ### Event: 'plugin-crashed'
 
@@ -1091,7 +1107,7 @@ Returns:
   * `frameCharset` string - The character encoding of the frame on which the
     menu was invoked.
   * `inputFieldType` string - If the context menu was invoked on an input
-    field, the type of that field. Possible values are `none`, `plainText`,
+    field, the type of that field. Possible values include `none`, `plainText`,
     `password`, `other`.
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.

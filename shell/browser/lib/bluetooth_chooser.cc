@@ -14,7 +14,7 @@ struct Converter<electron::BluetoothChooser::DeviceInfo> {
   static v8::Local<v8::Value> ToV8(
       v8::Isolate* isolate,
       const electron::BluetoothChooser::DeviceInfo& val) {
-    gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+    auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
     dict.Set("deviceName", val.device_name);
     dict.Set("deviceId", val.device_id);
     return gin::ConvertToV8(isolate, dict);

@@ -46,7 +46,7 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
   }
 
   // Check each transaction.
-  transactions.forEach((transaction) => {
+  for (const transaction of transactions) {
     const payment = transaction.payment
 
     switch (transaction.transactionState) {
@@ -95,7 +95,7 @@ inAppPurchase.on('transactions-updated', (event, transactions) => {
       default:
         break
     }
-  })
+  }
 })
 
 // Check if the user is allowed to make in-app purchase.
@@ -112,9 +112,9 @@ inAppPurchase.getProducts(PRODUCT_IDS).then(products => {
   }
 
   // Display the name and price of each product.
-  products.forEach(product => {
+  for (const product of products) {
     console.log(`The price of ${product.localizedTitle} is ${product.formattedPrice}.`)
-  })
+  }
 
   // Ask the user which product they want to purchase.
   const selectedProduct = products[0]

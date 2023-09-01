@@ -50,7 +50,7 @@ async function getDraftRelease (version, skipValidation) {
   if (!skipValidation) {
     failureCount = 0;
     check(drafts.length === 1, 'one draft exists', true);
-    if (versionToCheck.indexOf('beta') > -1) {
+    if (versionToCheck.includes('beta')) {
       check(draft.prerelease, 'draft is a prerelease');
     }
     check(draft.body.length > 50 && !draft.body.includes('(placeholder)'), 'draft has release notes');
@@ -65,9 +65,9 @@ async function validateReleaseAssets (release, validatingRelease) {
   const downloadUrls = release.assets.map(asset => ({ url: asset.browser_download_url, file: asset.name })).sort((a, b) => a.file.localeCompare(b.file));
 
   failureCount = 0;
-  requiredAssets.forEach(asset => {
+  for (const asset of requiredAssets) {
     check(extantAssets.includes(asset), asset);
-  });
+  }
   check((failureCount === 0), 'All required GitHub assets exist for release', true);
 
   if (!validatingRelease || !release.draft) {

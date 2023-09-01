@@ -948,7 +948,7 @@ describe('Menu module', function () {
       await new Promise<void>((resolve) => {
         appProcess.stdout.on('data', data => {
           output += data;
-          if (data.indexOf('Window has') > -1) {
+          if (data.includes('Window has')) {
             resolve();
           }
         });
