@@ -43,7 +43,6 @@
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
@@ -56,6 +55,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/input/native_web_keyboard_event.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -183,8 +183,8 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
-#include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#include "components/pdf/browser/pdf_document_helper.h"  // nogncheck
+#include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -499,7 +499,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const std::u16string& device_name) {
 #if BUILDFLAG(IS_MAC)
-  base::ScopedCFTypeRef<CFStringRef> new_printer_id(
+  base::apple::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
   bool printer_exists = new_printer != nullptr;
@@ -1016,12 +1016,6 @@ void WebContents::InitWithWebContents(
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
-#endif
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
-      web_contents.get(),
-      std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
   // Determine whether the WebContents is offscreen.

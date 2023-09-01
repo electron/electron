@@ -1,23 +1,22 @@
 // Copyright (c) 2015 Slack Technologies, Inc.
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
-#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_PDF_WEB_CONTENTS_HELPER_CLIENT_H_
-#define ELECTRON_SHELL_BROWSER_ELECTRON_PDF_WEB_CONTENTS_HELPER_CLIENT_H_
+#ifndef ELECTRON_SHELL_BROWSER_ELECTRON_PDF_DOCUMENT_HELPER_CLIENT_H_
+#define ELECTRON_SHELL_BROWSER_ELECTRON_PDF_DOCUMENT_HELPER_CLIENT_H_
 
-#include "components/pdf/browser/pdf_web_contents_helper_client.h"
+#include "components/pdf/browser/pdf_document_helper_client.h"
 
 namespace content {
 class WebContents;
 }
 
-class ElectronPDFWebContentsHelperClient
-    : public pdf::PDFWebContentsHelperClient {
+class ElectronPDFDocumentHelperClient : public pdf::PDFDocumentHelperClient {
  public:
-  ElectronPDFWebContentsHelperClient();
-  ~ElectronPDFWebContentsHelperClient() override;
+  ElectronPDFDocumentHelperClient();
+  ~ElectronPDFDocumentHelperClient() override;
 
  private:
-  // pdf::PDFWebContentsHelperClient
+  // pdf::PDFDocumentHelperClient
   content::RenderFrameHost* FindPdfFrame(
       content::WebContents* contents) override;
   void UpdateContentRestrictions(content::RenderFrameHost* render_frame_host,
@@ -28,4 +27,4 @@ class ElectronPDFWebContentsHelperClient
                         bool can_save) override;
 };
 
-#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_PDF_WEB_CONTENTS_HELPER_CLIENT_H_
+#endif  // ELECTRON_SHELL_BROWSER_ELECTRON_PDF_DOCUMENT_HELPER_CLIENT_H_

@@ -6,6 +6,8 @@
 
 #include <windows.h>  // windows.h must be included first
 
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
+
 #include <atlbase.h>
 #include <comdef.h>
 #include <commdlg.h>

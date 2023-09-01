@@ -14,7 +14,7 @@ Disable usage of the following private APIs in MAS builds:
 * AudioDeviceDuck
 
 diff --git a/base/enterprise_util_mac.mm b/base/enterprise_util_mac.mm
-index fd14573e1617d397012e5bb54efb229415326cca..6d1f3ca0f81d8d79b0e6d436a3fdb741a2b8e7c3 100644
+index 1977180038a11c24b2d94f49be9f8cc42a9e4227..48c3f56946da59ea9d178fb6bd8df6cf4c798fbc 100644
 --- a/base/enterprise_util_mac.mm
 +++ b/base/enterprise_util_mac.mm
 @@ -113,6 +113,13 @@ MacDeviceManagementState IsDeviceRegisteredWithManagement() {
@@ -31,7 +31,7 @@ index fd14573e1617d397012e5bb54efb229415326cca..6d1f3ca0f81d8d79b0e6d436a3fdb741
  
      @autoreleasepool {
        ODSession* session = [ODSession defaultSession];
-@@ -219,5 +226,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
+@@ -221,5 +228,6 @@ DeviceUserDomainJoinState AreDeviceAndUserJoinedToDomain() {
  
    return state;
  }
@@ -99,7 +99,7 @@ index b267bc2272fa82334a70d897a900f1ea37b1a598..967e22699bf565368704972c021f9b42
      DPSXCHECK(responsibility_spawnattrs_setdisclaim(attr.get(), 1));
    }
 diff --git a/media/audio/mac/audio_low_latency_input_mac.cc b/media/audio/mac/audio_low_latency_input_mac.cc
-index 6e73be2bd964aa8cf743c1ae01ce8e188dbcac8e..58a7eb1e982a90d6197579ffdb9545340356a65c 100644
+index 9642854e237edff1020ec5cd54e2cbe6b9e85dd2..4e84d8b09787a8a4592b64622bb8a8ca78fbaf49 100644
 --- a/media/audio/mac/audio_low_latency_input_mac.cc
 +++ b/media/audio/mac/audio_low_latency_input_mac.cc
 @@ -31,19 +31,23 @@
@@ -155,12 +155,12 @@ index f52f1d1da4d431505b1a55df4764f37a70e0b29d..2406f5d4342dafc0d2c398f03ac23907
  
  // |error| is strerror(errno) when a P* logging function is called. Pass
 diff --git a/sandbox/mac/system_services.cc b/sandbox/mac/system_services.cc
-index 175cbb4a23a4ab5f86c4bfa8158f8e0ada5454ed..ce44db60ba61394bbadacc4b85c94643a6e0261f 100644
+index eb81a70e4d5d5cd3e6ae9b45f8cd1c795ea76c51..dc30306f2c5d20503399fc3a8860773aa0044352 100644
 --- a/sandbox/mac/system_services.cc
 +++ b/sandbox/mac/system_services.cc
 @@ -9,6 +9,7 @@
  
- #include "base/mac/mac_logging.h"
+ #include "base/apple/osstatus_logging.h"
  
 +#if !IS_MAS_BUILD()
  extern "C" {
