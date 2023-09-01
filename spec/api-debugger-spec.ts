@@ -64,7 +64,7 @@ describe('debugger module', () => {
       });
       await detach;
       expect(w.webContents.debugger.isAttached()).to.be.false();
-      expect((w as any).devToolsWebContents.isDestroyed()).to.be.false();
+      expect(w.devToolsWebContents.isDestroyed()).to.be.false();
     });
   });
 
@@ -119,9 +119,9 @@ describe('debugger module', () => {
       w.webContents.debugger.sendCommand('Console.enable');
       const [,, params] = await message;
       w.webContents.debugger.detach();
-      expect((params as any).message.level).to.equal('log');
-      expect((params as any).message.url).to.equal(url);
-      expect((params as any).message.text).to.equal('a');
+      expect(params.message.level).to.equal('log');
+      expect(params.message.url).to.equal(url);
+      expect(params.message.text).to.equal('a');
     });
 
     it('returns error message when command fails', async () => {

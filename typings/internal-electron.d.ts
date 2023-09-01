@@ -32,6 +32,8 @@ declare namespace Electron {
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
     _getWindowButtonVisibility: () => boolean;
+    _getAlwaysOnTopLevel: () => string;
+    devToolsWebContents: WebContents;
     frameName: string;
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
