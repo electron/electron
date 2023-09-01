@@ -90,7 +90,7 @@ describe('asar package', () => {
       await w.loadFile(path.join(fixtures, 'workers', 'load_worker.html'));
 
       const workerUrl = url.format({
-        pathname: path.resolve(fixtures, 'workers', 'workers.asar', 'worker.js').replace(/\\/g, '/'),
+        pathname: path.resolve(fixtures, 'workers', 'workers.asar', 'worker.js').replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       });
@@ -103,7 +103,7 @@ describe('asar package', () => {
       await w.loadFile(path.join(fixtures, 'workers', 'load_shared_worker.html'));
 
       const workerUrl = url.format({
-        pathname: path.resolve(fixtures, 'workers', 'workers.asar', 'shared_worker.js').replace(/\\/g, '/'),
+        pathname: path.resolve(fixtures, 'workers', 'workers.asar', 'shared_worker.js').replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       });
@@ -1243,7 +1243,7 @@ describe('asar package', function () {
           const echo = path.join(asarDir, 'echo.asar', 'echo');
 
           const stdout = await promisify(require(childProcess).exec)('echo ' + echo + ' foo bar');
-          expect(stdout.toString().replace(/\r/g, '')).to.equal(echo + ' foo bar\n');
+          expect(stdout.toString().replaceAll('\r', '')).to.equal(echo + ' foo bar\n');
         }, [childProcess]);
       });
 
@@ -1252,7 +1252,7 @@ describe('asar package', function () {
           const echo = path.join(asarDir, 'echo.asar', 'echo');
 
           const stdout = require(childProcess).execSync('echo ' + echo + ' foo bar');
-          expect(stdout.toString().replace(/\r/g, '')).to.equal(echo + ' foo bar\n');
+          expect(stdout.toString().replaceAll('\r', '')).to.equal(echo + ' foo bar\n');
         }, [childProcess]);
       });
 
