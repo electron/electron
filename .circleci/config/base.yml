@@ -1883,7 +1883,12 @@ jobs:
     steps:
       - run:
           name: Install Rosetta 2
-          command: /usr/sbin/softwareupdate --install-rosetta --agree-to-license
+          command: |
+            /usr/sbin/softwareupdate --install-rosetta --agree-to-license
+            # Trick bashrc into thinking we are arm64 still
+            sed -i '' 's/x86_64/never/g' ~/.bashrc
+            sed -i '' 's/x86_64/never/g' ~/.bash_profile
+            sed -i '' 's/x86_64/never/g' ~/.zshrc
           shell: /bin/bash --login -eo pipefail
       - electron-build:
           persist: true
