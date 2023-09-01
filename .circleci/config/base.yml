@@ -579,8 +579,13 @@ step-install-gnutar-on-mac: &step-install-gnutar-on-mac
     command: |
       if [ "`uname`" == "Darwin" ]; then
         if [ ! -d /usr/local/Cellar/gnu-tar/ ]; then
-          brew update
-          brew install gnu-tar
+          if [ "`sysctl -n sysctl.proc_translated`" == "1" ]; then
+            arch -arm64 brew update
+            arch -arm64 brew install gnu-tar
+          else
+            brew update
+            brew install gnu-tar
+          fi
         fi
         ln -fs /usr/local/bin/gtar /usr/local/bin/tar
       fi
