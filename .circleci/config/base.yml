@@ -1872,7 +1872,8 @@ jobs:
   osx-testing-x64:
     executor:
       name: macos
-      size: macos.x86.medium.gen2
+      size: macos.m1.medium.gen1
+    shell: /usr/bin/arch -arch x86_64 /bin/bash --login -eo pipefail
     environment:
       <<: *env-mac-large
       <<: *env-testing-build
