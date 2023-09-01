@@ -218,10 +218,10 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAutoHideCursor(bool auto_hide);
 
   // Vibrancy API
-  virtual const std::string& vibrancy() const { return vibrancy_; }
+  const std::string& vibrancy() const { return vibrancy_; }
   virtual void SetVibrancy(const std::string& type);
 
-  virtual const std::string& background_material() const {
+  const std::string& background_material() const {
     return background_material_;
   }
   virtual void SetBackgroundMaterial(const std::string& type);
