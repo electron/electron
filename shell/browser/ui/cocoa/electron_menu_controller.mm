@@ -8,8 +8,8 @@
 #include <string>
 #include <utility>
 
+#include "base/apple/foundation_util.h"
 #include "base/logging.h"
-#include "base/mac/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -104,7 +104,7 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
   }
   if (item.file_paths) {
     for (const base::FilePath& path : *item.file_paths)
-      [result addObject:base::mac::FilePathToNSURL(path)];
+      [result addObject:base::apple::FilePathToNSURL(path)];
   }
   if (item.urls) {
     for (const GURL& url : *item.urls)
@@ -134,9 +134,8 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 }
 
 + (electron::ElectronMenuModel*)getFrom:(id)instance {
-  return
-      [base::mac::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(instance)
-          menuModel];
+  return [base::apple::ObjCCastStrict<WeakPtrToElectronMenuModelAsNSObject>(
+      instance) menuModel];
 }
 
 - (instancetype)initWithModel:(electron::ElectronMenuModel*)model {
@@ -482,10 +481,10 @@ NSArray* ConvertSharingItemToNS(const SharingItem& item) {
 // Performs the share action using the sharing service represented by |sender|.
 - (void)performShare:(NSMenuItem*)sender {
   NSDictionary* object =
-      base::mac::ObjCCastStrict<NSDictionary>([sender representedObject]);
+      base::apple::ObjCCastStrict<NSDictionary>([sender representedObject]);
   NSSharingService* service =
-      base::mac::ObjCCastStrict<NSSharingService>(object[@"service"]);
-  NSArray* items = base::mac::ObjCCastStrict<NSArray>(object[@"items"]);
+      base::apple::ObjCCastStrict<NSSharingService>(object[@"service"]);
+  NSArray* items = base::apple::ObjCCastStrict<NSArray>(object[@"items"]);
   [service setDelegate:self];
   [service performWithItems:items];
 }

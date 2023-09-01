@@ -174,7 +174,7 @@ equally fictitious `foo-parser` module. In traditional Node.js development,
 you might write code that eagerly loads dependencies:
 
 ```js title='parser.js' @ts-expect-error=[2]
-const fs = require('fs')
+const fs = require('node:fs')
 const fooParser = require('foo-parser')
 
 class Parser {
@@ -198,7 +198,7 @@ do this work a little later, when `getParsedFiles()` is actually called?
 
 ```js title='parser.js' @ts-expect-error=[20]
 // "fs" is likely already being loaded, so the `require()` call is cheap
-const fs = require('fs')
+const fs = require('node:fs')
 
 class Parser {
   async getFiles () {

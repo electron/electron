@@ -43,7 +43,6 @@
 #include "content/public/browser/download_request_utils.h"
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"
@@ -56,6 +55,7 @@
 #include "content/public/browser/site_instance.h"
 #include "content/public/browser/storage_partition.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/input/native_web_keyboard_event.h"
 #include "content/public/common/referrer_type_converters.h"
 #include "content/public/common/result_codes.h"
 #include "content/public/common/webplugininfo.h"
@@ -183,8 +183,8 @@
 #endif  // BUILDFLAG(ENABLE_PRINTING)
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
-#include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#include "components/pdf/browser/pdf_document_helper.h"  // nogncheck
+#include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -499,7 +499,7 @@ absl::optional<base::TimeDelta> GetCursorBlinkInterval() {
 // sanity checking of device_name validity and so will crash on invalid names.
 bool IsDeviceNameValid(const std::u16string& device_name) {
 #if BUILDFLAG(IS_MAC)
-  base::ScopedCFTypeRef<CFStringRef> new_printer_id(
+  base::apple::ScopedCFTypeRef<CFStringRef> new_printer_id(
       base::SysUTF16ToCFStringRef(device_name));
   PMPrinter new_printer = PMPrinterCreateFromPrinterID(new_printer_id.get());
   bool printer_exists = new_printer != nullptr;
@@ -1016,12 +1016,6 @@ void WebContents::InitWithWebContents(
 
 #if BUILDFLAG(ENABLE_PRINTING)
   PrintViewManagerElectron::CreateForWebContents(web_contents.get());
-#endif
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
-      web_contents.get(),
-      std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
   // Determine whether the WebContents is offscreen.
@@ -2027,32 +2021,6 @@ void WebContents::MessageSync(
   // channel, arguments);
   EmitWithSender("-ipc-message-sync", render_frame_host, std::move(callback),
                  internal, channel, std::move(arguments));
-}
-
-void WebContents::MessageTo(int32_t web_contents_id,
-                            const std::string& channel,
-                            blink::CloneableMessage arguments,
-                            content::RenderFrameHost* render_frame_host) {
-  TRACE_EVENT1("electron", "WebContents::MessageTo", "channel", channel);
-  auto* target_web_contents = FromID(web_contents_id);
-
-  if (target_web_contents) {
-    content::RenderFrameHost* frame = target_web_contents->MainFrame();
-    DCHECK(frame);
-
-    v8::HandleScope handle_scope(JavascriptEnvironment::GetIsolate());
-    gin::Handle<WebFrameMain> web_frame_main =
-        WebFrameMain::From(JavascriptEnvironment::GetIsolate(), frame);
-
-    if (!web_frame_main->CheckRenderFrame())
-      return;
-
-    int32_t sender_id = ID();
-    bool sender_is_main_frame = render_frame_host->GetParent() == nullptr;
-    web_frame_main->GetRendererApi()->Message(false /* internal */, channel,
-                                              std::move(arguments), sender_id,
-                                              sender_is_main_frame);
-  }
 }
 
 void WebContents::MessageHost(const std::string& channel,

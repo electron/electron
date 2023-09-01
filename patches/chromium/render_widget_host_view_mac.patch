@@ -10,7 +10,7 @@ kinds of utility windows. Similarly for `disableAutoHideCursor`.
 Additionally, disables usage of some private APIs in MAS builds.
 
 diff --git a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
-index 0bdd7c7813fdbbf148fe1fba2c38ef78d2923efc..c11453b8e3ce6345eead3b80c4f9036a1d07f5c7 100644
+index afb765cb7b74a8353fbaf284ee8a648d5d4eede7..cb1111aaf2132737b730ba1d358088f212e11599 100644
 --- a/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 +++ b/content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm
 @@ -157,6 +157,15 @@ void ExtractUnderlines(NSAttributedString* string,
@@ -39,7 +39,7 @@ index 0bdd7c7813fdbbf148fe1fba2c38ef78d2923efc..c11453b8e3ce6345eead3b80c4f9036a
    return [self acceptsMouseEventsWhenInactive];
  }
  
-@@ -820,6 +832,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
+@@ -828,6 +840,10 @@ - (BOOL)shouldIgnoreMouseEvent:(NSEvent*)theEvent {
    // its parent view.
    BOOL hitSelf = NO;
    while (view) {
@@ -50,7 +50,7 @@ index 0bdd7c7813fdbbf148fe1fba2c38ef78d2923efc..c11453b8e3ce6345eead3b80c4f9036a
      if (view == self)
        hitSelf = YES;
      if ([view isKindOfClass:[self class]] && ![view isEqual:self] &&
-@@ -1139,6 +1155,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
+@@ -1147,6 +1163,10 @@ - (void)keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv {
                                eventType == NSEventTypeKeyDown &&
                                !(modifierFlags & NSEventModifierFlagCommand);
  
@@ -61,7 +61,7 @@ index 0bdd7c7813fdbbf148fe1fba2c38ef78d2923efc..c11453b8e3ce6345eead3b80c4f9036a
    // We only handle key down events and just simply forward other events.
    if (eventType != NSEventTypeKeyDown) {
      _hostHelper->ForwardKeyboardEvent(event, latency_info);
-@@ -1970,15 +1990,21 @@ - (NSAccessibilityRole)accessibilityRole {
+@@ -1977,15 +1997,21 @@ - (NSAccessibilityRole)accessibilityRole {
  // Since this implementation doesn't have to wait any IPC calls, this doesn't
  // make any key-typing jank. --hbono 7/23/09
  //

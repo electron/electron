@@ -16,11 +16,11 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index ee83f9e5504eda6bd1ad80db7bd486934b7f3b6d..5db55a349f7eaf829d8458b279fd64f1f28a9a2c 100644
+index 879113fded1a373f844b1d2bc3b001acc1da8554..fe0540847d3347244e4e9bfecd5ddc771e71b4e3 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -24,7 +24,9 @@
- #include "gpu/ipc/service/gpu_vsync_mac.h"
+@@ -27,7 +27,9 @@
+ #include "ui/display/types/display_constants.h"
  #endif
  
 +#if !IS_MAS_BUILD()
@@ -29,7 +29,7 @@ index ee83f9e5504eda6bd1ad80db7bd486934b7f3b6d..5db55a349f7eaf829d8458b279fd64f1
  @class CALayer;
  
  namespace ui {
-@@ -79,8 +81,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
+@@ -83,8 +85,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
  
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
@@ -41,10 +41,10 @@ index ee83f9e5504eda6bd1ad80db7bd486934b7f3b6d..5db55a349f7eaf829d8458b279fd64f1
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index bd2f1d8a8d82456390a5efb641545e9177727542..c368baeb3b8141a84f461eff5bd84129dc26f0fd 100644
+index 40212e81a3c0303a9166426dd7349a95ffec39c4..b323a1f81f0e813b84ef98db9334d0c1992fbaa6 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -53,7 +53,9 @@
+@@ -54,7 +54,9 @@
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL(
      base::WeakPtr<ImageTransportSurfaceDelegate> delegate)
      : delegate_(delegate),
@@ -54,7 +54,7 @@ index bd2f1d8a8d82456390a5efb641545e9177727542..c368baeb3b8141a84f461eff5bd84129
        scale_factor_(1),
        weak_ptr_factory_(this) {
    static bool av_disabled_at_command_line =
-@@ -65,6 +67,7 @@
+@@ -66,6 +68,7 @@
             ->workarounds()
             .disable_av_sample_buffer_display_layer;
  
@@ -62,7 +62,7 @@ index bd2f1d8a8d82456390a5efb641545e9177727542..c368baeb3b8141a84f461eff5bd84129
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
        use_remote_layer_api_, allow_av_sample_buffer_display_layer);
  
-@@ -85,6 +88,10 @@
+@@ -86,6 +89,10 @@
  #endif
      ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
@@ -70,10 +70,10 @@ index bd2f1d8a8d82456390a5efb641545e9177727542..c368baeb3b8141a84f461eff5bd84129
 +  ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
 +      /*allow_remote_layers=*/false, allow_av_sample_buffer_display_layer);
 +#endif
+ }
  
- #if BUILDFLAG(IS_MAC)
-   if (features::UseGpuVsync()) {
-@@ -176,9 +183,13 @@
+ ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
+@@ -203,9 +210,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -88,7 +88,7 @@ index bd2f1d8a8d82456390a5efb641545e9177727542..c368baeb3b8141a84f461eff5bd84129
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index cdcb1da0c11b07cce895369aba56b78623a0bef5..3765fb5106c8f2fbc1438ad759a173610b5db2aa 100644
+index 3ff04691217a6b3c9d7605c2e6b8f8a88959b271..0296ca57a4c51cb3e97c65d5aba46f33617cb799 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 @@ -120,6 +120,7 @@ - (void)setContentsChanged;

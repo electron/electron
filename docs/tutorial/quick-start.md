@@ -292,7 +292,7 @@ to the `webPreferences.preload` option in your existing `BrowserWindow` construc
 ```js
 const { app, BrowserWindow } = require('electron')
 // include the Node.js 'path' module at the top of your file
-const path = require('path')
+const path = require('node:path')
 
 // modify your existing createWindow() function
 const createWindow = () => {
@@ -358,7 +358,7 @@ The full code is available below:
 
 // Modules to control application life and create native browser window
 const { app, BrowserWindow } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const createWindow = () => {
   // Create the browser window.

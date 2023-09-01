@@ -22,6 +22,7 @@
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 
 namespace electron {
 
@@ -61,6 +62,11 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
                           "document-end");
 }
 
+void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
+  render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
+      blink::LoaderFreezeMode::kNone);
+}
+
 void ElectronRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
@@ -88,8 +94,17 @@ void ElectronRendererClient::DidCreateScriptContext(
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
 
-  std::shared_ptr<node::Environment> env =
-      node_bindings_->CreateEnvironment(renderer_context, nullptr);
+  // Before we load the node environment, let's tell blink to hold off on
+  // loading the body of this frame.  We will undefer the load once the preload
+  // script has finished.  This allows our preload script to run async (E.g.
+  // with ESM) without the preload being in a race
+  render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
+      blink::LoaderFreezeMode::kStrict);
+
+  std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
+      renderer_context, nullptr,
+      base::BindRepeating(&ElectronRendererClient::UndeferLoad,
+                          base::Unretained(this), render_frame));
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.

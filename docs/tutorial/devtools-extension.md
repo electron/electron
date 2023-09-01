@@ -35,8 +35,8 @@ Using the [React Developer Tools][react-devtools] as an example:
 
    ```javascript
    const { app, session } = require('electron')
-   const path = require('path')
-   const os = require('os')
+   const path = require('node:path')
+   const os = require('node:os')
 
    // on macOS
    const reactDevToolsPath = path.join(

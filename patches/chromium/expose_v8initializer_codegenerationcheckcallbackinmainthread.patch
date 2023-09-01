@@ -6,10 +6,10 @@ Subject: expose V8Initializer::CodeGenerationCheckCallbackInMainThread
 This is needed to blend Blink and Node's policy for code generation policy.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 60e8ed950dad31a220bbe8a9197fbe25f429fe83..b8b20d8c8340c63bd3039a0683446ef1eb4fdf0d 100644
+index c652963d9861c9aa754563c9d282dd5cc72e4e34..3da7200c92ccaf8330d46280e26124c1ad558a76 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -439,8 +439,9 @@ TrustedTypesCodeGenerationCheck(v8::Local<v8::Context> context,
+@@ -411,8 +411,9 @@ TrustedTypesCodeGenerationCheck(v8::Local<v8::Context> context,
    return {true, V8String(context->GetIsolate(), stringified_source)};
  }
  
@@ -22,10 +22,10 @@ index 60e8ed950dad31a220bbe8a9197fbe25f429fe83..b8b20d8c8340c63bd3039a0683446ef1
                                          bool is_code_like) {
    // The TC39 "Dynamic Code Brand Check" feature is currently behind a flag.
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-index 39d1351a4a8bbc95097640be54affec426abe73e..30a36cf16d4a8f4692ec6a13be1217212390172a 100644
+index 7a08647d69a31ff439bbef8c7b8cde8de2953ae7..9e628b96a845322d407f9da30a63c04ef5de9c24 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
-@@ -69,6 +69,10 @@ class CORE_EXPORT V8Initializer {
+@@ -68,6 +68,10 @@ class CORE_EXPORT V8Initializer {
                                           v8::Local<v8::Value>);
    static void MessageHandlerInWorker(v8::Local<v8::Message>,
                                       v8::Local<v8::Value>);

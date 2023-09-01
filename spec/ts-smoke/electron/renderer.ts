@@ -13,6 +13,9 @@ ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
 
 ipcRenderer.send('asynchronous-message', 'ping');
 
+// @ts-expect-error Removed API
+ipcRenderer.sendTo(1, 'test', 'Hello World!');
+
 // web-frame
 // https://github.com/electron/electron/blob/main/docs/api/web-frame.md
 

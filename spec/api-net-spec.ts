@@ -68,7 +68,9 @@ async function respondNTimes (fn: http.RequestListener, n: number): Promise<stri
   server.on('connection', s => sockets.push(s));
   defer(() => {
     server.close();
-    sockets.forEach(s => s.destroy());
+    for (const socket of sockets) {
+      socket.destroy();
+    }
   });
   return (await listen(server)).url;
 }
@@ -771,7 +773,7 @@ describe('net module', () => {
           });
         });
 
-        ['Lax', 'Strict'].forEach((mode) => {
+        for (const mode of ['Lax', 'Strict']) {
           it(`should be able to use the sessions cookie store with same-site ${mode} cookies`, async () => {
             const serverUrl = await respondNTimes.toSingleURL((request, response) => {
               response.statusCode = 200;
@@ -812,7 +814,7 @@ describe('net module', () => {
             const response2 = await getResponse(urlRequest2);
             expect(response2.headers['x-cookie']).to.equal('same=site');
           });
-        });
+        }
 
         it('should be able to use the sessions cookie store safely across redirects', async () => {
           const serverUrl = await respondOnce.toSingleURL(async (request, response) => {
@@ -1065,7 +1067,7 @@ describe('net module', () => {
       await collectStreamBody(await getResponse(urlRequest));
     });
 
-    ['navigate', 'cors', 'no-cors', 'same-origin'].forEach((mode) => {
+    for (const mode of ['navigate', 'cors', 'no-cors', 'same-origin']) {
       it(`should set sec-fetch-mode to ${mode} if requested`, async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
           expect(request.headers['sec-fetch-mode']).to.equal(mode);
@@ -1080,7 +1082,7 @@ describe('net module', () => {
         urlRequest.setHeader('sec-fetch-mode', mode);
         await collectStreamBody(await getResponse(urlRequest));
       });
-    });
+    }
 
     it('should set sec-fetch-dest to empty by default', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
@@ -1095,12 +1097,12 @@ describe('net module', () => {
       await collectStreamBody(await getResponse(urlRequest));
     });
 
-    [
+    for (const dest of [
       'empty', 'audio', 'audioworklet', 'document', 'embed', 'font',
       'frame', 'iframe', 'image', 'manifest', 'object', 'paintworklet',
       'report', 'script', 'serviceworker', 'style', 'track', 'video',
       'worker', 'xslt'
-    ].forEach((dest) => {
+    ]) {
       it(`should set sec-fetch-dest to ${dest} if requested`, async () => {
         const serverUrl = await respondOnce.toSingleURL((request, response) => {
           expect(request.headers['sec-fetch-dest']).to.equal(dest);
@@ -1115,7 +1117,7 @@ describe('net module', () => {
         urlRequest.setHeader('sec-fetch-dest', dest);
         await collectStreamBody(await getResponse(urlRequest));
       });
-    });
+    }
 
     it('should be able to abort an HTTP request before first write', async () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
@@ -1691,11 +1693,11 @@ describe('net module', () => {
 
       await once(urlRequest, 'close');
       await new Promise((resolve, reject) => {
-        ['finish', 'abort', 'close', 'error'].forEach(evName => {
+        for (const evName of ['finish', 'abort', 'close', 'error']) {
           urlRequest.on(evName as any, () => {
             reject(new Error(`Unexpected ${evName} event`));
           });
-        });
+        }
         setTimeout(50).then(resolve);
       });
     });
@@ -1934,9 +1936,9 @@ describe('net module', () => {
       const serverUrl = await respondOnce.toSingleURL((request, response) => {
         response.statusCode = 200;
         response.statusMessage = 'OK';
-        customHeaders.forEach((headerTuple) => {
+        for (const headerTuple of customHeaders) {
           response.setHeader(headerTuple[0], headerTuple[1]);
-        });
+        }
         response.end();
       });
       const urlRequest = net.request(serverUrl);
@@ -1948,15 +1950,15 @@ describe('net module', () => {
       expect(rawHeaders).to.be.an('array');
 
       let rawHeadersIdx = 0;
-      customHeaders.forEach((headerTuple) => {
+      for (const headerTuple of customHeaders) {
         const headerKey = headerTuple[0];
         const headerValues = Array.isArray(headerTuple[1]) ? headerTuple[1] : [headerTuple[1]];
-        headerValues.forEach((headerValue) => {
+        for (const headerValue of headerValues) {
           expect(rawHeaders[rawHeadersIdx]).to.equal(headerKey);
           expect(rawHeaders[rawHeadersIdx + 1]).to.equal(headerValue);
           rawHeadersIdx += 2;
-        });
-      });
+        }
+      }
 
       await collectStreamBody(response);
     });

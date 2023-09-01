@@ -454,6 +454,7 @@ WebContents.prototype.loadURL = function (url, options) {
     };
 
     let navigationStarted = false;
+    let browserInitiatedInPageNavigation = false;
     const navigationListener = (event: Electron.Event, url: string, isSameDocument: boolean, isMainFrame: boolean) => {
       if (isMainFrame) {
         if (navigationStarted && !isSameDocument) {
@@ -468,6 +469,7 @@ WebContents.prototype.loadURL = function (url, options) {
           // as the routing does not leave the document
           return rejectAndCleanup(-3, 'ERR_ABORTED', url);
         }
+        browserInitiatedInPageNavigation = navigationStarted && isSameDocument;
         navigationStarted = true;
       }
     };
@@ -482,17 +484,22 @@ WebContents.prototype.loadURL = function (url, options) {
       // would be more appropriate.
       rejectAndCleanup(-2, 'ERR_FAILED', url);
     };
+    const finishListenerWhenUserInitiatedNavigation = () => {
+      if (!browserInitiatedInPageNavigation) {
+        finishListener();
+      }
+    };
     const removeListeners = () => {
       this.removeListener('did-finish-load', finishListener);
       this.removeListener('did-fail-load', failListener);
-      this.removeListener('did-navigate-in-page', finishListener);
+      this.removeListener('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
       this.removeListener('did-start-navigation', navigationListener);
       this.removeListener('did-stop-loading', stopLoadingListener);
       this.removeListener('destroyed', stopLoadingListener);
     };
     this.on('did-finish-load', finishListener);
     this.on('did-fail-load', failListener);
-    this.on('did-navigate-in-page', finishListener);
+    this.on('did-navigate-in-page', finishListenerWhenUserInitiatedNavigation);
     this.on('did-start-navigation', navigationListener);
     this.on('did-stop-loading', stopLoadingListener);
     this.on('destroyed', stopLoadingListener);

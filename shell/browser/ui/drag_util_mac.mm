@@ -8,8 +8,8 @@
 
 #include <vector>
 
+#include "base/apple/foundation_util.h"
 #include "base/files/file_path.h"
-#include "base/mac/foundation_util.h"
 
 // Contents largely copied from
 // chrome/browser/download/drag_download_item_mac.mm.
@@ -53,7 +53,7 @@ void DragFileItems(const std::vector<base::FilePath>& files,
 
   NSMutableArray* file_items = [NSMutableArray array];
   for (auto const& file : files) {
-    NSURL* file_url = base::mac::FilePathToNSURL(file);
+    NSURL* file_url = base::apple::FilePathToNSURL(file);
     NSDraggingItem* file_item =
         [[NSDraggingItem alloc] initWithPasteboardWriter:file_url];
     NSImage* file_image = icon.ToNSImage();

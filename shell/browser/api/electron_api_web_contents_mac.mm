@@ -38,7 +38,7 @@ bool WebContents::IsFocused() const {
 bool WebContents::PlatformHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.skip_in_browser ||
+  if (event.skip_if_unhandled ||
       event.GetType() == content::NativeWebKeyboardEvent::Type::kChar)
     return false;
 

@@ -10,10 +10,10 @@
 
 #include "base/apple/bridging.h"
 #include "base/apple/bundle_locations.h"
+#include "base/apple/scoped_cftyperef.h"
 #include "base/i18n/rtl.h"
 #include "base/mac/mac_util.h"
 #include "base/mac/mac_util.mm"
-#include "base/mac/scoped_cftyperef.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/sys_string_conversions.h"
 #include "chrome/browser/browser_process.h"
@@ -50,9 +50,9 @@ bool IsAppRTL() {
 NSString* GetAppPathForProtocol(const GURL& url) {
   NSURL* ns_url = [NSURL
       URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
-  base::ScopedCFTypeRef<CFErrorRef> out_err;
+  base::apple::ScopedCFTypeRef<CFErrorRef> out_err;
 
-  base::ScopedCFTypeRef<CFURLRef> openingApp(
+  base::apple::ScopedCFTypeRef<CFURLRef> openingApp(
       LSCopyDefaultApplicationURLForURL(base::apple::NSToCFPtrCast(ns_url),
                                         kLSRolesAll, out_err.InitializeInto()));
 
@@ -82,7 +82,7 @@ bool CheckLoginItemStatus(bool* is_hidden) {
   if (!login_items.Initialize())
     return false;
 
-  base::ScopedCFTypeRef<LSSharedFileListItemRef> item(
+  base::apple::ScopedCFTypeRef<LSSharedFileListItemRef> item(
       login_items.GetLoginItemForMainApp());
   if (!item.get())
     return false;
@@ -156,7 +156,7 @@ void Browser::Show() {
 }
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
-  NSString* path_string = base::mac::FilePathToNSString(path);
+  NSString* path_string = base::apple::FilePathToNSString(path);
   if (!path_string)
     return;
   NSURL* u = [NSURL fileURLWithPath:path_string];
@@ -193,7 +193,7 @@ bool Browser::RemoveAsDefaultProtocolClient(const std::string& protocol,
   CFStringRef other = nil;
   for (CFIndex i = 0; i < CFArrayGetCount(bundleList); ++i) {
     other =
-        base::mac::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList, i));
+        base::apple::CFCast<CFStringRef>(CFArrayGetValueAtIndex(bundleList, i));
     if (![identifier isEqualToString:(__bridge NSString*)other]) {
       break;
     }
@@ -238,8 +238,9 @@ bool Browser::IsDefaultProtocolClient(const std::string& protocol,
 // TODO(codebytere): Use -[NSWorkspace URLForApplicationToOpenURL:] instead
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
-  base::ScopedCFTypeRef<CFStringRef> bundleId(LSCopyDefaultHandlerForURLScheme(
-      base::apple::NSToCFPtrCast(protocol_ns)));
+  base::apple::ScopedCFTypeRef<CFStringRef> bundleId(
+      LSCopyDefaultHandlerForURLScheme(
+          base::apple::NSToCFPtrCast(protocol_ns)));
 #pragma clang diagnostic pop
   if (!bundleId)
     return false;
