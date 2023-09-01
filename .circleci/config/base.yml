@@ -1881,6 +1881,10 @@ jobs:
       <<: *env-macos-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
     steps:
+      - run:
+          name: Install Rosetta 2
+          command: /usr/sbin/softwareupdate --install-rosetta --agree-to-license
+          shell: /bin/bash --login -eo pipefail
       - electron-build:
           persist: true
           checkout: false
