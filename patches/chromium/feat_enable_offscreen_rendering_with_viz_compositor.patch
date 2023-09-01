@@ -87,7 +87,7 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index ade4e4973a0e9bd47604262c76bfbd0ee3c9dc38..440fa0b3ff9b08016ff19ab54c70a453dc8c5f86 100644
+index 72d9d594a93700a35eadb3c2bc017fa7996bf10d..729753a72edd761ec831f79828742a26f9dd2417 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
 @@ -141,6 +141,8 @@ viz_component("service") {
@@ -197,7 +197,7 @@ index e82717d5167e13e2926bcaf6c0ad66c1502e66f6..783c4d6ed399120e026bbf18baab4092
    const raw_ptr<GpuServiceImpl> gpu_service_impl_;
  
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.cc b/components/viz/service/display_embedder/software_output_device_mac.cc
-index 761eb3e14b5848463b8886a1d1ea2ac603e4f677..6e717449ca7b3b6cdb440f69f7d1c9565329eb1f 100644
+index 4ceb1a9d9f336f65e15831856d30b45af594dd0f..646ac22f074c3d1827e59170a93807bc10d83d0b 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.cc
 +++ b/components/viz/service/display_embedder/software_output_device_mac.cc
 @@ -106,6 +106,8 @@ void SoftwareOutputDeviceMac::UpdateAndCopyBufferDamage(
@@ -218,7 +218,7 @@ index 761eb3e14b5848463b8886a1d1ea2ac603e4f677..6e717449ca7b3b6cdb440f69f7d1c956
          IOSurfaceCreateMachPort(current_paint_buffer_->io_surface));
      client_->SoftwareDeviceUpdatedCALayerParams(ca_layer_params);
 diff --git a/components/viz/service/display_embedder/software_output_device_mac.h b/components/viz/service/display_embedder/software_output_device_mac.h
-index e12c1d87018a86d763f59e5ac62058cf815fce3a..01f8023811b49797674a0de6e32c358d965789d1 100644
+index 67d5ff67d74c107a867b39b306c6528425b87e05..5fd12a25c9e319e8e675955926271c9d1cd3a7ca 100644
 --- a/components/viz/service/display_embedder/software_output_device_mac.h
 +++ b/components/viz/service/display_embedder/software_output_device_mac.h
 @@ -62,6 +62,7 @@ class VIZ_SERVICE_EXPORT SoftwareOutputDeviceMac : public SoftwareOutputDevice {
@@ -514,7 +514,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index fe0cd60ba7d972ade4ba3cb0780117019ccea9cc..61ff833e649add942116371b012ec6b568bcfc44 100644
+index e8df1465346e7e9254fb25865d48c9e3f3e8e0ac..ddd2c4dcc6f597eda0eba91ba395aa3822a65e83 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -96,7 +96,8 @@ RootCompositorFrameSinkImpl::Create(
@@ -692,7 +692,7 @@ index 1944ef571b1f12fbee8dff553ad4de913c794efb..529296cbf858d2aaeb7b5fbe1ae8f36e
    float scale_factor;
  };
 diff --git a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
-index a4296b8e1084197830ca007bd91434607d766ec1..a93b7b04b538ccbba29a09aa2c3321d9a1835acd 100644
+index e1c6ed1b3a456b164945ee7eef34f9d4f0b80e07..87bff4350cdfcca97de6f66946b9cb6155e36634 100644
 --- a/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 +++ b/ui/gfx/mojom/ca_layer_params_mojom_traits.cc
 @@ -52,6 +52,9 @@ bool StructTraits<gfx::mojom::CALayerParamsDataView, gfx::CALayerParams>::Read(

@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index ddb9d4bc0822577a313fb160a3a0a584f1b41e07..f54024d355d24e1780f77314160220e1fe08de3c 100644
+index 72d98dde6611ee65aa5b3f2fb1ad8c1cbcd24230..5d4d972b24a3e758a0fce116021b48c0c1b8021f 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -387,6 +387,10 @@
+@@ -400,6 +400,10 @@
    E_CPONLY(kColorScrollbarThumbInactive) \
    E_CPONLY(kColorScrollbarThumbPressed) \
    E_CPONLY(kColorScrollbarTrack) \
@@ -22,7 +22,7 @@ index ddb9d4bc0822577a313fb160a3a0a584f1b41e07..f54024d355d24e1780f77314160220e1
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -487,6 +491,7 @@
+@@ -504,6 +508,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \
@@ -31,7 +31,7 @@ index ddb9d4bc0822577a313fb160a3a0a584f1b41e07..f54024d355d24e1780f77314160220e1
  
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
-index 86be2b39a384b22fbd45ed4cbc7ab9f127563771..82cbaeee444d1c140bac70bc308c4d7ce096329b 100644
+index f1aadfefe2b35ff4f292a04d834679e1c3fe89e9..7cb39e4059719a4fc323586e83aba47d4e91838d 100644
 --- a/ui/color/ui_color_mixer.cc
 +++ b/ui/color/ui_color_mixer.cc
 @@ -224,6 +224,17 @@ void AddUiColorMixer(ColorProvider* provider, const ColorProviderKey& key) {
@@ -61,7 +61,7 @@ index 86be2b39a384b22fbd45ed4cbc7ab9f127563771..82cbaeee444d1c140bac70bc308c4d7c
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index c698b842b496db488e9fd17a180d339ed5073a6c..8fc856f69cc6bbf06382c1873e9327255feeb8b6 100644
+index d9df0c0be6abf72c4756fb8e0f1e4b8c308a09f3..07ad3bf7e422272f017695c8b0e0aebedb8d8330 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
 @@ -202,6 +202,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
@@ -75,23 +75,23 @@ index c698b842b496db488e9fd17a180d339ed5073a6c..8fc856f69cc6bbf06382c1873e932725
  
    // Window Background
    mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
-@@ -210,6 +214,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
-   mixer[kColorFrameInactive] = {ui::kColorNativeWindow};
+@@ -211,6 +215,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+   mixer[kColorFrameInactive] = {kColorNativeWindow};
    mixer[kColorPrimaryBackground] = {kColorNativeWindow};
    mixer[kColorTooltipBackground] = {kColorNativeWindow};
 +  mixer[kColorResultsTableNormalBackground] = {kColorNativeWindow};
  
    // Window Text
    mixer[kColorAlertLowSeverity] = {kColorNativeWindowText};
-@@ -223,6 +228,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -225,6 +230,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTableGroupingIndicator] = {kColorNativeWindowText};
    mixer[kColorThrobber] = {kColorNativeWindowText};
    mixer[kColorTooltipForeground] = {kColorNativeWindowText};
 +  mixer[kColorResultsTableNormalText] = {kColorNativeWindowText};
  
    // Hyperlinks
-   mixer[kColorLinkForegroundDefault] = {kColorNativeHotlight};
-@@ -265,6 +271,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+   mixer[kColorForcedHotlight] = {kColorNativeHotlight};
+@@ -271,6 +277,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};

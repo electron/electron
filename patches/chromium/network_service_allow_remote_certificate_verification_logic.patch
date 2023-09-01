@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index c5f4244e73195a478be144fe02c11b19440521dd..46b6efb81e456d1f4543e21acbda669e89204e67 100644
+index 5afca29e19d618e75bf866e2382aa782ff38e409..ba499d50b948d90011d6eeb1463dbfda54e7d9b0 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -146,6 +146,11 @@
@@ -147,7 +147,7 @@ index c5f4244e73195a478be144fe02c11b19440521dd..46b6efb81e456d1f4543e21acbda669e
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index b2b848b38840ba1205d376643735cedea77443a5..8b232e22bdeb5fdcd1033889d041b42c2bc68f5a 100644
+index f798602b2d56db1c44e5a97de017f8095edba5cd..a452681df0b17c99fb476950ca9e22325bd8b8b9 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -167,7 +167,7 @@ index b2b848b38840ba1205d376643735cedea77443a5..8b232e22bdeb5fdcd1033889d041b42c
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -882,6 +885,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -885,6 +888,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,7 +177,7 @@ index b2b848b38840ba1205d376643735cedea77443a5..8b232e22bdeb5fdcd1033889d041b42c
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index e1385ffd429409aad74b73a1a7a1e7feea7181cd..e082a44bbeb6a99a6d1f0cbcc1be52646fc2c3b6 100644
+index 30514ba8a4157a1d8331ffb1a567b2e0ccce04d2..987d1186a02e7261980dae8ba732a97d03aed7b8 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -311,6 +311,17 @@ struct NetworkContextFilePaths {

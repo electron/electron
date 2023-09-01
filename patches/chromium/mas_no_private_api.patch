@@ -101,7 +101,7 @@ index a119b4439bfb9218c7aaf09dca8e78527da7f20d..faa813b003940280c6eeb87e70173019
  
  }  // namespace content
 diff --git a/device/bluetooth/bluetooth_adapter_mac.mm b/device/bluetooth/bluetooth_adapter_mac.mm
-index 4b1d57ef72d6a9235edc7a2591c8c3242c283235..680cf1ee57e0a9748a3b1efa93cb2d1569ac5655 100644
+index 82836fc5fe3a7279f4fd15f297969162bc63089a..4276251875612430d1b197578f659736dbd86925 100644
 --- a/device/bluetooth/bluetooth_adapter_mac.mm
 +++ b/device/bluetooth/bluetooth_adapter_mac.mm
 @@ -37,6 +37,7 @@
@@ -145,7 +145,7 @@ index 4b1d57ef72d6a9235edc7a2591c8c3242c283235..680cf1ee57e0a9748a3b1efa93cb2d15
  
  base::WeakPtr<BluetoothLowEnergyAdapterApple>
 diff --git a/media/audio/mac/audio_manager_mac.cc b/media/audio/mac/audio_manager_mac.cc
-index 2f7b9f4fb591f92fc570a271cf7e557f0dce00f7..209d356ea8562f5af4d64c9a7699a7c4f67526e2 100644
+index f834373f52a65b67fa0b601a18ac81044e66b0d2..5d7c4cf2fb323bdef2d5f671f96e2a4d6a7fff4f 100644
 --- a/media/audio/mac/audio_manager_mac.cc
 +++ b/media/audio/mac/audio_manager_mac.cc
 @@ -969,7 +969,7 @@ AudioParameters AudioManagerMac::GetPreferredOutputStreamParameters(
@@ -426,7 +426,7 @@ index 18479382a277cb2b25626ec8d31442bfd1377ee6..7d80d7fa8337523c3a70f317f883f0cc
        NOTREACHED();
        return nullptr;
 diff --git a/ui/accessibility/platform/inspect/ax_transform_mac.mm b/ui/accessibility/platform/inspect/ax_transform_mac.mm
-index 701b59231f2e5fbd31482775a248a0ff9755a480..271f9d1eebcf29aa7a8b98a0655038e75464a56b 100644
+index c737a2ca1afb44083aef33c6aa4518bea68d1aba..879f1357b5129849c5a1aa1731cf769712569e9e 100644
 --- a/ui/accessibility/platform/inspect/ax_transform_mac.mm
 +++ b/ui/accessibility/platform/inspect/ax_transform_mac.mm
 @@ -108,6 +108,7 @@
