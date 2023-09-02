@@ -2,6 +2,8 @@ import * as deprecate from '@electron/internal/common/deprecate';
 
 const { systemPreferences } = process._linkedBinding('electron_browser_system_preferences');
 
+const invoke = (target: Function, ...args: any[]) => Reflect.apply(target, systemPreferences, args);
+
 if ('getAppLevelAppearance' in systemPreferences) {
   const nativeALAGetter = systemPreferences.getAppLevelAppearance;
   const nativeALASetter = systemPreferences.setAppLevelAppearance;
@@ -11,27 +13,27 @@ if ('getAppLevelAppearance' in systemPreferences) {
   Object.defineProperty(systemPreferences, 'appLevelAppearance', {
     get: () => {
       warnALA();
-      return nativeALAGetter.call(systemPreferences);
+      return invoke(nativeALAGetter);
     },
     set: (appearance) => {
       warnALA();
-      nativeALASetter.call(systemPreferences, appearance);
+      invoke(nativeALASetter, appearance);
     }
   });
   systemPreferences.getAppLevelAppearance = () => {
     warnALAGetter();
-    return nativeALAGetter.call(systemPreferences);
+    return invoke(nativeALAGetter);
   };
   systemPreferences.setAppLevelAppearance = (appearance) => {
     warnALASetter();
-    nativeALASetter.call(systemPreferences, appearance);
+    invoke(nativeALASetter, appearance);
   };
 }
 
 if ('getEffectiveAppearance' in systemPreferences) {
   const nativeEAGetter = systemPreferences.getEffectiveAppearance;
   Object.defineProperty(systemPreferences, 'effectiveAppearance', {
-    get: () => nativeEAGetter.call(systemPreferences)
+    get: () => invoke(nativeEAGetter)
   });
 }
 

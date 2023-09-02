@@ -14,25 +14,27 @@ let dockMenu: Electron.Menu | null = null;
 
 // Properties.
 
+const invoke = (target: Function, ...args: any[]) => Reflect.apply(target, app, args);
+
 const nativeASGetter = app.isAccessibilitySupportEnabled;
 const nativeASSetter = app.setAccessibilitySupportEnabled;
 Object.defineProperty(app, 'accessibilitySupportEnabled', {
-  get: () => nativeASGetter.call(app),
-  set: (enabled) => nativeASSetter.call(app, enabled)
+  get: () => invoke(nativeASGetter),
+  set: (enabled) => invoke(nativeASSetter, enabled)
 });
 
 const nativeBCGetter = app.getBadgeCount;
 const nativeBCSetter = app.setBadgeCount;
 Object.defineProperty(app, 'badgeCount', {
-  get: () => nativeBCGetter.call(app),
-  set: (count) => nativeBCSetter.call(app, count)
+  get: () => invoke(nativeBCGetter),
+  set: (count) => invoke(nativeBCSetter, count)
 });
 
 const nativeNGetter = app.getName;
 const nativeNSetter = app.setName;
 Object.defineProperty(app, 'name', {
-  get: () => nativeNGetter.call(app),
-  set: (name) => nativeNSetter.call(app, name)
+  get: () => invoke(nativeNGetter),
+  set: (name) => invoke(nativeNSetter, name)
 });
 
 Object.assign(app, {
@@ -96,7 +98,7 @@ if (process.platform === 'linux') {
 
   const nativeFn = app.getAppMetrics;
   app.getAppMetrics = () => {
-    const metrics = nativeFn.call(app);
+    const metrics = invoke(nativeFn);
     for (const metric of metrics) {
       metric.memory = getProcessMemoryInfo(metric.pid);
     }
