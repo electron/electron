@@ -45,7 +45,7 @@ main process, one of the following conditions must be met:
 - The file ends with the `.mjs` extension
 - The nearest parent package.json  has `"type": "module"` set
 
-See Node's [determining module system](https://nodejs.org/api/packages.html#determining-module-system)
+See Node's [Determining Module System](https://nodejs.org/api/packages.html#determining-module-system)
 doc for more details.
 
 ### Caveats
