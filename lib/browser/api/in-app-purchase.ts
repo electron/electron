@@ -8,7 +8,7 @@ if (process.platform === 'darwin') {
   inAppPurchase.purchaseProduct = (productID: string, opts?: number | { quantity?: number, username?: string }) => {
     const quantity = typeof opts === 'object' ? opts.quantity : opts;
     const username = typeof opts === 'object' ? opts.username : undefined;
-    return _purchase.apply(inAppPurchase, [productID, quantity, username]);
+    return Reflect.apply(_purchase, inAppPurchase, [productID, quantity, username]);
   };
   _inAppPurchase = inAppPurchase;
 } else {

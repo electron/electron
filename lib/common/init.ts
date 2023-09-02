@@ -14,7 +14,7 @@ const wrapWithActivateUvLoop = function <T extends AnyFn> (func: T): T {
   return wrap(func, function (func) {
     return function (this: any, ...args: any[]) {
       process.activateUvLoop();
-      return func.apply(this, args);
+      return Reflect.apply(func, this, args);
     };
   }) as T;
 };

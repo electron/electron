@@ -246,7 +246,7 @@ async function startRepl () {
     if (!ignores.length && hits.length) {
       callback(null, [hits, currentSymbol]);
     } else {
-      defaultComplete.apply(repl, [line, callback]);
+      Reflect.apply(defaultComplete, repl, [line, callback]);
     }
   };
 }

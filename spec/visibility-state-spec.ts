@@ -30,7 +30,7 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
           contextIsolation: false
         }
       });
-      await Promise.resolve(fn.apply(this, args));
+      await Promise.resolve(Reflect.apply(fn, this, args));
     });
   };
 
