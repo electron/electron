@@ -59,8 +59,8 @@ describe('webRequest module', () => {
 
   before(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
-    defaultURL = (await listen(server)).url + '/';
-    http2URL = (await listen(h2server)).url + '/';
+    defaultURL = (await listen(server)).url;
+    http2URL = (await listen(h2server)).url;
     console.log(http2URL);
   });
 
@@ -99,24 +99,24 @@ describe('webRequest module', () => {
     });
 
     it('can filter URLs', async () => {
-      const filter = { urls: [defaultURL + 'filter/*'] };
+      const filter = { urls: [defaultURL + '/filter/*'] };
       ses.webRequest.onBeforeRequest(filter, cancel);
-      const { data } = await ajax(`${defaultURL}nofilter/test`);
+      const { data } = await ajax(defaultURL + '/nofilter/test');
       expect(data).to.equal('/nofilter/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(defaultURL + '/filter/test')).to.eventually.be.rejected();
     });
 
     it('can filter URLs and types', async () => {
-      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['xhr'] };
+      const filter1: Electron.WebRequestFilter = { urls: [defaultURL + '/filter/*'], types: ['xhr'] };
       ses.webRequest.onBeforeRequest(filter1, cancel);
-      const { data } = await ajax(`${defaultURL}nofilter/test`);
+      const { data } = await ajax(defaultURL + '/nofilter/test');
       expect(data).to.equal('/nofilter/test');
-      await expect(ajax(`${defaultURL}filter/test`)).to.eventually.be.rejected();
+      await expect(ajax(defaultURL + '/filter/test')).to.eventually.be.rejected();
 
-      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + 'filter/*'], types: ['stylesheet'] };
+      const filter2: Electron.WebRequestFilter = { urls: [defaultURL + '/filter/*'], types: ['stylesheet'] };
       ses.webRequest.onBeforeRequest(filter2, cancel);
-      expect((await ajax(`${defaultURL}nofilter/test`)).data).to.equal('/nofilter/test');
-      expect((await ajax(`${defaultURL}filter/test`)).data).to.equal('/filter/test');
+      expect((await ajax(defaultURL + '/nofilter/test')).data).to.equal('/nofilter/test');
+      expect((await ajax(defaultURL + '/filter/test')).data).to.equal('/filter/test');
     });
 
     it('receives details object', async () => {
@@ -127,7 +127,7 @@ describe('webRequest module', () => {
         expect(details.webContents).to.be.an('object');
         expect(details.webContents!.id).to.equal(details.webContentsId);
         expect(details.frame).to.be.an('object');
-        expect(details.url).to.be.a('string').that.is.equal(defaultURL);
+        expect(details.url).to.be.a('string').that.is.equal(defaultURL + '/');
         expect(details.method).to.be.a('string').that.is.equal('GET');
         expect(details.resourceType).to.be.a('string').that.is.equal('xhr');
         expect(details.uploadData).to.be.undefined();
@@ -143,7 +143,7 @@ describe('webRequest module', () => {
         type: 'string'
       };
       ses.webRequest.onBeforeRequest((details, callback) => {
-        expect(details.url).to.equal(defaultURL);
+        expect(details.url).to.equal(defaultURL + '/');
         expect(details.method).to.equal('POST');
         expect(details.uploadData).to.have.lengthOf(1);
         const data = qs.parse(details.uploadData[0].bytes.toString());
@@ -158,8 +158,8 @@ describe('webRequest module', () => {
 
     it('can redirect the request', async () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
-        if (details.url === defaultURL) {
-          callback({ redirectURL: `${defaultURL}redirect` });
+        if (details.url === defaultURL + '/') {
+          callback({ redirectURL: defaultURL + '/redirect' });
         } else {
           callback({});
         }
@@ -172,8 +172,8 @@ describe('webRequest module', () => {
       ses.webRequest.onBeforeRequest((details, callback) => {
         callback({ cancel: false });
       });
-      await ajax(defaultURL + 'serverRedirect');
-      await ajax(defaultURL + 'serverRedirect');
+      await ajax(defaultURL + '/serverRedirect');
+      await ajax(defaultURL + '/serverRedirect');
     });
 
     it('works with file:// protocol', async () => {
@@ -477,7 +477,7 @@ describe('webRequest module', () => {
         expect(details.responseHeaders!['content-disposition']).to.deep.equal([' attachment; filename="aa中aa.txt"']);
         callback({});
       });
-      const { data, headers } = await ajax(defaultURL + 'contentDisposition');
+      const { data, headers } = await ajax(defaultURL + '/contentDisposition');
       const disposition = Buffer.from('attachment; filename=aa中aa.txt').toString('binary');
       expect(headers).to.to.have.property('content-disposition', disposition);
       expect(data).to.equal('/contentDisposition');
@@ -488,7 +488,7 @@ describe('webRequest module', () => {
         const responseHeaders = details.responseHeaders;
         callback({ responseHeaders: responseHeaders });
       });
-      const { headers } = await ajax(defaultURL + 'serverRedirect');
+      const { headers } = await ajax(defaultURL + '/serverRedirect');
       expect(headers).to.to.have.property('custom', 'Header');
     });
 
@@ -530,10 +530,10 @@ describe('webRequest module', () => {
     });
 
     it('receives details object', async () => {
-      const redirectURL = defaultURL + 'redirect';
+      const redirectURL = defaultURL + '/redirect';
       ses.webRequest.onBeforeRequest((details, callback) => {
-        if (details.url === defaultURL) {
-          callback({ redirectURL: redirectURL });
+        if (details.url === defaultURL + '/') {
+          callback({ redirectURL });
         } else {
           callback({});
         }
