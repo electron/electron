@@ -2224,7 +2224,22 @@ describe('BrowserWindow module', () => {
       expect(visible).to.equal('hidden');
     });
 
-    it('resolves after the window is hidden', async () => {
+    it('resolves when the window is occluded', async () => {
+      const w1 = new BrowserWindow({ show: false });
+      w1.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await once(w1, 'ready-to-show');
+      w1.show();
+
+      const w2 = new BrowserWindow({ show: false });
+      w2.loadFile(path.join(fixtures, 'pages', 'a.html'));
+      await once(w2, 'ready-to-show');
+      w2.show();
+
+      const visibleImage = await w1.capturePage();
+      expect(visibleImage.isEmpty()).to.equal(false);
+    });
+
+    it('resolves when the window is not visible', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadFile(path.join(fixtures, 'pages', 'a.html'));
       await once(w, 'ready-to-show');
@@ -2233,21 +2248,10 @@ describe('BrowserWindow module', () => {
       const visibleImage = await w.capturePage();
       expect(visibleImage.isEmpty()).to.equal(false);
 
-      w.hide();
+      w.minimize();
 
       const hiddenImage = await w.capturePage();
-      const isEmpty = process.platform !== 'darwin';
-      expect(hiddenImage.isEmpty()).to.equal(isEmpty);
-    });
-
-    it('resolves after the window is hidden and capturer count is non-zero', async () => {
-      const w = new BrowserWindow({ show: false });
-      w.webContents.setBackgroundThrottling(false);
-      w.loadFile(path.join(fixtures, 'pages', 'a.html'));
-      await once(w, 'ready-to-show');
-
-      const image = await w.capturePage();
-      expect(image.isEmpty()).to.equal(false);
+      expect(hiddenImage.isEmpty()).to.equal(false);
     });
 
     it('preserves transparency', async () => {
