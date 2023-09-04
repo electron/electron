@@ -15,7 +15,7 @@ short-circuit all the permissions checks in MSDC for now to allow us to
 unduplicate this code.
 
 diff --git a/components/webrtc/media_stream_devices_controller.cc b/components/webrtc/media_stream_devices_controller.cc
-index efbea8c15b096344b0cc65cc337a9cdbd727cb55..ca31bba7fc6daf68e6862554a70032dfdc8285b5 100644
+index be66cc8226fa719645701d5cf708ae91c2bf823d..6cf82318db3cc74b2387cb76583284df5ddaed4a 100644
 --- a/components/webrtc/media_stream_devices_controller.cc
 +++ b/components/webrtc/media_stream_devices_controller.cc
 @@ -57,7 +57,8 @@ bool PermissionIsRequested(blink::PermissionType permission,
@@ -36,7 +36,7 @@ index efbea8c15b096344b0cc65cc337a9cdbd727cb55..ca31bba7fc6daf68e6862554a70032df
    content::PermissionController* permission_controller =
        web_contents->GetBrowserContext()->GetPermissionController();
  
-@@ -153,19 +155,25 @@ void MediaStreamDevicesController::RequestPermissions(
+@@ -153,21 +155,27 @@ void MediaStreamDevicesController::RequestPermissions(
        permission_types.push_back(blink::PermissionType::CAMERA_PAN_TILT_ZOOM);
      }
    }
@@ -50,7 +50,9 @@ index efbea8c15b096344b0cc65cc337a9cdbd727cb55..ca31bba7fc6daf68e6862554a70032df
 -  rfh->GetBrowserContext()
 -      ->GetPermissionController()
 -      ->RequestPermissionsFromCurrentDocument(
--          permission_types, rfh, request.user_gesture,
+-          rfh,
+-          content::PermissionRequestDescription(permission_types,
+-                                                request.user_gesture),
 -          base::BindOnce(
 -              &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
 -              std::move(controller)));
@@ -59,17 +61,19 @@ index efbea8c15b096344b0cc65cc337a9cdbd727cb55..ca31bba7fc6daf68e6862554a70032df
 +                                              blink::mojom::PermissionStatus::GRANTED /*video*/});
 +  } else {
 +    rfh->GetBrowserContext()
-+    ->GetPermissionController()
-+    ->RequestPermissionsFromCurrentDocument(
-+        permission_types, rfh, request.user_gesture,
-+        base::BindOnce(
-+            &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
-+            std::move(controller)));
++        ->GetPermissionController()
++        ->RequestPermissionsFromCurrentDocument(
++            rfh,
++            content::PermissionRequestDescription(permission_types,
++                                                  request.user_gesture),
++            base::BindOnce(
++                &MediaStreamDevicesController::PromptAnsweredGroupedRequest,
++                std::move(controller)));
 +  }
  }
  
  MediaStreamDevicesController::~MediaStreamDevicesController() {
-@@ -435,6 +443,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -437,6 +445,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      return false;
    }
  
@@ -77,7 +81,7 @@ index efbea8c15b096344b0cc65cc337a9cdbd727cb55..ca31bba7fc6daf68e6862554a70032df
    // TODO(raymes): This function wouldn't be needed if
    // PermissionManager::RequestPermissions returned a denial reason.
    content::PermissionResult result =
-@@ -445,6 +454,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
+@@ -447,6 +456,7 @@ bool MediaStreamDevicesController::PermissionIsBlockedForReason(
      DCHECK_EQ(blink::mojom::PermissionStatus::DENIED, result.status);
      return true;
    }
