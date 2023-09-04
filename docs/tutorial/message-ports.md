@@ -303,7 +303,7 @@ without having to step through the isolated world.
 
 ```js title='main.js (Main Process)'
 const { BrowserWindow, app, MessageChannelMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 app.whenReady().then(async () => {
   // Create a BrowserWindow with contextIsolation enabled.
