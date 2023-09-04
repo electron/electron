@@ -25,6 +25,8 @@ std::string GetApplicationVersion();
 // Returns the user agent of Electron.
 std::string GetApplicationUserAgent();
 
+bool IsAppRTL();
+
 #if BUILDFLAG(IS_WIN)
 PCWSTR GetRawAppUserModelID();
 bool GetAppUserModelID(ScopedHString* app_id);
