@@ -43,7 +43,7 @@ Electron's main process runs in a Node.js context and uses its ESM loader. Usage
 main process, one of the following conditions must be met:
 
 - The file ends with the `.mjs` extension
-- The nearest parent package.json  has `"type": "module"` set
+- The nearest parent package.json has `"type": "module"` set
 
 See Node's [Determining Module System](https://nodejs.org/api/packages.html#determining-module-system)
 doc for more details.
