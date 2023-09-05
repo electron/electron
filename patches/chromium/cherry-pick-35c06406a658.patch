@@ -1,0 +1,162 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Guido Urdaneta <guidou@chromium.org>
+Date: Thu, 24 Aug 2023 11:12:43 +0000
+Subject: Handle object destruction in MediaStreamDeviceObserver
+
+MSDO executes some callbacks that can result in the destruction of
+MSDO upon an external event such as removing a media device or the
+user revoking permission.
+This CL adds code to detect this condition and prevent further
+processing that would result in UAF. It also removes some invalid
+DCHECKs.
+
+Drive-by: minor style fixes
+
+(cherry picked from commit 7337133682ab0404b753c563dde2ae2b1dc13171)
+
+Bug: 1472492, b/296997707
+Change-Id: I76f019bb110e7d9cca276444bc23a7e43114d2cc
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4798398
+Reviewed-by: Palak Agarwal <agpalak@chromium.org>
+Commit-Queue: Guido Urdaneta <guidou@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1186452}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4810035
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5845@{#1586}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+
+diff --git a/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.cc b/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.cc
+index c553b70b3b3be78a1d6636037009210bc280e02e..ece0caa8dbeaadf8f2a78bfb5c76e6db6023f1b5 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.cc
++++ b/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.cc
+@@ -37,11 +37,11 @@ MediaStreamDeviceObserver::MediaStreamDeviceObserver(LocalFrame* frame) {
+   if (frame) {
+     frame->GetInterfaceRegistry()->AddInterface(WTF::BindRepeating(
+         &MediaStreamDeviceObserver::BindMediaStreamDeviceObserverReceiver,
+-        WTF::Unretained(this)));
++        weak_factory_.GetWeakPtr()));
+   }
+ }
+ 
+-MediaStreamDeviceObserver::~MediaStreamDeviceObserver() {}
++MediaStreamDeviceObserver::~MediaStreamDeviceObserver() = default;
+ 
+ MediaStreamDevices MediaStreamDeviceObserver::GetNonScreenCaptureDevices() {
+   MediaStreamDevices video_devices;
+@@ -70,13 +70,21 @@ void MediaStreamDeviceObserver::OnDeviceStopped(
+   }
+ 
+   for (Stream& stream : it->value) {
+-    if (IsAudioInputMediaType(device.type))
++    if (IsAudioInputMediaType(device.type)) {
+       RemoveStreamDeviceFromArray(device, &stream.audio_devices);
+-    else
++    } else {
+       RemoveStreamDeviceFromArray(device, &stream.video_devices);
+-
+-    if (stream.on_device_stopped_cb)
++    }
++    if (stream.on_device_stopped_cb) {
++      // Running `stream.on_device_stopped_cb` can destroy `this`. Use a weak
++      // pointer to detect that condition, and stop processing if it happens.
++      base::WeakPtr<MediaStreamDeviceObserver> weak_this =
++          weak_factory_.GetWeakPtr();
+       stream.on_device_stopped_cb.Run(device);
++      if (!weak_this) {
++        return;
++      }
++    }
+   }
+ 
+   // |it| could have already been invalidated in the function call above. So we
+@@ -85,8 +93,9 @@ void MediaStreamDeviceObserver::OnDeviceStopped(
+   // iterator from |label_stream_map_| (https://crbug.com/616884). Future work
+   // needs to be done to resolve this re-entrancy issue.
+   it = label_stream_map_.find(label);
+-  if (it == label_stream_map_.end())
++  if (it == label_stream_map_.end()) {
+     return;
++  }
+ 
+   Vector<Stream>& streams = it->value;
+   auto* stream_it = streams.begin();
+@@ -122,8 +131,16 @@ void MediaStreamDeviceObserver::OnDeviceChanged(
+   DCHECK_EQ(1u, it->value.size());
+ 
+   Stream* stream = &it->value[0];
+-  if (stream->on_device_changed_cb)
++  if (stream->on_device_changed_cb) {
++    // Running `stream->on_device_changed_cb` can destroy `this`. Use a weak
++    // pointer to detect that condition, and stop processing if it happens.
++    base::WeakPtr<MediaStreamDeviceObserver> weak_this =
++        weak_factory_.GetWeakPtr();
+     stream->on_device_changed_cb.Run(old_device, new_device);
++    if (!weak_this) {
++      return;
++    }
++  }
+ 
+   // Update device list only for device changing. Removing device will be
+   // handled in its own callback.
+@@ -278,9 +295,9 @@ void MediaStreamDeviceObserver::RemoveStreamDevice(
+       streams_to_remove.push_back(entry.key);
+     }
+   }
+-  DCHECK(device_found);
+-  for (const String& label : streams_to_remove)
++  for (const String& label : streams_to_remove) {
+     label_stream_map_.erase(label);
++  }
+ }
+ 
+ base::UnguessableToken MediaStreamDeviceObserver::GetAudioSessionId(
+diff --git a/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.h b/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.h
+index 55aba2c4e5bd046a008590436ed8eefa4f099d5c..c5a8b5b1e31011f5d2f9f2064cabb10a74c25bf7 100644
+--- a/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.h
++++ b/third_party/blink/renderer/modules/mediastream/media_stream_device_observer.h
+@@ -116,6 +116,7 @@ class MODULES_EXPORT MediaStreamDeviceObserver
+ 
+   using LabelStreamMap = HashMap<String, Vector<Stream>>;
+   LabelStreamMap label_stream_map_;
++  base::WeakPtrFactory<MediaStreamDeviceObserver> weak_factory_{this};
+ };
+ 
+ }  // namespace blink
+diff --git a/third_party/blink/renderer/platform/exported/mediastream/web_platform_media_stream_source.cc b/third_party/blink/renderer/platform/exported/mediastream/web_platform_media_stream_source.cc
+index be69e8c9741faf0728022ff1cc89ccf8d89a0629..b9f5e9c86537dace6f42e4c92ac255990eb910f7 100644
+--- a/third_party/blink/renderer/platform/exported/mediastream/web_platform_media_stream_source.cc
++++ b/third_party/blink/renderer/platform/exported/mediastream/web_platform_media_stream_source.cc
+@@ -31,10 +31,12 @@ void WebPlatformMediaStreamSource::StopSource() {
+ 
+ void WebPlatformMediaStreamSource::FinalizeStopSource() {
+   DCHECK(task_runner_->BelongsToCurrentThread());
+-  if (!stop_callback_.is_null())
++  if (!stop_callback_.is_null()) {
+     std::move(stop_callback_).Run(Owner());
+-  if (Owner())
++  }
++  if (Owner()) {
+     Owner().SetReadyState(WebMediaStreamSource::kReadyStateEnded);
++  }
+ }
+ 
+ void WebPlatformMediaStreamSource::SetSourceMuted(bool is_muted) {
+@@ -42,8 +44,9 @@ void WebPlatformMediaStreamSource::SetSourceMuted(bool is_muted) {
+   // Although this change is valid only if the ready state isn't already Ended,
+   // there's code further along (like in MediaStreamTrack) which filters
+   // that out already.
+-  if (!Owner())
++  if (!Owner()) {
+     return;
++  }
+   Owner().SetReadyState(is_muted ? WebMediaStreamSource::kReadyStateMuted
+                                  : WebMediaStreamSource::kReadyStateLive);
+ }
+@@ -72,7 +75,6 @@ void WebPlatformMediaStreamSource::SetStopCallback(
+ 
+ void WebPlatformMediaStreamSource::ResetSourceStoppedCallback() {
+   DCHECK(task_runner_->BelongsToCurrentThread());
+-  DCHECK(!stop_callback_.is_null());
+   stop_callback_.Reset();
+ }
+ 
