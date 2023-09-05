@@ -1954,16 +1954,6 @@ describe('webContents module', () => {
     });
   });
 
-  ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
-    afterEach(closeAllWindows);
-    it('can get printer list', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-      await w.loadURL('about:blank');
-      const printers = w.webContents.getPrinters();
-      expect(printers).to.be.an('array');
-    });
-  });
-
   ifdescribe(features.isPrintingEnabled())('getPrintersAsync()', () => {
     afterEach(closeAllWindows);
     it('can get printer list', async () => {
