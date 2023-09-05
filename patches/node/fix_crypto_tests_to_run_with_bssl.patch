@@ -419,20 +419,48 @@ index dd073274aef765e8f1e403aa2c8baf9694b521cb..fc6339e040debe61ecc61a3eb5b26823
    TEST_CASES.DiffieHellman = [common.hasOpenSSL3 ? 1024 : 256];
  }
  
+diff --git a/test/parallel/test-crypto-dh-curves.js b/test/parallel/test-crypto-dh-curves.js
+index 81a469c226c261564dee1e0b06b6571b18a41f1f..58b66045dba4201b7ebedd78b129420ffc316051 100644
+--- a/test/parallel/test-crypto-dh-curves.js
++++ b/test/parallel/test-crypto-dh-curves.js
+@@ -16,7 +16,7 @@ const p = 'FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD129024E088A67CC74' +
+ crypto.createDiffieHellman(p, 'hex');
+ 
+ // Confirm DH_check() results are exposed for optional examination.
+-const bad_dh = crypto.createDiffieHellman('02', 'hex');
++const bad_dh = crypto.createDiffieHellman('abcd', 'hex', 0);
+ assert.notStrictEqual(bad_dh.verifyError, 0);
+ 
+ const availableCurves = new Set(crypto.getCurves());
 diff --git a/test/parallel/test-crypto-dh.js b/test/parallel/test-crypto-dh.js
-index c730eac4ce76dde880fe2b36b17414b0c311ac0b..ec5510778f4aa77c68d10d7cc56fd3a45091121c 100644
+index c730eac4ce76dde880fe2b36b17414b0c311ac0b..416cfa0ac019fe5eab696df36f6cc65e311bf20f 100644
 --- a/test/parallel/test-crypto-dh.js
 +++ b/test/parallel/test-crypto-dh.js
-@@ -49,7 +49,7 @@ for (const bits of [-1, 0, 1]) {
+@@ -47,17 +47,19 @@ for (const bits of [-1, 0, 1]) {
+     });
+   } else {
      assert.throws(() => crypto.createDiffieHellman(bits), {
-       code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
+-      code: 'ERR_OSSL_BN_BITS_TOO_SMALL',
++      code: /ERR_OSSL_BN_BITS_TOO_SMALL|ERR_OSSL_DH_MODULUS_TOO_LARGE/,
        name: 'Error',
 -      message: /bits too small/,
-+      message: /bits too small|BITS_TOO_SMALL/,
++      message: /bits too small|BITS_TOO_SMALL|MODULUS_TOO_LARGE/,
      });
    }
  }
-@@ -65,7 +65,7 @@ for (const g of [-1, 1]) {
+ 
+-// Through a fluke of history, g=0 defaults to DH_GENERATOR (2).
+ {
+   const g = 0;
+-  crypto.createDiffieHellman('abcdef', g);
++  assert.throws(() => crypto.createDiffieHellman('abcdef', g), {
++    code: /INVALID_PARAMETERS/,
++    name: 'Error'
++  });
+   crypto.createDiffieHellman('abcdef', 'hex', g);
+ }
+ 
+@@ -65,13 +67,18 @@ for (const g of [-1, 1]) {
    const ex = {
      code: 'ERR_OSSL_DH_BAD_GENERATOR',
      name: 'Error',
@@ -441,7 +469,19 @@ index c730eac4ce76dde880fe2b36b17414b0c311ac0b..ec5510778f4aa77c68d10d7cc56fd3a4
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -79,7 +79,7 @@ for (const g of [Buffer.from([]),
+ }
+ 
+-crypto.createDiffieHellman('abcdef', Buffer.from([2]));  // OK
++{
++  assert.throws(() => crypto.createDiffieHellman('abcdef', Buffer.from([2])), {
++    code: /INVALID_PARAMETERS/,
++    name: 'Error'
++  });
++}
+ 
+ for (const g of [Buffer.from([]),
+                  Buffer.from([0]),
+@@ -79,7 +86,7 @@ for (const g of [Buffer.from([]),
    const ex = {
      code: 'ERR_OSSL_DH_BAD_GENERATOR',
      name: 'Error',
@@ -450,7 +490,7 @@ index c730eac4ce76dde880fe2b36b17414b0c311ac0b..ec5510778f4aa77c68d10d7cc56fd3a4
    };
    assert.throws(() => crypto.createDiffieHellman('abcdef', g), ex);
    assert.throws(() => crypto.createDiffieHellman('abcdef', 'hex', g), ex);
-@@ -133,18 +133,17 @@ assert.strictEqual(secret1, secret4);
+@@ -133,18 +140,17 @@ assert.strictEqual(secret1, secret4);
  let wrongBlockLength;
  if (common.hasOpenSSL3) {
    wrongBlockLength = {

@@ -32,7 +32,7 @@ describe('systemPreferences module', () => {
       ] as const;
 
       const defaultsDict: Record<string, any> = {};
-      defaultsMap.forEach(row => { defaultsDict[row.key] = row.value; });
+      for (const row of defaultsMap) { defaultsDict[row.key] = row.value; }
 
       systemPreferences.registerDefaults(defaultsDict);
 
@@ -160,10 +160,10 @@ describe('systemPreferences module', () => {
     it('returns a valid system color', () => {
       const colors = ['blue', 'brown', 'gray', 'green', 'orange', 'pink', 'purple', 'red', 'yellow'] as const;
 
-      colors.forEach(color => {
+      for (const color of colors) {
         const sysColor = systemPreferences.getSystemColor(color);
         expect(sysColor).to.be.a('string');
-      });
+      }
     });
   });
 
@@ -211,10 +211,10 @@ describe('systemPreferences module', () => {
         'window-frame-text'
       ] as const;
 
-      colors.forEach(color => {
+      for (const color of colors) {
         const sysColor = systemPreferences.getColor(color);
         expect(sysColor).to.be.a('string');
-      });
+      }
 
       await expectDeprecationMessages(
         () => {

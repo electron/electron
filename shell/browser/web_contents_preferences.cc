@@ -234,7 +234,6 @@ void WebContentsPreferences::SetFromDictionary(
     disable_blink_features_ = disable_blink_features;
 
   base::FilePath::StringType preload_path;
-  std::string preload_url_str;
   if (web_preferences.Get(options::kPreloadScript, &preload_path)) {
     base::FilePath preload(preload_path);
     if (preload.IsAbsolute()) {
@@ -397,13 +396,18 @@ void WebContentsPreferences::SaveLastPreferences() {
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
-    blink::web_pref::WebPreferences* prefs) {
+    blink::web_pref::WebPreferences* prefs,
+    blink::RendererPreferences* renderer_prefs) {
   prefs->javascript_enabled = javascript_;
   prefs->images_enabled = images_;
   prefs->animation_policy = image_animation_policy_;
   prefs->text_areas_are_resizable = text_areas_are_resizable_;
-  prefs->navigate_on_drag_drop = navigate_on_drag_drop_;
   prefs->autoplay_policy = autoplay_policy_;
+
+  // TODO: navigate_on_drag_drop was removed from web prefs in favor of the
+  // equivalent option in renderer prefs. this option should be deprecated from
+  // our API and then removed here.
+  renderer_prefs->can_accept_load_drops = navigate_on_drag_drop_;
 
   // Check if webgl should be enabled.
   prefs->webgl1_enabled = webgl_;

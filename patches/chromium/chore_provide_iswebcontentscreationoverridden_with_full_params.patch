@@ -80,10 +80,10 @@ index aaaa61d5c3a1d5ade2fd355e38a3985ef5cc4e7d..b45746ba0f38a381a2ee5ca17f3a1685
    }
  
 diff --git a/chrome/browser/ui/browser.cc b/chrome/browser/ui/browser.cc
-index 3390eb25d8e648282591fd05b2cd6a0b86964d3a..b4e2f99c25ebce78a6346e5bedd6728a1c528911 100644
+index 2c98bdd6336762e11b76e8f0d5993dd4d40bf5a2..f91ad8f22b4e5ac3417a536468db217666eda4e1 100644
 --- a/chrome/browser/ui/browser.cc
 +++ b/chrome/browser/ui/browser.cc
-@@ -1868,12 +1868,11 @@ bool Browser::IsWebContentsCreationOverridden(
+@@ -1872,12 +1872,11 @@ bool Browser::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -99,10 +99,10 @@ index 3390eb25d8e648282591fd05b2cd6a0b86964d3a..b4e2f99c25ebce78a6346e5bedd6728a
  
  WebContents* Browser::CreateCustomWebContents(
 diff --git a/chrome/browser/ui/browser.h b/chrome/browser/ui/browser.h
-index 9fceed57deff55386fbabb1ce46c4ad725144a11..1dc104cc4cb80124050f892c586aab670a89e5a2 100644
+index 2cd706cf14ce954289ce789886193e3fdb735801..35881d5d2ad489eb4e57f3fe26f1c58e8f1123cc 100644
 --- a/chrome/browser/ui/browser.h
 +++ b/chrome/browser/ui/browser.h
-@@ -883,8 +883,7 @@ class Browser : public TabStripModelObserver,
+@@ -884,8 +884,7 @@ class Browser : public TabStripModelObserver,
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -155,7 +155,7 @@ index 69d39ab12f7a1895e1ca50914a4f8dc37e10e6cd..eaa9156721de98d19f6110e7b2ab55af
    }
    content::WebContents* CreateCustomWebContents(
 diff --git a/components/embedder_support/android/delegate/web_contents_delegate_android.cc b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
-index eb2d28e7df5e4430f24799d051ba864b25a4da38..4af0e5792e875d9fcf55293707d2cdcdae5b5007 100644
+index 3ef115a4f625f5a776c880ac85848909683d733b..4e0a58c6a618a32cc269ab98b62389201912210d 100644
 --- a/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 +++ b/components/embedder_support/android/delegate/web_contents_delegate_android.cc
 @@ -169,14 +169,13 @@ bool WebContentsDelegateAndroid::IsWebContentsCreationOverridden(
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e3d811b00c799fba8aa9d52a9b437618e579e169..2f2e089817f8b9392f0a793c3702d04f9ad5b97b 100644
+index 80e0b9747484b13b76eba8e9a097a2fd10c1ef9d..d28f76fb8221df7da24179bf703f69861ae14042 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4222,8 +4222,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4219,8 +4219,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
@@ -288,10 +288,10 @@ index 583da1abe9cb405dc02806564b99a4619fc81473..8131afeee37a60ae3b10731bc708efd9
        content::RenderFrameHost* opener,
        content::SiteInstance* source_site_instance,
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-index 1e1712fdf38ecbd41f998896cca98db14448fa18..d2cd1003c224f49338595dc91fe9cd05a4549f4a 100644
+index 0fc4a40faf0704f5a0115505de6ca730f9ec5b03..e2ebcdcdff27c6ca6c96367a7cbbd94121577e43 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.cc
-@@ -380,8 +380,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
+@@ -379,8 +379,7 @@ bool MimeHandlerViewGuest::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -302,10 +302,10 @@ index 1e1712fdf38ecbd41f998896cca98db14448fa18..d2cd1003c224f49338595dc91fe9cd05
  }
  
 diff --git a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-index 397bee1fc011be7d949f62c50f6acfb05c7251e1..165026320324c3295b7152731d19efd65fd90b07 100644
+index 2a2f0b6b44293e7a9b31598c8c5382c5618d71b5..6c87565980a28532eeb4a7b51ca1188c5c26378f 100644
 --- a/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
 +++ b/extensions/browser/guest_view/mime_handler_view/mime_handler_view_guest.h
-@@ -172,8 +172,7 @@ class MimeHandlerViewGuest
+@@ -173,8 +173,7 @@ class MimeHandlerViewGuest
        content::SiteInstance* source_site_instance,
        content::mojom::WindowContainerType window_container_type,
        const GURL& opener_url,
@@ -358,7 +358,7 @@ index 60acb83c8d76f71db689f9d188bb6e8f64a74ffb..aa6cee708d1e451b443bc26528b56cc8
          ->options()
          ->block_new_web_contents();
 diff --git a/ui/views/controls/webview/web_dialog_view.cc b/ui/views/controls/webview/web_dialog_view.cc
-index aa3148852ff61323cb9bf20817c6677cffe34ded..82790630067f11da8c4eac785b242d5cd131d3e3 100644
+index 0da0750e43157470a25636af3b152f783c8a2f25..6898a8b6844811cccbafd23a483fbfca9b57a25c 100644
 --- a/ui/views/controls/webview/web_dialog_view.cc
 +++ b/ui/views/controls/webview/web_dialog_view.cc
 @@ -428,8 +428,7 @@ bool WebDialogView::IsWebContentsCreationOverridden(

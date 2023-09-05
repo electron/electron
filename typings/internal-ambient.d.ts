@@ -246,6 +246,8 @@ declare namespace NodeJS {
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;
+
+    appCodeLoaded?: () => void;
   }
 }
 
@@ -287,6 +289,12 @@ declare interface Window {
   };
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
+}
+
+// https://github.com/electron/electron/blob/main/docs/tutorial/message-ports.md#extension-close-event
+
+interface MessagePort {
+  onclose: () => void;
 }
 
 // https://w3c.github.io/webappsec-trusted-types/dist/spec/#trusted-types

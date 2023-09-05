@@ -7,9 +7,9 @@
 #include "shell/app/electron_library_main.h"
 
 #include "base/apple/bundle_locations.h"
+#include "base/apple/scoped_nsautorelease_pool.h"
 #include "base/at_exit.h"
 #include "base/i18n/icu_util.h"
-#include "base/mac/scoped_nsautorelease_pool.h"
 #include "content/public/app/content_main.h"
 #include "electron/fuses.h"
 #include "shell/app/electron_main_delegate.h"
@@ -33,7 +33,7 @@ int ElectronInitializeICUandStartNode(int argc, char* argv[]) {
   }
 
   base::AtExitManager atexit_manager;
-  base::mac::ScopedNSAutoreleasePool pool;
+  base::apple::ScopedNSAutoreleasePool pool;
   base::apple::SetOverrideFrameworkBundlePath(
       electron::MainApplicationBundlePath()
           .Append("Contents")

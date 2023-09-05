@@ -91,6 +91,22 @@ systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
 nativeTheme.on('updated', () => { /* ... */ })
 ```
 
+### Removed: `webContents.getPrinters`
+
+The `webContents.getPrinters` method has been removed. Use
+`webContents.getPrintersAsync` instead.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed
+console.log(w.webContents.getPrinters())
+// Replace with
+w.webContents.getPrintersAsync().then((printers) => {
+  console.log(printers)
+})
+```
+
 ## Planned Breaking API Changes (26.0)
 
 ### Deprecated: `webContents.getPrinters`

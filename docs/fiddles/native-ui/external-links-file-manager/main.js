@@ -1,5 +1,15 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, shell } = require('electron/main')
+const { app, BrowserWindow, shell, ipcMain } = require('electron/main')
+const path = require('node:path')
+const os = require('node:os')
+
+ipcMain.on('open-home-dir', () => {
+  shell.showItemInFolder(os.homedir())
+})
+
+ipcMain.on('open-external', (event, url) => {
+  shell.openExternal(url)
+})
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -11,8 +21,7 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      contextIsolation: false,
-      nodeIntegration: true
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 

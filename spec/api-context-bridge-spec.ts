@@ -1006,10 +1006,10 @@ describe('contextBridge', () => {
             }
           };
           const keys: string[] = [];
-          Object.entries(toExpose).forEach(([key, value]) => {
+          for (const [key, value] of Object.entries(toExpose)) {
             keys.push(key);
             contextBridge.exposeInMainWorld(key, value);
-          });
+          }
           contextBridge.exposeInMainWorld('keys', keys);
         });
         const result = await callWithBindings(async (root: any) => {

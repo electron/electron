@@ -44,9 +44,9 @@ describe('chrome extensions', () => {
   });
   afterEach(closeAllWindows);
   afterEach(() => {
-    session.defaultSession.getAllExtensions().forEach((e: any) => {
+    for (const e of session.defaultSession.getAllExtensions()) {
       session.defaultSession.removeExtension(e.id);
-    });
+    }
   });
 
   it('does not crash when using chrome.management', async () => {
@@ -759,9 +759,9 @@ describe('chrome extensions', () => {
 
   describe('extension ui pages', () => {
     afterEach(() => {
-      session.defaultSession.getAllExtensions().forEach(e => {
+      for (const e of session.defaultSession.getAllExtensions()) {
         session.defaultSession.removeExtension(e.id);
-      });
+      }
     });
 
     it('loads a ui page of an extension', async () => {

@@ -300,18 +300,14 @@ describe('BrowserView module', () => {
       }).to.not.throw();
     });
 
-    it('can be called on a BrowserView with a destroyed webContents', (done) => {
+    it('can be called on a BrowserView with a destroyed webContents', async () => {
       view = new BrowserView();
       w.addBrowserView(view);
-
-      view.webContents.on('destroyed', () => {
-        w.removeBrowserView(view);
-        done();
-      });
-
-      view.webContents.loadURL('data:text/html,hello there').then(() => {
-        view.webContents.close();
-      });
+      await view.webContents.loadURL('data:text/html,hello there');
+      const destroyed = once(view.webContents, 'destroyed');
+      view.webContents.close();
+      await destroyed;
+      w.removeBrowserView(view);
     });
   });
 

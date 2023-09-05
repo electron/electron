@@ -27,7 +27,7 @@ control our application lifecycle and create a native browser window.
 
 ```javascript
 const { app, BrowserWindow, shell } = require('electron')
-const path = require('path')
+const path = require('node:path')
 ```
 
 Next, we will proceed to register our application to handle all "`electron-fiddle://`" protocols.
