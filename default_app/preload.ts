@@ -43,8 +43,8 @@ async function initialize () {
   }
 
   replaceText('.electron-version', `Electron v${process.versions.electron}`);
-  replaceText('.chrome-version', `Chromium v${process.versions.chrome}`);
-  replaceText('.node-version', `Node v${process.versions.node}`);
+  replaceText('.chrome-version', `<a href="https://www.chromium.org/v${process.versions.chrome}">Chromium v${process.versions.chrome}</a>`);
+  replaceText('.node-version', `<a href="https://nodejs.org/docs/v${process.versions.node}">Node v${process.versions.node}</a>`);
   replaceText('.v8-version', `v8 v${process.versions.v8}`);
   replaceText('.command-example', `${electronPath} path-to-app`);
 
