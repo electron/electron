@@ -2343,7 +2343,7 @@ describe('BrowserWindow module', () => {
 
       expect(w.isAlwaysOnTop()).to.be.false();
       expect(c.isAlwaysOnTop()).to.be.true('child is not always on top');
-      expect((c as any)._getAlwaysOnTopLevel()).to.equal('screen-saver');
+      expect(c._getAlwaysOnTopLevel()).to.equal('screen-saver');
     });
   });
 
