@@ -334,7 +334,10 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
   }
 }
 
-- (void)toggleFullScreenMode:(id)sender {
+- (BOOL)toggleFullScreenMode:(id)sender {
+  if (!shell_->has_frame() && !shell_->HasStyleMask(NSWindowStyleMaskTitled))
+    return NO;
+
   bool is_simple_fs = shell_->IsSimpleFullScreen();
   bool always_simple_fs = shell_->always_simple_fullscreen();
 
@@ -363,6 +366,8 @@ void SwizzleSwipeWithEvent(NSView* view, SEL swiz_selector) {
     bool maximizable = shell_->IsMaximizable();
     shell_->SetMaximizable(maximizable);
   }
+
+  return YES;
 }
 
 - (void)performMiniaturize:(id)sender {
