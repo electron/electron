@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index a972785f956cbfd04730a7420a249a3c9880d7ab..4a90e06f8d81a5813797ae9097622f2e09195094 100644
+index 2c8a95ce169f9c322b545a4426b8bec2964de2e5..02b93bb09564ffacee638ccbd725c56855dbb6ab 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -48,7 +48,7 @@ index a972785f956cbfd04730a7420a249a3c9880d7ab..4a90e06f8d81a5813797ae9097622f2e
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -944,7 +951,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -966,7 +973,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -81,7 +81,7 @@ index a687861c04b323102a8d2bfe22b24a964793cd9b..4a7a469111eaec3e1e76ee852bd5afbb
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index d4bb0e9a017a833b403916e1d6e64fb058f40f86..35ba35a95e39700824d6e0b480b99bc3cb033a99 100644
+index c891c5649a6ae76c9f0f988359649ece0e8ac1d9..54e30c4dd82042c283e36cae767dcdd716f94292 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -9,6 +9,7 @@
@@ -92,7 +92,7 @@ index d4bb0e9a017a833b403916e1d6e64fb058f40f86..35ba35a95e39700824d6e0b480b99bc3
  #include "build/build_config.h"
  #include "content/common/content_export.h"
  #include "content/public/common/main_function_params.h"
-@@ -165,6 +166,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -168,6 +169,8 @@ class CONTENT_EXPORT ContentMainDelegate {
    virtual bool ShouldHandleConsoleControlEvents();
  #endif
  
