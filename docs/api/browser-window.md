@@ -1211,7 +1211,7 @@ const win = new BrowserWindow()
 const url = require('url').format({
   protocol: 'file',
   slashes: true,
-  pathname: require('path').join(__dirname, 'index.html')
+  pathname: require('node:path').join(__dirname, 'index.html')
 })
 
 win.loadURL(url)

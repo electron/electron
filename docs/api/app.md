@@ -1331,7 +1331,7 @@ application name. For example:
 
 ``` js
 const { app } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 const appFolder = path.dirname(process.execPath)
 const updateExe = path.resolve(appFolder, '..', 'Update.exe')
@@ -1402,7 +1402,7 @@ Returns `Function` - This function **must** be called once you have finished acc
 
 ```js
 const { app, dialog } = require('electron')
-const fs = require('fs')
+const fs = require('node:fs')
 
 let filepath
 let bookmark

@@ -260,7 +260,7 @@ To create a custom driver, we'll use Node.js' [`child_process`](https://nodejs.o
 The test suite will spawn the Electron process, then establish a simple messaging protocol:
 
 ```js title='testDriver.js' @ts-nocheck
-const childProcess = require('child_process')
+const childProcess = require('node:child_process')
 const electronPath = require('electron')
 
 // spawn the process
