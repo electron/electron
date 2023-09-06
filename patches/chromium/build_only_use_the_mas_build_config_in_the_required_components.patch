@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 7a5486b35f34f23d71574805a373568cbb4ea49f..9aedd696c7102aa2008ff0d43f560968ad5b1b58 100644
+index 82cb596dcbb369cf67addf856dfe8c0789449e78..149d429b8f80de9a16ef1459693b940f86710dc2 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1038,6 +1038,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 729753a72edd761ec831f79828742a26f9dd2417..45858456c9c8c82870c41b0edd1359d1
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 180a4bbe8f0b39858f154d41aca8ffbb483c7cab..bced1f3d53a1ce3686bcaf5cc3594a5b03fc1347 100644
+index e0d55a859061f029e5298599bf2d9345674ecb34..74f977ca68b566d4c2859d71fabbe112555d1d91 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -98,10 +98,10 @@ index dce27cfa39b52e39a95cee658584ed80ab1953ef..366edd2e86edcdbb30ae4c0fa952b5d9
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 62117d9c83972003d0483ed9fc6efad6a4490a75..246d7289fd5727886054e182e17520c5ce5a7916 100644
+index b16be8f9992b23ce93d174531f2debd7f18bb436..119038743dc222907cb74c2c3ea34d23b5915a5e 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -224,6 +224,7 @@ target(link_target_type, "renderer") {
+@@ -225,6 +225,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -110,10 +110,10 @@ index 62117d9c83972003d0483ed9fc6efad6a4490a75..246d7289fd5727886054e182e17520c5
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 26e2f7101275af5e68492098d486683f1d87d035..e20d69ab8f98c751383a8c420c259c8daf8d95ca 100644
+index 8fbd09e0305b22114c2cc2534a43622cf660bb23..39951971e29c374aa705eab8c921f73e56d428c8 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -478,6 +478,7 @@ static_library("test_support") {
+@@ -480,6 +480,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -147,10 +147,10 @@ index 4885f927ae2b871cf2911fb5bc5a2aac128b2aae..5f820bd6ef9f91f69e75065f08bd61a7
  
    if (is_mac) {
 diff --git a/gpu/ipc/service/BUILD.gn b/gpu/ipc/service/BUILD.gn
-index 550cf601dcb65e710e9dab6fb5023119b52b5278..18e60732057a3695858b17d6faef13927f869726 100644
+index 090bbd6f03c5749aaf763dac9e52c776f366c33d..5143231f5b3c95f55bf12aaedf253781eb59bb64 100644
 --- a/gpu/ipc/service/BUILD.gn
 +++ b/gpu/ipc/service/BUILD.gn
-@@ -138,6 +138,7 @@ component("service") {
+@@ -134,6 +134,7 @@ component("service") {
        "QuartzCore.framework",
      ]
      defines += [ "GL_SILENCE_DEPRECATION" ]
@@ -276,10 +276,10 @@ index 7e17546f658ce0e6908f7dea499eac31e5295895..85c5fe7e25a84de5342d3d9b8cd20d19
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index b09b4510e9f5b1578e4e8ba18330bed928e7728a..ad3d29a93714080be660b5364ed15a676e153a66 100644
+index 98869537561ba6eaaa838601c9e0d1e71a016197..2141e6d3376042df7992f89119735c1b9b3cb236 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -194,6 +194,7 @@ component("gfx") {
+@@ -192,6 +192,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]

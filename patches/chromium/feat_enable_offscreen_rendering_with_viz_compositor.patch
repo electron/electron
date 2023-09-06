@@ -514,10 +514,10 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index e8df1465346e7e9254fb25865d48c9e3f3e8e0ac..ddd2c4dcc6f597eda0eba91ba395aa3822a65e83 100644
+index c70b0af70a68386c5d36833e621dd1b5cdc1522a..17e5c96cbb4ef2f575fd5ba7bd8b0c7bd58da5e7 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-@@ -96,7 +96,8 @@ RootCompositorFrameSinkImpl::Create(
+@@ -97,7 +97,8 @@ RootCompositorFrameSinkImpl::Create(
        params->gpu_compositing, params->widget);
    auto output_surface = output_surface_provider->CreateOutputSurface(
        params->widget, params->gpu_compositing, display_client.get(),
@@ -556,10 +556,10 @@ index cc1ceb263a60b9bd743bd4166def23cd1c01b49f..d2c24bf0b674c5028e48c6b51f23d4a8
  
  }  // namespace viz
 diff --git a/content/browser/compositor/viz_process_transport_factory.cc b/content/browser/compositor/viz_process_transport_factory.cc
-index c86f1e090cb844fb555098d128391ae66de2d594..1f20ff61a66f9a269fe5d5257470ef99e11fa72c 100644
+index c34c0854efeec1ddddcd47fea40c9516f9c8dfaf..c27169973e2ac9b2faf802b9f35ed5c6d2b22543 100644
 --- a/content/browser/compositor/viz_process_transport_factory.cc
 +++ b/content/browser/compositor/viz_process_transport_factory.cc
-@@ -395,8 +395,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
+@@ -393,8 +393,14 @@ void VizProcessTransportFactory::OnEstablishedGpuChannel(
    mojo::AssociatedRemote<viz::mojom::DisplayPrivate> display_private;
    root_params->display_private =
        display_private.BindNewEndpointAndPassReceiver();
