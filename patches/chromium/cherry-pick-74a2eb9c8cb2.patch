@@ -1,7 +1,7 @@
-From 74a2eb9c8cb203d7cb916cfcd73053b1be745a2b Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yoichi Osato <yoichio@chromium.org>
 Date: Tue, 29 Aug 2023 02:37:46 +0000
-Subject: [PATCH] Readd lock when ObserverListMap::erase()
+Subject: Readd lock when ObserverListMap::erase()
 
 We should lock when remove an item from the map.
 This lock was accidentally removed in:
@@ -22,13 +22,12 @@ Reviewed-by: Kent Tamura <tkent@chromium.org>
 Commit-Queue: Kent Tamura <tkent@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5845@{#1666}
 Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
----
 
 diff --git a/third_party/blink/renderer/platform/network/network_state_notifier.cc b/third_party/blink/renderer/platform/network/network_state_notifier.cc
-index 39c417e..e74b4ea4 100644
+index 39c417e0f8ec672d413bb69a3b98f06442183295..e74b4ea41b2b30037890f36dd9ff81d6ef3c4e88 100644
 --- a/third_party/blink/renderer/platform/network/network_state_notifier.cc
 +++ b/third_party/blink/renderer/platform/network/network_state_notifier.cc
-@@ -350,6 +350,7 @@
+@@ -350,6 +350,7 @@ void NetworkStateNotifier::RemoveObserver(
    DCHECK(task_runner->RunsTasksInCurrentSequence());
    DCHECK(observer);
  
