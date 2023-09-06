@@ -13,6 +13,7 @@ import { ifit, ifdescribe, defer, itremote, listen } from './lib/spec-helpers';
 import { PipeTransport } from './pipe-transport';
 import * as ws from 'ws';
 import { setTimeout } from 'node:timers/promises';
+import { AddressInfo } from 'node:net';
 
 const features = process._linkedBinding('electron_common_features');
 
@@ -56,12 +57,12 @@ describe('reporting api', () => {
       res.end('<script>window.navigator.vibrate(1)</script>');
     });
 
-    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve));
+    await listen(server);
     const bw = new BrowserWindow({ show: false });
 
     try {
       const reportGenerated = once(reporting, 'report');
-      await bw.loadURL(`https://localhost:${(server.address() as any).port}/a`);
+      await bw.loadURL(`https://localhost:${(server.address() as AddressInfo).port}/a`);
 
       const [reports] = await reportGenerated;
       expect(reports).to.be.an('array').with.lengthOf(1);
@@ -2011,13 +2012,13 @@ describe('chromium features', () => {
         const w = new BrowserWindow({ show: false });
         await w.loadFile(path.join(fixturesPath, 'pages', 'blank.html'));
         // History should have current page by now.
-        expect((w.webContents as any).length()).to.equal(1);
+        expect(w.webContents.length()).to.equal(1);
 
         const waitCommit = once(w.webContents, 'navigation-entry-committed');
         w.webContents.executeJavaScript('window.history.pushState({}, "")');
         await waitCommit;
         // Initial page + pushed state.
-        expect((w.webContents as any).length()).to.equal(2);
+        expect(w.webContents.length()).to.equal(2);
       });
     });
 
@@ -2037,7 +2038,7 @@ describe('chromium features', () => {
           once(w.webContents, 'did-navigate-in-page')
         ]);
 
-        (w.webContents as any).once('navigation-entry-committed', () => {
+        w.webContents.once('navigation-entry-committed' as any, () => {
           expect.fail('Unexpected navigation-entry-committed');
         });
         w.webContents.once('did-navigate-in-page', () => {
@@ -2045,7 +2046,7 @@ describe('chromium features', () => {
         });
         await w.webContents.mainFrame.frames[0].executeJavaScript('window.history.back()');
         expect(await w.webContents.executeJavaScript('window.history.state')).to.equal(1);
-        expect((w.webContents as any).getActiveIndex()).to.equal(1);
+        expect(w.webContents.getActiveIndex()).to.equal(1);
       });
     });
   });

@@ -7,7 +7,7 @@ import * as fs from 'node:fs';
 import * as url from 'node:url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo, Socket } from 'node:net';
+import { Socket } from 'node:net';
 import { listen, defer } from './lib/spec-helpers';
 import { once } from 'node:events';
 import { ReadableStream } from 'node:stream/web';
@@ -60,10 +60,7 @@ describe('webRequest module', () => {
   before(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
     defaultURL = (await listen(server)).url + '/';
-    await new Promise<void>((resolve) => {
-      h2server.listen(0, '127.0.0.1', () => resolve());
-    });
-    http2URL = `https://127.0.0.1:${(h2server.address() as AddressInfo).port}/`;
+    http2URL = (await listen(h2server)).url + '/';
     console.log(http2URL);
   });
 

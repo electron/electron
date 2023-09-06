@@ -2,6 +2,7 @@ import * as childProcess from 'node:child_process';
 import * as path from 'node:path';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as http2 from 'node:http2';
 import * as net from 'node:net';
 import * as v8 from 'node:v8';
 import * as url from 'node:url';
@@ -194,10 +195,10 @@ export async function itremote (name: string, fn: Function, args?: any[]) {
   });
 }
 
-export async function listen (server: http.Server | https.Server) {
+export async function listen (server: http.Server | https.Server | http2.Http2SecureServer) {
   const hostname = '127.0.0.1';
   await new Promise<void>(resolve => server.listen(0, hostname, () => resolve()));
   const { port } = server.address() as net.AddressInfo;
-  const protocol = (server instanceof https.Server) ? 'https' : 'http';
+  const protocol = (server instanceof http.Server) ? 'http' : 'https';
   return { port, url: url.format({ protocol, hostname, port }) };
 }

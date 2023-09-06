@@ -12,10 +12,10 @@ upstream a more durable approach to allowing us to do this, at which
 point this patch can be removed.
 
 diff --git a/front_end/entrypoints/shell/BUILD.gn b/front_end/entrypoints/shell/BUILD.gn
-index eb0638979786ef5ec3973a861f424a8e95b02e68..ae3c2f29512d0f2443c5b6c45b3a5d69aeba639c 100644
+index 9b7c4251dde44c7e2ce76637515bb193a63427d8..76c2f924967df85d01ed41616609273adfad1342 100644
 --- a/front_end/entrypoints/shell/BUILD.gn
 +++ b/front_end/entrypoints/shell/BUILD.gn
-@@ -31,6 +31,7 @@ devtools_entrypoint("shell") {
+@@ -30,6 +30,7 @@ devtools_entrypoint("shell") {
      "../../ui/legacy/components/perf_ui:meta",
      "../../ui/legacy/components/quick_open:meta",
      "../../ui/legacy/components/source_frame:meta",
@@ -24,10 +24,10 @@ index eb0638979786ef5ec3973a861f424a8e95b02e68..ae3c2f29512d0f2443c5b6c45b3a5d69
  
    visibility = [
 diff --git a/front_end/entrypoints/shell/shell.ts b/front_end/entrypoints/shell/shell.ts
-index 10580db71ce6150210c7eb01bf6410197e94c236..766707a9efcea634d203aeee2497f67f79ce32c8 100644
+index b1f0db6afb29188e4e69c5dd899523e836f9d253..4290e626fd875a50740bbd668ca11a4fef6ef8b5 100644
 --- a/front_end/entrypoints/shell/shell.ts
 +++ b/front_end/entrypoints/shell/shell.ts
-@@ -19,6 +19,7 @@ import '../../models/logs/logs-meta.js';
+@@ -18,6 +18,7 @@ import '../../models/logs/logs-meta.js';
  import '../main/main-meta.js';
  import '../../ui/legacy/components/perf_ui/perf_ui-meta.js';
  import '../../ui/legacy/components/quick_open/quick_open-meta.js';

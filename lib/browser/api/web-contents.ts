@@ -394,17 +394,6 @@ WebContents.prototype.print = function (options: ElectronInternal.WebContentsPri
   }
 };
 
-WebContents.prototype.getPrinters = function () {
-  // TODO(nornagon): this API has nothing to do with WebContents and should be
-  // moved.
-  if (printing.getPrinterList) {
-    return printing.getPrinterList();
-  } else {
-    console.error('Error: Printing feature is disabled.');
-    return [];
-  }
-};
-
 WebContents.prototype.getPrintersAsync = async function () {
   // TODO(nornagon): this API has nothing to do with WebContents and should be
   // moved.

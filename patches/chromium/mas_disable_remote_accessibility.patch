@@ -75,7 +75,7 @@ index 76be676717e62c429319338c6115be89f2dfa424..18a5fd3c87b08c95d668b70c9b8f7a76
  
    void ForwardKeyboardEvent(const content::NativeWebKeyboardEvent& key_event,
 diff --git a/content/browser/accessibility/browser_accessibility_manager_mac.mm b/content/browser/accessibility/browser_accessibility_manager_mac.mm
-index 45aeb6838a859f57287bec51f79a4eb77d69b619..6f5c28de251d4f6db9b07b37d0b513c2cc2826b3 100644
+index 5a6706495ed2a8f1cd781da9bde8572318bf6897..afd4d1f728a7f056e49b2ecb006c5a05388d3409 100644
 --- a/content/browser/accessibility/browser_accessibility_manager_mac.mm
 +++ b/content/browser/accessibility/browser_accessibility_manager_mac.mm
 @@ -21,7 +21,9 @@
@@ -104,18 +104,18 @@ index 45aeb6838a859f57287bec51f79a4eb77d69b619..6f5c28de251d4f6db9b07b37d0b513c2
  
        // Use native VoiceOver support for live regions.
        BrowserAccessibilityCocoa* retained_node = native_node;
-@@ -627,6 +631,7 @@ void PostAnnouncementNotification(NSString* announcement,
-   if ([NSApp isActive])
+@@ -632,6 +636,7 @@ void PostAnnouncementNotification(NSString* announcement,
      return window == [NSApp accessibilityFocusedWindow];
+   }
  
 +#if !IS_MAS_BUILD()
    // TODO(accessibility): We need a solution to the problem described below.
    // If the window is NSAccessibilityRemoteUIElement, there are some challenges:
    // 1. NSApp is the browser which spawned the PWA, and what it considers the
-@@ -654,6 +659,7 @@ void PostAnnouncementNotification(NSString* announcement,
-   // from within the app shim content.
-   if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]])
+@@ -660,6 +665,7 @@ void PostAnnouncementNotification(NSString* announcement,
+   if ([window isKindOfClass:[NSAccessibilityRemoteUIElement class]]) {
      return true;
+   }
 +#endif
  
    return false;
@@ -147,10 +147,10 @@ index 3edad19a3ecbd27f54f1d17aca2e806fbbff05d4..1b4ed839f0d00334fd32a102be07be91
    // Used to force the NSApplication's focused accessibility element to be the
    // content::BrowserAccessibilityCocoa accessibility tree when the NSView for
 diff --git a/content/browser/renderer_host/render_widget_host_view_mac.mm b/content/browser/renderer_host/render_widget_host_view_mac.mm
-index 8fc94f84498fe5f6cde55f9b9cdf93c9592124d6..6dadda85eaa3c885540190fc0744c5063961d06a 100644
+index d7e190889ff678599410eef4c172f0a25e9837d0..3fb6ed640ee9d857f19b4d60b12047133e68f920 100644
 --- a/content/browser/renderer_host/render_widget_host_view_mac.mm
 +++ b/content/browser/renderer_host/render_widget_host_view_mac.mm
-@@ -285,8 +285,10 @@
+@@ -278,8 +278,10 @@
  void RenderWidgetHostViewMac::MigrateNSViewBridge(
      remote_cocoa::mojom::Application* remote_cocoa_application,
      uint64_t parent_ns_view_id) {
@@ -161,7 +161,7 @@ index 8fc94f84498fe5f6cde55f9b9cdf93c9592124d6..6dadda85eaa3c885540190fc0744c506
  
    // Reset `ns_view_` before resetting `remote_ns_view_` to avoid dangling
    // pointers. `ns_view_` gets reinitialized later in this method.
-@@ -1652,8 +1654,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1636,8 +1638,10 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  gfx::NativeViewAccessible
  RenderWidgetHostViewMac::AccessibilityGetNativeViewAccessibleForWindow() {
@@ -172,7 +172,7 @@ index 8fc94f84498fe5f6cde55f9b9cdf93c9592124d6..6dadda85eaa3c885540190fc0744c506
    return [GetInProcessNSView() window];
  }
  
-@@ -1698,9 +1702,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -1682,9 +1686,11 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  }
  
  void RenderWidgetHostViewMac::SetAccessibilityWindow(NSWindow* window) {
@@ -184,7 +184,7 @@ index 8fc94f84498fe5f6cde55f9b9cdf93c9592124d6..6dadda85eaa3c885540190fc0744c506
  }
  
  bool RenderWidgetHostViewMac::SyncIsWidgetForMainFrame(
-@@ -2202,12 +2208,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
+@@ -2186,12 +2192,14 @@ void CombineTextNodesAndMakeCallback(SpeechCallback callback,
  
  void RenderWidgetHostViewMac::SetRemoteAccessibilityWindowToken(
      const std::vector<uint8_t>& window_token) {

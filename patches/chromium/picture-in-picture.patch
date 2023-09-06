@@ -8,6 +8,37 @@ chrome's generated resources for our own. This updates the #include so that we
 don't get errors for Chrome's generated resources, which are non-existent
 because we don't generate them in our build.
 
+diff --git a/chrome/browser/ui/views/overlay/close_image_button.cc b/chrome/browser/ui/views/overlay/close_image_button.cc
+index af0616d9ca466d146f3c41887857dd4720ebafbf..c088db193f5bd4b88aa42a3803571d2b87251b76 100644
+--- a/chrome/browser/ui/views/overlay/close_image_button.cc
++++ b/chrome/browser/ui/views/overlay/close_image_button.cc
+@@ -4,11 +4,14 @@
+ 
+ #include "chrome/browser/ui/views/overlay/close_image_button.h"
+ 
++#include "build/branding_buildflags.h"
+ #include "build/chromeos_buildflags.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
+ #include "chrome/grit/generated_resources.h"
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "components/omnibox/browser/omnibox_field_trial.h"
+ #include "components/vector_icons/vector_icons.h"
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+ #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/metadata/metadata_impl_macros.h"
+ #include "ui/base/models/image_model.h"
+@@ -28,9 +31,11 @@ CloseImageButton::CloseImageButton(PressedCallback callback)
+   SetSize(gfx::Size(kCloseButtonSize, kCloseButtonSize));
+ 
+   auto* icon = &views::kIcCloseIcon;
++#if BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   if (OmniboxFieldTrial::IsChromeRefreshIconsEnabled()) {
+     icon = &vector_icons::kCloseChromeRefreshIcon;
+   }
++#endif  // BUILDFLAG(GOOGLE_CHROME_BRANDING)
+   SetImageModel(views::Button::STATE_NORMAL,
+                 ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
+                                                kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 index 9e5e40c912c00b70d921d422ce141cd9d4a5bcd3..25b4b9cd6d4d9ff8c48fac7d04385963463d00f5 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
