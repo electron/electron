@@ -12,6 +12,7 @@
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
 #include "base/threading/thread_restrictions.h"
+#include "chrome/browser/media/webrtc/desktop_capturer_wrapper.h"
 #include "chrome/browser/media/webrtc/desktop_media_list.h"
 #include "chrome/browser/media/webrtc/window_icon_util.h"
 #include "content/public/browser/desktop_capture.h"
@@ -237,9 +238,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
   if (capture_window && capture_screen) {
     // Some capturers like PipeWire suppport a single capturer for both screens
     // and windows. Use it if possible, treating both as window capture
-    if (auto capturer = webrtc::DesktopCapturer::CreateGenericCapturer(
+    std::unique_ptr<webrtc::DesktopCapturer> desktop_capturer =
+        webrtc::DesktopCapturer::CreateGenericCapturer(
             content::desktop_capture::CreateDesktopCaptureOptions());
-        capturer && capturer->GetDelegatedSourceListController()) {
+    auto capturer = desktop_capturer ? std::make_unique<DesktopCapturerWrapper>(
+                                           std::move(desktop_capturer))
+                                     : nullptr;
+    if (capturer && capturer->GetDelegatedSourceListController()) {
       capture_screen_ = false;
       capture_window_ = capture_window;
       window_capturer_ = std::make_unique<NativeDesktopMediaList>(
@@ -269,8 +274,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
     // Initialize the source list.
     // Apply the new thumbnail size and restart capture.
     if (capture_window) {
-      if (auto capturer = content::desktop_capture::CreateWindowCapturer();
-          capturer) {
+      std::unique_ptr<webrtc::DesktopCapturer> window_capturer =
+          content::desktop_capture::CreateWindowCapturer();
+      auto capturer = window_capturer
+                          ? std::make_unique<DesktopCapturerWrapper>(
+                                std::move(window_capturer))
+                          : nullptr;
+      if (capturer) {
         window_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kWindow, std::move(capturer));
         window_capturer_->SetThumbnailSize(thumbnail_size);
@@ -294,8 +304,13 @@ void DesktopCapturer::StartHandling(bool capture_window,
     }
 
     if (capture_screen) {
-      if (auto capturer = content::desktop_capture::CreateScreenCapturer();
-          capturer) {
+      std::unique_ptr<webrtc::DesktopCapturer> screen_capturer =
+          content::desktop_capture::CreateScreenCapturer();
+      auto capturer = screen_capturer
+                          ? std::make_unique<DesktopCapturerWrapper>(
+                                std::move(screen_capturer))
+                          : nullptr;
+      if (capturer) {
         screen_capturer_ = std::make_unique<NativeDesktopMediaList>(
             DesktopMediaList::Type::kScreen, std::move(capturer));
         screen_capturer_->SetThumbnailSize(thumbnail_size);
