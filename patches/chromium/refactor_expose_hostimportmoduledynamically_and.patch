@@ -7,7 +7,7 @@ Subject: refactor: expose HostImportModuleDynamically and
 This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 3da7200c92ccaf8330d46280e26124c1ad558a76..5ceecd071ca2efd2a7db214b65c4a997ef31d0b0 100644
+index 20d188f57d5425c5f704b3b03cd27034efb25ea7..ff8de70fe7638f1f4fb2f4839ccf54e22339ba8b 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 @@ -578,7 +578,9 @@ bool JavaScriptCompileHintsMagicEnabledCallback(
@@ -21,7 +21,7 @@ index 3da7200c92ccaf8330d46280e26124c1ad558a76..5ceecd071ca2efd2a7db214b65c4a997
      v8::Local<v8::Context> context,
      v8::Local<v8::Data> v8_host_defined_options,
      v8::Local<v8::Value> v8_referrer_resource_url,
-@@ -644,7 +646,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+@@ -653,7 +655,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
  }
  
  // https://html.spec.whatwg.org/C/#hostgetimportmetaproperties
@@ -30,7 +30,7 @@ index 3da7200c92ccaf8330d46280e26124c1ad558a76..5ceecd071ca2efd2a7db214b65c4a997
                                   v8::Local<v8::Module> module,
                                   v8::Local<v8::Object> meta) {
    ScriptState* script_state = ScriptState::From(context);
-@@ -671,6 +673,8 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
+@@ -680,6 +682,8 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
    meta->CreateDataProperty(context, resolve_key, resolve_value).ToChecked();
  }
  
@@ -39,7 +39,7 @@ index 3da7200c92ccaf8330d46280e26124c1ad558a76..5ceecd071ca2efd2a7db214b65c4a997
  void InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -690,9 +694,9 @@ void InitializeV8Common(v8::Isolate* isolate) {
+@@ -699,9 +703,9 @@ void InitializeV8Common(v8::Isolate* isolate) {
        SharedArrayBufferConstructorEnabledCallback);
    isolate->SetJavaScriptCompileHintsMagicEnabledCallback(
        JavaScriptCompileHintsMagicEnabledCallback);
