@@ -111,8 +111,6 @@ electron_version = exec_script("script/print-version.py",
                                [],
                                "trim string",
                                [
-                                 ".git/packed-refs",
-                                 ".git/HEAD",
                                  "script/lib/get-version.js",
                                ])
 
@@ -505,7 +503,7 @@ source_set("electron_lib") {
     defines += [ "GDK_DISABLE_DEPRECATION_WARNINGS" ]
   }
 
-  if (!is_mas_build) {
+  if (!is_mas_build && !is_bsd) {
     deps += [
       "//components/crash/core/app",
       "//components/crash/core/browser",
@@ -595,6 +593,12 @@ source_set("electron_lib") {
       # ReactiveObjC which is used by Squirrel requires using __weak.
       cflags_objcc = [ "-fobjc-weak" ]
     }
+  }
+  if (is_bsd) {
+    sources -= [
+      "shell/common/crash_keys.cc",
+      "shell/common/crash_keys.h",
+    ]
   }
   if (is_linux) {
     libs = [ "xshmfence" ]
@@ -1237,7 +1241,7 @@ if (is_mac) {
       ":electron_lib",
       ":electron_win32_resources",
       ":packed_resources",
-      "//components/crash/core/app",
+      # "//components/crash/core/app",
       "//content:sandbox_helper_win",
       "//electron/buildflags",
       "//ui/strings",
@@ -1263,7 +1267,7 @@ if (is_mac) {
       public_deps = [ "//tools/v8_context_snapshot:v8_context_snapshot" ]
     }
 
-    if (is_linux) {
+    if (is_linux && !is_bsd) {
       data_deps += [ "//components/crash/core/app:chrome_crashpad_handler" ]
     }
 
@@ -1330,7 +1334,7 @@ if (is_mac) {
         configs += [ "//build/config/gcc:rpath_for_built_shared_libraries" ]
       }
 
-      if (is_linux) {
+      if (is_linux && !is_bsd) {
         deps += [ "//sandbox/linux:chrome_sandbox" ]
       }
     }
@@ -1457,7 +1461,7 @@ dist_zip("electron_dist_zip") {
     ":electron_version_file",
     ":licenses",
   ]
-  if (is_linux) {
+  if (is_linux && !is_bsd) {
     data_deps += [ "//sandbox/linux:chrome_sandbox" ]
   }
   deps = data_deps

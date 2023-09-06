@@ -26,7 +26,7 @@ void ElectronCommandLine::Init(int argc, base::CommandLine::CharType** argv) {
   argv_.assign(argv, argv + argc);
 }
 
-#if BUILDFLAG(IS_LINUX)
+#if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_BSD)
 // static
 void ElectronCommandLine::InitializeFromCommandLine() {
   argv_ = base::CommandLine::ForCurrentProcess()->argv();

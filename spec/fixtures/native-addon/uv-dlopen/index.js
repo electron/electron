@@ -2,7 +2,7 @@ const testLoadLibrary = require('./build/Release/test_module');
 
 const lib = (() => {
   switch (process.platform) {
-    case 'linux':
+    case 'linux': case 'freebsd':
       return `${__dirname}/build/Release/foo.so`;
     case 'darwin':
       return `${__dirname}/build/Release/foo.dylib`;
