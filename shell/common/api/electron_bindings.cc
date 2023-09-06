@@ -87,7 +87,6 @@ void ElectronBindings::BindTo(v8::Isolate* isolate,
 
   gin_helper::Dictionary versions;
   if (dict.Get("versions", &versions)) {
-    versions.SetReadOnly(ELECTRON_PROJECT_NAME, ELECTRON_VERSION_STRING);
     versions.SetReadOnly("chrome", CHROME_VERSION_STRING);
   }
 }

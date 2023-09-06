@@ -335,12 +335,12 @@ index 87d6ab3b9970e48db53cf7061d7208679c8b1dfc..4d79fbb4a30a7e57a7456413685706d9
  }  // namespace
  
 diff --git a/src/node_metadata.cc b/src/node_metadata.cc
-index 6fe09f843e26b7f29faadf5035d368ed8b7eba38..326a9ee8a6d24d0c78537bfe5d9da394a439da90 100644
+index c62132b6e1a37367611ba64fe90c0c94ffc1baa9..80c1b1684045d4afed014c9b64f164ce98a2cf67 100644
 --- a/src/node_metadata.cc
 +++ b/src/node_metadata.cc
-@@ -14,7 +14,7 @@
- #include "v8.h"
+@@ -15,7 +15,7 @@
  #include "zlib.h"
+ #include "electron/electron_version.h"
  
 -#if HAVE_OPENSSL
 +#if HAVE_OPENSSL && !defined(OPENSSL_IS_BORINGSSL)
@@ -348,7 +348,7 @@ index 6fe09f843e26b7f29faadf5035d368ed8b7eba38..326a9ee8a6d24d0c78537bfe5d9da394
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_metadata.h b/src/node_metadata.h
-index 1831bfd0baaac70277fc274a72235bf6a04697cb..1c0a3fcdeb44dc947bb8c38459533779575379da 100644
+index 3949e701543989f0e63a8ed59ae1adf41ffb04e2..0b4c3ce4484dca49027ad4ace311da39fc7dc922 100644
 --- a/src/node_metadata.h
 +++ b/src/node_metadata.h
 @@ -6,7 +6,7 @@

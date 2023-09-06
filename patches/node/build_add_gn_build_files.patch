@@ -2104,6 +2104,38 @@ index 0000000000000000000000000000000000000000..4ab828dcbf322a9e28674e48c4a6868b
 +  script = "../../tools/compress_json.py"
 +  args = rebase_path(inputs + outputs, root_build_dir)
 +}
+diff --git a/src/node_metadata.cc b/src/node_metadata.cc
+index 6fe09f843e26b7f29faadf5035d368ed8b7eba38..c62132b6e1a37367611ba64fe90c0c94ffc1baa9 100644
+--- a/src/node_metadata.cc
++++ b/src/node_metadata.cc
+@@ -13,6 +13,7 @@
+ #include "uvwasi.h"
+ #include "v8.h"
+ #include "zlib.h"
++#include "electron/electron_version.h"
+ 
+ #if HAVE_OPENSSL
+ #include <openssl/opensslv.h>
+@@ -75,6 +76,7 @@ void Metadata::Versions::InitializeIntlVersions() {
+ Metadata::Versions::Versions() {
+   node = NODE_VERSION_STRING;
+   v8 = v8::V8::GetVersion();
++  electron = ELECTRON_VERSION_STRING;
+   uv = uv_version_string();
+   zlib = ZLIB_VERSION;
+   ares = ARES_VERSION_STR;
+diff --git a/src/node_metadata.h b/src/node_metadata.h
+index 1831bfd0baaac70277fc274a72235bf6a04697cb..3949e701543989f0e63a8ed59ae1adf41ffb04e2 100644
+--- a/src/node_metadata.h
++++ b/src/node_metadata.h
+@@ -36,6 +36,7 @@ namespace node {
+ #define NODE_VERSIONS_KEYS_BASE(V)                                             \
+   V(node)                                                                      \
+   V(v8)                                                                        \
++  V(electron)                                                                  \
+   V(uv)                                                                        \
+   V(zlib)                                                                      \
+   V(brotli)                                                                    \
 diff --git a/src/node_version.h b/src/node_version.h
 index 1e898ffcc9104bc50079a9850dc89767199c646e..0f5c5f1cc0845b5d005697d8ab1ab6167c541ced 100644
 --- a/src/node_version.h
