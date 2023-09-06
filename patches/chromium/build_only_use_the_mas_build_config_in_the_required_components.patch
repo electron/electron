@@ -74,7 +74,7 @@ index 729753a72edd761ec831f79828742a26f9dd2417..45858456c9c8c82870c41b0edd1359d1
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index e0d55a859061f029e5298599bf2d9345674ecb34..74f977ca68b566d4c2859d71fabbe112555d1d91 100644
+index 718ad3e088f6730bb00f1e3674effae6c429b9b6..77af941f2dd2d3074f5596cee24be47dc8175434 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -86,10 +86,10 @@ index e0d55a859061f029e5298599bf2d9345674ecb34..74f977ca68b566d4c2859d71fabbe112
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index dce27cfa39b52e39a95cee658584ed80ab1953ef..366edd2e86edcdbb30ae4c0fa952b5d9aab38f8a 100644
+index 9c9f6d58a8e5c1ed14eb60c722667d1a24d2c6fa..34979dbbd84da86db079b423967ab8b775b47c52 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
-@@ -174,6 +174,7 @@ source_set("common") {
+@@ -176,6 +176,7 @@ source_set("common") {
      "//content:content_implementation",
      "//build/config:precompiled_headers",
    ]
@@ -110,7 +110,7 @@ index b16be8f9992b23ce93d174531f2debd7f18bb436..119038743dc222907cb74c2c3ea34d23
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 8fbd09e0305b22114c2cc2534a43622cf660bb23..39951971e29c374aa705eab8c921f73e56d428c8 100644
+index 581571b6bb1a655319b247d7cc85bb2a4dd7db1c..09779610326da207062a59ba572b2d7c13efd26f 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -480,6 +480,7 @@ static_library("test_support") {
