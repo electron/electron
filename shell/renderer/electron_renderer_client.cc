@@ -27,10 +27,10 @@
 namespace electron {
 
 ElectronRendererClient::ElectronRendererClient()
-    : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+    : node_bindings_{NodeBindings::Create(
+          NodeBindings::BrowserEnvironment::kRenderer)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
 
@@ -121,7 +121,8 @@ void ElectronRendererClient::DidCreateScriptContext(
   BindProcess(env->isolate(), &process_dict, render_frame);
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env.get());
+  node_bindings_->LoadEnvironment(
+      env.get());  // FIXME(ckerr) node_bindings_ created this env, can remember
 
   if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
