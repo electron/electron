@@ -4,8 +4,10 @@
 
 #include "shell/common/application_info.h"
 
+#include "base/i18n/rtl.h"
 #include "base/no_destructor.h"
 #include "base/strings/stringprintf.h"
+#include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_version.h"
 #include "content/public/common/user_agent.h"
 #include "electron/electron_version.h"
@@ -45,6 +47,13 @@ std::string GetApplicationUserAgent() {
         name.c_str(), browser->GetVersion().c_str(), CHROME_VERSION_STRING);
   }
   return content::BuildUserAgentFromProduct(user_agent);
+}
+
+bool IsAppRTL() {
+  const std::string& locale = g_browser_process->GetApplicationLocale();
+  base::i18n::TextDirection text_direction =
+      base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
+  return text_direction == base::i18n::RIGHT_TO_LEFT;
 }
 
 }  // namespace electron
