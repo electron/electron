@@ -37,10 +37,18 @@ class NodeService : public node::mojom::NodeService {
 
  private:
   bool node_env_stopped_ = false;
+
+  const std::unique_ptr<NodeBindings> node_bindings_;
+
+  // depends-on: node_bindings_'s uv_loop
+  const std::unique_ptr<ElectronBindings> electron_bindings_;
+
+  // depends-on: node_bindings_'s uv_loop
   std::unique_ptr<JavascriptEnvironment> js_env_;
-  std::unique_ptr<NodeBindings> node_bindings_;
-  std::unique_ptr<ElectronBindings> electron_bindings_;
+
+  // depends-on: js_env_'s isolate
   std::shared_ptr<node::Environment> node_env_;
+
   mojo::Receiver<node::mojom::NodeService> receiver_{this};
 };
 
