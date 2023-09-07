@@ -126,7 +126,7 @@ class NodeBindings {
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
   node::Environment* uv_env() const { return uv_env_; }
 
-  uv_loop_t* uv_loop() const { return uv_loop_; }
+  [[nodiscard]] constexpr uv_loop_t* uv_loop() { return uv_loop_; }
 
   // disable copy
   NodeBindings(const NodeBindings&) = delete;
@@ -150,11 +150,15 @@ class NodeBindings {
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
 
-  // Current thread's MessageLoop.
-  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
+  // Loop used when constructed in WORKER mode
+  uv_loop_t worker_loop_;
 
   // Current thread's libuv loop.
-  raw_ptr<uv_loop_t> uv_loop_;
+  // depends-on: worker_loop_
+  const raw_ptr<uv_loop_t> uv_loop_;
+
+  // Current thread's MessageLoop.
+  scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
  private:
   [[nodiscard]] constexpr bool in_worker_loop() const {
@@ -175,9 +179,6 @@ class NodeBindings {
 
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;
-
-  // Loop used when constructed in WORKER mode
-  uv_loop_t worker_loop_;
 
   // Dummy handle to make uv's loop not quit.
   UvHandle<uv_async_t> dummy_uv_handle_;

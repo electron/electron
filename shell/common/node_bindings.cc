@@ -336,13 +336,11 @@ base::FilePath GetResourcesPath() {
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
-    : browser_env_{browser_env} {
-  if (browser_env == BrowserEnvironment::kWorker) {
+    : browser_env_{browser_env},
+      uv_loop_{browser_env == BrowserEnvironment::kWorker ? &worker_loop_
+                                                          : uv_default_loop()} {
+  if (browser_env == BrowserEnvironment::kWorker)
     uv_loop_init(&worker_loop_);
-    uv_loop_ = &worker_loop_;
-  } else {
-    uv_loop_ = uv_default_loop();
-  }
 
   // Interrupt embed polling when a handle is started.
   uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
