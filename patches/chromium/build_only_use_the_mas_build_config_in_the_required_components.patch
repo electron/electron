@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 82cb596dcbb369cf67addf856dfe8c0789449e78..149d429b8f80de9a16ef1459693b940f86710dc2 100644
+index 9965c13de21543f1fe60490530d5c0da49b104fa..5b9834d91959a58156972adf886f659989b19f8a 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1038,6 +1038,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 729753a72edd761ec831f79828742a26f9dd2417..45858456c9c8c82870c41b0edd1359d1
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 718ad3e088f6730bb00f1e3674effae6c429b9b6..77af941f2dd2d3074f5596cee24be47dc8175434 100644
+index 97b5611e8b5ea925add32c3ed4f58a0c3859f66a..cab4be2bc3c1bc187365617d46f9cb53ddf55f77 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -110,10 +110,10 @@ index b16be8f9992b23ce93d174531f2debd7f18bb436..119038743dc222907cb74c2c3ea34d23
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 581571b6bb1a655319b247d7cc85bb2a4dd7db1c..09779610326da207062a59ba572b2d7c13efd26f 100644
+index 515b80cd2910fb25285e53193cb761c7cdc7e96c..71b030b6fb59df641bf07075b728c1b6613694ba 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -480,6 +480,7 @@ static_library("test_support") {
+@@ -481,6 +481,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
@@ -276,10 +276,10 @@ index 7e17546f658ce0e6908f7dea499eac31e5295895..85c5fe7e25a84de5342d3d9b8cd20d19
  
    if (is_win) {
 diff --git a/ui/gfx/BUILD.gn b/ui/gfx/BUILD.gn
-index 98869537561ba6eaaa838601c9e0d1e71a016197..2141e6d3376042df7992f89119735c1b9b3cb236 100644
+index 7f04b27b3d9f1d5468edde848f8ec820ca0ca831..3348d119c28c559bec907aa8917669996cf50a93 100644
 --- a/ui/gfx/BUILD.gn
 +++ b/ui/gfx/BUILD.gn
-@@ -192,6 +192,7 @@ component("gfx") {
+@@ -203,6 +203,7 @@ component("gfx") {
        "scoped_ns_graphics_context_save_gstate_mac.h",
        "scoped_ns_graphics_context_save_gstate_mac.mm",
      ]
