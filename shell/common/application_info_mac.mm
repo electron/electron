@@ -6,9 +6,9 @@
 
 #include <string>
 
-#import "base/mac/foundation_util.h"
-#import "base/strings/sys_string_conversions.h"
-#import "shell/common/mac/main_application_bundle.h"
+#include "base/apple/foundation_util.h"
+#include "base/strings/sys_string_conversions.h"
+#include "shell/common/mac/main_application_bundle.h"
 
 namespace electron {
 

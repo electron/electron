@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "chrome/common/extensions/api/scripting.h"
+#include "extensions/browser/api/scripting/scripting_utils.h"
 #include "extensions/browser/extension_function.h"
 #include "extensions/browser/script_executor.h"
 #include "extensions/common/mojom/code_injection.mojom.h"
@@ -108,9 +109,6 @@ class ScriptingRemoveCSSFunction : public ExtensionFunction {
   void OnCSSRemoved(std::vector<ScriptExecutor::FrameResult> results);
 };
 
-using ValidateContentScriptsResult =
-    std::pair<std::unique_ptr<UserScriptList>, absl::optional<std::string>>;
-
 class ScriptingRegisterContentScriptsFunction : public ExtensionFunction {
  public:
   DECLARE_EXTENSION_FUNCTION("scripting.registerContentScripts",
@@ -131,7 +129,7 @@ class ScriptingRegisterContentScriptsFunction : public ExtensionFunction {
   // Called when script files have been checked.
   void OnContentScriptFilesValidated(
       std::set<std::string> persistent_script_ids,
-      ValidateContentScriptsResult result);
+      scripting::ValidateScriptsResult result);
 
   // Called when content scripts have been registered.
   void OnContentScriptsRegistered(const absl::optional<std::string>& error);
@@ -196,7 +194,7 @@ class ScriptingUpdateContentScriptsFunction : public ExtensionFunction {
   // Called when script files have been checked.
   void OnContentScriptFilesValidated(
       std::set<std::string> persistent_script_ids,
-      ValidateContentScriptsResult result);
+      scripting::ValidateScriptsResult result);
 
   // Called when content scripts have been updated.
   void OnContentScriptsUpdated(const absl::optional<std::string>& error);

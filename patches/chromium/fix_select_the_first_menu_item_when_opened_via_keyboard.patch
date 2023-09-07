@@ -6,10 +6,10 @@ Subject: fix: select the first menu item when opened via keyboard
 This fixes an accessibility issue where the root view is 'focused' to the screen reader instead of the first menu item as with all other native menus. This patch will be upstreamed.
 
 diff --git a/ui/views/controls/menu/menu_controller.cc b/ui/views/controls/menu/menu_controller.cc
-index 4f3ec48c9bc07473a4085dddce6c7b9de1afdefe..c4b7beb3d551130caf87280233161afa23f94c95 100644
+index b02f25526d9cb6983a68a35df8c0700624eb7eb5..04f3c2b9ae8d509a90eb83d074d7a887c4faef2b 100644
 --- a/ui/views/controls/menu/menu_controller.cc
 +++ b/ui/views/controls/menu/menu_controller.cc
-@@ -564,6 +564,7 @@ void MenuController::Run(Widget* parent,
+@@ -565,6 +565,7 @@ void MenuController::Run(Widget* parent,
                           MenuAnchorPosition position,
                           bool context_menu,
                           bool is_nested_drag,
@@ -17,7 +17,7 @@ index 4f3ec48c9bc07473a4085dddce6c7b9de1afdefe..c4b7beb3d551130caf87280233161afa
                           gfx::NativeView native_view_for_gestures) {
    exit_type_ = ExitType::kNone;
    possible_drag_ = false;
-@@ -628,6 +629,14 @@ void MenuController::Run(Widget* parent,
+@@ -629,6 +630,14 @@ void MenuController::Run(Widget* parent,
    // Set the selection, which opens the initial menu.
    SetSelection(root, SELECTION_OPEN_SUBMENU | SELECTION_UPDATE_IMMEDIATELY);
  
@@ -32,7 +32,7 @@ index 4f3ec48c9bc07473a4085dddce6c7b9de1afdefe..c4b7beb3d551130caf87280233161afa
    if (button_controller) {
      pressed_lock_ = button_controller->TakeLock(
          false, ui::LocatedEvent::FromIfValid(event));
-@@ -2256,19 +2265,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
+@@ -2253,19 +2262,15 @@ void MenuController::OpenMenuImpl(MenuItemView* item, bool show) {
      }
      item->GetSubmenu()->ShowAt(params);
  
@@ -58,7 +58,7 @@ index 4f3ec48c9bc07473a4085dddce6c7b9de1afdefe..c4b7beb3d551130caf87280233161afa
  
      item->GetSubmenu()->GetWidget()->SetNativeWindowProperty(
 diff --git a/ui/views/controls/menu/menu_controller.h b/ui/views/controls/menu/menu_controller.h
-index 4c3cda2db04002c65d1a0055214f2775f5678134..3f11ce3d1f9d843b24aec3a028e5ea64ca402024 100644
+index 97c1f62da483bc629a795534849729c273768f27..3278dc846135e20816ce1c76137e8806249f771e 100644
 --- a/ui/views/controls/menu/menu_controller.h
 +++ b/ui/views/controls/menu/menu_controller.h
 @@ -138,6 +138,7 @@ class VIEWS_EXPORT MenuController
@@ -157,7 +157,7 @@ index 2056016df30982e24d4d99271f59e0edb261a16a..2876d3ccedf0e9f041d3f3310cd596de
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index 9d148ed4bd5f13c4a7e266e9c2992a7d33dcc494..3d2c8dbe1a28e35640c6599810b82d2a5fb2fa25 100644
+index f137d6f86aba7227440b06160d072fcc0578a736..45d1eaf4cd73c00e9ddd79499b351517a12958cb 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 @@ -189,6 +189,7 @@

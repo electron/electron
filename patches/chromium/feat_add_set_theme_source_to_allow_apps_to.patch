@@ -26,10 +26,10 @@ index f6556e141a76b0766f672bfa5819256e635c60af..06c7ac178cefc149732294ed790f2b7c
  }
  
 diff --git a/ui/native_theme/native_theme.h b/ui/native_theme/native_theme.h
-index c0a4e3a9f6cb29eead5b1a95da696c92277b3722..97d4db79bcb4a874d0f40f4f0ef0a466a3cfe3b1 100644
+index 6f51a8ffec973d6c2acacabb951c7cc4e36b639c..889e655fccc115faae932236cc28c6386cf19c1e 100644
 --- a/ui/native_theme/native_theme.h
 +++ b/ui/native_theme/native_theme.h
-@@ -421,6 +421,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -433,6 +433,23 @@ class NATIVE_THEME_EXPORT NativeTheme {
        scoped_refptr<ColorProviderKey::ThemeInitializerSupplier> custom_theme,
        bool use_custom_frame = true) const;
  
@@ -53,7 +53,7 @@ index c0a4e3a9f6cb29eead5b1a95da696c92277b3722..97d4db79bcb4a874d0f40f4f0ef0a466
    // Returns a shared instance of the native theme that should be used for web
    // rendering. Do not use it in a normal application context (i.e. browser).
    // The returned object should not be deleted by the caller. This function is
-@@ -631,6 +648,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
+@@ -643,6 +660,7 @@ class NATIVE_THEME_EXPORT NativeTheme {
    bool inverted_colors_ = false;
    PreferredColorScheme preferred_color_scheme_ = PreferredColorScheme::kLight;
    PreferredContrast preferred_contrast_ = PreferredContrast::kNoPreference;
