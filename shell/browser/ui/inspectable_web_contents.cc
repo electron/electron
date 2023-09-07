@@ -596,14 +596,10 @@ void InspectableWebContents::LoadCompleted() {
       // position overlaps with the position of window controls to avoid
       // broken layout.
       if (win && win->IsWindowControlsOverlayEnabled()) {
-        if (IsAppRTL()) {
-          if (dock_state_ == "left") {
-            dock_state_ = "undocked";
-          }
-        } else {
-          if (dock_state_ == "right") {
-            dock_state_ = "undocked";
-          }
+        if (IsAppRTL() && dock_state_ == "left") {
+          dock_state_ = "undocked";
+        } else if (dock_state_ == "right") {
+          dock_state_ = "undocked";
         }
       }
     }
