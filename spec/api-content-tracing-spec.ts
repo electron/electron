@@ -25,8 +25,6 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
   });
 
   describe('startRecording', function () {
-    this.timeout(5e3);
-
     const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath);
       const fileSizeInBytes = stats.size;
@@ -84,8 +82,6 @@ ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== '
   });
 
   describe('stopRecording', function () {
-    this.timeout(5e3);
-
     it('does not crash on empty string', async () => {
       const options = {
         categoryFilter: '*',
