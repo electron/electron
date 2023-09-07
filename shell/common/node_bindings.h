@@ -132,9 +132,7 @@ class NodeBindings {
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
   node::Environment* uv_env() const { return uv_env_; }
 
-  uv_loop_t* uv_loop() const { return uv_loop_; }
-
-  bool in_worker_loop() const { return uv_loop_ == &worker_loop_; }
+  [[nodiscard]] constexpr uv_loop_t* uv_loop() { return uv_loop_; }
 
   // disable copy
   NodeBindings(const NodeBindings&) = delete;
@@ -150,25 +148,36 @@ class NodeBindings {
   // Called to poll events in new thread.
   virtual void PollEvents() = 0;
 
-  // Run the libuv loop for once.
-  void UvRunOnce();
-
   // Make the main thread run libuv loop.
   void WakeupMainThread();
 
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
 
+ private:
+  static uv_loop_t* InitEventLoop(BrowserEnvironment browser_env,
+                                  uv_loop_t* worker_loop);
+
+  // Run the libuv loop for once.
+  void UvRunOnce();
+
+  [[nodiscard]] constexpr bool in_worker_loop() const {
+    return browser_env_ == BrowserEnvironment::kWorker;
+  }
+
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
+
+  // Loop used when constructed in WORKER mode
+  uv_loop_t worker_loop_;
+
+  // Current thread's libuv loop.
+  // depends-on: worker_loop_
+  const raw_ptr<uv_loop_t> uv_loop_;
 
   // Current thread's MessageLoop.
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
-  // Current thread's libuv loop.
-  raw_ptr<uv_loop_t> uv_loop_;
-
- private:
   // Choose a reasonable unique index that's higher than any Blink uses
   // and thus unlikely to collide with an existing index.
   static constexpr int kElectronContextEmbedderDataIndex =
@@ -191,9 +200,6 @@ class NodeBindings {
 
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;
-
-  // Loop used when constructed in WORKER mode
-  uv_loop_t worker_loop_;
 
   // Dummy handle to make uv's loop not quit.
   UvHandle<uv_async_t> dummy_uv_handle_;
