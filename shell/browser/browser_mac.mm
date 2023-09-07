@@ -40,13 +40,6 @@ namespace electron {
 
 namespace {
 
-bool IsAppRTL() {
-  const std::string& locale = g_browser_process->GetApplicationLocale();
-  base::i18n::TextDirection text_direction =
-      base::i18n::GetTextDirectionForLocaleInStartUp(locale.c_str());
-  return text_direction == base::i18n::RIGHT_TO_LEFT;
-}
-
 NSString* GetAppPathForProtocol(const GURL& url) {
   NSURL* ns_url = [NSURL
       URLWithString:base::SysUTF8ToNSString(url.possibly_invalid_spec())];
