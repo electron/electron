@@ -36,6 +36,26 @@ index 98408e14c13140a842f22c650ba5d609ba561659..4c1da8333c936833732309d28b5e64a8
    return origin_with_debug_info;
  }
  
+diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
+index ab7398b1b6d3b7c31b1c2a6a10f6bc30cbcedda9..dae1a821179e2609fbae906bc2419e66f5602e1b 100644
+--- a/content/browser/renderer_host/render_frame_host_impl.cc
++++ b/content/browser/renderer_host/render_frame_host_impl.cc
+@@ -10149,9 +10149,14 @@ void RenderFrameHostImpl::CommitNavigation(
+       ProcessLock::FromSiteInfo(GetSiteInstance()->GetSiteInfo());
+   auto browser_calc_origin_to_commit =
+       navigation_request->GetOriginToCommitWithDebugInfo();
++  url::Origin origin_to_check = browser_calc_origin_to_commit.first.value();
++  if(!common_params->url.IsStandard()) {
++    //Custom URLS fail the CanAccessDataForOrigin check with browser_calc_origin_to_commit.first.value
++    origin_to_check = url::Origin::Create(common_params->url);
++  }
+   if (!process_lock.is_error_page() && !is_mhtml_subframe &&
+       !policy->CanAccessDataForOrigin(
+-          GetProcess()->GetID(), browser_calc_origin_to_commit.first.value())) {
++          GetProcess()->GetID(), origin_to_check)) {
+     SCOPED_CRASH_KEY_STRING64("CommitNavigation", "lock_url",
+                               process_lock.ToString());
+     SCOPED_CRASH_KEY_STRING64(
 diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
 index 10282bf7372a07937d3aa15af6f3f7e767321df6..ae5cfc9bc17c7e8e9d1ab9134c95ff6413fe2017 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.h
