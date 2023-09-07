@@ -138,14 +138,19 @@ class NodeBindings {
   // Called to poll events in new thread.
   virtual void PollEvents() = 0;
 
-  // Run the libuv loop for once.
-  void UvRunOnce();
-
   // Make the main thread run libuv loop.
   void WakeupMainThread();
 
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
+
+ private:
+  // Run the libuv loop for once.
+  void UvRunOnce();
+
+  [[nodiscard]] constexpr bool in_worker_loop() const {
+    return browser_env_ == BrowserEnvironment::kWorker;
+  }
 
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
@@ -159,11 +164,6 @@ class NodeBindings {
 
   // Current thread's MessageLoop.
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
-
- private:
-  [[nodiscard]] constexpr bool in_worker_loop() const {
-    return browser_env_ == BrowserEnvironment::kWorker;
-  }
 
   // Choose a reasonable unique index that's higher than any Blink uses
   // and thus unlikely to collide with an existing index.
