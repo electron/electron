@@ -63,8 +63,8 @@ if (process.platform === 'win32') {
 
   if (fs.existsSync(updateDotExe)) {
     const packageDir = path.dirname(path.resolve(updateDotExe));
-    const packageName = path.basename(packageDir).replace(/\s/g, '');
-    const exeName = path.basename(process.execPath).replace(/\.exe$/i, '').replace(/\s/g, '');
+    const packageName = path.basename(packageDir).replaceAll(/\s/g, '');
+    const exeName = path.basename(process.execPath).replace(/\.exe$/i, '').replaceAll(/\s/g, '');
 
     app.setAppUserModelId(`com.squirrel.${packageName}.${exeName}`);
   }
