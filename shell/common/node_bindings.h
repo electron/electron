@@ -128,8 +128,6 @@ class NodeBindings {
 
   uv_loop_t* uv_loop() const { return uv_loop_; }
 
-  bool in_worker_loop() const { return uv_loop_ == &worker_loop_; }
-
   // disable copy
   NodeBindings(const NodeBindings&) = delete;
   NodeBindings& operator=(const NodeBindings&) = delete;
@@ -159,6 +157,10 @@ class NodeBindings {
   raw_ptr<uv_loop_t> uv_loop_;
 
  private:
+  [[nodiscard]] constexpr bool in_worker_loop() const {
+    return browser_env_ == BrowserEnvironment::kWorker;
+  }
+
   // Choose a reasonable unique index that's higher than any Blink uses
   // and thus unlikely to collide with an existing index.
   static constexpr int kElectronContextEmbedderDataIndex =
