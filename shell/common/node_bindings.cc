@@ -394,19 +394,11 @@ base::FilePath GetResourcesPath() {
   return exec_path.DirName().Append(FILE_PATH_LITERAL("resources"));
 #endif
 }
-
 }  // namespace
 
 NodeBindings::NodeBindings(BrowserEnvironment browser_env)
     : browser_env_{browser_env},
-      uv_loop_{browser_env == BrowserEnvironment::kWorker ? &worker_loop_
-                                                          : uv_default_loop()} {
-  if (browser_env == BrowserEnvironment::kWorker)
-    uv_loop_init(&worker_loop_);
-
-  // Interrupt embed polling when a handle is started.
-  uv_loop_configure(uv_loop_, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
-}
+      uv_loop_{InitEventLoop(browser_env, &worker_loop_)} {}
 
 NodeBindings::~NodeBindings() {
   // Quit the embed thread.
@@ -425,6 +417,24 @@ NodeBindings::~NodeBindings() {
   // Clean up worker loop
   if (in_worker_loop())
     stop_and_close_uv_loop(uv_loop_);
+}
+
+// static
+uv_loop_t* NodeBindings::InitEventLoop(BrowserEnvironment browser_env,
+                                       uv_loop_t* worker_loop) {
+  uv_loop_t* event_loop = nullptr;
+
+  if (browser_env == BrowserEnvironment::kWorker) {
+    uv_loop_init(worker_loop);
+    event_loop = worker_loop;
+  } else {
+    event_loop = uv_default_loop();
+  }
+
+  // Interrupt embed polling when a handle is started.
+  uv_loop_configure(event_loop, UV_LOOP_INTERRUPT_ON_IO_CHANGE);
+
+  return event_loop;
 }
 
 void NodeBindings::RegisterBuiltinBindings() {

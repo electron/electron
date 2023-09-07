@@ -155,6 +155,9 @@ class NodeBindings {
   void WakeupEmbedThread();
 
  private:
+  static uv_loop_t* InitEventLoop(BrowserEnvironment browser_env,
+                                  uv_loop_t* worker_loop);
+
   // Run the libuv loop for once.
   void UvRunOnce();
 
