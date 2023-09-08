@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Yi Gu <yigu@chromium.org>
 Date: Thu, 31 Aug 2023 20:12:41 +0000
-Subject: [FedCM] ReportBadMessage when the provider list is empty
+Subject: ReportBadMessage when the provider list is empty
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
