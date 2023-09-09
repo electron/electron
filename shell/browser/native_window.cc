@@ -133,36 +133,7 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   }
 #endif
 
-  WindowList::AddWindow(this);
-}
-
-NativeWindow::~NativeWindow() {
-  // It's possible that the windows gets destroyed before it's closed, in that
-  // case we need to ensure the Widget delegate gets destroyed and
-  // OnWindowClosed message is still notified.
-  if (widget_->widget_delegate())
-    widget_->OnNativeWidgetDestroyed();
-  NotifyWindowClosed();
-}
-
-void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
-  // Setup window from options.
-  int x = -1, y = -1;
-  bool center;
-  if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
-    SetPosition(gfx::Point(x, y));
-
-#if BUILDFLAG(IS_WIN)
-    // FIXME(felixrieseberg): Dirty, dirty workaround for
-    // https://github.com/electron/electron/issues/10862
-    // Somehow, we need to call `SetBounds` twice to get
-    // usable results. The root cause is still unknown.
-    SetPosition(gfx::Point(x, y));
-#endif
-  } else if (options.Get(options::kCenter, &center) && center) {
-    Center();
-  }
-
+  // Size constraints must be set before the widget is initialized.
   bool use_content_size = false;
   options.Get(options::kUseContentSize, &use_content_size);
 
@@ -197,6 +168,37 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   } else {
     SetSizeConstraints(size_constraints);
   }
+
+  WindowList::AddWindow(this);
+}
+
+NativeWindow::~NativeWindow() {
+  // It's possible that the windows gets destroyed before it's closed, in that
+  // case we need to ensure the Widget delegate gets destroyed and
+  // OnWindowClosed message is still notified.
+  if (widget_->widget_delegate())
+    widget_->OnNativeWidgetDestroyed();
+  NotifyWindowClosed();
+}
+
+void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
+  // Setup window from options.
+  int x = -1, y = -1;
+  bool center;
+  if (options.Get(options::kX, &x) && options.Get(options::kY, &y)) {
+    SetPosition(gfx::Point(x, y));
+
+#if BUILDFLAG(IS_WIN)
+    // FIXME(felixrieseberg): Dirty, dirty workaround for
+    // https://github.com/electron/electron/issues/10862
+    // Somehow, we need to call `SetBounds` twice to get
+    // usable results. The root cause is still unknown.
+    SetPosition(gfx::Point(x, y));
+#endif
+  } else if (options.Get(options::kCenter, &center) && center) {
+    Center();
+  }
+
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
