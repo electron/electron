@@ -84,11 +84,20 @@ const v8Util = process._linkedBinding('electron_common_v8_util');
 let packagePath = null;
 let packageJson = null;
 const searchPaths: string[] = v8Util.getHiddenValue(global, 'appSearchPaths');
+const searchPathsOnlyLoadASAR: boolean = v8Util.getHiddenValue(global, 'appSearchPathsOnlyLoadASAR');
+// Borrow the _getOrCreateArchive asar helper
+const getOrCreateArchive = process._getOrCreateArchive;
+delete process._getOrCreateArchive;
 
 if (process.resourcesPath) {
   for (packagePath of searchPaths) {
     try {
       packagePath = path.join(process.resourcesPath, packagePath);
+      if (searchPathsOnlyLoadASAR) {
+        if (!getOrCreateArchive?.(packagePath)) {
+          continue;
+        }
+      }
       packageJson = Module._load(path.join(packagePath, 'package.json'));
       break;
     } catch {
