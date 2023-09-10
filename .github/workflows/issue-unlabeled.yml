@@ -10,7 +10,7 @@ permissions:
 jobs:
   issue-unlabeled-blocked:
     name: All blocked/* labels removed
-    if: startsWith(github.event.label.name, 'blocked/')
+    if: startsWith(github.event.label.name, 'blocked/') && github.event.issue.state == 'open'
     runs-on: ubuntu-latest
     steps:
       - name: Check for any blocked labels
