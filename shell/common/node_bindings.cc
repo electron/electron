@@ -412,7 +412,6 @@ NodeBindings::~NodeBindings() {
 
   // Clear uv.
   uv_sem_destroy(&embed_sem_);
-  dummy_uv_handle_.reset();
 
   // Clean up worker loop
   if (in_worker_loop())

@@ -10,7 +10,6 @@
 #include <type_traits>
 #include <vector>
 
-#include "base/files/file_path.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -54,18 +53,23 @@ template <typename T,
               std::is_same<T, uv_udp_t>::value>::type* = nullptr>
 class UvHandle {
  public:
-  UvHandle() : t_(new T) {}
-  ~UvHandle() { reset(); }
-  T* get() { return t_; }
-  uv_handle_t* handle() { return reinterpret_cast<uv_handle_t*>(t_); }
+  UvHandle() : UvHandle{new T} {}
 
-  void reset() {
-    auto* h = handle();
-    if (h != nullptr) {
-      DCHECK_EQ(0, uv_is_closing(h));
-      uv_close(h, OnClosed);
-      t_ = nullptr;
-    }
+  explicit UvHandle(T* t) : t_{t} {}
+
+  ~UvHandle() {
+    auto* const handle = reinterpret_cast<uv_handle_t*>(t_);
+    DCHECK_NE(handle, nullptr);
+    DCHECK_EQ(0, uv_is_closing(handle));
+    uv_close(handle, OnClosed);
+  }
+
+  [[nodiscard]] constexpr T* get() noexcept { return t_; }
+
+  [[nodiscard]] constexpr T const* get() const noexcept { return t_; }
+
+  [[nodiscard]] constexpr bool operator<(UvHandle const& that) const noexcept {
+    return t_ < that.t_;
   }
 
  private:
@@ -73,7 +77,7 @@ class UvHandle {
     delete reinterpret_cast<T*>(handle);
   }
 
-  RAW_PTR_EXCLUSION T* t_ = {};
+  RAW_PTR_EXCLUSION T* const t_;
 };
 
 class NodeBindings {
