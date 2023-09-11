@@ -1456,6 +1456,8 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
+  NativeWindow::SetVibrancy(type);
+
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {

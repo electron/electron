@@ -13,6 +13,7 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "include/core/SkColor.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
@@ -259,13 +260,15 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetBackgroundMaterial(material);
   }
 #endif
-  std::string color;
-  if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(ParseCSSColor(color));
-  } else if (!transparent()) {
-    // For normal window, use white as default background.
-    SetBackgroundColor(SK_ColorWHITE);
+
+  SkColor background_color = SK_ColorWHITE;
+  if (std::string color; options.Get(options::kBackgroundColor, &color)) {
+    background_color = ParseCSSColor(color);
+  } else if (IsTranslucent()) {
+    background_color = SK_ColorTRANSPARENT;
   }
+  SetBackgroundColor(background_color);
+
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
@@ -472,9 +475,13 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type) {}
+void NativeWindow::SetVibrancy(const std::string& type) {
+  vibrancy_ = type;
+}
 
-void NativeWindow::SetBackgroundMaterial(const std::string& type) {}
+void NativeWindow::SetBackgroundMaterial(const std::string& type) {
+  background_material_ = type;
+}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
@@ -797,6 +804,30 @@ void NativeWindow::HandlePendingFullscreenTransitions() {
 
 // static
 int32_t NativeWindow::next_id_ = 0;
+
+bool NativeWindow::IsTranslucent() const {
+  // Transparent windows are translucent
+  if (transparent()) {
+    return true;
+  }
+
+#if BUILDFLAG(IS_MAC)
+  // Windows with vibrancy set are translucent
+  if (!vibrancy().empty()) {
+    return true;
+  }
+#endif
+
+#if BUILDFLAG(IS_WIN)
+  // Windows with certain background materials may be translucent
+  const std::string& bg_material = background_material();
+  if (!bg_material.empty() && bg_material != "none") {
+    return true;
+  }
+#endif
+
+  return false;
+}
 
 // static
 void NativeWindowRelay::CreateForWebContents(
