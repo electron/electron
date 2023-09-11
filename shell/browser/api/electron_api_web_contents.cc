@@ -2701,14 +2701,6 @@ void WebContents::OpenDevTools(gin::Arguments* args) {
     state = "detach";
   }
 
-#if BUILDFLAG(IS_WIN)
-  auto* win = static_cast<NativeWindowViews*>(owner_window());
-  // Force a detached state when WCO is enabled to match Chrome
-  // behavior and prevent occlusion of DevTools.
-  if (win && win->IsWindowControlsOverlayEnabled())
-    state = "detach";
-#endif
-
   bool activate = true;
   if (args && args->Length() == 1) {
     gin_helper::Dictionary options;
