@@ -249,7 +249,7 @@ describe('<webview> tag', function () {
       });
       await w.loadURL('about:blank');
       const src = url.format({
-        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        pathname: `${fixtures.replaceAll('\\', '/')}/pages/theme-color.html`,
         protocol: 'file',
         slashes: true
       });

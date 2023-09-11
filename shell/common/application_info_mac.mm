@@ -6,7 +6,7 @@
 
 #include <string>
 
-#include "base/mac/foundation_util.h"
+#include "base/apple/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "shell/common/mac/main_application_bundle.h"
 

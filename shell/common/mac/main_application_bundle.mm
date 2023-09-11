@@ -6,8 +6,8 @@
 #include "shell/common/mac/main_application_bundle.h"
 
 #include "base/apple/bundle_locations.h"
+#include "base/apple/foundation_util.h"
 #include "base/files/file_path.h"
-#include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/string_util.h"
 #include "content/browser/mac_helpers.h"
@@ -56,7 +56,7 @@ base::FilePath MainApplicationBundlePath() {
 }
 
 NSBundle* MainApplicationBundle() {
-  return [NSBundle bundleWithPath:base::mac::FilePathToNSString(
+  return [NSBundle bundleWithPath:base::apple::FilePathToNSString(
                                       MainApplicationBundlePath())];
 }
 

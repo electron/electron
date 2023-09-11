@@ -12,7 +12,7 @@
 #import <QuickLook/QuickLook.h>
 #import <QuickLookThumbnailing/QuickLookThumbnailing.h>
 
-#include "base/mac/foundation_util.h"
+#include "base/apple/foundation_util.h"
 #include "base/strings/sys_string_conversions.h"
 #include "gin/arguments.h"
 #include "shell/common/gin_converters/image_converter.h"
@@ -53,7 +53,7 @@ v8::Local<v8::Promise> NativeImage::CreateThumbnailFromPath(
 
   CGSize cg_size = size.ToCGSize();
 
-  NSURL* nsurl = base::mac::FilePathToNSURL(path);
+  NSURL* nsurl = base::apple::FilePathToNSURL(path);
 
   // We need to explicitly check if the user has passed an invalid path
   // because QLThumbnailGenerationRequest will generate a stock file icon

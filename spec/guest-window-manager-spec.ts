@@ -200,29 +200,21 @@ describe('webContents.setWindowOpenHandler', () => {
   });
 
   // Linux and arm64 platforms (WOA and macOS) do not return any capture sources
-  ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make child window background transparent', (done) => {
+  ifit(process.platform === 'darwin' && process.arch === 'x64')('should not make child window background transparent', async () => {
     browserWindow.webContents.setWindowOpenHandler(() => ({ action: 'allow' }));
-
-    browserWindow.webContents.once('did-create-window', async (childWindow) => {
-      const display = screen.getPrimaryDisplay();
-      childWindow.setBounds(display.bounds);
-      await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
-      await setTimeoutAsync(1000);
-      const screenCapture = await captureScreen();
-      const centerColor = getPixelColor(screenCapture, {
-        x: display.size.width / 2,
-        y: display.size.height / 2
-      });
-
-      try {
-        // color-scheme is set to dark so background should not be white
-        expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
-        done();
-      } catch (err) {
-        done(err);
-      }
-    });
-
+    const didCreateWindow = once(browserWindow.webContents, 'did-create-window');
     browserWindow.webContents.executeJavaScript("window.open('about:blank') && true");
+    const [childWindow] = await didCreateWindow;
+    const display = screen.getPrimaryDisplay();
+    childWindow.setBounds(display.bounds);
+    await childWindow.webContents.executeJavaScript("const meta = document.createElement('meta'); meta.name = 'color-scheme'; meta.content = 'dark'; document.head.appendChild(meta); true;");
+    await setTimeoutAsync(1000);
+    const screenCapture = await captureScreen();
+    const centerColor = getPixelColor(screenCapture, {
+      x: display.size.width / 2,
+      y: display.size.height / 2
+    });
+    // color-scheme is set to dark so background should not be white
+    expect(areColorsSimilar(centerColor, HexColors.WHITE)).to.be.false();
   });
 });

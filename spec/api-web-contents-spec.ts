@@ -1218,8 +1218,7 @@ describe('webContents module', () => {
           res.end();
         });
       });
-      server.listen(0, '127.0.0.1', () => {
-        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
+      listen(server).then(({ url }) => {
         const content = `<iframe src=${url}></iframe>`;
         w.webContents.on('did-frame-finish-load', (e, isMainFrame) => {
           if (!isMainFrame) {
@@ -1591,8 +1590,9 @@ describe('webContents module', () => {
           default:
             done('unsupported endpoint');
         }
-      }).listen(0, '127.0.0.1', () => {
-        serverUrl = 'http://127.0.0.1:' + (server.address() as AddressInfo).port;
+      });
+      listen(server).then(({ url }) => {
+        serverUrl = url;
         done();
       });
     });
@@ -1721,11 +1721,10 @@ describe('webContents module', () => {
         }
         res.end('<a id="a" href="/should_have_referrer" target="_blank">link</a>');
       });
-      server.listen(0, '127.0.0.1', () => {
-        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
+      listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.setWindowOpenHandler(details => {
-            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.url).to.equal(url + '/');
             expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
             return { action: 'allow' };
           });
@@ -1748,11 +1747,10 @@ describe('webContents module', () => {
         }
         res.end('');
       });
-      server.listen(0, '127.0.0.1', () => {
-        const url = 'http://127.0.0.1:' + (server.address() as AddressInfo).port + '/';
+      listen(server).then(({ url }) => {
         w.webContents.once('did-finish-load', () => {
           w.webContents.setWindowOpenHandler(details => {
-            expect(details.referrer.url).to.equal(url);
+            expect(details.referrer.url).to.equal(url + '/');
             expect(details.referrer.policy).to.equal('strict-origin-when-cross-origin');
             return { action: 'allow' };
           });
@@ -1913,7 +1911,7 @@ describe('webContents module', () => {
     it('does not crash when called via BrowserWindow', () => {
       const w = new BrowserWindow({ show: false });
 
-      (w as any).setBackgroundThrottling(true);
+      w.setBackgroundThrottling(true);
     });
 
     it('does not crash when disallowing', () => {
@@ -1948,21 +1946,11 @@ describe('webContents module', () => {
     it('works via BrowserWindow', () => {
       const w = new BrowserWindow({ show: false });
 
-      (w as any).setBackgroundThrottling(false);
-      expect((w as any).getBackgroundThrottling()).to.equal(false);
+      w.setBackgroundThrottling(false);
+      expect(w.getBackgroundThrottling()).to.equal(false);
 
-      (w as any).setBackgroundThrottling(true);
-      expect((w as any).getBackgroundThrottling()).to.equal(true);
-    });
-  });
-
-  ifdescribe(features.isPrintingEnabled())('getPrinters()', () => {
-    afterEach(closeAllWindows);
-    it('can get printer list', async () => {
-      const w = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
-      await w.loadURL('about:blank');
-      const printers = w.webContents.getPrinters();
-      expect(printers).to.be.an('array');
+      w.setBackgroundThrottling(true);
+      expect(w.getBackgroundThrottling()).to.equal(true);
     });
   });
 

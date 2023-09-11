@@ -9,10 +9,10 @@ This patch can be removed when we decide how we want to handle
 enterprise content analysis.
 
 diff --git a/components/enterprise/buildflags/buildflags.gni b/components/enterprise/buildflags/buildflags.gni
-index 7653c1c9e8fb18ce2c471af11468583d2da0cfb0..f63c1c7263b40d4344ef4b8468acb77d9718e19c 100644
+index b26c6ca3480f529b21cd4c7544de786baa995dfd..6509e0131bca73ab080b1e47878acf7fae72d112 100644
 --- a/components/enterprise/buildflags/buildflags.gni
 +++ b/components/enterprise/buildflags/buildflags.gni
-@@ -31,4 +31,4 @@ declare_args() {
+@@ -34,4 +34,4 @@ declare_args() {
  # These two flags are equivalent, but `enable_print_content_analysis` still
  # needs to exist separately as it lives under //printing which cannot depend
  # on //components.

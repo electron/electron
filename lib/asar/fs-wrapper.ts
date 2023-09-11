@@ -5,7 +5,7 @@ import type * as Crypto from 'crypto';
 
 const asar = process._linkedBinding('electron_common_asar');
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 const Promise: PromiseConstructor = global.Promise;
 

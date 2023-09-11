@@ -103,18 +103,6 @@ extensions::LaunchType ElectronManagementAPIDelegate::GetLaunchType(
   return extensions::LAUNCH_TYPE_DEFAULT;
 }
 
-void ElectronManagementAPIDelegate::
-    GetPermissionWarningsByManifestFunctionDelegate(
-        extensions::ManagementGetPermissionWarningsByManifestFunction* function,
-        const std::string& manifest_str) const {
-  data_decoder::DataDecoder::ParseJsonIsolated(
-      manifest_str,
-      base::BindOnce(
-          &extensions::ManagementGetPermissionWarningsByManifestFunction::
-              OnParse,
-          function));
-}
-
 std::unique_ptr<extensions::InstallPromptDelegate>
 ElectronManagementAPIDelegate::SetEnabledFunctionDelegate(
     content::WebContents* web_contents,

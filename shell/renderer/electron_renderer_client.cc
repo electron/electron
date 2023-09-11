@@ -27,10 +27,10 @@
 namespace electron {
 
 ElectronRendererClient::ElectronRendererClient()
-    : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+    : node_bindings_{NodeBindings::Create(
+          NodeBindings::BrowserEnvironment::kRenderer)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
 

@@ -5,7 +5,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import type * as ipcRendererInternalModule from '@electron/internal/renderer/ipc-renderer-internal';
 import type * as ipcRendererUtilsModule from '@electron/internal/renderer/ipc-renderer-internal-utils';
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 // Make sure globals like "process" and "global" are always available in preload
 // scripts even after they are deleted in "loaded" script.
