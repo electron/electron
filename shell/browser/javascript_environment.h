@@ -49,7 +49,7 @@ class JavascriptEnvironment {
   const raw_ptr<v8::Isolate> isolate_;
 
   // depends-on: isolate_
-  v8::Locker locker_;
+  const v8::Locker locker_;
 
   std::unique_ptr<MicrotasksRunner> microtasks_runner_;
 };
