@@ -11,7 +11,7 @@ trying to see whether or not the lines are greyed out. One possibility
 would be to upstream a changed test that doesn't hardcode line numbers.
 
 diff --git a/test/fixtures/errors/force_colors.snapshot b/test/fixtures/errors/force_colors.snapshot
-index 0334a0b4faa3633aa8617b9538873e7f3540513b..0300d397c6a5b82ef2d0feafca5f8bd746b1f5b0 100644
+index 0334a0b4faa3633aa8617b9538873e7f3540513b..07b7e0d23e0096eb3ec2e66f98686863e2e38b55 100644
 --- a/test/fixtures/errors/force_colors.snapshot
 +++ b/test/fixtures/errors/force_colors.snapshot
 @@ -4,11 +4,12 @@ throw new Error('Should include grayed stack trace')
