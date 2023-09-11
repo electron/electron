@@ -25,10 +25,7 @@ class Locker {
   void* operator new(size_t size);
   void operator delete(void*, size_t);
 
-  std::unique_ptr<v8::Locker> locker_;
-
-  static bool g_is_browser_process;
-  static bool g_is_renderer_process;
+  const std::unique_ptr<v8::Locker> locker_;
 };
 
 }  // namespace gin_helper
