@@ -1,0 +1,61 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yi Gu <yigu@chromium.org>
+Date: Thu, 31 Aug 2023 20:12:41 +0000
+Subject: ReportBadMessage when the provider list is empty
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The provider list should not be empty unless the API is called from a
+compromised renderer.
+
+(cherry picked from commit 3b19acb01dcea93b423aa0da56c4a9811a067353)
+
+Change-Id: I3e497fae2343342b3ec6b17bd663f2ec1bf12d54
+Bug: 1476403
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4822925
+Reviewed-by: Nicolás Peña <npm@chromium.org>
+Commit-Queue: Yi Gu <yigu@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1189841}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4833411
+Commit-Queue: Nicolás Peña <npm@chromium.org>
+Auto-Submit: Yi Gu <yigu@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5845@{#1698}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+
+diff --git a/content/browser/webid/federated_auth_request_impl.cc b/content/browser/webid/federated_auth_request_impl.cc
+index cbae35e588c2db4ac83a23d62fa7c5b0aec09324..194e4d937562ce73fb6e1e095dc16d13f74f002b 100644
+--- a/content/browser/webid/federated_auth_request_impl.cc
++++ b/content/browser/webid/federated_auth_request_impl.cc
+@@ -415,6 +415,16 @@ void FederatedAuthRequestImpl::RequestToken(
+     mojo::ReportBadMessage("idp_get_params_ptrs is empty.");
+     return;
+   }
++  // This could only happen with a compromised renderer process. We ensure that
++  // the provider list size is > 0 on the renderer side at the beginning of
++  // parsing |IdentityCredentialRequestOptions|.
++  for (auto& idp_get_params_ptr : idp_get_params_ptrs) {
++    if (idp_get_params_ptr->providers.size() == 0) {
++      mojo::ReportBadMessage("The provider list should not be empty.");
++      return;
++    }
++  }
++
+   // It should not be possible to receive multiple IDPs when the
+   // `kFedCmMultipleIdentityProviders` flag is disabled. But such a message
+   // could be received from a compromised renderer.
+@@ -425,14 +435,6 @@ void FederatedAuthRequestImpl::RequestToken(
+     return;
+   }
+ 
+-  // Check that providers are non-empty.
+-  for (auto& idp_get_params_ptr : idp_get_params_ptrs) {
+-    if (idp_get_params_ptr->providers.size() == 0) {
+-      std::move(callback).Run(RequestTokenStatus::kError, absl::nullopt, "");
+-      return;
+-    }
+-  }
+-
+   if (!fedcm_metrics_) {
+     // TODO(crbug.com/1307709): Handle FedCmMetrics for multiple IDPs.
+     fedcm_metrics_ =
