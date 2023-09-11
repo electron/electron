@@ -128,6 +128,7 @@ auto_filenames = {
     "docs/api/structures/size.md",
     "docs/api/structures/task.md",
     "docs/api/structures/thumbar-button.md",
+    "docs/api/structures/titlebar-overlay-options.md",
     "docs/api/structures/trace-categories-and-options.md",
     "docs/api/structures/trace-config.md",
     "docs/api/structures/transaction.md",

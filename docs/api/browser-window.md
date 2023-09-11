@@ -1644,10 +1644,7 @@ removed in future Electron releases.
 
 #### `win.setTitleBarOverlay(options)` _Windows_
 
-* `options` Object
-  * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
-  * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
-  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+* `options` [TitleBarOverlayOptions](structures/titlebar-overlay-options.md)
 
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.
