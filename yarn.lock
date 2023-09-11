@@ -220,9 +220,9 @@
     vscode-uri "^3.0.7"
 
 "@electron/typescript-definitions@^8.14.5":
-  version "8.14.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.5.tgz#07ffc7dac6008e0f659215e3b88bc0d7c6bc6ece"
-  integrity sha512-68JfMTcj6X7B0dhjhj8lGGnnOlfuiR4f+2UBEtQDYRHfeSuFriKErno3Lh+jAolGSqhw39qr4lLO+FGToVdCew==
+  version "8.14.6"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.6.tgz#78ba1fa8314f06255bb9309791b33c9695ac42ef"
+  integrity sha512-HK70Q3nrp6h4cCxb/P65vFixdJ99vABLIG8TpqU21/fmuHdYboL4zcleWaYhXhU2EwduuOPfORFMrUTdBRc+lw==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
