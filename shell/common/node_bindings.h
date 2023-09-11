@@ -72,6 +72,10 @@ class UvHandle {
     return t_ < that.t_;
   }
 
+  [[nodiscard]] constexpr bool operator==(const T* that_handle) const noexcept {
+    return t_ == that_handle;
+  }
+
  private:
   static void OnClosed(uv_handle_t* handle) {
     delete reinterpret_cast<T*>(handle);
