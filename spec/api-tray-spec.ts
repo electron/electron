@@ -3,6 +3,7 @@ import { Menu, Tray } from 'electron/main';
 import { nativeImage } from 'electron/common';
 import { ifdescribe, ifit } from './lib/spec-helpers';
 import * as path from 'node:path';
+import { setTimeout } from 'node:timers/promises';
 
 describe('tray module', () => {
   let tray: Tray;
@@ -74,12 +75,11 @@ describe('tray module', () => {
   });
 
   describe('tray.popUpContextMenu()', () => {
-    ifit(process.platform === 'win32')('can be called when menu is showing', function (done) {
+    ifit(process.platform === 'win32')('can be called when menu is showing', async function () {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]));
-      setTimeout(() => {
-        tray.popUpContextMenu();
-        done();
-      });
+      const timeout = setTimeout();
+      tray.popUpContextMenu();
+      await timeout;
       tray.popUpContextMenu();
     });
 
@@ -115,14 +115,13 @@ describe('tray module', () => {
   });
 
   describe('tray.closeContextMenu()', () => {
-    ifit(process.platform === 'win32')('does not crash when called more than once', function (done) {
+    ifit(process.platform === 'win32')('does not crash when called more than once', async function () {
       tray.setContextMenu(Menu.buildFromTemplate([{ label: 'Test' }]));
-      setTimeout(() => {
-        tray.closeContextMenu();
-        tray.closeContextMenu();
-        done();
-      });
+      const timeout = setTimeout();
       tray.popUpContextMenu();
+      await timeout;
+      tray.closeContextMenu();
+      tray.closeContextMenu();
     });
   });
 

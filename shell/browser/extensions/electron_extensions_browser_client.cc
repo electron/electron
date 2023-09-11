@@ -85,7 +85,7 @@ bool ElectronExtensionsBrowserClient::AreExtensionsDisabled(
   return false;
 }
 
-bool ElectronExtensionsBrowserClient::IsValidContext(BrowserContext* context) {
+bool ElectronExtensionsBrowserClient::IsValidContext(void* context) {
   auto& context_map = ElectronBrowserContext::browser_context_map();
   for (auto const& entry : context_map) {
     if (entry.second && entry.second.get() == context)

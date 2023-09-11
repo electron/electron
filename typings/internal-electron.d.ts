@@ -32,6 +32,8 @@ declare namespace Electron {
     _setEscapeTouchBarItem: (item: TouchBarItemType | {}) => void;
     _refreshTouchBarItem: (itemID: string) => void;
     _getWindowButtonVisibility: () => boolean;
+    _getAlwaysOnTopLevel: () => string;
+    devToolsWebContents: WebContents;
     frameName: string;
     on(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
     removeListener(event: '-touch-bar-interaction', listener: (event: Event, itemID: string, details: any) => void): this;
@@ -70,7 +72,6 @@ declare namespace Electron {
     _sendInternal(channel: string, ...args: any[]): void;
     _printToPDF(options: any): Promise<Buffer>;
     _print(options: any, callback?: (success: boolean, failureReason: string) => void): void;
-    _getPrinters(): Electron.PrinterInfo[];
     _getPrintersAsync(): Promise<Electron.PrinterInfo[]>;
     _init(): void;
     canGoToIndex(index: number): boolean;

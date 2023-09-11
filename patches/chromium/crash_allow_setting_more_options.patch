@@ -89,7 +89,7 @@ index 99efa6b245b9944710b76a342ec9a37947078a48..e55df93f17560a566e1dd2a63c560054
                                annotations, arguments, false, false));
    } else {
 diff --git a/components/crash/core/app/crashpad_mac.mm b/components/crash/core/app/crashpad_mac.mm
-index e6c1805bfd52f0b855f6b7db4ceda9a5a78dea44..eb388b3af595d4db07c8d3e050b892a4093263c6 100644
+index eb5bcfe0234c39526d6d162434476fe9e32d8184..8480d07e2607eb3c8c16b54a02077c0454d11fce 100644
 --- a/components/crash/core/app/crashpad_mac.mm
 +++ b/components/crash/core/app/crashpad_mac.mm
 @@ -87,6 +87,8 @@

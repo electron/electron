@@ -23,8 +23,8 @@
 #endif
 
 #if BUILDFLAG(ENABLE_PDF_VIEWER)
-#include "components/pdf/browser/pdf_web_contents_helper.h"  // nogncheck
-#include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#include "components/pdf/browser/pdf_document_helper.h"  // nogncheck
+#include "shell/browser/electron_pdf_document_helper_client.h"
 #endif
 
 namespace extensions {
@@ -94,11 +94,6 @@ void ElectronExtensionsAPIClient::AttachWebContentsHelpers(
     content::WebContents* web_contents) const {
 #if BUILDFLAG(ENABLE_PRINTING)
   electron::PrintViewManagerElectron::CreateForWebContents(web_contents);
-#endif
-
-#if BUILDFLAG(ENABLE_PDF_VIEWER)
-  pdf::PDFWebContentsHelper::CreateForWebContentsWithClient(
-      web_contents, std::make_unique<ElectronPDFWebContentsHelperClient>());
 #endif
 
   extensions::ElectronExtensionWebContentsObserver::CreateForWebContents(

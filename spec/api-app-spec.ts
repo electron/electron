@@ -1229,9 +1229,9 @@ describe('app module', () => {
         'http://',
         'https://'
       ];
-      protocols.forEach((protocol) => {
+      for (const protocol of protocols) {
         expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('');
-      });
+      }
     });
 
     it('returns an empty string for a bogus protocol', () => {

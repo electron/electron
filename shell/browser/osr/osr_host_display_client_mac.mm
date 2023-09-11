@@ -11,7 +11,7 @@ namespace electron {
 void OffScreenHostDisplayClient::OnDisplayReceivedCALayerParams(
     const gfx::CALayerParams& ca_layer_params) {
   if (!ca_layer_params.is_empty) {
-    base::ScopedCFTypeRef<IOSurfaceRef> io_surface(
+    base::apple::ScopedCFTypeRef<IOSurfaceRef> io_surface(
         IOSurfaceLookupFromMachPort(ca_layer_params.io_surface_mach_port));
 
     gfx::Size pixel_size_ = ca_layer_params.pixel_size;
@@ -19,7 +19,7 @@ void OffScreenHostDisplayClient::OnDisplayReceivedCALayerParams(
     size_t stride = IOSurfaceGetBytesPerRow(io_surface);
 
     struct IOSurfacePinner {
-      base::ScopedCFTypeRef<IOSurfaceRef> io_surface;
+      base::apple::ScopedCFTypeRef<IOSurfaceRef> io_surface;
     };
 
     SkBitmap bitmap;

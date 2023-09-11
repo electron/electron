@@ -7,9 +7,9 @@
 #include <string>
 
 #include "base/apple/bundle_locations.h"
+#include "base/apple/foundation_util.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/browser/mac_helpers.h"
@@ -78,7 +78,7 @@ void ElectronMainDelegate::SetUpBundleOverrides() {
     NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
     if (team_id)
       base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
-    base::mac::SetBaseBundleID(base_bundle_id.c_str());
+    base::apple::SetBaseBundleID(base_bundle_id.c_str());
   }
 }
 

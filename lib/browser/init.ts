@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import type * as defaultMenuModule from '@electron/internal/browser/default-menu';
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 // We modified the original process.argv to let node.js load the init.js,
 // we need to restore it here.
@@ -63,8 +63,8 @@ if (process.platform === 'win32') {
 
   if (fs.existsSync(updateDotExe)) {
     const packageDir = path.dirname(path.resolve(updateDotExe));
-    const packageName = path.basename(packageDir).replace(/\s/g, '');
-    const exeName = path.basename(process.execPath).replace(/\.exe$/i, '').replace(/\s/g, '');
+    const packageName = path.basename(packageDir).replaceAll(/\s/g, '');
+    const exeName = path.basename(process.execPath).replace(/\.exe$/i, '').replaceAll(/\s/g, '');
 
     app.setAppUserModelId(`com.squirrel.${packageName}.${exeName}`);
   }
@@ -182,11 +182,31 @@ const { setDefaultApplicationMenu } = require('@electron/internal/browser/defaul
 // menu is set before any user window is created.
 app.once('will-finish-launching', setDefaultApplicationMenu);
 
+const { appCodeLoaded } = process;
+delete process.appCodeLoaded;
+
 if (packagePath) {
   // Finally load app's main.js and transfer control to C++.
-  process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
-  Module._load(path.join(packagePath, mainStartupScript), Module, true);
+  if ((packageJson.type === 'module' && !mainStartupScript.endsWith('.cjs')) || mainStartupScript.endsWith('.mjs')) {
+    const { loadESM } = __non_webpack_require__('internal/process/esm_loader');
+    const main = require('url').pathToFileURL(path.join(packagePath, mainStartupScript));
+    loadESM(async (esmLoader: any) => {
+      try {
+        await esmLoader.import(main.toString(), undefined, Object.create(null));
+        appCodeLoaded!();
+      } catch (err) {
+        appCodeLoaded!();
+        process.emit('uncaughtException', err as Error);
+      }
+    });
+  } else {
+    // Call appCodeLoaded before just for safety, it doesn't matter here as _load is syncronous
+    appCodeLoaded!();
+    process._firstFileName = Module._resolveFilename(path.join(packagePath, mainStartupScript), null, false);
+    Module._load(path.join(packagePath, mainStartupScript), Module, true);
+  }
 } else {
   console.error('Failed to locate a valid package to load (app, app.asar or default_app.asar)');
   console.error('This normally means you\'ve damaged the Electron package somehow');
+  appCodeLoaded!();
 }

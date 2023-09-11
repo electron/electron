@@ -91,6 +91,22 @@ systemPreferences.on('high-contrast-color-scheme-changed', () => { /* ... */ })
 nativeTheme.on('updated', () => { /* ... */ })
 ```
 
+### Removed: `webContents.getPrinters`
+
+The `webContents.getPrinters` method has been removed. Use
+`webContents.getPrintersAsync` instead.
+
+```js
+const w = new BrowserWindow({ show: false })
+
+// Removed
+console.log(w.webContents.getPrinters())
+// Replace with
+w.webContents.getPrintersAsync().then((printers) => {
+  console.log(printers)
+})
+```
+
 ### Removed: `systemPreferences.{get,set}AppLevelAppearance` and `systemPreferences.appLevelAppearance`
 
 The `systemPreferences.getAppLevelAppearance` and `systemPreferences.setAppLevelAppearance`
@@ -108,7 +124,7 @@ systemPreferences.appLevelAppearance
 // Replace with
 nativeTheme.shouldUseDarkColors
 
-// REmoved
+// Removed
 systemPreferences.setAppLevelAppearance('dark')
 // Replace with
 nativeTheme.themeSource = 'dark'

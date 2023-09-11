@@ -103,7 +103,7 @@ const { session } = require('electron')
 session.defaultSession.on('will-download', (event, item, webContents) => {
   event.preventDefault()
   require('got')(item.getURL()).then((response) => {
-    require('fs').writeFileSync('/somewhere', response.body)
+    require('node:fs').writeFileSync('/somewhere', response.body)
   })
 })
 ```
@@ -1193,7 +1193,7 @@ automatically.  To clear the handler, call `setBluetoothPairingHandler(null)`.
 
 ```javascript
 const { app, BrowserWindow, session } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 function createWindow () {
   let bluetoothPinCallback = null
@@ -1457,7 +1457,7 @@ extension to be loaded.
 
 ```js
 const { app, session } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 app.whenReady().then(async () => {
   await session.defaultSession.loadExtension(
@@ -1491,7 +1491,7 @@ is emitted.
 
 * `extensionId` string - ID of extension to query
 
-Returns `Extension` | `null` - The loaded extension with the given ID.
+Returns `Extension | null` - The loaded extension with the given ID.
 
 **Note:** This API cannot be called before the `ready` event of the `app` module
 is emitted.
@@ -1544,7 +1544,7 @@ A [`Protocol`](protocol.md) object for this session.
 
 ```javascript
 const { app, session } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 app.whenReady().then(() => {
   const protocol = session.fromPartition('some-partition').protocol

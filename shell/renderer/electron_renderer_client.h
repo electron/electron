@@ -35,6 +35,8 @@ class ElectronRendererClient : public RendererClientBase {
                                 content::RenderFrame* render_frame) override;
 
  private:
+  void UndeferLoad(content::RenderFrame* render_frame);
+
   // content::ContentRendererClient:
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
@@ -49,8 +51,8 @@ class ElectronRendererClient : public RendererClientBase {
   // Whether the node integration has been initialized.
   bool node_integration_initialized_ = false;
 
-  std::unique_ptr<NodeBindings> node_bindings_;
-  std::unique_ptr<ElectronBindings> electron_bindings_;
+  const std::unique_ptr<NodeBindings> node_bindings_;
+  const std::unique_ptr<ElectronBindings> electron_bindings_;
 
   // The node::Environment::GetCurrent API does not return nullptr when it
   // is called for a context without node::Environment, so we have to keep

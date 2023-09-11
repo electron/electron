@@ -1,0 +1,75 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Wed, 8 Mar 2023 13:04:21 -0800
+Subject: refactor: expose HostImportModuleDynamically and
+ HostGetImportMetaProperties to embedders
+
+This is so that Electron can blend Blink's and Node's implementations of these isolate handlers.
+
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+index 20d188f57d5425c5f704b3b03cd27034efb25ea7..ff8de70fe7638f1f4fb2f4839ccf54e22339ba8b 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
++++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
+@@ -578,7 +578,9 @@ bool JavaScriptCompileHintsMagicEnabledCallback(
+       execution_context);
+ }
+ 
+-v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
++}
++
++v8::MaybeLocal<v8::Promise> V8Initializer::HostImportModuleDynamically(
+     v8::Local<v8::Context> context,
+     v8::Local<v8::Data> v8_host_defined_options,
+     v8::Local<v8::Value> v8_referrer_resource_url,
+@@ -653,7 +655,7 @@ v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
+ }
+ 
+ // https://html.spec.whatwg.org/C/#hostgetimportmetaproperties
+-void HostGetImportMetaProperties(v8::Local<v8::Context> context,
++void V8Initializer::HostGetImportMetaProperties(v8::Local<v8::Context> context,
+                                  v8::Local<v8::Module> module,
+                                  v8::Local<v8::Object> meta) {
+   ScriptState* script_state = ScriptState::From(context);
+@@ -680,6 +682,8 @@ void HostGetImportMetaProperties(v8::Local<v8::Context> context,
+   meta->CreateDataProperty(context, resolve_key, resolve_value).ToChecked();
+ }
+ 
++namespace {
++
+ void InitializeV8Common(v8::Isolate* isolate) {
+   // Set up garbage collection before setting up anything else as V8 may trigger
+   // GCs during Blink setup.
+@@ -699,9 +703,9 @@ void InitializeV8Common(v8::Isolate* isolate) {
+       SharedArrayBufferConstructorEnabledCallback);
+   isolate->SetJavaScriptCompileHintsMagicEnabledCallback(
+       JavaScriptCompileHintsMagicEnabledCallback);
+-  isolate->SetHostImportModuleDynamicallyCallback(HostImportModuleDynamically);
++  isolate->SetHostImportModuleDynamicallyCallback(V8Initializer::HostImportModuleDynamically);
+   isolate->SetHostInitializeImportMetaObjectCallback(
+-      HostGetImportMetaProperties);
++      V8Initializer::HostGetImportMetaProperties);
+   isolate->SetMetricsRecorder(std::make_shared<V8MetricsRecorder>(isolate));
+ 
+   V8ContextSnapshot::EnsureInterfaceTemplates(isolate);
+diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
+index 9e628b96a845322d407f9da30a63c04ef5de9c24..8f5e4602f5e3f6787a9e54d510b39519074d51e6 100644
+--- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
++++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
+@@ -76,6 +76,17 @@ class CORE_EXPORT V8Initializer {
+       v8::Local<v8::Context> context,
+       v8::Local<v8::String> source);
+ 
++  static v8::MaybeLocal<v8::Promise> HostImportModuleDynamically(
++    v8::Local<v8::Context> context,
++    v8::Local<v8::Data> v8_host_defined_options,
++    v8::Local<v8::Value> v8_referrer_resource_url,
++    v8::Local<v8::String> v8_specifier,
++    v8::Local<v8::FixedArray> v8_import_assertions);
++
++  static void HostGetImportMetaProperties(v8::Local<v8::Context> context,
++                                          v8::Local<v8::Module> module,
++                                          v8::Local<v8::Object> meta);
++
+   static void WasmAsyncResolvePromiseCallback(
+       v8::Isolate* isolate,
+       v8::Local<v8::Context> context,
