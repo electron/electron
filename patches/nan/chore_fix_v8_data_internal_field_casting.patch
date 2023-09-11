@@ -1,0 +1,265 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Mon, 11 Sep 2023 23:39:55 +0200
+Subject: chore: fix v8::Data internal field casting
+
+Changed in https://chromium-review.googlesource.com/c/v8/v8/+/4834471
+
+Adapt to upstream changes in v8::Object::GetInternalField() and
+v8::Object::SetInternalField() to accept v8::Data instead of just
+v8::Value.
+
+diff --git a/nan_callbacks_12_inl.h b/nan_callbacks_12_inl.h
+index c27b18d80d1299ff2142606d333804696bc17f93..2c734137fa1a5f8c6341e045f488fdcde5d040ef 100644
+--- a/nan_callbacks_12_inl.h
++++ b/nan_callbacks_12_inl.h
+@@ -170,9 +170,9 @@ void FunctionCallbackWrapper(const v8::FunctionCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   FunctionCallback callback = reinterpret_cast<FunctionCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kFunctionIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kFunctionIndex).As<v8::Value>().As<v8::External>()->Value()));
+   FunctionCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   callback(cbinfo);
+ }
+ 
+@@ -185,10 +185,10 @@ void GetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   GetterCallback callback = reinterpret_cast<GetterCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kGetterIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kGetterIndex).As<v8::Value>().As<v8::External>()->Value()));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -202,10 +202,10 @@ void SetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<void> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<void>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   SetterCallback callback = reinterpret_cast<SetterCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kSetterIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kSetterIndex).As<v8::Value>().As<v8::External>()->Value()));
+   callback(property.As<v8::String>(), value, cbinfo);
+ }
+ 
+@@ -220,10 +220,10 @@ void GetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   GetterCallback callback = reinterpret_cast<GetterCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kGetterIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kGetterIndex).As<v8::Value>().As<v8::External>()->Value()));
+   callback(property, cbinfo);
+ }
+ 
+@@ -237,10 +237,10 @@ void SetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<void> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<void>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   SetterCallback callback = reinterpret_cast<SetterCallback>(
+       reinterpret_cast<intptr_t>(
+-          obj->GetInternalField(kSetterIndex).As<v8::External>()->Value()));
++          obj->GetInternalField(kSetterIndex).As<v8::Value>().As<v8::External>()->Value()));
+   callback(property, value, cbinfo);
+ }
+ 
+@@ -257,11 +257,11 @@ void PropertyGetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertyGetterCallback callback = reinterpret_cast<PropertyGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyGetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -275,11 +275,11 @@ void PropertySetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertySetterCallback callback = reinterpret_cast<PropertySetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertySetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property.As<v8::String>(), value, cbinfo);
+ }
+ 
+@@ -293,11 +293,11 @@ void PropertyEnumeratorCallbackWrapper(
+     const v8::PropertyCallbackInfo<v8::Array> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Array>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertyEnumeratorCallback callback =
+       reinterpret_cast<PropertyEnumeratorCallback>(reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyEnumeratorIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(cbinfo);
+ }
+ 
+@@ -310,11 +310,11 @@ void PropertyDeleterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Boolean> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Boolean>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertyDeleterCallback callback = reinterpret_cast<PropertyDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyDeleterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -327,11 +327,11 @@ void PropertyQueryCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Integer> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Integer>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertyQueryCallback callback = reinterpret_cast<PropertyQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyQueryIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property.As<v8::String>(), cbinfo);
+ }
+ 
+@@ -344,11 +344,11 @@ void PropertyGetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertyGetterCallback callback = reinterpret_cast<PropertyGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyGetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property, cbinfo);
+ }
+ 
+@@ -384,7 +384,7 @@ void PropertyEnumeratorCallbackWrapper(
+   PropertyEnumeratorCallback callback =
+       reinterpret_cast<PropertyEnumeratorCallback>(reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyEnumeratorIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(cbinfo);
+ }
+ 
+@@ -401,7 +401,7 @@ void PropertyDeleterCallbackWrapper(
+   PropertyDeleterCallback callback = reinterpret_cast<PropertyDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyDeleterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property, cbinfo);
+ }
+ 
+@@ -414,11 +414,11 @@ void PropertyQueryCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Integer> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Integer>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   PropertyQueryCallback callback = reinterpret_cast<PropertyQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kPropertyQueryIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(property, cbinfo);
+ }
+ 
+@@ -431,11 +431,11 @@ void IndexGetterCallbackWrapper(
+     uint32_t index, const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   IndexGetterCallback callback = reinterpret_cast<IndexGetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyGetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(index, cbinfo);
+ }
+ 
+@@ -449,11 +449,11 @@ void IndexSetterCallbackWrapper(
+   , const v8::PropertyCallbackInfo<v8::Value> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Value>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   IndexSetterCallback callback = reinterpret_cast<IndexSetterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertySetterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(index, value, cbinfo);
+ }
+ 
+@@ -467,11 +467,11 @@ void IndexEnumeratorCallbackWrapper(
+     const v8::PropertyCallbackInfo<v8::Array> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Array>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   IndexEnumeratorCallback callback = reinterpret_cast<IndexEnumeratorCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(
+-              kIndexPropertyEnumeratorIndex).As<v8::External>()->Value()));
++              kIndexPropertyEnumeratorIndex).As<v8::Value>().As<v8::External>()->Value()));
+   callback(cbinfo);
+ }
+ 
+@@ -483,11 +483,11 @@ void IndexDeleterCallbackWrapper(
+     uint32_t index, const v8::PropertyCallbackInfo<v8::Boolean> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Boolean>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   IndexDeleterCallback callback = reinterpret_cast<IndexDeleterCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyDeleterIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(index, cbinfo);
+ }
+ 
+@@ -499,11 +499,11 @@ void IndexQueryCallbackWrapper(
+     uint32_t index, const v8::PropertyCallbackInfo<v8::Integer> &info) {
+   v8::Local<v8::Object> obj = info.Data().As<v8::Object>();
+   PropertyCallbackInfo<v8::Integer>
+-      cbinfo(info, obj->GetInternalField(kDataIndex));
++      cbinfo(info, obj->GetInternalField(kDataIndex).As<v8::Value>());
+   IndexQueryCallback callback = reinterpret_cast<IndexQueryCallback>(
+       reinterpret_cast<intptr_t>(
+           obj->GetInternalField(kIndexPropertyQueryIndex)
+-              .As<v8::External>()->Value()));
++              .As<v8::Value>().As<v8::External>()->Value()));
+   callback(index, cbinfo);
+ }
+ 
