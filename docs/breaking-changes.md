@@ -107,6 +107,41 @@ w.webContents.getPrintersAsync().then((printers) => {
 })
 ```
 
+### Removed: `systemPreferences.{get,set}AppLevelAppearance` and `systemPreferences.appLevelAppearance`
+
+The `systemPreferences.getAppLevelAppearance` and `systemPreferences.setAppLevelAppearance`
+methods have been removed, as well as the `systemPreferences.appLevelAppearance` property.
+Use the `nativeTheme` module instead.
+
+```js
+// Removed
+systemPreferences.getAppLevelAppearance()
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Removed
+systemPreferences.appLevelAppearance
+// Replace with
+nativeTheme.shouldUseDarkColors
+
+// Removed
+systemPreferences.setAppLevelAppearance('dark')
+// Replace with
+nativeTheme.themeSource = 'dark'
+```
+
+### Removed: `alternate-selected-control-text` value for `systemPreferences.getColor`
+
+The `alternate-selected-control-text` value for `systemPreferences.getColor`
+has been removed. Use `selected-content-background` instead.
+
+```js
+// Removed
+systemPreferences.getColor('alternate-selected-control-text')
+// Replace with
+systemPreferences.getColor('selected-content-background')
+```
+
 ## Planned Breaking API Changes (26.0)
 
 ### Deprecated: `webContents.getPrinters`

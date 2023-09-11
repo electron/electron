@@ -89,10 +89,6 @@ gin::ObjectTemplateBuilder SystemPreferences::GetObjectTemplateBuilder(
                  &SystemPreferences::IsSwipeTrackingFromScrollEventsEnabled)
       .SetMethod("getEffectiveAppearance",
                  &SystemPreferences::GetEffectiveAppearance)
-      .SetMethod("getAppLevelAppearance",
-                 &SystemPreferences::GetAppLevelAppearance)
-      .SetMethod("setAppLevelAppearance",
-                 &SystemPreferences::SetAppLevelAppearance)
       .SetMethod("getSystemColor", &SystemPreferences::GetSystemColor)
       .SetMethod("canPromptTouchID", &SystemPreferences::CanPromptTouchID)
       .SetMethod("promptTouchID", &SystemPreferences::PromptTouchID)
