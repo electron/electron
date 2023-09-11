@@ -22,9 +22,6 @@ class Locker {
   Locker& operator=(const Locker&) = delete;
 
  private:
-  void* operator new(size_t size);
-  void operator delete(void*, size_t);
-
   const std::unique_ptr<v8::Locker> locker_;
 };
 
