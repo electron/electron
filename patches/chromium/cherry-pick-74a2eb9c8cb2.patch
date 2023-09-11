@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Yoichi Osato <yoichio@chromium.org>
+Date: Tue, 29 Aug 2023 02:37:46 +0000
+Subject: Readd lock when ObserverListMap::erase()
+
+We should lock when remove an item from the map.
+This lock was accidentally removed in:
+https://chromium-review.googlesource.com/c/chromium/src/+/4280021
+
+(cherry picked from commit a41479ba6efb5e48b82edad972c7dded6f385b79)
+
+Bug: 1469928
+Change-Id: I2512e14d4ad9b246cadae947023dbccb5158da51
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4790983
+Auto-Submit: Yoichi Osato <yoichio@chromium.org>
+Reviewed-by: Yoichi Osato <yoichio@chromium.org>
+Reviewed-by: Koji Ishii <kojii@chromium.org>
+Commit-Queue: Koji Ishii <kojii@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1187668}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4820108
+Reviewed-by: Kent Tamura <tkent@chromium.org>
+Commit-Queue: Kent Tamura <tkent@chromium.org>
+Cr-Commit-Position: refs/branch-heads/5845@{#1666}
+Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
+
+diff --git a/third_party/blink/renderer/platform/network/network_state_notifier.cc b/third_party/blink/renderer/platform/network/network_state_notifier.cc
+index 39c417e0f8ec672d413bb69a3b98f06442183295..e74b4ea41b2b30037890f36dd9ff81d6ef3c4e88 100644
+--- a/third_party/blink/renderer/platform/network/network_state_notifier.cc
++++ b/third_party/blink/renderer/platform/network/network_state_notifier.cc
+@@ -350,6 +350,7 @@ void NetworkStateNotifier::RemoveObserver(
+   DCHECK(task_runner->RunsTasksInCurrentSequence());
+   DCHECK(observer);
+ 
++  base::AutoLock locker(lock_);
+   ObserverListMap& map = GetObserverMapFor(type);
+   DCHECK_NE(map.end(), map.find(observer));
+   map.erase(observer);
