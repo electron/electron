@@ -10,7 +10,7 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 5ab9d7b6723fe472516e2c3bda58c68c6e66b73a..f5e37a6fe7db054e0e1558426c32729330908c18 100644
+index 5ab9d7b6723fe472516e2c3bda58c68c6e66b73a..60e1b55af76e0deb712646d77a91204a5456b321 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -10,9 +10,11 @@

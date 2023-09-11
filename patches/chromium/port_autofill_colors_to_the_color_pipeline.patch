@@ -30,7 +30,6 @@ index 7b24de2cc853d7e7bd048cf504ae26a89077ad93..7a48532940f3fc1a869a3b3eebbd6082
    /* These colors are used to paint the controls defined in */ \
    /* ui::NativeThemeBase::ControlColorId. */ \
    E_CPONLY(kColorWebNativeControlAccent) \
-
 diff --git a/ui/color/ui_color_mixer.cc b/ui/color/ui_color_mixer.cc
 index 01fe909077a786d5c7d896e84fd91b01d730f695..4a71d681177effe8ed06d46056f6ba1cfd7dd690 100644
 --- a/ui/color/ui_color_mixer.cc
@@ -61,7 +60,6 @@ index 01fe909077a786d5c7d896e84fd91b01d730f695..4a71d681177effe8ed06d46056f6ba1c
    mixer[kColorWebNativeControlAccent] = {dark_mode
                                               ? SkColorSetRGB(0x99, 0xC8, 0xFF)
                                               : SkColorSetRGB(0x00, 0x75, 0xFF)};
-
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
 index c499561242bb013714b6909d73d3df0fcbe16a18..03171c32211c0bd2e96eded7bbafab0a9f440074 100644
 --- a/ui/color/win/native_color_mixers_win.cc

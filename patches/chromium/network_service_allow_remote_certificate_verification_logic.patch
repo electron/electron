@@ -7,7 +7,7 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index d16e87cfc8fb4ba31c2a17028efd160f5b8da9bb..aa2d926ad32a92cba8587a41a39bde8140da3c13 100644
+index ac3b167a435eeb236da13ff0092e2128a5a2ead7..20f435f8432e1fa08da32beeb7e7f098d9033185 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
 @@ -147,6 +147,11 @@
@@ -122,7 +122,7 @@ index d16e87cfc8fb4ba31c2a17028efd160f5b8da9bb..aa2d926ad32a92cba8587a41a39bde81
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -834,6 +932,13 @@ void NetworkContext::SetClient(
+@@ -836,6 +934,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index d16e87cfc8fb4ba31c2a17028efd160f5b8da9bb..aa2d926ad32a92cba8587a41a39bde81
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2393,6 +2498,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2395,6 +2500,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index d16e87cfc8fb4ba31c2a17028efd160f5b8da9bb..aa2d926ad32a92cba8587a41a39bde81
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index d046d6909a9e648ddc86cbed9cb118d29223155e..25f9dab24b27ad2b3d6ca01690e9f5c3fea96d32 100644
+index a1ac41b0850de88c3334d7b7aa3bfc470365b873..17ecfd109db3e9dbcc27ec291f6c6021c9b6f0eb 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
