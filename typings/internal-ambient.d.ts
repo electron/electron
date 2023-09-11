@@ -253,6 +253,7 @@ declare namespace NodeJS {
     // Additional properties
     _firstFileName?: string;
     _serviceStartupScript: string;
+    _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;
