@@ -1,0 +1,49 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tobias Tebbi <tebbi@chromium.org>
+Date: Wed, 30 Aug 2023 10:59:48 +0200
+Subject: Merged: [turbofan] Growing a non-JSArray packed elements kind makes
+ it holey
+
+Bug: chromium:1473247
+(cherry picked from commit ae7dc61652805bc8e2b060d53b2b6da7cf846b6f)
+
+Change-Id: I5268513bc91ca0cc18e3e2115244c0b090afa0da
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4831892
+Auto-Submit: Leszek Swirski <leszeks@chromium.org>
+Owners-Override: Leszek Swirski <leszeks@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Leszek Swirski <leszeks@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.6@{#34}
+Cr-Branched-From: e29c028f391389a7a60ee37097e3ca9e396d6fa4-refs/heads/11.6.189@{#3}
+Cr-Branched-From: 95cbef20e2aa556a1ea75431a48b36c4de6b9934-refs/heads/main@{#88340}
+
+diff --git a/src/compiler/js-native-context-specialization.cc b/src/compiler/js-native-context-specialization.cc
+index 31b6d2dd0944a4d541947c773b175f86d24c86f6..72d97098c60e78b53cfa2356eabdc54f3eafc133 100644
+--- a/src/compiler/js-native-context-specialization.cc
++++ b/src/compiler/js-native-context-specialization.cc
+@@ -3628,15 +3628,21 @@ JSNativeContextSpecialization::BuildElementAccess(
+         // the (potential) backing store growth would normalize and thus
+         // the elements kind of the {receiver} would change to slow mode.
+         //
+-        // For PACKED_*_ELEMENTS the {index} must be within the range
++        // For JSArray PACKED_*_ELEMENTS the {index} must be within the range
+         // [0,length+1[ to be valid. In case {index} equals {length},
+         // the {receiver} will be extended, but kept packed.
++        //
++        // Non-JSArray PACKED_*_ELEMENTS always grow by adding holes because they
++        // lack the magical length property, which requires a map transition.
++        // So we can assume that this did not happen if we did not see this map.
+         Node* limit =
+             IsHoleyElementsKind(elements_kind)
+                 ? graph()->NewNode(simplified()->NumberAdd(), elements_length,
+                                    jsgraph()->Constant(JSObject::kMaxGap))
+-                : graph()->NewNode(simplified()->NumberAdd(), length,
+-                                   jsgraph()->OneConstant());
++                : receiver_is_jsarray
++                    ? graph()->NewNode(simplified()->NumberAdd(), length,
++                                       jsgraph()->OneConstant())
++                    : elements_length;
+         index = effect = graph()->NewNode(
+             simplified()->CheckBounds(
+                 FeedbackSource(), CheckBoundsFlag::kConvertStringAndMinusZero),
