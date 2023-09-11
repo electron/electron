@@ -586,6 +586,13 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
                          electron::fuses::IsOnlyLoadAppFromAsarEnabled()
                              ? app_asar_search_paths
                              : search_paths));
+    context->Global()->SetPrivate(
+        context,
+        v8::Private::ForApi(
+            isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
+                         .As<v8::String>()),
+        gin::ConvertToV8(isolate,
+                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
   }
 
   base::FilePath resources_path = GetResourcesPath();
