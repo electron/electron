@@ -13,34 +13,39 @@ namespace electron {
 
 NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
     : NodeBindings(browser_env) {
+  auto* const event_loop = uv_loop();
+
   // on single-core the io comp port NumberOfConcurrentThreads needs to be 2
   // to avoid cpu pegging likely caused by a busy loop in PollEvents
   if (base::SysInfo::NumberOfProcessors() == 1) {
-    // the expectation is the uv_loop_ has just been initialized
+    // the expectation is the event_loop has just been initialized
     // which makes iocp replacement safe
-    CHECK_EQ(0u, uv_loop_->active_handles);
-    CHECK_EQ(0u, uv_loop_->active_reqs.count);
+    CHECK_EQ(0u, event_loop->active_handles);
+    CHECK_EQ(0u, event_loop->active_reqs.count);
 
-    if (uv_loop_->iocp && uv_loop_->iocp != INVALID_HANDLE_VALUE)
-      CloseHandle(uv_loop_->iocp);
-    uv_loop_->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
+    if (event_loop->iocp && event_loop->iocp != INVALID_HANDLE_VALUE)
+      CloseHandle(event_loop->iocp);
+    event_loop->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
   }
 }
 
 void NodeBindingsWin::PollEvents() {
+  auto* const event_loop = uv_loop();
+
   // If there are other kinds of events pending, uv_backend_timeout will
   // instruct us not to wait.
   DWORD bytes, timeout;
   ULONG_PTR key;
   OVERLAPPED* overlapped;
 
-  timeout = uv_backend_timeout(uv_loop_);
+  timeout = uv_backend_timeout(event_loop);
 
-  GetQueuedCompletionStatus(uv_loop_->iocp, &bytes, &key, &overlapped, timeout);
+  GetQueuedCompletionStatus(event_loop->iocp, &bytes, &key, &overlapped,
+                            timeout);
 
   // Give the event back so libuv can deal with it.
   if (overlapped != NULL)
-    PostQueuedCompletionStatus(uv_loop_->iocp, bytes, key, overlapped);
+    PostQueuedCompletionStatus(event_loop->iocp, bytes, key, overlapped);
 }
 
 // static
