@@ -18,11 +18,10 @@ UvTaskRunner::~UvTaskRunner() = default;
 bool UvTaskRunner::PostDelayedTask(const base::Location& from_here,
                                    base::OnceClosure task,
                                    base::TimeDelta delay) {
-  auto* const timer = new uv_timer_t{};
+  auto* timer = new uv_timer_t;
   timer->data = this;
   uv_timer_init(loop_, timer);
   uv_timer_start(timer, UvTaskRunner::OnTimeout, delay.InMilliseconds(), 0);
-
   tasks_.try_emplace(UvHandle<uv_timer_t>{timer}, std::move(task));
   return true;
 }
@@ -45,7 +44,7 @@ void UvTaskRunner::OnTimeout(uv_timer_t* timer) {
     if (it->first.get() == timer) {
       std::move(it->second).Run();
       tasks.erase(it);
-      return;
+      break;
     }
   }
 }

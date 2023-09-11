@@ -27,53 +27,41 @@ class SingleThreadTaskRunner;
 
 namespace electron {
 
-// A helper class to manage uv_handle_t types, e.g. uv_async_t.
+// A helper class to wrap uv_handles to make them more RAII-safe.
 //
-// As per the uv docs: "uv_close() MUST be called on each handle before
-// memory is released. Moreover, the memory can only be released in
-// close_cb or after it has returned." This class encapsulates the work
-// needed to follow those requirements.
-template <typename T,
-          typename std::enable_if<
-              // these are the C-style 'subclasses' of uv_handle_t
-              std::is_same<T, uv_async_t>::value ||
-              std::is_same<T, uv_check_t>::value ||
-              std::is_same<T, uv_fs_event_t>::value ||
-              std::is_same<T, uv_fs_poll_t>::value ||
-              std::is_same<T, uv_idle_t>::value ||
-              std::is_same<T, uv_pipe_t>::value ||
-              std::is_same<T, uv_poll_t>::value ||
-              std::is_same<T, uv_prepare_t>::value ||
-              std::is_same<T, uv_process_t>::value ||
-              std::is_same<T, uv_signal_t>::value ||
-              std::is_same<T, uv_stream_t>::value ||
-              std::is_same<T, uv_tcp_t>::value ||
-              std::is_same<T, uv_timer_t>::value ||
-              std::is_same<T, uv_tty_t>::value ||
-              std::is_same<T, uv_udp_t>::value>::type* = nullptr>
+// uv handles can't be freed directly: "uv_close() MUST be called
+// on each handle before memory is released. Moreover, the memory
+// can only be released in close_cb or after it has returned."
+// This class manages safe destruction of uv_handles.
+template <
+    typename T,
+    typename std::enable_if<
+        // these are the C-style 'subclasses' of uv_handle_t
+        std::is_same_v<T, uv_async_t> || std::is_same_v<T, uv_check_t> ||
+        std::is_same_v<T, uv_fs_event_t> || std::is_same_v<T, uv_fs_poll_t> ||
+        std::is_same_v<T, uv_idle_t> || std::is_same_v<T, uv_pipe_t> ||
+        std::is_same_v<T, uv_poll_t> || std::is_same_v<T, uv_prepare_t> ||
+        std::is_same_v<T, uv_process_t> || std::is_same_v<T, uv_signal_t> ||
+        std::is_same_v<T, uv_stream_t> || std::is_same_v<T, uv_tcp_t> ||
+        std::is_same_v<T, uv_timer_t> || std::is_same_v<T, uv_tty_t> ||
+        std::is_same_v<T, uv_udp_t>>::type* = nullptr>
 class UvHandle {
  public:
   UvHandle() : UvHandle{new T} {}
-
   explicit UvHandle(T* t) : t_{t} {}
 
   ~UvHandle() {
-    auto* const handle = reinterpret_cast<uv_handle_t*>(t_);
+    auto* const handle = reinterpret_cast<uv_handle_t*>(t_.get());
     DCHECK_NE(handle, nullptr);
     DCHECK_EQ(0, uv_is_closing(handle));
     uv_close(handle, OnClosed);
   }
 
-  [[nodiscard]] constexpr T* get() noexcept { return t_; }
+  [[nodiscard]] constexpr T* get() { return t_; }
+  [[nodiscard]] constexpr T const* get() const { return t_; }
 
-  [[nodiscard]] constexpr T const* get() const noexcept { return t_; }
-
-  [[nodiscard]] constexpr bool operator<(UvHandle const& that) const noexcept {
+  [[nodiscard]] constexpr bool operator<(UvHandle const& that) const {
     return t_ < that.t_;
-  }
-
-  [[nodiscard]] constexpr bool operator==(const T* that_handle) const noexcept {
-    return t_ == that_handle;
   }
 
  private:
@@ -81,7 +69,7 @@ class UvHandle {
     delete reinterpret_cast<T*>(handle);
   }
 
-  RAW_PTR_EXCLUSION T* const t_;
+  const raw_ptr<T> t_;
 };
 
 class NodeBindings {
