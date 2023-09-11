@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: clavin <clavin@electronjs.org>
+Date: Wed, 30 Aug 2023 18:15:36 -0700
+Subject: fix: activate background material on windows
+
+This patch adds a condition to the HWND message handler to allow windows
+with translucent background materials to become activated.
+
+This patch likely can't be upstreamed as-is, as Chromium doesn't have
+this use case in mind currently.
+
+diff --git a/ui/views/win/hwnd_message_handler.cc b/ui/views/win/hwnd_message_handler.cc
+index 13268bd89c710690eed5296f4b2157e9476f195e..37de479e95d49f4d2b1d8164c9e3f6a7bcd82612 100644
+--- a/ui/views/win/hwnd_message_handler.cc
++++ b/ui/views/win/hwnd_message_handler.cc
+@@ -1094,7 +1094,7 @@ void HWNDMessageHandler::FrameTypeChanged() {
+ 
+ void HWNDMessageHandler::PaintAsActiveChanged() {
+   if (!delegate_->HasNonClientView() || !delegate_->CanActivate() ||
+-      !delegate_->HasFrame() ||
++      (!delegate_->HasFrame() && !is_translucent_) ||
+       (delegate_->GetFrameMode() == FrameMode::CUSTOM_DRAWN)) {
+     return;
+   }
