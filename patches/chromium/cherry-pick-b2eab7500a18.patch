@@ -1,7 +1,7 @@
-From b2eab7500a18bd4d372f10149c6223fdfe48e3be Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: James Zern <jzern@chromium.org>
-Date: Fri, 08 Sep 2023 20:57:18 +0000
-Subject: [PATCH] Roll src/third_party/libwebp/src/ 6a319d4da..4619a48fc (1 commit)
+Date: Fri, 8 Sep 2023 20:57:18 +0000
+Subject: Roll src/third_party/libwebp/src/ 6a319d4da..4619a48fc (1 commit)
 
 https://chromium.googlesource.com/webm/libwebp.git/+log/6a319d4da395..4619a48fc329
 
@@ -18,31 +18,30 @@ Commit-Queue: James Zern <jzern@google.com>
 Reviewed-by: Urvang Joshi <urvang@chromium.org>
 Cr-Commit-Position: refs/branch-heads/5845@{#1779}
 Cr-Branched-From: 5a5dff63a4a4c63b9b18589819bebb2566c85443-refs/heads/main@{#1160321}
----
 
 diff --git a/DEPS b/DEPS
-index 7e73ace8..bfdbb96 100644
+index ab5e84996c9f4c3a260e74b42d182e3e24f23c7b..01410c9e67020cac0b8bd42b1cb8e6c5296b900e 100644
 --- a/DEPS
 +++ b/DEPS
-@@ -1591,7 +1591,7 @@
+@@ -1639,7 +1639,7 @@ deps = {
      Var('chromium_git') + '/webm/libwebm.git' + '@' + 'e4fbea0c9751ae8aa86629b197a28d8276a2b0da',
  
    'src/third_party/libwebp/src':
--    Var('chromium_git') + '/webm/libwebp.git' + '@' +  '6a319d4da3956f22f0dd5ad5a7bb294f88131bbd',
+-    Var('chromium_git') + '/webm/libwebp.git' + '@' +  'fd7bb21c0cb56e8a82e9bfa376164b842f433f3b',
 +    Var('chromium_git') + '/webm/libwebp.git' + '@' +  '4619a48fc3292743d7ce9658bee4245406734109',
  
    'src/third_party/libyuv':
      Var('chromium_git') + '/libyuv/libyuv.git' + '@' + '04821d1e7d60845525e8db55c7bcd41ef5be9406',
 diff --git a/third_party/libwebp/README.chromium b/third_party/libwebp/README.chromium
-index 6b51fa4a..0e24a45 100644
+index ff9403b11d05ee6015bce907aee4863afb53ffda..31e138dbfdb29dd80c64a5cd620ea6e1448fa55b 100644
 --- a/third_party/libwebp/README.chromium
 +++ b/third_party/libwebp/README.chromium
-@@ -2,7 +2,7 @@
+@@ -2,7 +2,7 @@ Name: WebP image encoder/decoder
  Short Name: libwebp
  URL: https://chromium.googlesource.com/webm/libwebp
  Version: 0
--Revision: 6a319d4da3956f22f0dd5ad5a7bb294f88131bbd
+-Revision: fd7bb21c0cb56e8a82e9bfa376164b842f433f3b
 +Revision: 4619a48fc3292743d7ce9658bee4245406734109
- CPEPrefix: cpe:/a:webmproject:libwebp:1.3.0
+ CPEPrefix: cpe:/a:webmproject:libwebp:1.3.1
  License: BSD
  License File: LICENSE
