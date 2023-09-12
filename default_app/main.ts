@@ -1,6 +1,7 @@
 import * as electron from 'electron/main';
 
 import * as fs from 'node:fs';
+import { Module } from 'node:module';
 import * as path from 'node:path';
 import * as url from 'node:url';
 const { app, dialog } = electron;
@@ -14,8 +15,6 @@ type DefaultAppOptions = {
   abi: boolean;
   modules: string[];
 }
-
-const Module = require('node:module');
 
 // Parse command line options.
 const argv = process.argv.slice(1);
@@ -71,10 +70,10 @@ if (nextArgIsRequire) {
 
 // Set up preload modules
 if (option.modules.length > 0) {
-  Module._preloadModules(option.modules);
+  (Module as any)._preloadModules(option.modules);
 }
 
-function loadApplicationPackage (packagePath: string) {
+async function loadApplicationPackage (packagePath: string) {
   // Add a flag indicating app is started from default app.
   Object.defineProperty(process, 'defaultApp', {
     configurable: false,
@@ -89,11 +88,19 @@ function loadApplicationPackage (packagePath: string) {
     let appPath;
     if (fs.existsSync(packageJsonPath)) {
       let packageJson;
+      const emitWarning = process.emitWarning;
       try {
-        packageJson = require(packageJsonPath);
+        process.emitWarning = () => {};
+        packageJson = (await import(url.pathToFileURL(packageJsonPath).toString(), {
+          assert: {
+            type: 'json'
+          }
+        })).default;
       } catch (e) {
         showErrorMessage(`Unable to parse ${packageJsonPath}\n\n${(e as Error).message}`);
         return;
+      } finally {
+        process.emitWarning = emitWarning;
       }
 
       if (packageJson.version) {
@@ -112,13 +119,15 @@ function loadApplicationPackage (packagePath: string) {
       // Set v8 flags, deliberately lazy load so that apps that do not use this
       // feature do not pay the price
       if (packageJson.v8Flags) {
-        require('node:v8').setFlagsFromString(packageJson.v8Flags);
+        (await import('node:v8')).setFlagsFromString(packageJson.v8Flags);
       }
       appPath = packagePath;
     }
 
+    let filePath: string;
+
     try {
-      const filePath = Module._resolveFilename(packagePath, module, true);
+      filePath = (Module as any)._resolveFilename(packagePath, null, true);
       app.setAppPath(appPath || path.dirname(filePath));
     } catch (e) {
       showErrorMessage(`Unable to find Electron app at ${packagePath}\n\n${(e as Error).message}`);
@@ -126,7 +135,7 @@ function loadApplicationPackage (packagePath: string) {
     }
 
     // Run the app.
-    Module._load(packagePath, module, true);
+    await import(url.pathToFileURL(filePath).toString());
   } catch (e) {
     console.error('App threw an error during load');
     console.error((e as Error).stack || e);
@@ -141,16 +150,16 @@ function showErrorMessage (message: string) {
 }
 
 async function loadApplicationByURL (appUrl: string) {
-  const { loadURL } = await import('./default_app');
+  const { loadURL } = await import('./default_app.js');
   loadURL(appUrl);
 }
 
 async function loadApplicationByFile (appPath: string) {
-  const { loadFile } = await import('./default_app');
+  const { loadFile } = await import('./default_app.js');
   loadFile(appPath);
 }
 
-function startRepl () {
+async function startRepl () {
   if (process.platform === 'win32') {
     console.error('Electron REPL not currently supported on Windows');
     process.exit(1);
@@ -171,8 +180,8 @@ function startRepl () {
     Using: Node.js ${nodeVersion} and Electron.js ${electronVersion}
   `);
 
-  const { REPLServer } = require('node:repl');
-  const repl = new REPLServer({
+  const { start } = await import('node:repl');
+  const repl = start({
     prompt: '> '
   }).on('exit', () => {
     process.exit(0);
@@ -225,8 +234,8 @@ function startRepl () {
 
   const electronBuiltins = [...Object.keys(electron), 'original-fs', 'electron'];
 
-  const defaultComplete = repl.completer;
-  repl.completer = (line: string, callback: Function) => {
+  const defaultComplete: Function = repl.completer;
+  (repl as any).completer = (line: string, callback: Function) => {
     const lastSpace = line.lastIndexOf(' ');
     const currentSymbol = line.substring(lastSpace + 1, repl.cursor);
 
@@ -249,11 +258,11 @@ if (option.file && !option.webdriver) {
   const protocol = url.parse(file).protocol;
   const extension = path.extname(file);
   if (protocol === 'http:' || protocol === 'https:' || protocol === 'file:' || protocol === 'chrome:') {
-    loadApplicationByURL(file);
+    await loadApplicationByURL(file);
   } else if (extension === '.html' || extension === '.htm') {
-    loadApplicationByFile(path.resolve(file));
+    await loadApplicationByFile(path.resolve(file));
   } else {
-    loadApplicationPackage(file);
+    await loadApplicationPackage(file);
   }
 } else if (option.version) {
   console.log('v' + process.versions.electron);
@@ -262,7 +271,7 @@ if (option.file && !option.webdriver) {
   console.log(process.versions.modules);
   process.exit(0);
 } else if (option.interactive) {
-  startRepl();
+  await startRepl();
 } else {
   if (!option.noHelp) {
     const welcomeMessage = `
@@ -285,5 +294,5 @@ Options:
     console.log(welcomeMessage);
   }
 
-  loadApplicationByFile('index.html');
+  await loadApplicationByFile('index.html');
 }

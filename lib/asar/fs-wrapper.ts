@@ -5,7 +5,7 @@ import type * as Crypto from 'crypto';
 
 const asar = process._linkedBinding('electron_common_asar');
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 const Promise: PromiseConstructor = global.Promise;
 
@@ -27,7 +27,7 @@ const cachedArchives = new Map<string, NodeJS.AsarArchive>();
 const getOrCreateArchive = (archivePath: string) => {
   const isCached = cachedArchives.has(archivePath);
   if (isCached) {
-    return cachedArchives.get(archivePath);
+    return cachedArchives.get(archivePath)!;
   }
 
   try {
@@ -39,10 +39,17 @@ const getOrCreateArchive = (archivePath: string) => {
   }
 };
 
+process._getOrCreateArchive = getOrCreateArchive;
+
 const asarRe = /\.asar/i;
 
+const { getValidatedPath } = __non_webpack_require__('internal/fs/utils');
+// In the renderer node internals use the node global URL but we do not set that to be
+// the global URL instance.  We need to do instanceof checks against the internal URL impl
+const { URL: NodeURL } = __non_webpack_require__('internal/url');
+
 // Separate asar package's path from full path.
-const splitPath = (archivePathOrBuffer: string | Buffer) => {
+const splitPath = (archivePathOrBuffer: string | Buffer | URL) => {
   // Shortcut for disabled asar.
   if (isAsarDisabled()) return { isAsar: <const>false };
 
@@ -50,6 +57,9 @@ const splitPath = (archivePathOrBuffer: string | Buffer) => {
   let archivePath = archivePathOrBuffer;
   if (Buffer.isBuffer(archivePathOrBuffer)) {
     archivePath = archivePathOrBuffer.toString();
+  }
+  if (archivePath instanceof NodeURL) {
+    archivePath = getValidatedPath(archivePath);
   }
   if (typeof archivePath !== 'string') return { isAsar: <const>false };
   if (!asarRe.test(archivePath)) return { isAsar: <const>false };
@@ -384,7 +394,13 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { exists: nativeExists } = fs;
   fs.exists = function exists (pathArgument: string, callback: any) {
-    const pathInfo = splitPath(pathArgument);
+    let pathInfo: ReturnType<typeof splitPath>;
+    try {
+      pathInfo = splitPath(pathArgument);
+    } catch {
+      nextTick(callback, [false]);
+      return;
+    }
     if (!pathInfo.isAsar) return nativeExists(pathArgument, callback);
     const { asarPath, filePath } = pathInfo;
 
@@ -415,7 +431,12 @@ export const wrapFsWithAsar = (fs: Record<string, any>) => {
 
   const { existsSync } = fs;
   fs.existsSync = (pathArgument: string) => {
-    const pathInfo = splitPath(pathArgument);
+    let pathInfo: ReturnType<typeof splitPath>;
+    try {
+      pathInfo = splitPath(pathArgument);
+    } catch {
+      return false;
+    }
     if (!pathInfo.isAsar) return existsSync(pathArgument);
     const { asarPath, filePath } = pathInfo;
 

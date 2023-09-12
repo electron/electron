@@ -1,0 +1,42 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Thu, 9 Mar 2023 01:28:56 -0800
+Subject: feat: expose DocumentLoader::SetDefersLoading on WebDocumentLoader
+
+This allows embedders to call SetDefersLoading without reaching into Blink internals. Electron uses this to defer page loading until the preload scripts have finished executing.
+This might be upstreamable?
+
+diff --git a/third_party/blink/public/web/web_document_loader.h b/third_party/blink/public/web/web_document_loader.h
+index ff1948e649fffdc92a2db0e736c99bf4e8c06514..b165201b273c8fa9de8e66fe8ef7bfc28eee0850 100644
+--- a/third_party/blink/public/web/web_document_loader.h
++++ b/third_party/blink/public/web/web_document_loader.h
+@@ -38,6 +38,7 @@
+ #include "third_party/blink/public/platform/cross_variant_mojo_util.h"
+ #include "third_party/blink/public/platform/web_archive_info.h"
+ #include "third_party/blink/public/platform/web_common.h"
++#include "third_party/blink/public/platform/web_loader_freeze_mode.h"
+ #include "third_party/blink/public/platform/web_source_location.h"
+ #include "third_party/blink/public/web/web_navigation_type.h"
+ 
+@@ -62,6 +63,8 @@ class BLINK_EXPORT WebDocumentLoader {
+     virtual ~ExtraData() = default;
+   };
+ 
++  virtual void SetDefersLoading(WebLoaderFreezeMode) = 0;
++
+   static bool WillLoadUrlAsEmpty(const WebURL&);
+ 
+   // Returns the http referrer of original request which initited this load.
+diff --git a/third_party/blink/renderer/core/loader/document_loader.h b/third_party/blink/renderer/core/loader/document_loader.h
+index 1548bbee1845eaac75ceb9e2b2783b69084956e4..c9e8293ef2d662210cb9fc95488c6a51ffc80df8 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.h
++++ b/third_party/blink/renderer/core/loader/document_loader.h
+@@ -305,7 +305,7 @@ class CORE_EXPORT DocumentLoader : public GarbageCollected<DocumentLoader>,
+       absl::optional<scheduler::TaskAttributionId>
+           soft_navigation_heuristics_task_id);
+ 
+-  void SetDefersLoading(LoaderFreezeMode);
++  void SetDefersLoading(LoaderFreezeMode) override;
+ 
+   DocumentLoadTiming& GetTiming() { return document_load_timing_; }
+ 

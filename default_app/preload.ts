@@ -1,4 +1,4 @@
-import { ipcRenderer, contextBridge } from 'electron/renderer';
+const { ipcRenderer, contextBridge } = require('electron/renderer');
 
 const policy = window.trustedTypes.createPolicy('electron-default-app', {
   // we trust the SVG contents

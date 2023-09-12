@@ -377,6 +377,14 @@ if (process.platform === 'darwin') {
   console.log(value);
   const value2 = systemPreferences.getUserDefault('Foo', 'boolean');
   console.log(value2);
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.getAppLevelAppearance());
+  // @ts-expect-error Removed API
+  systemPreferences.setAppLevelAppearance('dark');
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.appLevelAppearance);
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.getColor('alternate-selected-control-text'));
 }
 
 // Create the window.
@@ -1274,6 +1282,9 @@ win4.webContents.on('devtools-open-url', (event, url) => {
 });
 
 win4.loadURL('http://github.com');
+
+// @ts-expect-error Removed API
+win4.webContents.getPrinters();
 
 // TouchBar
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md

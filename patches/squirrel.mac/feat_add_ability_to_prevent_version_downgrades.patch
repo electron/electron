@@ -1,0 +1,116 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Samuel Attard <marshallofsound@electronjs.org>
+Date: Tue, 6 Jun 2023 15:20:38 -0700
+Subject: feat: add ability to prevent version downgrades
+
+The ElectronSquirrelPreventDowngrades flag in your Info.plist can enable this feature, it must be set to true.  This feature prevents a class of downgrade / freeze issues but has significant drawbacks in that it may break existing apps that delibrately downgrade users via the updater and requires that version strings are exactly A.B.C in order for the version comparison logic to work.  Because of this this feature can not (and is not) enabled by default.
+
+diff --git a/Squirrel/SQRLUpdater.h b/Squirrel/SQRLUpdater.h
+index b3526b246b3729a7556ca0ec348fdc08825c89ed..87119399e8548e04134d1ee0cd18f85c2ad672c2 100644
+--- a/Squirrel/SQRLUpdater.h
++++ b/Squirrel/SQRLUpdater.h
+@@ -117,6 +117,10 @@ typedef enum {
+ // documentation for more information.
+ @property (atomic, strong) Class updateClass;
+ 
++// Publicly exposed for testing purposes, compares two version strings to see if it's
++// allowed.  This assumes that the ElectronSquirrelPreventDowngrades flag is enabled.
+++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion;
++
+ // Initializes an updater that will send the given request to check for updates.
+ //
+ // This is the designated initializer for this class.
+diff --git a/Squirrel/SQRLUpdater.m b/Squirrel/SQRLUpdater.m
+index 4c703159a2bb0239b7d4e1793a985b5ec2edcfa9..592c7ea51515aab96934e0117df3c8065494fa09 100644
+--- a/Squirrel/SQRLUpdater.m
++++ b/Squirrel/SQRLUpdater.m
+@@ -42,6 +42,18 @@
+ // followed by a random string of characters.
+ static NSString * const SQRLUpdaterUniqueTemporaryDirectoryPrefix = @"update.";
+ 
++BOOL isVersionStandard(NSString* version) {
++	NSCharacterSet *alphaNums = [NSCharacterSet decimalDigitCharacterSet];
++
++	NSArray* versionParts = [version componentsSeparatedByString:@"."];
++	BOOL versionBad = [versionParts count] != 3;
++	for (NSString* part in versionParts) {
++		versionBad = versionBad || [alphaNums isSupersetOfSet:[NSCharacterSet characterSetWithCharactersInString:part]];
++	}
++
++	return !versionBad;
++}
++
+ @interface SQRLUpdater ()
+ 
+ @property (atomic, readwrite) SQRLUpdaterState state;
+@@ -59,6 +71,8 @@ @interface SQRLUpdater ()
+ // Sends completed or error.
+ @property (nonatomic, strong, readonly) RACSignal *shipItLauncher;
+ 
+++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion;
++
+ // Parses an update model from downloaded data.
+ //
+ // data - JSON data representing an update manifest. This must not be nil.
+@@ -372,6 +386,10 @@ - (RACDisposable *)startAutomaticChecksWithInterval:(NSTimeInterval)interval {
+ 		connect];
+ }
+ 
+++ (bool) isVersionAllowedForUpdate:(NSString*)targetVersion from:(NSString*)currentVersion {
++	return [currentVersion compare:targetVersion options:NSNumericSearch] != NSOrderedDescending;
++}
++
+ - (RACSignal *)updateFromJSONData:(NSData *)data {
+ 	NSParameterAssert(data != nil);
+ 
+@@ -711,6 +729,50 @@ - (RACSignal *)verifyAndPrepareUpdate:(SQRLUpdate *)update fromBundle:(NSBundle
+ 	return [[[[self.signature
+ 		verifyBundleAtURL:updateBundle.bundleURL]
+ 		then:^{
++			NSRunningApplication *currentApplication = NSRunningApplication.currentApplication;
++			NSBundle *appBundle = [NSBundle bundleWithURL:currentApplication.bundleURL];
++			BOOL preventDowngrades = [[appBundle objectForInfoDictionaryKey:@"ElectronSquirrelPreventDowngrades"] boolValue];
++
++			if (preventDowngrades == YES) {
++				NSString* currentVersion = [appBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
++				NSString* updateVersion = [updateBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
++				if (!currentVersion || !updateVersion) {
++					NSDictionary *errorInfo = @{
++						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
++						NSLocalizedRecoverySuggestionErrorKey: NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is missing a valid version string in either the current bundle or the target bundle", nil),
++					};
++					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
++					return [RACSignal error:error];
++				}
++
++				if (!isVersionStandard(currentVersion)) {
++					NSDictionary *errorInfo = @{
++						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
++						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update from '%@' which is not a valid version string", nil), currentVersion],
++					};
++					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
++					return [RACSignal error:error];
++				}
++
++				if (!isVersionStandard(updateVersion)) {
++					NSDictionary *errorInfo = @{
++						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
++						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update to '%@' which is not a valid version string", nil), updateVersion],
++					};
++					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
++					return [RACSignal error:error];
++				}
++
++				if (![SQRLUpdater isVersionAllowedForUpdate:updateVersion from:currentVersion]) {
++					NSDictionary *errorInfo = @{
++						NSLocalizedDescriptionKey: NSLocalizedString(@"Cannot update to a bundle with a lower version number", nil),
++						NSLocalizedRecoverySuggestionErrorKey: [NSString stringWithFormat:NSLocalizedString(@"The application has ElectronSquirrelPreventDowngrades enabled and is trying to update from '%@' to '%@' which appears to be a downgrade", nil), currentVersion, updateVersion],
++					};
++					NSError *error = [NSError errorWithDomain:SQRLUpdaterErrorDomain code:SQRLUpdaterErrorMissingUpdateBundle userInfo:errorInfo];
++					return [RACSignal error:error];
++				}
++			}
++
+ 			SQRLDownloadedUpdate *downloadedUpdate = [[SQRLDownloadedUpdate alloc] initWithUpdate:update bundle:updateBundle];
+ 			return [RACSignal return:downloadedUpdate];
+ 		}]

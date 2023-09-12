@@ -139,21 +139,6 @@ void ElectronPermissionManager::SetBluetoothPairingHandler(
   bluetooth_pairing_handler_ = handler;
 }
 
-void ElectronPermissionManager::RequestPermission(
-    blink::PermissionType permission,
-    content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin,
-    bool user_gesture,
-    StatusCallback callback) {
-  if (render_frame_host->IsNestedWithinFencedFrame()) {
-    std::move(callback).Run(blink::mojom::PermissionStatus::DENIED);
-    return;
-  }
-
-  RequestPermissionWithDetails(permission, render_frame_host, requesting_origin,
-                               user_gesture, {}, std::move(callback));
-}
-
 void ElectronPermissionManager::RequestPermissionWithDetails(
     blink::PermissionType permission,
     content::RenderFrameHost* render_frame_host,
@@ -161,35 +146,41 @@ void ElectronPermissionManager::RequestPermissionWithDetails(
     bool user_gesture,
     base::Value::Dict details,
     StatusCallback response_callback) {
+  if (render_frame_host->IsNestedWithinFencedFrame()) {
+    std::move(response_callback).Run(blink::mojom::PermissionStatus::DENIED);
+    return;
+  }
+
   RequestPermissionsWithDetails(
-      std::vector<blink::PermissionType>(1, permission), render_frame_host,
-      user_gesture, std::move(details),
+      render_frame_host,
+      content::PermissionRequestDescription(permission, user_gesture,
+                                            requesting_origin),
+      std::move(details),
       base::BindOnce(PermissionRequestResponseCallbackWrapper,
                      std::move(response_callback)));
 }
 
 void ElectronPermissionManager::RequestPermissions(
-    const std::vector<blink::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
-    const GURL& requesting_origin,
-    bool user_gesture,
+    const content::PermissionRequestDescription& request_description,
     StatusesCallback callback) {
   if (render_frame_host->IsNestedWithinFencedFrame()) {
     std::move(callback).Run(std::vector<blink::mojom::PermissionStatus>(
-        permissions.size(), blink::mojom::PermissionStatus::DENIED));
+        request_description.permissions.size(),
+        blink::mojom::PermissionStatus::DENIED));
     return;
   }
 
-  RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
-                                {}, std::move(callback));
+  RequestPermissionsWithDetails(render_frame_host, request_description, {},
+                                std::move(callback));
 }
 
 void ElectronPermissionManager::RequestPermissionsWithDetails(
-    const std::vector<blink::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
-    bool user_gesture,
+    const content::PermissionRequestDescription& request_description,
     base::Value::Dict details,
     StatusesCallback response_callback) {
+  auto& permissions = request_description.permissions;
   if (permissions.empty()) {
     std::move(response_callback).Run({});
     return;
@@ -197,7 +188,7 @@ void ElectronPermissionManager::RequestPermissionsWithDetails(
 
   if (request_handler_.is_null()) {
     std::vector<blink::mojom::PermissionStatus> statuses;
-    for (auto permission : permissions) {
+    for (auto& permission : permissions) {
       if (permission == blink::PermissionType::MIDI_SYSEX) {
         content::ChildProcessSecurityPolicy::GetInstance()
             ->GrantSendMidiSysExMessage(
@@ -252,19 +243,19 @@ void ElectronPermissionManager::ResetPermission(
     const GURL& embedding_origin) {}
 
 void ElectronPermissionManager::RequestPermissionsFromCurrentDocument(
-    const std::vector<blink::PermissionType>& permissions,
     content::RenderFrameHost* render_frame_host,
-    bool user_gesture,
+    const content::PermissionRequestDescription& request_description,
     base::OnceCallback<void(const std::vector<blink::mojom::PermissionStatus>&)>
         callback) {
   if (render_frame_host->IsNestedWithinFencedFrame()) {
     std::move(callback).Run(std::vector<blink::mojom::PermissionStatus>(
-        permissions.size(), blink::mojom::PermissionStatus::DENIED));
+        request_description.permissions.size(),
+        blink::mojom::PermissionStatus::DENIED));
     return;
   }
 
-  RequestPermissionsWithDetails(permissions, render_frame_host, user_gesture,
-                                {}, std::move(callback));
+  RequestPermissionsWithDetails(render_frame_host, request_description, {},
+                                std::move(callback));
 }
 
 blink::mojom::PermissionStatus ElectronPermissionManager::GetPermissionStatus(

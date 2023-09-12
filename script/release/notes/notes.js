@@ -461,7 +461,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     toBranch
   };
 
-  pool.commits.forEach(commit => {
+  for (const commit of pool.commits) {
     const str = commit.semanticType;
     if (commit.isBreakingChange) {
       notes.breaking.push(commit);
@@ -478,7 +478,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     } else {
       notes.unknown.push(commit);
     }
-  });
+  }
 
   return notes;
 };

@@ -12,7 +12,7 @@ We attempt to migrate the safe storage key from the old account, if that migrati
 Existing apps that aren't built for the app store should be unimpacted, there is one edge case where a user uses BOTH an AppStore and a darwin build of the same app only one will keep it's access to the safestorage key as during the migration we delete the old account.  This is an acceptable edge case as no one should be actively using two versions of the same app.
 
 diff --git a/components/os_crypt/sync/keychain_password_mac.mm b/components/os_crypt/sync/keychain_password_mac.mm
-index f6269925af68ce3ef9fb684bf4a1662874becae9..8c5e7cbb37b03e8c296590cd3b41aa6524f654ff 100644
+index a6b736f8be0fb24bd61f291ca60c1a9ccae30db7..edab197b5729c5b25599bba411c25bac6ed02827 100644
 --- a/components/os_crypt/sync/keychain_password_mac.mm
 +++ b/components/os_crypt/sync/keychain_password_mac.mm
 @@ -22,6 +22,12 @@
@@ -62,7 +62,7 @@ index f6269925af68ce3ef9fb684bf4a1662874becae9..8c5e7cbb37b03e8c296590cd3b41aa65
 +
 +  // If the suffixed account didn't exist, we should check if the legacy non-suffixed account
 +  // exists. If it does we can use that key and migrate it to the new account
-+  base::ScopedCFTypeRef<SecKeychainItemRef> item_ref;
++  base::apple::ScopedCFTypeRef<SecKeychainItemRef> item_ref;
 +  error = keychain_.FindGenericPassword(
 +      service_name.size(), service_name.c_str(),
 +      account_name.size(), account_name.c_str(), &password_length,

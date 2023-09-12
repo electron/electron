@@ -249,7 +249,7 @@ describe('<webview> tag', function () {
       });
       await w.loadURL('about:blank');
       const src = url.format({
-        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        pathname: `${fixtures.replaceAll('\\', '/')}/pages/theme-color.html`,
         protocol: 'file',
         slashes: true
       });
@@ -929,7 +929,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);
@@ -1411,7 +1411,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);
@@ -1791,7 +1791,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);
@@ -2088,7 +2088,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);

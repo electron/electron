@@ -68,9 +68,9 @@ const template = [
             // on reload, start fresh and close any old
             // open secondary windows
             if (focusedWindow.id === 1) {
-              BrowserWindow.getAllWindows().forEach(win => {
+              for (const win of BrowserWindow.getAllWindows()) {
                 if (win.id > 1) win.close()
-              })
+              }
             }
             focusedWindow.reload()
           }
@@ -209,15 +209,15 @@ function findReopenMenuItem () {
   if (!menu) return
 
   let reopenMenuItem
-  menu.items.forEach(item => {
+  for (const item of menu.items) {
     if (item.submenu) {
-      item.submenu.items.forEach(item => {
-        if (item.key === 'reopenMenuItem') {
-          reopenMenuItem = item
+      for (const subitem of item.submenu.items) {
+        if (subitem.key === 'reopenMenuItem') {
+          reopenMenuItem = subitem
         }
-      })
+      }
     }
-  })
+  }
   return reopenMenuItem
 }
 

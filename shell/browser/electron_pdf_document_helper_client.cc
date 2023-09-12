@@ -2,17 +2,15 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/electron_pdf_web_contents_helper_client.h"
+#include "shell/browser/electron_pdf_document_helper_client.h"
 
 #include "chrome/browser/pdf/pdf_frame_util.h"
 #include "content/public/browser/web_contents.h"
 
-ElectronPDFWebContentsHelperClient::ElectronPDFWebContentsHelperClient() =
-    default;
-ElectronPDFWebContentsHelperClient::~ElectronPDFWebContentsHelperClient() =
-    default;
+ElectronPDFDocumentHelperClient::ElectronPDFDocumentHelperClient() = default;
+ElectronPDFDocumentHelperClient::~ElectronPDFDocumentHelperClient() = default;
 
-content::RenderFrameHost* ElectronPDFWebContentsHelperClient::FindPdfFrame(
+content::RenderFrameHost* ElectronPDFDocumentHelperClient::FindPdfFrame(
     content::WebContents* contents) {
   content::RenderFrameHost* main_frame = contents->GetPrimaryMainFrame();
   content::RenderFrameHost* pdf_frame =
@@ -20,13 +18,13 @@ content::RenderFrameHost* ElectronPDFWebContentsHelperClient::FindPdfFrame(
   return pdf_frame ? pdf_frame : main_frame;
 }
 
-void ElectronPDFWebContentsHelperClient::UpdateContentRestrictions(
+void ElectronPDFDocumentHelperClient::UpdateContentRestrictions(
     content::RenderFrameHost* render_frame_host,
     int content_restrictions) {}
-void ElectronPDFWebContentsHelperClient::OnPDFHasUnsupportedFeature(
+void ElectronPDFDocumentHelperClient::OnPDFHasUnsupportedFeature(
     content::WebContents* contents) {}
-void ElectronPDFWebContentsHelperClient::OnSaveURL(
+void ElectronPDFDocumentHelperClient::OnSaveURL(
     content::WebContents* contents) {}
-void ElectronPDFWebContentsHelperClient::SetPluginCanSave(
+void ElectronPDFDocumentHelperClient::SetPluginCanSave(
     content::RenderFrameHost* render_frame_host,
     bool can_save) {}

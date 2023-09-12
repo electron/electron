@@ -54,7 +54,6 @@ class AutoUpdater : public gin::Wrappable<AutoUpdater>,
 
  private:
   std::string GetFeedURL();
-  void SetFeedURL(gin::Arguments* args);
   void QuitAndInstall();
 };
 

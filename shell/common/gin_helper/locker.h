@@ -28,6 +28,7 @@ class Locker {
   std::unique_ptr<v8::Locker> locker_;
 
   static bool g_is_browser_process;
+  static bool g_is_renderer_process;
 };
 
 }  // namespace gin_helper

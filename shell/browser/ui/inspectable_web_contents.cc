@@ -44,11 +44,13 @@
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -585,6 +587,23 @@ void InspectableWebContents::LoadCompleted() {
           prefs.FindString("currentDockState");
       base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
+#if BUILDFLAG(IS_WIN)
+    auto* api_web_contents = api::WebContents::From(GetWebContents());
+    if (api_web_contents) {
+      auto* win =
+          static_cast<NativeWindowViews*>(api_web_contents->owner_window());
+      // When WCO is enabled, undock the devtools if the current dock
+      // position overlaps with the position of window controls to avoid
+      // broken layout.
+      if (win && win->IsWindowControlsOverlayEnabled()) {
+        if (IsAppRTL() && dock_state_ == "left") {
+          dock_state_ = "undocked";
+        } else if (dock_state_ == "right") {
+          dock_state_ = "undocked";
+        }
+      }
+    }
+#endif
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
     GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
