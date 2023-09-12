@@ -839,6 +839,20 @@ describe('webContents module', () => {
       expect(altKey).to.be.false();
     });
 
+    it('can correctly convert accelerators to key codes', async () => {
+      const keyup = once(ipcMain, 'keyup');
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'keyUp' });
+
+      await keyup;
+      const inputText = await w.webContents.executeJavaScript('document.getElementById("input").value');
+      expect(inputText).to.equal('+ + +');
+    });
+
     it('can send char events with modifiers', async () => {
       const keypress = once(ipcMain, 'keypress');
       w.webContents.sendInputEvent({ type: 'keyDown', keyCode: 'Z' });
