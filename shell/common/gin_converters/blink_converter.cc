@@ -10,6 +10,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversion_utils.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
@@ -275,11 +276,18 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
   if ((out->GetType() == blink::WebInputEvent::Type::kChar ||
        out->GetType() == blink::WebInputEvent::Type::kRawKeyDown)) {
+    // If the keyCode is e.g. Space or Plus we want to use the character
+    // instead of the keyCode: ' ' instead of 'Space', '+' instead of 'Plus'.
+    std::string character_str;
+    if (str.size() > 1 && domKey.IsCharacter())
+      base::WriteUnicodeCharacter(domKey.ToCharacter(), &character_str);
+
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
     size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
-    std::u16string text16 = base::UTF8ToUTF16(str);
-
+    std::u16string text16 = character_str.empty()
+                                ? base::UTF8ToUTF16(str)
+                                : base::UTF8ToUTF16(character_str);
     std::fill_n(out->text, text_length_cap, 0);
     std::fill_n(out->unmodified_text, text_length_cap, 0);
     for (size_t i = 0; i < std::min(text_length_cap - 1, text16.size()); ++i) {
