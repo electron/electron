@@ -53,7 +53,7 @@ doc for more details.
 ES Modules are loaded **asynchronously**. This means that only side effects
 from the main process entry point's imports will execute before the `ready` event.
 
-This is important because certain Electron APIs (e.g. [`app.setPath`](latest/api/app.md#appsetpathname-path))
+This is important because certain Electron APIs (e.g. [`app.setPath`](../api/app.md#appsetpathname-path))
 need to be called **before** the app's `ready` event is emitted.
 
 With top-level `await` available in Node ESM, make sure to `await` every Promise that you need to
@@ -62,7 +62,7 @@ execute before the `ready` event. Otherwise, your app may be `ready` before your
 For example, if `index.mjs` calls `import('./set-up-paths.mjs')` at the top level, the app will
 likely already be `ready` by the time that dynamic import resolves.
 
-```js title='index.mjs (Main Process)'
+```js @ts-nocheck title='index.mjs (Main Process)'
 // add an await call here to guarantee that path setup will finish before `ready`
 import('./set-up-paths.mjs')
 
@@ -79,21 +79,25 @@ syntax before Node.js supported ESM imports by turning these calls to CommonJS
 
 <details><summary>Example: @babel/plugin-transform-modules-commonjs</summary>
 
-```js title='@babel/plugin-transform-modules-commonjs'
-import foo from 'foo'
-import { bar } from 'bar'
-foo
-bar
+The `@babel/plugin-transform-modules-commonjs` plugin will transform
+ESM imports down to `require` calls. The exact syntax will depend on the
+[`importInterop` setting](https://babeljs.io/docs/babel-plugin-transform-modules-commonjs#importinterop).
 
-// Is compiled to ...
+```js @nolint @ts-nocheck title='@babel/plugin-transform-modules-commonjs'
+import foo from "foo";
+import { bar } from "bar";
+foo;
+bar;
 
-'use strict'
+// with "importInterop: node", compiles to ...
 
-var _foo = require('foo')
-var _bar = require('bar')
+"use strict";
 
-_foo.default
-_bar.bar
+var _foo = require("foo");
+var _bar = require("bar");
+
+_foo;
+_bar.bar;
 ```
 
 </details>
@@ -155,7 +159,7 @@ If this impacts you, change your response body to have _something_ in it
 If your unsandboxed renderer process does not have the `contextIsolation` flag enabled,
 you cannot dynamically `import()` files via Node's ESM loader.
 
-```js title='preload.mjs'
+```js @ts-nocheck title='preload.mjs'
 // ❌ these won't work without context isolation
 const fs = await import('fs')
 await import('./foo')
