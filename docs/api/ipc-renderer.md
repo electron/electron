@@ -36,6 +36,7 @@ Listens to `channel`, when a new message arrives `listener` would be called with
 
 * `channel` string
 * `listener` Function
+  * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
 Alias for [`ipcRenderer.removeListener`](#ipcrendererremovelistenerchannel-listener).
