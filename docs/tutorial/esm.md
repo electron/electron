@@ -56,7 +56,7 @@ from the main process entry point's imports will execute before the `ready` even
 This is important because certain Electron APIs (e.g. [`app.setPath`](../api/app.md#appsetpathname-path))
 need to be called **before** the app's `ready` event is emitted.
 
-With top-level `await` available in Node ESM, make sure to `await` every Promise that you need to
+With top-level `await` available in Node.js ESM, make sure to `await` every Promise that you need to
 execute before the `ready` event. Otherwise, your app may be `ready` before your code executes.
 
 For example, if `index.mjs` calls `import('./set-up-paths.mjs')` at the top level, the app will
