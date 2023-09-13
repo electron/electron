@@ -113,7 +113,7 @@ Electron's renderer processes run in a Chromium context and will use Chromium's 
 In practice, this means that `import` statements:
 
 - will not have access to Node.js built-in modules
-- will not be able to npm packages from `node_modules`
+- will not be able to load npm packages from `node_modules`
 
 ```html
 <script type="module">
