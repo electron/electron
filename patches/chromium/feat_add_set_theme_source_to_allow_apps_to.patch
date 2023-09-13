@@ -13,10 +13,10 @@ uses internally for things like menus and devtools.
 We can remove this patch once it has in some shape been upstreamed.
 
 diff --git a/ui/native_theme/native_theme.cc b/ui/native_theme/native_theme.cc
-index f66e507be6efde9f42418191d51a89561a7a24bf..781402b33706a1c6ec6ead71c1da2326a2b2f519 100644
+index d017d73c6cf99607f5b2e1ef26b2e28d8ca9c71a..7f615a4a1fbe4d92c8e91091e4f21e675a4ce3ae 100644
 --- a/ui/native_theme/native_theme.cc
 +++ b/ui/native_theme/native_theme.cc
-@@ -158,6 +158,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
+@@ -162,6 +162,8 @@ NativeTheme::NativeTheme(bool should_use_dark_colors,
  NativeTheme::~NativeTheme() = default;
  
  bool NativeTheme::ShouldUseDarkColors() const {

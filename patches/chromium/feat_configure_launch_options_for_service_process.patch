@@ -183,10 +183,10 @@ index 01e62d7e8df65efb900e9cd0d34bcd8e0ed3e7da..9af6784707f125046d9a734165fc2b08
    host->GetChildProcess()->BindServiceInterface(std::move(receiver));
  }
 diff --git a/content/browser/utility_process_host.cc b/content/browser/utility_process_host.cc
-index 6b23ccfd3c7844c309228f1378100e474a6bbbc5..f3b4497cc453178ef46b294eae4ed280e65d8da0 100644
+index e7ea7206793a91edfceea5736d4c133a7f1acca2..4fba5bf7274334374aa3df3d22faee813940b0ab 100644
 --- a/content/browser/utility_process_host.cc
 +++ b/content/browser/utility_process_host.cc
-@@ -156,11 +156,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
+@@ -157,11 +157,13 @@ const ChildProcessData& UtilityProcessHost::GetData() {
    return process_->GetData();
  }
  
@@ -202,7 +202,7 @@ index 6b23ccfd3c7844c309228f1378100e474a6bbbc5..f3b4497cc453178ef46b294eae4ed280
  
  bool UtilityProcessHost::Start() {
    return StartProcess();
-@@ -226,6 +228,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
+@@ -227,6 +229,24 @@ void UtilityProcessHost::SetZygoteForTesting(ZygoteCommunication* handle) {
  }
  #endif  // BUILDFLAG(USE_ZYGOTE)
  
@@ -227,7 +227,7 @@ index 6b23ccfd3c7844c309228f1378100e474a6bbbc5..f3b4497cc453178ef46b294eae4ed280
  mojom::ChildProcess* UtilityProcessHost::GetChildProcess() {
    return static_cast<ChildProcessHostImpl*>(process_->GetHost())
        ->child_process();
-@@ -441,9 +461,22 @@ bool UtilityProcessHost::StartProcess() {
+@@ -442,9 +462,22 @@ bool UtilityProcessHost::StartProcess() {
      }
  #endif  // BUILDFLAG(IS_LINUX)
  

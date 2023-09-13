@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index a5a5c24f4a080367f9039327089058c9c624ef79..2578db959e86eee5e4f608887f3580b00fbc1c5d 100644
+index 7497b6069ee2544fce52be8d37190a97a25e65b3..7efc1eaf2cec436ca056ba72e33cbc5aac6df0d8 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1040,6 +1040,7 @@ component("base") {
@@ -110,7 +110,7 @@ index 5ab406dbebe5c159c6e209f8844bf6fabd47199f..224c45b7bff3c4073c70bbd8bdc1fd1c
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index d3f76b03f28cc9b34cea1c468e15e95a534cd516..71fcf511033f26b8dcc4cccb82fd46ee5784029a 100644
+index c41565ca0eb628503f0863ce69d4c790be25ce2f..815c8a82b43703f703181e8427dafb508ff43055 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -212,7 +212,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index d06b485aebb64def0f082b4f1627c7b69b91a29c..7ed1e4a69ab09e2c1f328ab7bb7193d68404c63b 100644
+index 3c5aefcf245ff80294102cd3fb04abb63ece132f..6e69a7a8d823263ea56f470ca549bbe2a62c669e 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
 @@ -308,6 +308,7 @@ component("core") {

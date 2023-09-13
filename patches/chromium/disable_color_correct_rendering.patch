@@ -20,10 +20,10 @@ to deal with color spaces. That is being tracked at
 https://crbug.com/634542 and https://crbug.com/711107.
 
 diff --git a/cc/trees/layer_tree_host_impl.cc b/cc/trees/layer_tree_host_impl.cc
-index 777465ab5bb311035f805f5eba49fae14fd6601c..30813d35bacedbff1494aeff5b481ccffc6af70d 100644
+index 107f1b8a751567da90cf2740085a26b071fb05a1..caae4c22bb0cde05ef1be2d55b217b730b674cd9 100644
 --- a/cc/trees/layer_tree_host_impl.cc
 +++ b/cc/trees/layer_tree_host_impl.cc
-@@ -1869,6 +1869,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
+@@ -1868,6 +1868,10 @@ void LayerTreeHostImpl::SetIsLikelyToRequireADraw(
  TargetColorParams LayerTreeHostImpl::GetTargetColorParams(
      gfx::ContentColorUsage content_color_usage) const {
    TargetColorParams params;
@@ -35,7 +35,7 @@ index 777465ab5bb311035f805f5eba49fae14fd6601c..30813d35bacedbff1494aeff5b481ccf
    // If we are likely to software composite the resource, we use sRGB because
    // software compositing is unable to perform color conversion.
 diff --git a/cc/trees/layer_tree_settings.h b/cc/trees/layer_tree_settings.h
-index c84d4536210f3671c9e98f0de7caeaba523d1959..62863927742375e10a5907496cca95058ae5eece 100644
+index a47fbc82c7a9369d49cb62d31fb5c786473b9a66..b9dd88949ac6f6913539a4f913534112cb6e07fa 100644
 --- a/cc/trees/layer_tree_settings.h
 +++ b/cc/trees/layer_tree_settings.h
 @@ -102,6 +102,8 @@ class CC_EXPORT LayerTreeSettings {
@@ -81,10 +81,10 @@ index e4deb71ea3afa1ef9d6ddac9c61f5916ff608514..d2e6854ac2aaa3cc83c0b72ebc03193b
        !command_line->HasSwitch(switches::kUIDisablePartialSwap);
  
 diff --git a/content/browser/gpu/gpu_process_host.cc b/content/browser/gpu/gpu_process_host.cc
-index 6b2f1af11e1480153dff4bd1f32527f87f18dc80..ef69c734878fcd9f8fa6dd61dada1729248c2b91 100644
+index 77a5695f93e91d50cb57eebd56e53ebad62033ff..a043c585453f5a286ec770b6e1e34de0afcbc06f 100644
 --- a/content/browser/gpu/gpu_process_host.cc
 +++ b/content/browser/gpu/gpu_process_host.cc
-@@ -228,6 +228,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
+@@ -227,6 +227,7 @@ GpuTerminationStatus ConvertToGpuTerminationStatus(
  
  // Command-line switches to propagate to the GPU process.
  static const char* const kSwitchNames[] = {
@@ -148,7 +148,7 @@ index 6892376fa33d006453977c354734d880a7ef7c91..4cd7b762d5fe1c54f5b06cc0d8f50560
  }
  
 diff --git a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
-index b35f43f7051c2aabf6a49dd9af6627c9fbb2e99f..688954856aaf12565f4c63b3ffbb5459fe634693 100644
+index b5c519d77e404d626ce04e16bea02a3ae2dac4ff..d0a4564bc52901dfa58993331a977f2c4980f2c5 100644
 --- a/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 +++ b/third_party/blink/renderer/platform/widget/compositing/layer_tree_settings.cc
 @@ -30,6 +30,7 @@

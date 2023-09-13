@@ -9,10 +9,10 @@ potentially prevent a window from being created.
 TODO(loc): this patch is currently broken.
 
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index e5cb52706bedd851f92192de6ad954df6e656e3d..6685c0fbfc9935b4cfede3660cf264c62abf234e 100644
+index f7af8c0ed1dfda2db6979127d9ccbda1b5720b2c..6e2517bfb39b88827aa7a44f6b65b13c9454d16f 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -8204,6 +8204,7 @@ void RenderFrameHostImpl::CreateNewWindow(
+@@ -8205,6 +8205,7 @@ void RenderFrameHostImpl::CreateNewWindow(
            last_committed_origin_, params->window_container_type,
            params->target_url, params->referrer.To<Referrer>(),
            params->frame_name, params->disposition, *params->features,
@@ -21,7 +21,7 @@ index e5cb52706bedd851f92192de6ad954df6e656e3d..6685c0fbfc9935b4cfede3660cf264c6
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 787bf876b7b3eb835c7ae4b2b219c82f9b2bc49e..7f84ee9f5019465e0ae08579a25e46e51324aa7e 100644
+index e667fd07c877a260d539aab11f42984f76b2e157..35a7cb88aadd3cf709ae6ab94e26268a518a6c4f 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
 @@ -4327,6 +4327,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
@@ -66,10 +66,10 @@ index 3ddc93e18d353d5af31e28f8f8e682ea813db21c..2f1df452ce3617cf845409d01d804932
  
  // Operation result when the renderer asks the browser to create a new window.
 diff --git a/content/public/browser/content_browser_client.cc b/content/public/browser/content_browser_client.cc
-index a0d56a9a24f22b1fd7a7e7a7ac82adf23a1e27ca..b006271eb9d4eb28aa8342a58d579716ed369281 100644
+index 4d84a234087209212c6af2bea6b1934e3de42000..d1d1d373a825f6d3ca90297059f23ab8a834ce81 100644
 --- a/content/public/browser/content_browser_client.cc
 +++ b/content/public/browser/content_browser_client.cc
-@@ -695,6 +695,8 @@ bool ContentBrowserClient::CanCreateWindow(
+@@ -702,6 +702,8 @@ bool ContentBrowserClient::CanCreateWindow(
      const std::string& frame_name,
      WindowOpenDisposition disposition,
      const blink::mojom::WindowFeatures& features,
@@ -79,7 +79,7 @@ index a0d56a9a24f22b1fd7a7e7a7ac82adf23a1e27ca..b006271eb9d4eb28aa8342a58d579716
      bool opener_suppressed,
      bool* no_javascript_access) {
 diff --git a/content/public/browser/content_browser_client.h b/content/public/browser/content_browser_client.h
-index e570298dc9e743561671d4c01a1148f22601c5bf..5bd4d1fbb07f0a56361075a5bed785188688cca9 100644
+index 56057fe8c0b0f307ba804a65d9b929531eb7d749..eaa60ae3c2e33f0592bbc0e9e44dca32c1cf4ea2 100644
 --- a/content/public/browser/content_browser_client.h
 +++ b/content/public/browser/content_browser_client.h
 @@ -173,6 +173,7 @@ class NetworkService;
@@ -90,7 +90,7 @@ index e570298dc9e743561671d4c01a1148f22601c5bf..5bd4d1fbb07f0a56361075a5bed78518
  }  // namespace network
  
  namespace sandbox {
-@@ -1109,6 +1110,8 @@ class CONTENT_EXPORT ContentBrowserClient {
+@@ -1116,6 +1117,8 @@ class CONTENT_EXPORT ContentBrowserClient {
        const std::string& frame_name,
        WindowOpenDisposition disposition,
        const blink::mojom::WindowFeatures& features,
@@ -148,10 +148,10 @@ index 0fa12e6a5dd2eb2cd2102919f6127731e8500133..64ac8d677a9f7a723c46bbf0e74595b3
    // typically happens when popups are created.
    virtual void WebContentsCreated(WebContents* source_contents,
 diff --git a/content/renderer/render_frame_impl.cc b/content/renderer/render_frame_impl.cc
-index 99066646e4e50ae8b4bf5dc51ddd590e825b0677..8411bcbbfd4aab1ee5ef3d64a5a574a2ad3195ea 100644
+index 5a8dc435251f496b605b589e577f3a1745b396b9..587c453043ca53bc38cc444a95aa7af3b391ad53 100644
 --- a/content/renderer/render_frame_impl.cc
 +++ b/content/renderer/render_frame_impl.cc
-@@ -6401,6 +6401,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
+@@ -6402,6 +6402,10 @@ WebView* RenderFrameImpl::CreateNewWindow(
            request.HasUserGesture(), GetWebFrame()->IsAdFrame(),
            GetWebFrame()->IsAdScriptInStack());
  
