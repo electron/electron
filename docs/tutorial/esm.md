@@ -161,7 +161,7 @@ you cannot dynamically `import()` files via Node's ESM loader.
 
 ```js @ts-nocheck title='preload.mjs'
 // ❌ these won't work without context isolation
-const fs = await import('fs')
+const fs = await import('node:fs')
 await import('./foo')
 ```
 
