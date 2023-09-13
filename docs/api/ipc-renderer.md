@@ -64,6 +64,7 @@ Alias for [`ipcRenderer.on`](#ipcrendereronchannel-listener).
 
 * `channel` string
 * `listener` Function
+  * `event` [IpcRendererEvent][ipc-renderer-event]
   * `...args` any[]
 
 Removes the specified `listener` from the listener array for the specified
