@@ -62,11 +62,11 @@ execute before the `ready` event. Otherwise, your app may be `ready` before your
 For example, if `index.mjs` calls `import('./set-up-paths.mjs')` at the top level, the app will
 likely already be `ready` by the time that dynamic import resolves.
 
-```js @ts-nocheck title='index.mjs (Main Process)'
+```js @ts-expect-error=[2] title='index.mjs (Main Process)'
 // add an await call here to guarantee that path setup will finish before `ready`
 import('./set-up-paths.mjs')
 
-app.whenReady(() => {
+app.whenReady().then(() => {
   console.log('This code may execute before the above import')
 })
 ```
