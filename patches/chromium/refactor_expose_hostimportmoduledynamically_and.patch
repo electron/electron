@@ -39,7 +39,7 @@ index 1990ad6c70cbb0e739f0cd2cec61c11d292a6725..cb3a32f85c37296547c49e29bef4e3e8
  void InitializeV8Common(v8::Isolate* isolate) {
    // Set up garbage collection before setting up anything else as V8 may trigger
    // GCs during Blink setup.
-@@ -704,9 +708,9 @@ void InitializeV8Common(v8::Isolate* isolate) {
+@@ -710,9 +710,9 @@ void InitializeV8Common(v8::Isolate* isolate) {
        SharedArrayBufferConstructorEnabledCallback);
    isolate->SetJavaScriptCompileHintsMagicEnabledCallback(
        JavaScriptCompileHintsMagicEnabledCallback);
@@ -50,7 +50,8 @@ index 1990ad6c70cbb0e739f0cd2cec61c11d292a6725..cb3a32f85c37296547c49e29bef4e3e8
 +      V8Initializer::HostGetImportMetaProperties);
    isolate->SetMetricsRecorder(std::make_shared<V8MetricsRecorder>(isolate));
  
-   V8ContextSnapshot::EnsureInterfaceTemplates(isolate);
+ #if BUILDFLAG(IS_WIN)
+
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h b/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
 index 9e628b96a845322d407f9da30a63c04ef5de9c24..8f5e4602f5e3f6787a9e54d510b39519074d51e6 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.h
