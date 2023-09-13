@@ -117,7 +117,7 @@ In practice, this means that `import` statements:
 
 ```html
 <script type="module">
-    import { exists } from 'fs' // ❌ will not work!
+    import { exists } from 'node:fs' // ❌ will not work!
 </script>
 ```
 
