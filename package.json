@@ -152,6 +152,6 @@
     ]
   },
   "resolutions": {
-    "nan": "nodejs/nan#4290e23af108328269fcd4fe174ad657ad7cdd96"
+    "nan": "nodejs/nan#e14bdcd1f72d62bca1d541b66da43130384ec213"
   }
 }

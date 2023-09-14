@@ -39,7 +39,7 @@
     "yargs": "^16.0.3"
   },
   "resolutions": {
-    "nan": "nodejs/nan#4290e23af108328269fcd4fe174ad657ad7cdd96",
+    "nan": "nodejs/nan#e14bdcd1f72d62bca1d541b66da43130384ec213",
     "dbus-native/optimist/minimist": "1.2.7",
     "dbus-native/xml2js": "0.5.0"
   }
