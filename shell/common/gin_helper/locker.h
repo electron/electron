@@ -21,6 +21,10 @@ class Locker {
   Locker(const Locker&) = delete;
   Locker& operator=(const Locker&) = delete;
 
+  // prevent heap allocation
+  void* operator new(size_t size) = delete;
+  void operator delete(void*, size_t) = delete;
+
  private:
   const std::unique_ptr<v8::Locker> locker_;
 };
