@@ -74,7 +74,7 @@ index 729753a72edd761ec831f79828742a26f9dd2417..45858456c9c8c82870c41b0edd1359d1
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 718ad3e088f6730bb00f1e3674effae6c429b9b6..77af941f2dd2d3074f5596cee24be47dc8175434 100644
+index 368cf7aaffeef5f9796f78a72f13eddb6c44dec9..ade39af8ac41c91d4fd4b9a905ce5d836bea7d87 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -56,6 +56,7 @@ source_set("browser") {
@@ -110,10 +110,10 @@ index b16be8f9992b23ce93d174531f2debd7f18bb436..119038743dc222907cb74c2c3ea34d23
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 581571b6bb1a655319b247d7cc85bb2a4dd7db1c..09779610326da207062a59ba572b2d7c13efd26f 100644
+index 9efe02bc63033f9d2e39a97c95038eb27a1c2f93..1535e9346218c4b0dd71be53e8830b8d299561cc 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
-@@ -480,6 +480,7 @@ static_library("test_support") {
+@@ -481,6 +481,7 @@ static_library("test_support") {
    configs += [
      "//build/config:precompiled_headers",
      "//v8:external_startup_data",
