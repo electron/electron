@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shelley Vohr <shelley.vohr@gmail.com>
+Date: Thu, 14 Sep 2023 10:24:44 +0200
+Subject: fix: handle no top level aura window in WebContentsImpl
+
+https://chromium-review.googlesource.com/c/chromium/src/+/4794133
+added two new RenderWidgetHostDelegate methods to set and get the
+window show state on Aura. However, the implementation of these methods
+doesn't take into account the case where there is no top level Aura
+Window which leads to a bad access crash trying to get its show state.
+
+This fixes that by guarding against the missing window - this check
+can potentially be upstreamed but it's likely that the better fix for this
+is to update our OSR code which is several years outdated.
+
+diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
+index 93fbebcf3307c20df75ed83e952b816a7d77da58..ad8bbbb0a2a94320938cb1e1d008a7422a79da7e 100644
+--- a/content/browser/web_contents/web_contents_impl.cc
++++ b/content/browser/web_contents/web_contents_impl.cc
+@@ -3843,6 +3843,8 @@ void WebContentsImpl::Restore() {
+ 
+ void WebContentsImpl::SetWindowShowState(ui::WindowShowState state) {
+   aura::Window* window = GetTopLevelNativeWindow();
++  if (!window)
++    return;
+ 
+   // TODO(isandrk, crbug.com/1466855): This API function currently works only on
+   // Aura platforms (Win/Lin/CrOS/Fuchsia), make it also work on Mac.
+@@ -3857,7 +3859,7 @@ void WebContentsImpl::SetWindowShowState(ui::WindowShowState state) {
+ 
+ ui::WindowShowState WebContentsImpl::GetWindowShowState() {
+   aura::Window* window = GetTopLevelNativeWindow();
+-  return wm::GetWindowState(window);
++  return window ? wm::GetWindowState(window) : ui::SHOW_STATE_NORMAL;
+ }
+ #endif
+ 
