@@ -37,20 +37,22 @@ index 7bc2f882a1d0d9dfd4541d4da1975e0136cf275e..cc5f926bf73a0d98a0b0015391413867
  }
  
 diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 8784a4a93993110879564c2cd5520e2d69f59b07..59bcb9969b014e5df8856f956de1587e2fcf52ec 100644
+index 8784a4a93993110879564c2cd5520e2d69f59b07..a2d6831d94623349c1ea7b7bcd53383c142c6c34 100644
 --- a/content/browser/renderer_host/render_frame_host_impl.cc
 +++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10153,9 +10153,11 @@ void RenderFrameHostImpl::CommitNavigation(
+@@ -10153,9 +10153,14 @@ void RenderFrameHostImpl::CommitNavigation(
        ProcessLock::FromSiteInfo(GetSiteInstance()->GetSiteInfo());
    auto browser_calc_origin_to_commit =
        navigation_request->GetOriginToCommitWithDebugInfo();
-+  const CanCommitStatus can_commit_status = policy->CanCommitOriginAndUrl(
-+          GetProcess()->GetID(), GetSiteInstance()->GetIsolationContext(),
-+          navigation_request->GetUrlInfo());
++  url::Origin origin_to_check = browser_calc_origin_to_commit.first.value();
++  if(!common_params->url.IsStandard()) {
++    //Custom URLS fail the CanAccessDataForOrigin check with browser_calc_origin_to_commit.first.value
++    origin_to_check = url::Origin::Create(common_params->url);
++  }
    if (!process_lock.is_error_page() && !is_mhtml_subframe &&
--      !policy->CanAccessDataForOrigin(
+       !policy->CanAccessDataForOrigin(
 -          GetProcess()->GetID(), browser_calc_origin_to_commit.first.value())) {
-+      can_commit_status != CanCommitStatus::CAN_COMMIT_ORIGIN_AND_URL) {
++          GetProcess()->GetID(), origin_to_check)) {
      SCOPED_CRASH_KEY_STRING64("CommitNavigation", "lock_url",
                                process_lock.ToString());
      SCOPED_CRASH_KEY_STRING64(
