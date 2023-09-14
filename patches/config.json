@@ -21,7 +21,5 @@
 
   "src/electron/patches/ReactiveObjC": "src/third_party/squirrel.mac/vendor/ReactiveObjC",
 
-  "src/electron/patches/webrtc": "src/third_party/webrtc",
-
-  "src/electron/patches/libwebp": "src/third_party/libwebp/src"
+  "src/electron/patches/webrtc": "src/third_party/webrtc"
 }
