@@ -11,7 +11,7 @@ trying to see whether or not the lines are greyed out. One possibility
 would be to upstream a changed test that doesn't hardcode line numbers.
 
 diff --git a/test/fixtures/errors/force_colors.snapshot b/test/fixtures/errors/force_colors.snapshot
-index 0334a0b4faa3633aa8617b9538873e7f3540513b..0300d397c6a5b82ef2d0feafca5f8bd746b1f5b0 100644
+index 0334a0b4faa3633aa8617b9538873e7f3540513b..8c047001ede7b66cab5146444fe2b48190b64359 100644
 --- a/test/fixtures/errors/force_colors.snapshot
 +++ b/test/fixtures/errors/force_colors.snapshot
 @@ -4,11 +4,12 @@ throw new Error('Should include grayed stack trace')
@@ -27,7 +27,7 @@ index 0334a0b4faa3633aa8617b9538873e7f3540513b..0300d397c6a5b82ef2d0feafca5f8bd7
 +[90m    at Object..js (node:internal*modules*cjs*loader:1326:10)[39m
 +[90m    at Module.load (node:internal*modules*cjs*loader:1126:32)[39m
 +[90m    at node:internal*modules*cjs*loader:967:12[39m
-+[90m    at Function._load (node:electron*js2c*asar_bundle:776:32)[39m
++[90m    at Function._load (node:electron*js2c*asar_bundle:777:32)[39m
 +[90m    at Function.executeUserEntryPoint [as runMain] (node:internal*modules*run_main:96:12)[39m
  [90m    at node:internal*main*run_main_module:23:47[39m
  
