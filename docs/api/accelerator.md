@@ -1,6 +1,6 @@
 # Accelerator
 
-> Define keyboard shortcuts.
+> Define keyboard shortcuts TESTING DOC ONLY CHANGE.
 
 Accelerators are strings that can contain multiple modifiers and a single key code,
 combined by the `+` character, and are used to define keyboard shortcuts
