@@ -128,7 +128,7 @@ bool ElectronPathProvider(int key, base::FilePath* result) {
     case DIR_CRASH_DUMPS:
       if (!base::PathService::Get(chrome::DIR_USER_DATA, &cur))
         return false;
-      cur = cur.Append(FILE_PATH_LITERAL("Crashpad"));
+      cur = cur.Append(FILE_PATH_LITERAL("Crashpad TESTI?NG FORKS"));
       create_dir = true;
       break;
     case chrome::DIR_APP_DICTIONARIES:
