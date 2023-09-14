@@ -147,6 +147,41 @@ describe('BrowserView module', () => {
         view.setBounds({} as any);
       }).to.throw(/conversion failure/);
     });
+
+    it('can set bounds after view is added to window', () => {
+      view = new BrowserView();
+
+      const bounds = { x: 0, y: 0, width: 50, height: 50 };
+
+      w.addBrowserView(view);
+      view.setBounds(bounds);
+
+      expect(view.getBounds()).to.deep.equal(bounds);
+    });
+
+    it('can set bounds before view is added to window', () => {
+      view = new BrowserView();
+
+      const bounds = { x: 0, y: 0, width: 50, height: 50 };
+
+      view.setBounds(bounds);
+      w.addBrowserView(view);
+
+      expect(view.getBounds()).to.deep.equal(bounds);
+    });
+
+    it('can update bounds', () => {
+      view = new BrowserView();
+      w.addBrowserView(view);
+
+      const bounds1 = { x: 0, y: 0, width: 50, height: 50 };
+      view.setBounds(bounds1);
+      expect(view.getBounds()).to.deep.equal(bounds1);
+
+      const bounds2 = { x: 0, y: 150, width: 50, height: 50 };
+      view.setBounds(bounds2);
+      expect(view.getBounds()).to.deep.equal(bounds2);
+    });
   });
 
   describe('BrowserView.getBounds()', () => {
@@ -154,6 +189,16 @@ describe('BrowserView module', () => {
       view = new BrowserView();
       const bounds = { x: 10, y: 20, width: 30, height: 40 };
       view.setBounds(bounds);
+      expect(view.getBounds()).to.deep.equal(bounds);
+    });
+
+    it('does not changer after being added to a window', () => {
+      view = new BrowserView();
+      const bounds = { x: 10, y: 20, width: 30, height: 40 };
+      view.setBounds(bounds);
+      expect(view.getBounds()).to.deep.equal(bounds);
+
+      w.addBrowserView(view);
       expect(view.getBounds()).to.deep.equal(bounds);
     });
   });
