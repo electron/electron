@@ -1292,6 +1292,7 @@ commands:
         type: steps
         default: []
     steps:
+      - run: ls -al /mnt
       - when:
           condition: << parameters.attach >>
           steps:
