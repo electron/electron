@@ -34,6 +34,11 @@ parameters:
     type: enum
     default: all
     enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+  
+  large-linux-executor:
+    type: enum
+    default: electronjs/aks-linux-large
+    enum: ["electronjs/aks-linux-large", "2xlarge"]
 
 # Executors
 executors:
@@ -42,9 +47,9 @@ executors:
       size:
         description: "Docker executor size"
         type: enum
-        # aks-linux-medium === 8 core (32 core host, shared with other builds)
         # aks-linux-large === 32 core
-        enum: ["medium", "xlarge", "electronjs/aks-linux-medium", "electronjs/aks-linux-large"]
+        # 2xlarge should not be used directly, use the pipeline param instead
+        enum: ["medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -1589,7 +1594,7 @@ jobs:
   linux-x64-testing:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1604,7 +1609,7 @@ jobs:
   linux-x64-testing-asan:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-testing-build
@@ -1646,7 +1651,7 @@ jobs:
   linux-x64-publish:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-release-build
@@ -1668,7 +1673,7 @@ jobs:
   linux-arm-testing:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-arm
@@ -1686,7 +1691,7 @@ jobs:
   linux-arm-publish:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm
@@ -1710,7 +1715,7 @@ jobs:
   linux-arm64-testing:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-global
       <<: *env-arm64
@@ -1739,7 +1744,7 @@ jobs:
   linux-arm64-publish:
     executor:
       name: linux-docker
-      size: electronjs/aks-linux-large
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge-release
       <<: *env-arm64
