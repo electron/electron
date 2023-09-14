@@ -219,8 +219,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAutoHideCursor(bool auto_hide);
 
   // Vibrancy API
+  const std::string& vibrancy() const { return vibrancy_; }
   virtual void SetVibrancy(const std::string& type);
 
+  const std::string& background_material() const {
+    return background_material_;
+  }
   virtual void SetBackgroundMaterial(const std::string& type);
 
   // Traffic Light API
@@ -396,6 +400,8 @@ class NativeWindow : public base::SupportsUserData,
   void AddDraggableRegionProvider(DraggableRegionProvider* provider);
   void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
 
+  bool IsTranslucent() const;
+
   // Adds |source| to |background_throttling_sources_|, triggers update of
   // background throttling state.
   void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
@@ -505,6 +511,9 @@ class NativeWindow : public base::SupportsUserData,
 
   // Accessible title.
   std::u16string accessible_title_;
+
+  std::string vibrancy_;
+  std::string background_material_;
 
   gfx::Rect overlay_rect_;
 

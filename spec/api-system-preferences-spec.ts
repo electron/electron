@@ -1,6 +1,5 @@
 import { expect } from 'chai';
 import { systemPreferences } from 'electron/main';
-import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { ifdescribe } from './lib/spec-helpers';
 
 describe('systemPreferences module', () => {
@@ -215,52 +214,6 @@ describe('systemPreferences module', () => {
         const sysColor = systemPreferences.getColor(color);
         expect(sysColor).to.be.a('string');
       }
-
-      await expectDeprecationMessages(
-        () => {
-          const sysColor = systemPreferences.getColor('alternate-selected-control-text');
-          expect(sysColor).to.be.a('string');
-        },
-        "'alternate-selected-control-text' is deprecated as an input to getColor.  Use 'selected-content-background' instead."
-      );
-    });
-  });
-
-  ifdescribe(process.platform === 'darwin')('systemPreferences.appLevelAppearance', () => {
-    const options = ['dark', 'light', 'unknown', null];
-    describe('with properties', () => {
-      it('returns a valid appearance', () => {
-        const appearance = systemPreferences.appLevelAppearance;
-        expect(options).to.include(appearance);
-      });
-
-      it('can be changed', () => {
-        systemPreferences.appLevelAppearance = 'dark';
-        expect(systemPreferences.appLevelAppearance).to.eql('dark');
-      });
-    });
-
-    describe('with functions', () => {
-      it('returns a valid appearance', async () => {
-        await expectDeprecationMessages(
-          () => {
-            const appearance = systemPreferences.getAppLevelAppearance();
-            expect(options).to.include(appearance);
-          },
-          "(electron) 'getAppLevelAppearance function' is deprecated and will be removed."
-        );
-      });
-
-      it('can be changed', async () => {
-        await expectDeprecationMessages(
-          () => {
-            systemPreferences.setAppLevelAppearance('dark');
-            const appearance = systemPreferences.getAppLevelAppearance();
-            expect(appearance).to.eql('dark');
-          },
-          "(electron) 'setAppLevelAppearance function' is deprecated and will be removed."
-        );
-      });
     });
   });
 

@@ -31,7 +31,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/event.h"
 #include "shell/common/gin_helper/event_emitter_caller.h"
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/mac/main_application_bundle.h"
 #include "shell/common/world_ids.h"
@@ -586,6 +585,13 @@ std::shared_ptr<node::Environment> NodeBindings::CreateEnvironment(
                          electron::fuses::IsOnlyLoadAppFromAsarEnabled()
                              ? app_asar_search_paths
                              : search_paths));
+    context->Global()->SetPrivate(
+        context,
+        v8::Private::ForApi(
+            isolate, gin::ConvertToV8(isolate, "appSearchPathsOnlyLoadASAR")
+                         .As<v8::String>()),
+        gin::ConvertToV8(isolate,
+                         electron::fuses::IsOnlyLoadAppFromAsarEnabled()));
   }
 
   base::FilePath resources_path = GetResourcesPath();
