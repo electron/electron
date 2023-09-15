@@ -1100,7 +1100,11 @@ commands:
               tmp_container=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID
               tmp_cache_path=$tmp_container/${cache_key}.tar
               mkdir -p $tmp_container
-              tar -cf $tmp_cache_path -C << parameters.cache_path >>/ ./
+              if [ -f "<< parameters.cache_path >>" ]; then
+                tar -cf $tmp_cache_path -C $(dirname << parameters.cache_path >>) ./$(basename << parameters.cache_path >>)
+              else
+                tar -cf $tmp_cache_path -C << parameters.cache_path >>/ ./
+              fi
               mv -vn $tmp_cache_path $final_cache_path
               rm -rf $tmp_container
             else
