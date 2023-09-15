@@ -911,13 +911,13 @@ step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
 step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
   restore_cache_aks:
     step-name: Restoring src cache
-    cache_key: v16-src-cache-$(shasum src/electron/.depshash)
+    cache_key: v16-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
     cache_path: ""
 
 step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
   restore_cache_aks:
     step-name: Restoring src cache marker
-    cache_key: v16-src-cache-marker-$(shasum src/electron/.depshash)
+    cache_key: v16-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
     cache_path: ""
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -935,7 +935,7 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
 step-maybe-restore-git-cache-aks: &step-maybe-restore-git-cache-aks
   restore_cache_aks:
     step-name: Conditionally restoring git cache (aks)
-    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done)-$(shasum src/electron/DEPS) v1-git-cache-$(shasum src/electron/.circle-sync-done)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ') v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')
     cache_path: git-cache
 
 step-set-git-cache-path: &step-set-git-cache-path
@@ -958,7 +958,7 @@ step-save-git-cache: &step-save-git-cache
 step-save-git-cache-aks: &step-save-git-cache-aks
   save_cache_aks:
     step-name: Persisting git cache (AKS)
-    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done)-$(shasum src/electron/DEPS)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ')
     cache_path: git-cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
@@ -1012,12 +1012,12 @@ step-save-src-cache-marker: &step-save-src-cache-marker
 step-save-src-cache-aks: &step-save-src-cache-aks
   save_cache_aks:
     step-name: Persisting src cache (aks)
-    cache_key: v16-src-cache-$(shasum /var/portal/src/electron/.depshash)
+    cache_key: v16-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
     cache_path: /var/portal
 step-save-src-cache-marker-aks: &step-save-src-cache-marker-aks
   save_cache_aks:
     step-name: Persisting src cache marker (aks)
-    cache_key: v16-src-cache-marker-$(shasum /var/portal/src/electron/.depshash)
+    cache_key: v16-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
     cache_path: .src-cache-marker
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
