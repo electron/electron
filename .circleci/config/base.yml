@@ -908,6 +908,18 @@ step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
       - v16-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
+step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
+  restore_cache_aks:
+    step-name: Restoring src cache
+    cache_key: v16-src-cache-$(shasum src/electron/.depshash)
+    cache_path: ""
+
+step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
+  restore_cache_aks:
+    step-name: Restoring src cache marker
+    cache_key: v16-src-cache-marker-$(shasum src/electron/.depshash)
+    cache_path: ""
+
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will match an empty cache
 # If the src cache was not restored above then this will match a close git cache
@@ -997,6 +1009,16 @@ step-save-src-cache-marker: &step-save-src-cache-marker
     paths:
       - .src-cache-marker
     key: v16-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+step-save-src-cache-aks: &step-save-src-cache-aks
+  save_cache_aks:
+    step-name: Persisting src cache (aks)
+    cache_key: v16-src-cache-$(shasum /var/portal/src/electron/.depshash)
+    cache_path: /var/portal
+step-save-src-cache-marker-aks: &step-save-src-cache-marker-aks
+  save_cache_aks:
+    step-name: Persisting src cache marker (aks)
+    cache_key: v16-src-cache-marker-$(shasum /var/portal/src/electron/.depshash)
+    cache_path: .src-cache-marker
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -1475,9 +1497,17 @@ commands:
                         sudo mkdir -p /var/portal
                         sudo chown -R $(id -u):$(id -g) /var/portal
                         mv ./src /var/portal
-                  - *step-save-src-cache
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-src-cache
+                      aks:
+                        - *step-save-src-cache-aks
                   - *step-make-src-cache-marker
-                  - *step-save-src-cache-marker
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-src-cache-marker
+                      aks:
+                        - *step-save-src-cache-marker-aks
 
       - when:
           condition: << parameters.build >>
