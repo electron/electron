@@ -1075,9 +1075,9 @@ commands:
           condition:
             equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
           steps: << parameters.circle >>
-      - unless:
+      - when:
           condition:
-            equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
+            equal: [<< pipeline.parameters.large-linux-executor >>, electronjs/aks-linux-large]
           steps: << parameters.aks >>
   save_cache_aks:
     parameters:
@@ -1141,14 +1141,22 @@ commands:
       - when:
           condition: << parameters.halt-if-successful >>
           steps:
-            - *step-maybe-restore-src-cache-marker
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-src-cache-marker
+                aks:
+                  - *step-maybe-restore-src-cache-marker-aks
             - run:
                 name: Halt the job early if the src cache exists
                 command: |
                   if [ -f ".src-cache-marker" ]; then
                     circleci-agent step halt
                   fi
-      - *step-maybe-restore-src-cache
+      - aks-specific-step:
+          circle:
+            - *step-maybe-restore-src-cache
+          aks:
+            - *step-maybe-restore-src-cache-aks
       - run:
           name: Fix the src cache restore point on macOS
           command: |
