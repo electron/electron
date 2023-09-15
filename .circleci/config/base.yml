@@ -920,6 +920,12 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
 
+step-maybe-restore-git-cache-aks: &step-maybe-restore-git-cache-aks
+  restore_cache_aks:
+    name: Conditionally restoring git cache (aks)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done)-$(shasum src/electron/DEPS) v1-git-cache-$(shasum src/electron/.circle-sync-done)
+    cache_path: git-cache
+
 step-set-git-cache-path: &step-set-git-cache-path
   run:
     name: Set GIT_CACHE_PATH to make gclient to use the cache
@@ -936,6 +942,12 @@ step-save-git-cache: &step-save-git-cache
       - git-cache
     key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
+
+step-save-git-cache-aks: &step-save-git-cache-aks
+  save_cache_aks:
+    name: Persisting git cache (AKS)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done)-$(shasum src/electron/DEPS)
+    cache_path: git-cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -1030,6 +1042,69 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
 # Command Aliases
 commands:
+  aks-specific-step:
+    parameters:
+      circle:
+        type: steps
+      aks:
+        type: steps
+    steps:
+      - when:
+          condition:
+            equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
+          steps: << parameters.circle >>
+      - unless:
+          condition:
+            equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
+          steps: << parameters.aks >>
+  save_cache_aks:
+    parameters:
+      name:
+        type: string
+      cache_key:
+        type: string
+      cache_path:
+        type: string
+    steps:
+      - run:
+          name: << parameters.name >>
+          command: |
+            cache_key="<< parameters.cache_key >>"
+            final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+            echo "Using cache key: $cache_key"
+            echo "Checking path: $final_cache_path"
+            if [ ! -f "$final_cache_path" ]; then
+              echo "Cache key not founding, storing tarball"
+              tmp_cache_path=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID/${cache_key}.tar
+              tar -cf $tmp_cache_path << parameters.cache_path >>/
+              mv -vn $tmp_cache_path $final_cache_path
+            else
+              echo "Cache key already exists, skipping.."
+            fi
+  restore_cache_aks:
+    parameters:
+      name:
+        type: string
+      cache_key:
+        type: string
+      cache_path:
+        type: string
+    steps:
+      - run:
+          name: << parameters.name >>
+          command: |
+            for cache_key in "<< parameters.cache_key >>"; do
+              cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+              echo "Using cache key: $cache_key"
+              echo "Checking path: $cache_path"
+              if [ ! -f "$cache_path" ]; then
+                echo "Cache key not found, nothing to restore..."
+              else
+                echo "Cache key found, restoring to path..."
+                tar -xf /mnt/cross-instance-cache/${cache_key}.tar -C << parameters.cache_path >>/
+                exit 0
+              fi
+            done
   maybe-restore-portaled-src-cache:
     parameters:
       halt-if-successful:
@@ -1325,7 +1400,11 @@ commands:
                 steps:
                   - maybe-restore-portaled-src-cache:
                       halt-if-successful: << parameters.checkout-to-create-src-cache >>
-            - *step-maybe-restore-git-cache
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-git-cache
+                aks:
+                  - *step-maybe-restore-git-cache-aks
             - *step-set-git-cache-path
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
@@ -1342,7 +1421,11 @@ commands:
             - when:
                 condition: << parameters.save-git-cache >>
                 steps:
-                  - *step-save-git-cache
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-git-cache
+                      aks:
+                        - *step-save-git-cache-aks
             # Mark sync as done _after_ saving the git cache so that it is uploaded
             # only when the src cache was not present
             # Their are theoretically two cases for this cache key
@@ -1634,7 +1717,7 @@ jobs:
   linux-make-src-cache:
     executor:
       name: linux-docker
-      size: xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
