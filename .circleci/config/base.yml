@@ -900,24 +900,24 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v16-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v16-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
 
 step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
   restore_cache_aks:
     step-name: Restoring src cache
-    cache_key: v16-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
     cache_path: /var/portal
 
 step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
   restore_cache_aks:
     step-name: Restoring src cache marker
-    cache_key: v16-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
     cache_path: "."
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
@@ -998,7 +998,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v16-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -1008,16 +1008,16 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v16-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
 step-save-src-cache-aks: &step-save-src-cache-aks
   save_cache_aks:
     step-name: Persisting src cache (aks)
-    cache_key: v16-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
     cache_path: /var/portal
 step-save-src-cache-marker-aks: &step-save-src-cache-marker-aks
   save_cache_aks:
     step-name: Persisting src cache marker (aks)
-    cache_key: v16-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_key: v17-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
     cache_path: .src-cache-marker
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
@@ -1100,7 +1100,7 @@ commands:
               tmp_container=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID
               tmp_cache_path=$tmp_container/${cache_key}.tar
               mkdir -p $tmp_container
-              tar -cf $tmp_cache_path << parameters.cache_path >>/
+              tar -cf $tmp_cache_path -C << parameters.cache_path >>/ ./
               mv -vn $tmp_cache_path $final_cache_path
               rm -rf $tmp_container
             else
