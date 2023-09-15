@@ -1437,6 +1437,7 @@ commands:
                 aks:
                   - *step-maybe-restore-git-cache-aks
             - *step-set-git-cache-path
+            - *step-fix-known-hosts-linux
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             - store_artifacts:
