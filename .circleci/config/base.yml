@@ -1049,15 +1049,6 @@ step-ts-compile: &step-ts-compile
       done
 
 # List of all steps.
-steps-electron-gn-check: &steps-electron-gn-check
-  steps:
-    - *step-setup-goma-for-build
-    - checkout-from-cache
-    - *step-setup-env-for-build
-    - *step-wait-for-goma
-    - *step-gn-gen-default
-    - *step-gn-check
-
 steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
   steps:
     # Checkout - Copied from steps-checkout
@@ -1189,7 +1180,18 @@ commands:
               rm -rf src
               mv /var/portal/src ./
             fi
-
+  run-gn-check:
+    parameters:
+      could-be-aks:
+        type: boolean
+    steps:
+      - *step-setup-goma-for-build
+      - checkout-from-cache:
+          could-be-aks: << parameters.could-be-aks >>
+      - *step-setup-env-for-build
+      - *step-wait-for-goma
+      - *step-gn-gen-default
+      - *step-gn-check
   build_and_save_artifacts:
     parameters:
       artifact-key:
@@ -1303,12 +1305,16 @@ commands:
             mv_if_exist cross-arch-snapshots src
 
   checkout-from-cache:
+    parameters:
+      could-be-aks:
+        type: boolean
     steps:
       - *step-checkout-electron
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-generate-deps-hash
-      - maybe-restore-portaled-src-cache
+      - maybe-restore-portaled-src-cache:
+          could-be-aks: << parameters.could-be-aks >>
       - run:
           name: Ensure src checkout worked
           command: |
@@ -1440,7 +1446,8 @@ commands:
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
-            - checkout-from-cache
+            - checkout-from-cache:
+                could-be-aks: << parameters.could-be-aks >>
       - when:
           condition: << parameters.checkout >>
           steps:
@@ -1456,6 +1463,7 @@ commands:
                 steps:
                   - maybe-restore-portaled-src-cache:
                       halt-if-successful: << parameters.checkout-to-create-src-cache >>
+                      could-be-aks: << parameters.could-be-aks >>
             - aks-specific-step:
                 circle:
                   - *step-maybe-restore-git-cache
@@ -1908,7 +1916,9 @@ jobs:
       <<: *env-linux-medium
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: true
 
   linux-x64-publish:
     executor:
@@ -2009,7 +2019,9 @@ jobs:
       <<: *env-arm64
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: true
 
   linux-arm64-publish:
     executor:
@@ -2079,7 +2091,9 @@ jobs:
       <<: *env-machine-mac
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: false
 
   osx-publish-x64:
     executor:
