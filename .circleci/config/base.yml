@@ -34,6 +34,11 @@ parameters:
     type: enum
     default: all
     enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+
+  medium-linux-executor:
+    type: enum
+    default: electronjs/aks-linux-medium
+    enum: ["electronjs/aks-linux-medium", "medium"]
   
   large-linux-executor:
     type: enum
@@ -49,7 +54,7 @@ executors:
         type: enum
         # aks-linux-large === 32 core
         # 2xlarge should not be used directly, use the pipeline param instead
-        enum: ["medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
+        enum: ["medium", "electronjs/aks-linux-medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -1875,7 +1880,7 @@ jobs:
   linux-x64-testing-gn-check:
     executor:
       name: linux-docker
-      size: medium
+      size: << pipeline.parameters.medium-linux-executor >>
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
@@ -1973,7 +1978,7 @@ jobs:
   linux-arm64-testing-gn-check:
     executor:
       name: linux-docker
-      size: medium
+      size: << pipeline.parameters.medium-linux-executor >>
     environment:
       <<: *env-linux-medium
       <<: *env-arm64
