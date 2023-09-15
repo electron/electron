@@ -9,90 +9,59 @@ ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin contains explicit
 exceptions to allow built-in non-standard schemes, but does not check
 for non-standard schemes registered by the embedder.
 
-Upstream, https://bugs.chromium.org/p/chromium/issues/detail?id=1081397
-contains several paths forward - here I chose to swap out the
-CHECK in navigation_request.cc from policy->CanAccessDataForOrigin to
-policy->CanCommitOriginAndUrl.
+This patch adjusts the origin calculation for non-standard schemes in
+ - browser process at `NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo`
+ - render process at `DocumentLoader::CalculateOrigin`
+
+When top level frame navigates to non-standard scheme url, the origin is calculated
+as `null` without any derivation. It is only in cases where there is a `initiator_origin`
+then the origin is derived from it, which is usually the case for renderer initiated
+navigations and iframes are no exceptions from this rule.
+
+Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 7bc2f882a1d0d9dfd4541d4da1975e0136cf275e..cc5f926bf73a0d98a0b0015391413867d514f487 100644
+index 7bc2f882a1d0d9dfd4541d4da1975e0136cf275e..35f0332fb330aadea8d07a3378663d5e410c2053 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -7547,10 +7547,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
-   if (IsForMhtmlSubframe())
-     return origin_with_debug_info;
+@@ -801,6 +801,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
+     return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
+   }
  
--  int process_id = GetRenderFrameHost()->GetProcess()->GetID();
--  auto* policy = ChildProcessSecurityPolicyImpl::GetInstance();
--  CHECK(
--      policy->CanAccessDataForOrigin(process_id, origin_with_debug_info.first));
-+  CanCommitStatus can_commit = GetRenderFrameHost()->CanCommitOriginAndUrl(
-+    origin_with_debug_info.first, GetURL(), IsSameDocument(), IsPdf(),
-+    GetUrlInfo().is_sandboxed);
-+  CHECK_EQ(CanCommitStatus::CAN_COMMIT_ORIGIN_AND_URL, can_commit);
-+
-   return origin_with_debug_info;
- }
- 
-diff --git a/content/browser/renderer_host/render_frame_host_impl.cc b/content/browser/renderer_host/render_frame_host_impl.cc
-index 8784a4a93993110879564c2cd5520e2d69f59b07..a2d6831d94623349c1ea7b7bcd53383c142c6c34 100644
---- a/content/browser/renderer_host/render_frame_host_impl.cc
-+++ b/content/browser/renderer_host/render_frame_host_impl.cc
-@@ -10153,9 +10153,14 @@ void RenderFrameHostImpl::CommitNavigation(
-       ProcessLock::FromSiteInfo(GetSiteInstance()->GetSiteInfo());
-   auto browser_calc_origin_to_commit =
-       navigation_request->GetOriginToCommitWithDebugInfo();
-+  url::Origin origin_to_check = browser_calc_origin_to_commit.first.value();
-+  if(!common_params->url.IsStandard()) {
-+    //Custom URLS fail the CanAccessDataForOrigin check with browser_calc_origin_to_commit.first.value
-+    origin_to_check = url::Origin::Create(common_params->url);
++  if (!common_params.url.IsStandard()) {
++    return std::make_pair(url::Origin::Resolve(common_params.url,
++                                               url::Origin()),
++                          "url_non_standard");
 +  }
-   if (!process_lock.is_error_page() && !is_mhtml_subframe &&
-       !policy->CanAccessDataForOrigin(
--          GetProcess()->GetID(), browser_calc_origin_to_commit.first.value())) {
-+          GetProcess()->GetID(), origin_to_check)) {
-     SCOPED_CRASH_KEY_STRING64("CommitNavigation", "lock_url",
-                               process_lock.ToString());
-     SCOPED_CRASH_KEY_STRING64(
-diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index d9923eb1d22e08d1f77fee2d91653476848a2ae0..176ea6690e162c8ed60203e47dbf199fb6c76c22 100644
---- a/content/browser/renderer_host/render_frame_host_impl.h
-+++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2969,6 +2969,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-   // last committed document.
-   CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
- 
-+  // Returns whether the given origin and URL is allowed to commit in the
-+  // current RenderFrameHost. The |url| is used to ensure it matches the origin
-+  // in cases where it is applicable. This is a more conservative check than
-+  // RenderProcessHost::FilterURL, since it will be used to kill processes that
-+  // commit unauthorized origins.
-+  CanCommitStatus CanCommitOriginAndUrl(const url::Origin& origin,
-+                                        const GURL& url,
-+                                        bool is_same_document_navigation,
-+                                        bool is_pdf,
-+                                        bool is_sandboxed);
 +
-   // Sets a ResourceCache in the renderer. `this` must be active and there must
-   // be no pending navigation. `remote` must have the same and process
-   // isolation policy.
-@@ -3392,17 +3403,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
-   // relevant.
-   void ResetWaitingState();
- 
--  // Returns whether the given origin and URL is allowed to commit in the
--  // current RenderFrameHost. The |url| is used to ensure it matches the origin
--  // in cases where it is applicable. This is a more conservative check than
--  // RenderProcessHost::FilterURL, since it will be used to kill processes that
--  // commit unauthorized origins.
--  CanCommitStatus CanCommitOriginAndUrl(const url::Origin& origin,
--                                        const GURL& url,
--                                        bool is_same_document_navigation,
--                                        bool is_pdf,
--                                        bool is_sandboxed);
--
-   // Returns whether a subframe navigation request should be allowed to commit
-   // to the current RenderFrameHost.
-   bool CanSubframeCommitOriginAndUrl(NavigationRequest* navigation_request);
+   // In cases not covered above, URLLoaderFactory should be associated with the
+   // origin of |common_params.url| and/or |common_params.initiator_origin|.
+   return std::make_pair(
+diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
+index 28d02464d8d8f2cfe0c8ad4fdb1e3ed4e983f089..39fb4bb6b8cddf50876eaea373189c43bedfc41f 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.cc
++++ b/third_party/blink/renderer/core/loader/document_loader.cc
+@@ -2022,6 +2022,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     Document* owner_document) {
+   scoped_refptr<SecurityOrigin> origin;
++  bool is_standard = false;
++  std::string protocol = url_.Protocol().Ascii();
++  is_standard = url::IsStandard(
++      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
+   if (origin_to_commit_) {
+     // Origin to commit is specified by the browser process, it must be taken
+     // and used directly. It is currently supplied only for failed navigations.
+@@ -2055,6 +2059,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     // breaks aliasing...
+     origin = owner_document->domWindow()->GetMutableSecurityOrigin();
+     origin_calculation_debug_info_ = AtomicString("use_owner_document_origin");
++  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
++             !is_standard) {
++    origin_calculation_debug_info_ = AtomicString("use_url_with_non_standard_scheme");
++    origin = SecurityOrigin::Create(url_);
+   } else {
+     origin_calculation_debug_info_ = AtomicString("use_url_with_precursor");
+     // Otherwise, create an origin that propagates precursor information
