@@ -1115,6 +1115,7 @@ commands:
       - run:
           name: << parameters.step-name >>
           command: |
+            df -h
             for cache_key in << parameters.cache_key >>; do
               cache_path=/mnt/cross-instance-cache/${cache_key}.tar
               echo "Using cache key: $cache_key"
