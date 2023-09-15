@@ -1097,9 +1097,12 @@ commands:
             echo "Checking path: $final_cache_path"
             if [ ! -f "$final_cache_path" ]; then
               echo "Cache key not founding, storing tarball"
-              tmp_cache_path=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID/${cache_key}.tar
+              tmp_container=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID
+              tmp_cache_path=$tmp_container/${cache_key}.tar
+              mkdir -p $tmp_container
               tar -cf $tmp_cache_path << parameters.cache_path >>/
               mv -vn $tmp_cache_path $final_cache_path
+              rm -rf $tmp_container
             else
               echo "Cache key already exists, skipping.."
             fi
