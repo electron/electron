@@ -912,7 +912,7 @@ step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
   restore_cache_aks:
     step-name: Restoring src cache
     cache_key: v16-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
-    cache_path: ""
+    cache_path: /var/portal
 
 step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
   restore_cache_aks:
