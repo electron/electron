@@ -1075,14 +1075,21 @@ commands:
         type: steps
       aks:
         type: steps
+      could-be-aks:
+        type: boolean
+        description: Only set this to true on linux hosts
     steps:
       - when:
           condition:
-            equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
+            or:
+              - equal: [<< parameters.could-be-aks >>, false]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
           steps: << parameters.circle >>
       - when:
           condition:
-            equal: [<< pipeline.parameters.large-linux-executor >>, electronjs/aks-linux-large]
+            and:
+              - equal: [<< parameters.could-be-aks >>, true]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, electronjs/aks-linux-large]
           steps: << parameters.aks >>
   save_cache_aks:
     parameters:
@@ -1145,6 +1152,8 @@ commands:
       halt-if-successful:
         type: boolean
         default: false
+      could-be-aks:
+        type: boolean
     steps:
       - run:
           name: Prepare for cross-OS sync restore
@@ -1159,6 +1168,7 @@ commands:
                   - *step-maybe-restore-src-cache-marker
                 aks:
                   - *step-maybe-restore-src-cache-marker-aks
+                could-be-aks: << parameters.could-be-aks >>
             - run:
                 name: Halt the job early if the src cache exists
                 command: |
@@ -1170,6 +1180,7 @@ commands:
             - *step-maybe-restore-src-cache
           aks:
             - *step-maybe-restore-src-cache-aks
+          could-be-aks: << parameters.could-be-aks >>
       - run:
           name: Fix the src cache restore point on macOS
           command: |
@@ -1409,6 +1420,8 @@ commands:
       after-persist:
         type: steps
         default: []
+      could-be-aks:
+        type: boolean
     steps:
       - run: ls -al /mnt
       - when:
@@ -1448,6 +1461,7 @@ commands:
                   - *step-maybe-restore-git-cache
                 aks:
                   - *step-maybe-restore-git-cache-aks
+                could-be-aks: << parameters.could-be-aks >>
             - *step-set-git-cache-path
             - *step-fix-known-hosts-linux
             # This sync call only runs if .circle-sync-done is an EMPTY file
@@ -1470,6 +1484,7 @@ commands:
                         - *step-save-git-cache
                       aks:
                         - *step-save-git-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
             # Mark sync as done _after_ saving the git cache so that it is uploaded
             # only when the src cache was not present
             # Their are theoretically two cases for this cache key
@@ -1524,12 +1539,14 @@ commands:
                         - *step-save-src-cache
                       aks:
                         - *step-save-src-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
                   - *step-make-src-cache-marker
                   - aks-specific-step:
                       circle:
                         - *step-save-src-cache-marker
                       aks:
                         - *step-save-src-cache-marker-aks
+                      could-be-aks: << parameters.could-be-aks >>
 
       - when:
           condition: << parameters.build >>
@@ -1782,6 +1799,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: true
 
   mac-checkout:
     executor:
@@ -1801,6 +1819,7 @@ jobs:
           restore-src-cache: false
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
   mac-make-src-cache-x64:
     executor:
@@ -1820,6 +1839,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
   mac-make-src-cache-arm64:
     executor:
@@ -1839,6 +1859,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -1857,6 +1878,7 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-x64'
           build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-asan:
     executor:
@@ -1876,6 +1898,7 @@ jobs:
           build-nonproprietary-ffmpeg: false
           artifact-key: 'linux-x64-asan'
           build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-gn-check:
     executor:
@@ -1929,6 +1952,7 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm'
           build-type: 'Linux ARM'
+          could-be-aks: true
 
   linux-arm-publish:
     executor:
@@ -1974,6 +1998,7 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm64'
           build-type: 'Linux ARM64'
+          could-be-aks: true
 
   linux-arm64-testing-gn-check:
     executor:
@@ -2044,6 +2069,7 @@ jobs:
                 root: .
                 paths:
                   - generated_artifacts_mas-x64
+          could-be-aks: false
 
   osx-testing-x64-gn-check:
     executor:
@@ -2135,6 +2161,7 @@ jobs:
                 root: .
                 paths:
                   - generated_artifacts_mas-arm64
+          could-be-aks: false
 
   mas-publish-x64:
     executor:
