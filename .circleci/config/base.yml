@@ -922,7 +922,7 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
 
 step-maybe-restore-git-cache-aks: &step-maybe-restore-git-cache-aks
   restore_cache_aks:
-    name: Conditionally restoring git cache (aks)
+    step-name: Conditionally restoring git cache (aks)
     cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done)-$(shasum src/electron/DEPS) v1-git-cache-$(shasum src/electron/.circle-sync-done)
     cache_path: git-cache
 
@@ -945,7 +945,7 @@ step-save-git-cache: &step-save-git-cache
 
 step-save-git-cache-aks: &step-save-git-cache-aks
   save_cache_aks:
-    name: Persisting git cache (AKS)
+    step-name: Persisting git cache (AKS)
     cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done)-$(shasum src/electron/DEPS)
     cache_path: git-cache
 
@@ -1059,7 +1059,7 @@ commands:
           steps: << parameters.aks >>
   save_cache_aks:
     parameters:
-      name:
+      step-name:
         type: string
       cache_key:
         type: string
@@ -1067,7 +1067,7 @@ commands:
         type: string
     steps:
       - run:
-          name: << parameters.name >>
+          name: << parameters.step-name >>
           command: |
             cache_key="<< parameters.cache_key >>"
             final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
@@ -1083,7 +1083,7 @@ commands:
             fi
   restore_cache_aks:
     parameters:
-      name:
+      step-name:
         type: string
       cache_key:
         type: string
@@ -1091,7 +1091,7 @@ commands:
         type: string
     steps:
       - run:
-          name: << parameters.name >>
+          name: << parameters.step-name >>
           command: |
             for cache_key in "<< parameters.cache_key >>"; do
               cache_path=/mnt/cross-instance-cache/${cache_key}.tar
