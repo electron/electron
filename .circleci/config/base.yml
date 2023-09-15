@@ -918,7 +918,7 @@ step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-ak
   restore_cache_aks:
     step-name: Restoring src cache marker
     cache_key: v16-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
-    cache_path: ""
+    cache_path: "."
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will match an empty cache
