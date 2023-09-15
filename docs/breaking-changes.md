@@ -14,6 +14,11 @@ This document uses the following convention to categorize breaking changes:
 
 ## Planned Breaking API Changes (28.0)
 
+### Behavior Changed: `WebContents.backgroundThrottling` set to false affects all `WebContents` in the host `BrowserWindow`
+
+`WebContents.backgroundThrottling` set to false will disable frames throttling
+in the `BrowserWindow` for all `WebContents` displayed by it.
+
 ### Removed: `BrowserWindow.setTrafficLightPosition(position)`
 
 `BrowserWindow.setTrafficLightPosition(position)` has been removed, the
