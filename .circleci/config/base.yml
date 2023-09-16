@@ -1134,6 +1134,7 @@ commands:
                 echo "Cache key not found, nothing to restore..."
               else
                 echo "Cache key found, restoring to path..."
+                mkdir -p << parameters.cache_path >>/
                 tar -xf /mnt/cross-instance-cache/${cache_key}.tar -C << parameters.cache_path >>/
                 exit 0
               fi
