@@ -1174,7 +1174,7 @@ commands:
             - *step-maybe-restore-src-cache-aks
           could-be-aks: << parameters.could-be-aks >>
       - run:
-          name: Fix the src cache restore point on macOS
+          name: Fix the src cache restore point
           command: |
             if [ -d "/var/portal/src" ]; then
               echo Relocating Cache
@@ -1608,6 +1608,17 @@ commands:
           condition: << parameters.build >>
           steps:
             - *step-maybe-notify-slack-failure
+      - when:
+          condition: << parameters.could-be-aks >>
+          steps:
+            - run:
+                name: Wait for active debug sessions
+                command: |
+                  while [ -f /var/.ssh-lock ]
+                  do
+                    sleep 60
+                  done
+                no_output_timeout: 2h
 
   electron-tests:
     parameters:
