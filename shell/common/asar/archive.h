@@ -10,6 +10,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <uv.h>
+
 #include "base/files/file.h"
 #include "base/files/file_path.h"
 #include "base/synchronization/lock.h"
@@ -49,11 +51,14 @@ class Archive {
     absl::optional<IntegrityPayload> integrity;
   };
 
+  enum class FileType {
+    kFile = UV_DIRENT_FILE,
+    kDirectory = UV_DIRENT_DIR,
+    kLink = UV_DIRENT_LINK,
+  };
+
   struct Stats : public FileInfo {
-    Stats() : is_file(true), is_directory(false), is_link(false) {}
-    bool is_file;
-    bool is_directory;
-    bool is_link;
+    FileType type = FileType::kFile;
   };
 
   explicit Archive(const base::FilePath& path);
