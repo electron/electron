@@ -1430,7 +1430,6 @@ commands:
       could-be-aks:
         type: boolean
     steps:
-      - run: ls -al /mnt
       - when:
           condition: << parameters.attach >>
           steps:
