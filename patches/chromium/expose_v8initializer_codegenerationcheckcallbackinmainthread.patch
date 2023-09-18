@@ -6,10 +6,10 @@ Subject: expose V8Initializer::CodeGenerationCheckCallbackInMainThread
 This is needed to blend Blink and Node's policy for code generation policy.
 
 diff --git a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-index 9bb1917278452e5b9d00dbb39b44416558987255..20d188f57d5425c5f704b3b03cd27034efb25ea7 100644
+index a3175449f37c2d3766c7e27176be571231aad2bb..93fd4a4be7bb3e3a0b9093d3c4a981e456f0d0f5 100644
 --- a/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
 +++ b/third_party/blink/renderer/bindings/core/v8/v8_initializer.cc
-@@ -411,8 +411,9 @@ TrustedTypesCodeGenerationCheck(v8::Local<v8::Context> context,
+@@ -422,8 +422,9 @@ TrustedTypesCodeGenerationCheck(v8::Local<v8::Context> context,
    return {true, V8String(context->GetIsolate(), stringified_source)};
  }
  

@@ -9,70 +9,59 @@ ChildProcessSecurityPolicyImpl::CanAccessDataForOrigin contains explicit
 exceptions to allow built-in non-standard schemes, but does not check
 for non-standard schemes registered by the embedder.
 
-Upstream, https://bugs.chromium.org/p/chromium/issues/detail?id=1081397
-contains several paths forward - here I chose to swap out the
-CHECK in navigation_request.cc from policy->CanAccessDataForOrigin to
-policy->CanCommitOriginAndUrl.
+This patch adjusts the origin calculation for non-standard schemes in
+ - browser process at `NavigationRequest::GetOriginForURLLoaderFactoryUncheckedWithDebugInfo`
+ - render process at `DocumentLoader::CalculateOrigin`
+
+When top level frame navigates to non-standard scheme url, the origin is calculated
+as `null` without any derivation. It is only in cases where there is a `initiator_origin`
+then the origin is derived from it, which is usually the case for renderer initiated
+navigations and iframes are no exceptions from this rule.
+
+Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index e91fb6b203b55d4937e9f4b4ed8fd5e8efb5aa10..855cb90260de04b90b8bbf4a8733e0869cda551d 100644
+index 7bc2f882a1d0d9dfd4541d4da1975e0136cf275e..35f0332fb330aadea8d07a3378663d5e410c2053 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
-@@ -7543,10 +7543,11 @@ NavigationRequest::GetOriginForURLLoaderFactoryAfterResponseWithDebugInfo() {
-   if (IsForMhtmlSubframe())
-     return origin_with_debug_info;
+@@ -801,6 +801,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
+     return std::make_pair(parent->GetLastCommittedOrigin(), "about_srcdoc");
+   }
  
--  int process_id = GetRenderFrameHost()->GetProcess()->GetID();
--  auto* policy = ChildProcessSecurityPolicyImpl::GetInstance();
--  CHECK(
--      policy->CanAccessDataForOrigin(process_id, origin_with_debug_info.first));
-+  CanCommitStatus can_commit = GetRenderFrameHost()->CanCommitOriginAndUrl(
-+    origin_with_debug_info.first, GetURL(), IsSameDocument(), IsPdf(),
-+    GetUrlInfo().is_sandboxed);
-+  CHECK_EQ(CanCommitStatus::CAN_COMMIT_ORIGIN_AND_URL, can_commit);
++  if (!common_params.url.IsStandard()) {
++    return std::make_pair(url::Origin::Resolve(common_params.url,
++                                               url::Origin()),
++                          "url_non_standard");
++  }
 +
-   return origin_with_debug_info;
- }
- 
-diff --git a/content/browser/renderer_host/render_frame_host_impl.h b/content/browser/renderer_host/render_frame_host_impl.h
-index 10282bf7372a07937d3aa15af6f3f7e767321df6..ae5cfc9bc17c7e8e9d1ab9134c95ff6413fe2017 100644
---- a/content/browser/renderer_host/render_frame_host_impl.h
-+++ b/content/browser/renderer_host/render_frame_host_impl.h
-@@ -2968,6 +2968,17 @@ class CONTENT_EXPORT RenderFrameHostImpl
-   // last committed document.
-   CookieChangeListener::CookieChangeInfo GetCookieChangeInfo();
- 
-+  // Returns whether the given origin and URL is allowed to commit in the
-+  // current RenderFrameHost. The |url| is used to ensure it matches the origin
-+  // in cases where it is applicable. This is a more conservative check than
-+  // RenderProcessHost::FilterURL, since it will be used to kill processes that
-+  // commit unauthorized origins.
-+  CanCommitStatus CanCommitOriginAndUrl(const url::Origin& origin,
-+                                        const GURL& url,
-+                                        bool is_same_document_navigation,
-+                                        bool is_pdf,
-+                                        bool is_sandboxed);
-+
-   // Sets a ResourceCache in the renderer. `this` must be active and there must
-   // be no pending navigation. `remote` must have the same and process
-   // isolation policy.
-@@ -3391,17 +3402,6 @@ class CONTENT_EXPORT RenderFrameHostImpl
-   // relevant.
-   void ResetWaitingState();
- 
--  // Returns whether the given origin and URL is allowed to commit in the
--  // current RenderFrameHost. The |url| is used to ensure it matches the origin
--  // in cases where it is applicable. This is a more conservative check than
--  // RenderProcessHost::FilterURL, since it will be used to kill processes that
--  // commit unauthorized origins.
--  CanCommitStatus CanCommitOriginAndUrl(const url::Origin& origin,
--                                        const GURL& url,
--                                        bool is_same_document_navigation,
--                                        bool is_pdf,
--                                        bool is_sandboxed);
--
-   // Returns whether a subframe navigation request should be allowed to commit
-   // to the current RenderFrameHost.
-   bool CanSubframeCommitOriginAndUrl(NavigationRequest* navigation_request);
+   // In cases not covered above, URLLoaderFactory should be associated with the
+   // origin of |common_params.url| and/or |common_params.initiator_origin|.
+   return std::make_pair(
+diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
+index 28d02464d8d8f2cfe0c8ad4fdb1e3ed4e983f089..39fb4bb6b8cddf50876eaea373189c43bedfc41f 100644
+--- a/third_party/blink/renderer/core/loader/document_loader.cc
++++ b/third_party/blink/renderer/core/loader/document_loader.cc
+@@ -2022,6 +2022,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     Document* owner_document) {
+   scoped_refptr<SecurityOrigin> origin;
++  bool is_standard = false;
++  std::string protocol = url_.Protocol().Ascii();
++  is_standard = url::IsStandard(
++      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
+   if (origin_to_commit_) {
+     // Origin to commit is specified by the browser process, it must be taken
+     // and used directly. It is currently supplied only for failed navigations.
+@@ -2055,6 +2059,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     // breaks aliasing...
+     origin = owner_document->domWindow()->GetMutableSecurityOrigin();
+     origin_calculation_debug_info_ = AtomicString("use_owner_document_origin");
++  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
++             !is_standard) {
++    origin_calculation_debug_info_ = AtomicString("use_url_with_non_standard_scheme");
++    origin = SecurityOrigin::Create(url_);
+   } else {
+     origin_calculation_debug_info_ = AtomicString("use_url_with_precursor");
+     // Otherwise, create an origin that propagates precursor information
