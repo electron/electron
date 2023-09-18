@@ -1619,6 +1619,7 @@ commands:
                     sleep 60
                   done
                 no_output_timeout: 2h
+                when: always
 
   electron-tests:
     parameters:
