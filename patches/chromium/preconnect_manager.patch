@@ -10,7 +10,7 @@ in favor of defining PreconnectRequest in this file since we don't build
 the header.
 
 diff --git a/chrome/browser/predictors/preconnect_manager.cc b/chrome/browser/predictors/preconnect_manager.cc
-index 5f3823dac0ea94885b16bcc5d3b851500c7262d8..8a6f94536e87ad2fb1ff2428cf9174b77db90bf3 100644
+index 5ab9d7b6723fe472516e2c3bda58c68c6e66b73a..60e1b55af76e0deb712646d77a91204a5456b321 100644
 --- a/chrome/browser/predictors/preconnect_manager.cc
 +++ b/chrome/browser/predictors/preconnect_manager.cc
 @@ -10,9 +10,11 @@
@@ -19,7 +19,7 @@ index 5f3823dac0ea94885b16bcc5d3b851500c7262d8..8a6f94536e87ad2fb1ff2428cf9174b7
  #include "base/trace_event/trace_event.h"
 +#if 0
  #include "chrome/browser/predictors/resource_prefetch_predictor.h"
- #include "chrome/browser/prefetch/prefetch_prefs.h"
+ #include "chrome/browser/preloading/preloading_prefs.h"
  #include "chrome/browser/profiles/profile.h"
 +#endif
  #include "content/public/browser/browser_context.h"

@@ -87,10 +87,10 @@ index 8af69cac78b7488d28f1f05ccb174793fe5148cd..9f74e511c263d147b5fbe81fe100d217
   private:
    const HWND hwnd_;
 diff --git a/components/viz/service/BUILD.gn b/components/viz/service/BUILD.gn
-index 72d9d594a93700a35eadb3c2bc017fa7996bf10d..729753a72edd761ec831f79828742a26f9dd2417 100644
+index 6e360b9a82555293f1a162a00f28a6d24f939c11..5d0bae2eb27d6ed90ac83932630954e4376e62b5 100644
 --- a/components/viz/service/BUILD.gn
 +++ b/components/viz/service/BUILD.gn
-@@ -141,6 +141,8 @@ viz_component("service") {
+@@ -142,6 +142,8 @@ viz_component("service") {
      "display_embedder/skia_output_surface_impl_on_gpu_debug_capture.h",
      "display_embedder/skia_render_copy_results.cc",
      "display_embedder/skia_render_copy_results.h",
@@ -514,7 +514,7 @@ index 796ae2688436eb07f19909641d1620dd02f10cdb..c9e0eee0b329caf46669b419b1cd10cf
    waiting_on_draw_ack_ = true;
  
 diff --git a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
-index c70b0af70a68386c5d36833e621dd1b5cdc1522a..17e5c96cbb4ef2f575fd5ba7bd8b0c7bd58da5e7 100644
+index 452e5aa346d8603fbb2c4b42f059f966748b801e..abb7e2e3a3d86c4cf51f1b2c8fbb7e183a8bc477 100644
 --- a/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 +++ b/components/viz/service/frame_sinks/root_compositor_frame_sink_impl.cc
 @@ -97,7 +97,8 @@ RootCompositorFrameSinkImpl::Create(

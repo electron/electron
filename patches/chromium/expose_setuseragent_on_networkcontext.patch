@@ -33,10 +33,10 @@ index 0ab8187b0db8ae6db46d81738f653a2bc4c566f6..de3d55e85c22317f7f9375eb94d0d5d4
  
  }  // namespace net
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index cb05975b622eee25217d9f2477c5e53ace017db8..e264713f4361a588e0ec8b4f6f37ab76ad642116 100644
+index 20f435f8432e1fa08da32beeb7e7f098d9033185..d4bfcd6473eee96964347953ac6df4623b7e4af9 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -1559,6 +1559,13 @@ void NetworkContext::SetNetworkConditions(
+@@ -1571,6 +1571,13 @@ void NetworkContext::SetNetworkConditions(
                                        std::move(network_conditions));
  }
  
@@ -51,7 +51,7 @@ index cb05975b622eee25217d9f2477c5e53ace017db8..e264713f4361a588e0ec8b4f6f37ab76
    // This may only be called on NetworkContexts created with the constructor
    // that calls MakeURLRequestContext().
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index 25f9dab24b27ad2b3d6ca01690e9f5c3fea96d32..b230036559cdc44b97b3a5ca5f359a0b4512ccd7 100644
+index 17ecfd109db3e9dbcc27ec291f6c6021c9b6f0eb..80a75a25595718a2c4e655f75620d18b274b24cd 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -316,6 +316,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
@@ -63,7 +63,7 @@ index 25f9dab24b27ad2b3d6ca01690e9f5c3fea96d32..b230036559cdc44b97b3a5ca5f359a0b
    void SetEnableReferrers(bool enable_referrers) override;
  #if BUILDFLAG(IS_CHROMEOS)
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index 6ebade992b628fee18d23e5e29d2d7d6190261a7..21039664d38fb228a9319d296276c33de7a0a265 100644
+index 64a840b13bc6c07112060f48d4f77507eb84994a..7482c19600f48bf7ae4a37ce55ffcbea922b8d42 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -1233,6 +1233,9 @@ interface NetworkContext {
