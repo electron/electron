@@ -20,10 +20,10 @@ namespace electron {
 
 NodeService::NodeService(
     mojo::PendingReceiver<node::mojom::NodeService> receiver)
-    : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kUtility)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+    : node_bindings_{NodeBindings::Create(
+          NodeBindings::BrowserEnvironment::kUtility)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {
   if (receiver.is_valid())
     receiver_.Bind(std::move(receiver));
 }

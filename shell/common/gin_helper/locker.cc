@@ -8,10 +8,9 @@
 
 namespace gin_helper {
 
-Locker::Locker(v8::Isolate* isolate) {
-  if (electron::IsBrowserProcess())
-    locker_ = std::make_unique<v8::Locker>(isolate);
-}
+Locker::Locker(v8::Isolate* isolate)
+    : locker_{electron::IsBrowserProcess() ? new v8::Locker{isolate}
+                                           : nullptr} {}
 
 Locker::~Locker() = default;
 

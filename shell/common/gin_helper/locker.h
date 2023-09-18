@@ -21,14 +21,12 @@ class Locker {
   Locker(const Locker&) = delete;
   Locker& operator=(const Locker&) = delete;
 
+  // prevent heap allocation
+  void* operator new(size_t size) = delete;
+  void operator delete(void*, size_t) = delete;
+
  private:
-  void* operator new(size_t size);
-  void operator delete(void*, size_t);
-
-  std::unique_ptr<v8::Locker> locker_;
-
-  static bool g_is_browser_process;
-  static bool g_is_renderer_process;
+  const std::unique_ptr<v8::Locker> locker_;
 };
 
 }  // namespace gin_helper

@@ -562,14 +562,14 @@ globalShortcut.unregisterAll();
 // ipcMain
 // https://github.com/electron/electron/blob/main/docs/api/ipc-main.md
 
+ipcMain.handle('ping-pong', (event, arg: any) => {
+  console.log(arg); // prints "ping"
+  return 'pong';
+});
+
 ipcMain.on('asynchronous-message', (event, arg: any) => {
   console.log(arg); // prints "ping"
   event.sender.send('asynchronous-reply', 'pong');
-});
-
-ipcMain.on('synchronous-message', (event, arg: any) => {
-  console.log(arg); // prints "ping"
-  event.returnValue = 'pong';
 });
 
 ipcMain.on('synchronous-message', (event, arg: any) => {
