@@ -133,4 +133,10 @@ void ElectronDesktopWindowTreeHostWin::OnNativeThemeUpdated(
   }
 }
 
+bool ElectronDesktopWindowTreeHostWin::ShouldWindowContentsBeTransparent()
+    const {
+  return native_window_view_->GetOpacity() < 1.0 ||
+         native_window_view_->transparent();
+}
+
 }  // namespace electron
