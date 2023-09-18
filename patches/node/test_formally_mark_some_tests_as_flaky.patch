@@ -7,10 +7,10 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 913ae4b0b10a7d508d864539cf075fa9c2f9362c..985f1c0d0c0c6afc049bf1d89f91412ecf431215 100644
+index 913ae4b0b10a7d508d864539cf075fa9c2f9362c..0539a599e57d40c5da650dcf5ffe9a67763506e1 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -5,6 +5,12 @@ prefix parallel
+@@ -5,6 +5,13 @@ prefix parallel
  # sample-test                        : PASS,FLAKY
  
  [true] # This section applies to all platforms
@@ -20,6 +20,7 @@ index 913ae4b0b10a7d508d864539cf075fa9c2f9362c..985f1c0d0c0c6afc049bf1d89f91412e
 +test-fetch: PASS, FLAKY
 +test-cluster-bind-privileged-port: PASS, FLAKY
 +test-cluster-shared-handle-bind-privileged-port: PASS, FLAKY
++test-debugger-random-port-with-inspect-port: PASS, FLAKY
  
  [$system==win32]
  # https://github.com/nodejs/node/issues/24497
