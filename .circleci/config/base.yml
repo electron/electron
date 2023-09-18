@@ -354,7 +354,7 @@ step-setup-goma-for-build: &step-setup-goma-for-build
         exit 1
       fi
       echo 'export GN_GOMA_FILE='`node -e "console.log(require('./src/utils/goma.js').gnFilePath)"` >> $BASH_ENV
-      echo 'export LOCAL_GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
+      echo 'export GOMA_DIR='`node -e "console.log(require('./src/utils/goma.js').dir)"` >> $BASH_ENV
       echo 'export GOMA_FALLBACK_ON_AUTH_FAILURE=true' >> $BASH_ENV
       cd ..
       touch "${TMPDIR:=/tmp}"/.goma-ready
@@ -749,8 +749,8 @@ step-show-goma-stats: &step-show-goma-stats
     command: |
       set +e
       set +o pipefail
-      $LOCAL_GOMA_DIR/goma_ctl.py stat
-      $LOCAL_GOMA_DIR/diagnose_goma_log.py
+      $GOMA_DIR/goma_ctl.py stat
+      $GOMA_DIR/diagnose_goma_log.py
       true
     when: always
     background: true

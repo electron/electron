@@ -39,7 +39,7 @@
     "yargs": "^16.0.3"
   },
   "resolutions": {
-    "nan": "github:jkleinsc/nan#remove_accessor_signature",
+    "nan": "nodejs/nan#4290e23af108328269fcd4fe174ad657ad7cdd96",
     "dbus-native/optimist/minimist": "1.2.7",
     "dbus-native/xml2js": "0.5.0"
   }

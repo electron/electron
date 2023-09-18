@@ -64,10 +64,10 @@ index 4cd668a127a50e5462e3878c3f1dcb7384926768..dfbec49249404df8f8ebdbd26e6e865c
  
  #endif  // THIRD_PARTY_BLINK_PUBLIC_WEB_WEB_SCRIPT_EXECUTION_CALLBACK_H_
 diff --git a/third_party/blink/renderer/core/frame/local_frame.cc b/third_party/blink/renderer/core/frame/local_frame.cc
-index d9fc652cf843dd2d55b7a773fbad601b487a3464..1c0aba8067f31cf9f04adfbd7ffc1683eb032494 100644
+index e993fa7c61d95a297e7655fc28311327e293aa56..7c403e99056dbb8a12f974ee79db248f1d0cbc9f 100644
 --- a/third_party/blink/renderer/core/frame/local_frame.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame.cc
-@@ -2793,6 +2793,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -2816,6 +2816,7 @@ void LocalFrame::RequestExecuteScript(
      mojom::blink::EvaluationTiming evaluation_timing,
      mojom::blink::LoadEventBlockingOption blocking_option,
      WebScriptExecutionCallback callback,
@@ -75,7 +75,7 @@ index d9fc652cf843dd2d55b7a773fbad601b487a3464..1c0aba8067f31cf9f04adfbd7ffc1683
      BackForwardCacheAware back_forward_cache_aware,
      mojom::blink::WantResultOption want_result_option,
      mojom::blink::PromiseResultOption promise_behavior) {
-@@ -2826,7 +2827,7 @@ void LocalFrame::RequestExecuteScript(
+@@ -2849,7 +2850,7 @@ void LocalFrame::RequestExecuteScript(
    PausableScriptExecutor::CreateAndRun(
        script_state, std::move(script_sources), execute_script_policy,
        user_gesture, evaluation_timing, blocking_option, want_result_option,
@@ -97,7 +97,7 @@ index eb4ce179cb09e28b97ad167b5b6d0e1c25e53c5f..a9cde93321e1afd18e3f742777b31112
                              mojom::blink::WantResultOption,
                              mojom::blink::PromiseResultOption);
 diff --git a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
-index 4c6ff1ffc67aa6f514fcabb453f404704a6ab024..6e6407125232bc9a8c0d80725a95a9e901cda009 100644
+index e48bb217c567397d0f5776e697922a797ae58dfd..05a9bc228ecf7bc998e188341a42236b0e5e22e7 100644
 --- a/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 +++ b/third_party/blink/renderer/core/frame/local_frame_mojo_handler.cc
 @@ -937,6 +937,7 @@ void LocalFrameMojoHandler::JavaScriptExecuteRequestInIsolatedWorld(
