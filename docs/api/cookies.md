@@ -123,4 +123,4 @@ Writes any unwritten cookies data to disk
 
 Cookies written by any method will not be written to disk immediately, but will be written every 30 seconds or 512 operations
 
-Calling this method can cause the cookie to be written to disk immediately
+Calling this method can cause the cookie to be written to disk immediately.
