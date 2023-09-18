@@ -240,13 +240,13 @@ step-depot-tools-get: &step-depot-tools-get
     name: Get depot tools
     command: |
       git clone --depth=1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
+      cd depot_tools
       if [ "`uname`" == "Darwin" ]; then
         # remove ninjalog_uploader_wrapper.py from autoninja since we don't use it and it causes problems
-        sed -i '' '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
+        sed -i '' '/ninjalog_uploader_wrapper.py/d' autoninja
       else
-        sed -i '/ninjalog_uploader_wrapper.py/d' ./depot_tools/autoninja
-        # Remove swift-format dep from cipd on macOS until we send a patch upstream.
-        cd depot_tools
+        sed -i '/ninjalog_uploader_wrapper.py/d' autoninja
+        # Remove swift-format dep from cipd on macOS until we send a patch upstream.        
         cat > gclient.diff \<< 'EOF'
       diff --git a/gclient.py b/gclient.py
       index c305c248..e6e0fbdc 100755
@@ -265,8 +265,34 @@ step-depot-tools-get: &step-depot-tools-get
       EOF
         git apply --3way gclient.diff
       fi
+      # Fixup autoninja until https://chromium-review.googlesource.com/c/chromium/tools/depot_tools/+/4869108 is merged
+      cat  > autoninja.diff \<< 'EOF'
+      diff --git a/autoninja.py b/autoninja.py
+      index 34db3c3..a3effe0 100755
+      --- a/autoninja.py
+      +++ b/autoninja.py
+      @@ -37,9 +37,14 @@
+               for line in f:
+                   match = import_re.match(line)
+                   if match:
+      -                import_path = os.path.normpath(
+      -                    os.path.join(output_dir, '..', '..',
+      -                                 match.groups()[0][2:]))
+      +                raw_import_path = match.groups()[0]
+      +                if raw_import_path[:2] == "//":
+      +                    import_path = os.path.normpath(
+      +                        os.path.join(output_dir, '..', '..',
+      +                                     raw_import_path[2:]))
+      +                else:
+      +                    import_path = os.path.normpath(
+      +                        os.path.join(os.path.dirname(path), raw_import_path))
+                       for import_line in _gn_lines(output_dir, import_path):
+                           yield import_line
+                   else:
+
+      EOF
+        git apply --3way autoninja.diff
       # Ensure depot_tools does not update.
-      test -d depot_tools && cd depot_tools
       touch .disable_auto_update
 
 step-depot-tools-add-to-path: &step-depot-tools-add-to-path
