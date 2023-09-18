@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 3560158bce3949cc454e8f94cd97584f7c1b6e2d..5bdeed26cc4f52d8d6ba3d30dcf013169e490008 100644
+index 23f268698ee81bd883e9249aa252082a3f40cae9..8e7730a655e5307141333deb676970a6a5d7b86e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1034,6 +1034,7 @@ component("base") {
+@@ -1032,6 +1032,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,7 +74,7 @@ index 5d0bae2eb27d6ed90ac83932630954e4376e62b5..1b6c54a5a859ff95db87c133c423182d
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 36d770e54579cd83b19fb145c031aa8e89ad60f6..4832ac75071f70ff4fe1909184af4d27c7ae0ed3 100644
+index 6d2732b059e238425de0414f9268ca9288367a02..559f27939149ea856ab0be61a20fe9eeac35bf86 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -59,6 +59,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index 5ab406dbebe5c159c6e209f8844bf6fabd47199f..224c45b7bff3c4073c70bbd8bdc1fd1c
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index c41565ca0eb628503f0863ce69d4c790be25ce2f..815c8a82b43703f703181e8427dafb508ff43055 100644
+index 6b31f7eb59babbb14d90e9278c978523753aba09..48613c5806a1df0e3cb9aff9f491ae775cdbdff2 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -171,7 +171,7 @@ index 93cf87a37792691f41d7c611104a378d9af45195..2d3a0f923f4991be41534e7f951fe5df
  
    if (is_ios) {
 diff --git a/net/dns/BUILD.gn b/net/dns/BUILD.gn
-index 6eb142954e6a9b2a3937dbf3ae733f330865c9da..f4061586471b23762ba898766ae16b6c46b5a90e 100644
+index f36bf682ffdeaf69da34a4f9e18465dde4e3a9a3..7f1a6fb71f78855bc771ee533b1715b246899c1c 100644
 --- a/net/dns/BUILD.gn
 +++ b/net/dns/BUILD.gn
 @@ -177,6 +177,8 @@ source_set("dns") {
@@ -212,10 +212,10 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 3c5aefcf245ff80294102cd3fb04abb63ece132f..6e69a7a8d823263ea56f470ca549bbe2a62c669e 100644
+index ea945ef532688367a86f2858f6b03f4b571acdc4..9286ef801349aeef8e9234a6f5e5f0390812cbf8 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -308,6 +308,7 @@ component("core") {
+@@ -309,6 +309,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -288,10 +288,10 @@ index ebd698116ef4f88c3bbaea1b02912bbeddbca34f..e096f9371607a088250e1ea72f450f85
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index c5eb8556e3c58f25fcb6f073b1f6bd58291591e5..86ccf083d2670e51356ba6ed35a7ad8766249650 100644
+index e5242c9831e514231954282501a1894af2d85288..eac051cd1e4705410fd13f2b63b62659c643b580 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
-@@ -683,6 +683,7 @@ component("views") {
+@@ -684,6 +684,7 @@ component("views") {
        "IOSurface.framework",
        "QuartzCore.framework",
      ]
@@ -299,7 +299,7 @@ index c5eb8556e3c58f25fcb6f073b1f6bd58291591e5..86ccf083d2670e51356ba6ed35a7ad87
    }
  
    if (is_win) {
-@@ -1109,6 +1110,8 @@ source_set("test_support") {
+@@ -1110,6 +1111,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
