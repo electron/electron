@@ -6,7 +6,7 @@ Subject: chore: patch out Profile methods in titlebar_config
 Make this code linkable in Electron by removing Profile references.
 
 diff --git a/chrome/browser/win/titlebar_config.cc b/chrome/browser/win/titlebar_config.cc
-index 92d0e8165a264c7ef2701a66e0f7179f0d080f47..b0c91778399f811a5d1b0f208488667cb38459e1 100644
+index f088a7071b1e0e1e05aee5637484b1dea3e2a6fa..8d411e550f6a8ca1a4070bf5d5719703f90b3dfa 100644
 --- a/chrome/browser/win/titlebar_config.cc
 +++ b/chrome/browser/win/titlebar_config.cc
 @@ -19,8 +19,10 @@ BASE_FEATURE(kWindows11MicaTitlebar,

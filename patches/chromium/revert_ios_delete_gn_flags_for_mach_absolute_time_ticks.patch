@@ -1,0 +1,407 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: "luci-bisection@appspot.gserviceaccount.com"
+ <luci-bisection@appspot.gserviceaccount.com>
+Date: Tue, 12 Sep 2023 19:09:21 +0000
+Subject: Revert "[iOS] Delete GN flags for mach absolute time ticks"
+
+This reverts commit 734471fe6b86de7e1017e20c5f2fb1c5897ed50f.
+
+Reason for revert:
+LUCI Bisection identified this CL as the culprit of a build failure. See the analysis: https://luci-bisection.appspot.com/analysis/b/8770136478150458481
+
+Sample failed build: https://ci.chromium.org/b/8770136478150458481
+
+If this is a false positive, please report it at https://bugs.chromium.org/p/chromium/issues/entry?comment=Analysis%3A+https%3A%2F%2Fluci-bisection.appspot.com%2Fanalysis%2Fb%2F8770136478150458481&components=Tools%3ETest%3EFindit&labels=LUCI-Bisection-Wrong%2CPri-3%2CType-Bug&status=Available&summary=Wrongly+blamed+https%3A%2F%2Fchromium-review.googlesource.com%2Fc%2Fchromium%2Fsrc%2F%2B%2F4850577
+
+Original change's description:
+> [iOS] Delete GN flags for mach absolute time ticks
+>
+> Mach absolute time ticks have been enabled by default for a month
+> with no known issues, so this CL cleans up the corresponding GN
+> flags.
+>
+> Bug: 1414153
+> Change-Id: I981f7e823295a5f8c9a9d186e356243e7f76eef1
+> Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4850577
+> Commit-Queue: Ali Juma <ajuma@chromium.org>
+> Reviewed-by: Ian Vollick <vollick@chromium.org>
+> Reviewed-by: Mark Mentovai <mark@chromium.org>
+> Cr-Commit-Position: refs/heads/main@{#1195534}
+>
+
+Bug: 1414153
+Change-Id: I9bd6656f514dc19a9c647f9ff845420762c462f4
+No-Presubmit: true
+No-Tree-Checks: true
+No-Try: true
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4858437
+Commit-Queue: luci-bisection@appspot.gserviceaccount.com <luci-bisection@appspot.gserviceaccount.com>
+Bot-Commit: luci-bisection@appspot.gserviceaccount.com <luci-bisection@appspot.gserviceaccount.com>
+Owners-Override: luci-bisection@appspot.gserviceaccount.com <luci-bisection@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/heads/main@{#1195555}
+
+diff --git a/base/BUILD.gn b/base/BUILD.gn
+index 5bdeed26cc4f52d8d6ba3d30dcf013169e490008..ff06f5ed195b784c414831faf18072bf4cb28f67 100644
+--- a/base/BUILD.gn
++++ b/base/BUILD.gn
+@@ -48,6 +48,11 @@ if (is_mac) {
+   import("//third_party/protobuf/proto_library.gni")
+ }
+ 
++if (is_apple) {
++  # Buildflags to control time behavior on iOS in file shared with mac.
++  import("//base/time/buildflags/buildflags.gni")
++}
++
+ if (is_win) {
+   import("//build/config/win/control_flow_guard.gni")
+ }
+@@ -88,6 +93,14 @@ assert(!is_nacl || is_nacl_saigo,
+ assert(!is_win || is_clang,
+        "only clang-cl is supported on Windows, see https://crbug.com/988071")
+ 
++if (is_apple) {
++  assert(!use_blink || enable_mach_absolute_time_ticks,
++         "use_blink requires mach absolute time ticks")
++
++  assert(!is_mac || enable_mach_absolute_time_ticks,
++         "mac requires mach absolute time ticks")
++}
++
+ # Determines whether libevent should be dep.
+ dep_libevent = !is_fuchsia && !is_win && !is_mac && !is_nacl
+ 
+@@ -1054,6 +1067,10 @@ component("base") {
+   # to provide the appropriate `#define` here.
+   defines += [ "IS_RAW_PTR_IMPL" ]
+ 
++  if (is_apple) {
++    deps += [ "//base/time/buildflags:buildflags" ]
++  }
++
+   if (build_rust_json_reader) {
+     deps += [ "//third_party/rust/serde_json_lenient/v0_1/wrapper" ]
+   }
+@@ -3724,7 +3741,7 @@ test("base_unittests") {
+     ]
+   }
+ 
+-  if (is_apple) {
++  if (is_apple && enable_mach_absolute_time_ticks) {
+     sources += [ "time/time_apple_unittest.mm" ]
+   }
+ 
+diff --git a/base/allocator/partition_allocator/BUILD.gn b/base/allocator/partition_allocator/BUILD.gn
+index 2c279c3bf348821307aac53f365e9590c2b4bd6e..1818a87c6a8793555cf39b42c71248f4a0131e97 100644
+--- a/base/allocator/partition_allocator/BUILD.gn
++++ b/base/allocator/partition_allocator/BUILD.gn
+@@ -730,6 +730,13 @@ buildflag_header("partition_alloc_buildflags") {
+     "ENABLE_PKEYS=$enable_pkeys",
+     "ENABLE_THREAD_ISOLATION=$enable_pkeys",
+   ]
++
++  if (is_apple) {
++    # TODO(crbug.com/1414153): once TimeTicks::Now behavior is unified on iOS,
++    # this should be removed.
++    flags += [ "PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS=" +
++               "$partition_alloc_enable_mach_absolute_time_ticks" ]
++  }
+ }
+ 
+ buildflag_header("chromecast_buildflags") {
+diff --git a/base/allocator/partition_allocator/partition_alloc.gni b/base/allocator/partition_allocator/partition_alloc.gni
+index 485883ba8ffd006ab53b4227fc3b3d3181d5d048..970d6d6682f122a5508ce7f35cb65b96694b00e1 100644
+--- a/base/allocator/partition_allocator/partition_alloc.gni
++++ b/base/allocator/partition_allocator/partition_alloc.gni
+@@ -204,6 +204,12 @@ declare_args() {
+   # Shadow metadata is still under development and only supports Linux
+   # for now.
+   enable_shadow_metadata = false
++
++  if (is_apple) {
++    # TODO(crbug.com/1414153): this should be removed once the use of mach
++    # absolute time ticks is successfully launched on iOS.
++    partition_alloc_enable_mach_absolute_time_ticks = true
++  }
+ }
+ 
+ # *Scan is currently only used by Chromium, and supports only 64-bit.
+@@ -306,6 +312,14 @@ assert(!use_asan_backup_ref_ptr || is_asan,
+ assert(!use_asan_unowned_ptr || is_asan,
+        "AsanUnownedPtr requires AddressSanitizer")
+ 
++if (is_apple) {
++  assert(!use_blink || partition_alloc_enable_mach_absolute_time_ticks,
++         "use_blink requires partition_alloc_enable_mach_absolute_time_ticks")
++
++  assert(!is_mac || partition_alloc_enable_mach_absolute_time_ticks,
++         "mac requires partition_alloc_enable_mach_absolute_time_ticks")
++}
++
+ # AsanBackupRefPtr is not supported outside Chromium. The implementation is
+ # entangled with `//base`. The code is only physically located with the rest of
+ # `raw_ptr` to keep it together.
+diff --git a/base/allocator/partition_allocator/partition_alloc_base/time/time.h b/base/allocator/partition_allocator/partition_alloc_base/time/time.h
+index 1d8ee28e9110e21909c8d814efbeff5eb2c7b96d..2f4b7996b1c81a6494763b8671d59389c1852d8f 100644
+--- a/base/allocator/partition_allocator/partition_alloc_base/time/time.h
++++ b/base/allocator/partition_allocator/partition_alloc_base/time/time.h
+@@ -140,7 +140,9 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) TimeDelta {
+   static TimeDelta FromZxDuration(zx_duration_t nanos);
+ #endif
+ #if BUILDFLAG(IS_APPLE)
++#if BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+   static TimeDelta FromMachTime(uint64_t mach_time);
++#endif  // BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ #endif  // BUILDFLAG(IS_APPLE)
+ 
+   // Converts an integer value representing TimeDelta to a class. This is used
+@@ -849,12 +851,14 @@ class PA_COMPONENT_EXPORT(PARTITION_ALLOC) TimeTicks
+ #endif
+ 
+ #if BUILDFLAG(IS_APPLE)
++#if BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+   static TimeTicks FromMachAbsoluteTime(uint64_t mach_absolute_time);
+ 
+   // Sets the current Mach timebase to `timebase`. Returns the old timebase.
+   static mach_timebase_info_data_t SetMachTimebaseInfoForTesting(
+       mach_timebase_info_data_t timebase);
+ 
++#endif  // BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ #endif  // BUILDFLAG(IS_APPLE)
+ 
+ #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(PA_IS_CHROMEOS_ASH)
+diff --git a/base/allocator/partition_allocator/partition_alloc_base/time/time_apple.mm b/base/allocator/partition_allocator/partition_alloc_base/time/time_apple.mm
+index f1288b59cc0fc26bf2419dcffa044ba12b2ad568..c4354ccc626af9831b8346221d479660ad890849 100644
+--- a/base/allocator/partition_allocator/partition_alloc_base/time/time_apple.mm
++++ b/base/allocator/partition_allocator/partition_alloc_base/time/time_apple.mm
+@@ -28,6 +28,7 @@
+ 
+ namespace {
+ 
++#if BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ // Returns a pointer to the initialized Mach timebase info struct.
+ mach_timebase_info_data_t* MachTimebaseInfo() {
+   static mach_timebase_info_data_t timebase_info = []() {
+@@ -80,14 +81,29 @@ int64_t MachTimeToMicroseconds(uint64_t mach_time) {
+   // 9223372036854775807 / (1e6 * 60 * 60 * 24 * 365.2425) = 292,277).
+   return checked_cast<int64_t>(microseconds);
+ }
++#endif  // BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ 
+ // Returns monotonically growing number of ticks in microseconds since some
+ // unspecified starting point.
+ int64_t ComputeCurrentTicks() {
++#if !BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++  struct timespec tp;
++  // clock_gettime() returns 0 on success and -1 on failure. Failure can only
++  // happen because of bad arguments (unsupported clock type or timespec
++  // pointer out of accessible address space). Here it is known that neither
++  // can happen since the timespec parameter is stack allocated right above and
++  // `CLOCK_MONOTONIC` is supported on all versions of iOS that Chrome is
++  // supported on.
++  int res = clock_gettime(CLOCK_MONOTONIC, &tp);
++  PA_BASE_DCHECK(0 == res) << "Failed clock_gettime, errno: " << errno;
++
++  return (int64_t)tp.tv_sec * 1000000 + tp.tv_nsec / 1000;
++#else
+   // mach_absolute_time is it when it comes to ticks on the Mac.  Other calls
+   // with less precision (such as TickCount) just call through to
+   // mach_absolute_time.
+   return MachTimeToMicroseconds(mach_absolute_time());
++#endif  // !BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ }
+ 
+ int64_t ComputeThreadTicks() {
+@@ -172,10 +188,12 @@ Time TimeNowFromSystemTimeIgnoringOverride() {
+ 
+ // TimeDelta ------------------------------------------------------------------
+ 
++#if BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ // static
+ TimeDelta TimeDelta::FromMachTime(uint64_t mach_time) {
+   return Microseconds(MachTimeToMicroseconds(mach_time));
+ }
++#endif  // BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ 
+ // TimeTicks ------------------------------------------------------------------
+ 
+@@ -195,6 +213,7 @@ TimeTicks TimeTicksNowIgnoringOverride() {
+   return true;
+ }
+ 
++#if BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ // static
+ TimeTicks TimeTicks::FromMachAbsoluteTime(uint64_t mach_absolute_time) {
+   return TimeTicks(MachTimeToMicroseconds(mach_absolute_time));
+@@ -210,9 +229,15 @@ TimeTicks TimeTicksNowIgnoringOverride() {
+   return orig_timebase;
+ }
+ 
++#endif  // BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++
+ // static
+ TimeTicks::Clock TimeTicks::GetClock() {
++#if !BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++  return Clock::IOS_CF_ABSOLUTE_TIME_MINUS_KERN_BOOTTIME;
++#else
+   return Clock::MAC_MACH_ABSOLUTE_TIME;
++#endif  // !BUILDFLAG(PARTITION_ALLOC_ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ }
+ 
+ // ThreadTicks ----------------------------------------------------------------
+diff --git a/base/time/buildflags/BUILD.gn b/base/time/buildflags/BUILD.gn
+new file mode 100644
+index 0000000000000000000000000000000000000000..738a5483167147521dc04d7d7b0c32c5d8447190
+--- /dev/null
++++ b/base/time/buildflags/BUILD.gn
+@@ -0,0 +1,15 @@
++# Copyright 2023 The Chromium Authors
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++import("//build/buildflag_header.gni")
++import("buildflags.gni")
++
++# Generate a buildflag header for compile-time checking of mach absolute time
++# support in TimeTicks
++# TODO(crbug.com/1414153): this should be removed once there is a unified
++# approach to TimeTicks::Now on iOS.
++buildflag_header("buildflags") {
++  header = "buildflags.h"
++  flags = [ "ENABLE_MACH_ABSOLUTE_TIME_TICKS=$enable_mach_absolute_time_ticks" ]
++}
+diff --git a/base/time/buildflags/buildflags.gni b/base/time/buildflags/buildflags.gni
+new file mode 100644
+index 0000000000000000000000000000000000000000..eabed1a3bbdfebb865da1a1c7161131acc15b203
+--- /dev/null
++++ b/base/time/buildflags/buildflags.gni
+@@ -0,0 +1,13 @@
++# Copyright 2023 The Chromium Authors
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++import("//build/config/features.gni")
++
++# TODO(crbug.com/1414153): this should be removed once the use of mach absolute
++# time ticks is successfully launched on iOS.
++declare_args() {
++  # use_blink currently assumes mach absolute time ticks (eg, to ensure that
++  # trace events cohere).
++  enable_mach_absolute_time_ticks = true
++}
+diff --git a/base/time/time.h b/base/time/time.h
+index c4746a5f2a058ccc76d37b82d171f048e1cf4c08..42d812b3ab523733c177d32c046a9ac54bef9855 100644
+--- a/base/time/time.h
++++ b/base/time/time.h
+@@ -143,7 +143,9 @@ class BASE_EXPORT TimeDelta {
+   static TimeDelta FromZxDuration(zx_duration_t nanos);
+ #endif
+ #if BUILDFLAG(IS_APPLE)
++#if BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+   static TimeDelta FromMachTime(uint64_t mach_time);
++#endif  // BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ #endif  // BUILDFLAG(IS_APPLE)
+ 
+   // Converts an integer value representing TimeDelta to a class. This is used
+@@ -1196,12 +1198,14 @@ class BASE_EXPORT TimeTicks : public time_internal::TimeBase<TimeTicks> {
+ #endif
+ 
+ #if BUILDFLAG(IS_APPLE)
++#if BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+   static TimeTicks FromMachAbsoluteTime(uint64_t mach_absolute_time);
+ 
+   // Sets the current Mach timebase to `timebase`. Returns the old timebase.
+   static mach_timebase_info_data_t SetMachTimebaseInfoForTesting(
+       mach_timebase_info_data_t timebase);
+ 
++#endif  // BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ #endif  // BUILDFLAG(IS_APPLE)
+ 
+ #if BUILDFLAG(IS_ANDROID) || BUILDFLAG(IS_CHROMEOS_ASH)
+diff --git a/base/time/time_apple.mm b/base/time/time_apple.mm
+index 8c3e041fe70a10e7a26cf282a0c19c7e0672fc03..d7f15c71e692370e4fc134874dc0554e18bd03da 100644
+--- a/base/time/time_apple.mm
++++ b/base/time/time_apple.mm
+@@ -22,8 +22,15 @@
+ #include "base/time/time_override.h"
+ #include "build/build_config.h"
+ 
++#if !BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++#include <errno.h>
++#include <time.h>
++#include "base/ios/ios_util.h"
++#endif  // !BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++
+ namespace {
+ 
++#if BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ // Returns a pointer to the initialized Mach timebase info struct.
+ mach_timebase_info_data_t* MachTimebaseInfo() {
+   static mach_timebase_info_data_t timebase_info = []() {
+@@ -77,14 +84,29 @@ int64_t MachTimeToMicroseconds(uint64_t mach_time) {
+   // 9223372036854775807 / (1e6 * 60 * 60 * 24 * 365.2425) = 292,277).
+   return base::checked_cast<int64_t>(microseconds);
+ }
++#endif  // BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ 
+ // Returns monotonically growing number of ticks in microseconds since some
+ // unspecified starting point.
+ int64_t ComputeCurrentTicks() {
++#if !BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++  struct timespec tp;
++  // clock_gettime() returns 0 on success and -1 on failure. Failure can only
++  // happen because of bad arguments (unsupported clock type or timespec pointer
++  // out of accessible address space). Here it is known that neither can happen
++  // since the timespec parameter is stack allocated right above and
++  // `CLOCK_MONOTONIC` is supported on all versions of iOS that Chrome is
++  // supported on.
++  int res = clock_gettime(CLOCK_MONOTONIC, &tp);
++  DCHECK_EQ(res, 0) << "Failed clock_gettime, errno: " << errno;
++
++  return (int64_t)tp.tv_sec * 1000000 + tp.tv_nsec / 1000;
++#else
+   // mach_absolute_time is it when it comes to ticks on the Mac.  Other calls
+   // with less precision (such as TickCount) just call through to
+   // mach_absolute_time.
+   return MachTimeToMicroseconds(mach_absolute_time());
++#endif  // !BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ }
+ 
+ int64_t ComputeThreadTicks() {
+@@ -172,10 +194,12 @@ Time TimeNowFromSystemTimeIgnoringOverride() {
+ 
+ // TimeDelta ------------------------------------------------------------------
+ 
++#if BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ // static
+ TimeDelta TimeDelta::FromMachTime(uint64_t mach_time) {
+   return Microseconds(MachTimeToMicroseconds(mach_time));
+ }
++#endif  // BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ 
+ // TimeTicks ------------------------------------------------------------------
+ 
+@@ -195,6 +219,7 @@ TimeTicks TimeTicksNowIgnoringOverride() {
+   return true;
+ }
+ 
++#if BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ // static
+ TimeTicks TimeTicks::FromMachAbsoluteTime(uint64_t mach_absolute_time) {
+   return TimeTicks(MachTimeToMicroseconds(mach_absolute_time));
+@@ -210,9 +235,15 @@ TimeTicks TimeTicksNowIgnoringOverride() {
+   return orig_timebase;
+ }
+ 
++#endif  // BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++
+ // static
+ TimeTicks::Clock TimeTicks::GetClock() {
++#if !BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
++  return Clock::IOS_CF_ABSOLUTE_TIME_MINUS_KERN_BOOTTIME;
++#else
+   return Clock::MAC_MACH_ABSOLUTE_TIME;
++#endif  // !BUILDFLAG(ENABLE_MACH_ABSOLUTE_TIME_TICKS)
+ }
+ 
+ // ThreadTicks ----------------------------------------------------------------

@@ -15,10 +15,10 @@ node does not change in this case.
 chromium-bug: https://crbug.com/1369605
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_child_frame.cc b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-index b190c86708d5ae7f207bae3e923609814bf68a52..16395c4b5fd5262885118095784db820508087dd 100644
+index 454033207ee52358ead79e16682b4aeb95cb0d71..a7650faa1ab1494e792814d2fa3af26988d4d95f 100644
 --- a/content/browser/renderer_host/render_widget_host_view_child_frame.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_child_frame.cc
-@@ -1041,6 +1041,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
+@@ -1046,6 +1046,12 @@ RenderWidgetHostViewChildFrame::DidUpdateVisualProperties(
    return viz::ScopedSurfaceIdAllocator(std::move(allocation_task));
  }
  
@@ -45,10 +45,10 @@ index 648896b13ad4f811fdd196bd2fe5bdf62e7154ab..e2e3b414e73052b2b5b8e443ded18ae3
    // RenderFrameMetadataProvider::Observer implementation.
    void OnRenderFrameMetadataChangedBeforeActivation(
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index e2e7b3e5cf8f581adee596903fc19886a23832c1..dd060f4207516af6b7db21593dcbed3848d47409 100644
+index 6dc2cd4b494eb3730139b8351212c3c0cde39861..93fbebcf3307c20df75ed83e952b816a7d77da58 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -8336,7 +8336,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
+@@ -8348,7 +8348,7 @@ void WebContentsImpl::OnFocusedElementChangedInFrame(
                          "WebContentsImpl::OnFocusedElementChangedInFrame",
                          "render_frame_host", frame);
    RenderWidgetHostViewBase* root_view =
