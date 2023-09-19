@@ -1,0 +1,23 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Athul Iddya <athul@iddya.com>
+Date: Tue, 12 Sep 2023 22:19:46 -0700
+Subject: fix: check PipeWire init before creating generic capturer
+
+Check if PipeWire can be initialized before creating generic capturer.
+This harmonizes the conditions with the ones used in Linux
+implementations of DesktopCapturer::CreateRawScreenCapturer and
+DesktopCapturer::CreateRawWindowCapturer.
+
+diff --git a/modules/desktop_capture/desktop_capturer.cc b/modules/desktop_capture/desktop_capturer.cc
+index b99f5ecb803ac0ac0e26fbdb3411c77605f33011..8c377459c6c1fa2597b6a63991cfdd58a99b1900 100644
+--- a/modules/desktop_capture/desktop_capturer.cc
++++ b/modules/desktop_capture/desktop_capturer.cc
+@@ -111,7 +111,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateGenericCapturer(
+   std::unique_ptr<DesktopCapturer> capturer;
+ 
+ #if defined(WEBRTC_USE_PIPEWIRE)
+-  if (options.allow_pipewire() && DesktopCapturer::IsRunningUnderWayland()) {
++  if (options.allow_pipewire() && BaseCapturerPipeWire::IsSupported()) {
+     capturer = std::make_unique<BaseCapturerPipeWire>(
+         options, CaptureType::kAnyScreenContent);
+   }
