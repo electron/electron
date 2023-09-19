@@ -9,10 +9,10 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 0a58771f77f9fab4bd660191a1b2c612f7951858..a25feb97dfa1f7f5c0378cdac256a8de542f3b7d 100644
+index bb5fbb185a7a958f7c118a9fe5e6f6893d386140..9e53e6078727f22a540240b6dc8d6ce7d653fe10 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-@@ -18,8 +18,10 @@
+@@ -19,8 +19,10 @@
  #include "ui/gfx/geometry/size.h"
  #if !BUILDFLAG(IS_ANDROID)
  #include "base/task/sequenced_task_runner.h"
@@ -23,7 +23,7 @@ index 0a58771f77f9fab4bd660191a1b2c612f7951858..a25feb97dfa1f7f5c0378cdac256a8de
  #include "third_party/blink/public/common/features.h"
  #include "ui/views/view.h"
  #endif  // !BUILDFLAG(IS_ANDROID)
-@@ -288,7 +290,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
+@@ -316,7 +318,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
    pip_window_controller_->Close(false /* should_pause_video */);
    pip_window_controller_ = nullptr;
@@ -32,7 +32,7 @@ index 0a58771f77f9fab4bd660191a1b2c612f7951858..a25feb97dfa1f7f5c0378cdac256a8de
    auto_pip_setting_helper_.reset();
  #endif  // !BUILDFLAG(IS_ANDROID)
  }
-@@ -299,8 +301,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -327,8 +329,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
    // contents, so we only need to forget the controller here when user closes
    // the parent web contents with the PiP window open.
    document_web_contents_observer_.reset();
@@ -43,7 +43,7 @@ index 0a58771f77f9fab4bd660191a1b2c612f7951858..a25feb97dfa1f7f5c0378cdac256a8de
    if (pip_window_controller_)
      pip_window_controller_ = nullptr;
  }
-@@ -318,6 +322,7 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
+@@ -346,6 +350,7 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
      return nullptr;
    }
  
@@ -51,7 +51,7 @@ index 0a58771f77f9fab4bd660191a1b2c612f7951858..a25feb97dfa1f7f5c0378cdac256a8de
    auto* const web_contents = pip_window_controller_->GetWebContents();
  
    auto* auto_pip_tab_helper =
-@@ -339,6 +344,8 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
+@@ -367,6 +372,8 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
    }
  
    return overlay_view;
@@ -61,10 +61,10 @@ index 0a58771f77f9fab4bd660191a1b2c612f7951858..a25feb97dfa1f7f5c0378cdac256a8de
  #endif  // !BUILDFLAG(IS_ANDROID)
  
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 560f2901ef6860811c783c1eed9277223072aabf..f5a5e3d883e0186961bd5560b4429e19abf0df49 100644
+index 68bffecaf8a95dff2f028d003715462e11aa59f0..17635657786890e31510e53a8884a35072346d4d 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-@@ -9,6 +9,7 @@
+@@ -11,6 +11,7 @@
  #include "base/memory/singleton.h"
  #include "base/observer_list.h"
  #include "base/observer_list_types.h"
@@ -72,7 +72,7 @@ index 560f2901ef6860811c783c1eed9277223072aabf..f5a5e3d883e0186961bd5560b4429e19
  #include "build/build_config.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
-@@ -25,7 +26,9 @@ class Display;
+@@ -28,7 +29,9 @@ class Display;
  }  // namespace display
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -82,7 +82,7 @@ index 560f2901ef6860811c783c1eed9277223072aabf..f5a5e3d883e0186961bd5560b4429e19
  
  namespace views {
  class View;
-@@ -193,7 +196,9 @@ class PictureInPictureWindowManager {
+@@ -209,7 +212,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  

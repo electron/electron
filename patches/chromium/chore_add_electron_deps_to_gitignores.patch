@@ -6,19 +6,19 @@ Subject: chore: add electron deps to gitignores
 Makes things like "git status" quicker when developing electron locally
 
 diff --git a/.gitignore b/.gitignore
-index c71ddf7b2c50024d1d40f7a0a44bc0b48a0f80b1..96a4ba2253ec2870865f22c27676ea883ee0d928 100644
+index 22417f27125a44d481483439066d73e60348b414..82e5084b0e12231e5cc96a38d99b7238ebd0565c 100644
 --- a/.gitignore
 +++ b/.gitignore
-@@ -244,6 +244,7 @@ vs-chromium-project.txt
+@@ -210,6 +210,7 @@ vs-chromium-project.txt
+ /data
  /delegate_execute
  /device/serial/device_serial_mojo.xml
- /docs/website
 +/electron
  /google_apis/gcm/gcm.xml
- /google_apis/internal
  /googleurl
+ /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 7f71f823e692f759aa38ddb977f073635fac697e..e4776c088d861102e37d20b38c4929028f083bda 100644
+index 5cd5dda2f903662cc470d445fc39837aea0b821d..df0499538b4de6d14afd33d3c1c03d3d70c6c100 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
 @@ -96,6 +96,7 @@
@@ -29,7 +29,7 @@ index 7f71f823e692f759aa38ddb977f073635fac697e..e4776c088d861102e37d20b38c492902
  /elfutils/src
  /emoji-metadata/src
  /emoji-segmenter/src
-@@ -210,6 +211,7 @@
+@@ -212,6 +213,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
@@ -37,7 +37,7 @@ index 7f71f823e692f759aa38ddb977f073635fac697e..e4776c088d861102e37d20b38c492902
  /nasm
  /nearby/src
  /neon_2_sse/src
-@@ -278,6 +280,7 @@
+@@ -280,6 +282,7 @@
  /speex
  /sqlite/src
  /sqlite4java/lib/

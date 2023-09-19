@@ -9,7 +9,7 @@ necessary for native modules to load.
 Also change visibility on mksnapshot in order to target mksnapshot for mksnapshot zip.
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 96e9f4f6db35aacd6d9420a2551ba469712a241c..71fc91c4b8836aa5b7019f328a71eb5af59a0d66 100644
+index 88cbaf273f62f958b5e3eb54e06436f5355b9cf5..3376eca5aa950c04b83f6193c47eef35e76f4d28 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -750,7 +750,7 @@ config("internal_config") {
@@ -21,7 +21,7 @@ index 96e9f4f6db35aacd6d9420a2551ba469712a241c..71fc91c4b8836aa5b7019f328a71eb5a
      defines += [ "BUILDING_V8_SHARED" ]
    }
  
-@@ -6744,7 +6744,7 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -6761,7 +6761,7 @@ if (current_toolchain == v8_generator_toolchain) {
        "src/interpreter/bytecodes.h",
      ]
  
@@ -30,7 +30,7 @@ index 96e9f4f6db35aacd6d9420a2551ba469712a241c..71fc91c4b8836aa5b7019f328a71eb5a
  
      deps = [
        ":v8_libbase",
-@@ -6756,7 +6756,6 @@ if (current_toolchain == v8_generator_toolchain) {
+@@ -6773,7 +6773,6 @@ if (current_toolchain == v8_generator_toolchain) {
  
  if (current_toolchain == v8_snapshot_toolchain) {
    v8_executable("mksnapshot") {

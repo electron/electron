@@ -51,7 +51,7 @@ index b05c0157ecca222452fb38e3b28c9d7cc6bcfbfd..02d9eabfef9521722340739bf86df3df
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index 356c30cc4bf0d672f62ccf15de829b3c7c42f476..2071c301644f95e6cd0448b08cc7b535343a55a0 100644
+index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663d64a63e6 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -172,7 +172,7 @@ index 356c30cc4bf0d672f62ccf15de829b3c7c42f476..2071c301644f95e6cd0448b08cc7b535
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 844b1814ba832b82e6f57236a9a5f5380c6a65cc..3dff138357d9e1ae8d572df7630aa6ec429728a3 100644
+index 071f3c05b8f899857531f2f08c05c7f2551eb4d0..11f35769cc53b4aa111a319d155a3916f0040fa7 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -28,7 +28,9 @@

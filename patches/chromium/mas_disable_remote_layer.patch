@@ -41,10 +41,10 @@ index 655dca3b5628eae2d13bce22e24a517113701480..30b97c47b6804d5677f87a59d7d5c602
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 40212e81a3c0303a9166426dd7349a95ffec39c4..b323a1f81f0e813b84ef98db9334d0c1992fbaa6 100644
+index 34931ae06d7923aff611b384730ca2edb7e866e9..1973b90a04bcbd21059b82a0969d3ff1ce8dcd0a 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -54,7 +54,9 @@
+@@ -54,12 +54,15 @@
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL(
      base::WeakPtr<ImageTransportSurfaceDelegate> delegate)
      : delegate_(delegate),
@@ -54,26 +54,24 @@ index 40212e81a3c0303a9166426dd7349a95ffec39c4..b323a1f81f0e813b84ef98db9334d0c1
        scale_factor_(1),
        weak_ptr_factory_(this) {
    static bool av_disabled_at_command_line =
-@@ -66,6 +68,7 @@
-            ->workarounds()
-            .disable_av_sample_buffer_display_layer;
+       !base::FeatureList::IsEnabled(kAVFoundationOverlays);
  
 +#if !IS_MAS_BUILD()
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
+       use_remote_layer_api_, !av_disabled_at_command_line);
  
-@@ -86,6 +89,10 @@
+@@ -80,6 +83,10 @@
  #endif
      ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
 +#else
 +  ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-+      /*allow_remote_layers=*/false, allow_av_sample_buffer_display_layer);
++      /*allow_remote_layers=*/false, !av_disabled_at_command_line);
 +#endif
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -203,9 +210,13 @@
+@@ -197,9 +204,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
