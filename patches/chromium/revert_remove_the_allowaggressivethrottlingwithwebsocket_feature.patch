@@ -6,10 +6,10 @@ Subject: Revert "Remove the AllowAggressiveThrottlingWithWebSocket feature."
 This reverts commit 615c1810a187840ffeb04096087efff86edb37de.
 
 diff --git a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-index d566c1a209aa5b39692fe79dd8b5012a5e053574..90e97f739b3e7ede2fa4ceffb1be5130f651f60b 100644
+index 48f6832098316b32dfe4119d2c01d2e7a2736cd2..b377df80bb849643a3af116f530bca0eae709c53 100644
 --- a/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
 +++ b/third_party/blink/renderer/modules/websockets/websocket_channel_impl.cc
-@@ -95,6 +95,17 @@ enum WebSocketOpCode {
+@@ -94,6 +94,17 @@ enum WebSocketOpCode {
    kOpCodeBinary = 0x2,
  };
  
@@ -27,8 +27,8 @@ index d566c1a209aa5b39692fe79dd8b5012a5e053574..90e97f739b3e7ede2fa4ceffb1be5130
  }  // namespace
  
  void WebSocketChannelImpl::MessageDataDeleter::operator()(char* p) const {
-@@ -285,7 +296,10 @@ bool WebSocketChannelImpl::Connect(const KURL& url, const String& protocol) {
-     // even if the `WebSocketChannel` is closed.
+@@ -278,7 +289,10 @@ bool WebSocketChannelImpl::Connect(const KURL& url, const String& protocol) {
+   if (auto* scheduler = execution_context_->GetScheduler()) {
      feature_handle_for_scheduler_ = scheduler->RegisterFeature(
          SchedulingPolicy::Feature::kWebSocket,
 -        SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()});
@@ -36,6 +36,6 @@ index d566c1a209aa5b39692fe79dd8b5012a5e053574..90e97f739b3e7ede2fa4ceffb1be5130
 +            ? SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()}
 +            : SchedulingPolicy{SchedulingPolicy::DisableAggressiveThrottling(),
 +                               SchedulingPolicy::DisableBackForwardCache()});
-     scheduler->RegisterStickyFeature(
-         SchedulingPolicy::Feature::kWebSocketSticky,
-         SchedulingPolicy{SchedulingPolicy::DisableBackForwardCache()});
+   }
+ 
+   if (MixedContentChecker::IsMixedContent(
