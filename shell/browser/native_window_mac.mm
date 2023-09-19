@@ -690,9 +690,6 @@ void NativeWindowMac::DetachChildren() {
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
-  if (!has_frame() && !HasStyleMask(NSWindowStyleMaskTitled))
-    return;
-
   // [NSWindow -toggleFullScreen] is an asynchronous operation, which means
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
@@ -725,7 +722,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
                                      ? FullScreenTransitionState::ENTERING
                                      : FullScreenTransitionState::EXITING;
 
-  [window_ toggleFullScreenMode:nil];
+  if (![window_ toggleFullScreenMode:nil])
+    fullscreen_transition_state_ = FullScreenTransitionState::NONE;
 }
 
 bool NativeWindowMac::IsFullscreen() const {
@@ -1721,6 +1719,9 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
   // Restore the window title under fullscreen mode.
   if (buttons_proxy_)
     [window_ setTitleVisibility:NSWindowTitleVisible];
+
+  if (transparent() || !has_frame())
+    [window_ setTitlebarAppearsTransparent:NO];
 }
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
@@ -1730,6 +1731,9 @@ void NativeWindowMac::NotifyWindowLeaveFullScreen() {
     [buttons_proxy_ redraw];
     [buttons_proxy_ setVisible:YES];
   }
+
+  if (transparent() || !has_frame())
+    [window_ setTitlebarAppearsTransparent:YES];
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {

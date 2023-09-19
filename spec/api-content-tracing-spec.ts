@@ -5,8 +5,8 @@ import * as path from 'path';
 import { setTimeout } from 'timers/promises';
 import { ifdescribe } from './lib/spec-helpers';
 
-// FIXME: The tests are skipped on arm/arm64 and ia32.
-ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing', () => {
+// FIXME: The tests are skipped on linux arm/arm64
+ifdescribe(!(['arm', 'arm64'].includes(process.arch)) || (process.platform !== 'linux'))('contentTracing', () => {
   const record = async (options: TraceConfig | TraceCategoriesAndOptions, outputFilePath: string | undefined, recordTimeInMilliseconds = 1e1) => {
     await app.whenReady();
 
@@ -25,8 +25,6 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
   });
 
   describe('startRecording', function () {
-    this.timeout(5e3);
-
     const getFileSizeInKiloBytes = (filePath: string) => {
       const stats = fs.statSync(filePath);
       const fileSizeInBytes = stats.size;
@@ -84,8 +82,6 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
   });
 
   describe('stopRecording', function () {
-    this.timeout(5e3);
-
     it('does not crash on empty string', async () => {
       const options = {
         categoryFilter: '*',
@@ -120,9 +116,7 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
 
   describe('captured events', () => {
     it('include V8 samples from the main process', async function () {
-      // This test is flaky on macOS CI.
-      this.retries(3);
-
+      this.timeout(60000);
       await contentTracing.startRecording({
         categoryFilter: 'disabled-by-default-v8.cpu_profiler',
         traceOptions: 'record-until-full'
@@ -131,7 +125,7 @@ ifdescribe(!(['arm', 'arm64', 'ia32'].includes(process.arch)))('contentTracing',
         const start = +new Date();
         let n = 0;
         const f = () => {};
-        while (+new Date() - start < 200 || n < 500) {
+        while (+new Date() - start < 200 && n < 500) {
           await setTimeout(0);
           f();
           n++;
