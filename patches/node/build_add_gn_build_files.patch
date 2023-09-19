@@ -929,10 +929,10 @@ index 0000000000000000000000000000000000000000..bfbd4e656db1a6c73048443f96f1d576
 +}
 diff --git a/deps/uv/BUILD.gn b/deps/uv/BUILD.gn
 new file mode 100644
-index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e546b39ef
+index 0000000000000000000000000000000000000000..ae4d3bf68882f1aa6d7440448050fbdd9a17dca7
 --- /dev/null
 +++ b/deps/uv/BUILD.gn
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,194 @@
 +config("libuv_config") {
 +  include_dirs = [ "include" ]
 +
@@ -978,6 +978,7 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +    "-Wno-string-conversion",
 +    "-Wno-switch",
 +    "-Wno-unused-function",
++    "-Wno-unused-result",
 +    "-Wno-unused-variable",
 +    "-Wno-unreachable-code",
 +    "-Wno-unreachable-code-return",
@@ -1004,6 +1005,7 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +    "src/strscpy.h",
 +    "src/strtok.c",
 +    "src/strtok.h",
++    "src/thread-common.c",
 +    "src/threadpool.c",
 +    "src/timer.c",
 +    "src/uv-common.c",
@@ -1067,7 +1069,6 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +      "include/uv/sunos.h",
 +      "include/uv/unix.h",
 +      "src/unix/async.c",
-+      "src/unix/atomic-ops.h",
 +      "src/unix/core.c",
 +      "src/unix/dl.c",
 +      "src/unix/fs.c",
@@ -1079,7 +1080,6 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +      "src/unix/pipe.c",
 +      "src/unix/poll.c",
 +      "src/unix/process.c",
-+      "src/unix/pthread-fixes.c",
 +      "src/unix/random-devurandom.c",
 +      "src/unix/signal.c",
 +      "src/unix/spinlock.h",
@@ -1110,11 +1110,7 @@ index 0000000000000000000000000000000000000000..e90becfab51beb090394db9d3c94d73e
 +  if (is_linux) {
 +    defines += [ "_GNU_SOURCE" ]
 +    sources += [
-+      "src/unix/epoll.c",
-+      "src/unix/linux-core.c",
-+      "src/unix/linux-inotify.c",
-+      "src/unix/linux-syscalls.c",
-+      "src/unix/linux-syscalls.h",
++      "src/unix/linux.c",
 +      "src/unix/procfs-exepath.c",
 +      "src/unix/random-getrandom.c",
 +      "src/unix/random-sysctl-linux.c",
