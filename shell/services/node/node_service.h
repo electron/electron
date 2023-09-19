@@ -8,7 +8,10 @@
 #include <memory>
 
 #include "mojo/public/cpp/bindings/pending_receiver.h"
+#include "mojo/public/cpp/bindings/pending_remote.h"
 #include "mojo/public/cpp/bindings/receiver.h"
+#include "services/network/public/cpp/shared_url_loader_factory.h"
+#include "services/network/public/mojom/url_loader_factory.mojom-forward.h"
 #include "shell/services/node/public/mojom/node_service.mojom.h"
 
 namespace node {
@@ -22,6 +25,23 @@ namespace electron {
 class ElectronBindings;
 class JavascriptEnvironment;
 class NodeBindings;
+
+class URLLoaderBundle {
+ public:
+  URLLoaderBundle();
+  ~URLLoaderBundle();
+
+  URLLoaderBundle(const URLLoaderBundle&) = delete;
+  URLLoaderBundle& operator=(const URLLoaderBundle&) = delete;
+
+  static URLLoaderBundle* GetInstance();
+  void SetURLLoaderFactory(
+      mojo::PendingRemote<network::mojom::URLLoaderFactory> factory);
+  scoped_refptr<network::SharedURLLoaderFactory> GetSharedURLLoaderFactory();
+
+ private:
+  scoped_refptr<network::SharedURLLoaderFactory> factory_;
+};
 
 class NodeService : public node::mojom::NodeService {
  public:

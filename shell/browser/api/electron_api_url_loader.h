@@ -60,7 +60,7 @@ class SimpleURLLoaderWrapper
   const char* GetTypeName() override;
 
  private:
-  SimpleURLLoaderWrapper(ElectronBrowserContext* browser_context,
+  SimpleURLLoaderWrapper(/*ElectronBrowserContext* browser_context,*/
                          std::unique_ptr<network::ResourceRequest> request,
                          int options);
 
@@ -133,7 +133,7 @@ class SimpleURLLoaderWrapper
   void Pin();
   void PinBodyGetter(v8::Local<v8::Value>);
 
-  raw_ptr<ElectronBrowserContext> browser_context_;
+  // raw_ptr<ElectronBrowserContext> browser_context_;
   int request_options_;
   std::unique_ptr<network::ResourceRequest> request_;
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
