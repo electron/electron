@@ -28,7 +28,7 @@ index d8a072cf6af3b0d3a47ee69be04b26875683d261..7991703df940634c62d798210b5e7b94
      const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea0cb44f8d 100644
+index a93d93b3c2aae3ef790ffa4f417d50b884451549..4072321e6bc3c9f0c8428d8159670950886c3404 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -26,11 +26,7 @@ const {
@@ -44,7 +44,7 @@ index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea
  const { getOptionValue } = require('internal/options');
  const pendingDeprecation = getOptionValue('--pending-deprecation');
  // Do not eagerly grab .manifest, it may be in TDZ
-@@ -171,14 +167,14 @@ const realpathCache = new SafeMap();
+@@ -172,14 +168,14 @@ const realpathCache = new SafeMap();
   * @returns {import('fs').Stats}
   */
  const tryStatSync =
@@ -61,7 +61,7 @@ index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea
  }
  
  /**
-@@ -326,7 +322,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -329,7 +325,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {
