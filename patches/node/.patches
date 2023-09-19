@@ -37,7 +37,6 @@ fix_account_for_createexternalizablestring_v8_global.patch
 fix_wunreachable-code_warning_in_ares_init_rand_engine.patch
 fix_-wshadow_warning.patch
 fix_do_not_resolve_electron_entrypoints.patch
-fix_ftbfs_werror_wunreachable-code-break.patch
 fix_ftbfs_werror_wextra-semi.patch
 fix_isurl_implementation.patch
 ci_ensure_node_tests_set_electron_run_as_node.patch
