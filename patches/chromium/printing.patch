@@ -706,7 +706,7 @@ index 3f9a514fb41d72c5d06de6ac989f9d7c0513a4e7..0e7ada9df962808dad7caf074a08ebde
    // Tells the browser printing failed.
    PrintingFailed(int32 cookie, PrintFailureReason reason);
 diff --git a/components/printing/renderer/print_render_frame_helper.cc b/components/printing/renderer/print_render_frame_helper.cc
-index d1c93d9b0ea6bd6ae6fb700a5b31b7462d8cf8cd..e59f58f593ace917f8c9b4f2f22f14cd8daf1f77 100644
+index d1c93d9b0ea6bd6ae6fb700a5b31b7462d8cf8cd..e4dea961cf7aed1b4cbdd0ff2b4ad2712c509660 100644
 --- a/components/printing/renderer/print_render_frame_helper.cc
 +++ b/components/printing/renderer/print_render_frame_helper.cc
 @@ -45,6 +45,7 @@
@@ -781,7 +781,7 @@ index d1c93d9b0ea6bd6ae6fb700a5b31b7462d8cf8cd..e59f58f593ace917f8c9b4f2f22f14cd
    // Check if `this` is still valid.
    if (!weak_this) {
      return;
-@@ -2052,14 +2057,16 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
+@@ -2052,17 +2057,19 @@ void PrintRenderFrameHelper::PrintNode(const blink::WebNode& node) {
  
  void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
                                     const blink::WebNode& node,
@@ -796,10 +796,14 @@ index d1c93d9b0ea6bd6ae6fb700a5b31b7462d8cf8cd..e59f58f593ace917f8c9b4f2f22f14cd
    FrameReference frame_ref(frame);
  
 -  if (!InitPrintSettings(frame, node)) {
-+  if (!InitPrintSettings(frame, node, settings)) {
++  if (!InitPrintSettings(frame, node, std::move(settings))) {
      // Browser triggered this code path. It already knows about the failure.
      notify_browser_of_print_failure_ = false;
- 
+-
++    GetPrintManagerHost()->ShowInvalidPrinterSettingsError();
+     DidFinishPrinting(PrintingResult::kFailPrintInit);
+     return;
+   }
 @@ -2083,8 +2090,15 @@ void PrintRenderFrameHelper::Print(blink::WebLocalFrame* frame,
          print_pages_params_->params->print_scaling_option;
  
@@ -817,7 +821,7 @@ index d1c93d9b0ea6bd6ae6fb700a5b31b7462d8cf8cd..e59f58f593ace917f8c9b4f2f22f14cd
      // Check if `this` is still valid.
      if (!self)
        return;
-@@ -2323,16 +2337,24 @@ void PrintRenderFrameHelper::IPCProcessed() {
+@@ -2323,25 +2337,33 @@ void PrintRenderFrameHelper::IPCProcessed() {
  }
  
  bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
@@ -846,8 +850,10 @@ index d1c93d9b0ea6bd6ae6fb700a5b31b7462d8cf8cd..e59f58f593ace917f8c9b4f2f22f14cd
      // Caller will reset `print_pages_params_`.
      return false;
    }
-@@ -2341,7 +2363,7 @@ bool PrintRenderFrameHelper::InitPrintSettings(blink::WebLocalFrame* frame,
-   settings.params->print_scaling_option =
+ 
+   bool fit_to_paper_size = !IsPrintingPdfFrame(frame, node);
+-  settings.params->print_scaling_option =
++  settings->params->print_scaling_option =
        fit_to_paper_size ? mojom::PrintScalingOption::kFitToPrintableArea
                          : mojom::PrintScalingOption::kSourceSize;
 -  SetPrintPagesParams(settings);
