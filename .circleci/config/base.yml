@@ -1919,7 +1919,7 @@ jobs:
   linux-x64-testing-no-run-as-node:
     executor:
       name: linux-docker
-      size: xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge
       <<: *env-testing-build
@@ -1932,6 +1932,7 @@ jobs:
           checkout: true
           artifact-key: 'linux-x64-no-run-as-node'
           build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-gn-check:
     executor:
