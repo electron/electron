@@ -73,7 +73,8 @@ NotifyIcon::~NotifyIcon() {
 
 void NotifyIcon::HandleClickEvent(int modifiers,
                                   bool left_mouse_click,
-                                  bool double_button_click) {
+                                  bool double_button_click,
+                                  bool middle_button_click) {
   gfx::Rect bounds = GetBounds();
 
   if (left_mouse_click) {
@@ -84,6 +85,8 @@ void NotifyIcon::HandleClickEvent(int modifiers,
                     display::Screen::GetScreen()->GetCursorScreenPoint(),
                     modifiers);
     return;
+  } else if (middle_button_click) {  // single middle click
+    NotifyMiddleClicked(bounds, modifiers);
   } else if (!double_button_click) {  // single right click
     if (menu_model_)
       PopUpContextMenu(gfx::Point(), menu_model_->GetWeakPtr());

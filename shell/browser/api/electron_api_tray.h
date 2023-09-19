@@ -69,6 +69,7 @@ class Tray : public gin::Wrappable<Tray>,
                  int modifiers) override;
   void OnDoubleClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnRightClicked(const gfx::Rect& bounds, int modifiers) override;
+  void OnMiddleClicked(const gfx::Rect& bounds, int modifiers) override;
   void OnBalloonShow() override;
   void OnBalloonClicked() override;
   void OnBalloonClosed() override;
