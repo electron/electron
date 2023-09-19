@@ -7,10 +7,10 @@ This adds a callback from the network service that's used to implement
 session.setCertificateVerifyCallback.
 
 diff --git a/services/network/network_context.cc b/services/network/network_context.cc
-index 9726c189bf110368593f879ac4fa93ecbdf8c8c7..d06fa083c0181d6eab50ffa8bebf8a2ecad82399 100644
+index 0a5ee4bd20bb54eb00def65134fa8d45c401f052..6887a784db5a2a9df582a2dc26f03af61b5c004c 100644
 --- a/services/network/network_context.cc
 +++ b/services/network/network_context.cc
-@@ -146,6 +146,11 @@
+@@ -147,6 +147,11 @@
  #include "third_party/abseil-cpp/absl/types/optional.h"
  #include "url/gurl.h"
  
@@ -22,7 +22,7 @@ index 9726c189bf110368593f879ac4fa93ecbdf8c8c7..d06fa083c0181d6eab50ffa8bebf8a2e
  #if BUILDFLAG(IS_CT_SUPPORTED)
  #include "components/certificate_transparency/chrome_ct_policy_enforcer.h"
  #include "components/certificate_transparency/chrome_require_ct_delegate.h"
-@@ -438,6 +443,99 @@ bool GetFullDataFilePath(
+@@ -439,6 +444,99 @@ bool GetFullDataFilePath(
  
  }  // namespace
  
@@ -122,7 +122,7 @@ index 9726c189bf110368593f879ac4fa93ecbdf8c8c7..d06fa083c0181d6eab50ffa8bebf8a2e
  constexpr uint32_t NetworkContext::kMaxOutstandingRequestsPerProcess;
  
  NetworkContext::NetworkContextHttpAuthPreferences::
-@@ -835,6 +933,13 @@ void NetworkContext::SetClient(
+@@ -836,6 +934,13 @@ void NetworkContext::SetClient(
    client_.Bind(std::move(client));
  }
  
@@ -136,7 +136,7 @@ index 9726c189bf110368593f879ac4fa93ecbdf8c8c7..d06fa083c0181d6eab50ffa8bebf8a2e
  void NetworkContext::CreateURLLoaderFactory(
      mojo::PendingReceiver<mojom::URLLoaderFactory> receiver,
      mojom::URLLoaderFactoryParamsPtr params) {
-@@ -2460,6 +2565,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
+@@ -2461,6 +2566,9 @@ URLRequestContextOwner NetworkContext::MakeURLRequestContext(
          std::move(cert_verifier));
      cert_verifier = base::WrapUnique(cert_verifier_with_trust_anchors_.get());
  #endif  // BUILDFLAG(IS_CHROMEOS)
@@ -147,7 +147,7 @@ index 9726c189bf110368593f879ac4fa93ecbdf8c8c7..d06fa083c0181d6eab50ffa8bebf8a2e
  
    builder.SetCertVerifier(IgnoreErrorsCertVerifier::MaybeWrapCertVerifier(
 diff --git a/services/network/network_context.h b/services/network/network_context.h
-index dabaa618a3b427fa4a0f3f9d3963c471dbea124f..d1a159bea0aa45e002e298ff2a1b3832cc6f4b3e 100644
+index 3f51ecd9694c900ffb21d7e9ec5d737387ea39ca..9bd43e9e373b74f2f8fcc8f12ab0e0c38927dfcb 100644
 --- a/services/network/network_context.h
 +++ b/services/network/network_context.h
 @@ -114,6 +114,7 @@ class URLMatcher;
@@ -167,7 +167,7 @@ index dabaa618a3b427fa4a0f3f9d3963c471dbea124f..d1a159bea0aa45e002e298ff2a1b3832
    void ResetURLLoaderFactories() override;
    void GetViaObliviousHttp(
        mojom::ObliviousHttpRequestPtr request,
-@@ -897,6 +900,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
+@@ -899,6 +902,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) NetworkContext
    std::vector<base::OnceClosure> dismount_closures_;
  #endif  // BUILDFLAG(IS_DIRECTORY_TRANSFER_REQUIRED)
  
@@ -177,7 +177,7 @@ index dabaa618a3b427fa4a0f3f9d3963c471dbea124f..d1a159bea0aa45e002e298ff2a1b3832
    std::unique_ptr<HostResolver> internal_host_resolver_;
    // Map values set to non-null only if that HostResolver has its own private
 diff --git a/services/network/public/mojom/network_context.mojom b/services/network/public/mojom/network_context.mojom
-index db64a42b6570c6c575cec2e67a73ca4b54b486b0..36905befa9afdf1ef654df147381d14cadc2e5c7 100644
+index 0af727743712cb82c882c3597e3b75e9f2ef5303..b678694478f62fc096bb2f79a1982492a0b9a228 100644
 --- a/services/network/public/mojom/network_context.mojom
 +++ b/services/network/public/mojom/network_context.mojom
 @@ -317,6 +317,17 @@ struct NetworkContextFilePaths {
