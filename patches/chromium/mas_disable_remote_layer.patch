@@ -41,7 +41,7 @@ index 655dca3b5628eae2d13bce22e24a517113701480..30b97c47b6804d5677f87a59d7d5c602
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 34931ae06d7923aff611b384730ca2edb7e866e9..abeda6f153cd1220645842939f3b216d3dd1afa5 100644
+index 34931ae06d7923aff611b384730ca2edb7e866e9..1973b90a04bcbd21059b82a0969d3ff1ce8dcd0a 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 @@ -54,12 +54,15 @@
@@ -66,7 +66,7 @@ index 34931ae06d7923aff611b384730ca2edb7e866e9..abeda6f153cd1220645842939f3b216d
    }
 +#else
 +  ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-+      /*allow_remote_layers=*/false, allow_av_sample_buffer_display_layer);
++      /*allow_remote_layers=*/false, !av_disabled_at_command_line);
 +#endif
  }
  
