@@ -34,6 +34,11 @@ parameters:
     type: enum
     default: all
     enum: ["all", "osx-x64", "osx-arm64", "mas-x64", "mas-arm64"]
+
+  medium-linux-executor:
+    type: enum
+    default: electronjs/aks-linux-medium
+    enum: ["electronjs/aks-linux-medium", "medium"]
   
   large-linux-executor:
     type: enum
@@ -49,7 +54,7 @@ executors:
         type: enum
         # aks-linux-large === 32 core
         # 2xlarge should not be used directly, use the pipeline param instead
-        enum: ["medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
+        enum: ["medium", "electronjs/aks-linux-medium", "xlarge", "electronjs/aks-linux-large", "2xlarge"]
     docker:
       - image: ghcr.io/electron/build:e6bebd08a51a0d78ec23e5b3fd7e7c0846412328
     resource_class: << parameters.size >>
@@ -900,13 +905,25 @@ step-touch-sync-done: &step-touch-sync-done
 step-maybe-restore-src-cache: &step-maybe-restore-src-cache
   restore_cache:
     keys:
-      - v16-src-cache-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache
 step-maybe-restore-src-cache-marker: &step-maybe-restore-src-cache-marker
   restore_cache:
     keys:
-      - v16-src-cache-marker-{{ checksum "src/electron/.depshash" }}
+      - v17-src-cache-marker-{{ checksum "src/electron/.depshash" }}
     name: Restoring src cache marker
+
+step-maybe-restore-src-cache-aks: &step-maybe-restore-src-cache-aks
+  restore_cache_aks:
+    step-name: Restoring src cache
+    cache_key: v17-src-cache-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_path: /var/portal
+
+step-maybe-restore-src-cache-marker-aks: &step-maybe-restore-src-cache-marker-aks
+  restore_cache_aks:
+    step-name: Restoring src cache marker
+    cache_key: v17-src-cache-marker-$(shasum src/electron/.depshash | cut -f1 -d' ')
+    cache_path: "."
 
 # Restore exact or closest git cache based on the hash of DEPS and .circle-sync-done
 # If the src cache was restored above then this will match an empty cache
@@ -919,6 +936,12 @@ step-maybe-restore-git-cache: &step-maybe-restore-git-cache
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
       - v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}
     name: Conditionally restoring git cache
+
+step-maybe-restore-git-cache-aks: &step-maybe-restore-git-cache-aks
+  restore_cache_aks:
+    step-name: Conditionally restoring git cache (aks)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ') v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')
+    cache_path: git-cache
 
 step-set-git-cache-path: &step-set-git-cache-path
   run:
@@ -936,6 +959,12 @@ step-save-git-cache: &step-save-git-cache
       - git-cache
     key: v1-git-cache-{{ checksum "src/electron/.circle-sync-done" }}-{{ checksum "src/electron/DEPS" }}
     name: Persisting git cache
+
+step-save-git-cache-aks: &step-save-git-cache-aks
+  save_cache_aks:
+    step-name: Persisting git cache (AKS)
+    cache_key: v1-git-cache-$(shasum src/electron/.circle-sync-done | cut -f1 -d' ')-$(shasum src/electron/DEPS | cut -f1 -d' ')
+    cache_path: git-cache
 
 step-run-electron-only-hooks: &step-run-electron-only-hooks
   run:
@@ -974,7 +1003,7 @@ step-save-src-cache: &step-save-src-cache
   save_cache:
     paths:
       - /var/portal
-    key: v16-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-{{ checksum "/var/portal/src/electron/.depshash" }}
     name: Persisting src cache
 step-make-src-cache-marker: &step-make-src-cache-marker
   run:
@@ -984,7 +1013,17 @@ step-save-src-cache-marker: &step-save-src-cache-marker
   save_cache:
     paths:
       - .src-cache-marker
-    key: v16-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+    key: v17-src-cache-marker-{{ checksum "/var/portal/src/electron/.depshash" }}
+step-save-src-cache-aks: &step-save-src-cache-aks
+  save_cache_aks:
+    step-name: Persisting src cache (aks)
+    cache_key: v17-src-cache-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_path: /var/portal
+step-save-src-cache-marker-aks: &step-save-src-cache-marker-aks
+  save_cache_aks:
+    step-name: Persisting src cache marker (aks)
+    cache_key: v17-src-cache-marker-$(shasum /var/portal/src/electron/.depshash | cut -f1 -d' ')
+    cache_path: .src-cache-marker
 
 step-maybe-early-exit-no-doc-change: &step-maybe-early-exit-no-doc-change
   run:
@@ -1010,15 +1049,6 @@ step-ts-compile: &step-ts-compile
       done
 
 # List of all steps.
-steps-electron-gn-check: &steps-electron-gn-check
-  steps:
-    - *step-setup-goma-for-build
-    - checkout-from-cache
-    - *step-setup-env-for-build
-    - *step-wait-for-goma
-    - *step-gn-gen-default
-    - *step-gn-check
-
 steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-change
   steps:
     # Checkout - Copied from steps-checkout
@@ -1030,11 +1060,92 @@ steps-electron-ts-compile-for-doc-change: &steps-electron-ts-compile-for-doc-cha
 
 # Command Aliases
 commands:
+  aks-specific-step:
+    parameters:
+      circle:
+        type: steps
+      aks:
+        type: steps
+      could-be-aks:
+        type: boolean
+        description: Only set this to true on linux hosts
+    steps:
+      - when:
+          condition:
+            or:
+              - equal: [<< parameters.could-be-aks >>, false]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
+          steps: << parameters.circle >>
+      - when:
+          condition:
+            and:
+              - equal: [<< parameters.could-be-aks >>, true]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, electronjs/aks-linux-large]
+          steps: << parameters.aks >>
+  save_cache_aks:
+    parameters:
+      step-name:
+        type: string
+      cache_key:
+        type: string
+      cache_path:
+        type: string
+    steps:
+      - run:
+          name: << parameters.step-name >>
+          command: |
+            cache_key="<< parameters.cache_key >>"
+            final_cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+            echo "Using cache key: $cache_key"
+            echo "Checking path: $final_cache_path"
+            if [ ! -f "$final_cache_path" ]; then
+              echo "Cache key not founding, storing tarball"
+              tmp_container=/mnt/cross-instance-cache/tmp/$CIRCLE_WORKFLOW_JOB_ID
+              tmp_cache_path=$tmp_container/${cache_key}.tar
+              mkdir -p $tmp_container
+              if [ -f "<< parameters.cache_path >>" ]; then
+                tar -cf $tmp_cache_path -C $(dirname << parameters.cache_path >>) ./$(basename << parameters.cache_path >>)
+              else
+                tar -cf $tmp_cache_path -C << parameters.cache_path >>/ ./
+              fi
+              mv -vn $tmp_cache_path $final_cache_path
+              rm -rf $tmp_container
+            else
+              echo "Cache key already exists, skipping.."
+            fi
+  restore_cache_aks:
+    parameters:
+      step-name:
+        type: string
+      cache_key:
+        type: string
+      cache_path:
+        type: string
+    steps:
+      - run:
+          name: << parameters.step-name >>
+          command: |
+            df -h
+            for cache_key in << parameters.cache_key >>; do
+              cache_path=/mnt/cross-instance-cache/${cache_key}.tar
+              echo "Using cache key: $cache_key"
+              echo "Checking path: $cache_path"
+              if [ ! -f "$cache_path" ]; then
+                echo "Cache key not found, nothing to restore..."
+              else
+                echo "Cache key found, restoring to path..."
+                mkdir -p << parameters.cache_path >>/
+                tar -xf /mnt/cross-instance-cache/${cache_key}.tar -C << parameters.cache_path >>/
+                exit 0
+              fi
+            done
   maybe-restore-portaled-src-cache:
     parameters:
       halt-if-successful:
         type: boolean
         default: false
+      could-be-aks:
+        type: boolean
     steps:
       - run:
           name: Prepare for cross-OS sync restore
@@ -1044,23 +1155,44 @@ commands:
       - when:
           condition: << parameters.halt-if-successful >>
           steps:
-            - *step-maybe-restore-src-cache-marker
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-src-cache-marker
+                aks:
+                  - *step-maybe-restore-src-cache-marker-aks
+                could-be-aks: << parameters.could-be-aks >>
             - run:
                 name: Halt the job early if the src cache exists
                 command: |
                   if [ -f ".src-cache-marker" ]; then
                     circleci-agent step halt
                   fi
-      - *step-maybe-restore-src-cache
+      - aks-specific-step:
+          circle:
+            - *step-maybe-restore-src-cache
+          aks:
+            - *step-maybe-restore-src-cache-aks
+          could-be-aks: << parameters.could-be-aks >>
       - run:
-          name: Fix the src cache restore point on macOS
+          name: Fix the src cache restore point
           command: |
             if [ -d "/var/portal/src" ]; then
               echo Relocating Cache
               rm -rf src
               mv /var/portal/src ./
             fi
-
+  run-gn-check:
+    parameters:
+      could-be-aks:
+        type: boolean
+    steps:
+      - *step-setup-goma-for-build
+      - checkout-from-cache:
+          could-be-aks: << parameters.could-be-aks >>
+      - *step-setup-env-for-build
+      - *step-wait-for-goma
+      - *step-gn-gen-default
+      - *step-gn-check
   build_and_save_artifacts:
     parameters:
       artifact-key:
@@ -1174,12 +1306,16 @@ commands:
             mv_if_exist cross-arch-snapshots src
 
   checkout-from-cache:
+    parameters:
+      could-be-aks:
+        type: boolean
     steps:
       - *step-checkout-electron
       - *step-depot-tools-get
       - *step-depot-tools-add-to-path
       - *step-generate-deps-hash
-      - maybe-restore-portaled-src-cache
+      - maybe-restore-portaled-src-cache:
+          could-be-aks: << parameters.could-be-aks >>
       - run:
           name: Ensure src checkout worked
           command: |
@@ -1291,6 +1427,8 @@ commands:
       after-persist:
         type: steps
         default: []
+      could-be-aks:
+        type: boolean
     steps:
       - when:
           condition: << parameters.attach >>
@@ -1308,7 +1446,8 @@ commands:
       - when:
           condition: << parameters.checkout-and-assume-cache >>
           steps:
-            - checkout-from-cache
+            - checkout-from-cache:
+                could-be-aks: << parameters.could-be-aks >>
       - when:
           condition: << parameters.checkout >>
           steps:
@@ -1324,8 +1463,15 @@ commands:
                 steps:
                   - maybe-restore-portaled-src-cache:
                       halt-if-successful: << parameters.checkout-to-create-src-cache >>
-            - *step-maybe-restore-git-cache
+                      could-be-aks: << parameters.could-be-aks >>
+            - aks-specific-step:
+                circle:
+                  - *step-maybe-restore-git-cache
+                aks:
+                  - *step-maybe-restore-git-cache-aks
+                could-be-aks: << parameters.could-be-aks >>
             - *step-set-git-cache-path
+            - *step-fix-known-hosts-linux
             # This sync call only runs if .circle-sync-done is an EMPTY file
             - *step-gclient-sync
             - store_artifacts:
@@ -1341,7 +1487,12 @@ commands:
             - when:
                 condition: << parameters.save-git-cache >>
                 steps:
-                  - *step-save-git-cache
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-git-cache
+                      aks:
+                        - *step-save-git-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
             # Mark sync as done _after_ saving the git cache so that it is uploaded
             # only when the src cache was not present
             # Their are theoretically two cases for this cache key
@@ -1391,9 +1542,19 @@ commands:
                         sudo mkdir -p /var/portal
                         sudo chown -R $(id -u):$(id -g) /var/portal
                         mv ./src /var/portal
-                  - *step-save-src-cache
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-src-cache
+                      aks:
+                        - *step-save-src-cache-aks
+                      could-be-aks: << parameters.could-be-aks >>
                   - *step-make-src-cache-marker
-                  - *step-save-src-cache-marker
+                  - aks-specific-step:
+                      circle:
+                        - *step-save-src-cache-marker
+                      aks:
+                        - *step-save-src-cache-marker-aks
+                      could-be-aks: << parameters.could-be-aks >>
 
       - when:
           condition: << parameters.build >>
@@ -1447,6 +1608,18 @@ commands:
           condition: << parameters.build >>
           steps:
             - *step-maybe-notify-slack-failure
+      - when:
+          condition: << parameters.could-be-aks >>
+          steps:
+            - run:
+                name: Wait for active debug sessions
+                command: |
+                  while [ -f /var/.ssh-lock ]
+                  do
+                    sleep 60
+                  done
+                no_output_timeout: 2h
+                when: always
 
   electron-tests:
     parameters:
@@ -1633,7 +1806,7 @@ jobs:
   linux-make-src-cache:
     executor:
       name: linux-docker
-      size: xlarge
+      size: << pipeline.parameters.large-linux-executor >>
     environment:
       <<: *env-linux-2xlarge
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
@@ -1646,6 +1819,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: true
 
   mac-checkout:
     executor:
@@ -1665,6 +1839,7 @@ jobs:
           restore-src-cache: false
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
   mac-make-src-cache-x64:
     executor:
@@ -1684,6 +1859,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
   mac-make-src-cache-arm64:
     executor:
@@ -1703,6 +1879,7 @@ jobs:
           checkout-to-create-src-cache: true
           artifact-key: 'nil'
           build-type: 'nil'
+          could-be-aks: false
 
   # Layer 2: Builds.
   linux-x64-testing:
@@ -1721,6 +1898,7 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-x64'
           build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-asan:
     executor:
@@ -1740,16 +1918,19 @@ jobs:
           build-nonproprietary-ffmpeg: false
           artifact-key: 'linux-x64-asan'
           build-type: 'Linux'
+          could-be-aks: true
 
   linux-x64-testing-gn-check:
     executor:
       name: linux-docker
-      size: medium
+      size: << pipeline.parameters.medium-linux-executor >>
     environment:
       <<: *env-linux-medium
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: true
 
   linux-x64-publish:
     executor:
@@ -1793,6 +1974,7 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm'
           build-type: 'Linux ARM'
+          could-be-aks: true
 
   linux-arm-publish:
     executor:
@@ -1838,17 +2020,20 @@ jobs:
           checkout-and-assume-cache: true
           artifact-key: 'linux-arm64'
           build-type: 'Linux ARM64'
+          could-be-aks: true
 
   linux-arm64-testing-gn-check:
     executor:
       name: linux-docker
-      size: medium
+      size: << pipeline.parameters.medium-linux-executor >>
     environment:
       <<: *env-linux-medium
       <<: *env-arm64
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_arm=True --custom-var=checkout_arm64=True'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: true
 
   linux-arm64-publish:
     executor:
@@ -1908,6 +2093,7 @@ jobs:
                 root: .
                 paths:
                   - generated_artifacts_mas-x64
+          could-be-aks: false
 
   osx-testing-x64-gn-check:
     executor:
@@ -1917,7 +2103,9 @@ jobs:
       <<: *env-machine-mac
       <<: *env-testing-build
       GCLIENT_EXTRA_ARGS: '--custom-var=checkout_mac=True --custom-var=host_os=mac'
-    <<: *steps-electron-gn-check
+    steps:
+      - run-gn-check:
+          could-be-aks: false
 
   osx-publish-x64:
     executor:
@@ -1999,6 +2187,7 @@ jobs:
                 root: .
                 paths:
                   - generated_artifacts_mas-arm64
+          could-be-aks: false
 
   mas-publish-x64:
     executor:
