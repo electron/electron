@@ -31,7 +31,7 @@ index 2685f5ea0bea998094453a5a29d23b1aaae55667..0ad4ba47b50a87bcf9e31a73c20a3a51
    case EVP_CIPH_GCM_MODE:
  #ifndef OPENSSL_NO_OCB
 diff --git a/src/crypto/crypto_common.cc b/src/crypto/crypto_common.cc
-index 41e607e9298314bd7dd9e61643650f3ec75caea8..bd3228a67e1bda671488b347bd53ca805f09be87 100644
+index c6120a655ec853aef11c66ed37d7ca0ffb957dd3..a52ca15cb0ab592d4196d4bd0f1133240967d70c 100644
 --- a/src/crypto/crypto_common.cc
 +++ b/src/crypto/crypto_common.cc
 @@ -158,7 +158,7 @@ const char* GetClientHelloALPN(const SSLPointer& ssl) {
@@ -84,7 +84,7 @@ index 41e607e9298314bd7dd9e61643650f3ec75caea8..bd3228a67e1bda671488b347bd53ca80
  
  const char* X509ErrorCode(long err) {  // NOLINT(runtime/int)
    const char* code = "UNSPECIFIED";
-@@ -1048,14 +1055,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
+@@ -1044,14 +1051,14 @@ MaybeLocal<Array> GetClientHelloCiphers(
      Environment* env,
      const SSLPointer& ssl) {
    EscapableHandleScope scope(env->isolate());
@@ -274,7 +274,7 @@ index 47a42246eddfc795b735f5efd08edf2832bbf6c1..7e6afaa1d3a4612fd567924b40438a31
  
        if (target
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 87d6ab3b9970e48db53cf7061d7208679c8b1dfc..4d79fbb4a30a7e57a7456413685706d9af36b1b3 100644
+index 1cfebb5e41d35d1845ba8e40657d6e8798988223..2302e3bad99625eb5dd5587218d0a1985837fb8e 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -518,24 +518,15 @@ Maybe<bool> Decorate(Environment* env, Local<Object> obj,
@@ -361,7 +361,7 @@ index 1831bfd0baaac70277fc274a72235bf6a04697cb..1c0a3fcdeb44dc947bb8c38459533779
  #if NODE_OPENSSL_HAS_QUIC
  #include <openssl/quic.h>
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 47a24ef5e59f049848637afbbfae6c9cfb9b8902..499d048fcb82e50a302d74e2c7f87f3696103a40 100644
+index 26f205bc3b425c5a6546a0ab27397754d6fe213d..397f9d4a7a8e9a850ae2e13b84d7f893076f724d 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
 @@ -6,7 +6,7 @@
@@ -374,7 +374,7 @@ index 47a24ef5e59f049848637afbbfae6c9cfb9b8902..499d048fcb82e50a302d74e2c7f87f36
  #endif
  
 diff --git a/src/node_options.h b/src/node_options.h
-index c57e7a93b13a856e834b77707feaf691241ebc41..f8bdd016e13a8775520bfee7eb61d1c8d667bb58 100644
+index 7d210049aff445bd9b721dbded1ea299c514f415..864ed5673aa0aa30557e4c320c1eeb2b45e7defa 100644
 --- a/src/node_options.h
 +++ b/src/node_options.h
 @@ -11,7 +11,7 @@

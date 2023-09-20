@@ -7,7 +7,7 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 913ae4b0b10a7d508d864539cf075fa9c2f9362c..0539a599e57d40c5da650dcf5ffe9a67763506e1 100644
+index 8de4ad29cb14149ed0c15eb201b3d17be506bac9..182aab4bc781da4c1968a84f87c1e7f2f0b986f1 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
 @@ -5,6 +5,13 @@ prefix parallel
@@ -23,9 +23,9 @@ index 913ae4b0b10a7d508d864539cf075fa9c2f9362c..0539a599e57d40c5da650dcf5ffe9a67
 +test-debugger-random-port-with-inspect-port: PASS, FLAKY
  
  [$system==win32]
- # https://github.com/nodejs/node/issues/24497
+ # https://github.com/nodejs/node/issues/41206
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 5cefcb95773bedc80bc462e058a11045be176741..33f50be5898754af696468499bcfa8e3c721434d 100644
+index 0688f5b05e789c15f2c9fc4c9e1a20cd5d1ba8be..64dc814fd24f3e6d90f246a4e66531696eab03cd 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential
