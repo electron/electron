@@ -19,6 +19,7 @@
 #include "base/path_service.h"
 #include "base/system/sys_info.h"
 #include "base/values.h"
+#include "base/win/windows_version.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/browser/icon_manager.h"
 #include "chrome/common/chrome_features.h"
@@ -1475,23 +1476,8 @@ void App::SetUserAgentFallback(const std::string& user_agent) {
 }
 
 #if BUILDFLAG(IS_WIN)
-
 bool App::IsRunningUnderARM64Translation() const {
-  USHORT processMachine = 0;
-  USHORT nativeMachine = 0;
-
-  auto IsWow64Process2 = reinterpret_cast<decltype(&::IsWow64Process2)>(
-      GetProcAddress(GetModuleHandle(L"kernel32.dll"), "IsWow64Process2"));
-
-  if (IsWow64Process2 == nullptr) {
-    return false;
-  }
-
-  if (!IsWow64Process2(GetCurrentProcess(), &processMachine, &nativeMachine)) {
-    return false;
-  }
-
-  return nativeMachine == IMAGE_FILE_MACHINE_ARM64;
+  return base::win::OSInfo::IsRunningEmulatedOnArm64();
 }
 #endif
 
