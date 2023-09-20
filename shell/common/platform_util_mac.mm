@@ -34,9 +34,9 @@ std::string OpenURL(NSURL* ns_url, bool activate) {
   CFURLRef ref =
       LSCopyDefaultApplicationURLForURL(cf_url, kLSRolesAll, nullptr);
 
-  // If no application could be found, NULL is returned and outError
-  // (if not NULL) is populated with kLSApplicationNotFoundErr.
-  if (ref == NULL)
+  // If no application could be found, nullptr is returned and outError
+  // (if not nullptr) is populated with kLSApplicationNotFoundErr.
+  if (ref == nullptr)
     return "No application in the Launch Services database matches the input "
            "criteria.";
 
@@ -72,7 +72,7 @@ std::string OpenPathOnThread(const base::FilePath& full_path) {
                                  withAppBundleIdentifier:nil
                                                  options:launch_options
                           additionalEventParamDescriptor:nil
-                                       launchIdentifiers:NULL];
+                                       launchIdentifiers:nil];
 
   return success ? "" : "Failed to open path";
 }

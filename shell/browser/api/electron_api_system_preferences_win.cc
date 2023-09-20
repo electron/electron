@@ -171,7 +171,7 @@ void SystemPreferences::InitializeWindow() {
   base::win::InitializeWindowClass(
       kSystemPreferencesWindowClass,
       &base::win::WrappedWindowProc<SystemPreferences::WndProcStatic>, 0, 0, 0,
-      NULL, NULL, NULL, NULL, NULL, &window_class);
+      nullptr, nullptr, nullptr, nullptr, nullptr, &window_class);
   instance_ = window_class.hInstance;
   atom_ = RegisterClassEx(&window_class);
 

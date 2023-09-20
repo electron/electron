@@ -1163,7 +1163,7 @@ void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
                       reinterpret_cast<LONG_PTR>(brush));
   if (previous_brush)
     DeleteObject((HBRUSH)previous_brush);
-  InvalidateRect(GetAcceleratedWidget(), NULL, 1);
+  InvalidateRect(GetAcceleratedWidget(), nullptr, 1);
 #endif
 }
 
@@ -1394,7 +1394,7 @@ void NativeWindowViews::SetParentWindow(NativeWindow* parent) {
   // For do this we must NOT use the ::SetParent function, instead we must use
   //  the ::GetWindowLongPtr or ::SetWindowLongPtr functions with "nIndex" set
   //  to "GWLP_HWNDPARENT" which actually means the window owner.
-  HWND hwndParent = parent ? parent->GetAcceleratedWidget() : NULL;
+  HWND hwndParent = parent ? parent->GetAcceleratedWidget() : nullptr;
   if (hwndParent ==
       (HWND)::GetWindowLongPtr(GetAcceleratedWidget(), GWLP_HWNDPARENT))
     return;

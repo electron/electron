@@ -95,7 +95,8 @@ void ElectronExtensionSystem::InitForRegularProfile(bool extensions_enabled) {
 std::unique_ptr<base::Value::Dict> ParseManifest(
     base::StringPiece manifest_contents) {
   JSONStringValueDeserializer deserializer(manifest_contents);
-  std::unique_ptr<base::Value> manifest = deserializer.Deserialize(NULL, NULL);
+  std::unique_ptr<base::Value> manifest =
+      deserializer.Deserialize(nullptr, nullptr);
 
   if (!manifest.get() || !manifest->is_dict()) {
     LOG(ERROR) << "Failed to parse extension manifest.";

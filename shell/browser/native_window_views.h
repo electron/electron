@@ -297,7 +297,7 @@ class NativeWindowViews : public NativeWindow,
   static std::set<NativeWindowViews*> forwarding_windows_;
   static HHOOK mouse_hook_;
   bool forwarding_mouse_messages_ = false;
-  HWND legacy_window_ = NULL;
+  HWND legacy_window_ = nullptr;
   bool layered_ = false;
 
   // Set to true if the window is always on top and behind the task bar.
