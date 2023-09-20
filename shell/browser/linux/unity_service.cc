@@ -10,6 +10,7 @@
 #include <string>
 
 #include "base/environment.h"
+#include "base/logging.h"
 #include "base/nix/xdg_util.h"
 
 // Unity data typedefs.
@@ -53,6 +54,7 @@ unity_launcher_entry_set_progress_visible_func entry_set_progress_visible =
 void EnsureLibUnityLoaded() {
   using base::nix::GetDesktopEnvironment;
 
+  LOG(INFO) << "IN EnsureLibUnityLoaded";
   if (attempted_load)
     return;
   attempted_load = true;
