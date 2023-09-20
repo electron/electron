@@ -382,8 +382,6 @@ if (process.platform === 'darwin') {
   // @ts-expect-error Removed API
   systemPreferences.setAppLevelAppearance('dark');
   // @ts-expect-error Removed API
-  console.log(systemPreferences.appLevelAppearance);
-  // @ts-expect-error Removed API
   console.log(systemPreferences.getColor('alternate-selected-control-text'));
 }
 

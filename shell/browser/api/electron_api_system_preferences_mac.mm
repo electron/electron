@@ -602,4 +602,9 @@ v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
       isolate, [NSApplication sharedApplication].effectiveAppearance);
 }
 
+bool SystemPreferences::AccessibilityDisplayShouldReduceTransparency() {
+  return [[NSWorkspace sharedWorkspace]
+      accessibilityDisplayShouldReduceTransparency];
+}
+
 }  // namespace electron::api
