@@ -1284,6 +1284,13 @@ win4.loadURL('http://github.com');
 // @ts-expect-error Removed API
 win4.webContents.getPrinters();
 
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-begin', () => {});
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-edge', () => {});
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-end', () => {});
+
 // TouchBar
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md
 
