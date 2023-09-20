@@ -477,11 +477,11 @@ std::unique_ptr<UserScript> ParseUserScript(
   DCHECK(content_script.matches);
   if (!script_parsing::ParseMatchPatterns(
           *content_script.matches,
-          base::OptionalToPtr(content_script.exclude_matches), definition_index,
+          base::OptionalToPtr(content_script.exclude_matches),
           extension.creation_flags(), scripting::kScriptsCanExecuteEverywhere,
           valid_schemes, scripting::kAllUrlsIncludesChromeUrls, result.get(),
-          error,
-          /*wants_file_access=*/nullptr)) {
+          error, /*wants_file_access=*/nullptr,
+          /*definition_index=*/absl::nullopt)) {
     return nullptr;
   }
 
