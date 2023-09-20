@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index bb5fbb185a7a958f7c118a9fe5e6f6893d386140..9e53e6078727f22a540240b6dc8d6ce7d653fe10 100644
+index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288fef6adb6 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -19,8 +19,10 @@
@@ -43,7 +43,7 @@ index bb5fbb185a7a958f7c118a9fe5e6f6893d386140..9e53e6078727f22a540240b6dc8d6ce7
    if (pip_window_controller_)
      pip_window_controller_ = nullptr;
  }
-@@ -346,6 +350,7 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
+@@ -350,6 +354,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -51,7 +51,7 @@ index bb5fbb185a7a958f7c118a9fe5e6f6893d386140..9e53e6078727f22a540240b6dc8d6ce7
    auto* const web_contents = pip_window_controller_->GetWebContents();
  
    auto* auto_pip_tab_helper =
-@@ -367,6 +372,8 @@ std::unique_ptr<views::View> PictureInPictureWindowManager::GetOverlayView() {
+@@ -372,6 +377,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -61,7 +61,7 @@ index bb5fbb185a7a958f7c118a9fe5e6f6893d386140..9e53e6078727f22a540240b6dc8d6ce7
  #endif  // !BUILDFLAG(IS_ANDROID)
  
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 68bffecaf8a95dff2f028d003715462e11aa59f0..17635657786890e31510e53a8884a35072346d4d 100644
+index a3acf948f1460c31341f4f1291f5a8ad9ca85d3a..a9488cfe10f5dff1e64af1206a1f0c99ad8925f4 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -11,6 +11,7 @@
@@ -70,9 +70,9 @@ index 68bffecaf8a95dff2f028d003715462e11aa59f0..17635657786890e31510e53a8884a350
  #include "base/observer_list_types.h"
 +#include "build/branding_buildflags.h"
  #include "build/build_config.h"
+ #include "chrome/browser/picture_in_picture/auto_pip_setting_overlay_view.h"
  #include "third_party/abseil-cpp/absl/types/optional.h"
- #include "third_party/blink/public/mojom/picture_in_picture_window_options/picture_in_picture_window_options.mojom.h"
-@@ -28,7 +29,9 @@ class Display;
+@@ -30,7 +31,9 @@ class Display;
  }  // namespace display
  
  #if !BUILDFLAG(IS_ANDROID)
@@ -82,7 +82,7 @@ index 68bffecaf8a95dff2f028d003715462e11aa59f0..17635657786890e31510e53a8884a350
  
  namespace views {
  class View;
-@@ -209,7 +212,9 @@ class PictureInPictureWindowManager {
+@@ -214,7 +217,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  

@@ -7,10 +7,10 @@ Pending upstream patch, this gives us fuller access to the window.open params
 so that we will be able to decide whether to cancel it or not.
 
 diff --git a/chrome/browser/media/offscreen_tab.cc b/chrome/browser/media/offscreen_tab.cc
-index 3205aa98621b855a8e1dcea19daf5c4bf660dc09..54a994670a6ce84baf74e1939aba88ca8f1648b3 100644
+index 5620967379a2f0754449bb47e8a3994be97fed54..e6d46a14d62df5dffc383b4fb36bb792a93bddab 100644
 --- a/chrome/browser/media/offscreen_tab.cc
 +++ b/chrome/browser/media/offscreen_tab.cc
-@@ -285,8 +285,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
+@@ -286,8 +286,7 @@ bool OffscreenTab::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -190,10 +190,10 @@ index e5b1bd6bb831f9e1e17520015d09068464ecb098..f8094fb78f30d6f3145b6ee704305281
    void SetContentsBounds(content::WebContents* source,
                           const gfx::Rect& bounds) override;
 diff --git a/components/offline_pages/content/background_loader/background_loader_contents.cc b/components/offline_pages/content/background_loader/background_loader_contents.cc
-index e055852342aef9ab1b49a9d8a630fae1173862e4..cc3ce00fb16ad560852aae6c3dcab29d920faec1 100644
+index 524b71f68bc048486d43d39f24fd07d483919944..73bb698b646ea0b4992aa86f56862376df090598 100644
 --- a/components/offline_pages/content/background_loader/background_loader_contents.cc
 +++ b/components/offline_pages/content/background_loader/background_loader_contents.cc
-@@ -83,8 +83,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
+@@ -84,8 +84,7 @@ bool BackgroundLoaderContents::IsWebContentsCreationOverridden(
      content::SiteInstance* source_site_instance,
      content::mojom::WindowContainerType window_container_type,
      const GURL& opener_url,
@@ -218,10 +218,10 @@ index 4e32d708ecf4afd3913d86ec1602ef2dc9a60998..1dd2f50fba1387b5eeb554dd540957d7
    void AddNewContents(content::WebContents* source,
                        std::unique_ptr<content::WebContents> new_contents,
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 7b34c3ecc778ee08f262b9b232c1dbd5c10d2475..08e3ff32f55a7d21bcf795764273758995854a80 100644
+index cde56ae73a72271dff0aadcee1a3056694d1d34a..e60ad9038e0a8ddcbf1c8ec7c092d498d9eacb47 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4234,8 +4234,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4280,8 +4280,7 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    if (delegate_ && delegate_->IsWebContentsCreationOverridden(
                         source_site_instance, params.window_container_type,
