@@ -38,6 +38,7 @@
 #include "extensions/common/mojom/run_location.mojom-shared.h"
 #include "extensions/common/permissions/api_permission.h"
 #include "extensions/common/permissions/permissions_data.h"
+#include "extensions/common/script_constants.h"
 #include "extensions/common/utils/content_script_utils.h"
 #include "extensions/common/utils/extension_types_utils.h"
 #include "shell/browser/api/electron_api_web_contents.h"
@@ -469,18 +470,32 @@ std::unique_ptr<UserScript> ParseUserScript(
     result->set_run_location(ConvertRunLocation(content_script.run_at));
   }
 
-  if (content_script.all_frames)
+  if (content_script.all_frames) {
     result->set_match_all_frames(*content_script.all_frames);
+  }
 
   DCHECK(content_script.matches);
   if (!script_parsing::ParseMatchPatterns(
           *content_script.matches,
-          base::OptionalToPtr(content_script.exclude_matches), definition_index,
+          base::OptionalToPtr(content_script.exclude_matches),
           extension.creation_flags(), scripting::kScriptsCanExecuteEverywhere,
           valid_schemes, scripting::kAllUrlsIncludesChromeUrls, result.get(),
-          error,
-          /*wants_file_access=*/nullptr)) {
+          error, /*wants_file_access=*/nullptr,
+          /*definition_index=*/absl::nullopt)) {
     return nullptr;
+  }
+
+  if (content_script.match_origin_as_fallback.value_or(false)) {
+    if (!script_parsing::ValidateMatchOriginAsFallback(
+            MatchOriginAsFallbackBehavior::kAlways, result->url_patterns(),
+            error)) {
+      return nullptr;
+    }
+
+    // Default value for MatchOriginAsFallbackBehavior is `kNever`, so this only
+    // needs to be set if `content_script.match_origin_as_fallback` is true.
+    result->set_match_origin_as_fallback(
+        MatchOriginAsFallbackBehavior::kAlways);
   }
 
   if (!script_parsing::ParseFileSources(

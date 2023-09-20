@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 23f268698ee81bd883e9249aa252082a3f40cae9..8e7730a655e5307141333deb676970a6a5d7b86e 100644
+index cf62fd258b9074679e9adc19777e871fff00433a..76f1af0a22ea7a018d281523347c018f68f37eb9 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1032,6 +1032,7 @@ component("base") {
+@@ -1031,6 +1031,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,7 +74,7 @@ index 5d0bae2eb27d6ed90ac83932630954e4376e62b5..1b6c54a5a859ff95db87c133c423182d
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index acce654402833f6a3654935c0ab2e16f61594a01..74b7c0e9c5f6b973d812cde0ecc9e0dc187f69b8 100644
+index 0647eaaf0a1991ef7861d105b74222b70401a856..2de832c1c5d4b4492d7b8aabaf403151ba29cb5b 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -59,6 +59,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index 5ab406dbebe5c159c6e209f8844bf6fabd47199f..224c45b7bff3c4073c70bbd8bdc1fd1c
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index f77e497c102deb7abd8719b7637e085855d8314c..61f75d917dabcc843c1a9d25d59f22f9c75a4013 100644
+index 77b0b977f21a9ceb7efc4c46bfc24e410352a88e..48380262ae5a993f5355a2f7d2a44b06b90b48e4 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -249,10 +249,10 @@ index 4e23c38763184840a393589b3f55dcabb0db8121..e4ad30d0d7acecdca3a22fe05935a340
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index ff3ddb576cd53bec245bd11698e80cca2b62bb72..e101fce2646057ba96607805689bf3b25fa1e58d 100644
+index 80ca25f1b7d3562d29a76fe725f54eca7ce179f2..76232879cb6454f433907ab71b10ddaf047e82fe 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
-@@ -361,6 +361,7 @@ component("base") {
+@@ -359,6 +359,7 @@ component("base") {
        "interaction/element_tracker_mac.mm",
        "resource/resource_bundle_mac.mm",
      ]

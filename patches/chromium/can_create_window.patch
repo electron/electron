@@ -21,10 +21,10 @@ index 70f2b666d7fa5421c26f7354d4fd0871bb51229a..fc93a7e98acd09ea2c6a1c8d209775d2
            &no_javascript_access);
  
 diff --git a/content/browser/web_contents/web_contents_impl.cc b/content/browser/web_contents/web_contents_impl.cc
-index 13ccc79c8ea8799c182223a295cf89a16ebff526..4f8187e10c6b328abd1d0a855f250e14ac880aac 100644
+index c500f6507c2d9298cdeba10cdf12c27f3a34c4d8..6cbca31bca51095b2301c9926910139b53548a9d 100644
 --- a/content/browser/web_contents/web_contents_impl.cc
 +++ b/content/browser/web_contents/web_contents_impl.cc
-@@ -4327,6 +4327,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4395,6 +4395,12 @@ FrameTree* WebContentsImpl::CreateNewWindow(
  
    auto* new_contents_impl = new_contents.get();
  
@@ -37,7 +37,7 @@ index 13ccc79c8ea8799c182223a295cf89a16ebff526..4f8187e10c6b328abd1d0a855f250e14
    // If the new frame has a name, make sure any SiteInstances that can find
    // this named frame have proxies for it.  Must be called after
    // SetSessionStorageNamespace, since this calls CreateRenderView, which uses
-@@ -4368,12 +4374,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
+@@ -4436,12 +4442,6 @@ FrameTree* WebContentsImpl::CreateNewWindow(
      AddWebContentsDestructionObserver(new_contents_impl);
    }
  
@@ -210,10 +210,10 @@ index bef5a989bac50c177f15f52fe87ac3790d553e85..65dcd2e3b51929400c8bfb6a98a4fb59
  
  }  // namespace blink
 diff --git a/third_party/blink/renderer/core/frame/local_dom_window.cc b/third_party/blink/renderer/core/frame/local_dom_window.cc
-index 22f92d8f173919127cce18b21f5f7a0895f723a1..240d6cce91b64b8bdc1e1842a06fbba2004b3178 100644
+index 0f97cb0d05ecfad9ac6dff6046257862c47f146c..635e1f3aa30afd42bc35c8bb9a795566797a6423 100644
 --- a/third_party/blink/renderer/core/frame/local_dom_window.cc
 +++ b/third_party/blink/renderer/core/frame/local_dom_window.cc
-@@ -2165,6 +2165,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
+@@ -2166,6 +2166,8 @@ DOMWindow* LocalDOMWindow::open(v8::Isolate* isolate,
    WebWindowFeatures window_features =
        GetWindowFeaturesFromString(features, entered_window);
  
