@@ -111,6 +111,7 @@ libcxx_headers = [
   "//third_party/libc++/src/include/__algorithm/ranges_copy_n.h",
   "//third_party/libc++/src/include/__algorithm/ranges_count.h",
   "//third_party/libc++/src/include/__algorithm/ranges_count_if.h",
+  "//third_party/libc++/src/include/__algorithm/ranges_ends_with.h",
   "//third_party/libc++/src/include/__algorithm/ranges_equal.h",
   "//third_party/libc++/src/include/__algorithm/ranges_equal_range.h",
   "//third_party/libc++/src/include/__algorithm/ranges_fill.h",
