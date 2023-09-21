@@ -17,8 +17,8 @@ describe('systemPreferences module', () => {
       }).to.throw('Unknown color: not-a-color');
     });
 
-    it('returns a hex RGB color string', () => {
-      expect(systemPreferences.getColor('window')).to.match(/^#[0-9A-F]{6}$/i);
+    it('returns a hex RGBA color string', () => {
+      expect(systemPreferences.getColor('window')).to.match(/^#[0-9A-F]{8}$/i);
     });
   });
 
