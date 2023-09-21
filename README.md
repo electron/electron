@@ -112,4 +112,15 @@ and more can be found on the [Community page](https://www.electronjs.org/communi
 
 [MIT](https://github.com/electron/electron/blob/main/LICENSE)
 
+## Star History
+
+<a href="https://star-history.com/#electron/electron&Timeline">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=electron/electron&type=Timeline&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=electron/electron&type=Timeline" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=electron/electron&type=Timeline" />
+  </picture>
+</a>
+
+
 When using Electron logos, make sure to follow [OpenJS Foundation Trademark Policy](https://openjsf.org/wp-content/uploads/sites/84/2021/01/OpenJS-Foundation-Trademark-Policy-2021-01-12.docx.pdf).
