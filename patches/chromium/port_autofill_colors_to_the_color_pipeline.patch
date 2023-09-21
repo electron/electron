@@ -61,10 +61,10 @@ index f1aadfefe2b35ff4f292a04d834679e1c3fe89e9..7cb39e4059719a4fc323586e83aba47d
  }
  
 diff --git a/ui/color/win/native_color_mixers_win.cc b/ui/color/win/native_color_mixers_win.cc
-index d9df0c0be6abf72c4756fb8e0f1e4b8c308a09f3..07ad3bf7e422272f017695c8b0e0aebedb8d8330 100644
+index a0eb66d2a28b19ee92e2c3c23fd3eff5d64d502d..1d3b62d504884e036365256443c1a1b4f0c796ab 100644
 --- a/ui/color/win/native_color_mixers_win.cc
 +++ b/ui/color/win/native_color_mixers_win.cc
-@@ -202,6 +202,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -205,6 +205,10 @@ void AddNativeUiColorMixer(ColorProvider* provider,
        SetAlpha(kColorNotificationInputForeground, gfx::kGoogleGreyAlpha700);
    mixer[kColorSliderTrack] = AlphaBlend(
        kColorNativeHighlight, kColorNativeWindow, gfx::kGoogleGreyAlpha400);
@@ -75,7 +75,7 @@ index d9df0c0be6abf72c4756fb8e0f1e4b8c308a09f3..07ad3bf7e422272f017695c8b0e0aebe
  
    // Window Background
    mixer[kColorBubbleFooterBackground] = {kColorNativeWindow};
-@@ -211,6 +215,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -214,6 +218,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorFrameInactive] = {kColorNativeWindow};
    mixer[kColorPrimaryBackground] = {kColorNativeWindow};
    mixer[kColorTooltipBackground] = {kColorNativeWindow};
@@ -83,7 +83,7 @@ index d9df0c0be6abf72c4756fb8e0f1e4b8c308a09f3..07ad3bf7e422272f017695c8b0e0aebe
  
    // Window Text
    mixer[kColorAlertLowSeverity] = {kColorNativeWindowText};
-@@ -225,6 +230,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -228,6 +233,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTableGroupingIndicator] = {kColorNativeWindowText};
    mixer[kColorThrobber] = {kColorNativeWindowText};
    mixer[kColorTooltipForeground] = {kColorNativeWindowText};
@@ -91,7 +91,7 @@ index d9df0c0be6abf72c4756fb8e0f1e4b8c308a09f3..07ad3bf7e422272f017695c8b0e0aebe
  
    // Hyperlinks
    mixer[kColorForcedHotlight] = {kColorNativeHotlight};
-@@ -271,6 +277,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
+@@ -274,6 +280,7 @@ void AddNativeUiColorMixer(ColorProvider* provider,
    mixer[kColorTextfieldForeground] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundPlaceholder] = {kColorNativeBtnText};
    mixer[kColorTextfieldForegroundDisabled] = {kColorNativeBtnText};
