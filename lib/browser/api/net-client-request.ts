@@ -1,5 +1,6 @@
 import * as url from 'url';
 import { Readable, Writable } from 'stream';
+import { app } from 'electron/main';
 import type { ClientRequestConstructorOptions, UploadProgress } from 'electron/main';
 
 const {
@@ -312,6 +313,10 @@ export class ClientRequest extends Writable implements Electron.ClientRequest {
 
   constructor (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
     super({ autoDestroy: true });
+
+    if (process.type === 'browser' && !app.isReady()) {
+      throw new Error('net module can only be used after app is ready');
+    }
 
     if (callback) {
       this.once('response', callback);
