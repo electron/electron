@@ -1074,7 +1074,7 @@ commands:
           condition:
             or:
               - equal: [<< parameters.could-be-aks >>, false]
-              - equal: [<< pipeline.parameters.large-linux-executor >>, xlarge]
+              - equal: [<< pipeline.parameters.large-linux-executor >>, 2xlarge]
           steps: << parameters.circle >>
       - when:
           condition:
@@ -1914,7 +1914,8 @@ jobs:
     steps:
       - electron-build:
           persist: true
-          checkout: true
+          checkout: false
+          checkout-and-assume-cache: true
           build-nonproprietary-ffmpeg: false
           artifact-key: 'linux-x64-asan'
           build-type: 'Linux'
