@@ -159,13 +159,13 @@ index 090bbd6f03c5749aaf763dac9e52c776f366c33d..5143231f5b3c95f55bf12aaedf253781
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 93cf87a37792691f41d7c611104a378d9af45195..2d3a0f923f4991be41534e7f951fe5dfcceda5c9 100644
+index 6f6ba6a4043444199cc143f0c1ee8b42a60e682e..56574109aac1e04b1bc8a8e91cdc14c58133f10b 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -199,6 +199,7 @@ source_set("audio") {
-       "mac/coreaudio_dispatch_override.h",
+@@ -208,6 +208,7 @@ source_set("audio") {
+       "CoreMedia.framework",
      ]
-     frameworks += [ "AudioUnit.framework" ]
+     weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
 +    configs += ["//electron/build/config:mas_build"]
    }
  
