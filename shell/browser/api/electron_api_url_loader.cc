@@ -28,12 +28,12 @@
 #include "services/network/public/mojom/chunked_data_pipe_getter.mojom.h"
 #include "services/network/public/mojom/http_raw_headers.mojom.h"
 #include "services/network/public/mojom/url_loader_factory.mojom.h"
-// #include "shell/browser/api/electron_api_session.h"
-// #include "shell/browser/electron_browser_context.h"
+#include "shell/browser/api/electron_api_session.h"
+#include "shell/browser/electron_browser_context.h"
 #include "shell/browser/javascript_environment.h"
-// #include "shell/browser/net/asar/asar_url_loader_factory.h"
-// #include "shell/browser/net/proxying_url_loader_factory.h"
-// #include "shell/browser/protocol_registry.h"
+#include "shell/browser/net/asar/asar_url_loader_factory.h"
+#include "shell/browser/net/proxying_url_loader_factory.h"
+#include "shell/browser/protocol_registry.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
@@ -41,6 +41,7 @@
 #include "shell/common/gin_helper/object_template_builder.h"
 #include "shell/common/gin_helper/promise.h"
 #include "shell/common/node_includes.h"
+#include "shell/common/process_util.h"
 #include "shell/services/node/node_service.h"
 #include "third_party/blink/public/common/loader/referrer_utils.h"
 #include "third_party/blink/public/mojom/fetch/fetch_api_request.mojom.h"
@@ -316,10 +317,10 @@ gin::WrapperInfo SimpleURLLoaderWrapper::kWrapperInfo = {
     gin::kEmbedderNativeGin};
 
 SimpleURLLoaderWrapper::SimpleURLLoaderWrapper(
-    /*    ElectronBrowserContext* browser_context,*/
+    ElectronBrowserContext* browser_context,
     std::unique_ptr<network::ResourceRequest> request,
     int options)
-    : /*browser_context_(browser_context),*/
+    : browser_context_(browser_context),
       request_options_(options),
       request_(std::move(request)) {
   if (!request_->trusted_params)
@@ -368,9 +369,7 @@ void SimpleURLLoaderWrapper::Start() {
   loader_->SetOnDownloadProgressCallback(base::BindRepeating(
       &SimpleURLLoaderWrapper::OnDownloadProgress, base::Unretained(this)));
 
-  // url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
-  url_loader_factory_ =
-      URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
+  url_loader_factory_ = GetURLLoaderFactoryForURL(request_ref->url);
   loader_->DownloadAsStream(url_loader_factory_.get(), this);
 }
 
@@ -466,42 +465,45 @@ void SimpleURLLoaderWrapper::Cancel() {
 }
 scoped_refptr<network::SharedURLLoaderFactory>
 SimpleURLLoaderWrapper::GetURLLoaderFactoryForURL(const GURL& url) {
+  if (electron::IsUtilityProcess()) {
+    return URLLoaderBundle::GetInstance()->GetSharedURLLoaderFactory();
+  }
   scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory;
-  /*  auto* protocol_registry =
-        ProtocolRegistry::FromBrowserContext(browser_context_);
-    // Explicitly handle intercepted protocols here, even though
-    // ProxyingURLLoaderFactory would handle them later on, so that we can
-    // correctly intercept file:// scheme URLs.
-    bool bypass_custom_protocol_handlers =
-        request_options_ & kBypassCustomProtocolHandlers;
-    if (!bypass_custom_protocol_handlers &&
-        protocol_registry->IsProtocolIntercepted(url.scheme())) {
-      auto& protocol_handler =
-          protocol_registry->intercept_handlers().at(url.scheme());
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-          ElectronURLLoaderFactory::Create(protocol_handler.first,
-                                           protocol_handler.second);
-      url_loader_factory = network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              std::move(pending_remote)));
-    } else if (!bypass_custom_protocol_handlers &&
-               protocol_registry->IsProtocolRegistered(url.scheme())) {
-      auto& protocol_handler = protocol_registry->handlers().at(url.scheme());
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-          ElectronURLLoaderFactory::Create(protocol_handler.first,
-                                           protocol_handler.second);
-      url_loader_factory = network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              std::move(pending_remote)));
-    } else if (url.SchemeIsFile()) {
-      mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
-          AsarURLLoaderFactory::Create();
-      url_loader_factory = network::SharedURLLoaderFactory::Create(
-          std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
-              std::move(pending_remote)));
-    } else {
-      url_loader_factory = browser_context_->GetURLLoaderFactory();
-    }*/
+  auto* protocol_registry =
+      ProtocolRegistry::FromBrowserContext(browser_context_);
+  // Explicitly handle intercepted protocols here, even though
+  // ProxyingURLLoaderFactory would handle them later on, so that we can
+  // correctly intercept file:// scheme URLs.
+  bool bypass_custom_protocol_handlers =
+      request_options_ & kBypassCustomProtocolHandlers;
+  if (!bypass_custom_protocol_handlers &&
+      protocol_registry->IsProtocolIntercepted(url.scheme())) {
+    auto& protocol_handler =
+        protocol_registry->intercept_handlers().at(url.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (!bypass_custom_protocol_handlers &&
+             protocol_registry->IsProtocolRegistered(url.scheme())) {
+    auto& protocol_handler = protocol_registry->handlers().at(url.scheme());
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        ElectronURLLoaderFactory::Create(protocol_handler.first,
+                                         protocol_handler.second);
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else if (url.SchemeIsFile()) {
+    mojo::PendingRemote<network::mojom::URLLoaderFactory> pending_remote =
+        AsarURLLoaderFactory::Create();
+    url_loader_factory = network::SharedURLLoaderFactory::Create(
+        std::make_unique<network::WrapperPendingSharedURLLoaderFactory>(
+            std::move(pending_remote)));
+  } else {
+    url_loader_factory = browser_context_->GetURLLoaderFactory();
+  }
   return url_loader_factory;
 }
 
@@ -633,10 +635,10 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     options |= network::mojom::kURLLoadOptionBlockAllCookies;
   }
 
-  /*bool bypass_custom_protocol_handlers = false;
+  bool bypass_custom_protocol_handlers = false;
   opts.Get("bypassCustomProtocolHandlers", &bypass_custom_protocol_handlers);
   if (bypass_custom_protocol_handlers)
-    options |= kBypassCustomProtocolHandlers;*/
+    options |= kBypassCustomProtocolHandlers;
 
   v8::Local<v8::Value> body;
   v8::Local<v8::Value> chunk_pipe_getter;
@@ -664,19 +666,22 @@ gin::Handle<SimpleURLLoaderWrapper> SimpleURLLoaderWrapper::Create(
     }
   }
 
-  /*std::string partition;
-  gin::Handle<Session> session;
-  if (!opts.Get("session", &session)) {
-    if (opts.Get("partition", &partition))
-      session = Session::FromPartition(args->isolate(), partition);
-    else  // default session
-      session = Session::FromPartition(args->isolate(), "");
-  }*/
+  ElectronBrowserContext* browser_context = nullptr;
+  if (electron::IsBrowserProcess()) {
+    std::string partition;
+    gin::Handle<Session> session;
+    if (!opts.Get("session", &session)) {
+      if (opts.Get("partition", &partition))
+        session = Session::FromPartition(args->isolate(), partition);
+      else  // default session
+        session = Session::FromPartition(args->isolate(), "");
+    }
+    browser_context = session->browser_context();
+  }
 
   auto ret = gin::CreateHandle(
       args->isolate(),
-      new SimpleURLLoaderWrapper(/*session->browser_context(),*/
-                                 std::move(request), options));
+      new SimpleURLLoaderWrapper(browser_context, std::move(request), options));
   ret->Pin();
   if (!chunk_pipe_getter.IsEmpty()) {
     ret->PinBodyGetter(chunk_pipe_getter);
