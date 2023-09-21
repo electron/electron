@@ -427,6 +427,9 @@ win2.once('ready-to-show', () => {
 app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) });
 app.exit(0);
 
+// @ts-expect-error Removed API
+console.log(app.runningUnderRosettaTranslation);
+
 // auto-updater
 // https://github.com/electron/electron/blob/main/docs/api/auto-updater.md
 

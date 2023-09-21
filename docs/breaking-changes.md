@@ -63,6 +63,18 @@ The `ipcRenderer.sendTo()` API has been removed. It should be replaced by settin
 
 The `senderId` and `senderIsMainFrame` properties of `IpcRendererEvent` have been removed as well.
 
+### Removed: `app.runningUnderRosettaTranslation`
+
+The `app.runningUnderRosettaTranslation` property has been removed.
+Use `app.runningUnderARM64Translation` instead.
+
+```js
+// Removed
+console.log(app.runningUnderRosettaTranslation)
+// Replace with
+console.log(app.runningUnderARM64Translation)
+```
+
 ## Planned Breaking API Changes (27.0)
 
 ### Removed: macOS 10.13 / 10.14 support
