@@ -2,7 +2,7 @@
 // Use of this source code is governed by the MIT license that can be
 // found in the LICENSE file.
 
-#include "shell/browser/api/electron_api_url_loader.h"
+#include "shell/common/api/electron_api_url_loader.h"
 
 #include <algorithm>
 #include <memory>
