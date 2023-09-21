@@ -8,7 +8,7 @@ Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
 Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
 
 diff --git a/lib/internal/js_stream_socket.js b/lib/internal/js_stream_socket.js
-index 68e1802a63b012b59418b79a0e68de5147543a23..70d6d03069f3f1e85e66864c6c1e6de6084f5ea6 100644
+index 935ba465d0a8cc33e637a98f2ba3ffe79c873697..80dbbd728e4af6240197d7c37e12971b4f0a9514 100644
 --- a/lib/internal/js_stream_socket.js
 +++ b/lib/internal/js_stream_socket.js
 @@ -149,6 +149,7 @@ class JSStreamSocket extends Socket {

@@ -23,7 +23,7 @@ Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
 Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
 
 diff --git a/lib/internal/js_stream_socket.js b/lib/internal/js_stream_socket.js
-index 8bc19296620b3fd0e5487165743f0f1bc2d342e7..68e1802a63b012b59418b79a0e68de5147543a23 100644
+index f1efa1f807cb9a48beaed91a8dc2b3f13ed1310c..935ba465d0a8cc33e637a98f2ba3ffe79c873697 100644
 --- a/lib/internal/js_stream_socket.js
 +++ b/lib/internal/js_stream_socket.js
 @@ -21,6 +21,7 @@ const { ERR_STREAM_WRAP } = require('internal/errors').codes;
