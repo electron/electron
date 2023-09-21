@@ -348,12 +348,14 @@ auto_filenames = {
   ]
 
   utility_bundle_deps = [
+    "lib/browser/api/net-client-request.ts",
     "lib/browser/message-port-main.ts",
     "lib/common/define-properties.ts",
     "lib/common/init.ts",
     "lib/common/reset-search-paths.ts",
     "lib/utility/api/exports/electron.ts",
     "lib/utility/api/module-list.ts",
+    "lib/utility/api/net.ts",
     "lib/utility/init.ts",
     "lib/utility/parent-port.ts",
     "package.json",
