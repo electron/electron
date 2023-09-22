@@ -17,10 +17,10 @@ Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
 Reviewed-By: Debadree Chatterjee <debadree333@gmail.com>
 
 diff --git a/lib/_tls_wrap.js b/lib/_tls_wrap.js
-index 1eff3b3fba8a05d5fade43c6cb00b6621daa8c3d..5bed23e1355e5e5a1965f15ca270fb372f751d66 100644
+index 84599102be4b74ff66af63c36c232f4656a1f406..bb0535558a8999034a99d0e7e99507ba10eca2eb 100644
 --- a/lib/_tls_wrap.js
 +++ b/lib/_tls_wrap.js
-@@ -629,6 +629,9 @@ TLSSocket.prototype._wrapHandle = function(wrap, handle) {
+@@ -661,6 +661,9 @@ TLSSocket.prototype._wrapHandle = function(wrap, handle, wrapHasActiveWriteFromP
    defineHandleReading(this, handle);
  
    this.on('close', onSocketCloseDestroySSL);
