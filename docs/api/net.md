@@ -2,7 +2,7 @@
 
 > Issue HTTP/HTTPS requests using Chromium's native networking library
 
-Process: [Main](../glossary.md#main-process)
+Process: [Main](../glossary.md#main-process), [Utility](../glossary.md#utility-process)
 
 The `net` module is a client-side API for issuing HTTP(S) requests. It is
 similar to the [HTTP](https://nodejs.org/api/http.html) and
