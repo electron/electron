@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index c33e4c0a3eff51bb2f2b5c5e31281afa7e258f0f..5af196ca6067a9c2e6e648cc60616e75ca8f944b 100644
+index 9de7c5d5a2caeea330293fbba123cfe91ebf8e3e..65bc110cbe6ad010423ceeb5a337922c8c37a50d 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1031,6 +1031,7 @@ component("base") {
@@ -288,7 +288,7 @@ index ebd698116ef4f88c3bbaea1b02912bbeddbca34f..e096f9371607a088250e1ea72f450f85
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 2a8a84adf7ad37bf1857e4a553c5115eee027c99..c7e3b70b30abaf3cc91a24c406054ae1870d8185 100644
+index 3deb7d15b80319596e0be663fb0883ee27dd9d1d..017641614e530a5296599578f4ba80eece996b95 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -684,6 +684,7 @@ component("views") {
@@ -299,7 +299,7 @@ index 2a8a84adf7ad37bf1857e4a553c5115eee027c99..c7e3b70b30abaf3cc91a24c406054ae1
    }
  
    if (is_win) {
-@@ -1111,6 +1112,8 @@ source_set("test_support") {
+@@ -1110,6 +1111,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
