@@ -1,6 +1,6 @@
 import { IncomingMessage, session } from 'electron/main';
 import type { ClientRequestConstructorOptions } from 'electron/main';
-import { ClientRequest } from '@electron/internal/browser/api/net-client-request';
+import { ClientRequest } from '@electron/internal/common/api/net-client-request';
 
 const { isOnline } = process._linkedBinding('electron_browser_net');
 
