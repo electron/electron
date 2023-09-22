@@ -40,10 +40,10 @@ index 2b803d24e126bc3e46fb76b0ead258251c224056..ec766b739d131ddd8f8bbb922ceebcbf
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index c87f1324a18fccf9742f2f568af42f20307858d0..8299185439b626c8dc59a1796a57f3a63aac1131 100644
+index 988a241d65d18e896025ca49a73c431d5e1d6fd7..8f614b1d9b50c70f1f0dcdc8cdea332e15863dee 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2023,6 +2023,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2043,6 +2043,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -53,15 +53,15 @@ index c87f1324a18fccf9742f2f568af42f20307858d0..8299185439b626c8dc59a1796a57f3a6
 +      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-     // and used directly. It is currently supplied only for failed navigations.
-@@ -2056,6 +2060,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
-     // breaks aliasing...
-     origin = owner_document->domWindow()->GetMutableSecurityOrigin();
-     origin_calculation_debug_info_ = AtomicString("use_owner_document_origin");
+     // and used directly. It is currently supplied only for failed navigations
+@@ -2051,6 +2055,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     CHECK(origin_to_commit_->IsOpaque());
+     origin = origin_to_commit_;
+     origin_calculation_debug_info_ = AtomicString("use_origin_to_commit");
 +  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
 +             !is_standard) {
 +    origin_calculation_debug_info_ = AtomicString("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
-   } else {
-     origin_calculation_debug_info_ = AtomicString("use_url_with_precursor");
-     // Otherwise, create an origin that propagates precursor information
+   } else if (IsPagePopupRunningInWebTest(frame_)) {
+     // If we are a page popup in LayoutTests ensure we use the popup
+     // owner's security origin so the tests can possibly access the
