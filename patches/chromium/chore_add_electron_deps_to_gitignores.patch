@@ -18,28 +18,28 @@ index 22417f27125a44d481483439066d73e60348b414..82e5084b0e12231e5cc96a38d99b7238
  /googleurl
  /gpu/gles2_conform_test
 diff --git a/third_party/.gitignore b/third_party/.gitignore
-index 5cd5dda2f903662cc470d445fc39837aea0b821d..df0499538b4de6d14afd33d3c1c03d3d70c6c100 100644
+index e901cf4f75e51f2c25181c8f6b7fabb066d5695a..ff652adac4fb5f0065b871210fd23fae3ab5506d 100644
 --- a/third_party/.gitignore
 +++ b/third_party/.gitignore
-@@ -96,6 +96,7 @@
+@@ -64,6 +64,7 @@
+ /custom_tabs_client/src
+ /cygwin
  /directxsdk
- /dom_distiller_js/dist
- /eigen3/src
 +/electron_node
  /elfutils/src
- /emoji-metadata/src
- /emoji-segmenter/src
-@@ -212,6 +213,7 @@
+ /espresso/lib/
+ /eyesfree/src
+@@ -124,6 +125,7 @@
  /mocha
  /mockito/src
  /nacl_sdk_binaries/
 +/nan
- /nasm
- /nearby/src
- /neon_2_sse/src
-@@ -280,6 +282,7 @@
+ /ninja/ninja*
+ /node/*.tar.gz
+ /node/linux
+@@ -167,6 +169,7 @@
+ /soda-win64
  /speex
- /sqlite/src
  /sqlite4java/lib/
 +/squirrel.mac
  /subresource-filter-ruleset/data/UnindexedRules
