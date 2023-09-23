@@ -104,6 +104,8 @@ content::DropData* OffScreenWebContentsView::GetDropData() const {
   return nullptr;
 }
 
+void OffScreenWebContentsView::CancelDragDropForPortalActivation() {}
+
 gfx::Rect OffScreenWebContentsView::GetViewBounds() const {
   return GetView() ? GetView()->GetViewBounds() : gfx::Rect();
 }
