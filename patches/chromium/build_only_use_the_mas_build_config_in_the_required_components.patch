@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 9de7c5d5a2caeea330293fbba123cfe91ebf8e3e..65bc110cbe6ad010423ceeb5a337922c8c37a50d 100644
+index 7e4a65e66eca9d81d0685217fc73a118b2b75283..1dad6963be69578634dd55dbe0fd28a49f99b00e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1033,6 +1033,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -261,7 +261,7 @@ index 80ca25f1b7d3562d29a76fe725f54eca7ce179f2..76232879cb6454f433907ab71b10ddaf
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 7e17546f658ce0e6908f7dea499eac31e5295895..85c5fe7e25a84de5342d3d9b8cd20d195dd2b159 100644
+index aa23981d491053ee7d75775bedc1f7d76147e8bf..4ccd2566616a274c02fe8aeb90538da449986c42 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
