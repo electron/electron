@@ -377,7 +377,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   }
 
   // Custom logic to "clone" Element references
-  blink::WebElement elem = blink::WebElement::FromV8Value(value);
+  blink::WebElement elem =
+      blink::WebElement::FromV8Value(destination_context->GetIsolate(), value);
   if (!elem.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
     return v8::MaybeLocal<v8::Value>(elem.ToV8Value(
@@ -385,7 +386,8 @@ v8::MaybeLocal<v8::Value> PassValueToOtherContext(
   }
 
   // Custom logic to "clone" Blob references
-  blink::WebBlob blob = blink::WebBlob::FromV8Value(value);
+  blink::WebBlob blob =
+      blink::WebBlob::FromV8Value(destination_context->GetIsolate(), value);
   if (!blob.IsNull()) {
     v8::Context::Scope destination_context_scope(destination_context);
     return v8::MaybeLocal<v8::Value>(

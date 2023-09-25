@@ -4,7 +4,6 @@
 
 #include "shell/common/gin_helper/event_emitter_caller.h"
 
-#include "shell/common/gin_helper/locker.h"
 #include "shell/common/gin_helper/microtasks_scope.h"
 #include "shell/common/node_includes.h"
 

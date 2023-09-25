@@ -249,7 +249,7 @@ describe('<webview> tag', function () {
       });
       await w.loadURL('about:blank');
       const src = url.format({
-        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        pathname: `${fixtures.replaceAll('\\', '/')}/pages/theme-color.html`,
         protocol: 'file',
         slashes: true
       });
@@ -669,9 +669,9 @@ describe('<webview> tag', function () {
 
       const [, content] = await once(ipcMain, 'answer');
       const expectedContent =
-          'Blocked a frame with origin "file://" from accessing a cross-origin frame.';
+          /Failed to read a named property 'toString' from 'Location': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;
 
-      expect(content).to.equal(expectedContent);
+      expect(content).to.match(expectedContent);
     });
 
     it('emits a browser-window-created event', async () => {

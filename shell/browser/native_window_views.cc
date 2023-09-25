@@ -284,12 +284,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (transparent() || has_client_frame())
+  if (IsTranslucent() || has_client_frame())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
-  // The given window is most likely not rectangular since it uses
-  // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent() && !has_frame())
+  // The given window is most likely not rectangular since it is translucent and
+  // has no standard frame, don't show a shadow for it.
+  if (IsTranslucent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
 
   bool focusable;
@@ -1457,6 +1457,8 @@ bool NativeWindowViews::IsMenuBarVisible() {
 }
 
 void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
+  NativeWindow::SetBackgroundMaterial(material);
+
 #if BUILDFLAG(IS_WIN)
   // DWMWA_USE_HOSTBACKDROPBRUSH is only supported on Windows 11 22H2 and up.
   if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
@@ -1468,6 +1470,20 @@ void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
                             &backdrop_type, sizeof(backdrop_type));
   if (FAILED(result))
     LOG(WARNING) << "Failed to set background material to " << material;
+
+  // For frameless windows with a background material set, we also need to
+  // remove the caption color so it doesn't render a caption bar (since the
+  // window is frameless)
+  COLORREF caption_color = DWMWA_COLOR_DEFAULT;
+  if (backdrop_type != DWMSBT_NONE && backdrop_type != DWMSBT_AUTO &&
+      !has_frame()) {
+    caption_color = DWMWA_COLOR_NONE;
+  }
+  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
+                                 &caption_color, sizeof(caption_color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color to transparent";
 #endif
 }
 

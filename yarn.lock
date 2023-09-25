@@ -199,10 +199,10 @@
     "@octokit/auth-app" "^4.0.13"
     "@octokit/rest" "^19.0.11"
 
-"@electron/lint-roller@^1.8.0":
-  version "1.8.0"
-  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.8.0.tgz#26c29f2b2b7eaa9429fde04b178d7fdfe9d56da9"
-  integrity sha512-4LKE2SeSM3kdorDoFMzvZBTKvNUPAJl8apH9e1E9Gb5SKhFBZuG9CIJwtPKwtRYiGmBfu/HxoHuGEGkycxM+3Q==
+"@electron/lint-roller@^1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.9.0.tgz#784d2b9b7664dc7b696cc57cf6c9e181ea701e76"
+  integrity sha512-DgZJdzSAG19PotTPhWM4Xgt0RDv/nJS1JNKpJdvOUv2AsdU0rIq3kDAzm2AdzIW/AlrOnkpUA1UJNezdIAIA4g==
   dependencies:
     "@dsanders11/vscode-markdown-languageservice" "^0.3.0"
     balanced-match "^2.0.0"
@@ -220,9 +220,9 @@
     vscode-uri "^3.0.7"
 
 "@electron/typescript-definitions@^8.14.5":
-  version "8.14.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.5.tgz#07ffc7dac6008e0f659215e3b88bc0d7c6bc6ece"
-  integrity sha512-68JfMTcj6X7B0dhjhj8lGGnnOlfuiR4f+2UBEtQDYRHfeSuFriKErno3Lh+jAolGSqhw39qr4lLO+FGToVdCew==
+  version "8.14.7"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.7.tgz#f8838eac200fa8106ce0a6b7044463b0fd86e9b6"
+  integrity sha512-y1kOB9Ckkd09+KpNDIID6LHO7WP69WoMiogGwNIRtBnEZIeK/aN5uy6plEF1OXYoJVkRKkM/ZSBhhwhk4H1rEA==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"

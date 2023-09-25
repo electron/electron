@@ -5,7 +5,7 @@ import type * as Crypto from 'crypto';
 
 const asar = process._linkedBinding('electron_common_asar');
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 const Promise: PromiseConstructor = global.Promise;
 
@@ -27,7 +27,7 @@ const cachedArchives = new Map<string, NodeJS.AsarArchive>();
 const getOrCreateArchive = (archivePath: string) => {
   const isCached = cachedArchives.has(archivePath);
   if (isCached) {
-    return cachedArchives.get(archivePath);
+    return cachedArchives.get(archivePath)!;
   }
 
   try {
@@ -38,6 +38,8 @@ const getOrCreateArchive = (archivePath: string) => {
     return null;
   }
 };
+
+process._getOrCreateArchive = getOrCreateArchive;
 
 const asarRe = /\.asar/i;
 

@@ -3425,7 +3425,7 @@ describe('BrowserWindow module', () => {
         w.loadURL(pageUrl);
         const [, url] = await once(ipcMain, 'answer');
         const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replace(/\\/g, '/')
+          ? 'file:///' + htmlPath.replaceAll('\\', '/')
           : pageUrl;
         expect(url).to.equal(expectedUrl);
       });
@@ -3475,7 +3475,7 @@ describe('BrowserWindow module', () => {
         w.loadURL(pageUrl);
         const [, { url, frameName, options }] = await once(w.webContents, 'did-create-window') as [BrowserWindow, Electron.DidCreateWindowDetails];
         const expectedUrl = process.platform === 'win32'
-          ? 'file:///' + htmlPath.replace(/\\/g, '/')
+          ? 'file:///' + htmlPath.replaceAll('\\', '/')
           : pageUrl;
         expect(url).to.equal(expectedUrl);
         expect(frameName).to.equal('popup!');
@@ -3542,12 +3542,13 @@ describe('BrowserWindow module', () => {
         // so let's close it from here before we run any checks.
         await closeWindow(popupWindow, { assertNotWindows: false });
 
+        const errorPattern = /Failed to read a named property 'document' from 'Window': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;
         expect(popupAccessMessage).to.be.a('string',
           'child\'s .document is accessible from its parent window');
-        expect(popupAccessMessage).to.match(/^Blocked a frame with origin/);
+        expect(popupAccessMessage).to.match(errorPattern);
         expect(openerAccessMessage).to.be.a('string',
           'opener .document is accessible from a popup window');
-        expect(openerAccessMessage).to.match(/^Blocked a frame with origin/);
+        expect(openerAccessMessage).to.match(errorPattern);
       });
 
       it('should inherit the sandbox setting in opened windows', async () => {
@@ -3754,7 +3755,7 @@ describe('BrowserWindow module', () => {
         const answer = once(ipcMain, 'answer');
         w.loadFile(path.join(fixtures, 'api', 'native-window-open-cross-origin.html'));
         const [, content] = await answer;
-        expect(content).to.equal('Blocked a frame with origin "file://" from accessing a cross-origin frame.');
+        expect(content).to.equal('Failed to read a named property \'toString\' from \'Location\': Blocked a frame with origin "file://" from accessing a cross-origin frame.');
       });
       it('opens window from <iframe> tags', async () => {
         const answer = once(ipcMain, 'answer');
@@ -5890,9 +5891,7 @@ describe('BrowserWindow module', () => {
     afterEach(closeAllWindows);
     it('returns valid handle', () => {
       const w = new BrowserWindow({ show: false });
-      // The module's source code is hosted at
-      // https://github.com/electron/node-is-valid-window
-      const isValidWindow = require('is-valid-window');
+      const isValidWindow = require('@electron-ci/is-valid-window');
       expect(isValidWindow(w.getNativeWindowHandle())).to.be.true('is valid window');
     });
   });

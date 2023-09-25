@@ -96,6 +96,7 @@ class SystemPreferences
                       gin::Arguments* args);
   void RemoveUserDefault(const std::string& name);
   bool IsSwipeTrackingFromScrollEventsEnabled();
+  bool AccessibilityDisplayShouldReduceTransparency();
 
   std::string GetSystemColor(gin_helper::ErrorThrower thrower,
                              const std::string& color);
@@ -112,8 +113,6 @@ class SystemPreferences
   // TODO(MarshallOfSound): Write tests for these methods once we
   // are running tests on a Mojave machine
   v8::Local<v8::Value> GetEffectiveAppearance(v8::Isolate* isolate);
-  v8::Local<v8::Value> GetAppLevelAppearance(v8::Isolate* isolate);
-  void SetAppLevelAppearance(gin::Arguments* args);
 #endif
   v8::Local<v8::Value> GetAnimationSettings(v8::Isolate* isolate);
 

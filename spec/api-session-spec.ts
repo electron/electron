@@ -237,7 +237,7 @@ describe('session module', () => {
 
           appProcess.stdout.on('data', data => { output += data; });
           appProcess.on('exit', () => {
-            resolve(output.replace(/(\r\n|\n|\r)/gm, ''));
+            resolve(output.replaceAll(/(\r\n|\n|\r)/gm, ''));
           });
         });
       };

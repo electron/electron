@@ -111,7 +111,7 @@ describe('debugger module', () => {
     it('fires message event', async () => {
       const url = process.platform !== 'win32'
         ? `file://${path.join(fixtures, 'pages', 'a.html')}`
-        : `file:///${path.join(fixtures, 'pages', 'a.html').replace(/\\/g, '/')}`;
+        : `file:///${path.join(fixtures, 'pages', 'a.html').replaceAll('\\', '/')}`;
       w.webContents.loadURL(url);
       w.webContents.debugger.attach();
       const message = emittedUntil(w.webContents.debugger, 'message',

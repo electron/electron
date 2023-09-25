@@ -81,8 +81,10 @@ bool Converter<gin_helper::AccessorValue<content::RenderFrameHost*>>::FromV8(
   if (rfh_obj->InternalFieldCount() != 2)
     return false;
 
-  v8::Local<v8::Value> process_id_wrapper = rfh_obj->GetInternalField(0);
-  v8::Local<v8::Value> routing_id_wrapper = rfh_obj->GetInternalField(1);
+  v8::Local<v8::Value> process_id_wrapper =
+      rfh_obj->GetInternalField(0).As<v8::Value>();
+  v8::Local<v8::Value> routing_id_wrapper =
+      rfh_obj->GetInternalField(1).As<v8::Value>();
 
   if (process_id_wrapper.IsEmpty() || !process_id_wrapper->IsNumber() ||
       routing_id_wrapper.IsEmpty() || !routing_id_wrapper->IsNumber())

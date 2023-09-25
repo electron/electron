@@ -39,7 +39,6 @@
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
 #include "shell/common/options_switches.h"
-#include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "third_party/webrtc/modules/desktop_capture/mac/window_list_utils.h"
@@ -226,14 +225,6 @@ NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
   options.Get(options::kSimpleFullScreen, &always_simple_fullscreen_);
   options.GetOptional(options::kTrafficLightPosition, &traffic_light_position_);
   options.Get(options::kVisualEffectState, &visual_effect_state_);
-
-  if (options.Has(options::kFullscreenWindowTitle)) {
-    EmitWarning(
-        node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate()),
-        "\"fullscreenWindowTitle\" option has been deprecated and is "
-        "no-op now.",
-        "electron");
-  }
 
   bool minimizable = true;
   options.Get(options::kMinimizable, &minimizable);
@@ -683,9 +674,6 @@ void NativeWindowMac::DetachChildren() {
 }
 
 void NativeWindowMac::SetFullScreen(bool fullscreen) {
-  if (!has_frame() && !HasStyleMask(NSWindowStyleMaskTitled))
-    return;
-
   // [NSWindow -toggleFullScreen] is an asynchronous operation, which means
   // that it's possible to call it while a fullscreen transition is currently
   // in process. This can create weird behavior (incl. phantom windows),
@@ -718,7 +706,8 @@ void NativeWindowMac::SetFullScreen(bool fullscreen) {
                                      ? FullScreenTransitionState::kEntering
                                      : FullScreenTransitionState::kExiting;
 
-  [window_ toggleFullScreenMode:nil];
+  if (![window_ toggleFullScreenMode:nil])
+    fullscreen_transition_state_ = FullScreenTransitionState::kNone;
 }
 
 bool NativeWindowMac::IsFullscreen() const {
@@ -1458,6 +1447,8 @@ void NativeWindowMac::UpdateWindowOriginalFrame() {
 }
 
 void NativeWindowMac::SetVibrancy(const std::string& type) {
+  NativeWindow::SetVibrancy(type);
+
   NSVisualEffectView* vibrantView = [window_ vibrantView];
 
   if (type.empty()) {
@@ -1692,6 +1683,9 @@ void NativeWindowMac::NotifyWindowEnterFullScreen() {
   // Restore the window title under fullscreen mode.
   if (buttons_proxy_)
     [window_ setTitleVisibility:NSWindowTitleVisible];
+
+  if (transparent() || !has_frame())
+    [window_ setTitlebarAppearsTransparent:NO];
 }
 
 void NativeWindowMac::NotifyWindowLeaveFullScreen() {
@@ -1701,6 +1695,9 @@ void NativeWindowMac::NotifyWindowLeaveFullScreen() {
     [buttons_proxy_ redraw];
     [buttons_proxy_ setVisible:YES];
   }
+
+  if (transparent() || !has_frame())
+    [window_ setTitlebarAppearsTransparent:YES];
 }
 
 void NativeWindowMac::NotifyWindowWillEnterFullScreen() {

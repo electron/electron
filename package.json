@@ -9,7 +9,7 @@
     "@electron/docs-parser": "^1.1.1",
     "@electron/fiddle-core": "^1.0.4",
     "@electron/github-app-auth": "^2.0.0",
-    "@electron/lint-roller": "^1.8.0",
+    "@electron/lint-roller": "^1.9.0",
     "@electron/typescript-definitions": "^8.14.5",
     "@octokit/rest": "^19.0.7",
     "@primer/octicons": "^10.0.0",
@@ -152,6 +152,6 @@
     ]
   },
   "resolutions": {
-    "nan": "nodejs/nan#16fa32231e2ccd89d2804b3f765319128b20c4ac"
+    "nan": "nodejs/nan#e14bdcd1f72d62bca1d541b66da43130384ec213"
   }
 }
