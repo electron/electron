@@ -40,7 +40,7 @@ index a33c756df6452d826456b960e6c01defec01f5fa..835371453953b8058e6e63070d3a2ce5
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 988a241d65d18e896025ca49a73c431d5e1d6fd7..8f614b1d9b50c70f1f0dcdc8cdea332e15863dee 100644
+index 19147a610d752996d2749a047648f69761975a48..d0d249274191a5f4f23d8c6837ddcbdea6d73696 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
 @@ -2043,6 +2043,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
@@ -51,13 +51,13 @@ index 988a241d65d18e896025ca49a73c431d5e1d6fd7..8f614b1d9b50c70f1f0dcdc8cdea332e
 +  std::string protocol = url_.Protocol().Ascii();
 +  is_standard = url::IsStandard(
 +      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
+   StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-     // and used directly. It is currently supplied only for failed navigations
-@@ -2051,6 +2055,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2052,6 +2056,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      CHECK(origin_to_commit_->IsOpaque());
      origin = origin_to_commit_;
-     origin_calculation_debug_info_ = AtomicString("use_origin_to_commit");
+     debug_info_builder.Append("use_origin_to_commit");
 +  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
 +             !is_standard) {
 +    origin_calculation_debug_info_ = AtomicString("use_url_with_non_standard_scheme");
