@@ -65,9 +65,7 @@ declare namespace NodeJS {
   type AsarFileStat = {
     size: number;
     offset: number;
-    isFile: boolean;
-    isDirectory: boolean;
-    isLink: boolean;
+    type: number;
   }
 
   interface AsarArchive {
