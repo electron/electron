@@ -1,0 +1,2359 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Keeley Hammond <vertedinde@electronjs.org>
+Date: Thu, 21 Sep 2023 16:21:29 -0700
+Subject: fix: revert sameparty cookie attribute removal
+
+The SameParty cookie attribute, which is used for same-party, cross-site
+contexts with First Party Sets, has been removed upstream by Chrome, but is
+depended on by some Electron consumers. This patch is meant to restore the
+removed SameParty cookie origin trail functionality and supported methods, while
+Chrome completes other API options to use in place of SameParty cookies.
+
+This patch can be removed when Storage Access API cookie support or
+equivalent support is completed upstream.
+
+diff --git a/chrome/browser/first_party_sets/first_party_sets_policy_service.cc b/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
+index 128e46bff2164d437b75cdb2ea9eb0c9967f3509..72a0667ea16c42ab6aa35c5e9e33aa912b5a26e3 100644
+--- a/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
++++ b/chrome/browser/first_party_sets/first_party_sets_policy_service.cc
+@@ -116,6 +116,7 @@ void FirstPartySetsPolicyService::Init() {
+ void FirstPartySetsPolicyService::ComputeFirstPartySetMetadata(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   if (!is_enabled()) {
+@@ -127,17 +128,18 @@ void FirstPartySetsPolicyService::ComputeFirstPartySetMetadata(
+     on_ready_callbacks_.push_back(base::BindOnce(
+         &FirstPartySetsPolicyService::ComputeFirstPartySetMetadataInternal,
+         weak_factory_.GetWeakPtr(), site, base::OptionalFromPtr(top_frame_site),
+-        std::move(callback)));
++        party_context, std::move(callback)));
+     return;
+   }
+ 
+   content::FirstPartySetsHandler::GetInstance()->ComputeFirstPartySetMetadata(
+-      site, top_frame_site, *config_, std::move(callback));
++      site, top_frame_site, party_context, *config_, std::move(callback));
+ }
+ 
+ void FirstPartySetsPolicyService::ComputeFirstPartySetMetadataInternal(
+     const net::SchemefulSite& site,
+     const absl::optional<net::SchemefulSite>& top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   CHECK(config_.has_value());
+@@ -148,7 +150,8 @@ void FirstPartySetsPolicyService::ComputeFirstPartySetMetadataInternal(
+   }
+ 
+   content::FirstPartySetsHandler::GetInstance()->ComputeFirstPartySetMetadata(
+-      site, base::OptionalToPtr(top_frame_site), *config_, std::move(callback));
++      site, base::OptionalToPtr(top_frame_site), party_context, *config_,
++      std::move(callback));
+ }
+ 
+ void FirstPartySetsPolicyService::AddRemoteAccessDelegate(
+diff --git a/chrome/browser/first_party_sets/first_party_sets_policy_service.h b/chrome/browser/first_party_sets/first_party_sets_policy_service.h
+index 1e0a49b7d2ec489f1be24a4bbcdd2741b789b85d..246d521b71d88c0e8a838a9711b7265fa59bf1ed 100644
+--- a/chrome/browser/first_party_sets/first_party_sets_policy_service.h
++++ b/chrome/browser/first_party_sets/first_party_sets_policy_service.h
+@@ -49,6 +49,7 @@ class FirstPartySetsPolicyService : public KeyedService {
+   void ComputeFirstPartySetMetadata(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback);
+ 
+   // Stores `access_delegate` in a RemoteSet for later IPC calls on it when this
+@@ -152,6 +153,7 @@ class FirstPartySetsPolicyService : public KeyedService {
+   void ComputeFirstPartySetMetadataInternal(
+       const net::SchemefulSite& site,
+       const absl::optional<net::SchemefulSite>& top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const;
+ 
+   // Clears the content settings associated with `profile` that were
+diff --git a/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.cc b/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.cc
+index b0167e5b1c77f66809a47526a2c0dcfe9ea2928b..55705bf4286f6307c05da20f5e10a96dab43bf70 100644
+--- a/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.cc
++++ b/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.cc
+@@ -9,6 +9,7 @@
+ #include "base/feature_list.h"
+ #include "base/functional/callback.h"
+ #include "base/task/sequenced_task_runner.h"
++#include "base/types/optional_util.h"
+ #include "content/public/browser/first_party_sets_handler.h"
+ #include "content/public/common/content_features.h"
+ #include "net/first_party_sets/first_party_set_metadata.h"
+@@ -75,10 +76,11 @@ void ScopedMockFirstPartySetsHandler::ClearSiteDataOnChangedSetsForContext(
+ void ScopedMockFirstPartySetsHandler::ComputeFirstPartySetMetadata(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     const net::FirstPartySetsContextConfig& config,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) {
+   net::FirstPartySetMetadata metadata =
+-      global_sets_.ComputeMetadata(site, top_frame_site, config);
++      global_sets_.ComputeMetadata(site, top_frame_site, party_context, config);
+   if (invoke_callbacks_asynchronously_) {
+     base::SequencedTaskRunner::GetCurrentDefault()->PostTask(
+         FROM_HERE, base::BindOnce(std::move(callback), std::move(metadata)));
+diff --git a/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.h b/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.h
+index a93e67a33f5ca5c845fa48606c8255ef51c4f5c8..817785f539deaa30621b76690de0db367565e922 100644
+--- a/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.h
++++ b/chrome/browser/first_party_sets/scoped_mock_first_party_sets_handler.h
+@@ -61,6 +61,7 @@ class ScopedMockFirstPartySetsHandler : public content::FirstPartySetsHandler {
+   void ComputeFirstPartySetMetadata(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& config,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback) override;
+ 
+diff --git a/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc b/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
+index 16e2af1a1f5a6c7209ebc8adbfaf5fcc3c7185cd..6ea0787b47e7e7c36dc178d89faf92bc6b51534b 100644
+--- a/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
++++ b/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
+@@ -286,6 +286,7 @@ void StorageAccessGrantPermissionContext::DecidePermission(
+       browser_context())
+       ->ComputeFirstPartySetMetadata(
+           requesting_site, &embedding_site,
++          /*party_context=*/{},
+           base::BindOnce(&StorageAccessGrantPermissionContext::
+                              CheckForAutoGrantOrAutoDenial,
+                          weak_factory_.GetWeakPtr(), std::move(request_data),
+diff --git a/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc b/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc
+index 900e17bcf2d379facf8a6efd3b4e03fce8f00bab..994269dbab5b6afa6d548676b70128208575d039 100644
+--- a/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc
++++ b/chrome/browser/top_level_storage_access_api/top_level_storage_access_permission_context.cc
+@@ -96,6 +96,7 @@ void TopLevelStorageAccessPermissionContext::DecidePermission(
+       browser_context())
+       ->ComputeFirstPartySetMetadata(
+           requesting_site, &embedding_site,
++          /*party_context=*/{},
+           base::BindOnce(&TopLevelStorageAccessPermissionContext::
+                              CheckForAutoGrantOrAutoDenial,
+                          weak_factory_.GetWeakPtr(), std::move(request_data),
+diff --git a/content/browser/cookie_store/cookie_change_subscription.cc b/content/browser/cookie_store/cookie_change_subscription.cc
+index dbe3c5b8a6c83c5e8d26b109f24e77b4ab2e604e..fd51ab0f749b63fda2a7848594bb616fe6a48730 100644
+--- a/content/browser/cookie_store/cookie_change_subscription.cc
++++ b/content/browser/cookie_store/cookie_change_subscription.cc
+@@ -9,8 +9,10 @@
+ #include "content/browser/cookie_store/cookie_change_subscriptions.pb.h"
+ #include "content/public/browser/content_browser_client.h"
+ #include "content/public/common/content_client.h"
++#include "net/base/features.h"
+ #include "net/cookies/cookie_constants.h"
+ #include "net/cookies/cookie_util.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "services/network/public/cpp/is_potentially_trustworthy.h"
+ 
+ namespace content {
+@@ -169,17 +171,26 @@ bool CookieChangeSubscription::ShouldObserveChangeTo(
+       break;
+   }
+ 
+-  // We assume that this is a same-site context.
++  // We assume that this is a same-site, same-party context.
+   net::CookieOptions net_options;
+   net_options.set_same_site_cookie_context(
+       net::CookieOptions::SameSiteCookieContext::MakeInclusive());
++  net_options.set_same_party_context(net::SamePartyContext::MakeInclusive());
++  // It doesn't matter which we choose here, since both SameParty and SameSite
++  // semantics should allow this access. But we make a choice to be explicit.
++  net_options.set_is_in_nontrivial_first_party_set(true);
+ 
+   return cookie
+-      .IncludeForRequestURL(url_, net_options,
+-                            net::CookieAccessParams{
+-                                access_semantics,
+-                                network::IsUrlPotentiallyTrustworthy(url_),
+-                            })
++      .IncludeForRequestURL(
++          url_, net_options,
++          net::CookieAccessParams{
++              access_semantics,
++              network::IsUrlPotentiallyTrustworthy(url_),
++              net::cookie_util::GetSamePartyStatus(
++                  cookie, net_options,
++                  base::FeatureList::IsEnabled(
++                      net::features::kSamePartyAttributeEnabled)),
++          })
+       .status.IsInclude();
+ }
+ 
+diff --git a/content/browser/devtools/protocol/network_handler.cc b/content/browser/devtools/protocol/network_handler.cc
+index 74737944f75cdc45b07ae110551ec4b2f250abc7..26a051883a10964168122f9b4ce8ac37f4efa006 100644
+--- a/content/browser/devtools/protocol/network_handler.cc
++++ b/content/browser/devtools/protocol/network_handler.cc
+@@ -783,6 +783,11 @@ GetProtocolBlockedSetCookieReason(net::CookieInclusionStatus status) {
+     blockedReasons->push_back(
+         Network::SetCookieBlockedReasonEnum::ThirdPartyBlockedInFirstPartySet);
+   }
++  if (status.HasExclusionReason(
++          net::CookieInclusionStatus::EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT)) {
++    blockedReasons->push_back(
++        Network::SetCookieBlockedReasonEnum::SamePartyFromCrossPartyContext);
++  }
+   if (status.HasExclusionReason(
+           net::CookieInclusionStatus::EXCLUDE_FAILURE_TO_STORE)) {
+     blockedReasons->push_back(Network::SetCookieBlockedReasonEnum::SyntaxError);
+@@ -807,6 +812,11 @@ GetProtocolBlockedSetCookieReason(net::CookieInclusionStatus status) {
+     blockedReasons->push_back(
+         Network::SetCookieBlockedReasonEnum::InvalidPrefix);
+   }
++  if (status.HasExclusionReason(
++          net::CookieInclusionStatus::EXCLUDE_INVALID_SAMEPARTY)) {
++    blockedReasons->push_back(Network::SetCookieBlockedReasonEnum::
++                                  SamePartyConflictsWithOtherAttributes);
++  }
+   if (status.HasExclusionReason(net::CookieInclusionStatus::
+                                     EXCLUDE_NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE)) {
+     blockedReasons->push_back(
+@@ -889,6 +899,11 @@ GetProtocolBlockedCookieReason(net::CookieInclusionStatus status) {
+     blockedReasons->push_back(
+         Network::CookieBlockedReasonEnum::ThirdPartyBlockedInFirstPartySet);
+   }
++  if (status.HasExclusionReason(
++          net::CookieInclusionStatus::EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT)) {
++    blockedReasons->push_back(
++        Network::CookieBlockedReasonEnum::SamePartyFromCrossPartyContext);
++  }
+   if (status.HasExclusionReason(net::CookieInclusionStatus::
+                                     EXCLUDE_NAME_VALUE_PAIR_EXCEEDS_MAX_SIZE)) {
+     blockedReasons->push_back(
+diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl.cc b/content/browser/first_party_sets/first_party_sets_handler_impl.cc
+index cefd0827b70fb092012d37357ad20444655db9a2..fef5f9ee7c9e3d005d1e366a332e408a1b4cab22 100644
+--- a/content/browser/first_party_sets/first_party_sets_handler_impl.cc
++++ b/content/browser/first_party_sets/first_party_sets_handler_impl.cc
+@@ -443,6 +443,7 @@ void FirstPartySetsHandlerImpl::DidClearSiteDataOnChangedSetsForContext(
+ void FirstPartySetsHandlerImpl::ComputeFirstPartySetMetadata(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     const net::FirstPartySetsContextConfig& config,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -450,17 +451,19 @@ void FirstPartySetsHandlerImpl::ComputeFirstPartySetMetadata(
+     EnqueuePendingTask(base::BindOnce(
+         &FirstPartySetsHandlerImpl::ComputeFirstPartySetMetadataInternal,
+         base::Unretained(this), site, base::OptionalFromPtr(top_frame_site),
+-        config.Clone(), base::ElapsedTimer(), std::move(callback)));
++        party_context, config.Clone(), base::ElapsedTimer(),
++        std::move(callback)));
+     return;
+   }
+ 
+-  std::move(callback).Run(
+-      global_sets_->ComputeMetadata(site, top_frame_site, config));
++  std::move(callback).Run(global_sets_->ComputeMetadata(site, top_frame_site,
++                                                        party_context, config));
+ }
+ 
+ void FirstPartySetsHandlerImpl::ComputeFirstPartySetMetadataInternal(
+     const net::SchemefulSite& site,
+     const absl::optional<net::SchemefulSite>& top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     const net::FirstPartySetsContextConfig& config,
+     const base::ElapsedTimer& timer,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const {
+@@ -472,7 +475,7 @@ void FirstPartySetsHandlerImpl::ComputeFirstPartySetMetadataInternal(
+       timer.Elapsed());
+ 
+   std::move(callback).Run(global_sets_->ComputeMetadata(
+-      site, base::OptionalToPtr(top_frame_site), config));
++      site, base::OptionalToPtr(top_frame_site), party_context, config));
+ }
+ 
+ net::FirstPartySetsContextConfig
+diff --git a/content/browser/first_party_sets/first_party_sets_handler_impl.h b/content/browser/first_party_sets/first_party_sets_handler_impl.h
+index 877f713c77542d0aab7d9bcd309c9346f97467f5..61e0cc95484e8fb1396d6734f73745b7c7ae16b5 100644
+--- a/content/browser/first_party_sets/first_party_sets_handler_impl.h
++++ b/content/browser/first_party_sets/first_party_sets_handler_impl.h
+@@ -110,6 +110,7 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+   void ComputeFirstPartySetMetadata(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& config,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback) override;
+ 
+@@ -174,6 +175,7 @@ class CONTENT_EXPORT FirstPartySetsHandlerImpl : public FirstPartySetsHandler {
+   void ComputeFirstPartySetMetadataInternal(
+       const net::SchemefulSite& site,
+       const absl::optional<net::SchemefulSite>& top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& config,
+       const base::ElapsedTimer& timer,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const;
+diff --git a/content/browser/renderer_host/cookie_utils.cc b/content/browser/renderer_host/cookie_utils.cc
+index 47707316874d2c23948c804321abea17a5300bf5..71d3ac287ef911589391c6fa6f1cdf9b2c1f5234 100644
+--- a/content/browser/renderer_host/cookie_utils.cc
++++ b/content/browser/renderer_host/cookie_utils.cc
+@@ -104,6 +104,8 @@ void RecordSchemefulContextDowngradeUKM(
+ bool ShouldReportDevToolsIssueForStatus(
+     const net::CookieInclusionStatus& status) {
+   return status.ShouldWarn() ||
++         status.HasExclusionReason(
++             net::CookieInclusionStatus::EXCLUDE_INVALID_SAMEPARTY) ||
+          status.HasExclusionReason(
+              net::CookieInclusionStatus::EXCLUDE_DOMAIN_NON_ASCII) ||
+          status.HasExclusionReason(
+@@ -173,6 +175,10 @@ void EmitCookieWarningsAndMetrics(
+   bool breaking_context_downgrade = false;
+   bool lax_allow_unsafe_cookies = false;
+ 
++  bool same_party = false;
++  bool same_party_exclusion_overruled_samesite = false;
++  bool same_party_inclusion_overruled_samesite = false;
++
+   bool samesite_cookie_inclusion_changed_by_cross_site_redirect = false;
+ 
+   bool partitioned_cookies_exist = false;
+@@ -217,6 +223,22 @@ void EmitCookieWarningsAndMetrics(
+               net::CookieInclusionStatus::
+                   WARN_SAMESITE_UNSPECIFIED_LAX_ALLOW_UNSAFE);
+ 
++      same_party = same_party ||
++                   status.HasWarningReason(
++                       net::CookieInclusionStatus::WARN_TREATED_AS_SAMEPARTY);
++
++      same_party_exclusion_overruled_samesite =
++          same_party_exclusion_overruled_samesite ||
++          status.HasWarningReason(
++              net::CookieInclusionStatus::
++                  WARN_SAMEPARTY_EXCLUSION_OVERRULED_SAMESITE);
++
++      same_party_inclusion_overruled_samesite =
++          same_party_inclusion_overruled_samesite ||
++          status.HasWarningReason(
++              net::CookieInclusionStatus::
++                  WARN_SAMEPARTY_INCLUSION_OVERRULED_SAMESITE);
++
+       samesite_cookie_inclusion_changed_by_cross_site_redirect =
+           samesite_cookie_inclusion_changed_by_cross_site_redirect ||
+           status.HasWarningReason(
+@@ -304,6 +326,23 @@ void EmitCookieWarningsAndMetrics(
+         rfh, blink::mojom::WebFeature::kLaxAllowingUnsafeCookies);
+   }
+ 
++  if (same_party) {
++    GetContentClient()->browser()->LogWebFeatureForCurrentPage(
++        rfh, blink::mojom::WebFeature::kSamePartyCookieAttribute);
++  }
++
++  if (same_party_exclusion_overruled_samesite) {
++    GetContentClient()->browser()->LogWebFeatureForCurrentPage(
++        rfh,
++        blink::mojom::WebFeature::kSamePartyCookieExclusionOverruledSameSite);
++  }
++
++  if (same_party_inclusion_overruled_samesite) {
++    GetContentClient()->browser()->LogWebFeatureForCurrentPage(
++        rfh,
++        blink::mojom::WebFeature::kSamePartyCookieInclusionOverruledSameSite);
++  }
++
+   if (samesite_cookie_inclusion_changed_by_cross_site_redirect) {
+     GetContentClient()->browser()->LogWebFeatureForCurrentPage(
+         rfh, blink::mojom::WebFeature::
+diff --git a/content/public/browser/first_party_sets_handler.h b/content/public/browser/first_party_sets_handler.h
+index 6d829bf3aec1abd6747492d1bf9b82e8081946af..6814bcf8f4d7549cb026743b94c93f0f9d8a5e6f 100644
+--- a/content/public/browser/first_party_sets_handler.h
++++ b/content/public/browser/first_party_sets_handler.h
+@@ -195,6 +195,7 @@ class CONTENT_EXPORT FirstPartySetsHandler {
+   virtual void ComputeFirstPartySetMetadata(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& config,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback) = 0;
+ };
+diff --git a/net/BUILD.gn b/net/BUILD.gn
+index f0493cfd8456000f88f1536e908fdc8ace227a28..68a30283eda63918f14efcc4cb40971180dc6ea8 100644
+--- a/net/BUILD.gn
++++ b/net/BUILD.gn
+@@ -584,6 +584,8 @@ component("net") {
+     "first_party_sets/first_party_sets_context_config.h",
+     "first_party_sets/global_first_party_sets.cc",
+     "first_party_sets/global_first_party_sets.h",
++    "first_party_sets/same_party_context.cc",
++    "first_party_sets/same_party_context.h",
+     "http/alternative_service.cc",
+     "http/alternative_service.h",
+     "http/bidirectional_stream.cc",
+diff --git a/net/base/features.cc b/net/base/features.cc
+index 1b63eb2526cd0fd07bd68c392c93aae59decdbde..0e6d590e78989570f21e9d0c0ed7b76a7cd6aa11 100644
+--- a/net/base/features.cc
++++ b/net/base/features.cc
+@@ -247,6 +247,10 @@ BASE_FEATURE(kCookieSameSiteConsidersRedirectChain,
+              "CookieSameSiteConsidersRedirectChain",
+              base::FEATURE_DISABLED_BY_DEFAULT);
+ 
++BASE_FEATURE(kSamePartyAttributeEnabled,
++             "SamePartyAttributeEnabled",
++             base::FEATURE_DISABLED_BY_DEFAULT);
++
+ BASE_FEATURE(kWaitForFirstPartySetsInit,
+              "WaitForFirstPartySetsInit",
+              base::FEATURE_ENABLED_BY_DEFAULT);
+diff --git a/net/base/features.h b/net/base/features.h
+index 3632bb20d08f19ef16784f5c769e34cf2d1e0883..8247c7dba75f746c325c97c84f829b1b5267b03b 100644
+--- a/net/base/features.h
++++ b/net/base/features.h
+@@ -297,6 +297,12 @@ NET_EXPORT BASE_DECLARE_FEATURE(kUdpSocketPosixAlwaysUpdateBytesReceived);
+ // See spec changes in https://github.com/httpwg/http-extensions/pull/1348
+ NET_EXPORT BASE_DECLARE_FEATURE(kCookieSameSiteConsidersRedirectChain);
+ 
++// When this feature is enabled, the SameParty attribute is enabled. (Note that
++// when this feature is disabled, the SameParty attribute is still parsed and
++// saved for cookie-sets, but it has no associated semantics (when setting or
++// reading cookies).)
++NET_EXPORT BASE_DECLARE_FEATURE(kSamePartyAttributeEnabled);
++
+ // When this feature is enabled, the network service will wait until First-Party
+ // Sets are initialized before issuing requests that use the HTTP cache or
+ // cookies.
+diff --git a/net/cookies/canonical_cookie.cc b/net/cookies/canonical_cookie.cc
+index 089443aab299000b7a10b42b90f3367318aa7730..cc2742ff7d3b04e42988b5e0e927d91af5c12389 100644
+--- a/net/cookies/canonical_cookie.cc
++++ b/net/cookies/canonical_cookie.cc
+@@ -339,9 +339,11 @@ bool HasValidHostPrefixAttributes(const GURL& url,
+ }  // namespace
+ 
+ CookieAccessParams::CookieAccessParams(CookieAccessSemantics access_semantics,
+-                                       bool delegate_treats_url_as_trustworthy)
++                                       bool delegate_treats_url_as_trustworthy,
++                                       CookieSamePartyStatus same_party_status)
+     : access_semantics(access_semantics),
+-      delegate_treats_url_as_trustworthy(delegate_treats_url_as_trustworthy) {}
++      delegate_treats_url_as_trustworthy(delegate_treats_url_as_trustworthy),
++      same_party_status(same_party_status) {}
+ 
+ CanonicalCookie::CanonicalCookie() = default;
+ 
+@@ -614,6 +616,12 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::Create(
+     status->AddExclusionReason(CookieInclusionStatus::EXCLUDE_INVALID_PREFIX);
+   }
+ 
++  bool is_same_party_valid = IsCookieSamePartyValid(parsed_cookie);
++  if (!is_same_party_valid) {
++    status->AddExclusionReason(
++        CookieInclusionStatus::EXCLUDE_INVALID_SAMEPARTY);
++  }
++
+   bool partition_has_nonce = CookiePartitionKey::HasNonce(cookie_partition_key);
+   bool is_partitioned_valid =
+       IsCookiePartitionedValid(url, parsed_cookie, partition_has_nonce);
+@@ -879,6 +887,10 @@ std::unique_ptr<CanonicalCookie> CanonicalCookie::CreateSanitizedCookie(
+         net::CookieInclusionStatus::EXCLUDE_INVALID_PREFIX);
+   }
+ 
++  if (!IsCookieSamePartyValid(same_party, secure, same_site)) {
++    status->AddExclusionReason(
++        net::CookieInclusionStatus::EXCLUDE_INVALID_SAMEPARTY);
++  }
+   if (!IsCookiePartitionedValid(url, secure,
+                                 /*is_partitioned=*/partition_key.has_value(),
+                                 /*partition_has_nonce=*/
+@@ -1180,11 +1192,56 @@ CookieAccessResult CanonicalCookie::IncludeForRequestURL(
+         CookieInclusionStatus::EXCLUDE_SAMESITE_NONE_INSECURE);
+   }
+ 
+-  // Only apply SameSite-related warnings if SameParty is not in effect.
+-  ApplySameSiteCookieWarningToStatus(SameSite(), effective_same_site,
+-                                     IsSecure(),
+-                                     options.same_site_cookie_context(),
+-                                     &status, false /* is_cookie_being_set */);
++  switch (params.same_party_status) {
++    case CookieSamePartyStatus::kEnforceSamePartyExclude:
++      DCHECK(IsSameParty());
++      status.AddExclusionReason(
++          CookieInclusionStatus::EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT);
++      [[fallthrough]];
++    case CookieSamePartyStatus::kEnforceSamePartyInclude: {
++      status.AddWarningReason(CookieInclusionStatus::WARN_TREATED_AS_SAMEPARTY);
++      // Remove any SameSite exclusion reasons, since SameParty overrides
++      // SameSite.
++      DCHECK(!status.HasExclusionReason(
++          CookieInclusionStatus::EXCLUDE_SAMESITE_STRICT));
++      DCHECK_NE(effective_same_site, CookieEffectiveSameSite::STRICT_MODE);
++      bool included_by_samesite =
++          !status.HasExclusionReason(
++              CookieInclusionStatus::EXCLUDE_SAMESITE_LAX) &&
++          !status.HasExclusionReason(
++              CookieInclusionStatus::
++                  EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX);
++      if (!included_by_samesite) {
++        status.RemoveExclusionReasons({
++            CookieInclusionStatus::EXCLUDE_SAMESITE_LAX,
++            CookieInclusionStatus::EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
++        });
++      }
++
++      // Update metrics.
++      if (status.HasOnlyExclusionReason(
++              CookieInclusionStatus::EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT) &&
++          included_by_samesite) {
++        status.AddWarningReason(
++            CookieInclusionStatus::WARN_SAMEPARTY_EXCLUSION_OVERRULED_SAMESITE);
++      }
++      if (status.IsInclude()) {
++        if (!included_by_samesite) {
++          status.AddWarningReason(
++              CookieInclusionStatus::
++                  WARN_SAMEPARTY_INCLUSION_OVERRULED_SAMESITE);
++        }
++      }
++      break;
++    }
++    case CookieSamePartyStatus::kNoSamePartyEnforcement:
++      // Only apply SameSite-related warnings if SameParty is not in effect.
++      ApplySameSiteCookieWarningToStatus(
++          SameSite(), effective_same_site, IsSecure(),
++          options.same_site_cookie_context(), &status,
++          false /* is_cookie_being_set */);
++      break;
++  }
+ 
+   if (status.IsInclude()) {
+     UMA_HISTOGRAM_ENUMERATION("Cookie.IncludedRequestEffectiveSameSite",
+@@ -1354,11 +1411,59 @@ CookieAccessResult CanonicalCookie::IsSetPermittedInContext(
+       break;
+   }
+ 
+-  // Only apply SameSite-related warnings if SameParty is not in effect.
+-  ApplySameSiteCookieWarningToStatus(
+-      SameSite(), access_result.effective_same_site, IsSecure(),
+-      options.same_site_cookie_context(), &access_result.status,
+-      true /* is_cookie_being_set */);
++  switch (params.same_party_status) {
++    case CookieSamePartyStatus::kEnforceSamePartyExclude:
++      DCHECK(IsSameParty());
++      access_result.status.AddExclusionReason(
++          CookieInclusionStatus::EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT);
++      [[fallthrough]];
++    case CookieSamePartyStatus::kEnforceSamePartyInclude: {
++      DCHECK(IsSameParty());
++      access_result.status.AddWarningReason(
++          CookieInclusionStatus::WARN_TREATED_AS_SAMEPARTY);
++      // Remove any SameSite exclusion reasons, since SameParty overrides
++      // SameSite.
++      DCHECK(!access_result.status.HasExclusionReason(
++          CookieInclusionStatus::EXCLUDE_SAMESITE_STRICT));
++      DCHECK_NE(access_result.effective_same_site,
++                CookieEffectiveSameSite::STRICT_MODE);
++      bool included_by_samesite =
++          !access_result.status.HasExclusionReason(
++              CookieInclusionStatus::EXCLUDE_SAMESITE_LAX) &&
++          !access_result.status.HasExclusionReason(
++              CookieInclusionStatus::
++                  EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX);
++      if (!included_by_samesite) {
++        access_result.status.RemoveExclusionReasons({
++            CookieInclusionStatus::EXCLUDE_SAMESITE_LAX,
++            CookieInclusionStatus::EXCLUDE_SAMESITE_UNSPECIFIED_TREATED_AS_LAX,
++        });
++      }
++
++      // Update metrics.
++      if (access_result.status.HasOnlyExclusionReason(
++              CookieInclusionStatus::EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT) &&
++          included_by_samesite) {
++        access_result.status.AddWarningReason(
++            CookieInclusionStatus::WARN_SAMEPARTY_EXCLUSION_OVERRULED_SAMESITE);
++      }
++      if (access_result.status.IsInclude()) {
++        if (!included_by_samesite) {
++          access_result.status.AddWarningReason(
++              CookieInclusionStatus::
++                  WARN_SAMEPARTY_INCLUSION_OVERRULED_SAMESITE);
++        }
++      }
++      break;
++    }
++    case CookieSamePartyStatus::kNoSamePartyEnforcement:
++      // Only apply SameSite-related warnings if SameParty is not in effect.
++      ApplySameSiteCookieWarningToStatus(
++          SameSite(), access_result.effective_same_site, IsSecure(),
++          options.same_site_cookie_context(), &access_result.status,
++          true /* is_cookie_being_set */);
++      break;
++  }
+ 
+   if (access_result.status.IsInclude()) {
+     UMA_HISTOGRAM_ENUMERATION("Cookie.IncludedResponseEffectiveSameSite",
+@@ -1465,6 +1570,9 @@ bool CanonicalCookie::IsCanonicalForFromStorage() const {
+   if (name_ == "" && HasHiddenPrefixName(value_))
+     return false;
+ 
++  if (!IsCookieSamePartyValid(same_party_, secure_, same_site_))
++    return false;
++
+   if (IsPartitioned()) {
+     if (CookiePartitionKey::HasNonce(partition_key_))
+       return true;
+@@ -1711,6 +1819,23 @@ bool CanonicalCookie::IsRecentlyCreated(base::TimeDelta age_threshold) const {
+   return (base::Time::Now() - creation_date_) <= age_threshold;
+ }
+ 
++// static
++bool CanonicalCookie::IsCookieSamePartyValid(
++    const ParsedCookie& parsed_cookie) {
++  return IsCookieSamePartyValid(parsed_cookie.IsSameParty(),
++                                parsed_cookie.IsSecure(),
++                                parsed_cookie.SameSite());
++}
++
++// static
++bool CanonicalCookie::IsCookieSamePartyValid(bool is_same_party,
++                                             bool is_secure,
++                                             CookieSameSite same_site) {
++  if (!is_same_party)
++    return true;
++  return is_secure && (same_site != CookieSameSite::STRICT_MODE);
++}
++
+ // static
+ bool CanonicalCookie::IsCookiePartitionedValid(
+     const GURL& url,
+diff --git a/net/cookies/canonical_cookie.h b/net/cookies/canonical_cookie.h
+index 6a86240fd610b1c1148e5df39c2243f715d10975..5744b3644a615ba256573887047e2f3917123b96 100644
+--- a/net/cookies/canonical_cookie.h
++++ b/net/cookies/canonical_cookie.h
+@@ -43,7 +43,8 @@ using CookieAccessResultList = std::vector<CookieWithAccessResult>;
+ struct NET_EXPORT CookieAccessParams {
+   CookieAccessParams() = delete;
+   CookieAccessParams(CookieAccessSemantics access_semantics,
+-                     bool delegate_treats_url_as_trustworthy);
++                     bool delegate_treats_url_as_trustworthy,
++                     CookieSamePartyStatus same_party_status);
+ 
+   // |access_semantics| is the access mode of the cookie access check.
+   CookieAccessSemantics access_semantics = CookieAccessSemantics::UNKNOWN;
+@@ -51,6 +52,10 @@ struct NET_EXPORT CookieAccessParams {
+   // CookieAccessDelegate has authorized access to secure cookies from URLs
+   // which might not otherwise be able to do so.
+   bool delegate_treats_url_as_trustworthy = false;
++  // |same_party_status| indicates whether, and how, SameParty restrictions
++  // should be enforced.
++  CookieSamePartyStatus same_party_status =
++      CookieSamePartyStatus::kNoSamePartyEnforcement;
+ };
+ 
+ class NET_EXPORT CanonicalCookie {
+@@ -537,6 +542,14 @@ class NET_EXPORT CanonicalCookie {
+   // Returns whether the cookie was created at most |age_threshold| ago.
+   bool IsRecentlyCreated(base::TimeDelta age_threshold) const;
+ 
++  // Returns true iff the cookie does not violate any rules associated with
++  // creating a cookie with the SameParty attribute. In particular, if a cookie
++  // has SameParty, then it must be Secure and must not be SameSite=Strict.
++  static bool IsCookieSamePartyValid(const ParsedCookie& parsed_cookie);
++  static bool IsCookieSamePartyValid(bool is_same_party,
++                                     bool is_secure,
++                                     CookieSameSite same_site);
++
+   // Returns true iff the cookie is a partitioned cookie with a nonce or that
+   // does not violate the semantics of the Partitioned attribute:
+   // - Must have the Secure attribute OR the cookie partition contains a nonce.
+diff --git a/net/cookies/cookie_access_delegate.cc b/net/cookies/cookie_access_delegate.cc
+index 256dd856cce9fb482926f7a0c8bb80676a37e0e7..9811f944fff0a20a1a7b431e214f3578ed30785b 100644
+--- a/net/cookies/cookie_access_delegate.cc
++++ b/net/cookies/cookie_access_delegate.cc
+@@ -4,7 +4,13 @@
+ 
+ #include "net/cookies/cookie_access_delegate.h"
+ 
+-class GURL;
++#include <set>
++
++#include "base/functional/callback.h"
++#include "net/base/schemeful_site.h"
++#include "net/cookies/cookie_partition_key.h"
++#include "net/first_party_sets/first_party_set_entry.h"
++#include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ namespace net {
+ 
+diff --git a/net/cookies/cookie_access_delegate.h b/net/cookies/cookie_access_delegate.h
+index 203434ee5d078284e396c5711617ec0dd7f2e174..ee8e3d0fab27ef7f087194ad8fcfb6f17b042592 100644
+--- a/net/cookies/cookie_access_delegate.h
++++ b/net/cookies/cookie_access_delegate.h
+@@ -5,6 +5,8 @@
+ #ifndef NET_COOKIES_COOKIE_ACCESS_DELEGATE_H_
+ #define NET_COOKIES_COOKIE_ACCESS_DELEGATE_H_
+ 
++#include <set>
++
+ #include "base/containers/flat_map.h"
+ #include "base/containers/flat_set.h"
+ #include "base/functional/callback_forward.h"
+@@ -15,6 +17,7 @@
+ #include "net/cookies/cookie_partition_key.h"
+ #include "net/first_party_sets/first_party_set_entry.h"
+ #include "net/first_party_sets/first_party_set_metadata.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ #include "url/gurl.h"
+ 
+@@ -49,8 +52,10 @@ class NET_EXPORT CookieAccessDelegate {
+       const GURL& url,
+       const SiteForCookies& site_for_cookies) const = 0;
+ 
+-  // Calls `callback` with First-Party Sets metadata about `site` and
+-  // `top_frame_site`.
++  // Calls `callback` with metadata indicating whether `site` is same-party with
++  // `party_context` and `top_frame_site`; and `site`'s owner, if applicable..
++  // If `top_frame_site` is nullptr, then `site` will be checked only against
++  // `party_context`.
+   //
+   // This may return a result synchronously, or asynchronously invoke `callback`
+   // with the result. The callback will be invoked iff the return value is
+@@ -60,6 +65,7 @@ class NET_EXPORT CookieAccessDelegate {
+   ComputeFirstPartySetMetadataMaybeAsync(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       base::OnceCallback<void(FirstPartySetMetadata)> callback) const = 0;
+ 
+   // Returns the entries of a set of sites if the sites are in non-trivial sets.
+diff --git a/net/cookies/cookie_constants.h b/net/cookies/cookie_constants.h
+index 725517694b1eda27181e683be3b631ebecb63486..5a7913ca669eabafb9fef59267a1b40632e11165 100644
+--- a/net/cookies/cookie_constants.h
++++ b/net/cookies/cookie_constants.h
+@@ -118,6 +118,16 @@ enum class CookieAccessSemantics {
+   LEGACY,
+ };
+ 
++enum class CookieSamePartyStatus {
++  // Used when there should be no SameParty enforcement (either because the
++  // cookie is not marked SameParty, or the enforcement is irrelevant).
++  kNoSamePartyEnforcement = 0,
++  // Used when SameParty enforcement says to exclude the cookie.
++  kEnforceSamePartyExclude = 1,
++  // Used when SameParty enforcement says to include the cookie.
++  kEnforceSamePartyInclude = 2,
++};
++
+ // What scheme was used in the setting of a cookie.
+ // Do not renumber.
+ enum class CookieSourceScheme {
+diff --git a/net/cookies/cookie_inclusion_status.cc b/net/cookies/cookie_inclusion_status.cc
+index 117fca1e81b6a77bd787368151ed984648e20175..d23a2ac82762667e332abc414fe0c25c4d47f09e 100644
+--- a/net/cookies/cookie_inclusion_status.cc
++++ b/net/cookies/cookie_inclusion_status.cc
+@@ -231,6 +231,9 @@ std::string CookieInclusionStatus::GetDebugString() const {
+       {EXCLUDE_SHADOWING_DOMAIN, "EXCLUDE_SHADOWING_DOMAIN"},
+       {EXCLUDE_DISALLOWED_CHARACTER, "EXCLUDE_DISALLOWED_CHARACTER"},
+       {EXCLUDE_THIRD_PARTY_PHASEOUT, "EXCLUDE_THIRD_PARTY_PHASEOUT"},
++      {EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT,
++       "EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT"},
++      {EXCLUDE_INVALID_SAMEPARTY, "EXCLUDE_INVALID_SAMEPARTY"},
+   };
+   static_assert(
+       std::size(exclusion_reasons) == ExclusionReason::NUM_EXCLUSION_REASONS,
+@@ -280,6 +283,11 @@ std::string CookieInclusionStatus::GetDebugString() const {
+        "WARN_TENTATIVELY_ALLOWING_SECURE_SOURCE_SCHEME"},
+       {WARN_SHADOWING_DOMAIN, "WARN_SHADOWING_DOMAIN"},
+       {WARN_THIRD_PARTY_PHASEOUT, "WARN_THIRD_PARTY_PHASEOUT"},
++      {WARN_TREATED_AS_SAMEPARTY, "WARN_TREATED_AS_SAMEPARTY"},
++      {WARN_SAMEPARTY_EXCLUSION_OVERRULED_SAMESITE,
++       "WARN_SAMEPARTY_EXCLUSION_OVERRULED_SAMESITE"},
++      {WARN_SAMEPARTY_INCLUSION_OVERRULED_SAMESITE,
++       "WARN_SAMEPARTY_INCLUSION_OVERRULED_SAMESITE"},
+   };
+   static_assert(
+       std::size(warning_reasons) == WarningReason::NUM_WARNING_REASONS,
+diff --git a/net/cookies/cookie_inclusion_status.h b/net/cookies/cookie_inclusion_status.h
+index e197c984d721171f5a131a1a7a8913cc9292719b..566e94489cbac6f0fa3d325a636ea1b71fb5615e 100644
+--- a/net/cookies/cookie_inclusion_status.h
++++ b/net/cookies/cookie_inclusion_status.h
+@@ -107,6 +107,12 @@ class NET_EXPORT CookieInclusionStatus {
+     EXCLUDE_DISALLOWED_CHARACTER = 24,
+     // Cookie is blocked for third-party cookie phaseout.
+     EXCLUDE_THIRD_PARTY_PHASEOUT = 25,
++    // The cookie specified SameParty, but was used in a cross-party context.
++    EXCLUDE_SAMEPARTY_CROSS_PARTY_CONTEXT = 26,
++    // Cookie was set with an invalid SameParty attribute in combination with
++    // other attributes. (SameParty is invalid if Secure is not present, or if
++    // SameSite=Strict is present.)
++    EXCLUDE_INVALID_SAMEPARTY = 27,
+ 
+     // This should be kept last.
+     NUM_EXCLUSION_REASONS
+@@ -226,6 +232,24 @@ class NET_EXPORT CookieInclusionStatus {
+     // This cookie will be blocked for third-party cookie phaseout.
+     WARN_THIRD_PARTY_PHASEOUT = 16,
+ 
++    // The cookie was treated as SameParty. This is different from looking at
++    // whether the cookie has the SameParty attribute, since we may choose to
++    // ignore that attribute for one reason or another. E.g., we ignore the
++    // SameParty attribute if the site is not a member of a nontrivial
++    // First-Party Set.
++    WARN_TREATED_AS_SAMEPARTY = 17,
++
++    // The cookie was excluded solely for SameParty reasons (i.e. it was in
++    // cross-party context), but would have been included by SameSite. (This can
++    // only occur in cross-party, cross-site contexts, for cookies that are
++    // 'SameParty; SameSite=None'.)
++    WARN_SAMEPARTY_EXCLUSION_OVERRULED_SAMESITE = 18,
++
++    // The cookie was included due to SameParty, even though it would have been
++    // excluded by SameSite. (This can only occur in same-party, cross-site
++    // contexts, for cookies that are 'SameParty; SameSite=Lax'.)
++    WARN_SAMEPARTY_INCLUSION_OVERRULED_SAMESITE = 19,
++
+     // This should be kept last.
+     NUM_WARNING_REASONS
+   };
+diff --git a/net/cookies/cookie_monster.cc b/net/cookies/cookie_monster.cc
+index 0c3ce2e289b5944d38315790cca829e851c31e19..5c4352bb9fc1fd85373ee413b59a12967bd02710 100644
+--- a/net/cookies/cookie_monster.cc
++++ b/net/cookies/cookie_monster.cc
+@@ -377,7 +377,9 @@ CookieMonster::CookieMonster(scoped_refptr<PersistentCookieStore> store,
+ CookieMonster::CookieMonster(scoped_refptr<PersistentCookieStore> store,
+                              base::TimeDelta last_access_threshold,
+                              NetLog* net_log)
+-    : change_dispatcher_(this),
++    : same_party_attribute_enabled_(base::FeatureList::IsEnabled(
++          net::features::kSamePartyAttributeEnabled)),
++      change_dispatcher_(this, same_party_attribute_enabled_),
+       net_log_(NetLogWithSource::Make(net_log, NetLogSourceType::COOKIE_STORE)),
+       store_(std::move(store)),
+       last_access_threshold_(last_access_threshold),
+@@ -739,9 +741,13 @@ bool CookieMonster::MatchCookieDeletionInfo(
+             delete_info.url.value());
+   }
+ 
++  // Deletion uses all inclusive options, so it's ok to get the
++  // `CookieSamePartyStatus` wrong here.
+   return delete_info.Matches(
+-      cookie, CookieAccessParams{GetAccessSemanticsForCookie(cookie),
+-                                 delegate_treats_url_as_trustworthy});
++      cookie,
++      CookieAccessParams{GetAccessSemanticsForCookie(cookie),
++                         delegate_treats_url_as_trustworthy,
++                         CookieSamePartyStatus::kNoSamePartyEnforcement});
+ }
+ 
+ void CookieMonster::DeleteCanonicalCookie(const CanonicalCookie& cookie,
+@@ -1205,8 +1211,11 @@ void CookieMonster::FilterCookiesWithOptions(
+     // cookie |options|.
+     CookieAccessResult access_result = cookie_ptr->IncludeForRequestURL(
+         url, options,
+-        CookieAccessParams{GetAccessSemanticsForCookie(*cookie_ptr),
+-                           delegate_treats_url_as_trustworthy});
++        CookieAccessParams{
++            GetAccessSemanticsForCookie(*cookie_ptr),
++            delegate_treats_url_as_trustworthy,
++            cookie_util::GetSamePartyStatus(*cookie_ptr, options,
++                                            same_party_attribute_enabled_)});
+     cookies_and_access_results.emplace_back(cookie_ptr, access_result);
+ 
+     // Record the names of all origin cookies that would be included if both
+@@ -1549,7 +1558,9 @@ void CookieMonster::SetCanonicalCookie(
+   CookieAccessResult access_result = cc->IsSetPermittedInContext(
+       source_url, options,
+       CookieAccessParams(GetAccessSemanticsForCookie(*cc),
+-                         delegate_treats_url_as_trustworthy),
++                         delegate_treats_url_as_trustworthy,
++                         cookie_util::GetSamePartyStatus(
++                             *cc, options, same_party_attribute_enabled_)),
+       cookieable_schemes_, cookie_access_result);
+ 
+   const std::string key(GetKey(cc->Domain()));
+diff --git a/net/cookies/cookie_monster.h b/net/cookies/cookie_monster.h
+index 3ca2c691cfd00acf34f7648dfc6c9f6692be470a..6086953c99f55bd8a1034f0fa33ea77e4af9ec0d 100644
+--- a/net/cookies/cookie_monster.h
++++ b/net/cookies/cookie_monster.h
+@@ -734,6 +734,8 @@ class NET_EXPORT CookieMonster : public CookieStore {
+   // nonce.
+   size_t num_nonced_partitioned_cookie_bytes_ = 0u;
+ 
++  bool same_party_attribute_enabled_ = false;
++
+   CookieMonsterChangeDispatcher change_dispatcher_;
+ 
+   // Indicates whether the cookie store has been initialized.
+diff --git a/net/cookies/cookie_monster_change_dispatcher.cc b/net/cookies/cookie_monster_change_dispatcher.cc
+index 61bd41e5a273e9d8d467deb587794600257feae6..34448cfee892b93558016c4fba22123c9522f6c4 100644
+--- a/net/cookies/cookie_monster_change_dispatcher.cc
++++ b/net/cookies/cookie_monster_change_dispatcher.cc
+@@ -37,6 +37,7 @@ CookieMonsterChangeDispatcher::Subscription::Subscription(
+     std::string name_key,
+     GURL url,
+     CookiePartitionKeyCollection cookie_partition_key_collection,
++    bool same_party_attribute_enabled,
+     net::CookieChangeCallback callback)
+     : change_dispatcher_(std::move(change_dispatcher)),
+       domain_key_(std::move(domain_key)),
+@@ -45,6 +46,7 @@ CookieMonsterChangeDispatcher::Subscription::Subscription(
+       cookie_partition_key_collection_(
+           std::move(cookie_partition_key_collection)),
+       callback_(std::move(callback)),
++      same_party_attribute_enabled_(same_party_attribute_enabled),
+       task_runner_(base::SingleThreadTaskRunner::GetCurrentDefault()) {
+   DCHECK(url_.is_valid() || url_.is_empty());
+   DCHECK_EQ(url_.is_empty(), domain_key_ == kGlobalDomainKey);
+@@ -73,11 +75,14 @@ void CookieMonsterChangeDispatcher::Subscription::DispatchChange(
+         cookie_access_delegate &&
+         cookie_access_delegate->ShouldTreatUrlAsTrustworthy(url_);
+     CookieOptions options = CookieOptions::MakeAllInclusive();
++    CookieSamePartyStatus same_party_status = cookie_util::GetSamePartyStatus(
++        cookie, options, same_party_attribute_enabled_);
+     if (!cookie
+              .IncludeForRequestURL(
+                  url_, options,
+                  CookieAccessParams{change.access_result.access_semantics,
+-                                    delegate_treats_url_as_trustworthy})
++                                    delegate_treats_url_as_trustworthy,
++                                    same_party_status})
+              .status.IsInclude()) {
+       return;
+     }
+@@ -111,8 +116,10 @@ void CookieMonsterChangeDispatcher::Subscription::DoDispatchChange(
+ }
+ 
+ CookieMonsterChangeDispatcher::CookieMonsterChangeDispatcher(
+-    const CookieMonster* cookie_monster)
+-    : cookie_monster_(cookie_monster) {}
++    const CookieMonster* cookie_monster,
++    bool same_party_attribute_enabled)
++    : cookie_monster_(cookie_monster),
++      same_party_attribute_enabled_(same_party_attribute_enabled) {}
+ 
+ CookieMonsterChangeDispatcher::~CookieMonsterChangeDispatcher() {
+   DCHECK_CALLED_ON_VALID_THREAD(thread_checker_);
+@@ -154,7 +161,7 @@ CookieMonsterChangeDispatcher::AddCallbackForCookie(
+   std::unique_ptr<Subscription> subscription = std::make_unique<Subscription>(
+       weak_ptr_factory_.GetWeakPtr(), DomainKey(url), NameKey(name), url,
+       CookiePartitionKeyCollection::FromOptional(cookie_partition_key),
+-      std::move(callback));
++      same_party_attribute_enabled_, std::move(callback));
+ 
+   LinkSubscription(subscription.get());
+   return subscription;
+@@ -171,7 +178,7 @@ CookieMonsterChangeDispatcher::AddCallbackForUrl(
+       weak_ptr_factory_.GetWeakPtr(), DomainKey(url),
+       std::string(kGlobalNameKey), url,
+       CookiePartitionKeyCollection::FromOptional(cookie_partition_key),
+-      std::move(callback));
++      same_party_attribute_enabled_, std::move(callback));
+ 
+   LinkSubscription(subscription.get());
+   return subscription;
+@@ -185,7 +192,8 @@ CookieMonsterChangeDispatcher::AddCallbackForAllChanges(
+   std::unique_ptr<Subscription> subscription = std::make_unique<Subscription>(
+       weak_ptr_factory_.GetWeakPtr(), std::string(kGlobalDomainKey),
+       std::string(kGlobalNameKey), GURL(""),
+-      CookiePartitionKeyCollection::ContainsAll(), std::move(callback));
++      CookiePartitionKeyCollection::ContainsAll(),
++      same_party_attribute_enabled_, std::move(callback));
+ 
+   LinkSubscription(subscription.get());
+   return subscription;
+diff --git a/net/cookies/cookie_monster_change_dispatcher.h b/net/cookies/cookie_monster_change_dispatcher.h
+index d6f449140b0244263b0c248e9163eb9940407541..31ca1e979ce1133dd6a78a7d8d09a6aba8f0ee44 100644
+--- a/net/cookies/cookie_monster_change_dispatcher.h
++++ b/net/cookies/cookie_monster_change_dispatcher.h
+@@ -33,7 +33,8 @@ class CookieMonsterChangeDispatcher : public CookieChangeDispatcher {
+       base::RepeatingCallbackList<void(const CookieChangeInfo&)>;
+ 
+   // Expects |cookie_monster| to outlive this.
+-  explicit CookieMonsterChangeDispatcher(const CookieMonster* cookie_monster);
++  CookieMonsterChangeDispatcher(const CookieMonster* cookie_monster,
++                                bool same_party_attribute_enabled);
+ 
+   CookieMonsterChangeDispatcher(const CookieMonsterChangeDispatcher&) = delete;
+   CookieMonsterChangeDispatcher& operator=(
+@@ -78,6 +79,7 @@ class CookieMonsterChangeDispatcher : public CookieChangeDispatcher {
+                  std::string name_key,
+                  GURL url,
+                  CookiePartitionKeyCollection cookie_partition_key_collection,
++                 bool same_party_attribute_enabled,
+                  net::CookieChangeCallback callback);
+ 
+     Subscription(const Subscription&) = delete;
+@@ -105,6 +107,7 @@ class CookieMonsterChangeDispatcher : public CookieChangeDispatcher {
+     const GURL url_;                // empty() means no URL-based filtering.
+     const CookiePartitionKeyCollection cookie_partition_key_collection_;
+     const net::CookieChangeCallback callback_;
++    bool same_party_attribute_enabled_;
+ 
+     void DoDispatchChange(const CookieChangeInfo& change) const;
+ 
+@@ -154,6 +157,8 @@ class CookieMonsterChangeDispatcher : public CookieChangeDispatcher {
+ 
+   CookieDomainMap cookie_domain_map_;
+ 
++  const bool same_party_attribute_enabled_;
++
+   THREAD_CHECKER(thread_checker_);
+ 
+   // Vends weak pointers to subscriptions.
+diff --git a/net/cookies/cookie_options.cc b/net/cookies/cookie_options.cc
+index d3e96410b39057e3a8d20078d69cbd728f7c8bde..42eb151094e5b26671ea576bf402f8a877e862a3 100644
+--- a/net/cookies/cookie_options.cc
++++ b/net/cookies/cookie_options.cc
+@@ -8,7 +8,9 @@
+ 
+ #include <tuple>
+ 
++#include "base/metrics/histogram_functions.h"
+ #include "net/cookies/cookie_util.h"
++#include "net/first_party_sets/same_party_context.h"
+ 
+ namespace net {
+ 
+@@ -99,6 +101,8 @@ CookieOptions CookieOptions::MakeAllInclusive() {
+   options.set_include_httponly();
+   options.set_same_site_cookie_context(SameSiteCookieContext::MakeInclusive());
+   options.set_do_not_update_access_time();
++  options.set_same_party_context(SamePartyContext::MakeInclusive());
++  options.set_is_in_nontrivial_first_party_set(true);
+   return options;
+ }
+ 
+diff --git a/net/cookies/cookie_options.h b/net/cookies/cookie_options.h
+index 183c1f61c1fbe94c8c85dd4f9a27695a04aad816..fc7cddad43a74945d5af6c2100893720f3895734 100644
+--- a/net/cookies/cookie_options.h
++++ b/net/cookies/cookie_options.h
+@@ -10,8 +10,11 @@
+ #include <ostream>
+ #include <string>
+ 
+-#include "base/check_op.h"
+ #include "net/base/net_export.h"
++#include "net/cookies/cookie_constants.h"
++#include "net/cookies/cookie_inclusion_status.h"
++#include "net/first_party_sets/same_party_context.h"
++#include "url/gurl.h"
+ 
+ namespace net {
+ 
+@@ -266,6 +269,26 @@ class NET_EXPORT CookieOptions {
+   void unset_return_excluded_cookies() { return_excluded_cookies_ = false; }
+   bool return_excluded_cookies() const { return return_excluded_cookies_; }
+ 
++  void set_same_party_context(const SamePartyContext& context) {
++    same_party_context_ = context;
++  }
++  const SamePartyContext& same_party_context() const {
++    return same_party_context_;
++  }
++
++  // Getter/setter of |full_party_context_size_| for logging purposes.
++  void set_full_party_context_size(uint32_t len) {
++    full_party_context_size_ = len;
++  }
++  uint32_t full_party_context_size() const { return full_party_context_size_; }
++
++  void set_is_in_nontrivial_first_party_set(bool is_member) {
++    is_in_nontrivial_first_party_set_ = is_member;
++  }
++  bool is_in_nontrivial_first_party_set() const {
++    return is_in_nontrivial_first_party_set_;
++  }
++
+   // Convenience method for where you need a CookieOptions that will
+   // work for getting/setting all types of cookies, including HttpOnly and
+   // SameSite cookies. Also specifies not to update the access time, because
+@@ -281,6 +304,19 @@ class NET_EXPORT CookieOptions {
+   SameSiteCookieContext same_site_cookie_context_;
+   bool update_access_time_ = true;
+   bool return_excluded_cookies_ = false;
++
++  SamePartyContext same_party_context_;
++
++  // The size of the isolation_info.party_context plus the top-frame site.
++  // Stored for logging purposes.
++  uint32_t full_party_context_size_ = 0;
++  // Whether the site requesting cookie access (as opposed to e.g. the
++  // `site_for_cookies`) is a member (or owner) of a nontrivial First-Party
++  // Set.
++  // This is included here temporarily, for the purpose of ignoring SameParty
++  // for sites that are not participating in the Origin Trial.
++  // TODO(https://crbug.com/1163990): remove this field.
++  bool is_in_nontrivial_first_party_set_ = false;
+ };
+ 
+ NET_EXPORT bool operator==(
+diff --git a/net/cookies/cookie_util.cc b/net/cookies/cookie_util.cc
+index 5e4748bf6fc8d06a8207642e1e2a9b3122b3b75e..e2670576d72bfcc2267d8cc9b1865210d8162a4f 100644
+--- a/net/cookies/cookie_util.cc
++++ b/net/cookies/cookie_util.cc
+@@ -32,6 +32,7 @@
+ #include "net/cookies/cookie_monster.h"
+ #include "net/cookies/cookie_options.h"
+ #include "net/first_party_sets/first_party_set_metadata.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "net/http/http_util.h"
+ #include "url/gurl.h"
+ #include "url/url_constants.h"
+@@ -897,13 +898,16 @@ absl::optional<FirstPartySetMetadata> ComputeFirstPartySetMetadataMaybeAsync(
+     const SchemefulSite& request_site,
+     const IsolationInfo& isolation_info,
+     const CookieAccessDelegate* cookie_access_delegate,
++    bool force_ignore_top_frame_party,
+     base::OnceCallback<void(FirstPartySetMetadata)> callback) {
+   if (isolation_info.party_context().has_value() && cookie_access_delegate) {
+     return cookie_access_delegate->ComputeFirstPartySetMetadataMaybeAsync(
+         request_site,
+-        base::OptionalToPtr(
+-            isolation_info.network_isolation_key().GetTopFrameSite()),
+-        std::move(callback));
++        force_ignore_top_frame_party
++            ? nullptr
++            : base::OptionalToPtr(
++                  isolation_info.network_isolation_key().GetTopFrameSite()),
++        isolation_info.party_context().value(), std::move(callback));
+   }
+ 
+   return FirstPartySetMetadata();
+@@ -935,6 +939,23 @@ HttpMethodStringToEnum(const std::string& in) {
+   return HttpMethod::kUnknown;
+ }
+ 
++CookieSamePartyStatus GetSamePartyStatus(
++    const CanonicalCookie& cookie,
++    const CookieOptions& options,
++    const bool same_party_attribute_enabled) {
++  if (!same_party_attribute_enabled || !cookie.IsSameParty() ||
++      !options.is_in_nontrivial_first_party_set()) {
++    return CookieSamePartyStatus::kNoSamePartyEnforcement;
++  }
++
++  switch (options.same_party_context().context_type()) {
++    case SamePartyContext::Type::kCrossParty:
++      return CookieSamePartyStatus::kEnforceSamePartyExclude;
++    case SamePartyContext::Type::kSameParty:
++      return CookieSamePartyStatus::kEnforceSamePartyInclude;
++  };
++}
++
+ bool IsCookieAccessResultInclude(CookieAccessResult cookie_access_result) {
+   return cookie_access_result.status.IsInclude();
+ }
+diff --git a/net/cookies/cookie_util.h b/net/cookies/cookie_util.h
+index 1ea066648012400453f56dcd437c891439199c2d..1a424e940524830fa396032bc567e0eb4db9d99a 100644
+--- a/net/cookies/cookie_util.h
++++ b/net/cookies/cookie_util.h
+@@ -295,6 +295,7 @@ ComputeFirstPartySetMetadataMaybeAsync(
+     const SchemefulSite& request_site,
+     const IsolationInfo& isolation_info,
+     const CookieAccessDelegate* cookie_access_delegate,
++    bool force_ignore_top_frame_party,
+     base::OnceCallback<void(FirstPartySetMetadata)> callback);
+ 
+ // Converts a string representing the http request method to its enum
+@@ -302,6 +303,14 @@ ComputeFirstPartySetMetadataMaybeAsync(
+ NET_EXPORT CookieOptions::SameSiteCookieContext::ContextMetadata::HttpMethod
+ HttpMethodStringToEnum(const std::string& in);
+ 
++// Get the SameParty inclusion status. If the cookie is not SameParty, returns
++// kNoSamePartyEnforcement; if the cookie is SameParty but does not have a
++// valid context, returns kEnforceSamePartyExclude.
++NET_EXPORT CookieSamePartyStatus
++GetSamePartyStatus(const CanonicalCookie& cookie,
++                   const CookieOptions& options,
++                   bool same_party_attribute_enabled);
++
+ // Takes a CookieAccessResult and returns a bool, returning true if the
+ // CookieInclusionStatus in CookieAccessResult was set to "include", else
+ // returning false.
+diff --git a/net/cookies/test_cookie_access_delegate.cc b/net/cookies/test_cookie_access_delegate.cc
+index 1e90c180f9ca510b273a9d35ce4d427423506d33..988a25e98959f7ee65abcdfa59c9064f3966d68e 100644
+--- a/net/cookies/test_cookie_access_delegate.cc
++++ b/net/cookies/test_cookie_access_delegate.cc
+@@ -21,6 +21,7 @@
+ #include "net/cookies/cookie_util.h"
+ #include "net/first_party_sets/first_party_set_entry.h"
+ #include "net/first_party_sets/first_party_set_metadata.h"
++#include "net/first_party_sets/same_party_context.h"
+ 
+ namespace net {
+ 
+@@ -62,11 +63,13 @@ absl::optional<FirstPartySetMetadata>
+ TestCookieAccessDelegate::ComputeFirstPartySetMetadataMaybeAsync(
+     const SchemefulSite& site,
+     const SchemefulSite* top_frame_site,
++    const std::set<SchemefulSite>& party_context,
+     base::OnceCallback<void(FirstPartySetMetadata)> callback) const {
+   absl::optional<FirstPartySetEntry> top_frame_owner =
+       top_frame_site ? FindFirstPartySetEntry(*top_frame_site) : absl::nullopt;
+   return RunMaybeAsync(
+-      FirstPartySetMetadata(base::OptionalToPtr(FindFirstPartySetEntry(site)),
++      FirstPartySetMetadata(SamePartyContext(),
++                            base::OptionalToPtr(FindFirstPartySetEntry(site)),
+                             base::OptionalToPtr(top_frame_owner)),
+       std::move(callback));
+ }
+diff --git a/net/cookies/test_cookie_access_delegate.h b/net/cookies/test_cookie_access_delegate.h
+index 35957aafe9ad0867ab1500cfb49bdbf95eaec4d8..a2324fdf7746b2ef967fd7cbb8ef2704902ad2e9 100644
+--- a/net/cookies/test_cookie_access_delegate.h
++++ b/net/cookies/test_cookie_access_delegate.h
+@@ -43,6 +43,7 @@ class TestCookieAccessDelegate : public CookieAccessDelegate {
+   absl::optional<FirstPartySetMetadata> ComputeFirstPartySetMetadataMaybeAsync(
+       const SchemefulSite& site,
+       const SchemefulSite* top_frame_site,
++      const std::set<SchemefulSite>& party_context,
+       base::OnceCallback<void(FirstPartySetMetadata)> callback) const override;
+   absl::optional<base::flat_map<SchemefulSite, FirstPartySetEntry>>
+   FindFirstPartySetEntries(
+diff --git a/net/first_party_sets/first_party_set_metadata.cc b/net/first_party_sets/first_party_set_metadata.cc
+index 75f41ad79ac067f806d4bea8b687a4781778e37a..26521fa5f9b4a93f892212cbd45e77ce41fc0f29 100644
+--- a/net/first_party_sets/first_party_set_metadata.cc
++++ b/net/first_party_sets/first_party_set_metadata.cc
+@@ -13,9 +13,11 @@ namespace net {
+ 
+ FirstPartySetMetadata::FirstPartySetMetadata() = default;
+ FirstPartySetMetadata::FirstPartySetMetadata(
++    const SamePartyContext& context,
+     const FirstPartySetEntry* frame_entry,
+     const FirstPartySetEntry* top_frame_entry)
+-    : frame_entry_(base::OptionalFromPtr(frame_entry)),
++    : context_(context),
++      frame_entry_(base::OptionalFromPtr(frame_entry)),
+       top_frame_entry_(base::OptionalFromPtr(top_frame_entry)) {}
+ 
+ FirstPartySetMetadata::FirstPartySetMetadata(FirstPartySetMetadata&&) = default;
+@@ -26,8 +28,8 @@ FirstPartySetMetadata::~FirstPartySetMetadata() = default;
+ 
+ bool FirstPartySetMetadata::operator==(
+     const FirstPartySetMetadata& other) const {
+-  return std::tie(frame_entry_, top_frame_entry_) ==
+-         std::tie(other.frame_entry_, other.top_frame_entry_);
++  return std::tie(context_, frame_entry_, top_frame_entry_) ==
++         std::tie(other.context_, other.frame_entry_, other.top_frame_entry_);
+ }
+ 
+ bool FirstPartySetMetadata::operator!=(
+@@ -37,7 +39,8 @@ bool FirstPartySetMetadata::operator!=(
+ 
+ std::ostream& operator<<(std::ostream& os,
+                          const FirstPartySetMetadata& metadata) {
+-  os << "{" << base::OptionalToPtr(metadata.frame_entry()) << ", "
++  os << "{" << metadata.context() << ", "
++     << base::OptionalToPtr(metadata.frame_entry()) << ", "
+      << base::OptionalToPtr(metadata.top_frame_entry()) << "}";
+   return os;
+ }
+diff --git a/net/first_party_sets/first_party_set_metadata.h b/net/first_party_sets/first_party_set_metadata.h
+index b23e52575bc2ae0634075890782eb46716116217..77cf13c75599522be3efda658b8685b21532c41c 100644
+--- a/net/first_party_sets/first_party_set_metadata.h
++++ b/net/first_party_sets/first_party_set_metadata.h
+@@ -7,6 +7,7 @@
+ 
+ #include "net/base/net_export.h"
+ #include "net/first_party_sets/first_party_set_entry.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ namespace net {
+@@ -20,7 +21,8 @@ class NET_EXPORT FirstPartySetMetadata {
+   // `frame_entry` and `top_frame_entry` must live for the duration of the ctor;
+   // nullptr indicates that there's no First-Party Set that's associated with
+   // the current frame or the top frame, respectively, in the given context.
+-  FirstPartySetMetadata(const FirstPartySetEntry* frame_entry,
++  FirstPartySetMetadata(const SamePartyContext& context,
++                        const FirstPartySetEntry* frame_entry,
+                         const FirstPartySetEntry* top_frame_entry);
+ 
+   FirstPartySetMetadata(FirstPartySetMetadata&&);
+@@ -31,6 +33,10 @@ class NET_EXPORT FirstPartySetMetadata {
+   bool operator==(const FirstPartySetMetadata& other) const;
+   bool operator!=(const FirstPartySetMetadata& other) const;
+ 
++  const SamePartyContext& context() const { return context_; }
++
++  // Returns a optional<T>& instead of a T* so that operator== can be defined
++  // more easily.
+   const absl::optional<FirstPartySetEntry>& frame_entry() const {
+     return frame_entry_;
+   }
+@@ -43,6 +49,7 @@ class NET_EXPORT FirstPartySetMetadata {
+   bool AreSitesInSameFirstPartySet() const;
+ 
+  private:
++  SamePartyContext context_ = SamePartyContext();
+   absl::optional<FirstPartySetEntry> frame_entry_ = absl::nullopt;
+   absl::optional<FirstPartySetEntry> top_frame_entry_ = absl::nullopt;
+ };
+diff --git a/net/first_party_sets/global_first_party_sets.cc b/net/first_party_sets/global_first_party_sets.cc
+index 29d34cd442ae19006d399b09b766c19dd5b12c76..ae2845f897ee9eb23f4888871b07edf28b62234c 100644
+--- a/net/first_party_sets/global_first_party_sets.cc
++++ b/net/first_party_sets/global_first_party_sets.cc
+@@ -28,6 +28,13 @@ namespace {
+ using FlattenedSets = base::flat_map<SchemefulSite, FirstPartySetEntry>;
+ using SingleSet = base::flat_map<SchemefulSite, FirstPartySetEntry>;
+ 
++// Converts WS to HTTP, and WSS to HTTPS.
++SchemefulSite NormalizeScheme(const SchemefulSite& site) {
++  SchemefulSite normalized_site = site;
++  normalized_site.ConvertWebSocketToHttp();
++  return normalized_site;
++}
++
+ // Converts a list of First-Party Sets from a SingleSet to a FlattenedSet
+ // representation.
+ FlattenedSets SetListToFlattenedSets(const std::vector<SingleSet>& set_list) {
+@@ -59,6 +66,11 @@ const SchemefulSite& ProjectKey(
+   return p.first;
+ }
+ 
++SamePartyContext::Type ContextTypeFromBool(bool is_same_party) {
++  return is_same_party ? SamePartyContext::Type::kSameParty
++                       : SamePartyContext::Type::kCrossParty;
++}
++
+ }  // namespace
+ 
+ GlobalFirstPartySets::GlobalFirstPartySets() = default;
+@@ -126,9 +138,11 @@ absl::optional<FirstPartySetEntry> GlobalFirstPartySets::FindEntry(
+ absl::optional<FirstPartySetEntry> GlobalFirstPartySets::FindEntry(
+     const SchemefulSite& site,
+     const FirstPartySetsContextConfig* config) const {
+-  // Check if `site` can be found in the customizations first.
++  const SchemefulSite normalized_site = NormalizeScheme(site);
++
++  // Check if `normalized_site` can be found in the customizations first.
+   if (config) {
+-    if (const auto override = config->FindOverride(site);
++    if (const auto override = config->FindOverride(normalized_site);
+         override.has_value()) {
+       return override->IsDeletion() ? absl::nullopt
+                                     : absl::make_optional(override->GetEntry());
+@@ -136,7 +150,7 @@ absl::optional<FirstPartySetEntry> GlobalFirstPartySets::FindEntry(
+   }
+ 
+   // Now see if it's in the manual config (with or without a manual alias).
+-  if (const auto manual_override = manual_config_.FindOverride(site);
++  if (const auto manual_override = manual_config_.FindOverride(normalized_site);
+       manual_override.has_value()) {
+     return manual_override->IsDeletion()
+                ? absl::nullopt
+@@ -144,9 +158,9 @@ absl::optional<FirstPartySetEntry> GlobalFirstPartySets::FindEntry(
+   }
+ 
+   // Finally, look up in `entries_`, applying an alias if applicable.
+-  const auto canonical_it = aliases_.find(site);
++  const auto canonical_it = aliases_.find(normalized_site);
+   const SchemefulSite& canonical_site =
+-      canonical_it == aliases_.end() ? site : canonical_it->second;
++      canonical_it == aliases_.end() ? normalized_site : canonical_it->second;
+   if (const auto entry_it = entries_.find(canonical_site);
+       entry_it != entries_.end()) {
+     return entry_it->second;
+@@ -172,16 +186,50 @@ GlobalFirstPartySets::FindEntries(
+ FirstPartySetMetadata GlobalFirstPartySets::ComputeMetadata(
+     const SchemefulSite& site,
+     const SchemefulSite* top_frame_site,
++    const std::set<SchemefulSite>& party_context,
+     const FirstPartySetsContextConfig& fps_context_config) const {
++  const base::ElapsedTimer timer;
++
++  SamePartyContext::Type context_type =
++      ContextTypeFromBool(IsContextSamePartyWithSite(
++          site, top_frame_site, party_context, fps_context_config));
++
++  SamePartyContext context(context_type);
++
+   absl::optional<FirstPartySetEntry> top_frame_entry =
+       top_frame_site ? FindEntry(*top_frame_site, fps_context_config)
+                      : absl::nullopt;
+ 
+   return FirstPartySetMetadata(
+-      base::OptionalToPtr(FindEntry(site, fps_context_config)),
++      context, base::OptionalToPtr(FindEntry(site, fps_context_config)),
+       base::OptionalToPtr(top_frame_entry));
+ }
+ 
++bool GlobalFirstPartySets::IsContextSamePartyWithSite(
++    const SchemefulSite& site,
++    const SchemefulSite* top_frame_site,
++    const std::set<SchemefulSite>& party_context,
++    const FirstPartySetsContextConfig& fps_context_config) const {
++  const absl::optional<FirstPartySetEntry> site_entry =
++      FindEntry(site, fps_context_config);
++  if (!site_entry.has_value())
++    return false;
++
++  const auto is_in_same_set_as_frame_site =
++      [this, &site_entry,
++       &fps_context_config](const SchemefulSite& context_site) -> bool {
++    const absl::optional<FirstPartySetEntry> context_entry =
++        FindEntry(context_site, fps_context_config);
++    return context_entry.has_value() &&
++           context_entry->primary() == site_entry->primary();
++  };
++
++  if (top_frame_site && !is_in_same_set_as_frame_site(*top_frame_site))
++    return false;
++
++  return base::ranges::all_of(party_context, is_in_same_set_as_frame_site);
++}
++
+ void GlobalFirstPartySets::ApplyManuallySpecifiedSet(
+     const base::flat_map<SchemefulSite, FirstPartySetEntry>& manual_entries) {
+   CHECK(manual_config_.empty());
+diff --git a/net/first_party_sets/global_first_party_sets.h b/net/first_party_sets/global_first_party_sets.h
+index f4f4e99189e0f3b8accfa884e136a127d0128bab..dc12d5fc440cecf291931cef98256b5f7ac58886 100644
+--- a/net/first_party_sets/global_first_party_sets.h
++++ b/net/first_party_sets/global_first_party_sets.h
+@@ -10,6 +10,8 @@
+ #include "base/containers/flat_map.h"
+ #include "base/containers/flat_set.h"
+ #include "base/functional/function_ref.h"
++#include "base/time/time.h"
++#include "base/timer/elapsed_timer.h"
+ #include "base/version.h"
+ #include "net/base/net_export.h"
+ #include "net/base/schemeful_site.h"
+@@ -83,6 +85,7 @@ class NET_EXPORT GlobalFirstPartySets {
+   FirstPartySetMetadata ComputeMetadata(
+       const SchemefulSite& site,
+       const SchemefulSite* top_frame_site,
++      const std::set<SchemefulSite>& party_context,
+       const FirstPartySetsContextConfig& fps_context_config) const;
+ 
+   // Modifies this instance such that it will respect the given
+@@ -166,6 +169,12 @@ class NET_EXPORT GlobalFirstPartySets {
+       const std::vector<base::flat_map<SchemefulSite, FirstPartySetEntry>>&
+           addition_sets) const;
+ 
++  bool IsContextSamePartyWithSite(
++      const SchemefulSite& site,
++      const SchemefulSite* top_frame_site,
++      const std::set<SchemefulSite>& party_context,
++      const FirstPartySetsContextConfig& fps_context_config) const;
++
+   // Same as the public version of ForEachEffectiveSetEntry, but is allowed to
+   // omit the `config` argument (i.e. pass nullptr instead of a reference).
+   bool ForEachEffectiveSetEntry(
+diff --git a/net/first_party_sets/same_party_context.cc b/net/first_party_sets/same_party_context.cc
+new file mode 100644
+index 0000000000000000000000000000000000000000..afa9ddf645cc8776d7c9303da9d93725b945a5d7
+--- /dev/null
++++ b/net/first_party_sets/same_party_context.cc
+@@ -0,0 +1,28 @@
++// Copyright 2021 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#include "net/first_party_sets/same_party_context.h"
++
++#include <ostream>
++
++namespace net {
++
++SamePartyContext::SamePartyContext(Type context_type)
++    : context_type_(context_type) {}
++
++bool SamePartyContext::operator==(const SamePartyContext& other) const {
++  return context_type_ == other.context_type_;
++}
++
++std::ostream& operator<<(std::ostream& os, const SamePartyContext& spc) {
++  os << "{" << static_cast<int>(spc.context_type()) << "}";
++  return os;
++}
++
++// static
++SamePartyContext SamePartyContext::MakeInclusive() {
++  return SamePartyContext(Type::kSameParty);
++}
++
++}  // namespace net
+diff --git a/net/first_party_sets/same_party_context.h b/net/first_party_sets/same_party_context.h
+new file mode 100644
+index 0000000000000000000000000000000000000000..448f000d8ab368f071d73da887e0e857c33e8973
+--- /dev/null
++++ b/net/first_party_sets/same_party_context.h
+@@ -0,0 +1,51 @@
++// Copyright 2021 The Chromium Authors
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++
++#ifndef NET_FIRST_PARTY_SETS_SAME_PARTY_CONTEXT_H_
++#define NET_FIRST_PARTY_SETS_SAME_PARTY_CONTEXT_H_
++
++#include <ostream>
++
++#include "net/base/net_export.h"
++
++namespace net {
++
++// This struct bundles together a few different notions of same-party-ness.
++// `context_type()` gives the notion of same-party-ness that Chromium should use
++// in all cases except metrics; other accessors are just for metrics purposes,
++// to explore the impact of different definitions of "same-party".
++class NET_EXPORT SamePartyContext {
++ public:
++  // Computed for every cookie access attempt but is only relevant for SameParty
++  // cookies.
++  enum class Type {
++    // The opposite to kSameParty. Should be the default value.
++    kCrossParty = 0,
++    // If the request URL is in the same First-Party Sets as the top-frame site
++    // and each member of the isolation_info.party_context.
++    kSameParty = 1,
++  };
++
++  SamePartyContext() = default;
++  explicit SamePartyContext(Type context_type);
++
++  bool operator==(const SamePartyContext& other) const;
++
++  // How trusted is the current browser environment when it comes to accessing
++  // SameParty cookies. Default is not trusted, e.g. kCrossParty.
++  Type context_type() const { return context_type_; }
++
++  // Creates a SamePartyContext that is as permissive as possible.
++  static SamePartyContext MakeInclusive();
++
++ private:
++  Type context_type_ = Type::kCrossParty;
++};
++
++NET_EXPORT std::ostream& operator<<(std::ostream& os,
++                                    const SamePartyContext& spc);
++
++}  // namespace net
++
++#endif  // NET_FIRST_PARTY_SETS_SAME_PARTY_CONTEXT_H_
+diff --git a/net/url_request/url_request.h b/net/url_request/url_request.h
+index 3c9516b7d80c09d97ce014859f15a0b4a2c634cc..88838c902460eec1aa45e558c8c04f5b9e6059cf 100644
+--- a/net/url_request/url_request.h
++++ b/net/url_request/url_request.h
+@@ -315,6 +315,16 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
+     force_ignore_site_for_cookies_ = attach;
+   }
+ 
++  // Indicates whether the top frame party will be considered same-party to the
++  // request URL (regardless of what it is), for the purpose of SameParty
++  // cookies.
++  bool force_ignore_top_frame_party_for_cookies() const {
++    return force_ignore_top_frame_party_for_cookies_;
++  }
++  void set_force_ignore_top_frame_party_for_cookies(bool force) {
++    force_ignore_top_frame_party_for_cookies_ = force;
++  }
++
+   // Indicates if the request should be treated as a main frame navigation for
+   // SameSite cookie computations.  This flag overrides the IsolationInfo
+   // request type associated with fetches from a service worker context.
+@@ -961,6 +971,7 @@ class NET_EXPORT URLRequest : public base::SupportsUserData {
+   absl::optional<CookiePartitionKey> cookie_partition_key_ = absl::nullopt;
+ 
+   bool force_ignore_site_for_cookies_ = false;
++  bool force_ignore_top_frame_party_for_cookies_ = false;
+   bool force_main_frame_for_same_site_cookies_ = false;
+   CookieSettingOverrides cookie_setting_overrides_;
+ 
+diff --git a/net/url_request/url_request_http_job.cc b/net/url_request/url_request_http_job.cc
+index eac944172789c28deda9e86e880d31d7e0dae1cf..f25f62a4ab8f826d5d1a4b25d8593f0a18428073 100644
+--- a/net/url_request/url_request_http_job.cc
++++ b/net/url_request/url_request_http_job.cc
+@@ -63,6 +63,7 @@
+ #include "net/filter/zstd_source_stream.h"
+ #include "net/first_party_sets/first_party_set_entry.h"
+ #include "net/first_party_sets/first_party_set_metadata.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "net/http/http_content_disposition.h"
+ #include "net/http/http_log_util.h"
+ #include "net/http/http_network_session.h"
+@@ -165,11 +166,22 @@ void LogTrustAnchor(const net::HashValueVector& spki_hashes) {
+ }
+ 
+ net::CookieOptions CreateCookieOptions(
+-    net::CookieOptions::SameSiteCookieContext same_site_context) {
++    net::CookieOptions::SameSiteCookieContext same_site_context,
++    const net::SamePartyContext& same_party_context,
++    const net::IsolationInfo& isolation_info,
++    bool is_in_nontrivial_first_party_set) {
+   net::CookieOptions options;
+   options.set_return_excluded_cookies();
+   options.set_include_httponly();
+   options.set_same_site_cookie_context(same_site_context);
++  options.set_same_party_context(same_party_context);
++  if (isolation_info.party_context().has_value()) {
++    // Count the top-frame site since it's not in the party_context.
++    options.set_full_party_context_size(isolation_info.party_context()->size() +
++                                        1);
++  }
++  options.set_is_in_nontrivial_first_party_set(
++      is_in_nontrivial_first_party_set);
+   return options;
+ }
+ 
+@@ -322,6 +334,7 @@ void URLRequestHttpJob::Start() {
+       cookie_util::ComputeFirstPartySetMetadataMaybeAsync(
+           SchemefulSite(request()->url()), request()->isolation_info(),
+           request()->context()->cookie_store()->cookie_access_delegate(),
++          request()->force_ignore_top_frame_party_for_cookies(),
+           base::BindOnce(&URLRequestHttpJob::OnGotFirstPartySetMetadata,
+                          weak_factory_.GetWeakPtr()));
+ 
+@@ -684,7 +697,11 @@ void URLRequestHttpJob::AddCookieHeaderAndStart() {
+           request_->site_for_cookies(), request_->initiator(),
+           is_main_frame_navigation, force_ignore_site_for_cookies);
+ 
+-  CookieOptions options = CreateCookieOptions(same_site_context);
++  bool is_in_nontrivial_first_party_set =
++      first_party_set_metadata_.frame_entry().has_value();
++  CookieOptions options = CreateCookieOptions(
++      same_site_context, first_party_set_metadata_.context(),
++      request_->isolation_info(), is_in_nontrivial_first_party_set);
+ 
+   cookie_store->GetCookieListWithOptionsAsync(
+       request_->url(), options,
+@@ -937,7 +954,11 @@ void URLRequestHttpJob::SaveCookiesAndNotifyHeadersComplete(int result) {
+           request_->initiator(), is_main_frame_navigation,
+           force_ignore_site_for_cookies);
+ 
+-  CookieOptions options = CreateCookieOptions(same_site_context);
++  bool is_in_nontrivial_first_party_set =
++      first_party_set_metadata_.frame_entry().has_value();
++  CookieOptions options = CreateCookieOptions(
++      same_site_context, first_party_set_metadata_.context(),
++      request_->isolation_info(), is_in_nontrivial_first_party_set);
+ 
+   // Set all cookies, without waiting for them to be set. Any subsequent
+   // read will see the combined result of all cookie operation.
+diff --git a/services/network/cookie_access_delegate_impl.cc b/services/network/cookie_access_delegate_impl.cc
+index cd44f7ecda273880f148577648dee0380381beb9..ab310b74a255834f558828d1ba4a830f09ccebcf 100644
+--- a/services/network/cookie_access_delegate_impl.cc
++++ b/services/network/cookie_access_delegate_impl.cc
+@@ -64,11 +64,12 @@ absl::optional<net::FirstPartySetMetadata>
+ CookieAccessDelegateImpl::ComputeFirstPartySetMetadataMaybeAsync(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const {
+   if (!first_party_sets_access_delegate_)
+     return {net::FirstPartySetMetadata()};
+   return first_party_sets_access_delegate_->ComputeMetadata(
+-      site, top_frame_site, std::move(callback));
++      site, top_frame_site, party_context, std::move(callback));
+ }
+ 
+ absl::optional<FirstPartySetsAccessDelegate::EntriesResult>
+diff --git a/services/network/cookie_access_delegate_impl.h b/services/network/cookie_access_delegate_impl.h
+index 4ef1746b383cfbf7ad007cb6ae7e331408ab75fe..50c3a309db86e5f044e2bfc429ca82fc6586d084 100644
+--- a/services/network/cookie_access_delegate_impl.h
++++ b/services/network/cookie_access_delegate_impl.h
+@@ -5,7 +5,10 @@
+ #ifndef SERVICES_NETWORK_COOKIE_ACCESS_DELEGATE_IMPL_H_
+ #define SERVICES_NETWORK_COOKIE_ACCESS_DELEGATE_IMPL_H_
+ 
++#include <set>
++
+ #include "base/component_export.h"
++#include "base/containers/flat_map.h"
+ #include "base/containers/flat_set.h"
+ #include "base/functional/callback_forward.h"
+ #include "base/memory/raw_ptr.h"
+@@ -56,6 +59,7 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) CookieAccessDelegateImpl
+   ComputeFirstPartySetMetadataMaybeAsync(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback)
+       const override;
+   [[nodiscard]] absl::optional<FirstPartySetsAccessDelegate::EntriesResult>
+diff --git a/services/network/first_party_sets/first_party_sets_access_delegate.cc b/services/network/first_party_sets/first_party_sets_access_delegate.cc
+index 08120524ead3ca40a8a167bf8d9991af871426df..9f2e736f056bf2d2b8c04264be6052fabc769d26 100644
+--- a/services/network/first_party_sets/first_party_sets_access_delegate.cc
++++ b/services/network/first_party_sets/first_party_sets_access_delegate.cc
+@@ -69,6 +69,7 @@ absl::optional<net::FirstPartySetMetadata>
+ FirstPartySetsAccessDelegate::ComputeMetadata(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+ 
+@@ -85,12 +86,12 @@ FirstPartySetsAccessDelegate::ComputeMetadata(
+     EnqueuePendingQuery(base::BindOnce(
+         &FirstPartySetsAccessDelegate::ComputeMetadataAndInvoke,
+         base::Unretained(this), site, base::OptionalFromPtr(top_frame_site),
+-        std::move(callback)));
++        party_context, std::move(callback)));
+     return absl::nullopt;
+   }
+ 
+-  return manager_->ComputeMetadata(site, top_frame_site, *context_config(),
+-                                   std::move(callback));
++  return manager_->ComputeMetadata(site, top_frame_site, party_context,
++                                   *context_config(), std::move(callback));
+ }
+ 
+ absl::optional<FirstPartySetsAccessDelegate::EntriesResult>
+@@ -148,6 +149,7 @@ FirstPartySetsAccessDelegate::GetCacheFilterMatchInfo(
+ void FirstPartySetsAccessDelegate::ComputeMetadataAndInvoke(
+     const net::SchemefulSite& site,
+     const absl::optional<net::SchemefulSite> top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   CHECK(context_config());
+@@ -162,7 +164,8 @@ void FirstPartySetsAccessDelegate::ComputeMetadataAndInvoke(
+ 
+   absl::optional<net::FirstPartySetMetadata> sync_result =
+       manager_->ComputeMetadata(site, base::OptionalToPtr(top_frame_site),
+-                                *context_config(), std::move(callbacks.first));
++                                party_context, *context_config(),
++                                std::move(callbacks.first));
+ 
+   if (sync_result.has_value())
+     std::move(callbacks.second).Run(std::move(sync_result.value()));
+diff --git a/services/network/first_party_sets/first_party_sets_access_delegate.h b/services/network/first_party_sets/first_party_sets_access_delegate.h
+index cb2399650853758378306ffe34ae14688ca06f72..67df37ef7dfc344bff9bb569fdc58c29967aeb22 100644
+--- a/services/network/first_party_sets/first_party_sets_access_delegate.h
++++ b/services/network/first_party_sets/first_party_sets_access_delegate.h
+@@ -62,6 +62,7 @@ class FirstPartySetsAccessDelegate
+   [[nodiscard]] absl::optional<net::FirstPartySetMetadata> ComputeMetadata(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback);
+ 
+   // Calls FirstPartySetsManager::FindEntries either asynchronously or
+@@ -91,6 +92,7 @@ class FirstPartySetsAccessDelegate
+   void ComputeMetadataAndInvoke(
+       const net::SchemefulSite& site,
+       const absl::optional<net::SchemefulSite> top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback) const;
+ 
+   // Same as `FindEntries`, but plumbs the result into the callback. Must only
+diff --git a/services/network/first_party_sets/first_party_sets_manager.cc b/services/network/first_party_sets/first_party_sets_manager.cc
+index 68306f7e32db4455366be68e8dd6434797bc6e3e..d89cd3f6fd38a17f9aa7d09d168496518b1e716a 100644
+--- a/services/network/first_party_sets/first_party_sets_manager.cc
++++ b/services/network/first_party_sets/first_party_sets_manager.cc
+@@ -15,6 +15,7 @@
+ #include "base/feature_list.h"
+ #include "base/metrics/histogram_functions.h"
+ #include "base/metrics/histogram_macros.h"
++#include "base/ranges/algorithm.h"
+ #include "base/sequence_checker.h"
+ #include "base/time/time.h"
+ #include "base/timer/elapsed_timer.h"
+@@ -24,6 +25,7 @@
+ #include "net/first_party_sets/first_party_set_entry.h"
+ #include "net/first_party_sets/first_party_set_metadata.h"
+ #include "net/first_party_sets/global_first_party_sets.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "third_party/abseil-cpp/absl/types/optional.h"
+ 
+ namespace network {
+@@ -48,6 +50,7 @@ absl::optional<net::FirstPartySetMetadata>
+ FirstPartySetsManager::ComputeMetadata(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     const net::FirstPartySetsContextConfig& fps_context_config,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback) {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+@@ -59,16 +62,19 @@ FirstPartySetsManager::ComputeMetadata(
+     EnqueuePendingQuery(base::BindOnce(
+         &FirstPartySetsManager::ComputeMetadataAndInvoke,
+         weak_factory_.GetWeakPtr(), site, base::OptionalFromPtr(top_frame_site),
+-        fps_context_config.Clone(), std::move(callback), base::ElapsedTimer()));
++        party_context, fps_context_config.Clone(), std::move(callback),
++        base::ElapsedTimer()));
+     return absl::nullopt;
+   }
+ 
+-  return ComputeMetadataInternal(site, top_frame_site, fps_context_config);
++  return ComputeMetadataInternal(site, top_frame_site, party_context,
++                                 fps_context_config);
+ }
+ 
+ void FirstPartySetsManager::ComputeMetadataAndInvoke(
+     const net::SchemefulSite& site,
+     const absl::optional<net::SchemefulSite> top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     const net::FirstPartySetsContextConfig& fps_context_config,
+     base::OnceCallback<void(net::FirstPartySetMetadata)> callback,
+     base::ElapsedTimer timer) const {
+@@ -78,18 +84,21 @@ void FirstPartySetsManager::ComputeMetadataAndInvoke(
+   UMA_HISTOGRAM_TIMES("Cookie.FirstPartySets.EnqueueingDelay.ComputeMetadata2",
+                       timer.Elapsed());
+ 
+-  std::move(callback).Run(ComputeMetadataInternal(
+-      site, base::OptionalToPtr(top_frame_site), fps_context_config));
++  std::move(callback).Run(
++      ComputeMetadataInternal(site, base::OptionalToPtr(top_frame_site),
++                              party_context, fps_context_config));
+ }
+ 
+ net::FirstPartySetMetadata FirstPartySetsManager::ComputeMetadataInternal(
+     const net::SchemefulSite& site,
+     const net::SchemefulSite* top_frame_site,
++    const std::set<net::SchemefulSite>& party_context,
+     const net::FirstPartySetsContextConfig& fps_context_config) const {
+   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
+   CHECK(sets_.has_value());
+ 
+-  return sets_->ComputeMetadata(site, top_frame_site, fps_context_config);
++  return sets_->ComputeMetadata(site, top_frame_site, party_context,
++                                fps_context_config);
+ }
+ 
+ absl::optional<net::FirstPartySetEntry> FirstPartySetsManager::FindEntry(
+diff --git a/services/network/first_party_sets/first_party_sets_manager.h b/services/network/first_party_sets/first_party_sets_manager.h
+index 9754dd5f6b0087c6630285b1f592e43cda4ba8d6..b04a98f42fc96a5f2e85cd1bc8ea841fb170e4f2 100644
+--- a/services/network/first_party_sets/first_party_sets_manager.h
++++ b/services/network/first_party_sets/first_party_sets_manager.h
+@@ -15,6 +15,7 @@
+ #include "base/functional/callback.h"
+ #include "base/sequence_checker.h"
+ #include "base/thread_annotations.h"
++#include "base/time/time.h"
+ #include "base/timer/elapsed_timer.h"
+ #include "net/base/schemeful_site.h"
+ #include "net/first_party_sets/first_party_set_entry.h"
+@@ -52,6 +53,7 @@ class FirstPartySetsManager {
+   [[nodiscard]] absl::optional<net::FirstPartySetMetadata> ComputeMetadata(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& fps_context_config,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback);
+ 
+@@ -84,6 +86,7 @@ class FirstPartySetsManager {
+   void ComputeMetadataAndInvoke(
+       const net::SchemefulSite& site,
+       const absl::optional<net::SchemefulSite> top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& fps_context_config,
+       base::OnceCallback<void(net::FirstPartySetMetadata)> callback,
+       base::ElapsedTimer timer) const;
+@@ -93,6 +96,7 @@ class FirstPartySetsManager {
+   net::FirstPartySetMetadata ComputeMetadataInternal(
+       const net::SchemefulSite& site,
+       const net::SchemefulSite* top_frame_site,
++      const std::set<net::SchemefulSite>& party_context,
+       const net::FirstPartySetsContextConfig& fps_context_config) const;
+ 
+   // Returns `site`'s entry, or `nullopt` if `site` has no entry.
+diff --git a/services/network/network_service_network_delegate.cc b/services/network/network_service_network_delegate.cc
+index d8133af94ca8dc20974e8e6600933ce115106530..80acabb2b079a48cab2a76f8e1faad1db7e7710e 100644
+--- a/services/network/network_service_network_delegate.cc
++++ b/services/network/network_service_network_delegate.cc
+@@ -18,6 +18,7 @@
+ #include "net/base/load_flags.h"
+ #include "net/base/net_errors.h"
+ #include "net/cookies/cookie_setting_override.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "net/url_request/clear_site_data.h"
+ #include "net/url_request/referrer_policy.h"
+ #include "net/url_request/url_request.h"
+diff --git a/services/network/public/cpp/cookie_manager_mojom_traits.cc b/services/network/public/cpp/cookie_manager_mojom_traits.cc
+index 5269c91580bc8d9cf93c3323f7b96ac748cd5972..2505b01a13c62f49ce73a539d5d452ea6ae340bd 100644
+--- a/services/network/public/cpp/cookie_manager_mojom_traits.cc
++++ b/services/network/public/cpp/cookie_manager_mojom_traits.cc
+@@ -586,6 +586,17 @@ bool StructTraits<network::mojom::CookieOptionsDataView, net::CookieOptions>::
+   else
+     cookie_options->unset_return_excluded_cookies();
+ 
++  net::SamePartyContext same_party_context;
++  if (!mojo_options.ReadSamePartyContext(&same_party_context))
++    return false;
++  cookie_options->set_same_party_context(same_party_context);
++
++  cookie_options->set_full_party_context_size(
++      mojo_options.full_party_context_size());
++
++  cookie_options->set_is_in_nontrivial_first_party_set(
++      mojo_options.is_in_nontrivial_first_party_set());
++
+   return true;
+ }
+ 
+diff --git a/services/network/public/cpp/cookie_manager_mojom_traits.h b/services/network/public/cpp/cookie_manager_mojom_traits.h
+index 5531222e359de032cb45b28e3451b5622a731069..d562b702b0f5a87017268e80d5941585609ccc3b 100644
+--- a/services/network/public/cpp/cookie_manager_mojom_traits.h
++++ b/services/network/public/cpp/cookie_manager_mojom_traits.h
+@@ -16,6 +16,8 @@
+ #include "net/cookies/cookie_inclusion_status.h"
+ #include "net/cookies/cookie_options.h"
+ #include "net/cookies/cookie_partition_key_collection.h"
++#include "net/first_party_sets/first_party_set_entry.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "services/network/public/cpp/cookie_manager_shared_mojom_traits.h"
+ #include "services/network/public/mojom/cookie_manager.mojom-forward.h"
+ #include "services/network/public/mojom/cookie_manager.mojom.h"
+@@ -194,6 +196,18 @@ struct StructTraits<network::mojom::CookieOptionsDataView, net::CookieOptions> {
+     return o.return_excluded_cookies();
+   }
+ 
++  static net::SamePartyContext same_party_context(const net::CookieOptions& o) {
++    return o.same_party_context();
++  }
++
++  static uint32_t full_party_context_size(const net::CookieOptions& o) {
++    return o.full_party_context_size();
++  }
++
++  static bool is_in_nontrivial_first_party_set(const net::CookieOptions& o) {
++    return o.is_in_nontrivial_first_party_set();
++  }
++
+   static bool Read(network::mojom::CookieOptionsDataView mojo_options,
+                    net::CookieOptions* cookie_options);
+ };
+diff --git a/services/network/public/cpp/first_party_sets_mojom_traits.cc b/services/network/public/cpp/first_party_sets_mojom_traits.cc
+index 0c20fd9b054b6bdf989adde7d9c03f4f784215d9..4d1e584278722eb449012ef4f2f8f2162223711f 100644
+--- a/services/network/public/cpp/first_party_sets_mojom_traits.cc
++++ b/services/network/public/cpp/first_party_sets_mojom_traits.cc
+@@ -18,6 +18,7 @@
+ #include "net/first_party_sets/first_party_sets_cache_filter.h"
+ #include "net/first_party_sets/first_party_sets_context_config.h"
+ #include "net/first_party_sets/global_first_party_sets.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "services/network/public/cpp/schemeful_site_mojom_traits.h"
+ #include "services/network/public/mojom/first_party_sets.mojom-shared.h"
+ 
+@@ -83,10 +84,55 @@ bool StructTraits<network::mojom::FirstPartySetEntryDataView,
+   return true;
+ }
+ 
++bool EnumTraits<network::mojom::SamePartyCookieContextType,
++                net::SamePartyContext::Type>::
++    FromMojom(network::mojom::SamePartyCookieContextType context_type,
++              net::SamePartyContext::Type* out) {
++  switch (context_type) {
++    case network::mojom::SamePartyCookieContextType::kCrossParty:
++      *out = net::SamePartyContext::Type::kCrossParty;
++      return true;
++    case network::mojom::SamePartyCookieContextType::kSameParty:
++      *out = net::SamePartyContext::Type::kSameParty;
++      return true;
++  }
++  return false;
++}
++
++network::mojom::SamePartyCookieContextType
++EnumTraits<network::mojom::SamePartyCookieContextType,
++           net::SamePartyContext::Type>::ToMojom(net::SamePartyContext::Type
++                                                     context_type) {
++  switch (context_type) {
++    case net::SamePartyContext::Type::kCrossParty:
++      return network::mojom::SamePartyCookieContextType::kCrossParty;
++    case net::SamePartyContext::Type::kSameParty:
++      return network::mojom::SamePartyCookieContextType::kSameParty;
++  }
++  NOTREACHED();
++  return network::mojom::SamePartyCookieContextType::kCrossParty;
++}
++
++bool StructTraits<network::mojom::SamePartyContextDataView,
++                  net::SamePartyContext>::
++    Read(network::mojom::SamePartyContextDataView context,
++         net::SamePartyContext* out) {
++  net::SamePartyContext::Type context_type;
++  if (!context.ReadContextType(&context_type))
++    return false;
++
++  *out = net::SamePartyContext(context_type);
++  return true;
++}
++
+ bool StructTraits<network::mojom::FirstPartySetMetadataDataView,
+                   net::FirstPartySetMetadata>::
+     Read(network::mojom::FirstPartySetMetadataDataView metadata,
+          net::FirstPartySetMetadata* out_metadata) {
++  net::SamePartyContext context;
++  if (!metadata.ReadContext(&context))
++    return false;
++
+   absl::optional<net::FirstPartySetEntry> frame_entry;
+   if (!metadata.ReadFrameEntry(&frame_entry))
+     return false;
+@@ -95,8 +141,9 @@ bool StructTraits<network::mojom::FirstPartySetMetadataDataView,
+   if (!metadata.ReadTopFrameEntry(&top_frame_entry))
+     return false;
+ 
+-  *out_metadata = net::FirstPartySetMetadata(
+-      base::OptionalToPtr(frame_entry), base::OptionalToPtr(top_frame_entry));
++  *out_metadata =
++      net::FirstPartySetMetadata(context, base::OptionalToPtr(frame_entry),
++                                 base::OptionalToPtr(top_frame_entry));
+ 
+   return true;
+ }
+diff --git a/services/network/public/cpp/first_party_sets_mojom_traits.h b/services/network/public/cpp/first_party_sets_mojom_traits.h
+index b255f56ead022bb237296e7560c73f692a7d7ee3..644aab23aef7fb37c573add9e4180b743c755a12 100644
+--- a/services/network/public/cpp/first_party_sets_mojom_traits.h
++++ b/services/network/public/cpp/first_party_sets_mojom_traits.h
+@@ -16,6 +16,7 @@
+ #include "net/first_party_sets/first_party_sets_cache_filter.h"
+ #include "net/first_party_sets/first_party_sets_context_config.h"
+ #include "net/first_party_sets/global_first_party_sets.h"
++#include "net/first_party_sets/same_party_context.h"
+ #include "services/network/public/mojom/first_party_sets.mojom-shared.h"
+ 
+ namespace mojo {
+@@ -61,10 +62,38 @@ struct COMPONENT_EXPORT(FIRST_PARTY_SETS_MOJOM_TRAITS)
+                    net::FirstPartySetEntry* out);
+ };
+ 
++template <>
++struct COMPONENT_EXPORT(FIRST_PARTY_SETS_MOJOM_TRAITS)
++    EnumTraits<network::mojom::SamePartyCookieContextType,
++               net::SamePartyContext::Type> {
++  static network::mojom::SamePartyCookieContextType ToMojom(
++      net::SamePartyContext::Type context_type);
++
++  static bool FromMojom(network::mojom::SamePartyCookieContextType context_type,
++                        net::SamePartyContext::Type* out);
++};
++
++template <>
++struct COMPONENT_EXPORT(FIRST_PARTY_SETS_MOJOM_TRAITS)
++    StructTraits<network::mojom::SamePartyContextDataView,
++                 net::SamePartyContext> {
++  static net::SamePartyContext::Type context_type(
++      const net::SamePartyContext& s) {
++    return s.context_type();
++  }
++
++  static bool Read(network::mojom::SamePartyContextDataView bundle,
++                   net::SamePartyContext* out);
++};
++
+ template <>
+ struct COMPONENT_EXPORT(FIRST_PARTY_SETS_MOJOM_TRAITS)
+     StructTraits<network::mojom::FirstPartySetMetadataDataView,
+                  net::FirstPartySetMetadata> {
++  static net::SamePartyContext context(const net::FirstPartySetMetadata& m) {
++    return m.context();
++  }
++
+   static absl::optional<net::FirstPartySetEntry> frame_entry(
+       const net::FirstPartySetMetadata& m) {
+     return m.frame_entry();
+diff --git a/services/network/public/mojom/BUILD.gn b/services/network/public/mojom/BUILD.gn
+index 311985f787a8577715609fcd389c3de04f25e310..32dd3b3924964d087121b5d4256c83951160baf1 100644
+--- a/services/network/public/mojom/BUILD.gn
++++ b/services/network/public/mojom/BUILD.gn
+@@ -1019,6 +1019,14 @@ mojom("mojom_first_party_sets") {
+               mojom = "network.mojom.FirstPartySetEntry"
+               cpp = "::net::FirstPartySetEntry"
+             },
++            {
++              mojom = "network.mojom.SamePartyCookieContextType"
++              cpp = "::net::SamePartyContext::Type"
++            },
++            {
++              mojom = "network.mojom.SamePartyContext"
++              cpp = "::net::SamePartyContext"
++            },
+             {
+               mojom = "network.mojom.FirstPartySetMetadata"
+               cpp = "::net::FirstPartySetMetadata"
+diff --git a/services/network/public/mojom/cookie_manager.mojom b/services/network/public/mojom/cookie_manager.mojom
+index 3e2e95956b691efe49b99a1509daea55d96fb8b9..563394f5d34f3314ca2208e46913bfd69bef6c58 100644
+--- a/services/network/public/mojom/cookie_manager.mojom
++++ b/services/network/public/mojom/cookie_manager.mojom
+@@ -183,6 +183,12 @@ struct CookieOptions {
+   CookieSameSiteContext same_site_cookie_context;
+   bool update_access_time = true;
+   bool return_excluded_cookies = false;
++  SamePartyContext same_party_context;
++  // The size of the isolation_info.party_context plus the top-frame site for
++  // logging purposes.
++  uint32 full_party_context_size = 0;
++  // Whether the site is a member of a nontrivial First-Party Set.
++  bool is_in_nontrivial_first_party_set = false;
+ };
+ 
+ // See net/cookies/canonical_cookie.{h,cc} for documentation.
+diff --git a/services/network/public/mojom/first_party_sets.mojom b/services/network/public/mojom/first_party_sets.mojom
+index 0ea745cd2450c2d92002c3a0113295b0d4bbd40e..150fed986ded1c82ca3b965c0218193dc938d7a1 100644
+--- a/services/network/public/mojom/first_party_sets.mojom
++++ b/services/network/public/mojom/first_party_sets.mojom
+@@ -27,9 +27,25 @@ struct FirstPartySetEntry {
+   SiteIndex? site_index;
+ };
+ 
++// Computed for every cookie access attempt but is only relevant for SameParty
++// cookies.
++enum SamePartyCookieContextType {
++  // The opposite to kSameParty. Should be the default value.
++  kCrossParty,
++  // If the request URL is in the same First-Party Sets as the top-frame site
++  // and each member of the isolation_info.party_context.
++  kSameParty,
++};
++
++// Keep defaults in here in sync with net/cookies/same_party_context.cc.
++struct SamePartyContext {
++  SamePartyCookieContextType context_type = kCrossParty;
++};
++
+ // This struct must match the class fields defined in
+ // //net/first_party_sets/first_party_set_metadata.h.
+ struct FirstPartySetMetadata {
++  SamePartyContext context;
+   // absl::nullopt indicates that the frame's site is not associated with any
+   // First-Party Set.
+   FirstPartySetEntry? frame_entry;
+diff --git a/services/network/restricted_cookie_manager.cc b/services/network/restricted_cookie_manager.cc
+index cc22ed62613a567e44708758a75de2cac18ee284..1a1eca338ff8cd7e1b1b247cfadaee16f37e5628 100644
+--- a/services/network/restricted_cookie_manager.cc
++++ b/services/network/restricted_cookie_manager.cc
+@@ -56,11 +56,17 @@ BASE_FEATURE(kIncreaseCoookieAccesCacheSize,
+ // adding a user-perceptible delay.
+ constexpr base::TimeDelta kCookiesAccessedTimeout = base::Milliseconds(100);
+ 
++// The `force_ignore_top_frame_party` param being false prevents `document.cookie`
++// access for same-party scripts embedded in an extension frame.
++const bool kForceIgnoreTopFrameParty = false;
++
+ net::CookieOptions MakeOptionsForSet(
+     mojom::RestrictedCookieManagerRole role,
+     const GURL& url,
+     const net::SiteForCookies& site_for_cookies,
+-    const CookieSettings& cookie_settings) {
++    const net::IsolationInfo& isolation_info,
++    const CookieSettings& cookie_settings,
++    const net::FirstPartySetMetadata& first_party_set_metadata) {
+   net::CookieOptions options;
+   bool force_ignore_site_for_cookies =
+       cookie_settings.ShouldIgnoreSameSiteRestrictions(url, site_for_cookies);
+@@ -76,6 +82,14 @@ net::CookieOptions MakeOptionsForSet(
+         net::cookie_util::ComputeSameSiteContextForSubresource(
+             url, site_for_cookies, force_ignore_site_for_cookies));
+   }
++  options.set_same_party_context(first_party_set_metadata.context());
++  if (isolation_info.party_context().has_value()) {
++    // Count the top-frame site since it's not in the party_context.
++    options.set_full_party_context_size(isolation_info.party_context()->size() +
++                                        1);
++  }
++  options.set_is_in_nontrivial_first_party_set(
++      first_party_set_metadata.frame_entry().has_value());
+ 
+   return options;
+ }
+@@ -84,7 +98,9 @@ net::CookieOptions MakeOptionsForGet(
+     mojom::RestrictedCookieManagerRole role,
+     const GURL& url,
+     const net::SiteForCookies& site_for_cookies,
+-    const CookieSettings& cookie_settings) {
++    const net::IsolationInfo& isolation_info,
++    const CookieSettings& cookie_settings,
++    const net::FirstPartySetMetadata& first_party_set_metadata) {
+   // TODO(https://crbug.com/925311): Wire initiator here.
+   net::CookieOptions options;
+   bool force_ignore_site_for_cookies =
+@@ -102,6 +118,14 @@ net::CookieOptions MakeOptionsForGet(
+         net::cookie_util::ComputeSameSiteContextForSubresource(
+             url, site_for_cookies, force_ignore_site_for_cookies));
+   }
++  options.set_same_party_context(first_party_set_metadata.context());
++  if (isolation_info.party_context().has_value()) {
++    // Count the top-frame site since it's not in the party_context.
++    options.set_full_party_context_size(isolation_info.party_context()->size() +
++                                        1);
++  }
++  options.set_is_in_nontrivial_first_party_set(
++      first_party_set_metadata.frame_entry().has_value());
+ 
+   return options;
+ }
+@@ -123,7 +147,8 @@ void RestrictedCookieManager::ComputeFirstPartySetMetadata(
+   absl::optional<net::FirstPartySetMetadata> metadata =
+       net::cookie_util::ComputeFirstPartySetMetadataMaybeAsync(
+           /*request_site=*/net::SchemefulSite(origin), isolation_info,
+-          cookie_store->cookie_access_delegate(), std::move(callbacks.first));
++          cookie_store->cookie_access_delegate(), kForceIgnoreTopFrameParty,
++          std::move(callbacks.first));
+   if (metadata.has_value())
+     std::move(callbacks.second).Run(std::move(metadata.value()));
+ }
+@@ -216,7 +241,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+            bool has_storage_access,
+            const absl::optional<net::CookiePartitionKey>& cookie_partition_key,
+            net::CookieOptions options,
+-           mojo::PendingRemote<mojom::CookieChangeListener> mojo_listener)
++           mojo::PendingRemote<mojom::CookieChangeListener> mojo_listener,
++           bool same_party_attribute_enabled)
+       : cookie_store_(cookie_store),
+         restricted_cookie_manager_(restricted_cookie_manager),
+         url_(url),
+@@ -224,7 +250,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+         top_frame_origin_(top_frame_origin),
+         has_storage_access_(has_storage_access),
+         options_(options),
+-        mojo_listener_(std::move(mojo_listener)) {
++        mojo_listener_(std::move(mojo_listener)),
++        same_party_attribute_enabled_(same_party_attribute_enabled) {
+     // TODO(pwnall): add a constructor w/options to net::CookieChangeDispatcher.
+     cookie_store_subscription_ =
+         cookie_store->GetChangeDispatcher().AddCallbackForUrl(
+@@ -260,11 +287,16 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+ 
+     // CookieChangeDispatcher doesn't check for inclusion against `options_`, so
+     // we need to double-check that.
++    net::CookieSamePartyStatus same_party_status =
++        net::cookie_util::GetSamePartyStatus(change.cookie, options_,
++                                             same_party_attribute_enabled_);
++
+     if (!change.cookie
+              .IncludeForRequestURL(
+                  url_, options_,
+                  net::CookieAccessParams{change.access_result.access_semantics,
+-                                         delegate_treats_url_as_trustworthy})
++                                         delegate_treats_url_as_trustworthy,
++                                         same_party_status})
+              .status.IsInclude()) {
+       return;
+     }
+@@ -315,6 +347,8 @@ class RestrictedCookieManager::Listener : public base::LinkNode<Listener> {
+ 
+   mojo::Remote<mojom::CookieChangeListener> mojo_listener_;
+ 
++  bool same_party_attribute_enabled_;
++
+   SEQUENCE_CHECKER(sequence_checker_);
+ };
+ 
+@@ -341,6 +375,8 @@ RestrictedCookieManager::RestrictedCookieManager(
+       cookie_partition_key_collection_(
+           net::CookiePartitionKeyCollection::FromOptional(
+               cookie_partition_key_)),
++      same_party_attribute_enabled_(base::FeatureList::IsEnabled(
++          net::features::kSamePartyAttributeEnabled)),
+       receiver_(this),
+       metrics_updater_(metrics_updater),
+       cookies_access_timer_(
+@@ -451,7 +487,8 @@ void RestrictedCookieManager::GetAllForUrl(
+   // TODO(morlovich): Try to validate site_for_cookies as well.
+ 
+   net::CookieOptions net_options =
+-      MakeOptionsForGet(role_, url, site_for_cookies, cookie_settings());
++      MakeOptionsForGet(role_, url, site_for_cookies, isolation_info_,
++                        cookie_settings(), first_party_set_metadata_);
+   // TODO(https://crbug.com/977040): remove set_return_excluded_cookies() once
+   // removing deprecation warnings.
+   net_options.set_return_excluded_cookies();
+@@ -705,7 +742,8 @@ void RestrictedCookieManager::SetCanonicalCookie(
+ 
+   net::CanonicalCookie cookie_copy = *sanitized_cookie;
+   net::CookieOptions options =
+-      MakeOptionsForSet(role_, url, site_for_cookies, cookie_settings());
++      MakeOptionsForSet(role_, url, site_for_cookies, isolation_info_,
++                        cookie_settings(), first_party_set_metadata_);
+ 
+   net::CookieAccessResult cookie_access_result(status);
+   cookie_store_->SetCanonicalCookieAsync(
+@@ -757,11 +795,12 @@ void RestrictedCookieManager::AddChangeListener(
+   }
+ 
+   net::CookieOptions net_options =
+-      MakeOptionsForGet(role_, url, site_for_cookies, cookie_settings());
++      MakeOptionsForGet(role_, url, site_for_cookies, isolation_info_,
++                        cookie_settings(), first_party_set_metadata_);
+   auto listener = std::make_unique<Listener>(
+       cookie_store_, this, url, site_for_cookies, top_frame_origin,
+       has_storage_access, cookie_partition_key_, net_options,
+-      std::move(mojo_listener));
++      std::move(mojo_listener), same_party_attribute_enabled_);
+ 
+   listener->mojo_listener().set_disconnect_handler(
+       base::BindOnce(&RestrictedCookieManager::RemoveChangeListener,
+diff --git a/services/network/restricted_cookie_manager.h b/services/network/restricted_cookie_manager.h
+index be2749818c7af32f48da819b378c9afaa4933933..8086076904844fe208c4f3f72569e85fb485dec0 100644
+--- a/services/network/restricted_cookie_manager.h
++++ b/services/network/restricted_cookie_manager.h
+@@ -314,6 +314,8 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) RestrictedCookieManager
+   // update filtering.
+   CookieAccessesByURLAndSite recent_cookie_accesses_;
+ 
++  bool same_party_attribute_enabled_;
++
+   // This class can optionally bind its Receiver. If that's the case it's stored
+   // done with this variable.
+   mojo::Receiver<mojom::RestrictedCookieManager> receiver_;
+diff --git a/services/network/url_loader.cc b/services/network/url_loader.cc
+index 4ad8c5476cbf00a4246ec524e5d95037b06a7151..2cb705fcd442334074edcf2265ae0ccbb26db183 100644
+--- a/services/network/url_loader.cc
++++ b/services/network/url_loader.cc
+@@ -287,6 +287,8 @@ bool ShouldNotifyAboutCookie(net::CookieInclusionStatus status) {
+   return status.IsInclude() || status.ShouldWarn() ||
+          status.HasExclusionReason(
+              net::CookieInclusionStatus::EXCLUDE_USER_PREFERENCES) ||
++         status.HasExclusionReason(
++             net::CookieInclusionStatus::EXCLUDE_INVALID_SAMEPARTY) ||
+          status.HasExclusionReason(
+              net::CookieInclusionStatus::EXCLUDE_DOMAIN_NON_ASCII);
+ }
+@@ -586,6 +588,9 @@ URLLoader::URLLoader(
+     DCHECK(!url_request_->isolation_info().IsEmpty());
+   }
+ 
++  if (ShouldForceIgnoreTopFramePartyForCookies())
++    url_request_->set_force_ignore_top_frame_party_for_cookies(true);
++
+   // When a service worker forwards a navigation request it uses the
+   // service worker's IsolationInfo.  This causes the cookie code to fail
+   // to send SameSite=Lax cookies for main-frame navigations passed through
+@@ -2689,6 +2694,36 @@ bool URLLoader::ShouldForceIgnoreSiteForCookies(
+   return false;
+ }
+ 
++bool URLLoader::ShouldForceIgnoreTopFramePartyForCookies() const {
++  const net::IsolationInfo& isolation_info = url_request_->isolation_info();
++  const absl::optional<url::Origin>& top_frame_origin =
++      isolation_info.top_frame_origin();
++
++  if (!top_frame_origin || top_frame_origin->opaque())
++    return false;
++
++  const absl::optional<std::set<net::SchemefulSite>>& party_context =
++      isolation_info.party_context();
++  if (!party_context)
++    return false;
++
++  // The top frame origin must have access to the request URL.
++  if (cors::OriginAccessList::AccessState::kAllowed !=
++      origin_access_list_->CheckAccessState(*top_frame_origin,
++                                            url_request_->url())) {
++    return false;
++  }
++
++  // The top frame origin must have access to each site in the party_context.
++  return base::ranges::all_of(
++      *party_context,
++      [this, &top_frame_origin](const net::SchemefulSite& site) {
++        return origin_access_list_->CheckAccessState(*top_frame_origin,
++                                                     site.GetURL()) ==
++               cors::OriginAccessList::AccessState::kAllowed;
++      });
++}
++
+ void URLLoader::SetRequestCredentials(const GURL& url) {
+   bool coep_allow_credentials = CoepAllowCredentials(url);
+ 
+diff --git a/services/network/url_loader.h b/services/network/url_loader.h
+index 6970066e65c6e61a6fed1248127abd6550ddfec6..96d224b1634aff0791ac6b3799725e61ab11afca 100644
+--- a/services/network/url_loader.h
++++ b/services/network/url_loader.h
+@@ -548,6 +548,10 @@ class COMPONENT_EXPORT(NETWORK_SERVICE) URLLoader
+   // Whether `force_ignore_site_for_cookies` should be set on net::URLRequest.
+   bool ShouldForceIgnoreSiteForCookies(const ResourceRequest& request);
+ 
++  // Whether `force_ignore_top_frame_party_for_cookies` should be set on
++  // net::URLRequest.
++  bool ShouldForceIgnoreTopFramePartyForCookies() const;
++
+   // Applies Private Network Access checks to the current request.
+   //
+   // Helper for `OnConnected()`.
