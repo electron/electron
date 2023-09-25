@@ -142,9 +142,15 @@ namespace scripting {
     // requirements are not met. Defaults to false, meaning that only the top
     // frame is matched.
     boolean? allFrames;
-    // TODO(devlin): Add documentation once the implementation is complete. See
-    // crbug.com/55084.
-    [nodoc]
+    // Whether the script should inject into any frames where the URL belongs to
+    // a scheme that would never match a specified Match Pattern, including
+    // about:, data:, blob:, and filesystem: schemes. In these cases, in order
+    // to determine if the script should inject, the origin of the URL is
+    // checked. If the origin is `null` (as is the case for data: URLs), then
+    // the "initiator" or "creator" origin is used (i.e., the origin of the
+    // frame that created or navigated this frame). Note that this may not
+    // be the parent frame, if the frame was navigated by another frame in the
+    // document hierarchy.
     boolean? matchOriginAsFallback;
     // Specifies when JavaScript files are injected into the web page. The
     // preferred and default value is <code>document_idle</code>.

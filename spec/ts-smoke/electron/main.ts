@@ -382,8 +382,6 @@ if (process.platform === 'darwin') {
   // @ts-expect-error Removed API
   systemPreferences.setAppLevelAppearance('dark');
   // @ts-expect-error Removed API
-  console.log(systemPreferences.appLevelAppearance);
-  // @ts-expect-error Removed API
   console.log(systemPreferences.getColor('alternate-selected-control-text'));
 }
 
@@ -562,14 +560,14 @@ globalShortcut.unregisterAll();
 // ipcMain
 // https://github.com/electron/electron/blob/main/docs/api/ipc-main.md
 
+ipcMain.handle('ping-pong', (event, arg: any) => {
+  console.log(arg); // prints "ping"
+  return 'pong';
+});
+
 ipcMain.on('asynchronous-message', (event, arg: any) => {
   console.log(arg); // prints "ping"
   event.sender.send('asynchronous-reply', 'pong');
-});
-
-ipcMain.on('synchronous-message', (event, arg: any) => {
-  console.log(arg); // prints "ping"
-  event.returnValue = 'pong';
 });
 
 ipcMain.on('synchronous-message', (event, arg: any) => {
@@ -1285,6 +1283,13 @@ win4.loadURL('http://github.com');
 
 // @ts-expect-error Removed API
 win4.webContents.getPrinters();
+
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-begin', () => {});
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-edge', () => {});
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-end', () => {});
 
 // TouchBar
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md

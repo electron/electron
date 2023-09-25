@@ -26,7 +26,7 @@ index 7ef6d04794c31064c70dbbb0bfc1dd7bf4d1b8fc..d5a03d5e10faaa204b3f9f290fed79be
    void* ret;
    if (zero_fill_field_ || per_process::cli_options->zero_fill_all_buffers)
 diff --git a/src/crypto/crypto_util.cc b/src/crypto/crypto_util.cc
-index 4d79fbb4a30a7e57a7456413685706d9af36b1b3..13e4d8b532cdb4c39fab30a8f4118ff8d2bca33c 100644
+index 2302e3bad99625eb5dd5587218d0a1985837fb8e..1aa2aafafdae1d2a1b2c851db59e3d736fb8bd3e 100644
 --- a/src/crypto/crypto_util.cc
 +++ b/src/crypto/crypto_util.cc
 @@ -349,10 +349,35 @@ ByteSource& ByteSource::operator=(ByteSource&& other) noexcept {

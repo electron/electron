@@ -192,7 +192,7 @@ template("electron_paks") {
       "${root_gen_dir}/ui/strings/ui_strings_",
     ]
     deps = [
-      "//chrome/app:chromium_strings",
+      "//chrome/app:branded_strings",
       "//chrome/app:generated_resources",
       "//chrome/app/resources:locale_settings",
       "//chrome/app/resources:platform_locale_settings",

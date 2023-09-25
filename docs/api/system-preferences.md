@@ -401,6 +401,10 @@ Returns an object with system animation settings.
 
 ## Properties
 
+### `systemPreferences.accessibilityDisplayShouldReduceTransparency()` _macOS_
+
+A `boolean` property which determines whether the app avoids using semitransparent backgrounds. This maps to [NSWorkspace.accessibilityDisplayShouldReduceTransparency](https://developer.apple.com/documentation/appkit/nsworkspace/1533006-accessibilitydisplayshouldreduce)
+
 ### `systemPreferences.effectiveAppearance` _macOS_ _Readonly_
 
 A `string` property that can be `dark`, `light` or `unknown`.

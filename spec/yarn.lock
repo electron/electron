@@ -5,6 +5,11 @@
 "@electron-ci/echo@file:./fixtures/native-addon/echo":
   version "0.0.1"
 
+"@electron-ci/is-valid-window@file:./is-valid-window":
+  version "0.0.5"
+  dependencies:
+    nan "2.x"
+
 "@electron-ci/uv-dlopen@file:./fixtures/native-addon/uv-dlopen":
   version "0.0.1"
 
@@ -703,13 +708,6 @@ is-unicode-supported@^0.1.0:
   resolved "https://registry.yarnpkg.com/is-unicode-supported/-/is-unicode-supported-0.1.0.tgz#3f26c76a809593b52bfa2ecb5710ed2779b522a7"
   integrity sha512-knxG2q4UC3u8stRGyAVJCOdxFmv5DZiRcdlIaAQXAbSfJya+OhopNotLQrstBhququ4ZpuKbDc/8S6mgXgPFPw==
 
-is-valid-window@0.0.5:
-  version "0.0.5"
-  resolved "https://registry.yarnpkg.com/is-valid-window/-/is-valid-window-0.0.5.tgz#57935b35b8c3f30f077b16d54fe5c0d0e4ba8a03"
-  integrity sha512-bs7tIvCJyJ9BOFZP+U3yGWH9mMQVBDxtWTokrpvpSzEQfMHX+hlhuKqltbYnVkEfj+YSgQJgAW/Klx0qQH7zbQ==
-  dependencies:
-    nan "2.x"
-
 isarray@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/isarray/-/isarray-0.0.1.tgz#8a18acfca9a8f4177e09abfc6038939b05d1eedf"
@@ -897,9 +895,9 @@ ms@2.1.3:
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.1.3.tgz#574c8138ce1d2b5861f0b44579dbadd60c6615b2"
   integrity sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==
 
-nan@2.x, nan@^2.12.1, "nan@github:jkleinsc/nan#remove_accessor_signature":
-  version "2.16.0"
-  resolved "https://codeload.github.com/jkleinsc/nan/tar.gz/6a2f95a6a2209d8aa7542fb18099fd808a802059"
+nan@2.x, nan@^2.12.1, nan@nodejs/nan#e14bdcd1f72d62bca1d541b66da43130384ec213:
+  version "2.18.0"
+  resolved "https://codeload.github.com/nodejs/nan/tar.gz/e14bdcd1f72d62bca1d541b66da43130384ec213"
 
 nanoid@3.3.3:
   version "3.3.3"

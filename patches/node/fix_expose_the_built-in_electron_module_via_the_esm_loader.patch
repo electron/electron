@@ -18,10 +18,10 @@ index 219ef03a21214deb8961044cfc18ef9c1e711b60..7749b37001f869fe565d8c450ff7ca2b
  
  /**
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index 1178f06074ec8ec02a2e7b5cf8cbe7e68b72f809..d64d4452a50bc4469b2d2fcc3251b3df31cda6ec 100644
+index 71a9f8da0b49f3dca786eab07d44201a1bc76240..d8a072cf6af3b0d3a47ee69be04b26875683d261 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
-@@ -116,6 +116,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -121,6 +121,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
      protocol !== 'file:' &&
      protocol !== 'data:' &&
      protocol !== 'node:' &&
@@ -29,7 +29,7 @@ index 1178f06074ec8ec02a2e7b5cf8cbe7e68b72f809..d64d4452a50bc4469b2d2fcc3251b3df
      (
        !experimentalNetworkImports ||
        (
-@@ -124,7 +125,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
+@@ -129,7 +130,7 @@ function throwIfUnsupportedURLScheme(parsed, experimentalNetworkImports) {
        )
      )
    ) {
@@ -39,10 +39,10 @@ index 1178f06074ec8ec02a2e7b5cf8cbe7e68b72f809..d64d4452a50bc4469b2d2fcc3251b3df
        ArrayPrototypePush(schemes, 'https', 'http');
      }
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index 2cac6f2d450fab014544d15439e51575f86ccb38..ce2d851da2577e6e99980eb75337f629b38fddbf 100644
+index 7006887a6fe2bab525e52c6b0c76b5d089699a14..a93d93b3c2aae3ef790ffa4f417d50b884451549 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
-@@ -822,6 +822,8 @@ function parsePackageName(specifier, base) {
+@@ -825,6 +825,8 @@ function parsePackageName(specifier, base) {
    return { packageName, packageSubpath, isScoped };
  }
  
@@ -51,7 +51,7 @@ index 2cac6f2d450fab014544d15439e51575f86ccb38..ce2d851da2577e6e99980eb75337f629
  /**
   * @param {string} specifier
   * @param {string | URL | undefined} base
-@@ -834,6 +836,10 @@ function packageResolve(specifier, base, conditions) {
+@@ -837,6 +839,10 @@ function packageResolve(specifier, base, conditions) {
      return new URL('node:' + specifier);
    }
  
@@ -89,10 +89,10 @@ index a425749e82acd7593c9fb1ceffedc119a4e416f2..1ceb89da21610c703f4a18be5888373c
        // We might trigger a getter -> dont fail.
        let value;
 diff --git a/lib/internal/url.js b/lib/internal/url.js
-index 51688b8403076a328c2c62b6434fc310ee4f1ea7..36604c9de2179b5f6941dd9a7af66cdb03facd7f 100644
+index 9c11377aef1f24c6ce5cfdf02b800440afc4686a..b66a5bbde3e8c419d5385339805cbd94f630986d 100644
 --- a/lib/internal/url.js
 +++ b/lib/internal/url.js
-@@ -1399,6 +1399,8 @@ function fileURLToPath(path) {
+@@ -1432,6 +1432,8 @@ function fileURLToPath(path) {
      path = new URL(path);
    else if (!isURL(path))
      throw new ERR_INVALID_ARG_TYPE('path', ['string', 'URL'], path);
