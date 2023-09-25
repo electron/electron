@@ -311,14 +311,12 @@ bool Archive::Stat(const base::FilePath& path, Stats* stats) const {
     return false;
 
   if (node->Find("link")) {
-    stats->is_file = false;
-    stats->is_link = true;
+    stats->type = FileType::kLink;
     return true;
   }
 
   if (node->Find("files")) {
-    stats->is_file = false;
-    stats->is_directory = true;
+    stats->type = FileType::kDirectory;
     return true;
   }
 

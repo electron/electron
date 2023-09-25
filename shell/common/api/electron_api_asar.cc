@@ -121,9 +121,7 @@ class Archive : public node::ObjectWrap {
     gin_helper::Dictionary dict(isolate, v8::Object::New(isolate));
     dict.Set("size", stats.size);
     dict.Set("offset", stats.offset);
-    dict.Set("isFile", stats.is_file);
-    dict.Set("isDirectory", stats.is_directory);
-    dict.Set("isLink", stats.is_link);
+    dict.Set("type", static_cast<int>(stats.type));
     args.GetReturnValue().Set(dict.GetHandle());
   }
 
