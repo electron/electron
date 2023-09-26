@@ -14,6 +14,7 @@
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "include/core/SkColor.h"
+#include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
@@ -24,6 +25,7 @@
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
+#include "ui/compositor/compositor.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -765,6 +767,37 @@ void NativeWindow::RemoveDraggableRegionProvider(
     DraggableRegionProvider* provider) {
   draggable_region_providers_.remove_if(
       [&provider](DraggableRegionProvider* p) { return p == provider; });
+}
+
+void NativeWindow::AddBackgroundThrottlingSource(
+    BackgroundThrottlingSource* source) {
+  auto result = background_throttling_sources_.insert(source);
+  DCHECK(result.second) << "Added already stored BackgroundThrottlingSource.";
+  UpdateBackgroundThrottlingState();
+}
+
+void NativeWindow::RemoveBackgroundThrottlingSource(
+    BackgroundThrottlingSource* source) {
+  auto result = background_throttling_sources_.erase(source);
+  DCHECK(result == 1)
+      << "Tried to remove non existing BackgroundThrottlingSource.";
+  UpdateBackgroundThrottlingState();
+}
+
+void NativeWindow::UpdateBackgroundThrottlingState() {
+  if (!GetWidget() || !GetWidget()->GetCompositor()) {
+    return;
+  }
+  bool enable_background_throttling = true;
+  for (const auto* background_throttling_source :
+       background_throttling_sources_) {
+    if (!background_throttling_source->GetBackgroundThrottling()) {
+      enable_background_throttling = false;
+      break;
+    }
+  }
+  GetWidget()->GetCompositor()->SetBackgroundThrottling(
+      enable_background_throttling);
 }
 
 views::Widget* NativeWindow::GetWidget() {

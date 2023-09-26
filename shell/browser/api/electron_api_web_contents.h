@@ -36,6 +36,7 @@
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
+#include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -107,7 +108,8 @@ class WebContents : public ExclusiveAccessContext,
                     public content::WebContentsDelegate,
                     public content::RenderWidgetHost::InputEventObserver,
                     public InspectableWebContentsDelegate,
-                    public InspectableWebContentsViewDelegate {
+                    public InspectableWebContentsViewDelegate,
+                    public BackgroundThrottlingSource {
  public:
   enum class Type {
     kBackgroundPage,  // An extension background page.
@@ -160,7 +162,7 @@ class WebContents : public ExclusiveAccessContext,
   void Close(absl::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
-  bool GetBackgroundThrottling() const;
+  bool GetBackgroundThrottling() const override;
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
