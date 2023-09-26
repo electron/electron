@@ -716,6 +716,18 @@ to open synchronously scriptable child windows, among other incompatibilities.
 See the documentation for [window.open in Electron](api/window-open.md)
 for more details.
 
+### Deprecated: `app.runningUnderRosettaTranslation`
+
+The `app.runningUnderRosettaTranslation` property has been deprecated.
+Use `app.runningUnderARM64Translation` instead.
+
+```js
+// Deprecated
+console.log(app.runningUnderRosettaTranslation)
+// Replace with
+console.log(app.runningUnderARM64Translation)
+```
+
 ## Planned Breaking API Changes (14.0)
 
 ### Removed: `remote` module
