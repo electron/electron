@@ -58,6 +58,8 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect GetBounds() override;
   bool IsNormal() override;
   gfx::Rect GetNormalBounds() override;
+  void SetSizeConstraints(
+      const extensions::SizeConstraints& window_constraints) override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;

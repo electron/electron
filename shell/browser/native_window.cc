@@ -354,10 +354,14 @@ void NativeWindow::SetContentSizeConstraints(
   size_constraints_.reset();
 }
 
+// Windows/Linux:
 // The return value of GetContentSizeConstraints will be passed to Chromium
 // to set min/max sizes of window. Note that we are returning content size
 // instead of window size because that is what Chromium expects, see the
 // comment of |WidgetSizeIsClientSize| in Chromium's codebase to learn more.
+//
+// macOS:
+// The min/max sizes are set directly by calling NSWindow's methods.
 extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   if (content_size_constraints_)
     return *content_size_constraints_;
