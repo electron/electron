@@ -228,6 +228,23 @@ channel with a renderer process using [`MessagePort`][]s. An Electron app can
 always prefer the [UtilityProcess][] API over Node.js [`child_process.fork`][] API when
 there is need to fork a child process from the main process.
 
+## Process-specific module aliases (TypeScript)
+
+Electron's npm package also exports subpaths that contain a subset of
+Electron's TypeScript type definitions.
+
+- `electron/main` includes types for all main process modules.
+- `electron/renderer` includes types for all renderer process modules.
+- `electron/common` includes types for modules that can run in main and renderer processes.
+
+These aliases have no impact on runtime, but can be used for typechecking
+and autocomplete.
+
+```js title="Usage example"
+const { app } = require('electron/main')
+const { shell } = require('electron/common')
+```
+
 [window-mdn]: https://developer.mozilla.org/en-US/docs/Web/API/Window
 [`MessagePort`]: https://developer.mozilla.org/en-US/docs/Web/API/MessagePort
 [`child_process.fork`]: https://nodejs.org/dist/latest-v16.x/docs/api/child_process.html#child_processforkmodulepath-args-options
