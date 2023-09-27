@@ -189,8 +189,10 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
 
       case WM_LBUTTONDOWN:
       case WM_RBUTTONDOWN:
+      case WM_MBUTTONDOWN:
       case WM_LBUTTONDBLCLK:
       case WM_RBUTTONDBLCLK:
+      case WM_MBUTTONDBLCLK:
       case WM_CONTEXTMENU:
         // Walk our icons, find which one was clicked on, and invoke its
         // HandleClickEvent() method.
@@ -200,7 +202,8 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
                 &NotifyIcon::HandleClickEvent, win_icon_weak,
                 GetKeyboardModifiers(),
                 (lparam == WM_LBUTTONDOWN || lparam == WM_LBUTTONDBLCLK),
-                (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK)));
+                (lparam == WM_LBUTTONDBLCLK || lparam == WM_RBUTTONDBLCLK),
+                (lparam == WM_MBUTTONDOWN || lparam == WM_MBUTTONDBLCLK)));
 
         return TRUE;
 

@@ -102,6 +102,12 @@ void Tray::OnRightClicked(const gfx::Rect& bounds, int modifiers) {
   EmitWithoutEvent("right-click", CreateEventFromFlags(modifiers), bounds);
 }
 
+void Tray::OnMiddleClicked(const gfx::Rect& bounds, int modifiers) {
+  v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
+  v8::HandleScope scope(isolate);
+  EmitWithoutEvent("middle-click", CreateEventFromFlags(modifiers), bounds);
+}
+
 void Tray::OnBalloonShow() {
   Emit("balloon-show");
 }

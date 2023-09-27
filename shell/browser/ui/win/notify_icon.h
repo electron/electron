@@ -45,7 +45,8 @@ class NotifyIcon : public TrayIcon {
   // otherwise displays the context menu if there is one.
   void HandleClickEvent(int modifiers,
                         bool left_button_click,
-                        bool double_button_click);
+                        bool double_button_click,
+                        bool middle_button_click);
 
   // Handles a mouse move event from the user.
   void HandleMouseMoveEvent(int modifiers);

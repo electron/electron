@@ -106,6 +106,7 @@ class TrayIcon {
                      const gfx::Point& location = gfx::Point(),
                      int modifiers = 0);
   void NotifyDoubleClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
+  void NotifyMiddleClicked(const gfx::Rect& = gfx::Rect(), int modifiers = 0);
   void NotifyBalloonShow();
   void NotifyBalloonClicked();
   void NotifyBalloonClosed();
