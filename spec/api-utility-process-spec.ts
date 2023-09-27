@@ -2,7 +2,8 @@ import { expect } from 'chai';
 import * as childProcess from 'node:child_process';
 import * as path from 'node:path';
 import { BrowserWindow, MessageChannelMain, utilityProcess, app } from 'electron/main';
-import { ifit } from './lib/spec-helpers';
+import * as http from 'node:http';
+import { defer, ifit, listen } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'node:events';
 import { pathToFileURL } from 'node:url';
@@ -461,6 +462,25 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
       const [data] = await once(child, 'message');
       expect(data).to.equal(42);
+      // Cleanup.
+      const exit = once(child, 'exit');
+      expect(child.kill()).to.be.true();
+      await exit;
+    });
+  });
+
+  describe('net.request API', () => {
+    it('should be able to issue a basic GET request', async () => {
+      const server = http.createServer((request, response) => {
+        expect(request.method).to.equal('GET');
+        response.end();
+      });
+      defer(() => server.close());
+      const serverUrl = (await listen(server)).url;
+      const child = utilityProcess.fork(path.join(fixturesPath, 'net.js'));
+      child.postMessage(serverUrl);
+      const [statusCode] = await once(child, 'message');
+      expect(statusCode).to.equal(200);
       // Cleanup.
       const exit = once(child, 'exit');
       expect(child.kill()).to.be.true();
