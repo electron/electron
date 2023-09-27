@@ -6,7 +6,7 @@ Subject: fix: lazyload fs in esm loaders to apply asar patches
 Changes { foo } from fs to just "fs.foo" so that our patching of fs is applied to esm loaders
 
 diff --git a/lib/internal/modules/esm/load.js b/lib/internal/modules/esm/load.js
-index d64d4452a50bc4469b2d2fcc3251b3df31cda6ec..8d8f1b24fb68cce2b37e43f92aac200b4ee73cea 100644
+index d8a072cf6af3b0d3a47ee69be04b26875683d261..7991703df940634c62d798210b5e7b94412f9bde 100644
 --- a/lib/internal/modules/esm/load.js
 +++ b/lib/internal/modules/esm/load.js
 @@ -20,7 +20,7 @@ const experimentalNetworkImports =
@@ -18,17 +18,17 @@ index d64d4452a50bc4469b2d2fcc3251b3df31cda6ec..8d8f1b24fb68cce2b37e43f92aac200b
  const { URL } = require('internal/url');
  const {
    ERR_INVALID_URL,
-@@ -34,7 +34,7 @@ async function getSource(url, context) {
-   let responseURL = url;
+@@ -39,7 +39,7 @@ async function getSource(url, context) {
+   let responseURL = href;
    let source;
-   if (parsed.protocol === 'file:') {
--    source = await readFileAsync(parsed);
-+    source = await fs.promises.readFile(parsed);
-   } else if (parsed.protocol === 'data:') {
-     const match = RegExpPrototypeExec(DATA_URL_PATTERN, parsed.pathname);
+   if (protocol === 'file:') {
+-    source = await readFileAsync(url);
++    source = await fs.promises.readFile(url);
+   } else if (protocol === 'data:') {
+     const match = RegExpPrototypeExec(DATA_URL_PATTERN, url.pathname);
      if (!match) {
 diff --git a/lib/internal/modules/esm/resolve.js b/lib/internal/modules/esm/resolve.js
-index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea0cb44f8d 100644
+index a93d93b3c2aae3ef790ffa4f417d50b884451549..4072321e6bc3c9f0c8428d8159670950886c3404 100644
 --- a/lib/internal/modules/esm/resolve.js
 +++ b/lib/internal/modules/esm/resolve.js
 @@ -26,11 +26,7 @@ const {
@@ -44,7 +44,7 @@ index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea
  const { getOptionValue } = require('internal/options');
  const pendingDeprecation = getOptionValue('--pending-deprecation');
  // Do not eagerly grab .manifest, it may be in TDZ
-@@ -171,14 +167,14 @@ const realpathCache = new SafeMap();
+@@ -172,14 +168,14 @@ const realpathCache = new SafeMap();
   * @returns {import('fs').Stats}
   */
  const tryStatSync =
@@ -61,7 +61,7 @@ index ce2d851da2577e6e99980eb75337f629b38fddbf..fed26d25b59d66ab6e5160e2e13c8eea
  }
  
  /**
-@@ -326,7 +322,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
+@@ -329,7 +325,7 @@ function finalizeResolution(resolved, base, preserveSymlinks) {
    }
  
    if (!preserveSymlinks) {

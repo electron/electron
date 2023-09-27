@@ -104,14 +104,26 @@ branding = read_file("shell/app/BRANDING.json", "json")
 electron_project_name = branding.project_name
 electron_product_name = branding.product_name
 electron_mac_bundle_id = branding.mac_bundle_id
-electron_version = exec_script("script/print-version.py",
-                               [],
-                               "trim string",
-                               [
-                                 ".git/packed-refs",
-                                 ".git/HEAD",
-                                 "script/lib/get-version.js",
-                               ])
+
+if (override_electron_version != "") {
+  electron_version = override_electron_version
+} else {
+  # When building from source code tarball there is no git tag available and
+  # builders must explicitly pass override_electron_version in gn args.
+  # This read_file call will assert if there is no git information, without it
+  # gn will generate a malformed build configuration and ninja will get into
+  # infinite loop.
+  read_file(".git/packed-refs", "string")
+
+  # Set electron version from git tag.
+  electron_version = exec_script("script/get-git-version.py",
+                                 [],
+                                 "trim string",
+                                 [
+                                   ".git/packed-refs",
+                                   ".git/HEAD",
+                                 ])
+}
 
 if (is_mas_build) {
   assert(is_mac,

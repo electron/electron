@@ -58,10 +58,10 @@ index d5a03d5e10faaa204b3f9f290fed79be824c78b1..c4caef25af670658965fc740ce03c2d2
  }
  
 diff --git a/src/node_options.cc b/src/node_options.cc
-index 499d048fcb82e50a302d74e2c7f87f3696103a40..7ad8d80faee840e4dd224d946871b2ff08b0c23c 100644
+index 397f9d4a7a8e9a850ae2e13b84d7f893076f724d..365748f046f9d0f232d4f0ebc7b0c7f56bbd74e2 100644
 --- a/src/node_options.cc
 +++ b/src/node_options.cc
-@@ -1205,6 +1205,11 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
+@@ -1215,6 +1215,11 @@ void GetEmbedderOptions(const FunctionCallbackInfo<Value>& args) {
    Local<Context> context = env->context();
    Local<Object> ret = Object::New(isolate);
  

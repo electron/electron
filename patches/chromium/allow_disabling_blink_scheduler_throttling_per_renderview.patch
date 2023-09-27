@@ -6,7 +6,7 @@ Subject: allow disabling blink scheduler throttling per RenderView
 This allows us to disable throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_view_host_impl.cc b/content/browser/renderer_host/render_view_host_impl.cc
-index 8a8f88c0beed2afda87543b8933bde342ecb0588..2ed68bd47ccadea20acad67d6a106e257e2c7cd0 100644
+index 631d43c65168bbc3843c5c848aee65ab9c0f761d..c0fea3501857bcbb2bdbc44e8852852579a7ee16 100644
 --- a/content/browser/renderer_host/render_view_host_impl.cc
 +++ b/content/browser/renderer_host/render_view_host_impl.cc
 @@ -716,6 +716,11 @@ void RenderViewHostImpl::SetBackgroundOpaque(bool opaque) {
@@ -34,10 +34,10 @@ index d44652650891eff7cd6111bc6d6454a009942cb6..16522609163ba6bc422fc30a8d145a25
    void SendRendererPreferencesToRenderer(
        const blink::RendererPreferences& preferences);
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
-index 9b7814890a4f513e8b9e07fbac370a40af6dac15..ee2b3bc3aabf7f5a8e3d2ad57675537f21aafaa6 100644
+index b7d50b6286ac90ab06089f75f0b9d0b7b02bbf6c..0d917c241b2acb9510ff65dbeabc6aae9a01eec6 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_aura.cc
-@@ -562,8 +562,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
+@@ -563,8 +563,8 @@ void RenderWidgetHostViewAura::ShowImpl(PageVisibilityState page_visibility) {
    // OnShowWithPageVisibility will not call NotifyHostAndDelegateOnWasShown,
    // which updates `visibility_`, unless the host is hidden. Make sure no update
    // is needed.

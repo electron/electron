@@ -16,6 +16,7 @@
 #include "media/base/media_switches.h"
 #include "net/base/features.h"
 #include "services/network/public/cpp/features.h"
+#include "third_party/blink/public/common/features.h"
 
 #if BUILDFLAG(IS_MAC)
 #include "device/base/features.h"  // nogncheck
@@ -35,6 +36,9 @@ void InitializeFeatureList() {
   // when node integration is enabled.
   disable_features +=
       std::string(",") + features::kSpareRendererForSitePerProcess.name;
+
+  // TODO(codebytere): Remove WebSQL support per crbug.com/695592.
+  enable_features += std::string(",") + blink::features::kWebSQLAccess.name;
 
 #if BUILDFLAG(IS_WIN)
   disable_features +=

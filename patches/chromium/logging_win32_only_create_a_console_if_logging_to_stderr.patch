@@ -9,21 +9,28 @@ be created for each child process, despite logs being redirected to a
 file.
 
 diff --git a/content/app/content_main.cc b/content/app/content_main.cc
-index a3c00c974311753f1d308afef39ccda4fd8bf2ee..0ced0ad97f91e9217b1f5c8126bfb5746165afa6 100644
+index f70a103a45c6d6610864147ce746c0e085d0ddb4..fda4438dac09ddbe805621214eac021a593e87ea 100644
 --- a/content/app/content_main.cc
 +++ b/content/app/content_main.cc
-@@ -306,8 +306,12 @@ RunContentProcess(ContentMainParams params,
+@@ -309,14 +309,13 @@ RunContentProcess(ContentMainParams params,
  
  #if BUILDFLAG(IS_WIN)
      // Route stdio to parent console (if any) or create one.
 -    if (base::CommandLine::ForCurrentProcess()->HasSwitch(
 -            switches::kEnableLogging)) {
+-      base::RouteStdioToConsole(/*create_console_if_not_found*/ true);
+-    } else if (base::CommandLine::ForCurrentProcess()->HasSwitch(
+-                   switches::kHeadless)) {
+-      // When running in headless mode we want stdio routed however if
+-      // console does not exist we should not create one.
+-      base::RouteStdioToConsole(/*create_console_if_not_found*/ false);
 +    auto const* cmd_line = base::CommandLine::ForCurrentProcess();
 +    bool const log_to_stderr =
 +        cmd_line->HasSwitch(switches::kEnableLogging) &&
 +        cmd_line->GetSwitchValueASCII(switches::kEnableLogging) != "file" &&
 +        !cmd_line->HasSwitch(switches::kLogFile);
 +    if (log_to_stderr) {
-       base::RouteStdioToConsole(true);
++      base::RouteStdioToConsole(true);
      }
  #endif
+ 

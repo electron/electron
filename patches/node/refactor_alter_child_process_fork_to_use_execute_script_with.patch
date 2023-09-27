@@ -7,25 +7,21 @@ Subject: refactor: alter child_process.fork to use execute script with
 When forking a child script, we setup a special environment to make the Electron binary run like the upstream node. On Mac, we use the helper app as node binary.
 
 diff --git a/lib/child_process.js b/lib/child_process.js
-index 59c37b97672d39a9da89ca2b78aa28a77ca78699..da553f6556a06d57d7490d74a3b4dd8f0132600c 100644
+index 5bdc474c80169cb0ceeb082e6afcf9e8fa322ab3..ec39a00ddb791e6e1ebe31aa45d290e7dcc4ebfc 100644
 --- a/lib/child_process.js
 +++ b/lib/child_process.js
-@@ -137,7 +137,18 @@ function fork(modulePath, args = [], options) {
+@@ -139,6 +139,14 @@ function fork(modulePath, args = [], options) {
      validateObject(options, 'options');
    }
-   options = { ...options, shell: false };
-+
+   options = { __proto__: null, ...options, shell: false };
 +  // When forking a child script, we setup a special environment to make
 +  // the electron binary run like upstream Node.js
 +  options.env = Object.create(options.env || process.env)
 +  options.env.ELECTRON_RUN_AS_NODE = 1;
 +
 +  if (!options.execPath && process.type && process.platform == 'darwin') {
-+    options.execPath = process.helperExecPath;
++     options.execPath = process.helperExecPath;
 +  }
-+
    options.execPath = options.execPath || process.execPath;
-+
    validateArgumentNullCheck(options.execPath, 'options.execPath');
  
-   // Prepare arguments for fork:

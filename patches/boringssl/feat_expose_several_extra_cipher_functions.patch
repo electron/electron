@@ -118,7 +118,7 @@ index 852b76bea69988e0b3ac76a17b603128f239dde0..43fc792697519325725e9ce87801c5dc
    callback(EVP_des_ede3_cbc(), "des-ede3-cbc", NULL, arg);
    callback(EVP_rc2_cbc(), "rc2-cbc", NULL, arg);
 diff --git a/include/openssl/cipher.h b/include/openssl/cipher.h
-index 310d7c237fd884ba715e3fa97ccf1393b6d04fbb..66e69d487fbb767438b7d0dfdf3770f54e3cf7b2 100644
+index 18c1e708a42d7802b7d52564bceb93a53b7ab9c5..08b830a40e4587435b4e026dee4b205b4813c357 100644
 --- a/include/openssl/cipher.h
 +++ b/include/openssl/cipher.h
 @@ -476,6 +476,7 @@ OPENSSL_EXPORT const EVP_CIPHER *EVP_des_ede3_ecb(void);
