@@ -204,6 +204,10 @@ static_library("chrome") {
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.cc",
       "//chrome/browser/ui/views/status_icons/status_icon_linux_dbus.h",
     ]
+    sources += [
+      "//chrome/browser/ui/views/dark_mode_manager_linux.cc",
+      "//chrome/browser/ui/views/dark_mode_manager_linux.h",
+    ]
     public_deps += [
       "//components/dbus/menu",
       "//components/dbus/thread_linux",

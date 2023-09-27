@@ -43,7 +43,8 @@ class Environment;
 
 namespace ui {
 class LinuxUiGetter;
-}
+class DarkModeManagerLinux;
+}  // namespace ui
 
 namespace electron {
 
@@ -63,10 +64,6 @@ class ViewsDelegate;
 
 #if BUILDFLAG(IS_MAC)
 class ViewsDelegateMac;
-#endif
-
-#if BUILDFLAG(IS_LINUX)
-class DarkThemeObserver;
 #endif
 
 class ElectronBrowserMainParts : public content::BrowserMainParts {
@@ -145,9 +142,7 @@ class ElectronBrowserMainParts : public content::BrowserMainParts {
 #endif
 
 #if BUILDFLAG(IS_LINUX)
-  // Used to notify the native theme of changes to dark mode.
-  std::unique_ptr<DarkThemeObserver> dark_theme_observer_;
-
+  std::unique_ptr<ui::DarkModeManagerLinux> dark_mode_manager_;
   std::unique_ptr<ui::LinuxUiGetter> linux_ui_getter_;
 #endif
 

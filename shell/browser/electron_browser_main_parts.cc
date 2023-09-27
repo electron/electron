@@ -79,12 +79,12 @@
 
 #if BUILDFLAG(IS_LINUX)
 #include "base/environment.h"
+#include "chrome/browser/ui/views/dark_mode_manager_linux.h"
 #include "device/bluetooth/bluetooth_adapter_factory.h"
 #include "device/bluetooth/dbus/dbus_bluez_manager_wrapper_linux.h"
 #include "electron/electron_gtk_stubs.h"
 #include "ui/base/cursor/cursor_factory.h"
 #include "ui/base/ime/linux/linux_input_method_context_factory.h"
-#include "ui/gfx/color_utils.h"
 #include "ui/gtk/gtk_compat.h"  // nogncheck
 #include "ui/gtk/gtk_util.h"    // nogncheck
 #include "ui/linux/linux_ui.h"
@@ -169,35 +169,7 @@ std::u16string MediaStringProvider(media::MessageId id) {
   }
 }
 
-#if BUILDFLAG(IS_LINUX)
-// GTK does not provide a way to check if current theme is dark, so we compare
-// the text and background luminosity to get a result.
-// This trick comes from FireFox.
-void UpdateDarkThemeSetting() {
-  float bg = color_utils::GetRelativeLuminance(gtk::GetBgColor("GtkLabel"));
-  float fg = color_utils::GetRelativeLuminance(gtk::GetFgColor("GtkLabel"));
-  bool is_dark = fg > bg;
-  // Pass it to NativeUi theme, which is used by the nativeTheme module and most
-  // places in Electron.
-  ui::NativeTheme::GetInstanceForNativeUi()->set_use_dark_colors(is_dark);
-  // Pass it to Web Theme, to make "prefers-color-scheme" media query work.
-  ui::NativeTheme::GetInstanceForWeb()->set_use_dark_colors(is_dark);
-}
-#endif
-
 }  // namespace
-
-#if BUILDFLAG(IS_LINUX)
-class DarkThemeObserver : public ui::NativeThemeObserver {
- public:
-  DarkThemeObserver() = default;
-
-  // ui::NativeThemeObserver:
-  void OnNativeThemeUpdated(ui::NativeTheme* observed_theme) override {
-    UpdateDarkThemeSetting();
-  }
-};
-#endif
 
 // static
 ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
@@ -435,17 +407,10 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
   CHECK(electron::IsElectron_gdk_pixbufInitialized())
       << "Failed to initialize libgdk_pixbuf-2.0.so.0";
 
-  // Chromium does not respect GTK dark theme setting, but they may change
-  // in future and this code might be no longer needed. Check the Chromium
-  // issue to keep updated:
-  // https://bugs.chromium.org/p/chromium/issues/detail?id=998903
-  UpdateDarkThemeSetting();
-  // Update the native theme when GTK theme changes. The GetNativeTheme
-  // here returns a NativeThemeGtk, which monitors GTK settings.
-  dark_theme_observer_ = std::make_unique<DarkThemeObserver>();
-  auto* linux_ui_theme = ui::LinuxUiTheme::GetForProfile(nullptr);
-  CHECK(linux_ui_theme);
-  linux_ui_theme->GetNativeTheme()->AddObserver(dark_theme_observer_.get());
+  // source theme changes from system settings, including settings portal:
+  // https://flatpak.github.io/xdg-desktop-portal/#gdbus-org.freedesktop.portal.Settings
+  dark_mode_manager_ = std::make_unique<ui::DarkModeManagerLinux>();
+
   ui::LinuxUi::SetInstance(linux_ui);
 
   // Cursor theme changes are tracked by LinuxUI (via a CursorThemeManager
