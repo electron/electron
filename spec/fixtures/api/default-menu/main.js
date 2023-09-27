@@ -22,11 +22,11 @@ try {
     setImmediate(() => {
       try {
         output(Menu.getApplicationMenu() === expectedMenu);
-      } catch (error) {
+      } catch {
         output(null);
       }
     });
   });
-} catch (error) {
+} catch {
   output(null);
 }

@@ -42,7 +42,6 @@ class ViewsDelegate : public views::ViewsDelegate {
 #if BUILDFLAG(IS_WIN)
   HICON GetDefaultWindowIcon() const override;
   HICON GetSmallWindowIcon() const override;
-  bool IsWindowInMetro(gfx::NativeWindow window) const override;
   int GetAppbarAutohideEdges(HMONITOR monitor,
                              base::OnceClosure callback) override;
 #elif BUILDFLAG(IS_LINUX) && !BUILDFLAG(IS_CHROMEOS)

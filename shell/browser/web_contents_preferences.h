@@ -9,9 +9,11 @@
 #include <string>
 #include <vector>
 
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
 #include "electron/buildflags/buildflags.h"
+#include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/public/mojom/v8_cache_options.mojom-forward.h"
 #include "third_party/blink/public/mojom/webpreferences/web_preferences.mojom-forward.h"
 
@@ -47,7 +49,8 @@ class WebContentsPreferences
                                  bool is_subframe);
 
   // Modify the WebPreferences according to preferences.
-  void OverrideWebkitPrefs(blink::web_pref::WebPreferences* prefs);
+  void OverrideWebkitPrefs(blink::web_pref::WebPreferences* prefs,
+                           blink::RendererPreferences* renderer_prefs);
 
   base::Value* last_preference() { return &last_web_preferences_; }
 
@@ -92,7 +95,7 @@ class WebContentsPreferences
 
   // TODO(clavin): refactor to use the WebContents provided by the
   // WebContentsUserData base class instead of storing a duplicate ref
-  content::WebContents* web_contents_;
+  raw_ptr<content::WebContents> web_contents_;
 
   bool plugins_;
   bool experimental_features_;

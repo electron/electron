@@ -87,10 +87,10 @@ index 943168e2c72c0aeb59f1ea21b14f2dc8e6cfd7e0..db3ca2ed0ba0994caa4d26436b942166
    // Create an observer that registers a hot key for |accelerator|.
    std::unique_ptr<gfx::SingletonHwndHotKeyObserver> observer =
 diff --git a/content/browser/media/media_keys_listener_manager_impl.cc b/content/browser/media/media_keys_listener_manager_impl.cc
-index f855a6f083d7f0de1aa2ac26e6032917e2a984c8..2901d408d154a86f0df838314e54c17c208ac573 100644
+index e5d2d8d5061926ca0507a6d1f5cc1d7ee29a8cb4..169a009fd62d677955ac67df086dd658f902560c 100644
 --- a/content/browser/media/media_keys_listener_manager_impl.cc
 +++ b/content/browser/media/media_keys_listener_manager_impl.cc
-@@ -297,6 +297,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
+@@ -298,6 +298,11 @@ void MediaKeysListenerManagerImpl::UpdateSystemMediaControlsEnabledControls() {
        case ui::VKEY_MEDIA_STOP:
          system_media_controls_->SetIsStopEnabled(should_enable);
          break;
@@ -117,10 +117,10 @@ index db596585cbb44b3710636e3fc013f288966f604f..6d5557ee1a2c35ee15e695e024834184
  
  }  // namespace ui
 diff --git a/ui/base/accelerators/media_keys_listener_mac.mm b/ui/base/accelerators/media_keys_listener_mac.mm
-index 49cdcc41ccc1d1f005520e7f26700a98e5123476..7710129240b17124c8a845e513e49c16daa839a0 100644
+index 3450e36ba7d80ad36d12fc4b85130d985c2f247a..e81a45c1f038cb43b19aa0225fbcf4c35f280442 100644
 --- a/ui/base/accelerators/media_keys_listener_mac.mm
 +++ b/ui/base/accelerators/media_keys_listener_mac.mm
-@@ -34,6 +34,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
+@@ -32,6 +32,12 @@ KeyboardCode MediaKeyCodeToKeyboardCode(int key_code) {
      case NX_KEYTYPE_NEXT:
      case NX_KEYTYPE_FAST:
        return VKEY_MEDIA_NEXT_TRACK;
@@ -133,7 +133,7 @@ index 49cdcc41ccc1d1f005520e7f26700a98e5123476..7710129240b17124c8a845e513e49c16
    }
    return VKEY_UNKNOWN;
  }
-@@ -194,7 +200,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
+@@ -190,7 +196,10 @@ static CGEventRef EventTapCallback(CGEventTapProxy proxy,
    int key_code = (data1 & 0xFFFF0000) >> 16;
    if (key_code != NX_KEYTYPE_PLAY && key_code != NX_KEYTYPE_NEXT &&
        key_code != NX_KEYTYPE_PREVIOUS && key_code != NX_KEYTYPE_FAST &&

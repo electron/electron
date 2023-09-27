@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 #include "shell/browser/ui/cocoa/delayed_native_view_host.h"
+#include "base/apple/owned_objc.h"
 #include "shell/browser/ui/cocoa/electron_inspectable_web_contents_view.h"
 
 namespace electron {
@@ -26,10 +27,12 @@ bool DelayedNativeViewHost::OnMousePressed(const ui::MouseEvent& ui_event) {
   // handle them here.
   // See:
   // https://source.chromium.org/chromium/chromium/src/+/main:components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm;l=415-421;drc=a5af91924bafb85426e091c6035801990a6dc697
+
   ElectronInspectableWebContentsView* inspectable_web_contents_view =
       (ElectronInspectableWebContentsView*)native_view_.GetNativeNSView();
   [inspectable_web_contents_view
-      redispatchContextMenuEvent:ui_event.native_event()];
+      redispatchContextMenuEvent:base::apple::OwnedNSEvent(
+                                     ui_event.native_event())];
 
   return true;
 }

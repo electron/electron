@@ -1,7 +1,7 @@
 import { shell } from 'electron/common';
 import { app, dialog, BrowserWindow, ipcMain } from 'electron/main';
-import * as path from 'path';
-import * as url from 'url';
+import * as path from 'node:path';
+import * as url from 'node:url';
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -51,16 +51,17 @@ async function createWindow (backgroundColor?: string) {
     autoHideMenuBar: true,
     backgroundColor,
     webPreferences: {
-      preload: path.resolve(__dirname, 'preload.js'),
+      preload: url.fileURLToPath(new URL('preload.js', import.meta.url)),
       contextIsolation: true,
-      sandbox: true
+      sandbox: true,
+      nodeIntegration: false
     },
     useContentSize: true,
     show: false
   };
 
   if (process.platform === 'linux') {
-    options.icon = path.join(__dirname, 'icon.png');
+    options.icon = url.fileURLToPath(new URL('icon.png', import.meta.url));
   }
 
   mainWindow = new BrowserWindow(options);

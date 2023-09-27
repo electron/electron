@@ -6,10 +6,10 @@ Subject: mas: avoid usage of CGDisplayUsesForceToGray
 Removes usage of the CGDisplayUsesForceToGray private API.
 
 diff --git a/ui/display/mac/screen_mac.mm b/ui/display/mac/screen_mac.mm
-index 2185525edaf5e14b57055e1043db0299bed87fd8..0d5ef8c48f08b1eb5ed878ab8934f2ecd04083fa 100644
+index 18d1dbbc6d15ea7191f8c48c30e692a59875df37..8997858f873901a7cc7fb922f322c0150a1716f3 100644
 --- a/ui/display/mac/screen_mac.mm
 +++ b/ui/display/mac/screen_mac.mm
-@@ -268,7 +268,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
+@@ -159,7 +159,17 @@ DisplayMac BuildDisplayForScreen(NSScreen* screen) {
      display.set_color_depth(Display::kDefaultBitsPerPixel);
      display.set_depth_per_component(Display::kDefaultBitsPerComponent);
    }
@@ -25,5 +25,5 @@ index 2185525edaf5e14b57055e1043db0299bed87fd8..0d5ef8c48f08b1eb5ed878ab8934f2ec
    display.set_is_monochrome(CGDisplayUsesForceToGray());
 +#endif
  
-   if (auto display_link = ui::DisplayLinkMac::GetForDisplay(display_id))
-     display.set_display_frequency(display_link->GetRefreshRate());
+   // Query the display's refresh rate.
+   {

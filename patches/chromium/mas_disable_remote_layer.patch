@@ -16,12 +16,12 @@ cases where performance improves when disabling remote CoreAnimation (remote
 CoreAnimation is really only about battery usage).
 
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.h b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-index 7d0b810073898dd4a3607828e3419b65ee1cb09d..20c6bd1a002e2b54eed0a8732b2807f598b5f20f 100644
+index 655dca3b5628eae2d13bce22e24a517113701480..30b97c47b6804d5677f87a59d7d5c6028f6d4bf4 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.h
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.h
-@@ -17,7 +17,9 @@
- #include "ui/gl/gl_surface.h"
- #include "ui/gl/presenter.h"
+@@ -23,7 +23,9 @@
+ #include "ui/display/types/display_constants.h"
+ #endif
  
 +#if !IS_MAS_BUILD()
  @class CAContext;
@@ -29,22 +29,22 @@ index 7d0b810073898dd4a3607828e3419b65ee1cb09d..20c6bd1a002e2b54eed0a8732b2807f5
  @class CALayer;
  
  namespace ui {
-@@ -73,8 +75,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
+@@ -79,8 +81,10 @@ class ImageTransportSurfaceOverlayMacEGL : public gl::Presenter {
  
    base::WeakPtr<ImageTransportSurfaceDelegate> delegate_;
  
 +#if !IS_MAS_BUILD()
    const bool use_remote_layer_api_;
-   base::scoped_nsobject<CAContext> ca_context_;
+   CAContext* __strong ca_context_;
 +#endif
    std::unique_ptr<ui::CALayerTreeCoordinator> ca_layer_tree_coordinator_;
  
    gfx::Size pixel_size_;
 diff --git a/gpu/ipc/service/image_transport_surface_overlay_mac.mm b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-index 1f9d7ec4bd7ab0668a081ecc74bf9a3ab80c4697..4e3014ff05c001d37f583cb7c1af6b3dda9b1503 100644
+index 34931ae06d7923aff611b384730ca2edb7e866e9..1973b90a04bcbd21059b82a0969d3ff1ce8dcd0a 100644
 --- a/gpu/ipc/service/image_transport_surface_overlay_mac.mm
 +++ b/gpu/ipc/service/image_transport_surface_overlay_mac.mm
-@@ -55,7 +55,9 @@
+@@ -54,12 +54,15 @@
  ImageTransportSurfaceOverlayMacEGL::ImageTransportSurfaceOverlayMacEGL(
      base::WeakPtr<ImageTransportSurfaceDelegate> delegate)
      : delegate_(delegate),
@@ -52,28 +52,26 @@ index 1f9d7ec4bd7ab0668a081ecc74bf9a3ab80c4697..4e3014ff05c001d37f583cb7c1af6b3d
        use_remote_layer_api_(ui::RemoteLayerAPISupported()),
 +#endif
        scale_factor_(1),
-       vsync_callback_(delegate->GetGpuVSyncCallback()),
        weak_ptr_factory_(this) {
-@@ -68,6 +70,7 @@
-            ->workarounds()
-            .disable_av_sample_buffer_display_layer;
+   static bool av_disabled_at_command_line =
+       !base::FeatureList::IsEnabled(kAVFoundationOverlays);
  
 +#if !IS_MAS_BUILD()
    ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-       use_remote_layer_api_, allow_av_sample_buffer_display_layer);
+       use_remote_layer_api_, !av_disabled_at_command_line);
  
-@@ -88,6 +91,10 @@
+@@ -80,6 +83,10 @@
  #endif
-     [ca_context_ setLayer:ca_layer_tree_coordinator_->GetCALayerForDisplay()];
+     ca_context_.layer = ca_layer_tree_coordinator_->GetCALayerForDisplay();
    }
 +#else
 +  ca_layer_tree_coordinator_ = std::make_unique<ui::CALayerTreeCoordinator>(
-+      /*allow_remote_layers=*/false, allow_av_sample_buffer_display_layer);
++      /*allow_remote_layers=*/false, !av_disabled_at_command_line);
 +#endif
  }
  
  ImageTransportSurfaceOverlayMacEGL::~ImageTransportSurfaceOverlayMacEGL() {
-@@ -169,9 +176,13 @@
+@@ -197,9 +204,13 @@
      TRACE_EVENT_INSTANT2("test_gpu", "SwapBuffers", TRACE_EVENT_SCOPE_THREAD,
                           "GLImpl", static_cast<int>(gl::GetGLImplementation()),
                           "width", pixel_size_.width());
@@ -88,20 +86,20 @@ index 1f9d7ec4bd7ab0668a081ecc74bf9a3ab80c4697..4e3014ff05c001d37f583cb7c1af6b3d
            ca_layer_tree_coordinator_->GetIOSurfaceForDisplay();
        if (io_surface) {
 diff --git a/ui/accelerated_widget_mac/display_ca_layer_tree.mm b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-index 8cd4cd65a02b3ca332f1d4164ff7c16cda10cdb8..bcd99c491085d3bfca4434c65ad53d2f6da51831 100644
+index 3ff04691217a6b3c9d7605c2e6b8f8a88959b271..0296ca57a4c51cb3e97c65d5aba46f33617cb799 100644
 --- a/ui/accelerated_widget_mac/display_ca_layer_tree.mm
 +++ b/ui/accelerated_widget_mac/display_ca_layer_tree.mm
-@@ -119,6 +119,7 @@ - (void)setContentsChanged;
+@@ -120,6 +120,7 @@ - (void)setContentsChanged;
  }
  
  void DisplayCALayerTree::GotCALayerFrame(uint32_t ca_context_id) {
 +#if !IS_MAS_BUILD()
    // Early-out if the remote layer has not changed.
-   if ([remote_layer_ contextId] == ca_context_id)
+   if (remote_layer_.contextId == ca_context_id) {
      return;
 @@ -149,6 +150,9 @@ - (void)setContentsChanged;
      [io_surface_layer_ removeFromSuperlayer];
-     io_surface_layer_.reset();
+     io_surface_layer_ = nil;
    }
 +#else
 +  NOTREACHED() << "Remote layer is being used in MAS build";
@@ -110,7 +108,7 @@ index 8cd4cd65a02b3ca332f1d4164ff7c16cda10cdb8..bcd99c491085d3bfca4434c65ad53d2f
  
  void DisplayCALayerTree::GotIOSurfaceFrame(
 diff --git a/ui/base/cocoa/remote_layer_api.h b/ui/base/cocoa/remote_layer_api.h
-index 5763f05d30ee718b5b6ec75465bc5f58fc263a91..e470d8a719119427026b5656159f8c7188727ad4 100644
+index 59dc2f82214cfd883b6ebef3b0fb25af6387a9cd..d585ba14b34021a93c878d0d9f9d9ef70eed32ca 100644
 --- a/ui/base/cocoa/remote_layer_api.h
 +++ b/ui/base/cocoa/remote_layer_api.h
 @@ -17,6 +17,7 @@

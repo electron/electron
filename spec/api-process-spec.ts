@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { expect } from 'chai';
 import { BrowserWindow } from 'electron';
 import { defer, ifdescribe } from './lib/spec-helpers';
@@ -99,7 +99,7 @@ describe('process module', () => {
         defer(() => {
           try {
             fs.unlinkSync(filePath);
-          } catch (e) {
+          } catch {
             // ignore error
           }
         });
@@ -204,14 +204,14 @@ describe('process module', () => {
     });
 
     describe('process.takeHeapSnapshot()', () => {
-      // TODO(nornagon): this seems to take a really long time when run in the
+      // DISABLED-FIXME(nornagon): this seems to take a really long time when run in the
       // main process, for unknown reasons.
-      it.skip('returns true on success', () => {
+      it('returns true on success', () => {
         const filePath = path.join(app.getPath('temp'), 'test.heapsnapshot');
         defer(() => {
           try {
             fs.unlinkSync(filePath);
-          } catch (e) {
+          } catch {
             // ignore error
           }
         });

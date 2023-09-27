@@ -1,16 +1,16 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as http2 from 'http2';
-import * as qs from 'querystring';
-import * as path from 'path';
-import * as fs from 'fs';
-import * as url from 'url';
+import * as http from 'node:http';
+import * as http2 from 'node:http2';
+import * as qs from 'node:querystring';
+import * as path from 'node:path';
+import * as fs from 'node:fs';
+import * as url from 'node:url';
 import * as WebSocket from 'ws';
 import { ipcMain, protocol, session, WebContents, webContents } from 'electron/main';
-import { AddressInfo, Socket } from 'net';
+import { Socket } from 'node:net';
 import { listen, defer } from './lib/spec-helpers';
-import { once } from 'events';
-import { ReadableStream } from 'stream/web';
+import { once } from 'node:events';
+import { ReadableStream } from 'node:stream/web';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
 
@@ -22,7 +22,10 @@ describe('webRequest module', () => {
       res.setHeader('Location', 'http://' + req.rawHeaders[1]);
       res.end();
     } else if (req.url === '/contentDisposition') {
-      res.setHeader('content-disposition', [' attachment; filename=aa%E4%B8%ADaa.txt']);
+      res.writeHead(200, [
+        'content-disposition',
+        Buffer.from('attachment; filename=aa中aa.txt').toString('binary')
+      ]);
       const content = req.url;
       res.end(content);
     } else {
@@ -57,10 +60,7 @@ describe('webRequest module', () => {
   before(async () => {
     protocol.registerStringProtocol('cors', (req, cb) => cb(''));
     defaultURL = (await listen(server)).url + '/';
-    await new Promise<void>((resolve) => {
-      h2server.listen(0, '127.0.0.1', () => resolve());
-    });
-    http2URL = `https://127.0.0.1:${(h2server.address() as AddressInfo).port}/`;
+    http2URL = (await listen(h2server)).url + '/';
     console.log(http2URL);
   });
 
@@ -181,7 +181,7 @@ describe('webRequest module', () => {
         callback({ cancel: true });
       });
       const fileURL = url.format({
-        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        pathname: path.join(fixturesPath, 'blank.html').replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       });
@@ -395,7 +395,7 @@ describe('webRequest module', () => {
         onSendHeadersCalled = true;
       });
       await ajax(url.format({
-        pathname: path.join(fixturesPath, 'blank.html').replace(/\\/g, '/'),
+        pathname: path.join(fixturesPath, 'blank.html').replaceAll('\\', '/'),
         protocol: 'file',
         slashes: true
       }));
@@ -478,7 +478,8 @@ describe('webRequest module', () => {
         callback({});
       });
       const { data, headers } = await ajax(defaultURL + 'contentDisposition');
-      expect(headers).to.to.have.property('content-disposition', 'attachment; filename=aa%E4%B8%ADaa.txt');
+      const disposition = Buffer.from('attachment; filename=aa中aa.txt').toString('binary');
+      expect(headers).to.to.have.property('content-disposition', disposition);
       expect(data).to.equal('/contentDisposition');
     });
 
@@ -599,7 +600,7 @@ describe('webRequest module', () => {
         });
       });
       server.on('upgrade', function upgrade (request, socket, head) {
-        const pathname = require('url').parse(request.url).pathname;
+        const pathname = require('node:url').parse(request.url).pathname;
         if (pathname === '/websocket') {
           reqHeaders[request.url!] = request.headers;
           wss.handleUpgrade(request, socket as Socket, head, function done (ws) {
@@ -621,7 +622,7 @@ describe('webRequest module', () => {
         callback({ requestHeaders: details.requestHeaders });
       });
       ses.webRequest.onHeadersReceived((details, callback) => {
-        const pathname = require('url').parse(details.url).pathname;
+        const pathname = require('node:url').parse(details.url).pathname;
         receivedHeaders[pathname] = details.responseHeaders;
         callback({ cancel: false });
       });

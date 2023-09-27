@@ -7,7 +7,6 @@
 #include <dlfcn.h>
 #include <gtk/gtk.h>
 
-#include <memory>
 #include <string>
 
 #include "base/environment.h"
@@ -15,7 +14,7 @@
 
 // Unity data typedefs.
 typedef struct _UnityInspector UnityInspector;
-typedef UnityInspector* (*unity_inspector_get_default_func)(void);
+typedef UnityInspector* (*unity_inspector_get_default_func)();
 typedef gboolean (*unity_inspector_get_unity_running_func)(
     UnityInspector* self);
 

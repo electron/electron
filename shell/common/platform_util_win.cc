@@ -6,6 +6,8 @@
 
 #include <windows.h>  // windows.h must be included first
 
+#include "base/win/shlwapi.h"  // NOLINT(build/include_order)
+
 #include <atlbase.h>
 #include <comdef.h>
 #include <commdlg.h>
@@ -278,7 +280,7 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     return;
 
   Microsoft::WRL::ComPtr<IShellFolder> desktop;
-  HRESULT hr = SHGetDesktopFolder(desktop.GetAddressOf());
+  HRESULT hr = SHGetDesktopFolder(&desktop);
   if (FAILED(hr))
     return;
 
@@ -297,8 +299,7 @@ void ShowItemInFolderOnWorkerThread(const base::FilePath& full_path) {
     return;
 
   const ITEMIDLIST* highlight[] = {file_item};
-  hr = SHOpenFolderAndSelectItems(dir_item, std::size(highlight), highlight,
-                                  NULL);
+  hr = SHOpenFolderAndSelectItems(dir_item, std::size(highlight), highlight, 0);
   if (FAILED(hr)) {
     // On some systems, the above call mysteriously fails with "file not
     // found" even though the file is there.  In these cases, ShellExecute()
@@ -379,9 +380,8 @@ bool MoveItemToTrashWithError(const base::FilePath& path,
 
   // Create an IShellItem from the supplied source path.
   Microsoft::WRL::ComPtr<IShellItem> delete_item;
-  if (FAILED(SHCreateItemFromParsingName(
-          path.value().c_str(), NULL,
-          IID_PPV_ARGS(delete_item.GetAddressOf())))) {
+  if (FAILED(SHCreateItemFromParsingName(path.value().c_str(), NULL,
+                                         IID_PPV_ARGS(&delete_item)))) {
     *error = "Failed to parse path";
     return false;
   }

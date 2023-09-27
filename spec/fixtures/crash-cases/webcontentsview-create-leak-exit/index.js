@@ -1,6 +1,7 @@
 const { WebContentsView, app } = require('electron');
 app.whenReady().then(function () {
-  new WebContentsView({})  // eslint-disable-line
+  // eslint-disable-next-line no-new
+  new WebContentsView({});
 
   app.quit();
 });

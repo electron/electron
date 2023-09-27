@@ -4,13 +4,14 @@
 
 #include "shell/browser/ui/accelerator_util.h"
 
+#include "base/memory/raw_ref.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace accelerator_util {
 
 TEST(AcceleratorUtilTest, StringToAccelerator) {
   struct {
-    const std::string& description;
+    const std::string description;
     bool expected_success;
   } keys[] = {
       {"♫♫♫♫♫♫♫", false},   {"Cmd+Plus", true}, {"Ctrl+Space", true},

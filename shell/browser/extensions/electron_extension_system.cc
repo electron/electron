@@ -26,9 +26,7 @@
 #include "electron/buildflags/buildflags.h"
 #include "extensions/browser/api/app_runtime/app_runtime_api.h"
 #include "extensions/browser/extension_registry.h"
-#include "extensions/browser/info_map.h"
 #include "extensions/browser/management_policy.h"
-#include "extensions/browser/notification_types.h"
 #include "extensions/browser/null_app_sorting.h"
 #include "extensions/browser/quota_service.h"
 #include "extensions/browser/service_worker_manager.h"
@@ -158,12 +156,6 @@ ElectronExtensionSystem::store_factory() {
   return store_factory_;
 }
 
-InfoMap* ElectronExtensionSystem::info_map() {
-  if (!info_map_.get())
-    info_map_ = base::MakeRefCounted<InfoMap>();
-  return info_map_.get();
-}
-
 QuotaService* ElectronExtensionSystem::quota_service() {
   return quota_service_.get();
 }
@@ -171,20 +163,6 @@ QuotaService* ElectronExtensionSystem::quota_service() {
 AppSorting* ElectronExtensionSystem::app_sorting() {
   return app_sorting_.get();
 }
-
-void ElectronExtensionSystem::RegisterExtensionWithRequestContexts(
-    const Extension* extension,
-    base::OnceClosure callback) {
-  content::GetIOThreadTaskRunner({})->PostTaskAndReply(
-      FROM_HERE,
-      base::BindOnce(&InfoMap::AddExtension, info_map(),
-                     base::RetainedRef(extension), base::Time::Now(), false,
-                     false),
-      std::move(callback));
-}
-
-void ElectronExtensionSystem::UnregisterExtensionWithRequestContexts(
-    const std::string& extension_id) {}
 
 const base::OneShotEvent& ElectronExtensionSystem::ready() const {
   return ready_;
@@ -222,7 +200,7 @@ bool ElectronExtensionSystem::FinishDelayedInstallationIfReady(
 
 void ElectronExtensionSystem::PerformActionBasedOnOmahaAttributes(
     const std::string& extension_id,
-    const base::Value& attributes) {
+    const base::Value::Dict& attributes) {
   NOTREACHED();
 }
 

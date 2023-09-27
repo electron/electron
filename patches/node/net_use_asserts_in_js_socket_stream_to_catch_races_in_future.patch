@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Perry <pimterry@gmail.com>
+Date: Fri, 25 Aug 2023 14:16:35 +0100
+Subject: net: use asserts in JS Socket Stream to catch races in future
+
+PR-URL: https://github.com/nodejs/node/pull/49400
+Reviewed-By: Matteo Collina <matteo.collina@gmail.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+
+diff --git a/lib/internal/js_stream_socket.js b/lib/internal/js_stream_socket.js
+index 68e1802a63b012b59418b79a0e68de5147543a23..70d6d03069f3f1e85e66864c6c1e6de6084f5ea6 100644
+--- a/lib/internal/js_stream_socket.js
++++ b/lib/internal/js_stream_socket.js
+@@ -149,6 +149,7 @@ class JSStreamSocket extends Socket {
+     }
+ 
+     const handle = this._handle;
++    assert(handle !== null);
+ 
+     process.nextTick(() => {
+       // Ensure that write is dispatched asynchronously.
+@@ -181,6 +182,8 @@ class JSStreamSocket extends Socket {
+     }
+ 
+     const handle = this._handle;
++    assert(handle !== null);
++
+     const self = this;
+ 
+     let pending = bufs.length;

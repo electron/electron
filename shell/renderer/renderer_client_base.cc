@@ -596,7 +596,7 @@ void RendererClientBase::SetupMainWorldOverrides(
   v8::HandleScope handle_scope(isolate);
   v8::Context::Scope context_scope(context);
 
-  gin_helper::Dictionary isolated_api = gin::Dictionary::CreateEmpty(isolate);
+  auto isolated_api = gin_helper::Dictionary::CreateEmpty(isolate);
   isolated_api.SetMethod("allowGuestViewElementDefinition",
                          &AllowGuestViewElementDefinition);
   isolated_api.SetMethod("setIsWebView", &SetIsWebView);
@@ -608,7 +608,8 @@ void RendererClientBase::SetupMainWorldOverrides(
   if (global.GetHidden("guestViewInternal", &guest_view_internal)) {
     api::context_bridge::ObjectCache object_cache;
     auto result = api::PassValueToOtherContext(
-        source_context, context, guest_view_internal, &object_cache, false, 0);
+        source_context, context, guest_view_internal, &object_cache, false, 0,
+        api::BridgeErrorTarget::kSource);
     if (!result.IsEmpty()) {
       isolated_api.Set("guestViewInternal", result.ToLocalChecked());
     }

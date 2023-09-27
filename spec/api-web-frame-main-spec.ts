@@ -1,13 +1,13 @@
 import { expect } from 'chai';
-import * as http from 'http';
-import * as path from 'path';
-import * as url from 'url';
+import * as http from 'node:http';
+import * as path from 'node:path';
+import * as url from 'node:url';
 import { BrowserWindow, WebFrameMain, webFrameMain, ipcMain, app, WebContents } from 'electron/main';
 import { closeAllWindows } from './lib/window-helpers';
 import { emittedNTimes } from './lib/events-helpers';
 import { defer, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 describe('webFrameMain module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -143,7 +143,7 @@ describe('webFrameMain module', () => {
     it('should show parent origin when child page is about:blank', async () => {
       const w = new BrowserWindow({ show: false });
       await w.loadFile(path.join(fixtures, 'pages', 'blank.html'));
-      const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       expect(w.webContents.mainFrame.origin).to.equal('file://');
       await w.webContents.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
@@ -163,7 +163,7 @@ describe('webFrameMain module', () => {
       expect(mainFrame.origin).to.equal(serverA.url.replace(/\/$/, ''));
       const [childFrame] = mainFrame.frames;
       expect(childFrame.origin).to.equal(serverB.url.replace(/\/$/, ''));
-      const webContentsCreated: Promise<[unknown, WebContents]> = once(app, 'web-contents-created') as any;
+      const webContentsCreated = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       await childFrame.executeJavaScript('window.open("", null, "show=false"), null');
       const [, childWebContents] = await webContentsCreated;
       expect(childWebContents.mainFrame.origin).to.equal(childFrame.origin);
@@ -185,9 +185,8 @@ describe('webFrameMain module', () => {
   });
 
   describe('WebFrame.visibilityState', () => {
-    // TODO(MarshallOfSound): Fix flaky test
-    // @flaky-test
-    it.skip('should match window state', async () => {
+    // DISABLED-FIXME(MarshallOfSound): Fix flaky test
+    it('should match window state', async () => {
       const w = new BrowserWindow({ show: true });
       await w.loadURL('about:blank');
       const webFrame = w.webContents.mainFrame;
@@ -368,7 +367,7 @@ describe('webFrameMain module', () => {
   describe('"frame-created" event', () => {
     it('emits when the main frame is created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = once(w.webContents, 'frame-created');
+      const promise = once(w.webContents, 'frame-created') as Promise<[any, Electron.FrameCreatedDetails]>;
       w.webContents.loadFile(path.join(subframesPath, 'frame.html'));
       const [, details] = await promise;
       expect(details.frame).to.equal(w.webContents.mainFrame);
@@ -376,7 +375,7 @@ describe('webFrameMain module', () => {
 
     it('emits when nested frames are created', async () => {
       const w = new BrowserWindow({ show: false });
-      const promise = emittedNTimes(w.webContents, 'frame-created', 2);
+      const promise = emittedNTimes(w.webContents, 'frame-created', 2) as Promise<[any, Electron.FrameCreatedDetails][]>;
       w.webContents.loadFile(path.join(subframesPath, 'frame-container.html'));
       const [[, mainDetails], [, nestedDetails]] = await promise;
       expect(mainDetails.frame).to.equal(w.webContents.mainFrame);

@@ -9,6 +9,7 @@
 
 #include <set>
 
+#include "base/memory/raw_ptr.h"
 #include "base/memory/ref_counted.h"
 #include "base/memory/singleton.h"
 #include "ui/base/glib/glib_signal.h"
@@ -53,7 +54,7 @@ class GlobalMenuBarRegistrarX11 {
                      GObject*,
                      GParamSpec*);
 
-  GDBusProxy* registrar_proxy_ = nullptr;
+  raw_ptr<GDBusProxy> registrar_proxy_ = nullptr;
 
   // x11::Window which want to be registered, but haven't yet been because
   // we're waiting for the proxy to become available.

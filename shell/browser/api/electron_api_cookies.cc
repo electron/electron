@@ -169,7 +169,7 @@ base::Time ParseTimeProperty(const absl::optional<double>& value) {
   return base::Time::FromDoubleT(*value);
 }
 
-std::string InclusionStatusToString(net::CookieInclusionStatus status) {
+base::StringPiece InclusionStatusToString(net::CookieInclusionStatus status) {
   if (status.HasExclusionReason(net::CookieInclusionStatus::EXCLUDE_HTTP_ONLY))
     return "Failed to create httponly cookie";
   if (status.HasExclusionReason(

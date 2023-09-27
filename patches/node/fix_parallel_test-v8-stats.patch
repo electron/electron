@@ -3,15 +3,24 @@ From: Jeremy Rose <japthorp@slack-corp.com>
 Date: Thu, 29 Sep 2022 16:30:17 -0700
 Subject: fix parallel/test-v8-stats
 
-new heap spaces were added in v8, this updates the expectations to
-match. node should eventually have this too once they roll up the newer
-v8.
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/3967841
+Refs https://chromium-review.googlesource.com/c/v8/v8/+/3892950.
+
+Heap spaces were added/removed in v8 - this patch updates test expectations
+to match.
+
+This patch can be removed when Electron updates to Node.js v20.
 
 diff --git a/test/parallel/test-v8-stats.js b/test/parallel/test-v8-stats.js
-index 2eaa3c5b0609149271afb85d7ecc33272e0ada2e..3af7ea1e4a4598dc4125ff78e426d6dc6a025c66 100644
+index 2eaa3c5b0609149271afb85d7ecc33272e0ada2e..83b375bd3c5b5dbd5189d48ad560580883ac91f6 100644
 --- a/test/parallel/test-v8-stats.js
 +++ b/test/parallel/test-v8-stats.js
-@@ -47,6 +47,8 @@ const expectedHeapSpaces = [
+@@ -42,11 +42,12 @@ const expectedHeapSpaces = [
+   'code_large_object_space',
+   'code_space',
+   'large_object_space',
+-  'map_space',
+   'new_large_object_space',
    'new_space',
    'old_space',
    'read_only_space',

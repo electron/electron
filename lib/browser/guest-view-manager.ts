@@ -8,7 +8,7 @@ import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 
 interface GuestInstance {
   elementInstanceId: number;
-  visibilityState?: VisibilityState;
+  visibilityState?: DocumentVisibilityState;
   embedder: Electron.WebContents;
   guest: Electron.WebContents;
 }
@@ -96,7 +96,6 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
     return -1;
   }
 
-  // eslint-disable-next-line no-undef
   const guest = (webContents as typeof ElectronInternal.WebContents).create({
     ...webPreferences,
     type: 'webview',
@@ -141,9 +140,9 @@ const createGuest = function (embedder: Electron.WebContents, embedderFrameId: n
 
   const makeProps = (eventKey: string, args: any[]) => {
     const props: Record<string, any> = {};
-    webViewEvents[eventKey].forEach((prop, index) => {
+    for (const [index, prop] of webViewEvents[eventKey].entries()) {
       props[prop] = args[index];
-    });
+    }
     return props;
   };
 
@@ -230,7 +229,7 @@ const watchEmbedder = function (embedder: Electron.WebContents) {
   watchedEmbedders.add(embedder);
 
   // Forward embedder window visibility change events to guest
-  const onVisibilityChange = function (visibilityState: VisibilityState) {
+  const onVisibilityChange = function (visibilityState: DocumentVisibilityState) {
     for (const guestInstance of guestInstances.values()) {
       guestInstance.visibilityState = visibilityState;
       if (guestInstance.embedder === embedder) {

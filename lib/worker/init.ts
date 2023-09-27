@@ -1,6 +1,6 @@
 import * as path from 'path';
 
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 
 // We modified the original process.argv to let node.js load the
 // init.js, we need to restore it here.
@@ -16,7 +16,7 @@ require('@electron/internal/common/init');
 const { hasSwitch, getSwitchValue } = process._linkedBinding('electron_common_command_line');
 
 // Export node bindings to global.
-const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers') // eslint-disable-line
+const { makeRequireFunction } = __non_webpack_require__('internal/modules/cjs/helpers');
 global.module = new Module('electron/js2c/worker_init');
 global.require = makeRequireFunction(global.module);
 

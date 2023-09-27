@@ -14,6 +14,7 @@
 #include "base/feature_list.h"
 #include "base/i18n/rtl.h"
 #include "base/metrics/field_trial.h"
+#include "base/nix/xdg_util.h"
 #include "base/path_service.h"
 #include "base/run_loop.h"
 #include "base/strings/string_number_conversions.h"
@@ -24,6 +25,7 @@
 #include "chrome/common/chrome_paths.h"
 #include "chrome/common/chrome_switches.h"
 #include "components/os_crypt/sync/key_storage_config_linux.h"
+#include "components/os_crypt/sync/key_storage_util_linux.h"
 #include "components/os_crypt/sync/os_crypt.h"
 #include "content/browser/browser_main_loop.h"  // nogncheck
 #include "content/public/browser/browser_child_process_host_delegate.h"
@@ -66,6 +68,7 @@
 #include "ui/base/idle/idle.h"
 #include "ui/base/l10n/l10n_util.h"
 #include "ui/base/ui_base_switches.h"
+#include "ui/color/color_provider_manager.h"
 
 #if defined(USE_AURA)
 #include "ui/display/display.h"
@@ -92,7 +95,6 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/base/l10n/l10n_util_win.h"
-#include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
 #endif
@@ -146,13 +148,6 @@ void Erase(T* container, typename T::iterator iter) {
 }
 
 #if BUILDFLAG(IS_WIN)
-// gfx::Font callbacks
-void AdjustUIFont(gfx::win::FontAdjustment* font_adjustment) {
-  l10n_util::NeedOverrideDefaultUIFont(&font_adjustment->font_family_override,
-                                       &font_adjustment->font_scale);
-  font_adjustment->font_scale *= display::win::GetAccessibilityFontScale();
-}
-
 int GetMinimumFontSize() {
   int min_font_size;
   base::StringToInt(l10n_util::GetStringUTF16(IDS_MINIMUM_UI_FONT_SIZE),
@@ -209,11 +204,11 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
-      browser_(std::make_unique<Browser>()),
-      node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+      node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())},
+      browser_{std::make_unique<Browser>()} {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
@@ -271,26 +266,28 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
   // Create the global environment.
-  node::Environment* env = node_bindings_->CreateEnvironment(
+  node_env_ = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform());
-  node_env_ = std::make_unique<NodeEnvironment>(env);
 
-  env->set_trace_sync_io(env->options()->trace_sync_io);
+  node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
   // We do not want to crash the main process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn-with-error-code";
+  node_env_->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_->BindTo(js_env_->isolate(), node_env_->process_object());
 
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
-  node_bindings_->set_uv_env(env);
+  node_bindings_->set_uv_env(node_env_.get());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(node_env_.get());
+
+  // Wait for app
+  node_bindings_->JoinAppCode();
 
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
@@ -461,7 +458,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if BUILDFLAG(IS_WIN)
-  gfx::win::SetAdjustFontCallback(&AdjustUIFont);
+  gfx::win::SetAdjustFontCallback(&l10n_util::AdjustUiFont);
   gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 #endif
 
@@ -524,6 +521,8 @@ int ElectronBrowserMainParts::PreMainMessageLoopRun() {
   // Notify observers that main thread message loop was initialized.
   Browser::Get()->PreMainMessageLoopRun();
 
+  fake_browser_process_->PreMainMessageLoopRun();
+
   return GetExitCode();
 }
 
@@ -557,13 +556,20 @@ void ElectronBrowserMainParts::PostCreateMainMessageLoop() {
   config->store = command_line.GetSwitchValueASCII(::switches::kPasswordStore);
   config->product_name = app_name;
   config->application_name = app_name;
-  config->main_thread_runner =
-      base::SingleThreadTaskRunner::GetCurrentDefault();
   // c.f.
   // https://source.chromium.org/chromium/chromium/src/+/main:chrome/common/chrome_switches.cc;l=689;drc=9d82515060b9b75fa941986f5db7390299669ef1
   config->should_use_preference =
       command_line.HasSwitch(::switches::kEnableEncryptionSelection);
   base::PathService::Get(DIR_SESSION_DATA, &config->user_data_path);
+
+  bool use_backend = !config->should_use_preference ||
+                     os_crypt::GetBackendUse(config->user_data_path);
+  std::unique_ptr<base::Environment> env(base::Environment::Create());
+  base::nix::DesktopEnvironment desktop_env =
+      base::nix::GetDesktopEnvironment(env.get());
+  os_crypt::SelectedLinuxBackend selected_backend =
+      os_crypt::SelectBackend(config->store, use_backend, desktop_env);
+  fake_browser_process_->SetLinuxStorageBackend(selected_backend);
   OSCrypt::SetConfig(std::move(config));
 #endif
 #if BUILDFLAG(IS_MAC)
@@ -623,9 +629,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
-  node_env_->env()->set_trace_sync_io(false);
+  node_env_->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
-  node::Stop(node_env_->env(), false);
+  node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   node_env_.reset();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);

@@ -12,9 +12,7 @@
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/promise.h"
 
-namespace electron {
-
-namespace api {
+namespace electron::api {
 
 v8::Local<v8::Promise> PushNotifications::RegisterForAPNSNotifications(
     v8::Isolate* isolate) {
@@ -57,6 +55,4 @@ void PushNotifications::OnDidReceiveAPNSNotification(
   Emit("received-apns-notification", user_info);
 }
 
-}  // namespace api
-
-}  // namespace electron
+}  // namespace electron::api

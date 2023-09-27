@@ -2,7 +2,7 @@
 
 const { GitProcess } = require('dugite');
 const minimist = require('minimist');
-const path = require('path');
+const path = require('node:path');
 const semver = require('semver');
 
 const { ELECTRON_DIR } = require('../../lib/utils');
@@ -200,7 +200,7 @@ For example, these invocations are equivalent:
   }
 }
 
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((err) => {
     console.error('Error Occurred:', err);
     process.exit(1);

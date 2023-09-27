@@ -95,10 +95,6 @@ void AutoUpdater::OnWindowAllClosed() {
   QuitAndInstall();
 }
 
-void AutoUpdater::SetFeedURL(gin::Arguments* args) {
-  auto_updater::AutoUpdater::SetFeedURL(args);
-}
-
 void AutoUpdater::QuitAndInstall() {
   Emit("before-quit-for-update");
 
@@ -124,7 +120,11 @@ gin::ObjectTemplateBuilder AutoUpdater::GetObjectTemplateBuilder(
              isolate)
       .SetMethod("checkForUpdates", &auto_updater::AutoUpdater::CheckForUpdates)
       .SetMethod("getFeedURL", &auto_updater::AutoUpdater::GetFeedURL)
-      .SetMethod("setFeedURL", &AutoUpdater::SetFeedURL)
+      .SetMethod("setFeedURL", &auto_updater::AutoUpdater::SetFeedURL)
+#if DCHECK_IS_ON()
+      .SetMethod("isVersionAllowedForUpdate",
+                 &auto_updater::AutoUpdater::IsVersionAllowedForUpdate)
+#endif
       .SetMethod("quitAndInstall", &AutoUpdater::QuitAndInstall);
 }
 

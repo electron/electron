@@ -7,24 +7,24 @@ Ensure that licenses for the dependencies introduced by Electron
 are included in `LICENSES.chromium.html`
 
 diff --git a/tools/licenses/licenses.py b/tools/licenses/licenses.py
-index e56688f7ab2a8b0ee59d0b7389e4c87370c8fad2..0e09b173574d48a3c7388315fef83f3ec74fe71a 100755
+index e0e9996e78046fb626198beccbd08f20fc3b574d..90ad87295c197db4853056b0650e6f769de67b9d 100755
 --- a/tools/licenses/licenses.py
 +++ b/tools/licenses/licenses.py
-@@ -383,6 +383,31 @@ SPECIAL_CASES = {
+@@ -413,6 +413,31 @@ SPECIAL_CASES = {
          "License": "Apache 2.0",
-         "License File": "/third_party/selenium-atoms/LICENSE.closure",
+         "License File": ["//third_party/selenium-atoms/LICENSE.closure"],
      },
 +    os.path.join('third_party', 'electron_node'): {
 +        "Name": "Node.js",
 +        "URL": "https://github.com/nodejs/node",
 +        "License": "MIT",
-+        "License File": "/third_party/electron_node/LICENSE",
++        "License File": ["/third_party/electron_node/LICENSE"],
 +    },
 +    os.path.join('third_party', 'squirrel.mac'): {
 +        "Name": "Squirrel",
 +        "URL": "https://github.com/Squirrel/Squirrel.Mac",
 +        "License": "MIT",
-+        "License File": "/third_party/squirrel.mac/LICENSE",
++        "License File": ["/third_party/squirrel.mac/LICENSE"],
 +    },
 +    os.path.join('third_party', 'squirrel.mac', 'vendor', 'mantle'): {
 +        "Name": "Mantle",
@@ -37,8 +37,8 @@ index e56688f7ab2a8b0ee59d0b7389e4c87370c8fad2..0e09b173574d48a3c7388315fef83f3e
 +        "URL": "https://github.com/ReactiveCocoa/ReactiveObjC",
 +        "License": "MIT",
 +        "License File":
-+        "/third_party/squirrel.mac/vendor/ReactiveObjC/LICENSE.md",
++        ["/third_party/squirrel.mac/vendor/ReactiveObjC/LICENSE.md"],
 +    },
  }
  
- # Special value for 'License File' field used to indicate that the license file
+ # These buildtools/third_party directories only contain

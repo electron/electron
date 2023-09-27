@@ -32,8 +32,8 @@ To have your custom protocol work in combination with a custom session, you need
 to register it to that session explicitly.
 
 ```javascript
-const { session, app, protocol } = require('electron')
-const path = require('path')
+const { app, BrowserWindow, net, protocol, session } = require('electron')
+const path = require('node:path')
 const url = require('url')
 
 app.whenReady().then(() => {
@@ -41,11 +41,11 @@ app.whenReady().then(() => {
   const ses = session.fromPartition(partition)
 
   ses.protocol.handle('atom', (request) => {
-    const path = request.url.slice('atom://'.length)
-    return net.fetch(url.pathToFileURL(path.join(__dirname, path)))
+    const filePath = request.url.slice('atom://'.length)
+    return net.fetch(url.pathToFileURL(path.join(__dirname, filePath)).toString())
   })
 
-  mainWindow = new BrowserWindow({ webPreferences: { partition } })
+  const mainWindow = new BrowserWindow({ webPreferences: { partition } })
 })
 ```
 
@@ -121,9 +121,9 @@ Either a `Response` or a `Promise<Response>` can be returned.
 Example:
 
 ```js
-import { app, protocol } from 'electron'
-import { join } from 'path'
-import { pathToFileURL } from 'url'
+const { app, net, protocol } = require('electron')
+const { join } = require('node:path')
+const { pathToFileURL } = require('url')
 
 protocol.registerSchemesAsPrivileged([
   {
@@ -131,7 +131,7 @@ protocol.registerSchemesAsPrivileged([
     privileges: {
       standard: true,
       secure: true,
-      supportsFetchAPI: true
+      supportFetchAPI: true
     }
   }
 ])
@@ -147,7 +147,7 @@ app.whenReady().then(() => {
       }
       // NB, this does not check for paths that escape the bundle, e.g.
       // app://bundle/../../secret_file.txt
-      return net.fetch(pathToFileURL(join(__dirname, pathname)))
+      return net.fetch(pathToFileURL(join(__dirname, pathname)).toString())
     } else if (host === 'api') {
       return net.fetch('https://api.my-server.com/' + pathname, {
         method: req.method,

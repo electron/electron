@@ -6,7 +6,10 @@
 
 #include <map>
 
+#include "base/containers/contains.h"
+#include "base/run_loop.h"
 #include "base/strings/utf_string_conversions.h"
+#include "shell/browser/browser.h"
 #include "shell/common/gin_converters/image_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/node_includes.h"
@@ -71,7 +74,7 @@ std::string Clipboard::Read(const std::string& format_string) {
       clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kCopyPaste,
                                             /* data_dst = */ nullptr);
 #if BUILDFLAG(IS_LINUX)
-  if (custom_format_names.find(format_string) == custom_format_names.end()) {
+  if (!base::Contains(custom_format_names, format_string)) {
     custom_format_names =
         clipboard->ExtractCustomPlatformNames(ui::ClipboardBuffer::kSelection,
                                               /* data_dst = */ nullptr);
@@ -79,7 +82,7 @@ std::string Clipboard::Read(const std::string& format_string) {
 #endif
 
   ui::ClipboardFormatType format;
-  if (custom_format_names.find(format_string) != custom_format_names.end()) {
+  if (base::Contains(custom_format_names, format_string)) {
     format =
         ui::ClipboardFormatType(ui::ClipboardFormatType::CustomPlatformType(
             custom_format_names[format_string]));
@@ -218,19 +221,33 @@ void Clipboard::WriteBookmark(const std::u16string& title,
 }
 
 gfx::Image Clipboard::ReadImage(gin_helper::Arguments* args) {
+  // The ReadPng uses thread pool which requires app ready.
+  if (IsBrowserProcess() && !Browser::Get()->is_ready()) {
+    args->ThrowError(
+        "clipboard.readImage is available only after app ready in the main "
+        "process");
+    return gfx::Image();
+  }
+
   ui::Clipboard* clipboard = ui::Clipboard::GetForCurrentThread();
   absl::optional<gfx::Image> image;
+
+  base::RunLoop run_loop(base::RunLoop::Type::kNestableTasksAllowed);
+  base::RepeatingClosure callback = run_loop.QuitClosure();
   clipboard->ReadPng(
       GetClipboardBuffer(args),
       /* data_dst = */ nullptr,
       base::BindOnce(
-          [](absl::optional<gfx::Image>* image,
+          [](absl::optional<gfx::Image>* image, base::RepeatingClosure cb,
              const std::vector<uint8_t>& result) {
             SkBitmap bitmap;
             gfx::PNGCodec::Decode(result.data(), result.size(), &bitmap);
             image->emplace(gfx::Image::CreateFrom1xBitmap(bitmap));
+            std::move(cb).Run();
           },
-          &image));
+          &image, std::move(callback)));
+  run_loop.Run();
+
   DCHECK(image.has_value());
   return image.value();
 }

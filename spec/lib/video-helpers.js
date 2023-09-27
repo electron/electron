@@ -313,16 +313,16 @@ function bitsToBuffer (bits) {
 
 function generateEBML (json) {
   const ebml = [];
-  for (let i = 0; i < json.length; i++) {
-    if (!('id' in json[i])) {
+  for (const item of json) {
+    if (!('id' in item)) {
       // already encoded blob or byteArray
-      ebml.push(json[i]);
+      ebml.push(item);
       continue;
     }
 
-    let data = json[i].data;
+    let data = item.data;
     if (typeof data === 'object') data = generateEBML(data);
-    if (typeof data === 'number') data = ('size' in json[i]) ? numToFixedBuffer(data, json[i].size) : bitsToBuffer(data.toString(2));
+    if (typeof data === 'number') data = ('size' in item) ? numToFixedBuffer(data, item.size) : bitsToBuffer(data.toString(2));
     if (typeof data === 'string') data = strToBuffer(data);
 
     const len = data.size || data.byteLength || data.length;
@@ -335,7 +335,7 @@ function generateEBML (json) {
     // going to fix this, i'm probably just going to write some hacky thing which
     // converts that string into a buffer-esque thing
 
-    ebml.push(numToBuffer(json[i].id));
+    ebml.push(numToBuffer(item.id));
     ebml.push(bitsToBuffer(size));
     ebml.push(data);
   }
@@ -349,13 +349,13 @@ function toFlatArray (arr, outBuffer) {
   if (outBuffer == null) {
     outBuffer = [];
   }
-  for (let i = 0; i < arr.length; i++) {
-    if (typeof arr[i] === 'object') {
+  for (const item of arr) {
+    if (typeof item === 'object') {
       // an array
-      toFlatArray(arr[i], outBuffer);
+      toFlatArray(item, outBuffer);
     } else {
       // a simple element
-      outBuffer.push(arr[i]);
+      outBuffer.push(item);
     }
   }
   return outBuffer;
@@ -394,8 +394,10 @@ function parseWebP (riff) {
   const height = tmp & 0x3FFF;
   const verticalScale = tmp >> 14;
   return {
-    width: width,
-    height: height,
+    width,
+    height,
+    horizontalScale,
+    verticalScale,
     data: VP8,
     riff: riff
   };
@@ -440,7 +442,7 @@ function parseRIFF (string) {
 // basically, the only purpose is for encoding "Duration", which is encoded as
 // a double (considerably more difficult to encode than an integer)
 function doubleToString (num) {
-  return [].slice.call(
+  return Array.prototype.slice.call(
     new Uint8Array(
       (
         new Float64Array([num]) // create a float64 array
@@ -475,7 +477,7 @@ WhammyVideo.prototype.add = function (frame, duration) {
     // quickly store image data so we don't block cpu. encode in compile method.
     frame = frame.getContext('2d').getImageData(0, 0, frame.width, frame.height);
   } else if (typeof frame !== 'string') {
-    throw new Error('frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string');
+    throw new TypeError('frame must be a a HTMLCanvasElement, a CanvasRenderingContext2D or a DataURI formatted string');
   }
   if (typeof frame === 'string' && !(/^data:image\/webp;base64,/ig).test(frame)) {
     throw new Error('Input must be formatted properly as a base64 encoded DataURI of type image/webp');

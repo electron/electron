@@ -36,11 +36,11 @@ index 4aff5b9a0f74d99f8f605b68631f820e282091ab..d5d77fc7c648ddb45225f04c6cf23f98
      },
  
      ctrlC() {
-diff --git a/test/sequential/test-debugger-break.js b/test/sequential/test-debugger-break.js
-index 1d92331d4e10136ddc9d811c3eb07e6b24d0fc51..8f37b71571225eb6b264cd44fa031f82c701cdbc 100644
---- a/test/sequential/test-debugger-break.js
-+++ b/test/sequential/test-debugger-break.js
-@@ -27,7 +27,7 @@ const cli = startCLI([script]);
+diff --git a/test/parallel/test-debugger-break.js b/test/parallel/test-debugger-break.js
+index 65b4355cfe7bc25464626cca6f1c3b0de1dd9a45..8e3a290321a2e70304859eb57a2056c3a70af0f6 100644
+--- a/test/parallel/test-debugger-break.js
++++ b/test/parallel/test-debugger-break.js
+@@ -27,7 +27,7 @@ const cli = startCLI(['--port=0', script]);
  
    await cli.stepCommand('n');
    assert.ok(
@@ -49,7 +49,7 @@ index 1d92331d4e10136ddc9d811c3eb07e6b24d0fc51..8f37b71571225eb6b264cd44fa031f82
      'pauses in next line of the script');
    assert.match(
      cli.output,
-@@ -36,7 +36,7 @@ const cli = startCLI([script]);
+@@ -36,7 +36,7 @@ const cli = startCLI(['--port=0', script]);
  
    await cli.stepCommand('next');
    assert.ok(
@@ -58,7 +58,7 @@ index 1d92331d4e10136ddc9d811c3eb07e6b24d0fc51..8f37b71571225eb6b264cd44fa031f82
      'pauses in next line of the script');
    assert.match(
      cli.output,
-@@ -89,7 +89,7 @@ const cli = startCLI([script]);
+@@ -89,7 +89,7 @@ const cli = startCLI(['--port=0', script]);
    await cli.stepCommand('');
    assert.match(
      cli.output,
@@ -67,10 +67,10 @@ index 1d92331d4e10136ddc9d811c3eb07e6b24d0fc51..8f37b71571225eb6b264cd44fa031f82
      'entered timers.js');
  
    await cli.stepCommand('cont');
-diff --git a/test/sequential/test-debugger-run-after-quit-restart.js b/test/sequential/test-debugger-run-after-quit-restart.js
-index a9da07dcdff8bd0b8cc69ccff8f29a67ff553592..2da4cea6359c8564a93863e43fc4a3f14a27e693 100644
---- a/test/sequential/test-debugger-run-after-quit-restart.js
-+++ b/test/sequential/test-debugger-run-after-quit-restart.js
+diff --git a/test/parallel/test-debugger-run-after-quit-restart.js b/test/parallel/test-debugger-run-after-quit-restart.js
+index 2c56f7227aed69d781392ce2f3f40e489e3501f2..0e1048699206dcc77696974e097e97de6b217811 100644
+--- a/test/parallel/test-debugger-run-after-quit-restart.js
++++ b/test/parallel/test-debugger-run-after-quit-restart.js
 @@ -25,7 +25,7 @@ const path = require('path');
      .then(() => cli.stepCommand('n'))
      .then(() => {

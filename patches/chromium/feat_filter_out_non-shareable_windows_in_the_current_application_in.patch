@@ -7,13 +7,13 @@ Subject: feat: filter out non-shareable windows in the current application in
 This patch ensures that windows protected via win.setContentProtection(true) do not appear in full display captures via desktopCapturer.  This patch could be upstreamed but as the check is limited to in-process windows it doesn't make a lot of sense for Chromium itself.  This patch currently has a limitation that it only function for windows created / protected BEFORE the stream is started.  There is theoretical future work we can do via polling / observers to automatically update the SCContentFilter when new windows are made but for now this will solve 99+% of the problem and folks can re-order their logic a bit to get it working for their use cases.
 
 diff --git a/content/browser/media/capture/screen_capture_kit_device_mac.mm b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-index c1949132c7c6c6f23eb1bb2d795f3dc4f55bbe2f..c552860ca6e0d3a57836149af33eea10508844e3 100644
+index 814eab6a5e8c83cae50da2491398edf329ca1ed4..9cacf36eae623c4787d5cccef4bed0202bfd5d35 100644
 --- a/content/browser/media/capture/screen_capture_kit_device_mac.mm
 +++ b/content/browser/media/capture/screen_capture_kit_device_mac.mm
-@@ -168,7 +168,15 @@ void OnShareableContentCreated(
+@@ -170,7 +170,15 @@ void OnShareableContentCreated(SCShareableContent* content) {
        case DesktopMediaID::TYPE_SCREEN:
-         for (SCDisplay* display : [content displays]) {
-           if (source_.id == [display displayID]) {
+         for (SCDisplay* display in content.displays) {
+           if (source_.id == display.displayID) {
 -            NSArray<SCWindow*>* exclude_windows = nil;
 +            NSArray<NSWindow*>* exclude_ns_windows = [[[NSApplication sharedApplication] windows] filteredArrayUsingPredicate:[NSPredicate predicateWithBlock:^BOOL(NSWindow* win, NSDictionary *bindings) {
 +              return [win sharingType] == NSWindowSharingNone;
@@ -24,6 +24,6 @@ index c1949132c7c6c6f23eb1bb2d795f3dc4f55bbe2f..c552860ca6e0d3a57836149af33eea10
 +              }
 +              return false;
 +            }]];
-             filter.reset([[SCContentFilter alloc]
-                  initWithDisplay:display
-                 excludingWindows:exclude_windows]);
+             filter = [[SCContentFilter alloc] initWithDisplay:display
+                                              excludingWindows:exclude_windows];
+             stream_config_content_size_ =

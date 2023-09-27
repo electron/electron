@@ -51,10 +51,22 @@ using FullScreenTransitionState =
 
   // check occlusion binary flag
   if (window.occlusionState & NSWindowOcclusionStateVisible) {
-    // The app is visible
+    // There's a macOS bug where if a child window is minimized, and then both
+    // windows are restored via activation of the parent window, the child
+    // window is not properly deminiaturized. This causes traffic light bugs
+    // like the close and miniaturize buttons having no effect. We need to call
+    // deminiaturize on the child window to fix this. Unfortunately, this also
+    // hits ANOTHER bug where even after calling deminiaturize,
+    // windowDidDeminiaturize is not posted on the child window if it was
+    // incidentally restored by the parent, so we need to manually reset
+    // is_minimized_ here.
+    if (shell_->parent() && is_minimized_) {
+      shell_->Restore();
+      is_minimized_ = false;
+    }
+
     shell_->NotifyWindowShow();
   } else {
-    // The app is not visible
     shell_->NotifyWindowHide();
   }
 }
@@ -239,15 +251,21 @@ using FullScreenTransitionState =
   level_ = [window level];
   shell_->SetWindowLevel(NSNormalWindowLevel);
   shell_->UpdateWindowOriginalFrame();
+  shell_->DetachChildren();
 }
 
 - (void)windowDidMiniaturize:(NSNotification*)notification {
   [super windowDidMiniaturize:notification];
+  is_minimized_ = true;
+
   shell_->NotifyWindowMinimize();
 }
 
 - (void)windowDidDeminiaturize:(NSNotification*)notification {
   [super windowDidDeminiaturize:notification];
+  is_minimized_ = false;
+
+  shell_->AttachChildren();
   shell_->SetWindowLevel(level_);
   shell_->NotifyWindowRestore();
 }
@@ -273,7 +291,7 @@ using FullScreenTransitionState =
   // Store resizable mask so it can be restored after exiting fullscreen.
   is_resizable_ = shell_->HasStyleMask(NSWindowStyleMaskResizable);
 
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::ENTERING);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kEntering);
 
   shell_->NotifyWindowWillEnterFullScreen();
 
@@ -282,7 +300,7 @@ using FullScreenTransitionState =
 }
 
 - (void)windowDidEnterFullScreen:(NSNotification*)notification {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::NONE);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
 
   shell_->NotifyWindowEnterFullScreen();
 
@@ -293,13 +311,13 @@ using FullScreenTransitionState =
 }
 
 - (void)windowWillExitFullScreen:(NSNotification*)notification {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::EXITING);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kExiting);
 
   shell_->NotifyWindowWillLeaveFullScreen();
 }
 
 - (void)windowDidExitFullScreen:(NSNotification*)notification {
-  shell_->set_fullscreen_transition_state(FullScreenTransitionState::NONE);
+  shell_->set_fullscreen_transition_state(FullScreenTransitionState::kNone);
 
   shell_->SetResizable(is_resizable_);
   shell_->NotifyWindowLeaveFullScreen();
@@ -322,9 +340,9 @@ using FullScreenTransitionState =
     NSWindow* window = shell_->GetNativeWindow().GetNativeNSWindow();
     NSWindow* sheetParent = [window sheetParent];
     base::SingleThreadTaskRunner::GetCurrentDefault()->PostTask(
-        FROM_HERE, base::BindOnce(base::RetainBlock(^{
+        FROM_HERE, base::BindOnce(^{
           [sheetParent endSheet:window];
-        })));
+        }));
   }
 
   // Clears the delegate when window is going to be closed, since EL Capitan it

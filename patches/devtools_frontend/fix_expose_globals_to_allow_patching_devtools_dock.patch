@@ -12,7 +12,7 @@ upstream a more durable approach to allowing us to do this, at which
 point this patch can be removed.
 
 diff --git a/front_end/entrypoints/shell/BUILD.gn b/front_end/entrypoints/shell/BUILD.gn
-index 72617d7036162ab3ab86c85df3f81b6e5a8c685d..aab471b56d785b372e5aa9aaddc792584700d16e 100644
+index 9b7c4251dde44c7e2ce76637515bb193a63427d8..76c2f924967df85d01ed41616609273adfad1342 100644
 --- a/front_end/entrypoints/shell/BUILD.gn
 +++ b/front_end/entrypoints/shell/BUILD.gn
 @@ -30,6 +30,7 @@ devtools_entrypoint("shell") {
@@ -24,7 +24,7 @@ index 72617d7036162ab3ab86c85df3f81b6e5a8c685d..aab471b56d785b372e5aa9aaddc79258
  
    visibility = [
 diff --git a/front_end/entrypoints/shell/shell.ts b/front_end/entrypoints/shell/shell.ts
-index b22591ee606ef449817aef1f9bd5ff0c024d1c05..a14c0e0a381ae838d44d4c7f2cc252c24380b602 100644
+index b1f0db6afb29188e4e69c5dd899523e836f9d253..4290e626fd875a50740bbd668ca11a4fef6ef8b5 100644
 --- a/front_end/entrypoints/shell/shell.ts
 +++ b/front_end/entrypoints/shell/shell.ts
 @@ -18,6 +18,7 @@ import '../../models/logs/logs-meta.js';
@@ -36,10 +36,10 @@ index b22591ee606ef449817aef1f9bd5ff0c024d1c05..a14c0e0a381ae838d44d4c7f2cc252c2
  import '../../ui/legacy/components/source_frame/source_frame-meta.js';
  import '../../panels/console_counters/console_counters-meta.js';
 diff --git a/front_end/ui/legacy/BUILD.gn b/front_end/ui/legacy/BUILD.gn
-index fe5d16d9935cad8e78a050d8db10bb6b7b355eee..fd21618411a388c53a2a508663fb9349a51a6a58 100644
+index 38efc67f3e34aead6e80730736353672dbf8e5b8..0368f531ea70efcbb51c9433bcdf8e3e6d69c19b 100644
 --- a/front_end/ui/legacy/BUILD.gn
 +++ b/front_end/ui/legacy/BUILD.gn
-@@ -183,5 +183,6 @@ devtools_entrypoint("legacy") {
+@@ -187,5 +187,6 @@ devtools_entrypoint("legacy") {
    visibility = [
      "../..:legacy_entrypoints",
      "../../legacy_test_runner/*",

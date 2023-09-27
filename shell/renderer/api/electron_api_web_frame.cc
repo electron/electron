@@ -142,7 +142,7 @@ class ScriptExecutionCallback {
       context_bridge::ObjectCache object_cache;
       maybe_result = PassValueToOtherContext(
           result->GetCreationContextChecked(), promise_.GetContext(), result,
-          &object_cache, false, 0);
+          &object_cache, false, 0, BridgeErrorTarget::kSource);
       if (maybe_result.IsEmpty() || try_catch.HasCaught()) {
         success = false;
       }
@@ -383,7 +383,7 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
 
  private:
   bool MaybeGetRenderFrame(v8::Isolate* isolate,
-                           const std::string& method_name,
+                           const base::StringPiece method_name,
                            content::RenderFrame** render_frame_ptr) {
     std::string error_msg;
     if (!MaybeGetRenderFrame(&error_msg, method_name, render_frame_ptr)) {
@@ -394,13 +394,12 @@ class WebFrameRenderer : public gin::Wrappable<WebFrameRenderer>,
   }
 
   bool MaybeGetRenderFrame(std::string* error_msg,
-                           const std::string& method_name,
+                           const base::StringPiece method_name,
                            content::RenderFrame** render_frame_ptr) {
     auto* frame = render_frame();
     if (!frame) {
-      *error_msg = "Render frame was torn down before webFrame." + method_name +
-                   " could be "
-                   "executed";
+      *error_msg = base::ToString("Render frame was torn down before webFrame.",
+                                  method_name, " could be executed");
       return false;
     }
     *render_frame_ptr = frame;

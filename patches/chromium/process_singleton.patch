@@ -51,7 +51,7 @@ index b05c0157ecca222452fb38e3b28c9d7cc6bcfbfd..02d9eabfef9521722340739bf86df3df
    base::win::MessageWindow window_;  // The message-only window.
    bool is_virtualized_;  // Stuck inside Microsoft Softricity VM environment.
 diff --git a/chrome/browser/process_singleton_posix.cc b/chrome/browser/process_singleton_posix.cc
-index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56647d042b 100644
+index f4692fd100b157d571cff4bcd2ca30f33d132af3..09108f231a54b117a143e71efa3f3663d64a63e6 100644
 --- a/chrome/browser/process_singleton_posix.cc
 +++ b/chrome/browser/process_singleton_posix.cc
 @@ -54,6 +54,7 @@
@@ -70,9 +70,9 @@ index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56
  #include "base/threading/platform_thread.h"
  #include "base/time/time.h"
  #include "base/timer/timer.h"
-@@ -96,9 +98,11 @@
- #include "net/base/network_interfaces.h"
+@@ -97,9 +99,11 @@
  #include "ui/base/l10n/l10n_util.h"
+ #include "ui/base/resource/scoped_startup_resource_bundle.h"
  
 +#if 0
  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
@@ -82,17 +82,17 @@ index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56
  
  using content::BrowserThread;
  
-@@ -342,6 +346,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
+@@ -343,6 +347,9 @@ bool SymlinkPath(const base::FilePath& target, const base::FilePath& path) {
  bool DisplayProfileInUseError(const base::FilePath& lock_path,
                                const std::string& hostname,
                                int pid) {
 +  return true;
 +
 +#if 0
-   std::u16string error = l10n_util::GetStringFUTF16(
-       IDS_PROFILE_IN_USE_POSIX, base::NumberToString16(pid),
-       base::ASCIIToUTF16(hostname));
-@@ -361,6 +368,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
+   // Ensure there is an instance of ResourceBundle that is initialized for
+   // localized string resource accesses.
+   ui::ScopedStartupResourceBundle ensure_startup_resource_bundle;
+@@ -366,6 +373,7 @@ bool DisplayProfileInUseError(const base::FilePath& lock_path,
  
    NOTREACHED();
    return false;
@@ -100,7 +100,7 @@ index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56
  }
  
  bool IsChromeProcess(pid_t pid) {
-@@ -401,6 +409,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
+@@ -406,6 +414,21 @@ bool CheckCookie(const base::FilePath& path, const base::FilePath& cookie) {
    return (cookie == ReadLink(path));
  }
  
@@ -122,7 +122,7 @@ index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56
  bool ConnectSocket(ScopedSocket* socket,
                     const base::FilePath& socket_path,
                     const base::FilePath& cookie_path) {
-@@ -768,6 +791,10 @@ ProcessSingleton::ProcessSingleton(
+@@ -773,6 +796,10 @@ ProcessSingleton::ProcessSingleton(
  
  ProcessSingleton::~ProcessSingleton() {
    DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
@@ -133,7 +133,7 @@ index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56
  }
  
  ProcessSingleton::NotifyResult ProcessSingleton::NotifyOtherProcess() {
-@@ -1031,14 +1058,32 @@ bool ProcessSingleton::Create() {
+@@ -1036,14 +1063,32 @@ bool ProcessSingleton::Create() {
  #endif
    }
  
@@ -172,7 +172,7 @@ index e9ba0101791d7ca84ae8a6801aa7b3607d5a6ded..0e1baf024e7aee3bc1edad1e0620bd56
    int dir_mode = 0;
    CHECK(base::GetPosixFilePermissions(socket_dir_.GetPath(), &dir_mode) &&
 diff --git a/chrome/browser/process_singleton_win.cc b/chrome/browser/process_singleton_win.cc
-index 844b1814ba832b82e6f57236a9a5f5380c6a65cc..3dff138357d9e1ae8d572df7630aa6ec429728a3 100644
+index 071f3c05b8f899857531f2f08c05c7f2551eb4d0..11f35769cc53b4aa111a319d155a3916f0040fa7 100644
 --- a/chrome/browser/process_singleton_win.cc
 +++ b/chrome/browser/process_singleton_win.cc
 @@ -28,7 +28,9 @@

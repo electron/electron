@@ -120,7 +120,7 @@ int WinCaptionButton::GetBetweenButtonSpacing() const {
   const int display_order_index = GetButtonDisplayOrderIndex();
   return display_order_index == 0
              ? 0
-             : WindowFrameUtil::kWindows10GlassCaptionButtonVisualSpacing;
+             : WindowFrameUtil::kWindowsCaptionButtonVisualSpacing;
 }
 
 int WinCaptionButton::GetButtonDisplayOrderIndex() const {

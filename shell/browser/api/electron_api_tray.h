@@ -45,10 +45,13 @@ class Tray : public gin::Wrappable<Tray>,
                                v8::Local<v8::Value> image,
                                absl::optional<UUID> guid,
                                gin::Arguments* args);
+
   static void FillObjectTemplate(v8::Isolate*, v8::Local<v8::ObjectTemplate>);
+  static const char* GetClassName() { return "Tray"; }
 
   // gin::Wrappable
   static gin::WrapperInfo kWrapperInfo;
+  const char* GetTypeName() override;
 
   // disable copy
   Tray(const Tray&) = delete;

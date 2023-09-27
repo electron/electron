@@ -4,12 +4,12 @@
 
 #include "shell/common/gin_converters/net_converter.h"
 
-#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include "base/containers/span.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/values.h"
@@ -59,7 +59,7 @@ bool CertFromData(const std::string& data,
 v8::Local<v8::Value> Converter<net::AuthChallengeInfo>::ToV8(
     v8::Isolate* isolate,
     const net::AuthChallengeInfo& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("isProxy", val.is_proxy);
   dict.Set("scheme", val.scheme);
   dict.Set("host", val.challenger.host());
@@ -475,10 +475,10 @@ class ChunkedDataPipeReadableStream
       OnSizeReceived(net::ERR_FAILED, 0);
   }
 
-  v8::Isolate* isolate_;
+  raw_ptr<v8::Isolate> isolate_;
   int status_ = net::OK;
   scoped_refptr<network::ResourceRequestBody> resource_request_body_;
-  network::DataElementChunkedDataPipe* data_element_;
+  raw_ptr<network::DataElementChunkedDataPipe> data_element_;
   mojo::Remote<network::mojom::ChunkedDataPipeGetter> chunked_data_pipe_getter_;
   mojo::ScopedDataPipeConsumerHandle data_pipe_;
   mojo::SimpleWatcher handle_watcher_;
@@ -578,8 +578,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
     return false;
   base::Value::List& list = list_value.GetList();
   *out = base::MakeRefCounted<network::ResourceRequestBody>();
-  for (size_t i = 0; i < list.size(); ++i) {
-    base::Value& dict_value = list[i];
+  for (base::Value& dict_value : list) {
     if (!dict_value.is_dict())
       return false;
     base::Value::Dict& dict = dict_value.GetDict();
@@ -611,7 +610,7 @@ bool Converter<scoped_refptr<network::ResourceRequestBody>>::FromV8(
 v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
     v8::Isolate* isolate,
     const network::ResourceRequest& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("method", val.method);
   dict.Set("url", val.url.spec());
   dict.Set("referrer", val.referrer.spec());
@@ -625,7 +624,7 @@ v8::Local<v8::Value> Converter<network::ResourceRequest>::ToV8(
 v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
     v8::Isolate* isolate,
     electron::VerifyRequestParams val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("hostname", val.hostname);
   dict.Set("certificate", val.certificate);
   dict.Set("validatedCertificate", val.validated_certificate);
@@ -639,7 +638,7 @@ v8::Local<v8::Value> Converter<electron::VerifyRequestParams>::ToV8(
 v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
     v8::Isolate* isolate,
     const net::HttpVersion& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
   dict.Set("major", static_cast<uint32_t>(val.major_value()));
   dict.Set("minor", static_cast<uint32_t>(val.minor_value()));
   return ConvertToV8(isolate, dict);
@@ -649,7 +648,7 @@ v8::Local<v8::Value> Converter<net::HttpVersion>::ToV8(
 v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
     v8::Isolate* isolate,
     const net::RedirectInfo& val) {
-  gin::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin::Dictionary::CreateEmpty(isolate);
 
   dict.Set("statusCode", val.status_code);
   dict.Set("newMethod", val.new_method);
@@ -661,6 +660,107 @@ v8::Local<v8::Value> Converter<net::RedirectInfo>::ToV8(
            val.is_signed_exchange_fallback_redirect);
 
   return ConvertToV8(isolate, dict);
+}
+
+// static
+v8::Local<v8::Value> Converter<net::IPEndPoint>::ToV8(
+    v8::Isolate* isolate,
+    const net::IPEndPoint& val) {
+  gin::Dictionary dict(isolate, v8::Object::New(isolate));
+  dict.Set("address", val.ToStringWithoutPort());
+  switch (val.GetFamily()) {
+    case net::ADDRESS_FAMILY_IPV4: {
+      dict.Set("family", "ipv4");
+      break;
+    }
+    case net::ADDRESS_FAMILY_IPV6: {
+      dict.Set("family", "ipv6");
+      break;
+    }
+    case net::ADDRESS_FAMILY_UNSPECIFIED: {
+      dict.Set("family", "unspec");
+      break;
+    }
+  }
+  return ConvertToV8(isolate, dict);
+}
+
+// static
+bool Converter<net::DnsQueryType>::FromV8(v8::Isolate* isolate,
+                                          v8::Local<v8::Value> val,
+                                          net::DnsQueryType* out) {
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, net::DnsQueryType>({
+          {"A", net::DnsQueryType::A},
+          {"AAAA", net::DnsQueryType::AAAA},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
+}
+
+// static
+bool Converter<net::HostResolverSource>::FromV8(v8::Isolate* isolate,
+                                                v8::Local<v8::Value> val,
+                                                net::HostResolverSource* out) {
+  using Val = net::HostResolverSource;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"any", Val::ANY},
+          {"dns", Val::DNS},
+          {"localOnly", Val::LOCAL_ONLY},
+          {"mdns", Val::MULTICAST_DNS},
+          {"system", Val::SYSTEM},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
+}
+
+// static
+bool Converter<network::mojom::ResolveHostParameters::CacheUsage>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    network::mojom::ResolveHostParameters::CacheUsage* out) {
+  using Val = network::mojom::ResolveHostParameters::CacheUsage;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"allowed", Val::ALLOWED},
+          {"disallowed", Val::DISALLOWED},
+          {"staleAllowed", Val::STALE_ALLOWED},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
+}
+
+// static
+bool Converter<network::mojom::SecureDnsPolicy>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    network::mojom::SecureDnsPolicy* out) {
+  using Val = network::mojom::SecureDnsPolicy;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"allow", Val::ALLOW},
+          {"disable", Val::DISABLE},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
+}
+
+// static
+bool Converter<network::mojom::ResolveHostParametersPtr>::FromV8(
+    v8::Isolate* isolate,
+    v8::Local<v8::Value> val,
+    network::mojom::ResolveHostParametersPtr* out) {
+  gin::Dictionary dict(nullptr);
+  if (!ConvertFromV8(isolate, val, &dict))
+    return false;
+
+  network::mojom::ResolveHostParametersPtr params =
+      network::mojom::ResolveHostParameters::New();
+
+  dict.Get("queryType", &(params->dns_query_type));
+  dict.Get("source", &(params->source));
+  dict.Get("cacheUsage", &(params->cache_usage));
+  dict.Get("secureDnsPolicy", &(params->secure_dns_policy));
+
+  *out = std::move(params);
+  return true;
 }
 
 }  // namespace gin

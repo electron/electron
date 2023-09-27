@@ -13,7 +13,7 @@ the [`BrowserWindow`](browser-window.md) object. An example of accessing the
 const { BrowserWindow } = require('electron')
 
 const win = new BrowserWindow({ width: 800, height: 1500 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 const contents = win.webContents
 console.log(contents)
@@ -65,28 +65,28 @@ for all windows, webviews, opened devtools, and devtools extension background pa
 
 ### `webContents.getFocusedWebContents()`
 
-Returns `WebContents` | null - The web contents that is focused in this application, otherwise
+Returns `WebContents | null` - The web contents that is focused in this application, otherwise
 returns `null`.
 
 ### `webContents.fromId(id)`
 
 * `id` Integer
 
-Returns `WebContents` | undefined - A WebContents instance with the given ID, or
+Returns `WebContents | undefined` - A WebContents instance with the given ID, or
 `undefined` if there is no WebContents associated with the given ID.
 
 ### `webContents.fromFrame(frame)`
 
 * `frame` WebFrameMain
 
-Returns `WebContents` | undefined - A WebContents instance with the given WebFrameMain, or
+Returns `WebContents | undefined` - A WebContents instance with the given WebFrameMain, or
 `undefined` if there is no WebContents associated with the given WebFrameMain.
 
 ### `webContents.fromDevToolsTargetId(targetId)`
 
 * `targetId` string - The Chrome DevTools Protocol [TargetID](https://chromedevtools.github.io/devtools-protocol/tot/Target/#type-TargetID) associated with the WebContents instance.
 
-Returns `WebContents` | undefined - A WebContents instance with the given TargetID, or
+Returns `WebContents | undefined` - A WebContents instance with the given TargetID, or
 `undefined` if there is no WebContents associated with the given TargetID.
 
 When communicating with the [Chrome DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/),
@@ -98,7 +98,7 @@ async function lookupTargetId (browserWindow) {
   await wc.debugger.attach('1.3')
   const { targetInfo } = await wc.debugger.sendCommand('Target.getTargetInfo')
   const { targetId } = targetInfo
-  const targetWebContents = await webContents.fromDevToolsTargetId(targetId)
+  const targetWebContents = await wc.fromDevToolsTargetId(targetId)
 }
 ```
 
@@ -210,7 +210,7 @@ Returns:
   * `url` string - URL for the created window.
   * `frameName` string - Name given to the created window in the
      `window.open()` call.
-  * `options` BrowserWindowConstructorOptions - The options used to create the
+  * `options` [BrowserWindowConstructorOptions](structures/browser-window-options.md) - The options used to create the
     BrowserWindow. They are merged in increasing precedence: parsed options
     from the `features` string from `window.open()`, security-related
     webPreferences inherited from the parent, and options given by
@@ -239,9 +239,8 @@ Returns:
 
 * `details` Event<>
   * `url` string - The URL the frame is navigating to.
-  * `isSameDocument` boolean - Whether the navigation happened without changing
-    document. Examples of same document navigations are reference fragment
-    navigations, pushState/replaceState, and same page history navigation.
+  * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
+    This property is always set to `false` for this event.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
   * `frame` WebFrameMain - The frame to be navigated.
   * `initiator` WebFrameMain (optional) - The frame which initiated the
@@ -273,6 +272,8 @@ Returns:
 
 * `details` Event<>
   * `url` string - The URL the frame is navigating to.
+  * `isSameDocument` boolean - This event does not fire for same document navigations using window.history api and reference fragment navigations.
+    This property is always set to `false` for this event.
   * `isMainFrame` boolean - True if the navigation is taking place in a main frame.
   * `frame` WebFrameMain - The frame to be navigated.
   * `initiator` WebFrameMain (optional) - The frame which initiated the
@@ -478,18 +479,7 @@ checking `reason === 'killed'` when you switch to that event.
 Returns:
 
 * `event` Event
-* `details` Object
-  * `reason` string - The reason the render process is gone.  Possible values:
-    * `clean-exit` - Process exited with an exit code of zero
-    * `abnormal-exit` - Process exited with a non-zero exit code
-    * `killed` - Process was sent a SIGTERM or otherwise killed externally
-    * `crashed` - Process crashed
-    * `oom` - Process ran out of memory
-    * `launch-failed` - Process never successfully launched
-    * `integrity-failure` - Windows code integrity checks failed
-  * `exitCode` Integer - The exit code of the process, unless `reason` is
-    `launch-failed`, in which case `exitCode` will be a platform-specific
-    launch failure error code.
+* `details` [RenderProcessGoneDetails](structures/render-process-gone-details.md)
 
 Emitted when the renderer process unexpectedly disappears.  This is normally
 because it was crashed or killed.
@@ -601,6 +591,7 @@ window.
 
 Returns:
 
+* `event` Event
 * `url` string - URL of the link that was clicked or selected.
 
 Emitted when a link is clicked in DevTools or 'Open in new tab' is selected for a link in its context menu.
@@ -736,14 +727,16 @@ Returns:
 * `size` [Size](structures/size.md) (optional) - the size of the `image`.
 * `hotspot` [Point](structures/point.md) (optional) - coordinates of the custom cursor's hotspot.
 
-Emitted when the cursor's type changes. The `type` parameter can be `default`,
-`crosshair`, `pointer`, `text`, `wait`, `help`, `e-resize`, `n-resize`,
-`ne-resize`, `nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`,
-`ns-resize`, `ew-resize`, `nesw-resize`, `nwse-resize`, `col-resize`,
-`row-resize`, `m-panning`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`,
-`s-panning`, `se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`,
-`cell`, `context-menu`, `alias`, `progress`, `nodrop`, `copy`, `none`,
-`not-allowed`, `zoom-in`, `zoom-out`, `grab`, `grabbing` or `custom`.
+Emitted when the cursor's type changes. The `type` parameter can be `pointer`,
+`crosshair`, `hand`, `text`, `wait`, `help`, `e-resize`, `n-resize`, `ne-resize`,
+`nw-resize`, `s-resize`, `se-resize`, `sw-resize`, `w-resize`, `ns-resize`, `ew-resize`,
+`nesw-resize`, `nwse-resize`, `col-resize`, `row-resize`, `m-panning`, `m-panning-vertical`,
+`m-panning-horizontal`, `e-panning`, `n-panning`, `ne-panning`, `nw-panning`, `s-panning`,
+`se-panning`, `sw-panning`, `w-panning`, `move`, `vertical-text`, `cell`, `context-menu`,
+`alias`, `progress`, `nodrop`, `copy`, `none`, `not-allowed`, `zoom-in`, `zoom-out`, `grab`,
+`grabbing`, `custom`, `null`, `drag-drop-none`, `drag-drop-move`, `drag-drop-copy`,
+`drag-drop-link`, `ns-no-resize`, `ew-no-resize`, `nesw-no-resize`, `nwse-no-resize`,
+or `default`.
 
 If the `type` parameter is `custom`, the `image` parameter will hold the custom
 cursor image in a [`NativeImage`](native-image.md), and `scale`, `size` and `hotspot` will hold
@@ -791,7 +784,7 @@ Returns:
   * `frameCharset` string - The character encoding of the frame on which the
     menu was invoked.
   * `inputFieldType` string - If the context menu was invoked on an input
-    field, the type of that field. Possible values are `none`, `plainText`,
+    field, the type of that field. Possible values include `none`, `plainText`,
     `password`, `other`.
   * `spellcheckEnabled` boolean - If the context is editable, whether or not spellchecking is enabled.
   * `menuSourceType` string - Input source that invoked the context menu.
@@ -863,7 +856,7 @@ app.whenReady().then(() => {
     })
     if (!result) {
       // The device wasn't found so we need to either wait longer (eg until the
-      // device is turned on) or cancel the request by calling the callback 
+      // device is turned on) or cancel the request by calling the callback
       // with an empty string.
       callback('')
     } else {
@@ -891,7 +884,7 @@ const win = new BrowserWindow({ webPreferences: { offscreen: true } })
 win.webContents.on('paint', (event, dirty, image) => {
   // updateBitmap(dirty, image.getBitmap())
 })
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 ```
 
 #### Event: 'devtools-reload-page'
@@ -903,7 +896,7 @@ Emitted when the devtools window instructs the webContents to reload
 Returns:
 
 * `event` Event
-* `webPreferences` WebPreferences - The web preferences that will be used by the guest
+* `webPreferences` [WebPreferences](structures/web-preferences.md) - The web preferences that will be used by the guest
   page. This object can be modified to adjust the preferences for the guest
   page.
 * `params` Record<string, string> - The other `<webview>` parameters such as the `src` URL.
@@ -1017,9 +1010,9 @@ e.g. the `http://` or `file://`. If the load should bypass http cache then
 use the `pragma` header to achieve it.
 
 ```javascript
-const { webContents } = require('electron')
+const win = new BrowserWindow()
 const options = { extraHeaders: 'pragma: no-cache\n' }
-webContents.loadURL('https://github.com', options)
+win.webContents.loadURL('https://github.com', options)
 ```
 
 #### `contents.loadFile(filePath[, options])`
@@ -1049,12 +1042,15 @@ an app structure like this:
 Would require code like this
 
 ```js
+const win = new BrowserWindow()
 win.loadFile('src/index.html')
 ```
 
-#### `contents.downloadURL(url)`
+#### `contents.downloadURL(url[, options])`
 
 * `url` string
+* `options` Object (optional)
+  * `headers` Record<string, string> (optional) - HTTP request headers.
 
 Initiates a download of the resource at `url` without navigating. The
 `will-download` event of `session` will be triggered.
@@ -1066,7 +1062,7 @@ Returns `string` - The URL of the current web page.
 ```javascript
 const { BrowserWindow } = require('electron')
 const win = new BrowserWindow({ width: 800, height: 600 })
-win.loadURL('http://github.com').then(() => {
+win.loadURL('https://github.com').then(() => {
   const currentURL = win.webContents.getURL()
   console.log(currentURL)
 })
@@ -1185,7 +1181,9 @@ when this process is unstable or unusable, for instance in order to recover
 from the `unresponsive` event.
 
 ```js
-contents.on('unresponsive', async () => {
+const win = new BrowserWindow()
+
+win.webContents.on('unresponsive', async () => {
   const { response } = await dialog.showMessageBox({
     message: 'App X has become unresponsive',
     title: 'Do you want to try forcefully reloading the app?',
@@ -1193,8 +1191,8 @@ contents.on('unresponsive', async () => {
     cancelId: 1
   })
   if (response === 0) {
-    contents.forcefullyCrashRenderer()
-    contents.reload()
+    win.webContents.forcefullyCrashRenderer()
+    win.webContents.reload()
   }
 })
 ```
@@ -1221,8 +1219,9 @@ Injects CSS into the current web page and returns a unique key for the inserted
 stylesheet.
 
 ```js
-contents.on('did-finish-load', () => {
-  contents.insertCSS('html, body { background-color: #f00; }')
+const win = new BrowserWindow()
+win.webContents.on('did-finish-load', () => {
+  win.webContents.insertCSS('html, body { background-color: #f00; }')
 })
 ```
 
@@ -1236,9 +1235,11 @@ Removes the inserted CSS from the current web page. The stylesheet is identified
 by its key, which is returned from `contents.insertCSS(css)`.
 
 ```js
-contents.on('did-finish-load', async () => {
-  const key = await contents.insertCSS('html, body { background-color: #f00; }')
-  contents.removeInsertedCSS(key)
+const win = new BrowserWindow()
+
+win.webContents.on('did-finish-load', async () => {
+  const key = await win.webContents.insertCSS('html, body { background-color: #f00; }')
+  win.webContents.removeInsertedCSS(key)
 })
 ```
 
@@ -1259,7 +1260,9 @@ this limitation.
 Code execution will be suspended until web page stop loading.
 
 ```js
-contents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
+const win = new BrowserWindow()
+
+win.webContents.executeJavaScript('fetch("https://jsonplaceholder.typicode.com/users/1").then(resp => resp.json())', true)
   .then((result) => {
     console.log(result) // Will be the JSON object from the fetch call
   })
@@ -1370,7 +1373,8 @@ Sets the maximum and minimum pinch-to-zoom level.
 > **NOTE**: Visual zoom is disabled by default in Electron. To re-enable it, call:
 >
 > ```js
-> contents.setVisualZoomLevelLimits(1, 3)
+> const win = new BrowserWindow()
+> win.webContents.setVisualZoomLevelLimits(1, 3)
 > ```
 
 #### `contents.undo()`
@@ -1388,6 +1392,10 @@ Executes the editing command `cut` in web page.
 #### `contents.copy()`
 
 Executes the editing command `copy` in web page.
+
+#### `contents.centerSelection()`
+
+Centers the current text selection in web page.
 
 #### `contents.copyImageAt(x, y)`
 
@@ -1415,6 +1423,46 @@ Executes the editing command `selectAll` in web page.
 #### `contents.unselect()`
 
 Executes the editing command `unselect` in web page.
+
+#### `contents.scrollToTop()`
+
+Scrolls to the top of the current `webContents`.
+
+#### `contents.scrollToBottom()`
+
+Scrolls to the bottom of the current `webContents`.
+
+#### `contents.adjustSelection(options)`
+
+* `options` Object
+  * `start` Number (optional) - Amount to shift the start index of the current selection.
+  * `end` Number (optional) - Amount to shift the end index of the current selection.
+
+Adjusts the current text selection starting and ending points in the focused frame by the given amounts. A negative amount moves the selection towards the beginning of the document, and a positive amount moves the selection towards the end of the document.
+
+Example:
+
+```js
+const win = new BrowserWindow()
+
+// Adjusts the beginning of the selection 1 letter forward,
+// and the end of the selection 5 letters forward.
+win.webContents.adjustSelection({ start: 1, end: 5 })
+
+// Adjusts the beginning of the selection 2 letters forward,
+// and the end of the selection 3 letters backward.
+win.webContents.adjustSelection({ start: 2, end: -3 })
+```
+
+For a call of `win.webContents.adjustSelection({ start: 1, end: 5 })`
+
+Before:
+
+<img width="487" alt="Image Before Text Selection Adjustment" src="../images/web-contents-text-selection-before.png"/>
+
+After:
+
+<img width="487" alt="Image After Text Selection Adjustment" src="../images/web-contents-text-selection-after.png"/>
 
 #### `contents.replace(text)`
 
@@ -1461,12 +1509,12 @@ can be obtained by subscribing to [`found-in-page`](web-contents.md#event-found-
 Stops any `findInPage` request for the `webContents` with the provided `action`.
 
 ```javascript
-const { webContents } = require('electron')
-webContents.on('found-in-page', (event, result) => {
-  if (result.finalUpdate) webContents.stopFindInPage('clearSelection')
+const win = new BrowserWindow()
+win.webContents.on('found-in-page', (event, result) => {
+  if (result.finalUpdate) win.webContents.stopFindInPage('clearSelection')
 })
 
-const requestId = webContents.findInPage('api')
+const requestId = win.webContents.findInPage('api')
 console.log(requestId)
 ```
 
@@ -1487,14 +1535,6 @@ If you would like the page to stay hidden, you should ensure that `stayHidden` i
 
 Returns `boolean` - Whether this page is being captured. It returns true when the capturer count
 is large then 0.
-
-#### `contents.getPrinters()` _Deprecated_
-
-Get the system printer list.
-
-Returns [`PrinterInfo[]`](structures/printer-info.md)
-
-**Deprecated:** Should use the new [`contents.getPrintersAsync`](web-contents.md#contentsgetprintersasync) API.
 
 #### `contents.getPrintersAsync()`
 
@@ -1546,6 +1586,7 @@ Use `page-break-before: always;` CSS style to force to print to a new page.
 Example usage:
 
 ```js
+const win = new BrowserWindow()
 const options = {
   silent: true,
   deviceName: 'My-Printer',
@@ -1573,10 +1614,11 @@ win.webContents.print(options, (success, errorType) => {
     * `bottom` number (optional) - Bottom margin in inches. Defaults to 1cm (~0.4 inches).
     * `left` number (optional) - Left margin in inches. Defaults to 1cm (~0.4 inches).
     * `right` number (optional) - Right margin in inches. Defaults to 1cm (~0.4 inches).
-  * `pageRanges` string (optional) - Paper ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
+  * `pageRanges` string (optional) - Page ranges to print, e.g., '1-5, 8, 11-13'. Defaults to the empty string, which means print all pages.
   * `headerTemplate` string (optional) - HTML template for the print header. Should be valid HTML markup with following classes used to inject printing values into them: `date` (formatted print date), `title` (document title), `url` (document location), `pageNumber` (current page number) and `totalPages` (total pages in the document). For example, `<span class=title></span>` would generate span containing the title.
   * `footerTemplate` string (optional) - HTML template for the print footer. Should use the same format as the `headerTemplate`.
   * `preferCSSPageSize` boolean (optional) - Whether or not to prefer page size as defined by css. Defaults to false, in which case the content will be scaled to fit the paper size.
+  * `generateTaggedPDF` boolean (optional) _Experimental_ - Whether or not to generate a tagged (accessible) PDF. Defaults to false. As this property is experimental, the generated PDF may not adhere fully to PDF/UA and WCAG standards.
 
 Returns `Promise<Buffer>` - Resolves with the generated PDF data.
 
@@ -1588,12 +1630,12 @@ An example of `webContents.printToPDF`:
 
 ```javascript
 const { BrowserWindow } = require('electron')
-const fs = require('fs')
-const path = require('path')
-const os = require('os')
+const fs = require('node:fs')
+const path = require('node:path')
+const os = require('node:os')
 
 const win = new BrowserWindow()
-win.loadURL('http://github.com')
+win.loadURL('https://github.com')
 
 win.webContents.on('did-finish-load', () => {
   // Use default printing options
@@ -1719,6 +1761,7 @@ app.whenReady().then(() => {
     In `undocked` mode it's possible to dock back. In `detach` mode it's not.
   * `activate` boolean (optional) - Whether to bring the opened devtools window
     to the foreground. The default is `true`.
+  * `title` string (optional) - A title for the DevTools window (only in `undocked` or `detach` mode).
 
 Opens the devtools.
 
@@ -1738,6 +1781,18 @@ Returns `boolean` - Whether the devtools is opened.
 #### `contents.isDevToolsFocused()`
 
 Returns `boolean` - Whether the devtools view is focused .
+
+#### `contents.getDevToolsTitle()`
+
+Returns `string` - the current title of the DevTools window. This will only be visible
+if DevTools is opened in `undocked` or `detach` mode.
+
+#### `contents.setDevToolsTitle(title)`
+
+* `title` string
+
+Changes the title of the DevTools window to `title`. This will only be visible if DevTools is
+opened in `undocked` or `detach` mode.
 
 #### `contents.toggleDevTools()`
 
@@ -1842,8 +1897,9 @@ For example:
 
 ```js
 // Main process
+const win = new BrowserWindow()
 const { port1, port2 } = new MessageChannelMain()
-webContents.postMessage('port', { message: 'hello' }, [port1])
+win.webContents.postMessage('port', { message: 'hello' }, [port1])
 
 // Renderer process
 ipcRenderer.on('port', (e, msg) => {
@@ -2004,6 +2060,24 @@ Returns `string` - Returns the WebRTC IP Handling Policy.
 Setting the WebRTC IP handling policy allows you to control which IPs are
 exposed via WebRTC. See [BrowserLeaks](https://browserleaks.com/webrtc) for
 more details.
+
+#### `contents.getWebRTCUDPPortRange()`
+
+Returns `Object`:
+
+* `min` Integer - The minimum UDP port number that WebRTC should use.
+* `max` Integer - The maximum UDP port number that WebRTC should use.
+
+By default this value is `{ min: 0, max: 0 }` , which would apply no restriction on the udp port range.
+
+#### `contents.setWebRTCUDPPortRange(udpPortRange)`
+
+* `udpPortRange` Object
+  * `min` Integer - The minimum UDP port number that WebRTC should use.
+  * `max` Integer - The maximum UDP port number that WebRTC should use.
+
+Setting the WebRTC UDP Port Range allows you to restrict the udp port range used by WebRTC. By default the port range is unrestricted.
+**Note:** To reset to an unrestricted port range this value should be set to `{ min: 0, max: 0 }`.
 
 #### `contents.getMediaSourceId(requestWebContents)`
 

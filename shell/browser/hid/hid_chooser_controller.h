@@ -54,7 +54,7 @@ class HidChooserController
   ~HidChooserController() override;
 
   // static
-  static std::string PhysicalDeviceIdFromDeviceInfo(
+  static const std::string& PhysicalDeviceIdFromDeviceInfo(
       const device::mojom::HidDeviceInfo& device);
 
   // HidChooserContext::DeviceObserver:

@@ -1,5 +1,5 @@
 import { ParentPort } from '@electron/internal/utility/parent-port';
-const Module = require('module');
+const Module = require('module') as NodeJS.ModuleInternal;
 const v8Util = process._linkedBinding('electron_common_v8_util');
 
 const entryScript: string = v8Util.getHiddenValue(process, '_serviceStartupScript');

@@ -1,5 +1,5 @@
-const {app, BrowserWindow, Menu, ipcMain} = require('electron')
-const path = require('path')
+const { app, BrowserWindow, Menu, ipcMain } = require('electron/main')
+const path = require('node:path')
 
 function createWindow () {
   const mainWindow = new BrowserWindow({
@@ -12,14 +12,14 @@ function createWindow () {
     {
       label: app.name,
       submenu: [
-      {
-        click: () => mainWindow.webContents.send('update-counter', 1),
-        label: 'Increment',
-      },
-      {
-        click: () => mainWindow.webContents.send('update-counter', -1),
-        label: 'Decrement',
-      }
+        {
+          click: () => mainWindow.webContents.send('update-counter', 1),
+          label: 'Increment'
+        },
+        {
+          click: () => mainWindow.webContents.send('update-counter', -1),
+          label: 'Decrement'
+        }
       ]
     }
 

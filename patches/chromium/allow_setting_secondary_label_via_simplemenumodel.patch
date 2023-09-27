@@ -6,10 +6,10 @@ Subject: Allow setting secondary label via SimpleMenuModel
 Builds on https://chromium-review.googlesource.com/c/chromium/src/+/2208976
 
 diff --git a/ui/base/models/simple_menu_model.cc b/ui/base/models/simple_menu_model.cc
-index c058edaf6ea40746228da569a8739c50f958500d..2d4306d16ce8e354dcdf3da8c5afce8546349fcd 100644
+index da8b1d7d22f6f316263b7ea1595000b678920103..7165c6a3851c582c0dd71b667f46a52f568d0a12 100644
 --- a/ui/base/models/simple_menu_model.cc
 +++ b/ui/base/models/simple_menu_model.cc
-@@ -52,6 +52,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
+@@ -48,6 +48,11 @@ std::u16string SimpleMenuModel::Delegate::GetLabelForCommandId(
    return std::u16string();
  }
  
@@ -21,7 +21,7 @@ index c058edaf6ea40746228da569a8739c50f958500d..2d4306d16ce8e354dcdf3da8c5afce85
  ImageModel SimpleMenuModel::Delegate::GetIconForCommandId(
      int command_id) const {
    return ImageModel();
-@@ -310,6 +315,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
+@@ -333,6 +338,11 @@ void SimpleMenuModel::SetLabel(size_t index, const std::u16string& label) {
    MenuItemsChanged();
  }
  
@@ -33,7 +33,7 @@ index c058edaf6ea40746228da569a8739c50f958500d..2d4306d16ce8e354dcdf3da8c5afce85
  void SimpleMenuModel::SetMinorText(size_t index,
                                     const std::u16string& minor_text) {
    items_[ValidateItemIndex(index)].minor_text = minor_text;
-@@ -403,6 +413,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
+@@ -417,6 +427,12 @@ std::u16string SimpleMenuModel::GetLabelAt(size_t index) const {
    return items_[ValidateItemIndex(index)].label;
  }
  
@@ -47,7 +47,7 @@ index c058edaf6ea40746228da569a8739c50f958500d..2d4306d16ce8e354dcdf3da8c5afce85
    return items_[ValidateItemIndex(index)].minor_text;
  }
 diff --git a/ui/base/models/simple_menu_model.h b/ui/base/models/simple_menu_model.h
-index 3f2ae4cb1347a8bac7df6d993d5b70b4212fdc66..72d70e3f94f990f8f9f5e4268f6186762e409d15 100644
+index 9064a0db21f5751762a4534ee2e5878d09ae020d..29fd4818bb4565b5ab6c5ca3daa507593bd7244a 100644
 --- a/ui/base/models/simple_menu_model.h
 +++ b/ui/base/models/simple_menu_model.h
 @@ -50,6 +50,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
@@ -58,7 +58,7 @@ index 3f2ae4cb1347a8bac7df6d993d5b70b4212fdc66..72d70e3f94f990f8f9f5e4268f618676
      // Gets the icon for the item with the specified id.
      virtual ImageModel GetIconForCommandId(int command_id) const;
  
-@@ -167,6 +168,9 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -169,6 +170,9 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
    // Sets the label for the item at |index|.
    void SetLabel(size_t index, const std::u16string& label);
  
@@ -68,7 +68,7 @@ index 3f2ae4cb1347a8bac7df6d993d5b70b4212fdc66..72d70e3f94f990f8f9f5e4268f618676
    // Sets the minor text for the item at |index|.
    void SetMinorText(size_t index, const std::u16string& minor_text);
  
-@@ -206,6 +210,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
+@@ -207,6 +211,7 @@ class COMPONENT_EXPORT(UI_BASE) SimpleMenuModel : public MenuModel {
    ui::MenuSeparatorType GetSeparatorTypeAt(size_t index) const override;
    int GetCommandIdAt(size_t index) const override;
    std::u16string GetLabelAt(size_t index) const override;

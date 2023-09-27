@@ -1,15 +1,15 @@
 import { assert, expect } from 'chai';
-import * as cp from 'child_process';
-import * as https from 'https';
-import * as http from 'http';
-import * as net from 'net';
+import * as cp from 'node:child_process';
+import * as https from 'node:https';
+import * as http from 'node:http';
+import * as net from 'node:net';
 import * as fs from 'fs-extra';
-import * as path from 'path';
-import { promisify } from 'util';
-import { app, BrowserWindow, Menu, session, net as electronNet } from 'electron/main';
+import * as path from 'node:path';
+import { promisify } from 'node:util';
+import { app, BrowserWindow, Menu, session, net as electronNet, WebContents } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
-import { once } from 'events';
+import { once } from 'node:events';
 import split = require('split')
 
 const fixturesPath = path.resolve(__dirname, 'fixtures');
@@ -188,12 +188,7 @@ describe('app module', () => {
       expect(code).to.equal(123, 'exit code should be 123, if you see this please tag @MarshallOfSound');
     });
 
-    it('exits gracefully', async function () {
-      if (!['darwin', 'linux'].includes(process.platform)) {
-        this.skip();
-        return;
-      }
-
+    ifit(['darwin', 'linux'].includes(process.platform))('exits gracefully', async function () {
       const electronPath = process.execPath;
       const appPath = path.join(fixturesPath, 'api', 'singleton');
       appProcess = cp.spawn(electronPath, [appPath]);
@@ -350,7 +345,7 @@ describe('app module', () => {
           expectedAdditionalData: undefined
         });
         assert(false);
-      } catch (e) {
+      } catch {
         // This is expected.
       }
     });
@@ -409,13 +404,7 @@ describe('app module', () => {
     });
   });
 
-  describe('app.setUserActivity(type, userInfo)', () => {
-    before(function () {
-      if (process.platform !== 'darwin') {
-        this.skip();
-      }
-    });
-
+  ifdescribe(process.platform === 'darwin')('app.setUserActivity(type, userInfo)', () => {
     it('sets the current activity', () => {
       app.setUserActivity('com.electron.testActivity', { testData: '123' });
       expect(app.getCurrentActivityType()).to.equal('com.electron.testActivity');
@@ -506,7 +495,7 @@ describe('app module', () => {
     afterEach(() => closeWindow(w).then(() => { w = null as any; }));
 
     it('should emit browser-window-focus event when window is focused', async () => {
-      const emitted = once(app, 'browser-window-focus');
+      const emitted = once(app, 'browser-window-focus') as Promise<[any, BrowserWindow]>;
       w = new BrowserWindow({ show: false });
       w.emit('focus');
       const [, window] = await emitted;
@@ -514,7 +503,7 @@ describe('app module', () => {
     });
 
     it('should emit browser-window-blur event when window is blurred', async () => {
-      const emitted = once(app, 'browser-window-blur');
+      const emitted = once(app, 'browser-window-blur') as Promise<[any, BrowserWindow]>;
       w = new BrowserWindow({ show: false });
       w.emit('blur');
       const [, window] = await emitted;
@@ -522,14 +511,14 @@ describe('app module', () => {
     });
 
     it('should emit browser-window-created event when window is created', async () => {
-      const emitted = once(app, 'browser-window-created');
+      const emitted = once(app, 'browser-window-created') as Promise<[any, BrowserWindow]>;
       w = new BrowserWindow({ show: false });
       const [, window] = await emitted;
       expect(window.id).to.equal(w.id);
     });
 
     it('should emit web-contents-created event when a webContents is created', async () => {
-      const emitted = once(app, 'web-contents-created');
+      const emitted = once(app, 'web-contents-created') as Promise<[any, WebContents]>;
       w = new BrowserWindow({ show: false });
       const [, webContents] = await emitted;
       expect(webContents.id).to.equal(w.webContents.id);
@@ -546,7 +535,7 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const emitted = once(app, 'renderer-process-crashed');
+      const emitted = once(app, 'renderer-process-crashed') as Promise<[any, WebContents]>;
       w.webContents.executeJavaScript('process.crash()');
 
       const [, webContents] = await emitted;
@@ -564,7 +553,7 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const emitted = once(app, 'render-process-gone');
+      const emitted = once(app, 'render-process-gone') as Promise<[any, WebContents, Electron.RenderProcessGoneDetails]>;
       w.webContents.executeJavaScript('process.crash()');
 
       const [, webContents, details] = await emitted;
@@ -737,9 +726,7 @@ describe('app module', () => {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
     });
 
-    it('correctly sets and unsets the LoginItem as hidden', function () {
-      if (process.platform !== 'darwin') this.skip();
-
+    ifit(process.platform === 'darwin')('correctly sets and unsets the LoginItem as hidden', function () {
       expect(app.getLoginItemSettings().openAtLogin).to.equal(false);
       expect(app.getLoginItemSettings().openAsHidden).to.equal(false);
 
@@ -1099,13 +1086,10 @@ describe('app module', () => {
     });
   });
 
-  describe('select-client-certificate event', () => {
+  ifdescribe(process.platform !== 'linux')('select-client-certificate event', () => {
     let w: BrowserWindow;
 
     before(function () {
-      if (process.platform === 'linux') {
-        this.skip();
-      }
       session.fromPartition('empty-certificate').setCertificateVerifyProc((req, cb) => { cb(0); });
     });
 
@@ -1134,7 +1118,7 @@ describe('app module', () => {
     });
   });
 
-  describe('setAsDefaultProtocolClient(protocol, path, args)', () => {
+  ifdescribe(process.platform === 'win32')('setAsDefaultProtocolClient(protocol, path, args)', () => {
     const protocol = 'electron-test';
     const updateExe = path.resolve(path.dirname(process.execPath), '..', 'Update.exe');
     const processStartArgs = [
@@ -1146,16 +1130,12 @@ describe('app module', () => {
     let classesKey: any;
 
     before(function () {
-      if (process.platform !== 'win32') {
-        this.skip();
-      } else {
-        Winreg = require('winreg');
+      Winreg = require('winreg');
 
-        classesKey = new Winreg({
-          hive: Winreg.HKCU,
-          key: '\\Software\\Classes\\'
-        });
-      }
+      classesKey = new Winreg({
+        hive: Winreg.HKCU,
+        key: '\\Software\\Classes\\'
+      });
     });
 
     after(function (done) {
@@ -1204,7 +1184,7 @@ describe('app module', () => {
       app.setAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1213,7 +1193,7 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(false);
     });
 
@@ -1229,7 +1209,7 @@ describe('app module', () => {
       app.removeAsDefaultProtocolClient(protocol);
 
       const keys = await promisify(classesKey.keys).call(classesKey) as any[];
-      const exists = !!keys.find(key => key.key.includes(protocol));
+      const exists = keys.some(key => key.key.includes(protocol));
       expect(exists).to.equal(true);
     });
 
@@ -1240,21 +1220,18 @@ describe('app module', () => {
   });
 
   describe('getApplicationNameForProtocol()', () => {
-    it('returns application names for common protocols', function () {
+    // TODO: Linux CI doesn't have registered http & https handlers
+    ifit(!(process.env.CI && process.platform === 'linux'))('returns application names for common protocols', function () {
       // We can't expect particular app names here, but these protocols should
       // at least have _something_ registered. Except on our Linux CI
       // environment apparently.
-      if (process.platform === 'linux') {
-        this.skip();
-      }
-
       const protocols = [
         'http://',
         'https://'
       ];
-      protocols.forEach((protocol) => {
+      for (const protocol of protocols) {
         expect(app.getApplicationNameForProtocol(protocol)).to.not.equal('');
-      });
+      }
     });
 
     it('returns an empty string for a bogus protocol', () => {
@@ -1445,7 +1422,7 @@ describe('app module', () => {
         }
       } else {
         // return error if not clean exit
-        return Promise.reject(new Error(errorData));
+        throw new Error(errorData);
       }
     };
     const verifyBasicGPUInfo = async (gpuInfo: any) => {
@@ -1492,28 +1469,25 @@ describe('app module', () => {
     });
   });
 
-  describe('sandbox options', () => {
+  ifdescribe(!(process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')))('sandbox options', () => {
+    // Our ARM tests are run on VSTS rather than CircleCI, and the Docker
+    // setup on VSTS disallows syscalls that Chrome requires for setting up
+    // sandboxing.
+    // See:
+    // - https://docs.docker.com/engine/security/seccomp/#significant-syscalls-blocked-by-the-default-profile
+    // - https://chromium.googlesource.com/chromium/src/+/70.0.3538.124/sandbox/linux/services/credentials.cc#292
+    // - https://github.com/docker/docker-ce/blob/ba7dfc59ccfe97c79ee0d1379894b35417b40bca/components/engine/profiles/seccomp/seccomp_default.go#L497
+    // - https://blog.jessfraz.com/post/how-to-use-new-docker-seccomp-profiles/
+    //
+    // Adding `--cap-add SYS_ADMIN` or `--security-opt seccomp=unconfined`
+    // to the Docker invocation allows the syscalls that Chrome needs, but
+    // are probably more permissive than we'd like.
+
     let appProcess: cp.ChildProcess = null as any;
     let server: net.Server = null as any;
     const socketPath = process.platform === 'win32' ? '\\\\.\\pipe\\electron-mixed-sandbox' : '/tmp/electron-mixed-sandbox';
 
     beforeEach(function (done) {
-      if (process.platform === 'linux' && (process.arch === 'arm64' || process.arch === 'arm')) {
-        // Our ARM tests are run on VSTS rather than CircleCI, and the Docker
-        // setup on VSTS disallows syscalls that Chrome requires for setting up
-        // sandboxing.
-        // See:
-        // - https://docs.docker.com/engine/security/seccomp/#significant-syscalls-blocked-by-the-default-profile
-        // - https://chromium.googlesource.com/chromium/src/+/70.0.3538.124/sandbox/linux/services/credentials.cc#292
-        // - https://github.com/docker/docker-ce/blob/ba7dfc59ccfe97c79ee0d1379894b35417b40bca/components/engine/profiles/seccomp/seccomp_default.go#L497
-        // - https://blog.jessfraz.com/post/how-to-use-new-docker-seccomp-profiles/
-        //
-        // Adding `--cap-add SYS_ADMIN` or `--security-opt seccomp=unconfined`
-        // to the Docker invocation allows the syscalls that Chrome needs, but
-        // are probably more permissive than we'd like.
-        this.skip();
-        return;
-      }
       fs.unlink(socketPath, () => {
         server = net.createServer();
         server.listen(socketPath);
@@ -1613,8 +1587,7 @@ describe('app module', () => {
     });
   });
 
-  const dockDescribe = process.platform === 'darwin' ? describe : describe.skip;
-  dockDescribe('dock APIs', () => {
+  ifdescribe(process.platform === 'darwin')('dock APIs', () => {
     after(async () => {
       await app.dock.show();
     });
@@ -1962,7 +1935,7 @@ describe('default behavior', () => {
     it('should emit a login event on app when a WebContents hits a 401', async () => {
       const w = new BrowserWindow({ show: false });
       w.loadURL(serverUrl);
-      const [, webContents] = await once(app, 'login');
+      const [, webContents] = await once(app, 'login') as [any, WebContents];
       expect(webContents).to.equal(w.webContents);
     });
   });

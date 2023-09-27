@@ -9,9 +9,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "base/apple/osstatus_logging.h"
 #include "base/files/file_util.h"
 #include "base/logging.h"
-#include "base/mac/mac_logging.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/process/launch.h"
 #include "base/strings/sys_string_conversions.h"
@@ -82,8 +82,8 @@ int LaunchProgram(const StringVector& relauncher_args,
 
   base::LaunchOptions options;
   options.new_process_group = true;  // detach
-  options.fds_to_remap.push_back(std::make_pair(devnull.get(), STDERR_FILENO));
-  options.fds_to_remap.push_back(std::make_pair(devnull.get(), STDOUT_FILENO));
+  options.fds_to_remap.emplace_back(devnull.get(), STDERR_FILENO);
+  options.fds_to_remap.emplace_back(devnull.get(), STDOUT_FILENO);
 
   base::Process process = base::LaunchProcess(argv, options);
   return process.IsValid() ? 0 : 1;

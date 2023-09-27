@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "base/command_line.h"
+#include "base/containers/fixed_flat_map.h"
 #include "base/memory/ptr_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/utf_string_conversions.h"
@@ -43,20 +44,15 @@ struct Converter<blink::mojom::AutoplayPolicy> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::mojom::AutoplayPolicy* out) {
-    std::string policy_str;
-    if (!ConvertFromV8(isolate, val, &policy_str))
-      return false;
-    if (policy_str == "no-user-gesture-required") {
-      *out = blink::mojom::AutoplayPolicy::kNoUserGestureRequired;
-      return true;
-    } else if (policy_str == "user-gesture-required") {
-      *out = blink::mojom::AutoplayPolicy::kUserGestureRequired;
-      return true;
-    } else if (policy_str == "document-user-activation-required") {
-      *out = blink::mojom::AutoplayPolicy::kDocumentUserActivationRequired;
-      return true;
-    }
-    return false;
+    using Val = blink::mojom::AutoplayPolicy;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"document-user-activation-required",
+             Val::kDocumentUserActivationRequired},
+            {"no-user-gesture-required", Val::kNoUserGestureRequired},
+            {"user-gesture-required", Val::kUserGestureRequired},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -65,23 +61,15 @@ struct Converter<blink::mojom::V8CacheOptions> {
   static bool FromV8(v8::Isolate* isolate,
                      v8::Local<v8::Value> val,
                      blink::mojom::V8CacheOptions* out) {
-    std::string v8_cache_options;
-    if (!ConvertFromV8(isolate, val, &v8_cache_options))
-      return false;
-    if (v8_cache_options == "none") {
-      *out = blink::mojom::V8CacheOptions::kNone;
-      return true;
-    } else if (v8_cache_options == "code") {
-      *out = blink::mojom::V8CacheOptions::kCode;
-      return true;
-    } else if (v8_cache_options == "bypassHeatCheck") {
-      *out = blink::mojom::V8CacheOptions::kCodeWithoutHeatCheck;
-      return true;
-    } else if (v8_cache_options == "bypassHeatCheckAndEagerCompile") {
-      *out = blink::mojom::V8CacheOptions::kFullCodeWithoutHeatCheck;
-      return true;
-    }
-    return false;
+    using Val = blink::mojom::V8CacheOptions;
+    static constexpr auto Lookup =
+        base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+            {"bypassHeatCheck", Val::kCodeWithoutHeatCheck},
+            {"bypassHeatCheckAndEagerCompile", Val::kFullCodeWithoutHeatCheck},
+            {"code", Val::kCode},
+            {"none", Val::kNone},
+        });
+    return FromV8WithLookup(isolate, val, Lookup, out);
   }
 };
 
@@ -226,7 +214,7 @@ void WebContentsPreferences::SetFromDictionary(
   // preferences don't save a transparency option,
   // apply any existing transparency setting to background_color_
   bool transparent;
-  if (web_preferences.Get(options::kTransparent, &transparent)) {
+  if (web_preferences.Get(options::kTransparent, &transparent) && transparent) {
     background_color_ = SK_ColorTRANSPARENT;
   }
   std::string background_color;
@@ -246,7 +234,6 @@ void WebContentsPreferences::SetFromDictionary(
     disable_blink_features_ = disable_blink_features;
 
   base::FilePath::StringType preload_path;
-  std::string preload_url_str;
   if (web_preferences.Get(options::kPreloadScript, &preload_path)) {
     base::FilePath preload(preload_path);
     if (preload.IsAbsolute()) {
@@ -409,13 +396,18 @@ void WebContentsPreferences::SaveLastPreferences() {
 }
 
 void WebContentsPreferences::OverrideWebkitPrefs(
-    blink::web_pref::WebPreferences* prefs) {
+    blink::web_pref::WebPreferences* prefs,
+    blink::RendererPreferences* renderer_prefs) {
   prefs->javascript_enabled = javascript_;
   prefs->images_enabled = images_;
   prefs->animation_policy = image_animation_policy_;
   prefs->text_areas_are_resizable = text_areas_are_resizable_;
-  prefs->navigate_on_drag_drop = navigate_on_drag_drop_;
   prefs->autoplay_policy = autoplay_policy_;
+
+  // TODO: navigate_on_drag_drop was removed from web prefs in favor of the
+  // equivalent option in renderer prefs. this option should be deprecated from
+  // our API and then removed here.
+  renderer_prefs->can_accept_load_drops = navigate_on_drag_drop_;
 
   // Check if webgl should be enabled.
   prefs->webgl1_enabled = webgl_;
@@ -425,24 +417,36 @@ void WebContentsPreferences::OverrideWebkitPrefs(
   prefs->web_security_enabled = web_security_;
   prefs->allow_running_insecure_content = allow_running_insecure_content_;
 
-  if (auto font =
-          default_font_family_.find("standard") != default_font_family_.end())
-    prefs->standard_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("serif") != default_font_family_.end())
-    prefs->serif_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("sansSerif") != default_font_family_.end())
-    prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("monospace") != default_font_family_.end())
-    prefs->fixed_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("cursive") != default_font_family_.end())
-    prefs->cursive_font_family_map[blink::web_pref::kCommonScript] = font;
-  if (auto font =
-          default_font_family_.find("fantasy") != default_font_family_.end())
-    prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] = font;
+  if (!default_font_family_.empty()) {
+    if (auto iter = default_font_family_.find("standard");
+        iter != default_font_family_.end())
+      prefs->standard_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("serif");
+        iter != default_font_family_.end())
+      prefs->serif_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("sansSerif");
+        iter != default_font_family_.end())
+      prefs->sans_serif_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("monospace");
+        iter != default_font_family_.end())
+      prefs->fixed_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("cursive");
+        iter != default_font_family_.end())
+      prefs->cursive_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("fantasy");
+        iter != default_font_family_.end())
+      prefs->fantasy_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+    if (auto iter = default_font_family_.find("math");
+        iter != default_font_family_.end())
+      prefs->math_font_family_map[blink::web_pref::kCommonScript] =
+          iter->second;
+  }
 
   if (default_font_size_)
     prefs->default_font_size = *default_font_size_;

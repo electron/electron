@@ -8,20 +8,20 @@ is therefore not a method that will compile given we don't include
 relevant files.
 
 diff --git a/chrome/browser/profiles/profile_selections.cc b/chrome/browser/profiles/profile_selections.cc
-index 10aa2b39d4033d92fe7502532a497d394c4351d9..23e70eb0b6f49b164ffe615b32d2821e83753658 100644
+index 7e0a4eb93ac9444d760d13736c1a2f6381fc3a7b..d5e45f27144ee4b05b82d699071eaa0780c9401d 100644
 --- a/chrome/browser/profiles/profile_selections.cc
 +++ b/chrome/browser/profiles/profile_selections.cc
-@@ -18,6 +18,7 @@ BASE_FEATURE(kSystemProfileSelectionDefaultNone,
-              base::FeatureState::FEATURE_ENABLED_BY_DEFAULT);
+@@ -14,6 +14,7 @@
+ #endif  // BUILDFLAG(IS_CHROMEOS_ASH)
  
  bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
 +#if 0
+   // By default disable all services for System Profile.
+   // Even though having no services is also the default value for Guest Profile,
+   // this is not really the case in practice because a lot of Service Factories
+@@ -21,7 +22,7 @@ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
    if (profile && profile->IsSystemProfile()) {
-     // The default behavior of the system profile selection depends on the value
-     // of `kSystemProfileSelectionDefaultNone` feature flag.
-@@ -28,7 +29,7 @@ bool AreKeyedServicesDisabledForProfileByDefault(const Profile* profile) {
- 
-     return system_profile_default == ProfileSelection::kNone;
+     return true;
    }
 -
 +#endif

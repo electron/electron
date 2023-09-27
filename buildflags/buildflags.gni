@@ -3,22 +3,9 @@
 # found in the LICENSE file.
 
 declare_args() {
-  enable_desktop_capturer = true
-
-  # Allow running Electron as a node binary.
-  enable_run_as_node = true
-
-  enable_osr = true
-
   enable_views_api = true
 
   enable_pdf_viewer = true
-
-  enable_tts = true
-
-  enable_color_chooser = true
-
-  enable_picture_in_picture = true
 
   # Provide a fake location provider for mocking
   # the geolocation responses. Disable it if you
@@ -31,4 +18,9 @@ declare_args() {
 
   # Enable Spellchecker support
   enable_builtin_spellchecker = true
+
+  # The version of Electron.
+  # Packagers and vendor builders should set this in gn args to avoid running
+  # the script that reads git tag.
+  override_electron_version = ""
 }

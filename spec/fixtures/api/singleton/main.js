@@ -8,7 +8,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 
 app.on('second-instance', (event, args, workingDirectory) => {
   setImmediate(() => {
-    console.log(JSON.stringify(args));
+    console.log(JSON.stringify(args), workingDirectory);
     app.exit(0);
   });
 });

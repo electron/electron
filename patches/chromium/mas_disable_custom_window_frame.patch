@@ -7,10 +7,10 @@ Disable private window frame APIs (NSNextStepFrame and NSThemeFrame) for MAS
 build.
 
 diff --git a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-index b31c3be1895f7ca4a0f5c61f06a66eb1e1fbc5a6..ad4a1ecb02573bb5d34d134c61ec71f3fb092f42 100644
+index 9db1a07aabdbc5ebcf5d971664a8783a3d4810a3..eed51d0af307a0bb1c6cbbcbe2dbd3c906d0999c 100644
 --- a/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
 +++ b/components/remote_cocoa/app_shim/browser_native_widget_window_mac.mm
-@@ -9,6 +9,7 @@
+@@ -10,6 +10,7 @@
  #include "components/remote_cocoa/app_shim/native_widget_ns_window_bridge.h"
  #include "components/remote_cocoa/common/native_widget_ns_window_host.mojom.h"
  
@@ -18,7 +18,7 @@ index b31c3be1895f7ca4a0f5c61f06a66eb1e1fbc5a6..ad4a1ecb02573bb5d34d134c61ec71f3
  @interface NSWindow (PrivateBrowserNativeWidgetAPI)
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle;
  @end
-@@ -69,10 +70,13 @@ - (BOOL)_shouldCenterTrafficLights {
+@@ -70,10 +71,13 @@ - (BOOL)_shouldCenterTrafficLights {
  
  @end
  
@@ -32,7 +32,7 @@ index b31c3be1895f7ca4a0f5c61f06a66eb1e1fbc5a6..ad4a1ecb02573bb5d34d134c61ec71f3
  + (Class)frameViewClassForStyleMask:(NSUInteger)windowStyle {
    // - NSThemeFrame and its subclasses will be nil if it's missing at runtime.
    if ([BrowserWindowFrame class])
-@@ -87,6 +91,8 @@ - (BOOL)_usesCustomDrawing {
+@@ -120,6 +124,8 @@ - (BOOL)_usesCustomDrawing {
    return NO;
  }
  
@@ -75,7 +75,7 @@ index 3a815ebf505bd95fa7f6b61ba433d98fbfe20225..dbbebbdc1735bc14224dfcde0b7fe3a6
 +
  @end
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
-index 4f071d4ab7ee171e35f1538dc87b591861f62a1a..71cc2b0a97781f1555902e426cd6cd802875aedd 100644
+index 94ac4fa8db42cb70fa5032a0c1eeb10ad94b8d9a..048cfe7b16d74845492c9317f1ed9790fed36250 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.h
 @@ -17,6 +17,7 @@ class NativeWidgetNSWindowBridge;
@@ -95,10 +95,10 @@ index 4f071d4ab7ee171e35f1538dc87b591861f62a1a..71cc2b0a97781f1555902e426cd6cd80
  // The NSWindow used by BridgedNativeWidget. Provides hooks into AppKit that
  // can only be accomplished by overriding methods.
 diff --git a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-index 5443dddab76c1e91ed7caf5447af68c037c6c802..6e104d5f5f04476bcfffb3406159c6fe3adfa2ea 100644
+index 517333705c9b68706159bff2396c3ba1f8dc1f55..f11ce18fb4d1567eb53e6b9272424eecb40e51e1 100644
 --- a/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
 +++ b/components/remote_cocoa/app_shim/native_widget_mac_nswindow.mm
-@@ -96,7 +96,9 @@ void OrderChildWindow(NSWindow* child_window,
+@@ -113,7 +113,9 @@ void OrderChildWindow(NSWindow* child_window,
  }  // namespace
  
  @interface NSWindow (Private)
@@ -108,7 +108,7 @@ index 5443dddab76c1e91ed7caf5447af68c037c6c802..6e104d5f5f04476bcfffb3406159c6fe
  - (BOOL)hasKeyAppearance;
  - (long long)_resizeDirectionForMouseLocation:(CGPoint)location;
  - (BOOL)_isConsideredOpenForPersistentState;
-@@ -129,6 +131,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
+@@ -161,6 +163,8 @@ - (void)cr_mouseDownOnFrameView:(NSEvent*)event {
  }
  @end
  
@@ -117,7 +117,7 @@ index 5443dddab76c1e91ed7caf5447af68c037c6c802..6e104d5f5f04476bcfffb3406159c6fe
  @implementation NativeWidgetMacNSWindowTitledFrame
  - (void)mouseDown:(NSEvent*)event {
    if (self.window.isMovable)
-@@ -155,6 +159,8 @@ - (BOOL)usesCustomDrawing {
+@@ -187,6 +191,8 @@ - (BOOL)usesCustomDrawing {
  }
  @end
  
@@ -125,8 +125,8 @@ index 5443dddab76c1e91ed7caf5447af68c037c6c802..6e104d5f5f04476bcfffb3406159c6fe
 +
  @implementation NativeWidgetMacNSWindow {
   @private
-   base::scoped_nsobject<CommandDispatcher> _commandDispatcher;
-@@ -338,6 +344,8 @@ - (NSAccessibilityRole)accessibilityRole {
+   CommandDispatcher* __strong _commandDispatcher;
+@@ -396,6 +402,8 @@ - (NSAccessibilityRole)accessibilityRole {
  
  // NSWindow overrides.
  
@@ -135,7 +135,7 @@ index 5443dddab76c1e91ed7caf5447af68c037c6c802..6e104d5f5f04476bcfffb3406159c6fe
  + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    if (windowStyle & NSWindowStyleMaskTitled) {
      if (Class customFrame = [NativeWidgetMacNSWindowTitledFrame class])
-@@ -349,6 +357,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
+@@ -407,6 +415,8 @@ + (Class)frameViewClassForStyleMask:(NSWindowStyleMask)windowStyle {
    return [super frameViewClassForStyleMask:windowStyle];
  }
  

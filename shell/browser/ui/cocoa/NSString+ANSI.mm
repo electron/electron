@@ -6,7 +6,6 @@
 
 #import <Cocoa/Cocoa.h>
 
-#include "base/mac/scoped_nsobject.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/ui/cocoa/NSString+ANSI.h"
 #include "skia/ext/skia_utils_mac.h"
@@ -149,12 +148,11 @@
 - (NSMutableAttributedString*)attributedStringParsingANSICodes {
   NSMutableAttributedString* result = [[NSMutableAttributedString alloc] init];
 
-  base::scoped_nsobject<NSMutableDictionary> attributes(
-      [[NSMutableDictionary alloc] init]);
+  NSMutableDictionary* attributes([[NSMutableDictionary alloc] init]);
   NSArray* parts = [self componentsSeparatedByString:@"\033["];
-  [result appendAttributedString:[[[NSAttributedString alloc]
+  [result appendAttributedString:[[NSAttributedString alloc]
                                      initWithString:parts.firstObject
-                                         attributes:nil] autorelease]];
+                                         attributes:nil]];
 
   for (NSString* part in
        [parts subarrayWithRange:NSMakeRange(1, parts.count - 1)]) {
@@ -165,18 +163,16 @@
     NSString* text = sequence.lastObject;
 
     if (sequence.count < 2) {
-      [result
-          appendAttributedString:[[[NSAttributedString alloc]
-                                     initWithString:text
-                                         attributes:attributes] autorelease]];
+      [result appendAttributedString:[[NSAttributedString alloc]
+                                         initWithString:text
+                                             attributes:attributes]];
     } else if (sequence.count >= 2) {
       text = [[sequence subarrayWithRange:NSMakeRange(1, sequence.count - 1)]
           componentsJoinedByString:@"m"];
       [attributes modifyAttributesForANSICodes:sequence[0]];
-      [result
-          appendAttributedString:[[[NSAttributedString alloc]
-                                     initWithString:text
-                                         attributes:attributes] autorelease]];
+      [result appendAttributedString:[[NSAttributedString alloc]
+                                         initWithString:text
+                                             attributes:attributes]];
     }
   }
 

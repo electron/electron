@@ -13,6 +13,7 @@
 #include "shell/browser/ui/views/win_caption_button.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "ui/base/l10n/l10n_util.h"
+#include "ui/compositor/layer.h"
 #include "ui/strings/grit/ui_strings.h"
 #include "ui/views/background.h"
 #include "ui/views/layout/flex_layout.h"
@@ -129,9 +130,7 @@ void WinCaptionButtonContainer::AddedToWidget() {
   UpdateButtons();
 
   if (frame_view_->window()->IsWindowControlsOverlayEnabled()) {
-    SetBackground(views::CreateSolidBackground(
-        frame_view_->window()->overlay_button_color()));
-    SetPaintToLayer();
+    UpdateBackground();
   }
 }
 
@@ -146,6 +145,16 @@ void WinCaptionButtonContainer::OnWidgetBoundsChanged(
   UpdateButtons();
 }
 
+void WinCaptionButtonContainer::UpdateBackground() {
+  const SkColor bg_color = frame_view_->window()->overlay_button_color();
+  const SkAlpha theme_alpha = SkColorGetA(bg_color);
+  SetBackground(views::CreateSolidBackground(bg_color));
+  SetPaintToLayer();
+
+  if (theme_alpha < SK_AlphaOPAQUE)
+    layer()->SetFillsBoundsOpaquely(false);
+}
+
 void WinCaptionButtonContainer::UpdateButtons() {
   const bool is_maximized = frame_view_->frame()->IsMaximized();
   restore_button_->SetVisible(is_maximized);
@@ -153,6 +162,7 @@ void WinCaptionButtonContainer::UpdateButtons() {
 
   const bool minimizable = frame_view_->window()->IsMinimizable();
   minimize_button_->SetEnabled(minimizable);
+  minimize_button_->SetVisible(minimizable);
 
   // In touch mode, windows cannot be taken out of fullscreen or tiled mode, so
   // the maximize/restore button should be disabled.

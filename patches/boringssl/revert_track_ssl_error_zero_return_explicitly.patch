@@ -20,10 +20,10 @@ index 2ca14efae5ea478f43794a81883b00dfdb1a37b0..d73055fbf39334925ef4b4804bbaca57
  
      case ssl_open_record_error:
 diff --git a/ssl/ssl_lib.cc b/ssl/ssl_lib.cc
-index 86e8eb33e2f99b9a6173550027cfd0812a39614e..f2aac85c096bef42a015135b02936e3d4e9a4c56 100644
+index 5a2ac2a8f586f2b90e4eb2989b05406a5e434769..2cac586039713df70e57eee5ecedbfc9f8d33510 100644
 --- a/ssl/ssl_lib.cc
 +++ b/ssl/ssl_lib.cc
-@@ -1320,7 +1320,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
+@@ -1333,7 +1333,7 @@ int SSL_get_error(const SSL *ssl, int ret_code) {
    }
  
    if (ret_code == 0) {
@@ -32,7 +32,7 @@ index 86e8eb33e2f99b9a6173550027cfd0812a39614e..f2aac85c096bef42a015135b02936e3d
        return SSL_ERROR_ZERO_RETURN;
      }
      // An EOF was observed which violates the protocol, and the underlying
-@@ -2597,13 +2597,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
+@@ -2697,13 +2697,7 @@ void *SSL_CTX_get_ex_data(const SSL_CTX *ctx, int idx) {
    return CRYPTO_get_ex_data(&ctx->ex_data, idx);
  }
  
@@ -47,42 +47,3 @@ index 86e8eb33e2f99b9a6173550027cfd0812a39614e..f2aac85c096bef42a015135b02936e3d
  
  void SSL_CTX_set_tmp_rsa_callback(SSL_CTX *ctx,
                                    RSA *(*cb)(SSL *ssl, int is_export,
-diff --git a/ssl/ssl_test.cc b/ssl/ssl_test.cc
-index f51c11efc12209377773204808b85c9cbf5d3bff..d19fd1f9643f99fdd56753a942fccefff08728ac 100644
---- a/ssl/ssl_test.cc
-+++ b/ssl/ssl_test.cc
-@@ -8460,11 +8460,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
-   EXPECT_EQ(ret, 0);
-   EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
- 
--  // Further calls to |SSL_read| continue to report |SSL_ERROR_ZERO_RETURN|.
--  ret = SSL_read(client.get(), buf, sizeof(buf));
--  EXPECT_EQ(ret, 0);
--  EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_ZERO_RETURN);
--
-   // Although the client has seen close_notify, it should continue to report
-   // |SSL_ERROR_SYSCALL| when its writes fail.
-   ret = SSL_write(client.get(), data, sizeof(data));
-@@ -8472,22 +8467,6 @@ TEST(SSLTest, ErrorSyscallAfterCloseNotify) {
-   EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
-   EXPECT_TRUE(write_failed);
-   write_failed = false;
--
--  // Cause |BIO_write| to fail with a return value of zero instead.
--  // |SSL_get_error| should not misinterpret this as a close_notify.
--  //
--  // This is not actually a correct implementation of |BIO_write|, but the rest
--  // of the code treats zero from |BIO_write| as an error, so ensure it does so
--  // correctly. Fixing https://crbug.com/boringssl/503 will make this case moot.
--  BIO_meth_set_write(method.get(), [](BIO *, const char *, int) -> int {
--    write_failed = true;
--    return 0;
--  });
--  ret = SSL_write(client.get(), data, sizeof(data));
--  EXPECT_EQ(ret, 0);
--  EXPECT_EQ(SSL_get_error(client.get(), ret), SSL_ERROR_SYSCALL);
--  EXPECT_TRUE(write_failed);
--  write_failed = false;
- }
- 
- // Test that |SSL_shutdown|, when quiet shutdown is enabled, simulates receiving

@@ -1,5 +1,5 @@
-const {app, BrowserWindow, ipcMain} = require('electron')
-const path = require('path')
+const { app, BrowserWindow, ipcMain } = require('electron/main')
+const path = require('node:path')
 
 function createWindow () {
   const mainWindow = new BrowserWindow({

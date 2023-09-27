@@ -21,7 +21,8 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
                      public gin_helper::EventEmitterMixin<PowerMonitor>,
                      public gin_helper::Pinnable<PowerMonitor>,
                      public base::PowerStateObserver,
-                     public base::PowerSuspendObserver {
+                     public base::PowerSuspendObserver,
+                     public base::PowerThermalObserver {
  public:
   static v8::Local<v8::Value> Create(v8::Isolate* isolate);
 
@@ -56,6 +57,10 @@ class PowerMonitor : public gin::Wrappable<PowerMonitor>,
   // base::PowerSuspendObserver implementations:
   void OnSuspend() override;
   void OnResume() override;
+
+  // base::PowerThermalObserver
+  void OnThermalStateChange(DeviceThermalState new_state) override;
+  void OnSpeedLimitChange(int speed_limit) override;
 
 #if BUILDFLAG(IS_WIN)
   // Static callback invoked when a message comes in to our messaging window.

@@ -2,8 +2,8 @@
 
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const { GitProcess } = require('dugite');
 
@@ -256,7 +256,7 @@ async function runRetryable (fn, maxRetries) {
     try {
       return await fn();
     } catch (error) {
-      await new Promise((resolve, reject) => setTimeout(resolve, CHECK_INTERVAL));
+      await new Promise(resolve => setTimeout(resolve, CHECK_INTERVAL));
       lastError = error;
     }
   }
@@ -461,7 +461,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     toBranch
   };
 
-  pool.commits.forEach(commit => {
+  for (const commit of pool.commits) {
     const str = commit.semanticType;
     if (commit.isBreakingChange) {
       notes.breaking.push(commit);
@@ -478,7 +478,7 @@ const getNotes = async (fromRef, toRef, newVersion) => {
     } else {
       notes.unknown.push(commit);
     }
-  });
+  }
 
   return notes;
 };

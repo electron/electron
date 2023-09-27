@@ -4,10 +4,12 @@
 
 #include "shell/browser/api/electron_api_base_window.h"
 
+#include <algorithm>
 #include <string>
 #include <utility>
 #include <vector>
 
+#include "base/containers/contains.h"
 #include "base/task/single_thread_task_runner.h"
 #include "electron/buildflags/buildflags.h"
 #include "gin/dictionary.h"
@@ -82,7 +84,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
   if (options.Get("parent", &parent) && !parent.IsEmpty())
     parent_window_.Reset(isolate, parent.ToV8());
 
-#if BUILDFLAG(ENABLE_OSR)
   // Offscreen windows are always created frameless.
   gin_helper::Dictionary web_preferences;
   bool offscreen;
@@ -90,7 +91,6 @@ BaseWindow::BaseWindow(v8::Isolate* isolate,
       web_preferences.Get(options::kOffscreen, &offscreen) && offscreen) {
     const_cast<gin_helper::Dictionary&>(options).Set(options::kFrame, false);
   }
-#endif
 
   // Creates NativeWindow.
   window_.reset(NativeWindow::Create(
@@ -212,7 +212,7 @@ void BaseWindow::OnWindowWillResize(const gfx::Rect& new_bounds,
                                     bool* prevent_default) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary info = gin::Dictionary::CreateEmpty(isolate);
+  auto info = gin::Dictionary::CreateEmpty(isolate);
   info.Set("edge", edge);
 
   if (Emit("will-resize", new_bounds, info)) {
@@ -570,12 +570,8 @@ std::vector<int> BaseWindow::GetPosition() {
 }
 void BaseWindow::MoveAbove(const std::string& sourceId,
                            gin_helper::Arguments* args) {
-#if BUILDFLAG(ENABLE_DESKTOP_CAPTURER)
   if (!window_->MoveAbove(sourceId))
     args->ThrowError("Invalid media source id");
-#else
-  args->ThrowError("enable_desktop_capturer=true to use this feature");
-#endif
 }
 
 void BaseWindow::MoveTop() {
@@ -709,8 +705,6 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   v8::Local<v8::Object> object;
   if (value->IsObject() && value->ToObject(context).ToLocal(&object) &&
       gin::ConvertFromV8(isolate, value, &menu) && !menu.IsEmpty()) {
-    menu_.Reset(isolate, menu.ToV8());
-
     // We only want to update the menu if the menu has a non-zero item count,
     // or we risk crashes.
     if (menu->model()->GetItemCount() == 0) {
@@ -718,6 +712,8 @@ void BaseWindow::SetMenu(v8::Isolate* isolate, v8::Local<v8::Value> value) {
     } else {
       window_->SetMenu(menu->model());
     }
+
+    menu_.Reset(isolate, menu.ToV8());
   } else if (value->IsNull()) {
     RemoveMenu();
   } else {
@@ -761,8 +757,7 @@ void BaseWindow::SetBrowserView(
 }
 
 void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
-  if (iter == browser_views_.end()) {
+  if (!base::Contains(browser_views_, browser_view.ToV8())) {
     // If we're reparenting a BrowserView, ensure that it's detached from
     // its previous owner window.
     BaseWindow* owner_window = browser_view->owner_window();
@@ -773,20 +768,32 @@ void BaseWindow::AddBrowserView(gin::Handle<BrowserView> browser_view) {
       browser_view->SetOwnerWindow(nullptr);
     }
 
+    // If the user set the BrowserView's bounds before adding it to the window,
+    // we need to get those initial bounds *before* adding it to the window
+    // so bounds isn't returned relative despite not being correctly positioned
+    // relative to the window.
+    auto bounds = browser_view->GetBounds();
+
     window_->AddBrowserView(browser_view->view());
     window_->AddDraggableRegionProvider(browser_view.get());
     browser_view->SetOwnerWindow(this);
-    browser_views_[browser_view->ID()].Reset(isolate(), browser_view.ToV8());
+    browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
+
+    // Recalibrate bounds relative to the containing window.
+    if (!bounds.IsEmpty())
+      browser_view->SetBounds(bounds);
   }
 }
 
 void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
-  auto iter = browser_views_.find(browser_view->ID());
+  auto iter = std::find(browser_views_.begin(), browser_views_.end(),
+                        browser_view.ToV8());
+
   if (iter != browser_views_.end()) {
-    window_->RemoveBrowserView(browser_view->view());
     window_->RemoveDraggableRegionProvider(browser_view.get());
+    window_->RemoveBrowserView(browser_view->view());
     browser_view->SetOwnerWindow(nullptr);
-    iter->second.Reset();
+    iter->Reset();
     browser_views_.erase(iter);
   }
 }
@@ -794,12 +801,15 @@ void BaseWindow::RemoveBrowserView(gin::Handle<BrowserView> browser_view) {
 void BaseWindow::SetTopBrowserView(gin::Handle<BrowserView> browser_view,
                                    gin_helper::Arguments* args) {
   BaseWindow* owner_window = browser_view->owner_window();
-  auto iter = browser_views_.find(browser_view->ID());
+  auto iter = std::find(browser_views_.begin(), browser_views_.end(),
+                        browser_view.ToV8());
   if (iter == browser_views_.end() || (owner_window && owner_window != this)) {
     args->ThrowError("Given BrowserView is not attached to the window");
     return;
   }
 
+  browser_views_.erase(iter);
+  browser_views_.emplace_back().Reset(isolate(), browser_view.ToV8());
   window_->SetTopBrowserView(browser_view->view());
 }
 
@@ -864,6 +874,10 @@ void BaseWindow::SetVibrancy(v8::Isolate* isolate, v8::Local<v8::Value> value) {
   window_->SetVibrancy(type);
 }
 
+void BaseWindow::SetBackgroundMaterial(const std::string& material_type) {
+  window_->SetBackgroundMaterial(material_type);
+}
+
 #if BUILDFLAG(IS_MAC)
 std::string BaseWindow::GetAlwaysOnTopLevel() {
   return window_->GetAlwaysOnTopLevel();
@@ -915,6 +929,10 @@ void BaseWindow::SelectPreviousTab() {
 
 void BaseWindow::SelectNextTab() {
   window_->SelectNextTab();
+}
+
+void BaseWindow::ShowAllTabs() {
+  window_->ShowAllTabs();
 }
 
 void BaseWindow::MergeAllWindows() {
@@ -998,7 +1016,7 @@ v8::Local<v8::Value> BaseWindow::GetBrowserView(
     return v8::Null(isolate());
   } else if (browser_views_.size() == 1) {
     auto first_view = browser_views_.begin();
-    return v8::Local<v8::Value>::New(isolate(), (*first_view).second);
+    return v8::Local<v8::Value>::New(isolate(), *first_view);
   } else {
     args->ThrowError(
         "BrowserWindow have multiple BrowserViews, "
@@ -1010,8 +1028,8 @@ v8::Local<v8::Value> BaseWindow::GetBrowserView(
 std::vector<v8::Local<v8::Value>> BaseWindow::GetBrowserViews() const {
   std::vector<v8::Local<v8::Value>> ret;
 
-  for (auto const& views_iter : browser_views_) {
-    ret.push_back(v8::Local<v8::Value>::New(isolate(), views_iter.second));
+  for (auto const& browser_view : browser_views_) {
+    ret.push_back(v8::Local<v8::Value>::New(isolate(), browser_view));
   }
 
   return ret;
@@ -1120,7 +1138,7 @@ void BaseWindow::ResetBrowserViews() {
   for (auto& item : browser_views_) {
     gin::Handle<BrowserView> browser_view;
     if (gin::ConvertFromV8(isolate(),
-                           v8::Local<v8::Value>::New(isolate(), item.second),
+                           v8::Local<v8::Value>::New(isolate(), item),
                            &browser_view) &&
         !browser_view.IsEmpty()) {
       // There's a chance that the BrowserView may have been reparented - only
@@ -1133,7 +1151,7 @@ void BaseWindow::ResetBrowserViews() {
       browser_view->SetOwnerWindow(nullptr);
     }
 
-    item.second.Reset();
+    item.Reset();
   }
 
   browser_views_.clear();
@@ -1267,6 +1285,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
       .SetMethod("setAutoHideCursor", &BaseWindow::SetAutoHideCursor)
 #endif
       .SetMethod("setVibrancy", &BaseWindow::SetVibrancy)
+      .SetMethod("setBackgroundMaterial", &BaseWindow::SetBackgroundMaterial)
 
 #if BUILDFLAG(IS_MAC)
       .SetMethod("isHiddenInMissionControl",
@@ -1281,6 +1300,7 @@ void BaseWindow::BuildPrototype(v8::Isolate* isolate,
 #if BUILDFLAG(IS_MAC)
       .SetMethod("selectPreviousTab", &BaseWindow::SelectPreviousTab)
       .SetMethod("selectNextTab", &BaseWindow::SelectNextTab)
+      .SetMethod("showAllTabs", &BaseWindow::ShowAllTabs)
       .SetMethod("mergeAllWindows", &BaseWindow::MergeAllWindows)
       .SetMethod("moveTabToNewWindow", &BaseWindow::MoveTabToNewWindow)
       .SetMethod("toggleTabBar", &BaseWindow::ToggleTabBar)

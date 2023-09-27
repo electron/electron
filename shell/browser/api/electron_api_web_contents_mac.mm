@@ -7,6 +7,8 @@
 #include "shell/browser/ui/cocoa/event_dispatching_window.h"
 #include "shell/browser/web_contents_preferences.h"
 #include "ui/base/cocoa/command_dispatcher.h"
+#include "ui/base/cocoa/nsmenu_additions.h"
+#include "ui/base/cocoa/nsmenuitem_additions.h"
 #include "ui/events/keycodes/keyboard_codes.h"
 
 #import <Cocoa/Cocoa.h>
@@ -36,7 +38,7 @@ bool WebContents::IsFocused() const {
 bool WebContents::PlatformHandleKeyboardEvent(
     content::WebContents* source,
     const content::NativeWebKeyboardEvent& event) {
-  if (event.skip_in_browser ||
+  if (event.skip_if_unhandled ||
       event.GetType() == content::NativeWebKeyboardEvent::Type::kChar)
     return false;
 
@@ -51,25 +53,42 @@ bool WebContents::PlatformHandleKeyboardEvent(
   if (web_preferences && web_preferences->ShouldIgnoreMenuShortcuts())
     return false;
 
+  NSEvent* ns_event = event.os_event.Get();
   // Send the event to the menu before sending it to the window
-  if (event.os_event.type == NSEventTypeKeyDown &&
-      [[NSApp mainMenu] performKeyEquivalent:event.os_event])
-    return true;
+  if (ns_event.type == NSEventTypeKeyDown) {
+    // If the keyboard event is a system shortcut, it's already sent to the
+    // NSMenu instance in
+    // content/app_shim_remote_cocoa/render_widget_host_view_cocoa.mm via
+    // keyEvent:(NSEvent*)theEvent wasKeyEquivalent:(BOOL)equiv. If we let the
+    // NSMenu handle it here as well, it'll be sent twice with unexpected side
+    // effects.
+    bool is_a_keyboard_shortcut_event =
+        [[NSApp mainMenu] cr_menuItemForKeyEquivalentEvent:ns_event] != nil;
+    bool is_a_system_shortcut_event =
+        is_a_keyboard_shortcut_event &&
+        (ui::cocoa::ModifierMaskForKeyEvent(ns_event) &
+         NSEventModifierFlagFunction) != 0;
+    if (is_a_system_shortcut_event)
+      return false;
+
+    if ([[NSApp mainMenu] performKeyEquivalent:ns_event])
+      return true;
+  }
 
   // Let the window redispatch the OS event
-  if (event.os_event.window &&
-      [event.os_event.window isKindOfClass:[EventDispatchingWindow class]]) {
-    [event.os_event.window redispatchKeyEvent:event.os_event];
+  if (ns_event.window &&
+      [ns_event.window isKindOfClass:[EventDispatchingWindow class]]) {
+    [ns_event.window redispatchKeyEvent:ns_event];
     // FIXME(nornagon): this isn't the right return value; we should implement
     // devtools windows as Widgets in order to take advantage of the
     // preexisting redispatch code in bridged_native_widget.
     return false;
-  } else if (event.os_event.window &&
-             [event.os_event.window
+  } else if (ns_event.window &&
+             [ns_event.window
                  conformsToProtocol:@protocol(CommandDispatchingWindow)]) {
     NSObject<CommandDispatchingWindow>* window =
-        static_cast<NSObject<CommandDispatchingWindow>*>(event.os_event.window);
-    [[window commandDispatcher] redispatchKeyEvent:event.os_event];
+        static_cast<NSObject<CommandDispatchingWindow>*>(ns_event.window);
+    [[window commandDispatcher] redispatchKeyEvent:ns_event];
     // FIXME(clavin): Not exactly sure what to return here, likely the same
     // situation as the branch above. If a future refactor removes
     // |EventDispatchingWindow| then only this branch will need to remain.

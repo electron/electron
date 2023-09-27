@@ -1,0 +1,26 @@
+name: Issue Commented
+
+on:
+  issue_comment:
+    types:
+      - created
+
+permissions: {}
+
+jobs:
+  issue-commented:
+    name: Remove blocked/need-repro on comment
+    if: ${{ contains(github.event.issue.labels.*.name, 'blocked/need-repro') && !contains(fromJSON('["MEMBER", "OWNER"]'), github.event.comment.author_association) && github.event.comment.user.type != 'Bot' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+      - name: Remove label
+        env:
+          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          gh issue edit $ISSUE_URL --remove-label 'blocked/need-repro'

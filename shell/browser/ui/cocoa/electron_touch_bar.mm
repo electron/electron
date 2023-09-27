@@ -55,10 +55,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
 }
 
 - (NSTouchBar*)touchBarFromItemIdentifiers:(NSMutableArray*)items {
-  base::scoped_nsobject<NSTouchBar> bar([[NSTouchBar alloc] init]);
+  NSTouchBar* bar = [[NSTouchBar alloc] init];
   [bar setDelegate:delegate_];
   [bar setDefaultItemIdentifiers:items];
-  return bar.autorelease();
+  return bar;
 }
 
 - (NSMutableArray*)identifiersFromSettings:
@@ -349,15 +349,15 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSCustomTouchBarItem> item(
-      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSCustomTouchBarItem* item =
+      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
   NSButton* button = [NSButton buttonWithTitle:@""
                                         target:self
                                         action:@selector(buttonAction:)];
   button.tag = [id floatValue];
   [item setView:button];
   [self updateButton:item withSettings:settings];
-  return item.autorelease();
+  return item;
 }
 
 - (void)updateButton:(NSCustomTouchBarItem*)item
@@ -410,11 +410,11 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSCustomTouchBarItem> item(
-      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSCustomTouchBarItem* item =
+      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
   [item setView:[NSTextField labelWithString:@""]];
   [self updateLabel:item withSettings:settings];
-  return item.autorelease();
+  return item;
 }
 
 - (void)updateLabel:(NSCustomTouchBarItem*)item
@@ -447,20 +447,19 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSColorPickerTouchBarItem> item(
-      [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSColorPickerTouchBarItem* item =
+      [[NSColorPickerTouchBarItem alloc] initWithIdentifier:identifier];
   [item setTarget:self];
   [item setAction:@selector(colorPickerAction:)];
   [self updateColorPicker:item withSettings:settings];
-  return item.autorelease();
+  return item;
 }
 
 - (void)updateColorPicker:(NSColorPickerTouchBarItem*)item
              withSettings:(const gin_helper::PersistentDictionary&)settings {
   std::vector<std::string> colors;
   if (settings.Get("availableColors", &colors) && !colors.empty()) {
-    NSColorList* color_list =
-        [[[NSColorList alloc] initWithName:@""] autorelease];
+    NSColorList* color_list = [[NSColorList alloc] initWithName:@""];
     for (size_t i = 0; i < colors.size(); ++i) {
       [color_list insertColor:[self colorFromHexColorString:colors[i]]
                           key:base::SysUTF8ToNSString(colors[i])
@@ -485,12 +484,12 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSSliderTouchBarItem> item(
-      [[NSSliderTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSSliderTouchBarItem* item =
+      [[NSSliderTouchBarItem alloc] initWithIdentifier:identifier];
   [item setTarget:self];
   [item setAction:@selector(sliderAction:)];
   [self updateSlider:item withSettings:settings];
-  return item.autorelease();
+  return item;
 }
 
 - (void)updateSlider:(NSSliderTouchBarItem*)item
@@ -521,10 +520,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSPopoverTouchBarItem> item(
-      [[NSPopoverTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSPopoverTouchBarItem* item =
+      [[NSPopoverTouchBarItem alloc] initWithIdentifier:identifier];
   [self updatePopover:item withSettings:settings];
-  return item.autorelease();
+  return item;
 }
 
 - (void)updatePopover:(NSPopoverTouchBarItem*)item
@@ -613,8 +612,8 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSCustomTouchBarItem> item(
-      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSCustomTouchBarItem* item =
+      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
 
   NSSegmentedControl* control = [NSSegmentedControl
       segmentedControlWithLabels:[NSMutableArray array]
@@ -625,7 +624,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   [item setView:control];
 
   [self updateSegmentedControl:item withSettings:settings];
-  return item.autorelease();
+  return item;
 }
 
 - (void)updateSegmentedControl:(NSCustomTouchBarItem*)item
@@ -700,11 +699,10 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   v8::HandleScope handle_scope(isolate);
 
   gin_helper::PersistentDictionary settings = settings_[s_id];
-  base::scoped_nsobject<NSCustomTouchBarItem> item(
-      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier]);
+  NSCustomTouchBarItem* item =
+      [[NSCustomTouchBarItem alloc] initWithIdentifier:identifier];
 
-  NSScrubber* scrubber =
-      [[[NSScrubber alloc] initWithFrame:NSZeroRect] autorelease];
+  NSScrubber* scrubber = [[NSScrubber alloc] initWithFrame:NSZeroRect];
 
   [scrubber registerClass:[NSScrubberTextItemView class]
         forItemIdentifier:TextScrubberItemIdentifier];
@@ -718,7 +716,7 @@ static NSString* const ImageScrubberItemIdentifier = @"scrubber.image.item";
   [item setView:scrubber];
   [self updateScrubber:item withSettings:settings];
 
-  return item.autorelease();
+  return item;
 }
 
 - (void)updateScrubber:(NSCustomTouchBarItem*)item

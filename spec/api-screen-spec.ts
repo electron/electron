@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { screen } from 'electron/main';
+import { ifit } from './lib/spec-helpers';
 
 describe('screen module', () => {
   describe('methods reassignment', () => {
@@ -28,8 +29,7 @@ describe('screen module', () => {
       expect(display).to.be.an('object');
     });
 
-    it('has the correct non-object properties', function () {
-      if (process.platform === 'linux') this.skip();
+    ifit(process.platform !== 'linux')('has the correct non-object properties', function () {
       const display = screen.getPrimaryDisplay();
 
       expect(display).to.have.property('scaleFactor').that.is.a('number');
@@ -46,8 +46,7 @@ describe('screen module', () => {
       expect(display).to.have.property('displayFrequency').that.is.a('number');
     });
 
-    it('has a size object property', function () {
-      if (process.platform === 'linux') this.skip();
+    ifit(process.platform !== 'linux')('has a size object property', function () {
       const display = screen.getPrimaryDisplay();
 
       expect(display).to.have.property('size').that.is.an('object');
@@ -56,8 +55,7 @@ describe('screen module', () => {
       expect(size).to.have.property('height').that.is.greaterThan(0);
     });
 
-    it('has a workAreaSize object property', function () {
-      if (process.platform === 'linux') this.skip();
+    ifit(process.platform !== 'linux')('has a workAreaSize object property', function () {
       const display = screen.getPrimaryDisplay();
 
       expect(display).to.have.property('workAreaSize').that.is.an('object');
@@ -66,8 +64,7 @@ describe('screen module', () => {
       expect(workAreaSize).to.have.property('height').that.is.greaterThan(0);
     });
 
-    it('has a bounds object property', function () {
-      if (process.platform === 'linux') this.skip();
+    ifit(process.platform !== 'linux')('has a bounds object property', function () {
       const display = screen.getPrimaryDisplay();
 
       expect(display).to.have.property('bounds').that.is.an('object');

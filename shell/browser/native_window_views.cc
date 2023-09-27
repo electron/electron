@@ -5,6 +5,7 @@
 #include "shell/browser/native_window_views.h"
 
 #if BUILDFLAG(IS_WIN)
+#include <dwmapi.h>
 #include <wrl/client.h>
 #endif
 
@@ -12,7 +13,8 @@
 #include <utility>
 #include <vector>
 
-#include "base/cxx17_backports.h"
+#include "base/containers/contains.h"
+#include "base/memory/raw_ptr.h"
 #include "base/stl_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "content/public/browser/browser_thread.h"
@@ -34,7 +36,6 @@
 #include "ui/gfx/image/image.h"
 #include "ui/gfx/native_widget_types.h"
 #include "ui/views/background.h"
-#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/controls/webview/webview.h"
 #include "ui/views/widget/native_widget_private.h"
 #include "ui/views/widget/widget.h"
@@ -68,6 +69,7 @@
 
 #elif BUILDFLAG(IS_WIN)
 #include "base/win/win_util.h"
+#include "base/win/windows_version.h"
 #include "content/public/common/color_parser.h"
 #include "shell/browser/ui/views/win_frame_view.h"
 #include "shell/browser/ui/win/electron_desktop_native_widget_aura.h"
@@ -76,11 +78,25 @@
 #include "ui/display/screen.h"
 #include "ui/display/win/screen_win.h"
 #include "ui/gfx/color_utils.h"
+#include "ui/gfx/win/msg_util.h"
 #endif
 
 namespace electron {
 
 #if BUILDFLAG(IS_WIN)
+
+DWM_SYSTEMBACKDROP_TYPE GetBackdropFromString(const std::string& material) {
+  if (material == "none") {
+    return DWMSBT_NONE;
+  } else if (material == "acrylic") {
+    return DWMSBT_TRANSIENTWINDOW;
+  } else if (material == "mica") {
+    return DWMSBT_MAINWINDOW;
+  } else if (material == "tabbed") {
+    return DWMSBT_TABBEDWINDOW;
+  }
+  return DWMSBT_AUTO;
+}
 
 // Similar to the ones in display::win::ScreenWin, but with rounded values
 // These help to avoid problems that arise from unresizable windows where the
@@ -123,6 +139,25 @@ gfx::Rect DIPToScreenRect(HWND hwnd, const gfx::Rect& pixel_bounds) {
   return screen_rect;
 }
 
+// Chromium uses a buggy implementation that converts content rect to window
+// rect when calculating min/max size, we should use the same implementation
+// when passing min/max size so we can get correct results.
+gfx::Size WindowSizeToContentSizeBuggy(HWND hwnd, const gfx::Size& size) {
+  // Calculate the size of window frame, using same code with the
+  // HWNDMessageHandler::OnGetMinMaxInfo method.
+  // The pitfall is, when window is minimized the calculated window frame size
+  // will be different from other states.
+  RECT client_rect, rect;
+  GetClientRect(hwnd, &client_rect);
+  GetWindowRect(hwnd, &rect);
+  CR_DEFLATE_RECT(&rect, &client_rect);
+  // Convert DIP size to pixel size, do calculation and then return DIP size.
+  gfx::Rect screen_rect = DIPToScreenRect(hwnd, gfx::Rect(size));
+  gfx::Size screen_client_size(screen_rect.width() - (rect.right - rect.left),
+                               screen_rect.height() - (rect.bottom - rect.top));
+  return ScreenToDIPRect(hwnd, gfx::Rect(screen_client_size)).size();
+}
+
 #endif
 
 #if defined(USE_OZONE)
@@ -150,7 +185,8 @@ class NativeWindowClientView : public views::ClientView {
   NativeWindowClientView(views::Widget* widget,
                          views::View* root_view,
                          NativeWindowViews* window)
-      : views::ClientView(widget, root_view), window_(window) {}
+      : views::ClientView{widget, root_view},
+        window_{raw_ref<NativeWindowViews>::from_ptr(window)} {}
   ~NativeWindowClientView() override = default;
 
   // disable copy
@@ -163,22 +199,19 @@ class NativeWindowClientView : public views::ClientView {
   }
 
  private:
-  NativeWindowViews* window_;
+  const raw_ref<NativeWindowViews> window_;
 };
 
 }  // namespace
 
 NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
                                      NativeWindow* parent)
-    : NativeWindow(options, parent),
-      root_view_(std::make_unique<RootView>(this)),
-      keyboard_event_handler_(
-          std::make_unique<views::UnhandledKeyboardEventHandler>()) {
+    : NativeWindow(options, parent) {
   options.Get(options::kTitle, &title_);
 
   bool menu_bar_autohide;
   if (options.Get(options::kAutoHideMenuBar, &menu_bar_autohide))
-    root_view_->SetAutoHideMenuBar(menu_bar_autohide);
+    root_view_.SetAutoHideMenuBar(menu_bar_autohide);
 
 #if BUILDFLAG(IS_WIN)
   // On Windows we rely on the CanResize() to indicate whether window can be
@@ -221,6 +254,10 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
 
   if (title_bar_style_ != TitleBarStyle::kNormal)
     set_has_frame(false);
+
+  // If the taskbar is re-created after we start up, we have to rebuild all of
+  // our buttons.
+  taskbar_created_message_ = RegisterWindowMessage(TEXT("TaskbarCreated"));
 #endif
 
   if (enable_larger_than_screen())
@@ -247,12 +284,12 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   params.remove_standard_frame = !has_frame() || has_client_frame();
 
   // If a client frame, we need to draw our own shadows.
-  if (transparent() || has_client_frame())
+  if (IsTranslucent() || has_client_frame())
     params.opacity = views::Widget::InitParams::WindowOpacity::kTranslucent;
 
-  // The given window is most likely not rectangular since it uses
-  // transparency and has no standard frame, don't show a shadow for it.
-  if (transparent() && !has_frame())
+  // The given window is most likely not rectangular since it is translucent and
+  // has no standard frame, don't show a shadow for it.
+  if (IsTranslucent() && !has_frame())
     params.shadow_type = views::Widget::InitParams::ShadowType::kNone;
 
   bool focusable;
@@ -439,12 +476,12 @@ void NativeWindowViews::SetGTKDarkThemeEnabled(bool use_dark_theme) {
 
 void NativeWindowViews::SetContentView(views::View* view) {
   if (content_view()) {
-    root_view_->RemoveChildView(content_view());
+    root_view_.RemoveChildView(content_view());
   }
   set_content_view(view);
   focused_view_ = view;
-  root_view_->AddChildView(content_view());
-  root_view_->Layout();
+  root_view_.AddChildView(content_view());
+  root_view_.Layout();
 }
 
 void NativeWindowViews::Close() {
@@ -535,7 +572,17 @@ void NativeWindowViews::Hide() {
 }
 
 bool NativeWindowViews::IsVisible() {
+#if BUILDFLAG(IS_WIN)
+  // widget()->IsVisible() calls ::IsWindowVisible, which returns non-zero if a
+  // window or any of its parent windows are visible. We want to only check the
+  // current window.
+  bool visible =
+      ::GetWindowLong(GetAcceleratedWidget(), GWL_STYLE) & WS_VISIBLE;
+  // WS_VISIBLE is true even if a window is miminized - explicitly check that.
+  return visible && !IsMinimized();
+#else
   return widget()->IsVisible();
+#endif
 }
 
 bool NativeWindowViews::IsEnabled() {
@@ -630,7 +677,7 @@ bool NativeWindowViews::IsMaximized() {
     return true;
   } else {
 #if BUILDFLAG(IS_WIN)
-    if (transparent()) {
+    if (transparent() && !IsMinimized()) {
       // Compare the size of the window with the size of the display
       auto display = display::Screen::GetScreen()->GetDisplayNearestWindow(
           GetNativeWindow());
@@ -708,10 +755,14 @@ void NativeWindowViews::SetFullScreen(bool fullscreen) {
                                             gfx::Rect());
 
   // Auto-hide menubar when in fullscreen.
-  if (fullscreen)
+  if (fullscreen) {
+    menu_bar_visible_before_fullscreen_ = IsMenuBarVisible();
     SetMenuBarVisibility(false);
-  else
-    SetMenuBarVisibility(!IsMenuBarAutoHide());
+  } else {
+    SetMenuBarVisibility(!IsMenuBarAutoHide() &&
+                         menu_bar_visible_before_fullscreen_);
+    menu_bar_visible_before_fullscreen_ = false;
+  }
 #endif
 }
 
@@ -761,6 +812,10 @@ gfx::Size NativeWindowViews::GetContentSize() {
 }
 
 gfx::Rect NativeWindowViews::GetNormalBounds() {
+#if BUILDFLAG(IS_WIN)
+  if (IsMaximized() && transparent())
+    return restore_bounds_;
+#endif
   return widget()->GetRestoredBounds();
 }
 
@@ -780,6 +835,29 @@ void NativeWindowViews::SetContentSizeConstraints(
   if (resizable_)
     old_size_constraints_ = size_constraints;
 }
+
+#if BUILDFLAG(IS_WIN)
+// This override does almost the same with its parent, except that it uses
+// the WindowSizeToContentSizeBuggy method to convert window size to content
+// size. See the comment of the method for the reason behind this.
+extensions::SizeConstraints NativeWindowViews::GetContentSizeConstraints()
+    const {
+  if (content_size_constraints_)
+    return *content_size_constraints_;
+  if (!size_constraints_)
+    return extensions::SizeConstraints();
+  extensions::SizeConstraints constraints;
+  if (size_constraints_->HasMaximumSize()) {
+    constraints.set_maximum_size(WindowSizeToContentSizeBuggy(
+        GetAcceleratedWidget(), size_constraints_->GetMaximumSize()));
+  }
+  if (size_constraints_->HasMinimumSize()) {
+    constraints.set_minimum_size(WindowSizeToContentSizeBuggy(
+        GetAcceleratedWidget(), size_constraints_->GetMinimumSize()));
+  }
+  return constraints;
+}
+#endif
 
 void NativeWindowViews::SetResizable(bool resizable) {
   if (resizable != resizable_) {
@@ -1067,7 +1145,7 @@ bool NativeWindowViews::IsTabletMode() const {
 }
 
 SkColor NativeWindowViews::GetBackgroundColor() {
-  auto* background = root_view_->background();
+  auto* background = root_view_.background();
   if (!background)
     return SK_ColorTRANSPARENT;
   return background->get_color();
@@ -1075,7 +1153,7 @@ SkColor NativeWindowViews::GetBackgroundColor() {
 
 void NativeWindowViews::SetBackgroundColor(SkColor background_color) {
   // web views' background color.
-  root_view_->SetBackground(views::CreateSolidBackground(background_color));
+  root_view_.SetBackground(views::CreateSolidBackground(background_color));
 
 #if BUILDFLAG(IS_WIN)
   // Set the background color of native window.
@@ -1102,7 +1180,7 @@ bool NativeWindowViews::HasShadow() {
 
 void NativeWindowViews::SetOpacity(const double opacity) {
 #if BUILDFLAG(IS_WIN)
-  const double boundedOpacity = base::clamp(opacity, 0.0, 1.0);
+  const double boundedOpacity = std::clamp(opacity, 0.0, 1.0);
   HWND hwnd = GetAcceleratedWidget();
   if (!layered_) {
     LONG ex_style = ::GetWindowLong(hwnd, GWL_EXSTYLE);
@@ -1210,7 +1288,7 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   // Remove global menu bar.
   if (global_menu_bar_ && menu_model == nullptr) {
     global_menu_bar_.reset();
-    root_view_->UnregisterAcceleratorsWithFocusManager();
+    root_view_.UnregisterAcceleratorsWithFocusManager();
     return;
   }
 
@@ -1219,7 +1297,7 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
     if (!global_menu_bar_)
       global_menu_bar_ = std::make_unique<GlobalMenuBarX11>(this);
     if (global_menu_bar_->IsServerStarted()) {
-      root_view_->RegisterAcceleratorsWithFocusManager(menu_model);
+      root_view_.RegisterAcceleratorsWithFocusManager(menu_model);
       global_menu_bar_->SetMenu(menu_model);
       return;
     }
@@ -1230,13 +1308,13 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
   gfx::Size content_size = GetContentSize();
   bool should_reset_size = use_content_size_ && has_frame() &&
                            !IsMenuBarAutoHide() &&
-                           ((!!menu_model) != root_view_->HasMenu());
+                           ((!!menu_model) != root_view_.HasMenu());
 
-  root_view_->SetMenu(menu_model);
+  root_view_.SetMenu(menu_model);
 
   if (should_reset_size) {
     // Enlarge the size constraints for the menu.
-    int menu_bar_height = root_view_->GetMenuBarHeight();
+    int menu_bar_height = root_view_.GetMenuBarHeight();
     extensions::SizeConstraints constraints = GetContentSizeConstraints();
     if (constraints.HasMinimumSize()) {
       gfx::Size min_size = constraints.GetMinimumSize();
@@ -1363,19 +1441,50 @@ void NativeWindowViews::SetOverlayIcon(const gfx::Image& overlay,
 }
 
 void NativeWindowViews::SetAutoHideMenuBar(bool auto_hide) {
-  root_view_->SetAutoHideMenuBar(auto_hide);
+  root_view_.SetAutoHideMenuBar(auto_hide);
 }
 
 bool NativeWindowViews::IsMenuBarAutoHide() {
-  return root_view_->IsMenuBarAutoHide();
+  return root_view_.IsMenuBarAutoHide();
 }
 
 void NativeWindowViews::SetMenuBarVisibility(bool visible) {
-  root_view_->SetMenuBarVisibility(visible);
+  root_view_.SetMenuBarVisibility(visible);
 }
 
 bool NativeWindowViews::IsMenuBarVisible() {
-  return root_view_->IsMenuBarVisible();
+  return root_view_.IsMenuBarVisible();
+}
+
+void NativeWindowViews::SetBackgroundMaterial(const std::string& material) {
+  NativeWindow::SetBackgroundMaterial(material);
+
+#if BUILDFLAG(IS_WIN)
+  // DWMWA_USE_HOSTBACKDROPBRUSH is only supported on Windows 11 22H2 and up.
+  if (base::win::GetVersion() < base::win::Version::WIN11_22H2)
+    return;
+
+  DWM_SYSTEMBACKDROP_TYPE backdrop_type = GetBackdropFromString(material);
+  HRESULT result =
+      DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_SYSTEMBACKDROP_TYPE,
+                            &backdrop_type, sizeof(backdrop_type));
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set background material to " << material;
+
+  // For frameless windows with a background material set, we also need to
+  // remove the caption color so it doesn't render a caption bar (since the
+  // window is frameless)
+  COLORREF caption_color = DWMWA_COLOR_DEFAULT;
+  if (backdrop_type != DWMSBT_NONE && backdrop_type != DWMSBT_AUTO &&
+      !has_frame()) {
+    caption_color = DWMWA_COLOR_NONE;
+  }
+  result = DwmSetWindowAttribute(GetAcceleratedWidget(), DWMWA_CAPTION_COLOR,
+                                 &caption_color, sizeof(caption_color));
+
+  if (FAILED(result))
+    LOG(WARNING) << "Failed to set caption color to transparent";
+#endif
 }
 
 void NativeWindowViews::SetVisibleOnAllWorkspaces(
@@ -1394,8 +1503,7 @@ bool NativeWindowViews::IsVisibleOnAllWorkspaces() {
     std::vector<x11::Atom> wm_states;
     GetArrayProperty(static_cast<x11::Window>(GetAcceleratedWidget()),
                      x11::GetAtom("_NET_WM_STATE"), &wm_states);
-    return std::find(wm_states.begin(), wm_states.end(), sticky_atom) !=
-           wm_states.end();
+    return base::Contains(wm_states, sticky_atom);
   }
 #endif
   return false;
@@ -1459,8 +1567,8 @@ gfx::Rect NativeWindowViews::ContentBoundsToWindowBounds(
   }
 #endif
 
-  if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
-    int menu_bar_height = root_view_->GetMenuBarHeight();
+  if (root_view_.HasMenu() && root_view_.IsMenuBarVisible()) {
+    int menu_bar_height = root_view_.GetMenuBarHeight();
     window_bounds.set_y(window_bounds.y() - menu_bar_height);
     window_bounds.set_height(window_bounds.height() + menu_bar_height);
   }
@@ -1486,8 +1594,8 @@ gfx::Rect NativeWindowViews::WindowBoundsToContentBounds(
   content_bounds.set_size(ScreenToDIPRect(hwnd, content_bounds).size());
 #endif
 
-  if (root_view_->HasMenu() && root_view_->IsMenuBarVisible()) {
-    int menu_bar_height = root_view_->GetMenuBarHeight();
+  if (root_view_.HasMenu() && root_view_.IsMenuBarVisible()) {
+    int menu_bar_height = root_view_.GetMenuBarHeight();
     content_bounds.set_y(content_bounds.y() + menu_bar_height);
     content_bounds.set_height(content_bounds.height() - menu_bar_height);
   }
@@ -1530,7 +1638,7 @@ void NativeWindowViews::OnWidgetActivationChanged(views::Widget* changed_widget,
   if (!active && IsMenuBarAutoHide() && IsMenuBarVisible())
     SetMenuBarVisibility(false);
 
-  root_view_->ResetAltState();
+  root_view_.ResetAltState();
 }
 
 void NativeWindowViews::OnWidgetBoundsChanged(views::Widget* changed_widget,
@@ -1586,7 +1694,7 @@ std::u16string NativeWindowViews::GetWindowTitle() const {
 }
 
 views::View* NativeWindowViews::GetContentsView() {
-  return root_view_.get();
+  return &root_view_;
 }
 
 bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
@@ -1596,7 +1704,7 @@ bool NativeWindowViews::ShouldDescendIntoChildForEventHandling(
 }
 
 views::ClientView* NativeWindowViews::CreateClientView(views::Widget* widget) {
-  return new NativeWindowClientView(widget, root_view_.get(), this);
+  return new NativeWindowClientView{widget, GetContentsView(), this};
 }
 
 std::unique_ptr<views::NonClientFrameView>
@@ -1635,9 +1743,9 @@ void NativeWindowViews::HandleKeyboardEvent(
     NotifyWindowExecuteAppCommand(kBrowserForward);
 #endif
 
-  keyboard_event_handler_->HandleKeyboardEvent(event,
-                                               root_view_->GetFocusManager());
-  root_view_->HandleKeyEvent(event);
+  keyboard_event_handler_.HandleKeyboardEvent(event,
+                                              root_view_.GetFocusManager());
+  root_view_.HandleKeyEvent(event);
 }
 
 void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
@@ -1645,7 +1753,7 @@ void NativeWindowViews::OnMouseEvent(ui::MouseEvent* event) {
     return;
 
   // Alt+Click should not toggle menu bar.
-  root_view_->ResetAltState();
+  root_view_.ResetAltState();
 
 #if BUILDFLAG(IS_LINUX)
   if (event->changed_button_flags() == ui::EF_BACK_MOUSE_BUTTON)

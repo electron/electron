@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 
 const { ElectronVersions, Installer } = require('@electron/fiddle-core');
-const childProcess = require('child_process');
-const crypto = require('crypto');
+const childProcess = require('node:child_process');
+const crypto = require('node:crypto');
 const fs = require('fs-extra');
 const { hashElement } = require('folder-hash');
-const path = require('path');
+const os = require('node:os');
+const path = require('node:path');
 const unknownFlags = [];
 
 require('colors');
@@ -64,10 +65,24 @@ if (args.runners !== undefined) {
 async function main () {
   if (args.electronVersion) {
     const versions = await ElectronVersions.create();
-    if (!versions.isVersion(args.electronVersion)) {
+    if (args.electronVersion === 'latest') {
+      args.electronVersion = versions.latest.version;
+    } else if (args.electronVersion.startsWith('latest@')) {
+      const majorVersion = parseInt(args.electronVersion.slice('latest@'.length));
+      const ver = versions.inMajor(majorVersion).slice(-1)[0];
+      if (ver) {
+        args.electronVersion = ver.version;
+      } else {
+        console.log(`${fail} '${majorVersion}' is not a recognized Electron major version`);
+        process.exit(1);
+      }
+    } else if (!versions.isVersion(args.electronVersion)) {
       console.log(`${fail} '${args.electronVersion}' is not a recognized Electron version`);
       process.exit(1);
     }
+
+    const versionString = `v${args.electronVersion}`;
+    console.log(`Running against Electron ${versionString.green}`);
   }
 
   const [lastSpecHash, lastSpecInstallHash] = loadLastSpecHash();
@@ -168,14 +183,6 @@ async function runTestUsingElectron (specDir, testName) {
   console.log(`${pass} Electron ${testName} process tests passed.`);
 }
 
-const specFilter = (file) => {
-  if (!/-spec\.[tj]s$/.test(file)) {
-    return false;
-  } else {
-    return true;
-  }
-};
-
 async function runNativeElectronTests () {
   let testTargets = require('./native-test-targets.json');
   const outDir = `out/${utils.getOutDir()}`;
@@ -246,7 +253,18 @@ async function installSpecModules (dir) {
     env.npm_config_target = args.electronVersion;
     env.npm_config_disturl = 'https://electronjs.org/headers';
     env.npm_config_runtime = 'electron';
+    env.npm_config_devdir = path.join(os.homedir(), '.electron-gyp');
     env.npm_config_build_from_source = 'true';
+    const { status } = childProcess.spawnSync('npm', ['run', 'node-gyp-install', '--ensure'], {
+      env,
+      cwd: dir,
+      stdio: 'inherit',
+      shell: true
+    });
+    if (status !== 0) {
+      console.log(`${fail} Failed to "npm run node-gyp-install" install in '${dir}'`);
+      process.exit(1);
+    }
   } else {
     env.npm_config_nodedir = path.resolve(BASE, `out/${utils.getOutDir({ shouldLog: true })}/gen/node_headers`);
   }

@@ -6,19 +6,16 @@
 #ifndef ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 #define ELECTRON_SHELL_BROWSER_UI_INSPECTABLE_WEB_CONTENTS_H_
 
-#include <list>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
 #include "base/containers/span.h"
 #include "base/containers/unique_ptr_adapters.h"
+#include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "chrome/browser/devtools/devtools_embedder_message_dispatcher.h"
-#include "chrome/browser/devtools/devtools_settings.h"
 #include "content/public/browser/devtools_agent_host.h"
 #include "content/public/browser/devtools_frontend_host.h"
 #include "content/public/browser/web_contents_delegate.h"
@@ -41,9 +38,6 @@ class InspectableWebContents
       public content::WebContentsDelegate,
       public DevToolsEmbedderMessageDispatcher::Delegate {
  public:
-  using List = std::list<InspectableWebContents*>;
-
-  static const List& GetAll();
   static void RegisterPrefs(PrefRegistrySimple* pref_registry);
 
   InspectableWebContents(std::unique_ptr<content::WebContents> web_contents,
@@ -65,9 +59,11 @@ class InspectableWebContents
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
+  void SetDevToolsTitle(const std::u16string& title);
   void ShowDevTools(bool activate);
   void CloseDevTools();
   bool IsDevToolsViewShowing();
+  std::u16string GetDevToolsTitle();
   void AttachTo(scoped_refptr<content::DevToolsAgentHost>);
   void Detach();
   void CallClientFunction(
@@ -139,6 +135,11 @@ class InspectableWebContents
   void OpenNodeFrontend() override;
   void DispatchProtocolMessageFromDevToolsFrontend(
       const std::string& message) override;
+  void RecordCountHistogram(const std::string& name,
+                            int sample,
+                            int min,
+                            int exclusive_max,
+                            int buckets) override {}
   void SendJsonRequest(DispatchCallback callback,
                        const std::string& browser_id,
                        const std::string& url) override;
@@ -205,15 +206,16 @@ class InspectableWebContents
   void AddDevToolsExtensionsToClient();
 #endif
 
-  DevToolsContentsResizingStrategy contents_resizing_strategy_;
   gfx::Rect devtools_bounds_;
   bool can_dock_ = true;
   std::string dock_state_;
+  std::u16string devtools_title_;
   bool activate_ = true;
 
-  InspectableWebContentsDelegate* delegate_ = nullptr;  // weak references.
+  raw_ptr<InspectableWebContentsDelegate> delegate_ =
+      nullptr;  // weak references.
 
-  PrefService* pref_service_;  // weak reference.
+  raw_ptr<PrefService> pref_service_;  // weak reference.
 
   std::unique_ptr<content::WebContents> web_contents_;
 
@@ -221,7 +223,7 @@ class InspectableWebContents
   // one assigned by SetDevToolsWebContents.
   std::unique_ptr<content::WebContents> managed_devtools_web_contents_;
   // The external devtools assigned by SetDevToolsWebContents.
-  content::WebContents* external_devtools_web_contents_ = nullptr;
+  raw_ptr<content::WebContents> external_devtools_web_contents_ = nullptr;
 
   bool is_guest_;
   std::unique_ptr<InspectableWebContentsView> view_;

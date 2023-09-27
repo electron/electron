@@ -1,6 +1,6 @@
-const { app, BrowserWindow } = require('electron')
-const fs = require('fs')
-const path = require('path')
+const { app, BrowserWindow } = require('electron/main')
+const fs = require('node:fs')
+const path = require('node:path')
 
 function createWindow () {
   const win = new BrowserWindow({

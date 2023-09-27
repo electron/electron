@@ -42,20 +42,20 @@ $ asar list /path/to/example.asar
 Read a file in the ASAR archive:
 
 ```javascript
-const fs = require('fs')
+const fs = require('node:fs')
 fs.readFileSync('/path/to/example.asar/file.txt')
 ```
 
 List all files under the root of the archive:
 
 ```javascript
-const fs = require('fs')
+const fs = require('node:fs')
 fs.readdirSync('/path/to/example.asar')
 ```
 
 Use a module from the archive:
 
-```javascript
+```javascript @ts-nocheck
 require('./path/to/example.asar/dir/module.js')
 ```
 
@@ -99,7 +99,7 @@ You can also set `process.noAsar` to `true` to disable the support for `asar` in
 the `fs` module:
 
 ```javascript
-const fs = require('fs')
+const fs = require('node:fs')
 process.noAsar = true
 fs.readFileSync('/path/to/example.asar')
 ```

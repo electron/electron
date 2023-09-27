@@ -1,5 +1,6 @@
 // Modules to control application life and create native browser window
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron/main')
+const path = require('node:path')
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -11,7 +12,7 @@ function createWindow () {
     width: 800,
     height: 600,
     webPreferences: {
-      nodeIntegration: true
+      preload: path.join(__dirname, 'preload.js')
     }
   })
 
@@ -27,6 +28,12 @@ function createWindow () {
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
     mainWindow = null
+  })
+
+  // Open external links in the default browser
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    event.preventDefault()
+    shell.openExternal(url)
   })
 }
 
@@ -52,14 +59,12 @@ app.on('activate', function () {
   }
 })
 
-ipcMain.on('save-dialog', event => {
+ipcMain.handle('save-dialog', async () => {
   const options = {
     title: 'Save an Image',
     filters: [{ name: 'Images', extensions: ['jpg', 'png', 'gif'] }]
   }
-  dialog.showSaveDialog(options, filename => {
-    event.sender.send('saved-file', filename)
-  })
+  return (await dialog.showSaveDialog(options)).filePath
 })
 
 // In this file you can include the rest of your app's specific main process

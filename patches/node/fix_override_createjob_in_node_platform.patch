@@ -3,39 +3,37 @@ From: Keeley Hammond <khammond@slack-corp.com>
 Date: Tue, 2 Aug 2022 12:52:02 -0700
 Subject: fix: override createjob in node_platform
 
-This CL changed Platform::CreateJob to an abstract method:
-https://chromium-review.googlesource.com/c/v8/v8/+/3779694
-This patch adds an override for NodePlatform::CreateJob, using
-the same parameters as PostJob.
+Refs https://github.com/nodejs/node/pull/44741/commits/507dd20ef957acf261ec521fcbd81d745b17983c
+
+V8Platform::CreateJob was changed to an abstract method in https://chromium-review.googlesource.com/c/v8/v8/+/3779694,
+and is called by V8Platform::PostJob, so we should only call
+CreateJob in order to most closely match V8Platform default behavior.
+
+This patch can be removed when Electron updates to Node.js v20.
 
 diff --git a/src/node_platform.cc b/src/node_platform.cc
-index 7dd0526e6ece5fd86ab3847be592e778e48b5d37..b3994c4398598c67c0029394d58e8f4dba032c5d 100644
+index 7dd0526e6ece5fd86ab3847be592e778e48b5d37..a20622adb2ee8a2e3b05b336e481193624d5b810 100644
 --- a/src/node_platform.cc
 +++ b/src/node_platform.cc
-@@ -534,6 +534,12 @@ std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority,
-       this, priority, std::move(job_task), NumberOfWorkerThreads());
+@@ -528,7 +528,7 @@ bool NodePlatform::FlushForegroundTasks(Isolate* isolate) {
+   return per_isolate->FlushForegroundTasksInternal();
  }
  
+-std::unique_ptr<v8::JobHandle> NodePlatform::PostJob(v8::TaskPriority priority,
 +std::unique_ptr<v8::JobHandle> NodePlatform::CreateJob(v8::TaskPriority priority,
-+                                       std::unique_ptr<v8::JobTask> job_task) {
-+  return v8::platform::NewDefaultJobHandle(
-+      this, priority, std::move(job_task), NumberOfWorkerThreads());
-+}
-+
- bool NodePlatform::IdleTasksEnabled(Isolate* isolate) {
-   return ForIsolate(isolate)->IdleTasksEnabled();
- }
+                                        std::unique_ptr<v8::JobTask> job_task) {
+   return v8::platform::NewDefaultJobHandle(
+       this, priority, std::move(job_task), NumberOfWorkerThreads());
 diff --git a/src/node_platform.h b/src/node_platform.h
-index 4a05f3bba58c8e875d0ab67f292589edbb3b812b..b8a956c286a5ea88b8b520322e04b4e4e16a2591 100644
+index 4a05f3bba58c8e875d0ab67f292589edbb3b812b..1062f3b1b9c386a7bde8dca366c6f008bb183ab7 100644
 --- a/src/node_platform.h
 +++ b/src/node_platform.h
-@@ -158,6 +158,9 @@ class NodePlatform : public MultiIsolatePlatform {
-   std::unique_ptr<v8::JobHandle> PostJob(
+@@ -155,7 +155,7 @@ class NodePlatform : public MultiIsolatePlatform {
+   double CurrentClockTimeMillis() override;
+   v8::TracingController* GetTracingController() override;
+   bool FlushForegroundTasks(v8::Isolate* isolate) override;
+-  std::unique_ptr<v8::JobHandle> PostJob(
++  std::unique_ptr<v8::JobHandle> CreateJob(
        v8::TaskPriority priority,
        std::unique_ptr<v8::JobTask> job_task) override;
-+  std::unique_ptr<v8::JobHandle> CreateJob(
-+      v8::TaskPriority priority,
-+      std::unique_ptr<v8::JobTask> job_task) override;
  
-   void RegisterIsolate(v8::Isolate* isolate, uv_loop_t* loop) override;
-   void RegisterIsolate(v8::Isolate* isolate,

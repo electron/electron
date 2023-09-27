@@ -33,7 +33,7 @@ const normalizeAccessKey = (text: string) => {
   // macOS does not have access keys so remove single ampersands
   // and replace double ampersands with a single ampersand
   if (process.platform === 'darwin') {
-    return text.replace(/&(&?)/g, '$1');
+    return text.replaceAll(/&(&?)/g, '$1');
   }
 
   // Linux uses a single underscore as an access key prefix so escape
@@ -41,7 +41,7 @@ const normalizeAccessKey = (text: string) => {
   // ampersands with a single ampersand, and replace a single ampersand with
   // a single underscore
   if (process.platform === 'linux') {
-    return text.replace(/_/g, '__').replace(/&(.?)/g, (match, after) => {
+    return text.replaceAll('_', '__').replaceAll(/&(.?)/g, (match, after) => {
       if (after === '&') return after;
       return `_${after}`;
     });
@@ -59,7 +59,7 @@ const checkAppInitialized = function () {
 const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogProperties)[]): number => {
   let dialogProperties = 0;
   for (const property of properties) {
-    if (Object.prototype.hasOwnProperty.call(OpenFileDialogProperties, property)) { dialogProperties |= OpenFileDialogProperties[property]; }
+    if (Object.hasOwn(OpenFileDialogProperties, property)) { dialogProperties |= OpenFileDialogProperties[property]; }
   }
   return dialogProperties;
 };
@@ -67,7 +67,7 @@ const setupOpenDialogProperties = (properties: (keyof typeof OpenFileDialogPrope
 const setupSaveDialogProperties = (properties: (keyof typeof SaveFileDialogProperties)[]): number => {
   let dialogProperties = 0;
   for (const property of properties) {
-    if (Object.prototype.hasOwnProperty.call(SaveFileDialogProperties, property)) { dialogProperties |= SaveFileDialogProperties[property]; }
+    if (Object.hasOwn(SaveFileDialogProperties, property)) { dialogProperties |= SaveFileDialogProperties[property]; }
   }
   return dialogProperties;
 };
@@ -194,8 +194,8 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
   if (cancelId == null) {
     // If the defaultId is set to 0, ensure the cancel button is a different index (1)
     cancelId = (defaultId === 0 && buttons.length > 1) ? 1 : 0;
-    for (let i = 0; i < buttons.length; i++) {
-      const text = buttons[i].toLowerCase();
+    for (const [i, button] of buttons.entries()) {
+      const text = button.toLowerCase();
       if (text === 'cancel' || text === 'no') {
         cancelId = i;
         break;
@@ -237,8 +237,6 @@ const messageBox = (sync: boolean, window: BrowserWindow | null, options?: Messa
   }
 };
 
-// eat dirt, eslint
-/* eslint-disable import/export */
 export function showOpenDialog(window: BrowserWindow, options: OpenDialogOptions): OpenDialogReturnValue;
 export function showOpenDialog(options: OpenDialogOptions): OpenDialogReturnValue;
 export function showOpenDialog (windowOrOptions: BrowserWindow | OpenDialogOptions, maybeOptions?: OpenDialogOptions): OpenDialogReturnValue {

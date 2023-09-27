@@ -7,7 +7,7 @@ Build libc++ as static library to compile and pass
 nan tests
 
 diff --git a/buildtools/third_party/libc++/BUILD.gn b/buildtools/third_party/libc++/BUILD.gn
-index 21421aa32047dc1479693c5a5f7aa209aafa05d3..ed1972a765574bdc380ea0670b45906ad66aca69 100644
+index c93cf2883d7109053b1daf68fb1d64219e745c6b..48ee62a16bcfbe7f3083855409b2c8db80d0109e 100644
 --- a/buildtools/third_party/libc++/BUILD.gn
 +++ b/buildtools/third_party/libc++/BUILD.gn
 @@ -44,7 +44,11 @@ config("winver") {
@@ -32,15 +32,15 @@ index 21421aa32047dc1479693c5a5f7aa209aafa05d3..ed1972a765574bdc380ea0670b45906a
    ]
    if (is_linux) {
 diff --git a/buildtools/third_party/libc++abi/BUILD.gn b/buildtools/third_party/libc++abi/BUILD.gn
-index 3ab30c4f8776b9b60e736e69c9bfbce99263ff97..3e8ed18b836f863deafd28a6363b7de2bcdc1863 100644
+index b5c15a0ead70604150a14820d8a829a5aa55f981..f1f984285e39192f5e1a8c5418c13915f5aa110a 100644
 --- a/buildtools/third_party/libc++abi/BUILD.gn
 +++ b/buildtools/third_party/libc++abi/BUILD.gn
-@@ -4,7 +4,7 @@
- 
+@@ -6,7 +6,7 @@ import("//build/config/android/config.gni")
  import("//build/config/c++/c++.gni")
+ import("//build/config/unwind.gni")
  
 -source_set("libc++abi") {
 +static_library("libc++abi") {
    if (export_libcxxabi_from_executables) {
-     visibility = [
-       "//build/config:executable_deps",
+     visibility = [ "//build/config:executable_deps" ]
+   } else {

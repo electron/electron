@@ -150,7 +150,13 @@ void ClientFrameViewLinux::Init(NativeWindowViews* window,
 }
 
 gfx::Insets ClientFrameViewLinux::GetBorderDecorationInsets() const {
-  return frame_provider_->GetFrameThicknessDip();
+  const auto insets = frame_provider_->GetFrameThicknessDip();
+  // We shouldn't draw frame decorations for the tiled edges.
+  // See https://wayland.app/protocols/xdg-shell#xdg_toplevel:enum:state
+  return gfx::Insets::TLBR(tiled_edges().top ? 0 : insets.top(),
+                           tiled_edges().left ? 0 : insets.left(),
+                           tiled_edges().bottom ? 0 : insets.bottom(),
+                           tiled_edges().right ? 0 : insets.right());
 }
 
 gfx::Insets ClientFrameViewLinux::GetInputInsets() const {
@@ -309,13 +315,13 @@ void ClientFrameViewLinux::PaintAsActiveChanged() {
 
 void ClientFrameViewLinux::UpdateThemeValues() {
   gtk::GtkCssContext window_context =
-      gtk::AppendCssNodeToStyleContext({}, "GtkWindow#window.background.csd");
+      gtk::AppendCssNodeToStyleContext({}, "window.background.csd");
   gtk::GtkCssContext headerbar_context = gtk::AppendCssNodeToStyleContext(
-      {}, "GtkHeaderBar#headerbar.default-decoration.titlebar");
-  gtk::GtkCssContext title_context = gtk::AppendCssNodeToStyleContext(
-      headerbar_context, "GtkLabel#label.title");
+      {}, "headerbar.default-decoration.titlebar");
+  gtk::GtkCssContext title_context =
+      gtk::AppendCssNodeToStyleContext(headerbar_context, "label.title");
   gtk::GtkCssContext button_context = gtk::AppendCssNodeToStyleContext(
-      headerbar_context, "GtkButton#button.image-button");
+      headerbar_context, "button.image-button");
 
   gtk_style_context_set_parent(headerbar_context, window_context);
   gtk_style_context_set_parent(title_context, headerbar_context);

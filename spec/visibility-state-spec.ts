@@ -1,12 +1,12 @@
 import { expect } from 'chai';
-import * as cp from 'child_process';
+import * as cp from 'node:child_process';
 import { BrowserWindow, BrowserWindowConstructorOptions, ipcMain } from 'electron/main';
-import * as path from 'path';
+import * as path from 'node:path';
 
 import { closeWindow } from './lib/window-helpers';
 import { ifdescribe } from './lib/spec-helpers';
-import { once } from 'events';
-import { setTimeout } from 'timers/promises';
+import { once } from 'node:events';
+import { setTimeout } from 'node:timers/promises';
 
 // visibilityState specs pass on linux with a real window manager but on CI
 // the environment does not let these specs pass
@@ -109,12 +109,8 @@ ifdescribe(process.platform !== 'linux')('document.visibilityState', () => {
     await once(ipcMain, 'visibility-change-visible');
   });
 
-  describe('on platforms that support occlusion detection', () => {
+  ifdescribe(process.platform === 'darwin')('on platforms that support occlusion detection', () => {
     let child: cp.ChildProcess;
-
-    before(function () {
-      if (process.platform !== 'darwin') this.skip();
-    });
 
     const makeOtherWindow = (opts: { x: number; y: number; width: number; height: number; }) => {
       child = cp.spawn(process.execPath, [path.resolve(__dirname, 'fixtures', 'chromium', 'other-window.js'), `${opts.x}`, `${opts.y}`, `${opts.width}`, `${opts.height}`]);

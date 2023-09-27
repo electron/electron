@@ -15,10 +15,11 @@
 #include "base/files/file_enumerator.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/guid.h"
+#include "base/memory/raw_ptr.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
+#include "base/uuid.h"
 #include "chrome/browser/browser_process.h"
 #include "chrome/common/chrome_switches.h"
 #include "chrome/common/pref_names.h"
@@ -65,6 +66,7 @@
 #include "shell/browser/javascript_environment.h"
 #include "shell/browser/media/media_device_id_salt.h"
 #include "shell/browser/net/cert_verifier_client.h"
+#include "shell/browser/net/resolve_host_function.h"
 #include "shell/browser/session_preferences.h"
 #include "shell/common/gin_converters/callback_converter.h"
 #include "shell/common/gin_converters/content_converter.h"
@@ -72,6 +74,7 @@
 #include "shell/common/gin_converters/gurl_converter.h"
 #include "shell/common/gin_converters/media_converter.h"
 #include "shell/common/gin_converters/net_converter.h"
+#include "shell/common/gin_converters/usb_protected_classes_converter.h"
 #include "shell/common/gin_converters/value_converter.h"
 #include "shell/common/gin_helper/dictionary.h"
 #include "shell/common/gin_helper/object_template_builder.h"
@@ -274,7 +277,8 @@ void DownloadIdCallback(content::DownloadManager* download_manager,
                         const base::Time& start_time,
                         uint32_t id) {
   download_manager->CreateDownloadItem(
-      base::GenerateGUID(), id, path, path, url_chain, GURL(),
+      base::Uuid::GenerateRandomV4().AsLowercaseString(), id, path, path,
+      url_chain, GURL(),
       content::StoragePartitionConfig::CreateDefault(
           download_manager->GetBrowserContext()),
       GURL(), GURL(), absl::nullopt, mime_type, mime_type, start_time,
@@ -326,7 +330,7 @@ class DictionaryObserver final : public SpellcheckCustomDictionary::Observer {
 struct UserDataLink : base::SupportsUserData::Data {
   explicit UserDataLink(Session* ses) : session(ses) {}
 
-  Session* session;
+  raw_ptr<Session> session;
 };
 
 const void* kElectronApiSessionKey = &kElectronApiSessionKey;
@@ -342,7 +346,7 @@ Session::Session(v8::Isolate* isolate, ElectronBrowserContext* browser_context)
   // Observe DownloadManager to get download notifications.
   browser_context->GetDownloadManager()->AddObserver(this);
 
-  new SessionPreferences(browser_context);
+  SessionPreferences::CreateForBrowserContext(browser_context);
 
   protocol_.Reset(isolate, Protocol::Create(isolate, browser_context).ToV8());
 
@@ -422,6 +426,37 @@ v8::Local<v8::Promise> Session::ResolveProxy(gin::Arguments* args) {
   browser_context_->GetResolveProxyHelper()->ResolveProxy(
       url, base::BindOnce(gin_helper::Promise<std::string>::ResolvePromise,
                           std::move(promise)));
+
+  return handle;
+}
+
+v8::Local<v8::Promise> Session::ResolveHost(
+    std::string host,
+    absl::optional<network::mojom::ResolveHostParametersPtr> params) {
+  gin_helper::Promise<gin_helper::Dictionary> promise(isolate_);
+  v8::Local<v8::Promise> handle = promise.GetHandle();
+
+  auto fn = base::MakeRefCounted<ResolveHostFunction>(
+      browser_context_, std::move(host),
+      params ? std::move(params.value()) : nullptr,
+      base::BindOnce(
+          [](gin_helper::Promise<gin_helper::Dictionary> promise,
+             int64_t net_error, const absl::optional<net::AddressList>& addrs) {
+            if (net_error < 0) {
+              promise.RejectWithErrorMessage(net::ErrorToString(net_error));
+            } else {
+              DCHECK(addrs.has_value() && !addrs->empty());
+
+              v8::HandleScope handle_scope(promise.isolate());
+              gin_helper::Dictionary dict =
+                  gin::Dictionary::CreateEmpty(promise.isolate());
+              dict.Set("endpoints", addrs->endpoints());
+              promise.Resolve(dict);
+            }
+          },
+          std::move(promise)));
+
+  fn->Run();
 
   return handle;
 }
@@ -620,8 +655,7 @@ void Session::SetPermissionRequestHandler(v8::Local<v8::Value> val,
          blink::PermissionType permission_type,
          ElectronPermissionManager::StatusCallback callback,
          const base::Value& details) {
-        handler->Run(web_contents, permission_type,
-                     base::AdaptCallbackForRepeating(std::move(callback)),
+        handler->Run(web_contents, permission_type, std::move(callback),
                      details);
       },
       base::Owned(std::move(handler))));
@@ -665,6 +699,18 @@ void Session::SetDevicePermissionHandler(v8::Local<v8::Value> val,
   auto* permission_manager = static_cast<ElectronPermissionManager*>(
       browser_context()->GetPermissionControllerDelegate());
   permission_manager->SetDevicePermissionHandler(handler);
+}
+
+void Session::SetUSBProtectedClassesHandler(v8::Local<v8::Value> val,
+                                            gin::Arguments* args) {
+  ElectronPermissionManager::ProtectedUSBHandler handler;
+  if (!(val->IsNull() || gin::ConvertFromV8(args->isolate(), val, &handler))) {
+    args->ThrowTypeError("Must pass null or function");
+    return;
+  }
+  auto* permission_manager = static_cast<ElectronPermissionManager*>(
+      browser_context()->GetPermissionControllerDelegate());
+  permission_manager->SetProtectedUSBHandler(handler);
 }
 
 void Session::SetBluetoothPairingHandler(v8::Local<v8::Value> val,
@@ -758,10 +804,24 @@ v8::Local<v8::Promise> Session::GetBlobData(v8::Isolate* isolate,
   return holder->ReadAll(isolate);
 }
 
-void Session::DownloadURL(const GURL& url) {
-  auto* download_manager = browser_context()->GetDownloadManager();
+void Session::DownloadURL(const GURL& url, gin::Arguments* args) {
+  std::map<std::string, std::string> headers;
+  gin_helper::Dictionary options;
+  if (args->GetNext(&options)) {
+    if (options.Has("headers") && !options.Get("headers", &headers)) {
+      args->ThrowTypeError("Invalid value for headers - must be an object");
+      return;
+    }
+  }
+
   auto download_params = std::make_unique<download::DownloadUrlParameters>(
       url, MISSING_TRAFFIC_ANNOTATION);
+
+  for (const auto& [name, value] : headers) {
+    download_params->add_request_header(name, value);
+  }
+
+  auto* download_manager = browser_context()->GetDownloadManager();
   download_manager->DownloadUrl(std::move(download_params));
 }
 
@@ -1241,7 +1301,8 @@ gin::Handle<Session> Session::New() {
 
 void Session::FillObjectTemplate(v8::Isolate* isolate,
                                  v8::Local<v8::ObjectTemplate> templ) {
-  gin::ObjectTemplateBuilder(isolate, "Session", templ)
+  gin::ObjectTemplateBuilder(isolate, GetClassName(), templ)
+      .SetMethod("resolveHost", &Session::ResolveHost)
       .SetMethod("resolveProxy", &Session::ResolveProxy)
       .SetMethod("getCacheSize", &Session::GetCacheSize)
       .SetMethod("clearCache", &Session::ClearCache)
@@ -1261,6 +1322,8 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
                  &Session::SetDisplayMediaRequestHandler)
       .SetMethod("setDevicePermissionHandler",
                  &Session::SetDevicePermissionHandler)
+      .SetMethod("setUSBProtectedClassesHandler",
+                 &Session::SetUSBProtectedClassesHandler)
       .SetMethod("setBluetoothPairingHandler",
                  &Session::SetBluetoothPairingHandler)
       .SetMethod("clearHostResolverCache", &Session::ClearHostResolverCache)
@@ -1316,7 +1379,7 @@ void Session::FillObjectTemplate(v8::Isolate* isolate,
 }
 
 const char* Session::GetTypeName() {
-  return "Session";
+  return GetClassName();
 }
 
 }  // namespace electron::api

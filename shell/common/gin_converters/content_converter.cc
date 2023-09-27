@@ -6,9 +6,10 @@
 
 #include <string>
 
+#include "base/containers/fixed_flat_map.h"
 #include "content/public/browser/context_menu_params.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/input/native_web_keyboard_event.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -23,36 +24,81 @@
 
 namespace gin {
 
-template <>
-struct Converter<ui::MenuSourceType> {
-  static v8::Local<v8::Value> ToV8(v8::Isolate* isolate,
-                                   const ui::MenuSourceType& in) {
-    switch (in) {
-      case ui::MENU_SOURCE_MOUSE:
-        return StringToV8(isolate, "mouse");
-      case ui::MENU_SOURCE_KEYBOARD:
-        return StringToV8(isolate, "keyboard");
-      case ui::MENU_SOURCE_TOUCH:
-        return StringToV8(isolate, "touch");
-      case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
-        return StringToV8(isolate, "touchMenu");
-      case ui::MENU_SOURCE_LONG_PRESS:
-        return StringToV8(isolate, "longPress");
-      case ui::MENU_SOURCE_LONG_TAP:
-        return StringToV8(isolate, "longTap");
-      case ui::MENU_SOURCE_TOUCH_HANDLE:
-        return StringToV8(isolate, "touchHandle");
-      case ui::MENU_SOURCE_STYLUS:
-        return StringToV8(isolate, "stylus");
-      case ui::MENU_SOURCE_ADJUST_SELECTION:
-        return StringToV8(isolate, "adjustSelection");
-      case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
-        return StringToV8(isolate, "adjustSelectionReset");
-      default:
-        return StringToV8(isolate, "none");
-    }
+// static
+v8::Local<v8::Value> Converter<ui::MenuSourceType>::ToV8(
+    v8::Isolate* isolate,
+    const ui::MenuSourceType& in) {
+  switch (in) {
+    case ui::MENU_SOURCE_MOUSE:
+      return StringToV8(isolate, "mouse");
+    case ui::MENU_SOURCE_KEYBOARD:
+      return StringToV8(isolate, "keyboard");
+    case ui::MENU_SOURCE_TOUCH:
+      return StringToV8(isolate, "touch");
+    case ui::MENU_SOURCE_TOUCH_EDIT_MENU:
+      return StringToV8(isolate, "touchMenu");
+    case ui::MENU_SOURCE_LONG_PRESS:
+      return StringToV8(isolate, "longPress");
+    case ui::MENU_SOURCE_LONG_TAP:
+      return StringToV8(isolate, "longTap");
+    case ui::MENU_SOURCE_TOUCH_HANDLE:
+      return StringToV8(isolate, "touchHandle");
+    case ui::MENU_SOURCE_STYLUS:
+      return StringToV8(isolate, "stylus");
+    case ui::MENU_SOURCE_ADJUST_SELECTION:
+      return StringToV8(isolate, "adjustSelection");
+    case ui::MENU_SOURCE_ADJUST_SELECTION_RESET:
+      return StringToV8(isolate, "adjustSelectionReset");
+    case ui::MENU_SOURCE_NONE:
+      return StringToV8(isolate, "none");
   }
-};
+}
+
+// static
+bool Converter<ui::MenuSourceType>::FromV8(v8::Isolate* isolate,
+                                           v8::Local<v8::Value> val,
+                                           ui::MenuSourceType* out) {
+  std::string type;
+  if (!ConvertFromV8(isolate, val, &type))
+    return false;
+
+  if (type == "mouse") {
+    *out = ui::MENU_SOURCE_MOUSE;
+    return true;
+  } else if (type == "keyboard") {
+    *out = ui::MENU_SOURCE_KEYBOARD;
+    return true;
+  } else if (type == "touch") {
+    *out = ui::MENU_SOURCE_TOUCH;
+    return true;
+  } else if (type == "touchMenu") {
+    *out = ui::MENU_SOURCE_TOUCH_EDIT_MENU;
+    return true;
+  } else if (type == "longPress") {
+    *out = ui::MENU_SOURCE_LONG_PRESS;
+    return true;
+  } else if (type == "longTap") {
+    *out = ui::MENU_SOURCE_LONG_TAP;
+    return true;
+  } else if (type == "touchHandle") {
+    *out = ui::MENU_SOURCE_TOUCH_HANDLE;
+    return true;
+  } else if (type == "stylus") {
+    *out = ui::MENU_SOURCE_STYLUS;
+    return true;
+  } else if (type == "adjustSelection") {
+    *out = ui::MENU_SOURCE_ADJUST_SELECTION;
+    return true;
+  } else if (type == "adjustSelectionReset") {
+    *out = ui::MENU_SOURCE_ADJUST_SELECTION_RESET;
+    return true;
+  } else if (type == "none") {
+    *out = ui::MENU_SOURCE_NONE;
+    return true;
+  }
+
+  return false;
+}
 
 // static
 v8::Local<v8::Value> Converter<blink::mojom::MenuItem::Type>::ToV8(
@@ -79,7 +125,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     const ContextMenuParamsWithRenderFrameHost& val) {
   const auto& params = val.first;
   content::RenderFrameHost* render_frame_host = val.second;
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
@@ -222,20 +268,14 @@ v8::Local<v8::Value> Converter<blink::PermissionType>::ToV8(
 bool Converter<content::StopFindAction>::FromV8(v8::Isolate* isolate,
                                                 v8::Local<v8::Value> val,
                                                 content::StopFindAction* out) {
-  std::string action;
-  if (!ConvertFromV8(isolate, val, &action))
-    return false;
-
-  if (action == "clearSelection")
-    *out = content::STOP_FIND_ACTION_CLEAR_SELECTION;
-  else if (action == "keepSelection")
-    *out = content::STOP_FIND_ACTION_KEEP_SELECTION;
-  else if (action == "activateSelection")
-    *out = content::STOP_FIND_ACTION_ACTIVATE_SELECTION;
-  else
-    return false;
-
-  return true;
+  using Val = content::StopFindAction;
+  static constexpr auto Lookup =
+      base::MakeFixedFlatMapSorted<base::StringPiece, Val>({
+          {"activateSelection", Val::STOP_FIND_ACTION_ACTIVATE_SELECTION},
+          {"clearSelection", Val::STOP_FIND_ACTION_CLEAR_SELECTION},
+          {"keepSelection", Val::STOP_FIND_ACTION_KEEP_SELECTION},
+      });
+  return FromV8WithLookup(isolate, val, Lookup, out);
 }
 
 // static
@@ -269,7 +309,7 @@ bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
     v8::Isolate* isolate,
     const content::Referrer& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
   dict.Set("policy", ConvertToV8(isolate, val.policy));
   return gin::ConvertToV8(isolate, dict);
@@ -302,7 +342,7 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
     return false;
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebKeyboardEvent*>(out)))
     return false;
-  dict.Get("skipInBrowser", &out->skip_in_browser);
+  dict.Get("skipIfUnhandled", &out->skip_if_unhandled);
   return true;
 }
 

@@ -10,8 +10,10 @@
 #include <memory>
 #include <set>
 #include <string>
-#include <vector>
 
+#include "base/memory/raw_ptr.h"
+#include "shell/browser/ui/views/root_view.h"
+#include "ui/views/controls/webview/unhandled_keyboard_event_handler.h"
 #include "ui/views/widget/widget_observer.h"
 
 #if defined(USE_OZONE)
@@ -27,14 +29,9 @@
 
 #endif
 
-namespace views {
-class UnhandledKeyboardEventHandler;
-}
-
 namespace electron {
 
 class GlobalMenuBarX11;
-class RootView;
 class WindowStateWatcher;
 
 #if defined(USE_OZONE_PLATFORM_X11)
@@ -81,6 +78,9 @@ class NativeWindowViews : public NativeWindow,
   SkColor GetBackgroundColor() override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
+#if BUILDFLAG(IS_WIN)
+  extensions::SizeConstraints GetContentSizeConstraints() const override;
+#endif
   void SetResizable(bool resizable) override;
   bool MoveAbove(const std::string& sourceId) override;
   void MoveTop() override;
@@ -137,6 +137,7 @@ class NativeWindowViews : public NativeWindow,
   bool IsMenuBarAutoHide() override;
   void SetMenuBarVisibility(bool visible) override;
   bool IsMenuBarVisible() override;
+  void SetBackgroundMaterial(const std::string& type) override;
 
   void SetVisibleOnAllWorkspaces(bool visible,
                                  bool visibleOnFullScreen,
@@ -249,10 +250,10 @@ class NativeWindowViews : public NativeWindow,
   // Maintain window placement.
   void MoveBehindTaskBarIfNeeded();
 
-  std::unique_ptr<RootView> root_view_;
+  RootView root_view_{this};
 
   // The view should be focused by default.
-  views::View* focused_view_ = nullptr;
+  raw_ptr<views::View> focused_view_ = nullptr;
 
   // The "resizable" flag on Linux is implemented by setting size constraints,
   // we need to make sure size constraints are restored when window becomes
@@ -317,10 +318,17 @@ class NativeWindowViews : public NativeWindow,
   // Controls Overlay if enabled on Windows.
   SkColor overlay_button_color_;
   SkColor overlay_symbol_color_;
+
+  // The message ID of the "TaskbarCreated" message, sent to us when we need to
+  // reset our thumbar buttons.
+  UINT taskbar_created_message_ = 0;
 #endif
 
   // Handles unhandled keyboard messages coming back from the renderer process.
-  std::unique_ptr<views::UnhandledKeyboardEventHandler> keyboard_event_handler_;
+  views::UnhandledKeyboardEventHandler keyboard_event_handler_;
+
+  // Whether the menubar is visible before the window enters fullscreen
+  bool menu_bar_visible_before_fullscreen_ = false;
 
   // Whether the window should be enabled based on user calls to SetEnabled()
   bool is_enabled_ = true;

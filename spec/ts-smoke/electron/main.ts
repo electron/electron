@@ -22,7 +22,7 @@ import {
 } from 'electron/main';
 
 import { clipboard, crashReporter, nativeImage, shell } from 'electron/common';
-import * as path from 'path';
+import * as path from 'node:path';
 
 // Quick start
 // https://github.com/electron/electron/blob/main/docs/tutorial/quick-start.md
@@ -365,7 +365,10 @@ if (process.platform !== 'win32' || systemPreferences.isAeroGlassEnabled()) {
 
 if (process.platform === 'win32') {
   systemPreferences.on('color-changed', () => { console.log('color changed'); });
+  // @ts-expect-error Removed API
   systemPreferences.on('inverted-color-scheme-changed', (_, inverted) => console.log(inverted ? 'inverted' : 'not inverted'));
+  // @ts-expect-error Removed API
+  systemPreferences.on('high-contrast-color-scheme-changed', (_, highContrast) => console.log(highContrast ? 'high contrast' : 'not high contrast'));
   console.log('Color for menu is', systemPreferences.getColor('menu'));
 }
 
@@ -374,6 +377,12 @@ if (process.platform === 'darwin') {
   console.log(value);
   const value2 = systemPreferences.getUserDefault('Foo', 'boolean');
   console.log(value2);
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.getAppLevelAppearance());
+  // @ts-expect-error Removed API
+  systemPreferences.setAppLevelAppearance('dark');
+  // @ts-expect-error Removed API
+  console.log(systemPreferences.getColor('alternate-selected-control-text'));
 }
 
 // Create the window.
@@ -503,10 +512,32 @@ dialog.showOpenDialog(win3, {
   console.log(ret);
 });
 
+// variants without browserWindow
+dialog.showMessageBox({ message: 'test', type: 'warning' });
+dialog.showMessageBoxSync({ message: 'test', type: 'error' });
+
+// @ts-expect-error Invalid type value
+dialog.showMessageBox({ message: 'test', type: 'foo' });
+// @ts-expect-error Invalid type value
+dialog.showMessageBoxSync({ message: 'test', type: 'foo' });
+
+// variants with browserWindow
+dialog.showMessageBox(win3, { message: 'test', type: 'question' });
+dialog.showMessageBoxSync(win3, { message: 'test', type: 'info' });
+
+// @ts-expect-error Invalid type value
+dialog.showMessageBox(win3, { message: 'test', type: 'foo' });
+// @ts-expect-error Invalid type value
+dialog.showMessageBoxSync(win3, { message: 'test', type: 'foo' });
+
 // desktopCapturer
 // https://github.com/electron/electron/blob/main/docs/api/desktop-capturer.md
 
 ipcMain.handle('get-sources', (event, options) => desktopCapturer.getSources(options));
+
+desktopCapturer.getSources({ types: ['window', 'screen'] });
+// @ts-expect-error Invalid type value
+desktopCapturer.getSources({ types: ['unknown'] });
 
 // global-shortcut
 // https://github.com/electron/electron/blob/main/docs/api/global-shortcut.md
@@ -529,14 +560,14 @@ globalShortcut.unregisterAll();
 // ipcMain
 // https://github.com/electron/electron/blob/main/docs/api/ipc-main.md
 
+ipcMain.handle('ping-pong', (event, arg: any) => {
+  console.log(arg); // prints "ping"
+  return 'pong';
+});
+
 ipcMain.on('asynchronous-message', (event, arg: any) => {
   console.log(arg); // prints "ping"
   event.sender.send('asynchronous-reply', 'pong');
-});
-
-ipcMain.on('synchronous-message', (event, arg: any) => {
-  console.log(arg); // prints "ping"
-  event.returnValue = 'pong';
 });
 
 ipcMain.on('synchronous-message', (event, arg: any) => {
@@ -806,6 +837,7 @@ Menu.buildFromTemplate([
   { role: 'toggleTabBar' },
   { role: 'selectNextTab' },
   { role: 'selectPreviousTab' },
+  { role: 'showAllTabs' },
   { role: 'mergeAllWindows' },
   { role: 'clearRecentDocuments' },
   { role: 'moveTabToNewWindow' }
@@ -881,7 +913,8 @@ app.whenReady().then(() => {
 const id = powerSaveBlocker.start('prevent-display-sleep');
 console.log(powerSaveBlocker.isStarted(id));
 
-powerSaveBlocker.stop(id);
+const stopped = powerSaveBlocker.stop(id);
+console.log(`The powerSaveBlocker is ${stopped ? 'stopped' : 'not stopped'}`);
 
 // protocol
 // https://github.com/electron/electron/blob/main/docs/api/protocol.md
@@ -1011,6 +1044,12 @@ appIcon4.destroy();
 const image2 = nativeImage.createFromPath('/Users/somebody/images/icon.png');
 console.log(image2.getSize());
 
+image2.resize({ quality: 'best' });
+image2.resize({ quality: 'better' });
+image2.resize({ quality: 'good' });
+// @ts-expect-error Invalid type value
+image2.resize({ quality: 'bad' });
+
 // process
 // https://github.com/electron/electron/blob/main/docs/api/process.md
 
@@ -1114,11 +1153,21 @@ shell.writeShortcutLink('/home/user/Desktop/shortcut.lnk', 'update', shell.readS
 // session
 // https://github.com/electron/electron/blob/main/docs/api/session.md
 
+session.defaultSession.clearStorageData({ storages: ['cookies', 'filesystem'] });
+session.defaultSession.clearStorageData({ storages: ['localstorage', 'indexdb', 'serviceworkers'] });
+session.defaultSession.clearStorageData({ storages: ['shadercache', 'websql', 'cachestorage'] });
+// @ts-expect-error Invalid type value
+session.defaultSession.clearStorageData({ storages: ['wrong_path'] });
+
+session.defaultSession.clearStorageData({ quotas: ['syncable', 'temporary'] });
+// @ts-expect-error Invalid type value
+session.defaultSession.clearStorageData({ quotas: ['bad_type'] });
+
 session.defaultSession.on('will-download', (event, item, webContents) => {
   console.log('will-download', webContents.id);
   event.preventDefault();
   require('got')(item.getURL()).then((data: any) => {
-    require('fs').writeFileSync('/somewhere', data);
+    require('node:fs').writeFileSync('/somewhere', data);
   });
 });
 
@@ -1226,7 +1275,21 @@ win4.webContents.on('paint', (event, dirty, _image) => {
   console.log(dirty, _image.getBitmap());
 });
 
+win4.webContents.on('devtools-open-url', (event, url) => {
+  console.log(url);
+});
+
 win4.loadURL('http://github.com');
+
+// @ts-expect-error Removed API
+win4.webContents.getPrinters();
+
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-begin', () => {});
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-edge', () => {});
+// @ts-expect-error Removed API
+win4.webContents.on('scroll-touch-end', () => {});
 
 // TouchBar
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md

@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-const crypto = require('crypto');
+const crypto = require('node:crypto');
 const { GitProcess } = require('dugite');
-const childProcess = require('child_process');
+const childProcess = require('node:child_process');
 const { ESLint } = require('eslint');
-const fs = require('fs');
+const fs = require('node:fs');
 const minimist = require('minimist');
-const path = require('path');
+const path = require('node:path');
 
 const { chunkFilenames, findMatchingFiles } = require('./lib/utils');
 
@@ -26,6 +26,32 @@ const IGNORELIST = new Set([
 ].map(tokens => path.join(ELECTRON_ROOT, ...tokens)));
 
 const IS_WINDOWS = process.platform === 'win32';
+
+const CPPLINT_FILTERS = [
+  // from presubmit_canned_checks.py OFF_BY_DEFAULT_LINT_FILTERS
+  '-build/include',
+  '-build/include_order',
+  '-build/namespaces',
+  '-readability/casting',
+  '-runtime/int',
+  '-whitespace/braces',
+  // from presubmit_canned_checks.py OFF_UNLESS_MANUALLY_ENABLED_LINT_FILTERS
+  '-build/c++11',
+  '-build/header_guard',
+  '-readability/todo',
+  '-runtime/references',
+  '-whitespace/braces',
+  '-whitespace/comma',
+  '-whitespace/end_of_line',
+  '-whitespace/forcolon',
+  '-whitespace/indent',
+  '-whitespace/line_length',
+  '-whitespace/newline',
+  '-whitespace/operators',
+  '-whitespace/parens',
+  '-whitespace/semicolon',
+  '-whitespace/tab'
+];
 
 function spawnAndCheckExitCode (cmd, args, opts) {
   opts = { stdio: 'inherit', ...opts };
@@ -75,7 +101,7 @@ const LINTERS = [{
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     for (const chunk of chunkFilenames(filenames)) {
       spawnAndCheckExitCode('python3', ['script/run-clang-format.py', ...clangFormatFlags, ...chunk]);
-      cpplint(chunk);
+      cpplint([`--filter=${CPPLINT_FILTERS.join(',')}`, ...chunk]);
     }
   }
 }, {
@@ -85,13 +111,7 @@ const LINTERS = [{
   run: (opts, filenames) => {
     const clangFormatFlags = opts.fix ? ['--fix'] : [];
     spawnAndCheckExitCode('python3', ['script/run-clang-format.py', '-r', ...clangFormatFlags, ...filenames]);
-    const filter = [
-      '-readability/braces',
-      '-readability/casting',
-      '-whitespace/braces',
-      '-whitespace/indent',
-      '-whitespace/parens'
-    ];
+    const filter = [...CPPLINT_FILTERS, '-readability/braces'];
     cpplint(['--extensions=mm,h', `--filter=${filter.join(',')}`, ...filenames]);
   }
 }, {
@@ -252,7 +272,7 @@ function parseCommandLine () {
   const opts = minimist(process.argv.slice(2), {
     boolean: ['c++', 'objc', 'javascript', 'python', 'gn', 'patches', 'help', 'changed', 'fix', 'verbose', 'only'],
     alias: { 'c++': ['cc', 'cpp', 'cxx'], javascript: ['js', 'es'], python: 'py', changed: 'c', help: 'h', verbose: 'v' },
-    unknown: arg => { help = true; }
+    unknown: () => { help = true; }
   });
   if (help || opts.help) {
     console.log('Usage: script/lint.js [--cc] [--js] [--py] [-c|--changed] [-h|--help] [-v|--verbose] [--fix] [--only -- file1 file2]');
@@ -333,7 +353,7 @@ async function main () {
   }
 }
 
-if (process.mainModule === module) {
+if (require.main === module) {
   main().catch((error) => {
     console.error(error);
     process.exit(1);

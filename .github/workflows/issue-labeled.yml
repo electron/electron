@@ -8,21 +8,63 @@ permissions:  # added using https://github.com/step-security/secure-workflows
   contents: read
 
 jobs:
-  issue-labeled:
+  issue-labeled-blocked:
+    name: blocked/* label added
+    if: startsWith(github.event.label.name, 'blocked/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+          org: electron
+      - name: Set status
+        uses: github/update-project-action@2d475e08804f11f4022df7e21f5816531e97cb64 # v2
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          organization: electron
+          project_number: 90
+          content_id: ${{ github.event.issue.node_id }}
+          field: Status
+          value: 🛑 Blocked
+  issue-labeled-blocked-need-repro:
+    name: blocked/need-repro label added
+    if: github.event.label.name == 'blocked/need-repro'
     permissions:
       issues: write  # for actions-cool/issues-helper to update issues
     runs-on: ubuntu-latest
     steps:
-      - name: blocked/need-repro label added
-        if: github.event.label.name == 'blocked/need-repro'
-        uses: actions-cool/issues-helper@dad28fdb88da5f082c04659b7373d85790f9b135 # v3.3.0
+      - name: Check if comment needed
+        id: check-for-comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: electron/electron
+        run: |
+          set -eo pipefail
+          COMMENT_COUNT=$(gh issue view ${{ github.event.issue.number }} --comments --json comments | jq '[ .comments[] | select(.author.login == "electron-issue-triage" or .authorAssociation == "OWNER" or .authorAssociation == "MEMBER") | select(.body | startswith("<!-- blocked/need-repro -->")) ] | length')
+          if [[ $COMMENT_COUNT -eq 0 ]]; then
+            echo "SHOULD_COMMENT=1" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Generate GitHub App token
+        if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.ISSUE_TRIAGE_GH_APP_CREDS }}
+      - name: Create comment
+        if: ${{ steps.check-for-comment.outputs.SHOULD_COMMENT }}
+        uses: actions-cool/issues-helper@275328970dbc3bfc3bc43f5fe741bf3638300c0a # v3.3.3
         with:
           actions: 'create-comment'
+          token: ${{ steps.generate-token.outputs.token }}
           body: |
+            <!-- blocked/need-repro -->
+
             Hello @${{ github.event.issue.user.login }}. Thanks for reporting this and helping to make Electron better!
 
             Would it be possible for you to make a standalone testcase with only the code necessary to reproduce the issue? For example, [Electron Fiddle](https://www.electronjs.org/fiddle) is a great tool for making small test cases and makes it easy to publish your test case to a [gist](https://gist.github.com) that Electron maintainers can use.
 
             Stand-alone test cases make fixing issues go more smoothly: it ensure everyone's looking at the same issue, it removes all unnecessary variables from the equation, and it can also provide the basis for automated regression tests.
 
-            Now adding the `blocked/need-repro` label for this reason. After you make a test case, please link to it in a followup comment. This issue will be closed in 10 days if the above is not addressed.
+            Now adding the https://github.com/electron/electron/labels/blocked%2Fneed-repro label for this reason. After you make a test case, please link to it in a followup comment. This issue will be closed in 10 days if the above is not addressed.
