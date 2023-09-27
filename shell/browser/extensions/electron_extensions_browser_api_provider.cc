@@ -7,6 +7,7 @@
 #include "extensions/browser/api/i18n/i18n_api.h"
 #include "extensions/browser/extension_function_registry.h"
 #include "shell/browser/extensions/api/generated_api_registration.h"
+#include "shell/browser/extensions/api/scripting/scripting_api.h"
 #include "shell/browser/extensions/api/tabs/tabs_api.h"
 
 namespace extensions {

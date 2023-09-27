@@ -249,7 +249,7 @@ describe('<webview> tag', function () {
       });
       await w.loadURL('about:blank');
       const src = url.format({
-        pathname: `${fixtures.replace(/\\/g, '/')}/pages/theme-color.html`,
+        pathname: `${fixtures.replaceAll('\\', '/')}/pages/theme-color.html`,
         protocol: 'file',
         slashes: true
       });
@@ -280,7 +280,9 @@ describe('<webview> tag', function () {
       w.webContents.session.removeExtension('foo');
 
       const extensionPath = path.join(__dirname, 'fixtures', 'devtools-extensions', 'foo');
-      await w.webContents.session.loadExtension(extensionPath);
+      await w.webContents.session.loadExtension(extensionPath, {
+        allowFileAccess: true
+      });
 
       w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'webview-devtools.html'));
       loadWebView(w.webContents, {
@@ -667,9 +669,9 @@ describe('<webview> tag', function () {
 
       const [, content] = await once(ipcMain, 'answer');
       const expectedContent =
-          'Blocked a frame with origin "file://" from accessing a cross-origin frame.';
+          /Failed to read a named property 'toString' from 'Location': Blocked a frame with origin "(.*?)" from accessing a cross-origin frame./;
 
-      expect(content).to.equal(expectedContent);
+      expect(content).to.match(expectedContent);
     });
 
     it('emits a browser-window-created event', async () => {
@@ -927,7 +929,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);
@@ -1409,7 +1411,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);
@@ -1789,7 +1791,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);
@@ -2032,7 +2034,7 @@ describe('<webview> tag', function () {
             // Values can be 0,2,3,4, or 6. We want 6, which is RGB + Alpha
             expect(imgBuffer[25]).to.equal(6);
             return;
-          } catch (e) {
+          } catch {
             /* drop the error */
           }
         }
@@ -2086,7 +2088,7 @@ describe('<webview> tag', function () {
     });
     afterEach(async () => {
       await w.executeJavaScript(`{
-        document.querySelectorAll('webview').forEach(el => el.remove())
+        for (const el of document.querySelectorAll('webview')) el.remove();
       }`);
     });
     after(closeAllWindows);

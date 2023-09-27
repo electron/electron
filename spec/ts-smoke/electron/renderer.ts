@@ -4,7 +4,19 @@ import { clipboard, crashReporter, shell } from 'electron/common';
 
 // In renderer process (web page).
 // https://github.com/electron/electron/blob/main/docs/api/ipc-renderer.md
+
+(async () => {
+  console.log(await ipcRenderer.invoke('ping-pong')); // prints "pong"
+})();
+
 console.log(ipcRenderer.sendSync('synchronous-message', 'ping')); // prints "pong"
+
+ipcRenderer.on('test', () => {});
+ipcRenderer.off('test', () => {});
+ipcRenderer.once('test', () => {});
+ipcRenderer.addListener('test', () => {});
+ipcRenderer.removeListener('test', () => {});
+ipcRenderer.removeAllListeners('test');
 
 ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
   console.log(arg); // prints "pong"
@@ -12,6 +24,9 @@ ipcRenderer.on('asynchronous-reply', (event, arg: any) => {
 });
 
 ipcRenderer.send('asynchronous-message', 'ping');
+
+// @ts-expect-error Removed API
+ipcRenderer.sendTo(1, 'test', 'Hello World!');
 
 // web-frame
 // https://github.com/electron/electron/blob/main/docs/api/web-frame.md
@@ -74,14 +89,14 @@ crashReporter.start({
 // https://github.com/electron/electron/blob/main/docs/api/desktop-capturer.md
 
 getSources({ types: ['window', 'screen'] }).then(sources => {
-  for (let i = 0; i < sources.length; ++i) {
-    if (sources[i].name === 'Electron') {
+  for (const source of sources) {
+    if (source.name === 'Electron') {
       (navigator as any).webkitGetUserMedia({
         audio: false,
         video: {
           mandatory: {
             chromeMediaSource: 'desktop',
-            chromeMediaSourceId: sources[i].id,
+            chromeMediaSourceId: source.id,
             minWidth: 1280,
             maxWidth: 1280,
             minHeight: 720,

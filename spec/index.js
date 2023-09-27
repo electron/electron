@@ -148,9 +148,9 @@ app.whenReady().then(async () => {
 
   const { getFiles } = require('./get-files');
   const testFiles = await getFiles(__dirname, { filter });
-  testFiles.sort().forEach((file) => {
+  for (const file of testFiles.sort()) {
     mocha.addFile(file);
-  });
+  }
 
   if (validTestPaths && validTestPaths.length > 0 && testFiles.length === 0) {
     console.error('Test files were provided, but they did not match any searched files');

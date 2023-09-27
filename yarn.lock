@@ -199,12 +199,13 @@
     "@octokit/auth-app" "^4.0.13"
     "@octokit/rest" "^19.0.11"
 
-"@electron/lint-roller@^1.5.0":
-  version "1.5.0"
-  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.5.0.tgz#9b743979e1b03327e475fa696bb781eb2ea05ef2"
-  integrity sha512-205UxwJEx8zv5wLwPq4wMA0OYrJ7d1GuqOhPav0Uy2HWe4K+DZbSP50safCvZCSpI6Op3DMo79tp5i8VppuPWA==
+"@electron/lint-roller@^1.9.0":
+  version "1.9.0"
+  resolved "https://registry.yarnpkg.com/@electron/lint-roller/-/lint-roller-1.9.0.tgz#784d2b9b7664dc7b696cc57cf6c9e181ea701e76"
+  integrity sha512-DgZJdzSAG19PotTPhWM4Xgt0RDv/nJS1JNKpJdvOUv2AsdU0rIq3kDAzm2AdzIW/AlrOnkpUA1UJNezdIAIA4g==
   dependencies:
     "@dsanders11/vscode-markdown-languageservice" "^0.3.0"
+    balanced-match "^2.0.0"
     glob "^8.1.0"
     markdown-it "^13.0.1"
     markdownlint-cli "^0.33.0"
@@ -219,9 +220,9 @@
     vscode-uri "^3.0.7"
 
 "@electron/typescript-definitions@^8.14.5":
-  version "8.14.5"
-  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.5.tgz#07ffc7dac6008e0f659215e3b88bc0d7c6bc6ece"
-  integrity sha512-68JfMTcj6X7B0dhjhj8lGGnnOlfuiR4f+2UBEtQDYRHfeSuFriKErno3Lh+jAolGSqhw39qr4lLO+FGToVdCew==
+  version "8.14.7"
+  resolved "https://registry.yarnpkg.com/@electron/typescript-definitions/-/typescript-definitions-8.14.7.tgz#f8838eac200fa8106ce0a6b7044463b0fd86e9b6"
+  integrity sha512-y1kOB9Ckkd09+KpNDIID6LHO7WP69WoMiogGwNIRtBnEZIeK/aN5uy6plEF1OXYoJVkRKkM/ZSBhhwhk4H1rEA==
   dependencies:
     "@types/node" "^11.13.7"
     chalk "^2.4.2"
@@ -1570,6 +1571,11 @@ balanced-match@^1.0.0:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-1.0.2.tgz#e83e3a7e3f300b34cb9d87f615fa0cbf357690ee"
   integrity sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==
+
+balanced-match@^2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/balanced-match/-/balanced-match-2.0.0.tgz#dc70f920d78db8b858535795867bf48f820633d9"
+  integrity sha512-1ugUSr8BHXRnK23KfuYS+gVMC3LB8QGH9W1iGtDPsNWoQbgtXSExkBu2aDR4epiGWZOjZsj6lDl/N/AqqTC3UA==
 
 base64-js@^1.3.1:
   version "1.5.1"

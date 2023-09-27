@@ -133,14 +133,14 @@ describe('renderer nodeIntegrationInSubFrames', () => {
 
   const generateConfigs = (webPreferences: any, ...permutations: {name: string, webPreferences: any}[]) => {
     const configs = [{ webPreferences, names: [] as string[] }];
-    for (let i = 0; i < permutations.length; i++) {
+    for (const permutation of permutations) {
       const length = configs.length;
       for (let j = 0; j < length; j++) {
         const newConfig = Object.assign({}, configs[j]);
         newConfig.webPreferences = Object.assign({},
-          newConfig.webPreferences, permutations[i].webPreferences);
+          newConfig.webPreferences, permutation.webPreferences);
         newConfig.names = newConfig.names.slice(0);
-        newConfig.names.push(permutations[i].name);
+        newConfig.names.push(permutation.name);
         configs.push(newConfig);
       }
     }
@@ -157,7 +157,7 @@ describe('renderer nodeIntegrationInSubFrames', () => {
     });
   };
 
-  generateConfigs(
+  const configs = generateConfigs(
     {
       preload: path.resolve(__dirname, 'fixtures/sub-frames/preload.js'),
       nodeIntegrationInSubFrames: true
@@ -174,9 +174,11 @@ describe('renderer nodeIntegrationInSubFrames', () => {
       name: 'webview',
       webPreferences: { webviewTag: true, preload: false }
     }
-  ).forEach(config => {
+  );
+
+  for (const config of configs) {
     generateTests(config.title, config.webPreferences);
-  });
+  }
 
   describe('internal <iframe> inside of <webview>', () => {
     let w: BrowserWindow;
@@ -253,7 +255,7 @@ ifdescribe(process.platform !== 'linux')('cross-site frame sandboxing', () => {
 
         const metrics = app.getAppMetrics();
         const isProcessSandboxed = function (pid: number) {
-          const entry = metrics.filter(metric => metric.pid === pid)[0];
+          const entry = metrics.find(metric => metric.pid === pid);
           return entry && entry.sandboxed;
         };
 

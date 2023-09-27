@@ -25,16 +25,6 @@ HRESULT TrySetWindowTheme(HWND hWnd, bool dark) {
   if (FAILED(result))
     return result;
 
-  auto* os_info = base::win::OSInfo::GetInstance();
-  auto const version = os_info->version();
-
-  // Toggle the nonclient area active state to force a redraw (Win10 workaround)
-  if (version < base::win::Version::WIN11) {
-    HWND activeWindow = GetActiveWindow();
-    SendMessage(hWnd, WM_NCACTIVATE, hWnd != activeWindow, 0);
-    SendMessage(hWnd, WM_NCACTIVATE, hWnd == activeWindow, 0);
-  }
-
   return S_OK;
 }
 

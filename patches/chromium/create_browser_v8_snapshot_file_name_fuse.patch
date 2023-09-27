@@ -7,7 +7,7 @@ By default, chromium sets up one v8 snapshot to be used in all v8 contexts. This
 to have a dedicated browser process v8 snapshot defined by the file `browser_v8_context_snapshot.bin`.
 
 diff --git a/content/app/content_main_runner_impl.cc b/content/app/content_main_runner_impl.cc
-index a294093a5534d9602b76f8496e6d5f8d4b10c96e..22245a4c2204b9965fd39e93ed48fc3e32df463e 100644
+index 0bd8a7330bcbedfdfe7f4bd6873a6244a4778d62..3f114945c77452e2998825f795afc7ee450e69d7 100644
 --- a/content/app/content_main_runner_impl.cc
 +++ b/content/app/content_main_runner_impl.cc
 @@ -39,6 +39,7 @@
@@ -48,7 +48,7 @@ index a294093a5534d9602b76f8496e6d5f8d4b10c96e..22245a4c2204b9965fd39e93ed48fc3e
  #endif  // V8_USE_EXTERNAL_STARTUP_DATA
  }
  
-@@ -944,7 +951,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
+@@ -966,7 +973,7 @@ int ContentMainRunnerImpl::Initialize(ContentMainParams params) {
      return TerminateForFatalInitializationError();
  #endif  // BUILDFLAG(IS_ANDROID) && (ICU_UTIL_DATA_IMPL == ICU_UTIL_DATA_FILE)
  
@@ -81,7 +81,7 @@ index a687861c04b323102a8d2bfe22b24a964793cd9b..4a7a469111eaec3e1e76ee852bd5afbb
    return new ContentClient();
  }
 diff --git a/content/public/app/content_main_delegate.h b/content/public/app/content_main_delegate.h
-index d4bb0e9a017a833b403916e1d6e64fb058f40f86..35ba35a95e39700824d6e0b480b99bc3cb033a99 100644
+index c891c5649a6ae76c9f0f988359649ece0e8ac1d9..54e30c4dd82042c283e36cae767dcdd716f94292 100644
 --- a/content/public/app/content_main_delegate.h
 +++ b/content/public/app/content_main_delegate.h
 @@ -9,6 +9,7 @@
@@ -92,7 +92,7 @@ index d4bb0e9a017a833b403916e1d6e64fb058f40f86..35ba35a95e39700824d6e0b480b99bc3
  #include "build/build_config.h"
  #include "content/common/content_export.h"
  #include "content/public/common/main_function_params.h"
-@@ -165,6 +166,8 @@ class CONTENT_EXPORT ContentMainDelegate {
+@@ -168,6 +169,8 @@ class CONTENT_EXPORT ContentMainDelegate {
    virtual bool ShouldHandleConsoleControlEvents();
  #endif
  
@@ -102,10 +102,10 @@ index d4bb0e9a017a833b403916e1d6e64fb058f40f86..35ba35a95e39700824d6e0b480b99bc3
    friend class ContentClientCreator;
    friend class ContentClientInitializer;
 diff --git a/gin/v8_initializer.cc b/gin/v8_initializer.cc
-index 3914c2b9bfa945b0baf1a40970b592cec1a91dc7..ae0c94535c027850a44afffa7593205987d29a2c 100644
+index 67b6b7ab4194d831a38429789dba269ddec7cbc9..35114fabe0156f48bd0f0a8adfa409e4ee06363a 100644
 --- a/gin/v8_initializer.cc
 +++ b/gin/v8_initializer.cc
-@@ -533,8 +533,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
+@@ -542,8 +542,7 @@ void V8Initializer::GetV8ExternalSnapshotData(const char** snapshot_data_out,
  
  #if defined(V8_USE_EXTERNAL_STARTUP_DATA)
  
@@ -115,7 +115,7 @@ index 3914c2b9bfa945b0baf1a40970b592cec1a91dc7..ae0c94535c027850a44afffa75932059
    if (g_mapped_snapshot) {
      // TODO(crbug.com/802962): Confirm not loading different type of snapshot
      // files in a process.
-@@ -543,10 +542,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
+@@ -552,10 +551,17 @@ void V8Initializer::LoadV8Snapshot(V8SnapshotFileType snapshot_file_type) {
  
    base::MemoryMappedFile::Region file_region;
    base::File file =

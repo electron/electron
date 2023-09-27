@@ -10,7 +10,7 @@ if they're missing.
 We should upstream or otherwise handle this.
 
 diff --git a/deps/histogram/src/hdr_atomic.h b/deps/histogram/src/hdr_atomic.h
-index ae1056a83612af5e370ce12fea82f334fce0c62c..9acc5c2d78d7f3d718e8b0f69e9a5e17d9609835 100644
+index 11b0cbd3facfdce648d7cf59ef3418e4e1049090..e1dfeaed6f0dd38aed5a0ddd5660d5b4ba4f46ab 100644
 --- a/deps/histogram/src/hdr_atomic.h
 +++ b/deps/histogram/src/hdr_atomic.h
 @@ -14,6 +14,13 @@

@@ -22,14 +22,15 @@
 #include "third_party/blink/public/web/web_document.h"
 #include "third_party/blink/public/web/web_local_frame.h"
 #include "third_party/blink/renderer/core/execution_context/execution_context.h"  // nogncheck
+#include "third_party/blink/renderer/core/frame/web_local_frame_impl.h"  // nogncheck
 
 namespace electron {
 
 ElectronRendererClient::ElectronRendererClient()
-    : node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kRenderer)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {}
+    : node_bindings_{NodeBindings::Create(
+          NodeBindings::BrowserEnvironment::kRenderer)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())} {}
 
 ElectronRendererClient::~ElectronRendererClient() = default;
 
@@ -61,6 +62,11 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
                           "document-end");
 }
 
+void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
+  render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
+      blink::LoaderFreezeMode::kNone);
+}
+
 void ElectronRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> renderer_context,
     content::RenderFrame* render_frame) {
@@ -88,8 +94,17 @@ void ElectronRendererClient::DidCreateScriptContext(
   v8::Maybe<bool> initialized = node::InitializeContext(renderer_context);
   CHECK(!initialized.IsNothing() && initialized.FromJust());
 
-  node::Environment* env =
-      node_bindings_->CreateEnvironment(renderer_context, nullptr);
+  // Before we load the node environment, let's tell blink to hold off on
+  // loading the body of this frame.  We will undefer the load once the preload
+  // script has finished.  This allows our preload script to run async (E.g.
+  // with ESM) without the preload being in a race
+  render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
+      blink::LoaderFreezeMode::kStrict);
+
+  std::shared_ptr<node::Environment> env = node_bindings_->CreateEnvironment(
+      renderer_context, nullptr,
+      base::BindRepeating(&ElectronRendererClient::UndeferLoad,
+                          base::Unretained(this), render_frame));
 
   // If we have disabled the site instance overrides we should prevent loading
   // any non-context aware native module.
@@ -106,11 +121,11 @@ void ElectronRendererClient::DidCreateScriptContext(
   BindProcess(env->isolate(), &process_dict, render_frame);
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(env.get());
 
   if (node_bindings_->uv_env() == nullptr) {
     // Make uv loop being wrapped by window context.
-    node_bindings_->set_uv_env(env);
+    node_bindings_->set_uv_env(env.get());
 
     // Give the node loop a run to make sure everything is ready.
     node_bindings_->StartPolling();
@@ -124,7 +139,9 @@ void ElectronRendererClient::WillReleaseScriptContext(
     return;
 
   node::Environment* env = node::Environment::GetCurrent(context);
-  if (environments_.erase(env) == 0)
+  const auto iter = base::ranges::find_if(
+      environments_, [env](auto& item) { return env == item.get(); });
+  if (iter == environments_.end())
     return;
 
   gin_helper::EmitEvent(env->isolate(), env->process_object(), "exit");
@@ -143,9 +160,7 @@ void ElectronRendererClient::WillReleaseScriptContext(
   DCHECK_EQ(microtask_queue->GetMicrotasksScopeDepth(), 0);
   microtask_queue->set_microtasks_policy(v8::MicrotasksPolicy::kExplicit);
 
-  node::FreeEnvironment(env);
-  node::FreeIsolateData(node_bindings_->isolate_data(context));
-  node_bindings_->clear_isolate_data(context);
+  environments_.erase(iter);
 
   microtask_queue->set_microtasks_policy(old_policy);
 
@@ -201,7 +216,11 @@ node::Environment* ElectronRendererClient::GetEnvironment(
   auto context =
       GetContext(render_frame->GetWebFrame(), v8::Isolate::GetCurrent());
   node::Environment* env = node::Environment::GetCurrent(context);
-  return base::Contains(environments_, env) ? env : nullptr;
+
+  return base::Contains(environments_, env,
+                        [](auto const& item) { return item.get(); })
+             ? env
+             : nullptr;
 }
 
 }  // namespace electron

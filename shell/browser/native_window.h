@@ -47,6 +47,7 @@ class PersistentDictionary;
 namespace electron {
 
 class ElectronMenuModel;
+class BackgroundThrottlingSource;
 class NativeBrowserView;
 
 namespace api {
@@ -149,6 +150,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual std::string GetAlwaysOnTopLevel() = 0;
   virtual void SetActive(bool is_key) = 0;
   virtual bool IsActive() const = 0;
+  virtual void RemoveChildFromParentWindow() = 0;
   virtual void RemoveChildWindow(NativeWindow* child) = 0;
   virtual void AttachChildren() = 0;
   virtual void DetachChildren() = 0;
@@ -217,8 +219,12 @@ class NativeWindow : public base::SupportsUserData,
   virtual void SetAutoHideCursor(bool auto_hide);
 
   // Vibrancy API
+  const std::string& vibrancy() const { return vibrancy_; }
   virtual void SetVibrancy(const std::string& type);
 
+  const std::string& background_material() const {
+    return background_material_;
+  }
   virtual void SetBackgroundMaterial(const std::string& type);
 
   // Traffic Light API
@@ -394,6 +400,19 @@ class NativeWindow : public base::SupportsUserData,
   void AddDraggableRegionProvider(DraggableRegionProvider* provider);
   void RemoveDraggableRegionProvider(DraggableRegionProvider* provider);
 
+  bool IsTranslucent() const;
+
+  // Adds |source| to |background_throttling_sources_|, triggers update of
+  // background throttling state.
+  void AddBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Removes |source| to |background_throttling_sources_|, triggers update of
+  // background throttling state.
+  void RemoveBackgroundThrottlingSource(BackgroundThrottlingSource* source);
+  // Updates `ui::Compositor` background throttling state based on
+  // |background_throttling_sources_|. If at least one of the sources disables
+  // throttling, then throttling in the `ui::Compositor` will be disabled.
+  void UpdateBackgroundThrottlingState();
+
  protected:
   friend class api::BrowserView;
 
@@ -488,8 +507,13 @@ class NativeWindow : public base::SupportsUserData,
   // Observers of this window.
   base::ObserverList<NativeWindowObserver> observers_;
 
+  std::set<BackgroundThrottlingSource*> background_throttling_sources_;
+
   // Accessible title.
   std::u16string accessible_title_;
+
+  std::string vibrancy_;
+  std::string background_material_;
 
   gfx::Rect overlay_rect_;
 

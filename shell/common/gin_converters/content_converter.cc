@@ -8,8 +8,8 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "content/public/browser/context_menu_params.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/web_contents.h"
+#include "content/public/common/input/native_web_keyboard_event.h"
 #include "shell/browser/api/electron_api_web_contents.h"
 #include "shell/browser/web_contents_permission_helper.h"
 #include "shell/common/gin_converters/blink_converter.h"
@@ -125,7 +125,7 @@ v8::Local<v8::Value> Converter<ContextMenuParamsWithRenderFrameHost>::ToV8(
     const ContextMenuParamsWithRenderFrameHost& val) {
   const auto& params = val.first;
   content::RenderFrameHost* render_frame_host = val.second;
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.SetGetter("frame", render_frame_host, v8::DontEnum);
   dict.Set("x", params.x);
   dict.Set("y", params.y);
@@ -309,7 +309,7 @@ bool Converter<content::WebContents*>::FromV8(v8::Isolate* isolate,
 v8::Local<v8::Value> Converter<content::Referrer>::ToV8(
     v8::Isolate* isolate,
     const content::Referrer& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
   dict.Set("policy", ConvertToV8(isolate, val.policy));
   return gin::ConvertToV8(isolate, dict);
@@ -342,7 +342,7 @@ bool Converter<content::NativeWebKeyboardEvent>::FromV8(
     return false;
   if (!ConvertFromV8(isolate, val, static_cast<blink::WebKeyboardEvent*>(out)))
     return false;
-  dict.Get("skipInBrowser", &out->skip_in_browser);
+  dict.Get("skipIfUnhandled", &out->skip_if_unhandled);
   return true;
 }
 

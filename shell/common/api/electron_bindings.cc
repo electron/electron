@@ -139,8 +139,7 @@ v8::Local<v8::Value> ElectronBindings::GetHeapStatistics(v8::Isolate* isolate) {
   v8::HeapStatistics v8_heap_stats;
   isolate->GetHeapStatistics(&v8_heap_stats);
 
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("totalHeapSize",
            static_cast<double>(v8_heap_stats.total_heap_size() >> 10));
   dict.Set(
@@ -184,8 +183,7 @@ v8::Local<v8::Value> ElectronBindings::GetSystemMemoryInfo(
     return v8::Undefined(isolate);
   }
 
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("total", mem_info.total);
 
   // See Chromium's "base/process/process_metrics.h" for an explanation.
@@ -235,8 +233,7 @@ v8::Local<v8::Value> ElectronBindings::GetBlinkMemoryInfo(
   auto allocated = blink::ProcessHeap::TotalAllocatedObjectSize();
   auto total = blink::ProcessHeap::TotalAllocatedSpace();
 
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("allocated", static_cast<double>(allocated >> 10));
   dict.Set("total", static_cast<double>(total >> 10));
   return dict.GetHandle();
@@ -266,7 +263,7 @@ void ElectronBindings::DidReceiveMemoryDump(
   for (const memory_instrumentation::GlobalMemoryDump::ProcessDump& dump :
        global_dump->process_dumps()) {
     if (target_pid == dump.pid()) {
-      gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+      auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
       const auto& osdump = dump.os_dump();
 #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_WIN)
       dict.Set("residentSet", osdump.resident_set_kb);
@@ -288,8 +285,7 @@ void ElectronBindings::DidReceiveMemoryDump(
 v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
     base::ProcessMetrics* metrics,
     v8::Isolate* isolate) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   int processor_count = base::SysInfo::NumberOfProcessors();
   dict.Set("percentCPUUsage",
            metrics->GetPlatformIndependentCPUUsage() / processor_count);
@@ -309,8 +305,7 @@ v8::Local<v8::Value> ElectronBindings::GetCPUUsage(
 v8::Local<v8::Value> ElectronBindings::GetIOCounters(v8::Isolate* isolate) {
   auto metrics = base::ProcessMetrics::CreateCurrentProcessMetrics();
   base::IoCounters io_counters;
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
-  dict.SetHidden("simple", true);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   if (metrics->GetIOCounters(&io_counters)) {
     dict.Set("readOperationCount", io_counters.ReadOperationCount);

@@ -103,7 +103,7 @@ const driver = new webdriver.Builder()
   })
   .forBrowser('chrome') // note: use .forBrowser('electron') for selenium-webdriver <= 3.6.0
   .build()
-driver.get('http://www.google.com')
+driver.get('https://www.google.com')
 driver.findElement(webdriver.By.name('q')).sendKeys('webdriver')
 driver.findElement(webdriver.By.name('btnG')).click()
 driver.wait(() => {
@@ -260,7 +260,7 @@ To create a custom driver, we'll use Node.js' [`child_process`](https://nodejs.o
 The test suite will spawn the Electron process, then establish a simple messaging protocol:
 
 ```js title='testDriver.js' @ts-nocheck
-const childProcess = require('child_process')
+const childProcess = require('node:child_process')
 const electronPath = require('electron')
 
 // spawn the process

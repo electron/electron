@@ -7,10 +7,10 @@ Instead of disabling the tests, flag them as flaky so they still run
 but don't cause CI failures on flakes.
 
 diff --git a/test/parallel/parallel.status b/test/parallel/parallel.status
-index 1cbcefb9712fae45b9a0ec7ed361bfe4ec7790be..6a6b52e9ae4150e7215e3587d8ddb41ce4374780 100644
+index 8de4ad29cb14149ed0c15eb201b3d17be506bac9..182aab4bc781da4c1968a84f87c1e7f2f0b986f1 100644
 --- a/test/parallel/parallel.status
 +++ b/test/parallel/parallel.status
-@@ -5,6 +5,12 @@ prefix parallel
+@@ -5,6 +5,13 @@ prefix parallel
  # sample-test                        : PASS,FLAKY
  
  [true] # This section applies to all platforms
@@ -20,11 +20,12 @@ index 1cbcefb9712fae45b9a0ec7ed361bfe4ec7790be..6a6b52e9ae4150e7215e3587d8ddb41c
 +test-fetch: PASS, FLAKY
 +test-cluster-bind-privileged-port: PASS, FLAKY
 +test-cluster-shared-handle-bind-privileged-port: PASS, FLAKY
++test-debugger-random-port-with-inspect-port: PASS, FLAKY
  
  [$system==win32]
- # https://github.com/nodejs/node/issues/24497
+ # https://github.com/nodejs/node/issues/41206
 diff --git a/test/sequential/sequential.status b/test/sequential/sequential.status
-index 5d88747b7066ce795b091eaaec2a5653f42b2c26..c40cb8827c3e1b91f46147cead5a91a7520019b9 100644
+index 0688f5b05e789c15f2c9fc4c9e1a20cd5d1ba8be..64dc814fd24f3e6d90f246a4e66531696eab03cd 100644
 --- a/test/sequential/sequential.status
 +++ b/test/sequential/sequential.status
 @@ -7,6 +7,18 @@ prefix sequential

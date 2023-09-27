@@ -5,17 +5,20 @@
 #ifndef ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 #define ELECTRON_SHELL_COMMON_NODE_BINDINGS_H_
 
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
 
 #include "base/files/file_path.h"
+#include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
 #include "base/memory/weak_ptr.h"
 #include "gin/public/context_holder.h"
 #include "gin/public/gin_embedders.h"
 #include "shell/common/node_includes.h"
+#include "third_party/abseil-cpp/absl/types/optional.h"
 #include "uv.h"  // NOLINT(build/include_directory)
 #include "v8/include/v8.h"
 
@@ -24,12 +27,6 @@ class SingleThreadTaskRunner;
 }
 
 namespace electron {
-
-// Choose a reasonable unique index that's higher than any Blink uses
-// and thus unlikely to collide with an existing index.
-static constexpr int kElectronContextEmbedderDataIndex =
-    static_cast<int>(gin::kPerContextDataStartIndex) +
-    static_cast<int>(gin::kEmbedderElectron);
 
 // A helper class to manage uv_handle_t types, e.g. uv_async_t.
 //
@@ -92,15 +89,22 @@ class NodeBindings {
   // Setup V8, libuv.
   void Initialize(v8::Local<v8::Context> context);
 
-  void SetNodeCliFlags();
+  std::vector<std::string> ParseNodeCliFlags();
 
   // Create the environment and load node.js.
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform,
-                                       std::vector<std::string> args,
-                                       std::vector<std::string> exec_args);
-  node::Environment* CreateEnvironment(v8::Handle<v8::Context> context,
-                                       node::MultiIsolatePlatform* platform);
+  std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform,
+      std::vector<std::string> args,
+      std::vector<std::string> exec_args,
+      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          absl::nullopt);
+
+  std::shared_ptr<node::Environment> CreateEnvironment(
+      v8::Handle<v8::Context> context,
+      node::MultiIsolatePlatform* platform,
+      absl::optional<base::RepeatingCallback<void()>> on_app_code_ready =
+          absl::nullopt);
 
   // Load node.js in the environment.
   void LoadEnvironment(node::Environment* env);
@@ -110,12 +114,6 @@ class NodeBindings {
 
   // Notify embed thread to start polling after environment is loaded.
   void StartPolling();
-
-  // Clears the PerIsolateData.
-  void clear_isolate_data(v8::Local<v8::Context> context) {
-    context->SetAlignedPointerInEmbedderData(kElectronContextEmbedderDataIndex,
-                                             nullptr);
-  }
 
   node::IsolateData* isolate_data(v8::Local<v8::Context> context) const {
     if (context->GetNumberOfEmbedderDataFields() <=
@@ -134,13 +132,15 @@ class NodeBindings {
   void set_uv_env(node::Environment* env) { uv_env_ = env; }
   node::Environment* uv_env() const { return uv_env_; }
 
-  uv_loop_t* uv_loop() const { return uv_loop_; }
-
-  bool in_worker_loop() const { return uv_loop_ == &worker_loop_; }
+  [[nodiscard]] constexpr uv_loop_t* uv_loop() { return uv_loop_; }
 
   // disable copy
   NodeBindings(const NodeBindings&) = delete;
   NodeBindings& operator=(const NodeBindings&) = delete;
+
+  // Blocks until app code is signaled to be loaded via |SetAppCodeLoaded|.
+  // Only has an effect if called in the browser process
+  void JoinAppCode();
 
  protected:
   explicit NodeBindings(BrowserEnvironment browser_env);
@@ -148,36 +148,58 @@ class NodeBindings {
   // Called to poll events in new thread.
   virtual void PollEvents() = 0;
 
-  // Run the libuv loop for once.
-  void UvRunOnce();
-
   // Make the main thread run libuv loop.
   void WakeupMainThread();
 
   // Interrupt the PollEvents.
   void WakeupEmbedThread();
 
+ private:
+  static uv_loop_t* InitEventLoop(BrowserEnvironment browser_env,
+                                  uv_loop_t* worker_loop);
+
+  // Run the libuv loop for once.
+  void UvRunOnce();
+
+  [[nodiscard]] constexpr bool in_worker_loop() const {
+    return browser_env_ == BrowserEnvironment::kWorker;
+  }
+
   // Which environment we are running.
   const BrowserEnvironment browser_env_;
+
+  // Loop used when constructed in WORKER mode
+  uv_loop_t worker_loop_;
+
+  // Current thread's libuv loop.
+  // depends-on: worker_loop_
+  const raw_ptr<uv_loop_t> uv_loop_;
 
   // Current thread's MessageLoop.
   scoped_refptr<base::SingleThreadTaskRunner> task_runner_;
 
-  // Current thread's libuv loop.
-  raw_ptr<uv_loop_t> uv_loop_;
+  // Choose a reasonable unique index that's higher than any Blink uses
+  // and thus unlikely to collide with an existing index.
+  static constexpr int kElectronContextEmbedderDataIndex =
+      static_cast<int>(gin::kPerContextDataStartIndex) +
+      static_cast<int>(gin::kEmbedderElectron);
 
- private:
   // Thread to poll uv events.
   static void EmbedThreadRunner(void* arg);
+
+  // Default callback to indicate when the node environment has finished
+  // initializing and the primary import chain is fully resolved and executed
+  void SetAppCodeLoaded();
 
   // Indicates whether polling thread has been created.
   bool initialized_ = false;
 
+  // Indicates whether the app code has finished loading
+  // for ESM this is async after the module is loaded
+  bool app_code_loaded_ = false;
+
   // Whether the libuv loop has ended.
   bool embed_closed_ = false;
-
-  // Loop used when constructed in WORKER mode
-  uv_loop_t worker_loop_;
 
   // Dummy handle to make uv's loop not quit.
   UvHandle<uv_async_t> dummy_uv_handle_;

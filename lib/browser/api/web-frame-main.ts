@@ -13,7 +13,7 @@ Object.defineProperty(WebFrameMain.prototype, 'ipc', {
 
 WebFrameMain.prototype.send = function (channel, ...args) {
   if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
+    throw new TypeError('Missing required channel argument');
   }
 
   try {
@@ -25,7 +25,7 @@ WebFrameMain.prototype.send = function (channel, ...args) {
 
 WebFrameMain.prototype._sendInternal = function (channel, ...args) {
   if (typeof channel !== 'string') {
-    throw new Error('Missing required channel argument');
+    throw new TypeError('Missing required channel argument');
   }
 
   try {

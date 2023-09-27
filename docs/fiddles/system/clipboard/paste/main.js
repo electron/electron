@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, clipboard } = require('electron')
+const { app, BrowserWindow, ipcMain, clipboard } = require('electron/main')
 const path = require('node:path')
 
 let mainWindow = null

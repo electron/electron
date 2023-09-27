@@ -22,7 +22,7 @@ session.defaultSession.cookies.get({})
   })
 
 // Query all cookies associated with a specific url.
-session.defaultSession.cookies.get({ url: 'http://www.github.com' })
+session.defaultSession.cookies.get({ url: 'https://www.github.com' })
   .then((cookies) => {
     console.log(cookies)
   }).catch((error) => {
@@ -31,7 +31,7 @@ session.defaultSession.cookies.get({ url: 'http://www.github.com' })
 
 // Set a cookie with the given cookie data;
 // may overwrite equivalent cookies if they exist.
-const cookie = { url: 'http://www.github.com', name: 'dummy_name', value: 'dummy' }
+const cookie = { url: 'https://www.github.com', name: 'dummy_name', value: 'dummy' }
 session.defaultSession.cookies.set(cookie)
   .then(() => {
     // success
@@ -119,4 +119,8 @@ Removes the cookies matching `url` and `name`
 
 Returns `Promise<void>` - A promise which resolves when the cookie store has been flushed
 
-Writes any unwritten cookies data to disk.
+Writes any unwritten cookies data to disk
+
+Cookies written by any method will not be written to disk immediately, but will be written every 30 seconds or 512 operations
+
+Calling this method can cause the cookie to be written to disk immediately.

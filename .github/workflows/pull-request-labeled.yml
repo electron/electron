@@ -1,0 +1,30 @@
+name: Pull Request Labeled
+
+on:
+  pull_request:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  pull-request-labeled-deprecation-review-complete:
+    name: deprecation-review/complete label added
+    if: github.event.label.name == 'deprecation-review/complete ✅'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate GitHub App token
+        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        id: generate-token
+        with:
+          creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
+          org: electron
+      - name: Set status
+        uses: dsanders11/update-project-action@7ade91760df70df76770a238abee7a4869e01cf8
+        with:
+          github_token: ${{ steps.generate-token.outputs.token }}
+          organization: electron
+          project_number: 94
+          content_id: ${{ github.event.pull_request.node_id }}
+          field: Status
+          value: ✅ Reviewed

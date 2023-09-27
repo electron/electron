@@ -70,9 +70,9 @@ class IncomingMessage extends Readable {
   get rawHeaders () {
     const rawHeadersArr: string[] = [];
     const { rawHeaders } = this._responseHead;
-    rawHeaders.forEach(header => {
+    for (const header of rawHeaders) {
       rawHeadersArr.push(header.key, header.value);
-    });
+    }
     return rawHeadersArr;
   }
 

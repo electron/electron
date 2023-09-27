@@ -126,7 +126,7 @@ app.whenReady().then(async () => {
 Then, in your preload scripts you receive the port through IPC and set up the
 listeners.
 
-```js title='preloadMain.js and preloadSecondary.js (Preload scripts)' @ts-nocheck
+```js title='preloadMain.js and preloadSecondary.js (Preload scripts)' @ts-window-type={electronMessagePort:MessagePort}
 const { ipcRenderer } = require('electron')
 
 ipcRenderer.on('port', e => {
@@ -148,7 +148,7 @@ That means window.electronMessagePort is globally available and you can call
 `postMessage` on it from anywhere in your app to send a message to the other
 renderer.
 
-```js title='renderer.js (Renderer Process)' @ts-nocheck
+```js title='renderer.js (Renderer Process)' @ts-window-type={electronMessagePort:MessagePort}
 // elsewhere in your code to send a message to the other renderers message handler
 window.electronMessagePort.postMessage('ping')
 ```
@@ -303,7 +303,7 @@ without having to step through the isolated world.
 
 ```js title='main.js (Main Process)'
 const { BrowserWindow, app, MessageChannelMain } = require('electron')
-const path = require('path')
+const path = require('node:path')
 
 app.whenReady().then(async () => {
   // Create a BrowserWindow with contextIsolation enabled.
@@ -365,7 +365,7 @@ window.onmessage = (event) => {
     // process.
     port.onmessage = (event) => {
       console.log('from main process:', event.data)
-      port.postMessage(event.data * 2)
+      port.postMessage(event.data.test * 2)
     }
   }
 }

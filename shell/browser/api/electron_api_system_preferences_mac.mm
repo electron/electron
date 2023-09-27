@@ -13,7 +13,7 @@
 #import <LocalAuthentication/LocalAuthentication.h>
 #import <Security/Security.h>
 
-#include "base/mac/scoped_cftyperef.h"
+#include "base/apple/scoped_cftyperef.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/sequenced_task_runner.h"
@@ -29,10 +29,6 @@
 #include "shell/common/process_util.h"
 #include "skia/ext/skia_utils_mac.h"
 #include "ui/native_theme/native_theme.h"
-
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
 
 namespace gin {
 
@@ -427,8 +423,8 @@ v8::Local<v8::Promise> SystemPreferences::PromptTouchID(
   v8::Local<v8::Promise> handle = promise.GetHandle();
 
   LAContext* context = [[LAContext alloc] init];
-  base::ScopedCFTypeRef<SecAccessControlRef> access_control =
-      base::ScopedCFTypeRef<SecAccessControlRef>(
+  base::apple::ScopedCFTypeRef<SecAccessControlRef> access_control =
+      base::apple::ScopedCFTypeRef<SecAccessControlRef>(
           SecAccessControlCreateWithFlags(
               kCFAllocatorDefault, kSecAttrAccessibleWhenUnlockedThisDeviceOnly,
               kSecAccessControlPrivateKeyUsage | kSecAccessControlUserPresence,
@@ -475,14 +471,7 @@ bool SystemPreferences::IsTrustedAccessibilityClient(bool prompt) {
 std::string SystemPreferences::GetColor(gin_helper::ErrorThrower thrower,
                                         const std::string& color) {
   NSColor* sysColor = nil;
-  if (color == "alternate-selected-control-text") {
-    sysColor = [NSColor alternateSelectedControlTextColor];
-    EmitWarning(
-        node::Environment::GetCurrent(thrower.isolate()),
-        "'alternate-selected-control-text' is deprecated as an input to "
-        "getColor.  Use 'selected-content-background' instead.",
-        "electron");
-  } else if (color == "control-background") {
+  if (color == "control-background") {
     sysColor = [NSColor controlBackgroundColor];
   } else if (color == "control") {
     sysColor = [NSColor controlColor];
@@ -609,19 +598,9 @@ v8::Local<v8::Value> SystemPreferences::GetEffectiveAppearance(
       isolate, [NSApplication sharedApplication].effectiveAppearance);
 }
 
-v8::Local<v8::Value> SystemPreferences::GetAppLevelAppearance(
-    v8::Isolate* isolate) {
-  return gin::ConvertToV8(isolate,
-                          [NSApplication sharedApplication].appearance);
-}
-
-void SystemPreferences::SetAppLevelAppearance(gin::Arguments* args) {
-  NSAppearance* appearance;
-  if (args->GetNext(&appearance)) {
-    [[NSApplication sharedApplication] setAppearance:appearance];
-  } else {
-    args->ThrowError();
-  }
+bool SystemPreferences::AccessibilityDisplayShouldReduceTransparency() {
+  return [[NSWorkspace sharedWorkspace]
+      accessibilityDisplayShouldReduceTransparency];
 }
 
 }  // namespace electron::api

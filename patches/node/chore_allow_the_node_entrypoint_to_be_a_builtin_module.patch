@@ -8,7 +8,7 @@ they use themselves as the entry point. We should try to upstream some form
 of this.
 
 diff --git a/lib/internal/modules/cjs/loader.js b/lib/internal/modules/cjs/loader.js
-index 9783d9235ed43c7919ed2f26e35c96ae7ff1a08b..e4fd5e7dadb8230c9e07dbb7bc70b2117135c59a 100644
+index 001343b74ce236f89dca030c0fc9dd0299df0b39..6f277daf4ce846f093f634c473daec07939b4558 100644
 --- a/lib/internal/modules/cjs/loader.js
 +++ b/lib/internal/modules/cjs/loader.js
 @@ -1230,6 +1230,13 @@ Module.prototype._compile = function(content, filename) {
@@ -26,10 +26,10 @@ index 9783d9235ed43c7919ed2f26e35c96ae7ff1a08b..e4fd5e7dadb8230c9e07dbb7bc70b211
          try {
            resolvedArgv = Module._resolveFilename(process.argv[1], null, false);
 diff --git a/lib/internal/process/pre_execution.js b/lib/internal/process/pre_execution.js
-index f91a32c0348f805d01d9c198c39cff4c5c72c88b..421b0ada67e281b4d269c7d3154e42f63e1e2cc7 100644
+index fcbd9ee1af002bc176937e6bb5af55791b2f64b2..cbfb6e3620a7e77658c86a4730c50661b8a937f7 100644
 --- a/lib/internal/process/pre_execution.js
 +++ b/lib/internal/process/pre_execution.js
-@@ -150,11 +150,13 @@ function patchProcessObject(expandArgv1) {
+@@ -164,11 +164,13 @@ function patchProcessObject(expandArgv1) {
    if (expandArgv1 && process.argv[1] &&
        !StringPrototypeStartsWith(process.argv[1], '-')) {
      // Expand process.argv[1] into a full path.

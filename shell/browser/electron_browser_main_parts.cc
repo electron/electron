@@ -95,7 +95,6 @@
 
 #if BUILDFLAG(IS_WIN)
 #include "ui/base/l10n/l10n_util_win.h"
-#include "ui/display/win/dpi.h"
 #include "ui/gfx/system_fonts_win.h"
 #include "ui/strings/grit/app_locale_settings.h"
 #endif
@@ -149,13 +148,6 @@ void Erase(T* container, typename T::iterator iter) {
 }
 
 #if BUILDFLAG(IS_WIN)
-// gfx::Font callbacks
-void AdjustUIFont(gfx::win::FontAdjustment* font_adjustment) {
-  l10n_util::NeedOverrideDefaultUIFont(&font_adjustment->font_family_override,
-                                       &font_adjustment->font_scale);
-  font_adjustment->font_scale *= display::win::GetAccessibilityFontScale();
-}
-
 int GetMinimumFontSize() {
   int min_font_size;
   base::StringToInt(l10n_util::GetStringUTF16(IDS_MINIMUM_UI_FONT_SIZE),
@@ -184,11 +176,11 @@ ElectronBrowserMainParts* ElectronBrowserMainParts::self_ = nullptr;
 
 ElectronBrowserMainParts::ElectronBrowserMainParts()
     : fake_browser_process_(std::make_unique<BrowserProcessImpl>()),
-      browser_(std::make_unique<Browser>()),
-      node_bindings_(
-          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)),
-      electron_bindings_(
-          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())) {
+      node_bindings_{
+          NodeBindings::Create(NodeBindings::BrowserEnvironment::kBrowser)},
+      electron_bindings_{
+          std::make_unique<ElectronBindings>(node_bindings_->uv_loop())},
+      browser_{std::make_unique<Browser>()} {
   DCHECK(!self_) << "Cannot have two ElectronBrowserMainParts";
   self_ = this;
 }
@@ -246,26 +238,28 @@ void ElectronBrowserMainParts::PostEarlyInitialization() {
 
   node_bindings_->Initialize(js_env_->isolate()->GetCurrentContext());
   // Create the global environment.
-  node::Environment* env = node_bindings_->CreateEnvironment(
+  node_env_ = node_bindings_->CreateEnvironment(
       js_env_->isolate()->GetCurrentContext(), js_env_->platform());
-  node_env_ = std::make_unique<NodeEnvironment>(env);
 
-  env->set_trace_sync_io(env->options()->trace_sync_io);
+  node_env_->set_trace_sync_io(node_env_->options()->trace_sync_io);
 
   // We do not want to crash the main process on unhandled rejections.
-  env->options()->unhandled_rejections = "warn-with-error-code";
+  node_env_->options()->unhandled_rejections = "warn-with-error-code";
 
   // Add Electron extended APIs.
-  electron_bindings_->BindTo(js_env_->isolate(), env->process_object());
+  electron_bindings_->BindTo(js_env_->isolate(), node_env_->process_object());
 
   // Create explicit microtasks runner.
   js_env_->CreateMicrotasksRunner();
 
   // Wrap the uv loop with global env.
-  node_bindings_->set_uv_env(env);
+  node_bindings_->set_uv_env(node_env_.get());
 
   // Load everything.
-  node_bindings_->LoadEnvironment(env);
+  node_bindings_->LoadEnvironment(node_env_.get());
+
+  // Wait for app
+  node_bindings_->JoinAppCode();
 
   // We already initialized the feature list in PreEarlyInitialization(), but
   // the user JS script would not have had a chance to alter the command-line
@@ -429,7 +423,7 @@ void ElectronBrowserMainParts::ToolkitInitialized() {
 #endif
 
 #if BUILDFLAG(IS_WIN)
-  gfx::win::SetAdjustFontCallback(&AdjustUIFont);
+  gfx::win::SetAdjustFontCallback(&l10n_util::AdjustUiFont);
   gfx::win::SetGetMinimumFontSizeCallback(&GetMinimumFontSize);
 #endif
 
@@ -600,9 +594,9 @@ void ElectronBrowserMainParts::PostMainMessageLoopRun() {
 
   // Destroy node platform after all destructors_ are executed, as they may
   // invoke Node/V8 APIs inside them.
-  node_env_->env()->set_trace_sync_io(false);
+  node_env_->set_trace_sync_io(false);
   js_env_->DestroyMicrotasksRunner();
-  node::Stop(node_env_->env(), node::StopFlags::kDoNotTerminateIsolate);
+  node::Stop(node_env_.get(), node::StopFlags::kDoNotTerminateIsolate);
   node_env_.reset();
 
   auto default_context_key = ElectronBrowserContext::PartitionKey("", false);

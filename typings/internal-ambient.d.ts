@@ -3,6 +3,17 @@ declare const BUILDFLAG: (flag: boolean) => boolean;
 declare const ENABLE_VIEWS_API: boolean;
 
 declare namespace NodeJS {
+  interface ModuleInternal extends NodeJS.Module {
+    new(id: string, parent?: NodeJS.Module | null): NodeJS.Module;
+    _load(request: string, parent?: NodeJS.Module | null, isMain?: boolean): any;
+    _resolveFilename(request: string, parent?: NodeJS.Module | null, isMain?: boolean, options?: { paths: string[] }): string;
+    _preloadModules(requests: string[]): void;
+    _nodeModulePaths(from: string): string[];
+    _extensions: Record<string, (module: NodeJS.Module, filename: string) => any>;
+    _cache: Record<string, NodeJS.Module>;
+    wrapper: [string, string];
+  }
+
   interface FeaturesBinding {
     isBuiltinSpellCheckerEnabled(): boolean;
     isPDFViewerEnabled(): boolean;
@@ -17,7 +28,6 @@ declare namespace NodeJS {
     send(internal: boolean, channel: string, args: any[]): void;
     sendSync(internal: boolean, channel: string, args: any[]): any;
     sendToHost(channel: string, args: any[]): void;
-    sendTo(webContentsId: number, channel: string, args: any[]): void;
     invoke<T>(internal: boolean, channel: string, args: any[]): Promise<{ error: string, result: T }>;
     postMessage(channel: string, message: any, transferables: MessagePort[]): void;
   }
@@ -62,9 +72,7 @@ declare namespace NodeJS {
   type AsarFileStat = {
     size: number;
     offset: number;
-    isFile: boolean;
-    isDirectory: boolean;
-    isLink: boolean;
+    type: number;
   }
 
   interface AsarArchive {
@@ -244,9 +252,12 @@ declare namespace NodeJS {
     // Additional properties
     _firstFileName?: string;
     _serviceStartupScript: string;
+    _getOrCreateArchive?: (path: string) => NodeJS.AsarArchive | null;
 
     helperExecPath: string;
     mainModule?: NodeJS.Module | undefined;
+
+    appCodeLoaded?: () => void;
   }
 }
 
@@ -288,6 +299,12 @@ declare interface Window {
   };
   WebView: typeof ElectronInternal.WebViewElement;
   trustedTypes: TrustedTypePolicyFactory;
+}
+
+// https://github.com/electron/electron/blob/main/docs/tutorial/message-ports.md#extension-close-event
+
+interface MessagePort {
+  onclose: () => void;
 }
 
 // https://w3c.github.io/webappsec-trusted-types/dist/spec/#trusted-types

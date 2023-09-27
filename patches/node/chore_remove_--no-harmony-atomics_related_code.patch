@@ -37,7 +37,7 @@ index 7fbfb64984c290a1d71c99c92084975c31ce18fe..be4d82086199855a10108528b3dacc66
        // not to workers created by other workers.
        let cachedCwd = '';
 diff --git a/lib/internal/worker.js b/lib/internal/worker.js
-index 59de3085cf65d532c1d8a9a3ff7fe75447639a10..9a2b8c06ec807fa62ef5130ad7b8aea21c7f049a 100644
+index 3d828d2f6f2b19554f7fc01ea880c0c144d8837d..78fcaec8d694580798783c83c3282ec1aaac4aa7 100644
 --- a/lib/internal/worker.js
 +++ b/lib/internal/worker.js
 @@ -93,8 +93,7 @@ let cwdCounter;

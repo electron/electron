@@ -97,16 +97,17 @@ gin::IsolateHolder CreateIsolateHolder(v8::Isolate* isolate) {
       base::SingleThreadTaskRunner::GetCurrentDefault(),
       gin::IsolateHolder::kSingleThread,
       gin::IsolateHolder::IsolateType::kUtility, std::move(create_params),
-      gin::IsolateHolder::IsolateCreationMode::kNormal, isolate);
+      gin::IsolateHolder::IsolateCreationMode::kNormal, nullptr, isolate);
 }
 
 }  // namespace
 
 JavascriptEnvironment::JavascriptEnvironment(uv_loop_t* event_loop,
                                              bool setup_wasm_streaming)
-    : isolate_(Initialize(event_loop, setup_wasm_streaming)),
-      isolate_holder_(CreateIsolateHolder(isolate_)),
-      locker_(isolate_) {
+    : isolate_holder_{CreateIsolateHolder(
+          Initialize(event_loop, setup_wasm_streaming))},
+      isolate_{isolate_holder_.isolate()},
+      locker_{isolate_} {
   isolate_->Enter();
 
   v8::HandleScope scope(isolate_);
@@ -337,14 +338,6 @@ void JavascriptEnvironment::DestroyMicrotasksRunner() {
     gin_helper::CleanedUpAtExit::DoCleanup();
   }
   base::CurrentThread::Get()->RemoveTaskObserver(microtasks_runner_.get());
-}
-
-NodeEnvironment::NodeEnvironment(node::Environment* env) : env_(env) {}
-
-NodeEnvironment::~NodeEnvironment() {
-  auto* isolate_data = env_->isolate_data();
-  node::FreeEnvironment(env_);
-  node::FreeIsolateData(isolate_data);
 }
 
 }  // namespace electron

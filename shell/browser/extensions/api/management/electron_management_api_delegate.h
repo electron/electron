@@ -24,9 +24,6 @@ class ElectronManagementAPIDelegate : public extensions::ManagementAPIDelegate {
   extensions::LaunchType GetLaunchType(
       const extensions::ExtensionPrefs* prefs,
       const extensions::Extension* extension) const override;
-  void GetPermissionWarningsByManifestFunctionDelegate(
-      extensions::ManagementGetPermissionWarningsByManifestFunction* function,
-      const std::string& manifest_str) const override;
   std::unique_ptr<extensions::InstallPromptDelegate> SetEnabledFunctionDelegate(
       content::WebContents* web_contents,
       content::BrowserContext* browser_context,

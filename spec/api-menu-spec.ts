@@ -813,15 +813,17 @@ describe('Menu module', function () {
       }).to.not.throw();
     });
 
-    it('should emit menu-will-show event', (done) => {
-      menu.on('menu-will-show', () => { done(); });
+    it('should emit menu-will-show event', async () => {
+      const menuWillShow = once(menu, 'menu-will-show');
       menu.popup({ window: w });
+      await menuWillShow;
     });
 
-    it('should emit menu-will-close event', (done) => {
-      menu.on('menu-will-close', () => { done(); });
+    it('should emit menu-will-close event', async () => {
+      const menuWillClose = once(menu, 'menu-will-close');
       menu.popup({ window: w });
       menu.closePopup();
+      await menuWillClose;
     });
 
     it('returns immediately', () => {
@@ -948,7 +950,7 @@ describe('Menu module', function () {
       await new Promise<void>((resolve) => {
         appProcess.stdout.on('data', data => {
           output += data;
-          if (data.indexOf('Window has') > -1) {
+          if (data.includes('Window has')) {
             resolve();
           }
         });

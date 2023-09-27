@@ -391,6 +391,11 @@ void OffScreenRenderWidgetHostView::TakeFallbackContentFrom(
   }
 }
 
+void OffScreenRenderWidgetHostView::
+    InvalidateLocalSurfaceIdAndAllocationGroup() {
+  compositor_allocator_.Invalidate(/*also_invalidate_allocation_group=*/true);
+}
+
 void OffScreenRenderWidgetHostView::ResetFallbackToFirstNavigationSurface() {
   GetDelegatedFrameHost()->ResetFallbackToFirstNavigationSurface();
 }
@@ -520,7 +525,8 @@ OffScreenRenderWidgetHostView::CreateSyntheticGestureTarget() {
 
 void OffScreenRenderWidgetHostView::ImeCompositionRangeChanged(
     const gfx::Range&,
-    const std::vector<gfx::Rect>&) {}
+    const absl::optional<std::vector<gfx::Rect>>& character_bounds,
+    const absl::optional<std::vector<gfx::Rect>>& line_bounds) {}
 
 gfx::Size OffScreenRenderWidgetHostView::GetCompositorViewportPixelSize() {
   return gfx::ScaleToCeiledSize(GetRequestedRendererSize(),

@@ -49,9 +49,6 @@ class ElectronApiIPCHandlerImpl : public mojom::ElectronApiIPC,
                    const std::string& channel,
                    blink::CloneableMessage arguments,
                    MessageSyncCallback callback) override;
-  void MessageTo(int32_t web_contents_id,
-                 const std::string& channel,
-                 blink::CloneableMessage arguments) override;
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments) override;
 

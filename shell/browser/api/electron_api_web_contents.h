@@ -36,6 +36,7 @@
 #include "printing/buildflags/buildflags.h"
 #include "shell/browser/api/frame_subscriber.h"
 #include "shell/browser/api/save_page_handler.h"
+#include "shell/browser/background_throttling_source.h"
 #include "shell/browser/event_emitter_mixin.h"
 #include "shell/browser/extended_web_contents_observer.h"
 #include "shell/browser/ui/inspectable_web_contents.h"
@@ -107,7 +108,8 @@ class WebContents : public ExclusiveAccessContext,
                     public content::WebContentsDelegate,
                     public content::RenderWidgetHost::InputEventObserver,
                     public InspectableWebContentsDelegate,
-                    public InspectableWebContentsViewDelegate {
+                    public InspectableWebContentsViewDelegate,
+                    public BackgroundThrottlingSource {
  public:
   enum class Type {
     kBackgroundPage,  // An extension background page.
@@ -134,6 +136,7 @@ class WebContents : public ExclusiveAccessContext,
   // if there is no associated wrapper.
   static WebContents* From(content::WebContents* web_contents);
   static WebContents* FromID(int32_t id);
+  static std::list<WebContents*> GetWebContentsList();
 
   // Get the V8 wrapper of the |web_contents|, or create one if not existed.
   //
@@ -159,7 +162,7 @@ class WebContents : public ExclusiveAccessContext,
   void Close(absl::optional<gin_helper::Dictionary> options);
   base::WeakPtr<WebContents> GetWeakPtr() { return weak_factory_.GetWeakPtr(); }
 
-  bool GetBackgroundThrottling() const;
+  bool GetBackgroundThrottling() const override;
   void SetBackgroundThrottling(bool allowed);
   int GetProcessID() const;
   base::ProcessId GetOSProcessID() const;
@@ -168,7 +171,7 @@ class WebContents : public ExclusiveAccessContext,
   void LoadURL(const GURL& url, const gin_helper::Dictionary& options);
   void Reload();
   void ReloadIgnoringCache();
-  void DownloadURL(const GURL& url);
+  void DownloadURL(const GURL& url, gin::Arguments* args);
   GURL GetURL() const;
   std::u16string GetTitle() const;
   bool IsLoading() const;
@@ -188,6 +191,8 @@ class WebContents : public ExclusiveAccessContext,
   int GetHistoryLength() const;
   const std::string GetWebRTCIPHandlingPolicy() const;
   void SetWebRTCIPHandlingPolicy(const std::string& webrtc_ip_handling_policy);
+  v8::Local<v8::Value> GetWebRTCUDPPortRange(v8::Isolate* isolate) const;
+  void SetWebRTCUDPPortRange(gin::Arguments* args);
   std::string GetMediaSourceID(content::WebContents* request_web_contents);
   bool IsCrashed() const;
   void ForcefullyCrashRenderer();
@@ -200,6 +205,8 @@ class WebContents : public ExclusiveAccessContext,
   void CloseDevTools();
   bool IsDevToolsOpened();
   bool IsDevToolsFocused();
+  std::u16string GetDevToolsTitle();
+  void SetDevToolsTitle(const std::u16string& title);
   void ToggleDevTools();
   void EnableDeviceEmulation(const blink::DeviceEmulationParams& params);
   void DisableDeviceEmulation();
@@ -429,9 +436,6 @@ class WebContents : public ExclusiveAccessContext,
       blink::CloneableMessage arguments,
       electron::mojom::ElectronApiIPC::MessageSyncCallback callback,
       content::RenderFrameHost* render_frame_host);
-  void MessageTo(int32_t web_contents_id,
-                 const std::string& channel,
-                 blink::CloneableMessage arguments);
   void MessageHost(const std::string& channel,
                    blink::CloneableMessage arguments,
                    content::RenderFrameHost* render_frame_host);

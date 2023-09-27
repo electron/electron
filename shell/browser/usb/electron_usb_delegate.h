@@ -85,6 +85,8 @@ class ElectronUsbDelegate : public content::UsbDelegate {
 
   void DeleteControllerForFrame(content::RenderFrameHost* render_frame_host);
 
+  bool PageMayUseUsb(content::Page& page) override;
+
  private:
   UsbChooserController* ControllerForFrame(
       content::RenderFrameHost* render_frame_host);

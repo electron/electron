@@ -59,9 +59,11 @@ class InspectableWebContents
   void ReleaseWebContents();
   void SetDevToolsWebContents(content::WebContents* devtools);
   void SetDockState(const std::string& state);
+  void SetDevToolsTitle(const std::u16string& title);
   void ShowDevTools(bool activate);
   void CloseDevTools();
   bool IsDevToolsViewShowing();
+  std::u16string GetDevToolsTitle();
   void AttachTo(scoped_refptr<content::DevToolsAgentHost>);
   void Detach();
   void CallClientFunction(
@@ -207,6 +209,7 @@ class InspectableWebContents
   gfx::Rect devtools_bounds_;
   bool can_dock_ = true;
   std::string dock_state_;
+  std::u16string devtools_title_;
   bool activate_ = true;
 
   raw_ptr<InspectableWebContentsDelegate> delegate_ =

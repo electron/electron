@@ -76,57 +76,122 @@ describe('webFrame module', () => {
     let w: WebContents;
     before(async () => {
       const win = new BrowserWindow({ show: false, webPreferences: { contextIsolation: false, nodeIntegration: true } });
-      await win.loadURL('about:blank');
+      await win.loadURL('data:text/html,<iframe name="test"></iframe>');
       w = win.webContents;
-      await w.executeJavaScript('webFrame = require(\'electron\').webFrame; null');
-    });
-    it('top is self for top frame', async () => {
-      const equal = await w.executeJavaScript('webFrame.top.context === webFrame.context');
-      expect(equal).to.be.true();
-    });
-
-    it('opener is null for top frame', async () => {
-      const equal = await w.executeJavaScript('webFrame.opener === null');
-      expect(equal).to.be.true();
+      await w.executeJavaScript(`
+        var { webFrame } = require('electron');
+        var isSameWebFrame = (a, b) => a.context === b.context;
+        childFrame = webFrame.firstChild;
+        null
+      `);
     });
 
-    it('firstChild is null for top frame', async () => {
-      const equal = await w.executeJavaScript('webFrame.firstChild === null');
-      expect(equal).to.be.true();
+    describe('top', () => {
+      it('is self for top frame', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.top, webFrame)');
+        expect(equal).to.be.true();
+      });
+
+      it('is self for child frame', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(childFrame.top, webFrame)');
+        expect(equal).to.be.true();
+      });
     });
 
-    it('getFrameForSelector() does not crash when not found', async () => {
-      const equal = await w.executeJavaScript('webFrame.getFrameForSelector(\'unexist-selector\') === null');
-      expect(equal).to.be.true();
+    describe('opener', () => {
+      it('is null for top frame', async () => {
+        const equal = await w.executeJavaScript('webFrame.opener === null');
+        expect(equal).to.be.true();
+      });
     });
 
-    it('findFrameByName() does not crash when not found', async () => {
-      const equal = await w.executeJavaScript('webFrame.findFrameByName(\'unexist-name\') === null');
-      expect(equal).to.be.true();
+    describe('parent', () => {
+      it('is null for top frame', async () => {
+        const equal = await w.executeJavaScript('webFrame.parent === null');
+        expect(equal).to.be.true();
+      });
+
+      it('is top frame for child frame', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(childFrame.parent, webFrame)');
+        expect(equal).to.be.true();
+      });
     });
 
-    it('findFrameByRoutingId() does not crash when not found', async () => {
-      const equal = await w.executeJavaScript('webFrame.findFrameByRoutingId(-1) === null');
-      expect(equal).to.be.true();
+    describe('firstChild', () => {
+      it('is child frame for top frame', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.firstChild, childFrame)');
+        expect(equal).to.be.true();
+      });
+
+      it('is null for child frame', async () => {
+        const equal = await w.executeJavaScript('childFrame.firstChild === null');
+        expect(equal).to.be.true();
+      });
+    });
+
+    describe('getFrameForSelector()', () => {
+      it('does not crash when not found', async () => {
+        const equal = await w.executeJavaScript('webFrame.getFrameForSelector("unexist-selector") === null');
+        expect(equal).to.be.true();
+      });
+
+      it('returns the webFrame when found', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.getFrameForSelector("iframe"), childFrame)');
+        expect(equal).to.be.true();
+      });
+    });
+
+    describe('findFrameByName()', () => {
+      it('does not crash when not found', async () => {
+        const equal = await w.executeJavaScript('webFrame.findFrameByName("unexist-name") === null');
+        expect(equal).to.be.true();
+      });
+
+      it('returns the webFrame when found', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByName("test"), childFrame)');
+        expect(equal).to.be.true();
+      });
+    });
+
+    describe('findFrameByRoutingId()', () => {
+      it('does not crash when not found', async () => {
+        const equal = await w.executeJavaScript('webFrame.findFrameByRoutingId(-1) === null');
+        expect(equal).to.be.true();
+      });
+
+      it('returns the webFrame when found', async () => {
+        const equal = await w.executeJavaScript('isSameWebFrame(webFrame.findFrameByRoutingId(childFrame.routingId), childFrame)');
+        expect(equal).to.be.true();
+      });
+    });
+
+    describe('setZoomFactor()', () => {
+      it('works', async () => {
+        const equal = await w.executeJavaScript('childFrame.setZoomFactor(2.0); childFrame.getZoomFactor() === 2.0');
+        expect(equal).to.be.true();
+      });
+    });
+
+    describe('setZoomLevel()', () => {
+      it('works', async () => {
+        const equal = await w.executeJavaScript('childFrame.setZoomLevel(5); childFrame.getZoomLevel() === 5');
+        expect(equal).to.be.true();
+      });
+    });
+
+    describe('getResourceUsage()', () => {
+      it('works', async () => {
+        const result = await w.executeJavaScript('childFrame.getResourceUsage()');
+        expect(result).to.have.property('images').that.is.an('object');
+        expect(result).to.have.property('scripts').that.is.an('object');
+        expect(result).to.have.property('cssStyleSheets').that.is.an('object');
+        expect(result).to.have.property('xslStyleSheets').that.is.an('object');
+        expect(result).to.have.property('fonts').that.is.an('object');
+        expect(result).to.have.property('other').that.is.an('object');
+      });
     });
 
     describe('executeJavaScript', () => {
-      before(() => {
-        w.executeJavaScript(`
-          childFrameElement = document.createElement('iframe');
-          document.body.appendChild(childFrameElement);
-          childFrame = webFrame.firstChild;
-          null
-        `);
-      });
-
-      after(() => {
-        w.executeJavaScript(`
-          childFrameElement.remove();
-          null
-        `);
-      });
-
       it('executeJavaScript() yields results via a promise and a sync callback', async () => {
         const { callbackResult, callbackError, result } = await w.executeJavaScript(`new Promise(resolve => {
           let callbackResult, callbackError;

@@ -158,9 +158,6 @@ std::string SystemPreferences::GetMediaAccessStatus(
 }
 
 void SystemPreferences::InitializeWindow() {
-  inverted_color_scheme_ = IsInvertedColorScheme();
-  high_contrast_color_scheme_ = IsHighContrastColorScheme();
-
   // Wait until app is ready before creating sys color listener
   // Creating this listener before the app is ready causes global shortcuts
   // to not fire
@@ -216,18 +213,6 @@ LRESULT CALLBACK SystemPreferences::WndProc(HWND hwnd,
 }
 
 void SystemPreferences::OnSysColorChange() {
-  bool new_inverted_color_scheme = IsInvertedColorScheme();
-  if (new_inverted_color_scheme != inverted_color_scheme_) {
-    inverted_color_scheme_ = new_inverted_color_scheme;
-    Emit("inverted-color-scheme-changed", new_inverted_color_scheme);
-  }
-
-  bool new_high_contrast_color_scheme = IsHighContrastColorScheme();
-  if (new_high_contrast_color_scheme != high_contrast_color_scheme_) {
-    high_contrast_color_scheme_ = new_high_contrast_color_scheme;
-    Emit("high-contrast-color-scheme-changed", new_high_contrast_color_scheme);
-  }
-
   Emit("color-changed");
 }
 

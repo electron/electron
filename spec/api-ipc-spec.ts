@@ -239,7 +239,7 @@ describe('ipc module', () => {
       const p = once(ipcMain, 'port');
       await w.webContents.executeJavaScript(`(${function () {
         const channel = new MessageChannel();
-        (channel.port2 as any).onmessage = (ev: any) => {
+        channel.port2.onmessage = (ev: any) => {
           channel.port2.postMessage(ev.data * 2);
         };
         require('electron').ipcRenderer.postMessage('port', '', [channel.port1]);
@@ -280,7 +280,7 @@ describe('ipc module', () => {
       w2.loadURL('about:blank');
       w1.webContents.executeJavaScript(`(${function () {
         const channel = new MessageChannel();
-        (channel.port2 as any).onmessage = (ev: any) => {
+        channel.port2.onmessage = (ev: any) => {
           require('electron').ipcRenderer.send('message received', ev.data);
         };
         require('electron').ipcRenderer.postMessage('port', '', [channel.port1]);
@@ -306,7 +306,7 @@ describe('ipc module', () => {
             ipcRenderer.on('port', e => {
               const [port] = e.ports;
               port.start();
-              (port as any).onclose = () => {
+              port.onclose = () => {
                 ipcRenderer.send('closed');
               };
             });
@@ -322,9 +322,9 @@ describe('ipc module', () => {
           w.loadURL('about:blank');
           await w.webContents.executeJavaScript(`(${async function () {
             const { port2 } = new MessageChannel();
-            await new Promise(resolve => {
+            await new Promise<void>(resolve => {
               port2.start();
-              (port2 as any).onclose = resolve;
+              port2.onclose = resolve;
               process._linkedBinding('electron_common_v8_util').requestGarbageCollectionForTesting();
             });
           }})()`);
@@ -336,9 +336,9 @@ describe('ipc module', () => {
           ipcMain.once('do-a-gc', () => v8Util.requestGarbageCollectionForTesting());
           await w.webContents.executeJavaScript(`(${async function () {
             const { port1, port2 } = new MessageChannel();
-            await new Promise(resolve => {
+            await new Promise<void>(resolve => {
               port2.start();
-              (port2 as any).onclose = resolve;
+              port2.onclose = resolve;
               require('electron').ipcRenderer.postMessage('nobody-listening', null, [port1]);
               require('electron').ipcRenderer.send('do-a-gc');
             });

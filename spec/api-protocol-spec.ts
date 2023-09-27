@@ -104,7 +104,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -263,7 +263,7 @@ describe('protocol module', () => {
         expect(r.headers).to.have.property('x-great-header', 'sogreat');
       });
 
-      it('can load iframes with custom protocols', (done) => {
+      it('can load iframes with custom protocols', async () => {
         registerFileProtocol('custom', (request, callback) => {
           const filename = request.url.substring(9);
           const p = path.join(__dirname, 'fixtures', 'pages', filename);
@@ -278,8 +278,9 @@ describe('protocol module', () => {
           }
         });
 
+        const loaded = once(ipcMain, 'loaded-iframe-custom-protocol');
         w.loadFile(path.join(__dirname, 'fixtures', 'pages', 'iframe-protocol.html'));
-        ipcMain.once('loaded-iframe-custom-protocol', () => done());
+        await loaded;
       });
 
       it('sends object as response', async () => {
@@ -557,7 +558,7 @@ describe('protocol module', () => {
         try {
           callback(text);
           callback('');
-        } catch (error) {
+        } catch {
           // Ignore error
         }
       });
@@ -1106,7 +1107,7 @@ describe('protocol module', () => {
           // In case of failure, make sure we unhandle. But we should succeed
           // :)
           protocol.unhandle('test-scheme');
-        } catch (_ignored) { /* ignore */ }
+        } catch { /* ignore */ }
       });
       const resp1 = await net.fetch('test-scheme://foo');
       expect(resp1.status).to.equal(200);
@@ -1127,7 +1128,7 @@ describe('protocol module', () => {
       protocol.handle('file', (req) => {
         let file;
         if (process.platform === 'win32') {
-          file = `file:///${filePath.replace(/\\/g, '/')}`;
+          file = `file:///${filePath.replaceAll('\\', '/')}`;
         } else {
           file = `file://${filePath}`;
         }

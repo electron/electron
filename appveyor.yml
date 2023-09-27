@@ -29,7 +29,7 @@
 
 version: 1.0.{build}
 build_cloud: electronhq-16-core
-image: e-116.0.5845.0
+image: e-119.0.6019.2
 environment:
   GIT_CACHE_PATH: C:\Users\appveyor\libcc_cache
   ELECTRON_OUT_DIR: Default
@@ -72,8 +72,10 @@ for:
       - ps: |
           node script/yarn.js install --frozen-lockfile
           node script/doc-only-change.js --prNumber=$env:APPVEYOR_PULL_REQUEST_NUMBER
+          $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "false"
           if ($LASTEXITCODE -eq 0) {
-            Write-warning "Skipping build for doc only change"
+            Write-warning "Skipping build for doc-only change"
+            $env:SHOULD_SKIP_ARTIFACT_VALIDATION = "true"
             Exit-AppveyorBuild
           } else {
             $global:LASTEXITCODE = 0
@@ -114,7 +116,7 @@ for:
       - ps: .\src\electron\script\start-goma.ps1 -gomaDir $env:LOCAL_GOMA_DIR
       - ps: >-
           if (Test-Path 'env:RAW_GOMA_AUTH') {
-            $goma_login = python $env:LOCAL_GOMA_DIR\goma_auth.py info
+            $goma_login = python3 $env:LOCAL_GOMA_DIR\goma_auth.py info
             if ($goma_login -eq 'Login as Fermi Planck') {
               Write-warning "Goma authentication is correct";
             } else {
@@ -163,8 +165,8 @@ for:
       - cd ..\..
       - ninja -C out/Default electron:hunspell_dictionaries_zip
       - ninja -C out/Default electron:electron_chromedriver_zip
-      - ninja -C out/Default third_party/electron_node:headers
-      - python %LOCAL_GOMA_DIR%\goma_ctl.py stat
+      - ninja -C out/Default electron:node_headers
+      - python3 %LOCAL_GOMA_DIR%\goma_ctl.py stat
       - ps: >-
           Get-CimInstance -Namespace root\cimv2 -Class Win32_product | Select vendor, description, @{l='install_location';e='InstallLocation'}, @{l='install_date';e='InstallDate'}, @{l='install_date_2';e='InstallDate2'}, caption, version, name, @{l='sku_number';e='SKUNumber'} | ConvertTo-Json | Out-File -Encoding utf8 -FilePath .\installed_software.json
       - python3 electron/build/profile_toolchain.py --output-json=out/Default/windows_toolchain_profile.json
@@ -185,6 +187,31 @@ for:
             7z a pdb.zip out\Default\*.pdb
           }
       - python3 electron/script/zip_manifests/check-zip-manifest.py out/Default/dist.zip electron/script/zip_manifests/dist_zip.win.%TARGET_ARCH%.manifest
+      - ps: |
+          cd C:\projects\src
+          $missing_artifacts = $false
+          if ($env:SHOULD_SKIP_ARTIFACT_VALIDATION -eq 'true') {
+            Write-warning "Skipping artifact validation for doc-only $env:APPVEYOR_PROJECT_NAME"
+          } else {
+            $artifacts_to_validate = 'dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip'
+            foreach($artifact_name in $artifacts_to_validate) {
+              if ($artifact_name -eq 'ffmpeg.zip') {
+                $artifact_file = "out\ffmpeg\ffmpeg.zip"
+              } elseif (
+                $artifact_name -eq 'node_headers.zip') {
+                $artifact_file = $artifact_name
+              } else {
+                $artifact_file = "out\Default\$artifact_name"
+              }
+              if (-not(Test-Path $artifact_file)) {
+                Write-warning "$artifact_name is missing and cannot be added to artifacts"
+                $missing_artifacts = $true
+              }
+            }
+          }
+          if ($missing_artifacts) {
+            throw "Build failed due to missing artifacts"
+          }
 
     deploy_script:
       - cd electron
@@ -210,7 +237,7 @@ for:
       - if exist node_headers.zip (appveyor-retry appveyor PushArtifact node_headers.zip)
       - if exist out\Default\mksnapshot.zip (appveyor-retry appveyor PushArtifact out\Default\mksnapshot.zip)
       - if exist out\Default\hunspell_dictionaries.zip (appveyor-retry appveyor PushArtifact out\Default\hunspell_dictionaries.zip)
-      - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)
+      - if exist out\Default\electron.lib (appveyor-retry appveyor PushArtifact out\Default\electron.lib)        
       - ps: >-
           if ((Test-Path "pdb.zip") -And ($env:GN_CONFIG -ne 'release')) {
             appveyor-retry appveyor PushArtifact pdb.zip
@@ -253,6 +280,9 @@ for:
                 }
                 Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/$artifact_name" -OutFile $outfile
               }
+              # Uncomment the following lines to download the pdb.zip to show real stacktraces when crashes happen during testing
+              # Invoke-RestMethod -Method Get -Uri "$apiUrl/buildjobs/$jobId/artifacts/pdb.zip" -OutFile pdb.zip
+              # 7z x -y -osrc pdb.zip
             }
           }
       - ps: |

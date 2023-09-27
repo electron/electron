@@ -12,10 +12,6 @@
 #include "chrome/browser/devtools/devtools_contents_resizing_strategy.h"
 #include "ui/base/cocoa/base_view.h"
 
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
-
 namespace electron {
 class InspectableWebContentsViewMac;
 }
@@ -50,6 +46,7 @@ using electron::InspectableWebContentsViewMac;
 - (void)setContentsResizingStrategy:
     (const DevToolsContentsResizingStrategy&)strategy;
 - (void)setTitle:(NSString*)title;
+- (NSString*)getTitle;
 
 - (void)redispatchContextMenuEvent:(base::apple::OwnedNSEvent)theEvent;
 

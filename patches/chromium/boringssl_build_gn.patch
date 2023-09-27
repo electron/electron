@@ -6,12 +6,12 @@ Subject: boringssl BUILD.gn
 Build BoringSSL with some extra functions that nodejs needs.
 
 diff --git a/third_party/boringssl/BUILD.gn b/third_party/boringssl/BUILD.gn
-index eb2393eb9a6459a2d7dfdcfe6379817be3139074..ef99c6bc6c1cd16cc8ef1bd88da55bf6961f31fd 100644
+index 4e882f729aacf7c63629ce019ef0f0bdc11ca937..5f5ec93ef0dd0e2a916ee08923b6536a5ed019e7 100644
 --- a/third_party/boringssl/BUILD.gn
 +++ b/third_party/boringssl/BUILD.gn
-@@ -49,6 +49,20 @@ config("no_asm_config") {
+@@ -53,6 +53,20 @@ config("no_asm_config") {
  
- all_sources = crypto_sources + ssl_sources
+ all_sources = crypto_sources + ssl_sources + pki_sources
  all_headers = crypto_headers + ssl_headers
 +if (is_electron_build) {
 +  # Needed to build a nodejs-compatible boringssl.

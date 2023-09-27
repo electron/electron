@@ -7,9 +7,9 @@
 #include <string>
 
 #include "base/apple/bundle_locations.h"
+#include "base/apple/foundation_util.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
-#include "base/mac/foundation_util.h"
 #include "base/path_service.h"
 #include "base/strings/sys_string_conversions.h"
 #include "content/browser/mac_helpers.h"
@@ -17,10 +17,6 @@
 #include "shell/browser/mac/electron_application.h"
 #include "shell/common/application_info.h"
 #include "shell/common/mac/main_application_bundle.h"
-
-#if !defined(__has_feature) || !__has_feature(objc_arc)
-#error "This file requires ARC support."
-#endif
 
 namespace electron {
 
@@ -69,7 +65,9 @@ void ElectronMainDelegate::OverrideChildProcessPath() {
     helper_path = GetHelperAppPath(frameworks_path, GetApplicationName());
   if (!base::PathExists(helper_path))
     LOG(FATAL) << "Unable to find helper app";
-  base::PathService::Override(content::CHILD_PROCESS_EXE, helper_path);
+  base::PathService::OverrideAndCreateIfNeeded(
+      content::CHILD_PROCESS_EXE, helper_path, /*is_absolute=*/true,
+      /*create=*/false);
 }
 
 void ElectronMainDelegate::SetUpBundleOverrides() {
@@ -80,7 +78,7 @@ void ElectronMainDelegate::SetUpBundleOverrides() {
     NSString* team_id = [bundle objectForInfoDictionaryKey:@"ElectronTeamID"];
     if (team_id)
       base_bundle_id = base::SysNSStringToUTF8(team_id) + "." + base_bundle_id;
-    base::mac::SetBaseBundleID(base_bundle_id.c_str());
+    base::apple::SetBaseBundleID(base_bundle_id.c_str());
   }
 }
 

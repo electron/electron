@@ -58,6 +58,8 @@ class NativeWindowMac : public NativeWindow,
   gfx::Rect GetBounds() override;
   bool IsNormal() override;
   gfx::Rect GetNormalBounds() override;
+  void SetSizeConstraints(
+      const extensions::SizeConstraints& window_constraints) override;
   void SetContentSizeConstraints(
       const extensions::SizeConstraints& size_constraints) override;
   void SetResizable(bool resizable) override;
@@ -157,7 +159,7 @@ class NativeWindowMac : public NativeWindow,
   bool IsActive() const override;
   // Remove the specified child window without closing it.
   void RemoveChildWindow(NativeWindow* child) override;
-  void RemoveChildFromParentWindow(NativeWindow* child);
+  void RemoveChildFromParentWindow() override;
   // Attach child windows, if the window is visible.
   void AttachChildren() override;
   // Detach window from parent without destroying it.

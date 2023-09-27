@@ -44,11 +44,13 @@
 #include "services/network/public/cpp/simple_url_loader_stream_consumer.h"
 #include "services/network/public/cpp/wrapper_shared_url_loader_factory.h"
 #include "shell/browser/api/electron_api_web_contents.h"
+#include "shell/browser/native_window_views.h"
 #include "shell/browser/net/asar/asar_url_loader_factory.h"
 #include "shell/browser/protocol_registry.h"
 #include "shell/browser/ui/inspectable_web_contents_delegate.h"
 #include "shell/browser/ui/inspectable_web_contents_view.h"
 #include "shell/browser/ui/inspectable_web_contents_view_delegate.h"
+#include "shell/common/application_info.h"
 #include "shell/common/platform_util.h"
 #include "third_party/blink/public/common/logging/logging_utils.h"
 #include "third_party/blink/public/common/page/page_zoom.h"
@@ -426,6 +428,11 @@ void InspectableWebContents::SetDockState(const std::string& state) {
   }
 }
 
+void InspectableWebContents::SetDevToolsTitle(const std::u16string& title) {
+  devtools_title_ = title;
+  view_->SetTitle(devtools_title_);
+}
+
 void InspectableWebContents::SetDevToolsWebContents(
     content::WebContents* devtools) {
   if (!managed_devtools_web_contents_)
@@ -479,6 +486,10 @@ void InspectableWebContents::CloseDevTools() {
 
 bool InspectableWebContents::IsDevToolsViewShowing() {
   return managed_devtools_web_contents_ && view_->IsDevToolsViewShowing();
+}
+
+std::u16string InspectableWebContents::GetDevToolsTitle() {
+  return view_->GetTitle();
 }
 
 void InspectableWebContents::AttachTo(
@@ -565,6 +576,9 @@ void InspectableWebContents::LoadCompleted() {
   // If the devtools can dock, "SetIsDocked" will be called by devtools itself.
   if (!can_dock_) {
     SetIsDocked(DispatchCallback(), false);
+    if (!devtools_title_.empty()) {
+      view_->SetTitle(devtools_title_);
+    }
   } else {
     if (dock_state_.empty()) {
       const base::Value::Dict& prefs =
@@ -573,6 +587,23 @@ void InspectableWebContents::LoadCompleted() {
           prefs.FindString("currentDockState");
       base::RemoveChars(*current_dock_state, "\"", &dock_state_);
     }
+#if BUILDFLAG(IS_WIN)
+    auto* api_web_contents = api::WebContents::From(GetWebContents());
+    if (api_web_contents) {
+      auto* win =
+          static_cast<NativeWindowViews*>(api_web_contents->owner_window());
+      // When WCO is enabled, undock the devtools if the current dock
+      // position overlaps with the position of window controls to avoid
+      // broken layout.
+      if (win && win->IsWindowControlsOverlayEnabled()) {
+        if (IsAppRTL() && dock_state_ == "left") {
+          dock_state_ = "undocked";
+        } else if (dock_state_ == "right") {
+          dock_state_ = "undocked";
+        }
+      }
+    }
+#endif
     std::u16string javascript = base::UTF8ToUTF16(
         "UI.DockController.instance().setDockSide(\"" + dock_state_ + "\");");
     GetDevToolsWebContents()->GetPrimaryMainFrame()->ExecuteJavaScript(
@@ -616,6 +647,9 @@ void InspectableWebContents::AddDevToolsExtensionsToClient() {
     extension_info.Set("exposeExperimentalAPIs",
                        extension->permissions_data()->HasAPIPermission(
                            extensions::mojom::APIPermissionID::kExperimental));
+    extension_info.Set("allowFileAccess",
+                       (extension->creation_flags() &
+                        extensions::Extension::ALLOW_FILE_ACCESS) != 0);
     results.Append(std::move(extension_info));
   }
 
@@ -632,9 +666,12 @@ void InspectableWebContents::SetInspectedPageBounds(const gfx::Rect& rect) {
 void InspectableWebContents::InspectElementCompleted() {}
 
 void InspectableWebContents::InspectedURLChanged(const std::string& url) {
-  if (managed_devtools_web_contents_)
-    view_->SetTitle(
-        base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+  if (managed_devtools_web_contents_) {
+    if (devtools_title_.empty()) {
+      view_->SetTitle(
+          base::UTF8ToUTF16(base::StringPrintf(kTitleFormat, url.c_str())));
+    }
+  }
 }
 
 void InspectableWebContents::LoadNetworkResource(DispatchCallback callback,

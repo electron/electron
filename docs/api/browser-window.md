@@ -367,36 +367,6 @@ The following app commands are explicitly supported on Linux:
 * `browser-backward`
 * `browser-forward`
 
-#### Event: 'scroll-touch-begin' _macOS_ _Deprecated_
-
-Emitted when scroll wheel event phase has begun.
-
-> **Note**
-> This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
-> for details of how to migrate to using the [WebContents
-> `input-event`](./web-contents.md#event-input-event) event.
-
-#### Event: 'scroll-touch-end' _macOS_ _Deprecated_
-
-Emitted when scroll wheel event phase has ended.
-
-> **Note**
-> This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
-> for details of how to migrate to using the [WebContents
-> `input-event`](./web-contents.md#event-input-event) event.
-
-#### Event: 'scroll-touch-edge' _macOS_ _Deprecated_
-
-Emitted when scroll wheel event phase filed upon reaching the edge of element.
-
-> **Note**
-> This event is deprecated beginning in Electron 22.0.0. See [Breaking
-> Changes](../breaking-changes.md#deprecated-browserwindow-scroll-touch--events)
-> for details of how to migrate to using the [WebContents
-> `input-event`](./web-contents.md#event-input-event) event.
-
 #### Event: 'swipe' _macOS_
 
 Returns:
@@ -820,9 +790,13 @@ win.setBounds({ width: 100 })
 console.log(win.getBounds())
 ```
 
+**Note:** On macOS, the y-coordinate value cannot be smaller than the [Tray](tray.md) height. The tray height has changed over time and depends on the operating system, but is between 20-40px. Passing a value lower than the tray height will result in a window that is flush to the tray.
+
 #### `win.getBounds()`
 
 Returns [`Rectangle`](structures/rectangle.md) - The `bounds` of the window as `Object`.
+
+**Note:** On macOS, the y-coordinate value returned will be at minimum the [Tray](tray.md) height. For example, calling `win.setBounds({ x: 25, y: 20, width: 800, height: 600 })` with a tray height of 38 means that `win.getBounds()` will return `{ x: 25, y: 38, width: 800, height: 600 }`.
 
 #### `win.getBackgroundColor()`
 
@@ -1207,7 +1181,7 @@ const win = new BrowserWindow()
 const url = require('url').format({
   protocol: 'file',
   slashes: true,
-  pathname: require('path').join(__dirname, 'index.html')
+  pathname: require('node:path').join(__dirname, 'index.html')
 })
 
 win.loadURL(url)
@@ -1591,25 +1565,6 @@ Passing `null` will reset the position to default.
 Returns `Point | null` - The custom position for the traffic light buttons in
 frameless window, `null` will be returned when there is no custom position.
 
-#### `win.setTrafficLightPosition(position)` _macOS_ _Deprecated_
-
-* `position` [Point](structures/point.md)
-
-Set a custom position for the traffic light buttons in frameless window.
-Passing `{ x: 0, y: 0 }` will reset the position to default.
-
-> **Note**
-> This function is deprecated. Use [setWindowButtonPosition](#winsetwindowbuttonpositionposition-macos) instead.
-
-#### `win.getTrafficLightPosition()` _macOS_ _Deprecated_
-
-Returns `Point` - The custom position for the traffic light buttons in
-frameless window, `{ x: 0, y: 0 }` will be returned when there is no custom
-position.
-
-> **Note**
-> This function is deprecated. Use [getWindowButtonPosition](#wingetwindowbuttonposition-macos) instead.
-
 #### `win.setTouchBar(touchBar)` _macOS_
 
 * `touchBar` TouchBar | null
@@ -1662,7 +1617,7 @@ removed in future Electron releases.
 * `options` Object
   * `color` String (optional) _Windows_ - The CSS color of the Window Controls Overlay when enabled.
   * `symbolColor` String (optional) _Windows_ - The CSS color of the symbols on the Window Controls Overlay when enabled.
-  * `height` Integer (optional) _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
+  * `height` Integer (optional) _macOS_ _Windows_ - The height of the title bar and Window Controls Overlay in pixels.
 
 On a Window with Window Controls Overlay already enabled, this method updates
 the style of the title bar overlay.

@@ -1,15 +1,19 @@
 import { expect } from 'chai';
-import * as path from 'node:path';
-import { ipcMain, BrowserWindow, WebContents, WebPreferences, webContents } from 'electron/main';
+import { ipcMain, BrowserWindow } from 'electron/main';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'node:events';
 
 describe('ipcRenderer module', () => {
-  const fixtures = path.join(__dirname, 'fixtures');
-
   let w: BrowserWindow;
   before(async () => {
-    w = new BrowserWindow({ show: false, webPreferences: { nodeIntegration: true, contextIsolation: false } });
+    w = new BrowserWindow({
+      show: false,
+      webPreferences: {
+        nodeIntegration: true,
+        nodeIntegrationInSubFrames: true,
+        contextIsolation: false
+      }
+    });
     await w.loadURL('about:blank');
   });
   after(async () => {
@@ -126,52 +130,6 @@ describe('ipcRenderer module', () => {
       })`);
       expect(msg).to.equal('test');
     });
-  });
-
-  describe('sendTo()', () => {
-    const generateSpecs = (description: string, webPreferences: WebPreferences) => {
-      describe(description, () => {
-        let contents: WebContents;
-        const payload = 'Hello World!';
-
-        before(async () => {
-          contents = (webContents as typeof ElectronInternal.WebContents).create({
-            preload: path.join(fixtures, 'module', 'preload-ipc-ping-pong.js'),
-            ...webPreferences
-          });
-
-          await contents.loadURL('about:blank');
-        });
-
-        after(() => {
-          contents.destroy();
-          contents = null as unknown as WebContents;
-        });
-
-        it('sends message to WebContents', async () => {
-          const data = await w.webContents.executeJavaScript(`new Promise(resolve => {
-            const { ipcRenderer } = require('electron')
-            ipcRenderer.sendTo(${contents.id}, 'ping', ${JSON.stringify(payload)})
-            ipcRenderer.once('pong', (event, data) => resolve(data))
-          })`);
-          expect(data).to.equal(payload);
-        });
-
-        it('sends message on channel with non-ASCII characters to WebContents', async () => {
-          const data = await w.webContents.executeJavaScript(`new Promise(resolve => {
-            const { ipcRenderer } = require('electron')
-            ipcRenderer.sendTo(${contents.id}, 'ping-æøåü', ${JSON.stringify(payload)})
-            ipcRenderer.once('pong-æøåü', (event, data) => resolve(data))
-          })`);
-          expect(data).to.equal(payload);
-        });
-      });
-    };
-
-    generateSpecs('without sandbox', {});
-    generateSpecs('with sandbox', { sandbox: true });
-    generateSpecs('with contextIsolation', { contextIsolation: true });
-    generateSpecs('with contextIsolation + sandbox', { contextIsolation: true, sandbox: true });
   });
 
   describe('ipcRenderer.on', () => {

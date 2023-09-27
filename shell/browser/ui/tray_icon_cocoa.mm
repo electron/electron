@@ -8,7 +8,7 @@
 #include <vector>
 
 #include "base/memory/raw_ptr.h"
-#include "base/message_loop/message_pump_mac.h"
+#include "base/message_loop/message_pump_apple.h"
 #include "base/strings/sys_string_conversions.h"
 #include "base/task/current_thread.h"
 #include "content/public/browser/browser_task_traits.h"
@@ -54,7 +54,12 @@
     NSStatusItem* item = [[NSStatusBar systemStatusBar]
         statusItemWithLength:NSVariableStatusItemLength];
     statusItem_ = item;
-    [[statusItem_ button] addSubview:self];  // inject custom view
+    [[statusItem_ button] addSubview:self];
+
+    // We need to set the target and action on the button, otherwise
+    // VoiceOver doesn't know where to send the select action.
+    [[statusItem_ button] setTarget:self];
+    [[statusItem_ button] setAction:@selector(mouseDown:)];
     [self updateDimensions];
   }
   return self;
@@ -83,6 +88,11 @@
     [self removeTrackingArea:trackingArea_];
     trackingArea_ = nil;
   }
+
+  // Ensure any open menu is closed.
+  if ([statusItem_ menu])
+    [[statusItem_ menu] cancelTracking];
+
   [[NSStatusBar systemStatusBar] removeStatusItem:statusItem_];
   [self removeFromSuperview];
   statusItem_ = nil;
@@ -185,6 +195,25 @@
 }
 
 - (void)mouseDown:(NSEvent*)event {
+  // If |event| does not respond to locationInWindow, we've
+  // arrived here from VoiceOver, which does not pass an event.
+  // Create a synthetic event to pass to the click handler.
+  if (![event respondsToSelector:@selector(locationInWindow)]) {
+    event = [NSEvent mouseEventWithType:NSEventTypeRightMouseDown
+                               location:NSMakePoint(0, 0)
+                          modifierFlags:0
+                              timestamp:NSApp.currentEvent.timestamp
+                           windowNumber:0
+                                context:nil
+                            eventNumber:0
+                             clickCount:1
+                               pressure:1.0];
+
+    // We also need to explicitly call the click handler here, since
+    // VoiceOver won't trigger mouseUp.
+    [self handleClickNotifications:event];
+  }
+
   trayIcon_->NotifyMouseDown(
       gfx::ScreenPointFromNSPoint([event locationInWindow]),
       ui::EventFlagsFromModifiers([event modifierFlags]));
@@ -228,7 +257,6 @@
   if (menuController_ && ![menuController_ isMenuOpen]) {
     // Ensure the UI can update while the menu is fading out.
     base::ScopedPumpMessagesInPrivateModes pump_private;
-
     [[statusItem_ button] performClick:self];
   }
 }
@@ -354,16 +382,16 @@ bool TrayIconCocoa::GetIgnoreDoubleClickEvents() {
   return [status_item_view_ getIgnoreDoubleClickEvents];
 }
 
-void TrayIconCocoa::PopUpOnUI(ElectronMenuModel* menu_model) {
-  [status_item_view_ popUpContextMenu:menu_model];
+void TrayIconCocoa::PopUpOnUI(base::WeakPtr<ElectronMenuModel> menu_model) {
+  [status_item_view_ popUpContextMenu:menu_model.get()];
 }
 
-void TrayIconCocoa::PopUpContextMenu(const gfx::Point& pos,
-                                     raw_ptr<ElectronMenuModel> menu_model) {
+void TrayIconCocoa::PopUpContextMenu(
+    const gfx::Point& pos,
+    base::WeakPtr<ElectronMenuModel> menu_model) {
   content::GetUIThreadTaskRunner({})->PostTask(
-      FROM_HERE,
-      base::BindOnce(&TrayIconCocoa::PopUpOnUI, weak_factory_.GetWeakPtr(),
-                     base::Unretained(menu_model)));
+      FROM_HERE, base::BindOnce(&TrayIconCocoa::PopUpOnUI,
+                                weak_factory_.GetWeakPtr(), menu_model));
 }
 
 void TrayIconCocoa::CloseContextMenu() {

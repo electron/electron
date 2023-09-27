@@ -10,6 +10,7 @@
 
 #include "base/containers/fixed_flat_map.h"
 #include "base/strings/string_util.h"
+#include "base/strings/utf_string_conversion_utils.h"
 #include "base/strings/utf_string_conversions.h"
 #include "gin/converter.h"
 #include "gin/data_object_builder.h"
@@ -275,11 +276,18 @@ bool Converter<blink::WebKeyboardEvent>::FromV8(v8::Isolate* isolate,
 
   if ((out->GetType() == blink::WebInputEvent::Type::kChar ||
        out->GetType() == blink::WebInputEvent::Type::kRawKeyDown)) {
+    // If the keyCode is e.g. Space or Plus we want to use the character
+    // instead of the keyCode: ' ' instead of 'Space', '+' instead of 'Plus'.
+    std::string character_str;
+    if (str.size() > 1 && domKey.IsCharacter())
+      base::WriteUnicodeCharacter(domKey.ToCharacter(), &character_str);
+
     // Make sure to not read beyond the buffer in case some bad code doesn't
     // NULL-terminate it (this is called from plugins).
     size_t text_length_cap = blink::WebKeyboardEvent::kTextLengthCap;
-    std::u16string text16 = base::UTF8ToUTF16(str);
-
+    std::u16string text16 = character_str.empty()
+                                ? base::UTF8ToUTF16(str)
+                                : base::UTF8ToUTF16(character_str);
     std::fill_n(out->text, text_length_cap, 0);
     std::fill_n(out->unmodified_text, text_length_cap, 0);
     for (size_t i = 0; i < std::min(text_length_cap - 1, text16.size()); ++i) {
@@ -311,7 +319,7 @@ int GetKeyLocationCode(const blink::WebInputEvent& key) {
 v8::Local<v8::Value> Converter<blink::WebKeyboardEvent>::ToV8(
     v8::Isolate* isolate,
     const blink::WebKeyboardEvent& in) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
 
   dict.Set("type", in.GetType());
   dict.Set("key", ui::KeycodeConverter::DomKeyToKeyString(in.dom_key));
@@ -468,7 +476,7 @@ Converter<blink::mojom::ContextMenuDataInputFieldType>::ToV8(
 }
 
 v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("canUndo",
            !!(editFlags & blink::ContextMenuDataEditFlags::kCanUndo));
   dict.Set("canRedo",
@@ -497,7 +505,7 @@ v8::Local<v8::Value> EditFlagsToV8(v8::Isolate* isolate, int editFlags) {
 }
 
 v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("inError", !!(mediaFlags & blink::ContextMenuData::kMediaInError));
   dict.Set("isPaused", !!(mediaFlags & blink::ContextMenuData::kMediaPaused));
   dict.Set("isMuted", !!(mediaFlags & blink::ContextMenuData::kMediaMuted));
@@ -522,7 +530,7 @@ v8::Local<v8::Value> MediaFlagsToV8(v8::Isolate* isolate, int mediaFlags) {
 v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStat>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCacheResourceTypeStat& stat) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("count", static_cast<uint32_t>(stat.count));
   dict.Set("size", static_cast<double>(stat.size));
   dict.Set("liveSize", static_cast<double>(stat.decoded_size));
@@ -532,7 +540,7 @@ v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStat>::ToV8(
 v8::Local<v8::Value> Converter<blink::WebCacheResourceTypeStats>::ToV8(
     v8::Isolate* isolate,
     const blink::WebCacheResourceTypeStats& stats) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("images", stats.images);
   dict.Set("scripts", stats.scripts);
   dict.Set("cssStyleSheets", stats.css_style_sheets);
@@ -565,7 +573,7 @@ bool Converter<network::mojom::ReferrerPolicy>::FromV8(
 v8::Local<v8::Value> Converter<blink::mojom::Referrer>::ToV8(
     v8::Isolate* isolate,
     const blink::mojom::Referrer& val) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("url", ConvertToV8(isolate, val.url));
   dict.Set("policy", ConvertToV8(isolate, val.policy));
   return gin::ConvertToV8(isolate, dict);

@@ -1,11 +1,17 @@
 <html>
 <body>
+<input type="text" id="input" autofocus/>
 <script type="text/javascript" charset="utf-8">
+const { ipcRenderer } = require('electron')
+
 document.onkeydown = function (e) {
-  require('electron').ipcRenderer.send('keydown', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
+  ipcRenderer.send('keydown', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
 }
 document.onkeypress = function (e) {
-  require('electron').ipcRenderer.send('keypress', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
+  ipcRenderer.send('keypress', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
+}
+document.onkeyup = function (e) {
+  ipcRenderer.send('keyup', e.key, e.code, e.keyCode, e.shiftKey, e.ctrlKey, e.altKey)
 }
 </script>
 </body>

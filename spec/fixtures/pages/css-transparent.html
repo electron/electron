@@ -14,11 +14,11 @@
       const { ipcRenderer } = require('electron');
 
       const observer = new MutationObserver((mutationList, observer) => {
-        mutationList.forEach(({ type, attributeName }) => {
+        for (const { type, attributeName } of mutationList) {
           if (type === 'attributes' && attributeName === 'style') {
             ipcRenderer.send('set-transparent');
           }
-        });
+        }
       });
 
       observer.observe(document.body, { attributes: true });

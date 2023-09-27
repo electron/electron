@@ -13,6 +13,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "base/values.h"
 #include "content/public/browser/web_contents_user_data.h"
+#include "include/core/SkColor.h"
+#include "shell/browser/background_throttling_source.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_features.h"
 #include "shell/browser/ui/drag_util.h"
@@ -23,6 +25,7 @@
 #include "shell/common/options_switches.h"
 #include "third_party/skia/include/core/SkRegion.h"
 #include "ui/base/hit_test.h"
+#include "ui/compositor/compositor.h"
 #include "ui/views/widget/widget.h"
 
 #if !BUILDFLAG(IS_MAC)
@@ -198,10 +201,6 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetSizeConstraints(size_constraints);
   }
 #if BUILDFLAG(IS_WIN) || BUILDFLAG(IS_LINUX)
-  bool resizable;
-  if (options.Get(options::kResizable, &resizable)) {
-    SetResizable(resizable);
-  }
   bool closable;
   if (options.Get(options::kClosable, &closable)) {
     SetClosable(closable);
@@ -223,6 +222,7 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
   if (options.Get(options::kAlwaysOnTop, &top) && top) {
     SetAlwaysOnTop(ui::ZOrderLevel::kFloatingWindow);
   }
+
   bool fullscreenable = true;
   bool fullscreen = false;
   if (options.Get(options::kFullscreen, &fullscreen) && !fullscreen) {
@@ -231,12 +231,18 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     fullscreenable = false;
 #endif
   }
-  // Overridden by 'fullscreenable'.
+
   options.Get(options::kFullScreenable, &fullscreenable);
   SetFullScreenable(fullscreenable);
-  if (fullscreen) {
+
+  if (fullscreen)
     SetFullScreen(true);
+
+  bool resizable;
+  if (options.Get(options::kResizable, &resizable)) {
+    SetResizable(resizable);
   }
+
   bool skip;
   if (options.Get(options::kSkipTaskbar, &skip)) {
     SetSkipTaskbar(skip);
@@ -256,13 +262,15 @@ void NativeWindow::InitFromOptions(const gin_helper::Dictionary& options) {
     SetBackgroundMaterial(material);
   }
 #endif
-  std::string color;
-  if (options.Get(options::kBackgroundColor, &color)) {
-    SetBackgroundColor(ParseCSSColor(color));
-  } else if (!transparent()) {
-    // For normal window, use white as default background.
-    SetBackgroundColor(SK_ColorWHITE);
+
+  SkColor background_color = SK_ColorWHITE;
+  if (std::string color; options.Get(options::kBackgroundColor, &color)) {
+    background_color = ParseCSSColor(color);
+  } else if (IsTranslucent()) {
+    background_color = SK_ColorTRANSPARENT;
   }
+  SetBackgroundColor(background_color);
+
   std::string title(Browser::Get()->GetName());
   options.Get(options::kTitle, &title);
   SetTitle(title);
@@ -346,10 +354,14 @@ void NativeWindow::SetContentSizeConstraints(
   size_constraints_.reset();
 }
 
+// Windows/Linux:
 // The return value of GetContentSizeConstraints will be passed to Chromium
 // to set min/max sizes of window. Note that we are returning content size
 // instead of window size because that is what Chromium expects, see the
 // comment of |WidgetSizeIsClientSize| in Chromium's codebase to learn more.
+//
+// macOS:
+// The min/max sizes are set directly by calling NSWindow's methods.
 extensions::SizeConstraints NativeWindow::GetContentSizeConstraints() const {
   if (content_size_constraints_)
     return *content_size_constraints_;
@@ -469,9 +481,13 @@ bool NativeWindow::AddTabbedWindow(NativeWindow* window) {
   return true;  // for non-Mac platforms
 }
 
-void NativeWindow::SetVibrancy(const std::string& type) {}
+void NativeWindow::SetVibrancy(const std::string& type) {
+  vibrancy_ = type;
+}
 
-void NativeWindow::SetBackgroundMaterial(const std::string& type) {}
+void NativeWindow::SetBackgroundMaterial(const std::string& type) {
+  background_material_ = type;
+}
 
 void NativeWindow::SetTouchBar(
     std::vector<gin_helper::PersistentDictionary> items) {}
@@ -757,6 +773,37 @@ void NativeWindow::RemoveDraggableRegionProvider(
       [&provider](DraggableRegionProvider* p) { return p == provider; });
 }
 
+void NativeWindow::AddBackgroundThrottlingSource(
+    BackgroundThrottlingSource* source) {
+  auto result = background_throttling_sources_.insert(source);
+  DCHECK(result.second) << "Added already stored BackgroundThrottlingSource.";
+  UpdateBackgroundThrottlingState();
+}
+
+void NativeWindow::RemoveBackgroundThrottlingSource(
+    BackgroundThrottlingSource* source) {
+  auto result = background_throttling_sources_.erase(source);
+  DCHECK(result == 1)
+      << "Tried to remove non existing BackgroundThrottlingSource.";
+  UpdateBackgroundThrottlingState();
+}
+
+void NativeWindow::UpdateBackgroundThrottlingState() {
+  if (!GetWidget() || !GetWidget()->GetCompositor()) {
+    return;
+  }
+  bool enable_background_throttling = true;
+  for (const auto* background_throttling_source :
+       background_throttling_sources_) {
+    if (!background_throttling_source->GetBackgroundThrottling()) {
+      enable_background_throttling = false;
+      break;
+    }
+  }
+  GetWidget()->GetCompositor()->SetBackgroundThrottling(
+      enable_background_throttling);
+}
+
 views::Widget* NativeWindow::GetWidget() {
   return widget();
 }
@@ -794,6 +841,30 @@ void NativeWindow::HandlePendingFullscreenTransitions() {
 
 // static
 int32_t NativeWindow::next_id_ = 0;
+
+bool NativeWindow::IsTranslucent() const {
+  // Transparent windows are translucent
+  if (transparent()) {
+    return true;
+  }
+
+#if BUILDFLAG(IS_MAC)
+  // Windows with vibrancy set are translucent
+  if (!vibrancy().empty()) {
+    return true;
+  }
+#endif
+
+#if BUILDFLAG(IS_WIN)
+  // Windows with certain background materials may be translucent
+  const std::string& bg_material = background_material();
+  if (!bg_material.empty() && bg_material != "none") {
+    return true;
+  }
+#endif
+
+  return false;
+}
 
 // static
 void NativeWindowRelay::CreateForWebContents(
