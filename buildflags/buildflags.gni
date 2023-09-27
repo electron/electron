@@ -18,4 +18,9 @@ declare_args() {
 
   # Enable Spellchecker support
   enable_builtin_spellchecker = true
+
+  # The version of Electron.
+  # Packagers and vendor builders should set this in gn args to avoid running
+  # the script that reads git tag.
+  override_electron_version = ""
 }
