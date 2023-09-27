@@ -222,14 +222,26 @@ with CommonJS module syntax:
 - [app][app], which controls your application's event lifecycle.
 - [BrowserWindow][browser-window], which creates and manages app windows.
 
-:::info Capitalization conventions
+<details><summary>Module capitalization conventions</summary>
 
 You might have noticed the capitalization difference between the **a**pp
 and **B**rowser**W**indow modules. Electron follows typical JavaScript conventions here,
 where PascalCase modules are instantiable class constructors (e.g. BrowserWindow, Tray,
 Notification) whereas camelCase modules are not instantiable (e.g. app, ipcRenderer, webContents).
 
-:::
+</details>
+
+<details><summary>Typed import aliases</summary>
+
+For better type checking when writing TypeScript code, you can choose to import
+main process modules from <code>electron/main</code>.
+
+```js
+const { app, BrowserWindow } = require('electron/main')
+```
+
+For more information, see the [Process Model docs](../tutorial/process-model.md#process-specific-module-aliases-typescript).
+</details>
 
 :::warning ES Modules in Electron
 
