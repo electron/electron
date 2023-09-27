@@ -43,7 +43,7 @@ class ScopedDisableResize {
 - (electron::NativeWindowMac*)shell;
 - (id)accessibilityFocusedUIElement;
 - (NSRect)originalContentRectForFrameRect:(NSRect)frameRect;
-- (void)toggleFullScreenMode:(id)sender;
+- (BOOL)toggleFullScreenMode:(id)sender;
 - (NSImage*)_cornerMask;
 @end
 

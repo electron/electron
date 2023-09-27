@@ -375,6 +375,16 @@ describe('webContents module', () => {
       await expect(w.loadURL(w.getURL() + '#foo')).to.eventually.be.fulfilled();
     });
 
+    it('resolves after browser initiated navigation', async () => {
+      let finishedLoading = false;
+      w.webContents.on('did-finish-load', function () {
+        finishedLoading = true;
+      });
+
+      await w.loadFile(path.join(fixturesPath, 'pages', 'navigate_in_page_and_wait.html'));
+      expect(finishedLoading).to.be.true();
+    });
+
     it('rejects when failing to load a file URL', async () => {
       await expect(w.loadURL('file:non-existent')).to.eventually.be.rejected()
         .and.have.property('code', 'ERR_FILE_NOT_FOUND');
@@ -806,6 +816,20 @@ describe('webContents module', () => {
       expect(shiftKey).to.be.false();
       expect(ctrlKey).to.be.false();
       expect(altKey).to.be.false();
+    });
+
+    it('can correctly convert accelerators to key codes', async () => {
+      const keyup = once(ipcMain, 'keyup');
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Space', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'char' });
+      w.webContents.sendInputEvent({ keyCode: 'Plus', type: 'keyUp' });
+
+      await keyup;
+      const inputText = await w.webContents.executeJavaScript('document.getElementById("input").value');
+      expect(inputText).to.equal('+ + +');
     });
 
     it('can send char events with modifiers', async () => {

@@ -11,3 +11,5 @@ chore_allow_customizing_microtask_policy_per_context.patch
 fix_set_proper_instruction_start_for_builtin.patch
 cherry-pick-8ff63d378f2c.patch
 merged_squashed_multiple_commits.patch
+cherry-pick-038530c94a06.patch
+cherry-pick-cf1d4d3c0b6e.patch

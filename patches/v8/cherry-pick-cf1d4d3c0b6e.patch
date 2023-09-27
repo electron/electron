@@ -1,0 +1,99 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Thu, 31 Aug 2023 08:59:12 -0700
+Subject: Merged: [interpreter] Fix TDZ elision in do-while tests
+
+(cherry picked from commit 1626e229a8965f975db6e9da0e7ab85f8c74333f)
+
+Change-Id: Ifb7461b6cfd62a10936470a760cb505cc5e1c60f
+Fixed: chromium:1477588
+Bug: v8:13723
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4862981
+Auto-Submit: Shu-yu Guo <syg@chromium.org>
+Commit-Queue: Shu-yu Guo <syg@chromium.org>
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.6@{#38}
+Cr-Branched-From: e29c028f391389a7a60ee37097e3ca9e396d6fa4-refs/heads/11.6.189@{#3}
+Cr-Branched-From: 95cbef20e2aa556a1ea75431a48b36c4de6b9934-refs/heads/main@{#88340}
+
+diff --git a/src/interpreter/bytecode-generator.cc b/src/interpreter/bytecode-generator.cc
+index 139ed00b4b3f9766a392b84db1ee9f32af57c146..6b656c4a53abacb884a3f23f871229d6e63e9ea1 100644
+--- a/src/interpreter/bytecode-generator.cc
++++ b/src/interpreter/bytecode-generator.cc
+@@ -2422,8 +2422,16 @@ void BytecodeGenerator::VisitDoWhileStatement(DoWhileStatement* stmt) {
+     VisitIterationBody(stmt, &loop_builder);
+     builder()->SetExpressionAsStatementPosition(stmt->cond());
+     BytecodeLabels loop_backbranch(zone());
+-    VisitForTest(stmt->cond(), &loop_backbranch, loop_builder.break_labels(),
+-                 TestFallthrough::kThen);
++    if (!loop_builder.break_labels()->empty()) {
++      // The test may be conditionally executed if there was a break statement
++      // inside the loop body, and therefore requires its own elision scope.
++      HoleCheckElisionScope elider(this);
++      VisitForTest(stmt->cond(), &loop_backbranch, loop_builder.break_labels(),
++                   TestFallthrough::kThen);
++    } else {
++      VisitForTest(stmt->cond(), &loop_backbranch, loop_builder.break_labels(),
++                   TestFallthrough::kThen);
++    }
+     loop_backbranch.Bind(builder());
+   }
+ }
+diff --git a/test/unittests/interpreter/bytecode-generator-unittest.cc b/test/unittests/interpreter/bytecode-generator-unittest.cc
+index 55315b2db8076161d02b97f4534fc2c56002a13f..14e4b28c0e963b178ecb0bc71b19d9e8fe267ef1 100644
+--- a/test/unittests/interpreter/bytecode-generator-unittest.cc
++++ b/test/unittests/interpreter/bytecode-generator-unittest.cc
+@@ -3237,6 +3237,10 @@ TEST_F(BytecodeGeneratorTest, ElideRedundantHoleChecks) {
+     "do { x; } while (y);\n"
+     "x; y;\n",
+ 
++    // do-while with break
++    "do { x; break; } while (y);\n"
++    "x; y;\n",
++
+     // C-style for
+     "for (x; y; z) { w; }\n"
+     "x; y; z; w;\n",
+diff --git a/test/unittests/interpreter/bytecode_expectations/ElideRedundantHoleChecks.golden b/test/unittests/interpreter/bytecode_expectations/ElideRedundantHoleChecks.golden
+index 2aeaf6f4aeb9bc8e03f44aa33a8f5dc3723ae61a..8d71dbb36878ddd068a9ca238d06a00bfe7d1a44 100644
+--- a/test/unittests/interpreter/bytecode_expectations/ElideRedundantHoleChecks.golden
++++ b/test/unittests/interpreter/bytecode_expectations/ElideRedundantHoleChecks.golden
+@@ -176,6 +176,38 @@ constant pool: [
+ handlers: [
+ ]
+ 
++---
++snippet: "
++  {
++    f = function f(a) {
++  do { x; break; } while (y);
++  x; y;
++    }
++    let w, x, y, z;
++    f();
++  }
++"
++frame size: 0
++parameter count: 2
++bytecode array length: 16
++bytecodes: [
++  /*   29 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
++                B(ThrowReferenceErrorIfHole), U8(0),
++  /*   32 S> */ B(Jump), U8(2),
++  /*   52 S> */ B(LdaImmutableCurrentContextSlot), U8(2),
++                B(ThrowReferenceErrorIfHole), U8(0),
++  /*   55 S> */ B(LdaImmutableCurrentContextSlot), U8(3),
++                B(ThrowReferenceErrorIfHole), U8(1),
++                B(LdaUndefined),
++  /*   60 S> */ B(Return),
++]
++constant pool: [
++  ONE_BYTE_INTERNALIZED_STRING_TYPE ["x"],
++  ONE_BYTE_INTERNALIZED_STRING_TYPE ["y"],
++]
++handlers: [
++]
++
+ ---
+ snippet: "
+   {
