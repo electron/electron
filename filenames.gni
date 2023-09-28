@@ -339,6 +339,7 @@ filenames = {
     "shell/browser/api/ui_event.h",
     "shell/browser/auto_updater.cc",
     "shell/browser/auto_updater.h",
+    "shell/browser/background_throttling_source.h",
     "shell/browser/badging/badge_manager.cc",
     "shell/browser/badging/badge_manager.h",
     "shell/browser/badging/badge_manager_factory.cc",

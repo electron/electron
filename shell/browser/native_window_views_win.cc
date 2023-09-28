@@ -7,6 +7,7 @@
 #include <wrl/client.h>
 
 #include "base/win/atl.h"  // Must be before UIAutomationCore.h
+#include "base/win/scoped_handle.h"
 #include "content/public/browser/browser_accessibility_state.h"
 #include "shell/browser/browser.h"
 #include "shell/browser/native_window_views.h"
@@ -165,10 +166,41 @@ gfx::ResizeEdge GetWindowResizeEdge(WPARAM param) {
   }
 }
 
+bool IsMutexPresent(const wchar_t* name) {
+  base::win::ScopedHandle mutex_holder(::CreateMutex(nullptr, false, name));
+  return ::GetLastError() == ERROR_ALREADY_EXISTS;
+}
+
+bool IsLibraryLoaded(const wchar_t* name) {
+  HMODULE hmodule = nullptr;
+  ::GetModuleHandleEx(GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT, name,
+                      &hmodule);
+  return hmodule != nullptr;
+}
+
+// The official way to get screen reader status is to call:
+// SystemParametersInfo(SPI_GETSCREENREADER) && UiaClientsAreListening()
+// However it has false positives (for example when user is using touch screens)
+// and will cause performance issues in some apps.
 bool IsScreenReaderActive() {
-  UINT screenReader = 0;
-  SystemParametersInfo(SPI_GETSCREENREADER, 0, &screenReader, 0);
-  return screenReader && UiaClientsAreListening();
+  if (IsMutexPresent(L"NarratorRunning"))
+    return true;
+
+  static const wchar_t* names[] = {// NVDA
+                                   L"nvdaHelperRemote.dll",
+                                   // JAWS
+                                   L"jhook.dll",
+                                   // Window-Eyes
+                                   L"gwhk64.dll", L"gwmhook.dll",
+                                   // ZoomText
+                                   L"AiSquared.Infuser.HookLib.dll"};
+
+  for (auto* name : names) {
+    if (IsLibraryLoaded(name))
+      return true;
+  }
+
+  return false;
 }
 
 }  // namespace

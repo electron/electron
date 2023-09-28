@@ -41,6 +41,11 @@ void TrayIcon::NotifyDoubleClicked(const gfx::Rect& bounds, int modifiers) {
     observer.OnDoubleClicked(bounds, modifiers);
 }
 
+void TrayIcon::NotifyMiddleClicked(const gfx::Rect& bounds, int modifiers) {
+  for (TrayIconObserver& observer : observers_)
+    observer.OnMiddleClicked(bounds, modifiers);
+}
+
 void TrayIcon::NotifyBalloonShow() {
   for (TrayIconObserver& observer : observers_)
     observer.OnBalloonShow();

@@ -459,7 +459,14 @@ To summarize all the steps we've done:
 The fastest way to distribute your newly created app is using
 [Electron Forge](https://www.electronforge.io).
 
-1. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
+:::info
+
+To build an RPM package for Linux, you will need to [install its required system dependencies](https://www.electronforge.io/config/makers/rpm).
+
+:::
+
+1. Add a description to your `package.json` file, otherwise rpmbuild will fail. Blank description are not valid.
+2. Add Electron Forge as a development dependency of your app, and use its `import` command to set up
 Forge's scaffolding:
 
    ```sh npm2yarn
@@ -478,7 +485,7 @@ Forge's scaffolding:
    Thanks for using "electron-forge"!!!
    ```
 
-2. Create a distributable using Forge's `make` command:
+3. Create a distributable using Forge's `make` command:
 
    ```sh npm2yarn
    npm run make

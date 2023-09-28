@@ -111,6 +111,15 @@ Returns:
 
 Emitted when the tray icon is double clicked.
 
+#### Event: 'middle-click' _Windows_
+
+Returns:
+
+* `event` [KeyboardEvent](structures/keyboard-event.md)
+* `bounds` [Rectangle](structures/rectangle.md) - The bounds of tray icon.
+
+Emitted when the tray icon is middle clicked.
+
 #### Event: 'balloon-show' _Windows_
 
 Emitted when the tray balloon shows.

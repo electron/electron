@@ -761,6 +761,16 @@ gfx::Rect NativeWindowMac::GetNormalBounds() {
   // return widget()->GetRestoredBounds();
 }
 
+void NativeWindowMac::SetSizeConstraints(
+    const extensions::SizeConstraints& window_constraints) {
+  // Apply the size constraints to NSWindow.
+  if (window_constraints.HasMinimumSize())
+    [window_ setMinSize:window_constraints.GetMinimumSize().ToCGSize()];
+  if (window_constraints.HasMaximumSize())
+    [window_ setMaxSize:window_constraints.GetMaximumSize().ToCGSize()];
+  NativeWindow::SetSizeConstraints(window_constraints);
+}
+
 void NativeWindowMac::SetContentSizeConstraints(
     const extensions::SizeConstraints& size_constraints) {
   auto convertSize = [this](const gfx::Size& size) {
@@ -775,6 +785,7 @@ void NativeWindowMac::SetContentSizeConstraints(
     }
   };
 
+  // Apply the size constraints to NSWindow.
   NSView* content = [window_ contentView];
   if (size_constraints.HasMinimumSize()) {
     NSSize min_size = convertSize(size_constraints.GetMinimumSize());
@@ -1409,11 +1420,21 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
-    if (!has_frame() && !is_modal() && !no_rounded_corner) {
+    const int macos_version = base::mac::MacOSMajorVersion();
+
+    // Modal window corners are rounded on macOS >= 11 or higher if the user
+    // hasn't passed noRoundedCorners.
+    bool should_round_modal =
+        !no_rounded_corner && (macos_version >= 11 ? true : !is_modal());
+    // Nonmodal window corners are rounded if they're frameless and the user
+    // hasn't passed noRoundedCorners.
+    bool should_round_nonmodal = !no_rounded_corner && !has_frame();
+
+    if (should_round_nonmodal || should_round_modal) {
       CGFloat radius;
       if (fullscreen) {
         radius = 0.0f;
-      } else if (@available(macOS 11.0, *)) {
+      } else if (macos_version >= 11) {
         radius = 9.0f;
       } else {
         // Smaller corner radius on versions prior to Big Sur.
