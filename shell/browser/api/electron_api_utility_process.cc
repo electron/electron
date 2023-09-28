@@ -197,7 +197,7 @@ UtilityProcessWrapper::UtilityProcessWrapper(
   mojo::PendingRemote<network::mojom::URLLoaderFactory> url_loader_factory;
   network::mojom::URLLoaderFactoryParamsPtr loader_params =
       network::mojom::URLLoaderFactoryParams::New();
-  loader_params->process_id = network::mojom::kBrowserProcessId;
+  loader_params->process_id = pid_;
   loader_params->is_corb_enabled = false;
   loader_params->is_trusted = true;
   g_browser_process->system_network_context_manager()
