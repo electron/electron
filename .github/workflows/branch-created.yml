@@ -60,106 +60,33 @@ jobs:
           done
       - name: Generate GitHub App token
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        uses: electron/github-app-auth-action@cc6751b3b5e4edc5b9a4ad0a021ac455653b6dc8 # v1.0.0
+        uses: electron/github-app-auth-action@384fd19694fe7b6dcc9a684746c6976ad78228ae # v1.1.1
         id: generate-token
         with:
           creds: ${{ secrets.RELEASE_BOARD_GH_APP_CREDS }}
           org: electron
+      - name: Generate Release Project Board Metadata
+        if: ${{ steps.check-major-version.outputs.MAJOR }}
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6.4.1
+        id: generate-project-metadata
+        with:
+          script: |
+            const major = ${{ steps.check-major-version.outputs.MAJOR }}
+
+            core.setOutput("template-view", JSON.stringify({
+                major,
+                "next-major": major + 1,
+                "prev-major": major - 1,
+            }))
+            core.setOutput("title", `${major}-x-y`)
       - name: Create Release Project Board
         if: ${{ steps.check-major-version.outputs.MAJOR }}
-        env:
-          GITHUB_TOKEN: ${{ steps.generate-token.outputs.token }}
-          MAJOR: ${{ steps.check-major-version.outputs.MAJOR }}
-          ELECTRON_ORG_ID: "O_kgDOAMybxg"
-          ELECTRON_REPO_ID: "R_kgDOAI8xSw"
-          TEMPLATE_PROJECT_ID: "PVT_kwDOAMybxs4AQvib"
-        run: |
-          # Copy template to create new project board
-          PROJECT_ID=$(gh api graphql -f query='mutation ($ownerId: ID!, $projectId: ID!, $title: String!) {  
-            copyProjectV2(input: {
-              includeDraftIssues: true,
-              ownerId: $ownerId,
-              projectId: $projectId,
-              title: $title
-            }) {
-              projectV2 {
-                id
-              }
-            }
-          }' -f ownerId=$ELECTRON_ORG_ID -f projectId=$TEMPLATE_PROJECT_ID -f title="${MAJOR}-x-y" | jq -r '.data.copyProjectV2.projectV2.id')
-
-          # Make the new project public
-          gh api graphql -f query='mutation ($projectId: ID!) {                                                                                             
-            updateProjectV2(input: {
-              projectId: $projectId,
-              public: true,
-            }) {
-              projectV2 {
-                id
-              }
-            }
-          }' -f projectId=$PROJECT_ID
-
-          # Link the new project to the Electron repository
-          gh api graphql -f query='mutation ($projectId: ID!, $repositoryId: ID!) {                                                                                             
-            linkProjectV2ToRepository(input: {
-              projectId: $projectId,
-              repositoryId: $repositoryId
-            }) {
-              clientMutationId
-            }
-          }' -f projectId=$PROJECT_ID -f repositoryId=$ELECTRON_REPO_ID
-
-          # Get all draft issues on the new project board
-          gh api graphql -f query='query ($id: ID!) {
-            node(id: $id) {
-              ... on ProjectV2 {
-                items(first: 100) {
-                  nodes {
-                    ... on ProjectV2Item {
-                      id
-                      content {
-                        ... on DraftIssue { id title
-                          body
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }' -f id=$PROJECT_ID > issues.json
-          PROJECT_ITEMS=$(jq '.data.node.items.nodes[] | select(.content.id != null) | .id' issues.json)
-
-          #
-          # Do template replacement for draft issues
-          #
-          echo "{\"major\": $MAJOR, \"next-major\": $((MAJOR + 1)), \"prev-major\": $((MAJOR - 1))}" > variables.json
-
-          # npx mustache is annoyingly slow, so install mustache directly
-          yarn add -D mustache
-
-          for PROJECT_ITEM_ID in $PROJECT_ITEMS; do
-            # These are done with the raw output flag and sent to file to better retain formatting
-            jq -r ".data.node.items.nodes[] | select(.id == $PROJECT_ITEM_ID) | .content.title" issues.json > title.txt
-            jq -r ".data.node.items.nodes[] | select(.id == $PROJECT_ITEM_ID) | .content.body" issues.json > body.txt
-
-            ./node_modules/.bin/mustache variables.json title.txt new_title.txt
-            ./node_modules/.bin/mustache variables.json body.txt new_body.txt
-
-            # Only update draft issues which had content change when interpolated
-            if ! cmp --silent -- new_title.txt title.txt || ! cmp --silent -- new_body.txt body.txt; then
-              DRAFT_ISSUE_ID=$(jq ".data.node.items.nodes[] | select(.id == $PROJECT_ITEM_ID) | .content.id" issues.json)
-              gh api graphql -f query='mutation ($draftIssueId: ID!, $title: String!, $body: String!) {                                                                                             
-                updateProjectV2DraftIssue(input: {
-                  draftIssueId: $draftIssueId,
-                  title: $title,
-                  body: $body
-                }) {
-                  draftIssue {
-                    id
-                  }
-                }
-              }' -f draftIssueId=$DRAFT_ISSUE_ID -f title="$(cat new_title.txt)" -f body="$(cat new_body.txt)"
-            fi
-          done
+        uses: dsanders11/project-actions/copy-project@a24415515fa60a22f71f9d9d00e36ca82660cde9 # v1.0.1
+        with:
+          drafts: true
+          project-number: 64
+          # TODO - Set to public once GitHub fixes their GraphQL bug
+          # public: true
+          template-view: ${{ steps.generate-project-metadata.outputs.template-view }}
+          title: ${{ steps.generate-project-metadata.outputs.title}}
+          token: ${{ steps.generate-token.outputs.token }}
