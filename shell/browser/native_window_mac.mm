@@ -1425,8 +1425,6 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
 
   if (vibrantView != nil && !vibrancy_type_.empty()) {
     const bool no_rounded_corner = !HasStyleMask(NSWindowStyleMaskTitled);
-    const int macos_version = base::mac::MacOSMajorVersion();
-
     // Modal window corners are rounded on macOS >= 11 or higher if the user
     // hasn't passed noRoundedCorners.
     bool should_round_modal =
