@@ -8,6 +8,7 @@
 #include <map>
 #include <memory>
 #include <string>
+#include <variant>
 #include <vector>
 #include "base/memory/raw_ptr.h"
 #include "base/memory/weak_ptr.h"
