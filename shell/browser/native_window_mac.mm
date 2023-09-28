@@ -1439,7 +1439,7 @@ void NativeWindowMac::UpdateVibrancyRadii(bool fullscreen) {
       CGFloat radius;
       if (fullscreen) {
         radius = 0.0f;
-      } else if (macos_version >= 11) {
+      } else if (base::mac::IsAtLeastOS11()) {
         radius = 9.0f;
       } else {
         // Smaller corner radius on versions prior to Big Sur.
