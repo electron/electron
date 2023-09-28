@@ -212,6 +212,8 @@ void InspectableWebContentsViewViews::SetTitle(const std::u16string& title) {
 void InspectableWebContentsViewViews::Layout() {
   if (!devtools_web_view_->GetVisible()) {
     contents_web_view_->SetBoundsRect(GetContentsBounds());
+    // Propagate layout call to all children, for example browser views.
+    View::Layout();
     return;
   }
 
@@ -228,6 +230,9 @@ void InspectableWebContentsViewViews::Layout() {
 
   devtools_web_view_->SetBoundsRect(new_devtools_bounds);
   contents_web_view_->SetBoundsRect(new_contents_bounds);
+
+  // Propagate layout call to all children, for example browser views.
+  View::Layout();
 
   if (GetDelegate())
     GetDelegate()->DevToolsResized();
