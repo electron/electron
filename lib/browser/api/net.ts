@@ -2,7 +2,7 @@ import { app, IncomingMessage, session } from 'electron/main';
 import type { ClientRequestConstructorOptions } from 'electron/main';
 import { ClientRequest } from '@electron/internal/common/api/net-client-request';
 
-const { isOnline } = process._linkedBinding('electron_browser_net');
+const { isOnline } = process._linkedBinding('electron_common_net');
 
 export function request (options: ClientRequestConstructorOptions | string, callback?: (message: IncomingMessage) => void) {
   if (!app.isReady()) {

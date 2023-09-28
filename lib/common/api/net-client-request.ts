@@ -9,7 +9,7 @@ const {
   isValidHeaderName,
   isValidHeaderValue,
   createURLLoader
-} = process._linkedBinding('electron_browser_net');
+} = process._linkedBinding('electron_common_net');
 
 const kHttpProtocols = new Set(['http:', 'https:']);
 

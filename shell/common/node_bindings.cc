@@ -57,7 +57,6 @@
   V(electron_browser_menu)               \
   V(electron_browser_message_port)       \
   V(electron_browser_native_theme)       \
-  V(electron_browser_net)                \
   V(electron_browser_notification)       \
   V(electron_browser_power_monitor)      \
   V(electron_browser_power_save_blocker) \
@@ -76,7 +75,8 @@
   V(electron_browser_web_contents_view)  \
   V(electron_browser_web_frame_main)     \
   V(electron_browser_web_view_manager)   \
-  V(electron_browser_window)
+  V(electron_browser_window)             \
+  V(electron_common_net)
 
 #define ELECTRON_COMMON_BINDINGS(V)   \
   V(electron_common_asar)             \
@@ -98,7 +98,7 @@
 
 #define ELECTRON_UTILITY_BINDINGS(V) \
   V(electron_browser_event_emitter)  \
-  V(electron_browser_net)            \
+  V(electron_common_net)             \
   V(electron_utility_parent_port)
 
 #define ELECTRON_TESTING_BINDINGS(V) V(electron_common_testing)
