@@ -30,11 +30,9 @@ jobs:
           org: electron
       - name: Set status
         if: ${{ steps.check-for-blocked-labels.outputs.NOT_BLOCKED }}
-        uses: github/update-project-action@2d475e08804f11f4022df7e21f5816531e97cb64 # v2
+        uses: dsanders11/project-actions/edit-item@a24415515fa60a22f71f9d9d00e36ca82660cde9 # v1.0.1
         with:
-          github_token: ${{ steps.generate-token.outputs.token }}
-          organization: electron
-          project_number: 90
-          content_id: ${{ github.event.issue.node_id }}
+          token: ${{ steps.generate-token.outputs.token }}
+          project-number: 90
           field: Status
-          value: 📥 Was Blocked
+          field-value: 📥 Was Blocked
