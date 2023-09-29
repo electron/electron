@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index cf62fd258b9074679e9adc19777e871fff00433a..76f1af0a22ea7a018d281523347c018f68f37eb9 100644
+index 7e4a65e66eca9d81d0685217fc73a118b2b75283..1dad6963be69578634dd55dbe0fd28a49f99b00e 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1031,6 +1031,7 @@ component("base") {
+@@ -1033,6 +1033,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -159,13 +159,13 @@ index 090bbd6f03c5749aaf763dac9e52c776f366c33d..5143231f5b3c95f55bf12aaedf253781
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index 93cf87a37792691f41d7c611104a378d9af45195..2d3a0f923f4991be41534e7f951fe5dfcceda5c9 100644
+index 6f6ba6a4043444199cc143f0c1ee8b42a60e682e..56574109aac1e04b1bc8a8e91cdc14c58133f10b 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
-@@ -199,6 +199,7 @@ source_set("audio") {
-       "mac/coreaudio_dispatch_override.h",
+@@ -208,6 +208,7 @@ source_set("audio") {
+       "CoreMedia.framework",
      ]
-     frameworks += [ "AudioUnit.framework" ]
+     weak_frameworks = [ "ScreenCaptureKit.framework" ]  # macOS 13.0
 +    configs += ["//electron/build/config:mas_build"]
    }
  
@@ -261,7 +261,7 @@ index 80ca25f1b7d3562d29a76fe725f54eca7ce179f2..76232879cb6454f433907ab71b10ddaf
  
    if (is_apple) {
 diff --git a/ui/display/BUILD.gn b/ui/display/BUILD.gn
-index 7e17546f658ce0e6908f7dea499eac31e5295895..85c5fe7e25a84de5342d3d9b8cd20d195dd2b159 100644
+index aa23981d491053ee7d75775bedc1f7d76147e8bf..4ccd2566616a274c02fe8aeb90538da449986c42 100644
 --- a/ui/display/BUILD.gn
 +++ b/ui/display/BUILD.gn
 @@ -67,6 +67,10 @@ component("display") {
@@ -288,7 +288,7 @@ index ebd698116ef4f88c3bbaea1b02912bbeddbca34f..e096f9371607a088250e1ea72f450f85
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 2a8a84adf7ad37bf1857e4a553c5115eee027c99..c7e3b70b30abaf3cc91a24c406054ae1870d8185 100644
+index 3deb7d15b80319596e0be663fb0883ee27dd9d1d..017641614e530a5296599578f4ba80eece996b95 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -684,6 +684,7 @@ component("views") {
@@ -299,7 +299,7 @@ index 2a8a84adf7ad37bf1857e4a553c5115eee027c99..c7e3b70b30abaf3cc91a24c406054ae1
    }
  
    if (is_win) {
-@@ -1111,6 +1112,8 @@ source_set("test_support") {
+@@ -1110,6 +1111,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

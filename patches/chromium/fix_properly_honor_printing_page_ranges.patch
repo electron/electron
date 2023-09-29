@@ -25,10 +25,10 @@ index c9a13aee1e64f359cd1d5c2e440b4df204420997..7790c311400fc84bfda6c99e1ebd8da7
    // Returns true if duplex mode is set.
    bool SetDuplexModeInPrintSettings(mojom::DuplexMode mode);
 diff --git a/printing/printing_context_mac.mm b/printing/printing_context_mac.mm
-index ee900c7541af99c61844920433ae39e2648ae90b..59137008aeddc03d60c58a463206dc91a0ef5c1f 100644
+index e7c2af99322d27d88e77bdebce44c1356161dfd4..22101df16677599a82e72c89014fa3d73aa3a147 100644
 --- a/printing/printing_context_mac.mm
 +++ b/printing/printing_context_mac.mm
-@@ -464,7 +464,8 @@ void ApplySystemPrintDialogData(
+@@ -485,7 +485,8 @@ void ApplySystemPrintDialogData(
          !SetCollateInPrintSettings(settings_->collate()) ||
          !SetDuplexModeInPrintSettings(settings_->duplex_mode()) ||
          !SetOutputColor(static_cast<int>(settings_->color())) ||
@@ -38,7 +38,7 @@ index ee900c7541af99c61844920433ae39e2648ae90b..59137008aeddc03d60c58a463206dc91
        return OnError();
      }
    }
-@@ -617,6 +618,22 @@ void ApplySystemPrintDialogData(
+@@ -637,6 +638,22 @@ void ApplySystemPrintDialogData(
    return PMSetCopies(print_settings, copies, false) == noErr;
  }
  
@@ -100,7 +100,7 @@ index 07847521e7217c78480205812a73cc89503c00d2..586e866ca7ec0eb0b573d23e3bd95792
    } else {
      // No need to bother, we don't know how many pages are available.
 diff --git a/ui/gtk/printing/print_dialog_gtk.cc b/ui/gtk/printing/print_dialog_gtk.cc
-index 20c68958d5645aba963ddd1fb61eebb534641dfc..c8b0100cf9d4370deaa9284528b6fdd12d2a9309 100644
+index 3d567787ea43ca93d5a71b360b9f7b4b21a5eb76..961a8b9e74104f2621275935e30e2e8f2f9518df 100644
 --- a/ui/gtk/printing/print_dialog_gtk.cc
 +++ b/ui/gtk/printing/print_dialog_gtk.cc
 @@ -241,6 +241,24 @@ void PrintDialogGtk::UpdateSettings(

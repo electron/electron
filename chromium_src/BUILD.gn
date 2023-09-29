@@ -219,7 +219,10 @@ static_library("chrome") {
       "//chrome/browser/win/icon_reader_service.cc",
       "//chrome/browser/win/icon_reader_service.h",
     ]
-    public_deps += [ "//chrome/services/util_win:lib" ]
+    public_deps += [
+      "//chrome/services/util_win:lib",
+      "//components/webapps/common:mojo_bindings",
+    ]
   }
 
   if (is_mac) {

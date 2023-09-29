@@ -40,7 +40,7 @@ index af0616d9ca466d146f3c41887857dd4720ebafbf..c088db193f5bd4b88aa42a3803571d2b
                  ui::ImageModel::FromVectorIcon(*icon, kColorPipWindowForeground,
                                                 kCloseButtonIconSize));
 diff --git a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
-index dbaef31a6399ff8d872b7ab66540643bc823e005..f4d5ffdf0e6511f8d376c05185fc01ee7142905d 100644
+index 692ce6c73512c096f37209ab9f27d44d73296d57..b425171629ad6c8b43c6b429f07ac7c96806e2da 100644
 --- a/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 +++ b/chrome/browser/ui/views/overlay/video_overlay_window_views.cc
 @@ -16,9 +16,11 @@
@@ -64,7 +64,7 @@ index dbaef31a6399ff8d872b7ab66540643bc823e005..f4d5ffdf0e6511f8d376c05185fc01ee
  #include "chrome/browser/shell_integration_win.h"
  #include "ui/aura/window.h"
  #include "ui/aura/window_tree_host.h"
-@@ -281,7 +283,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
+@@ -276,7 +278,7 @@ std::unique_ptr<VideoOverlayWindowViews> VideoOverlayWindowViews::Create(
    overlay_window->Init(std::move(params));
    overlay_window->OnRootViewReady();
  

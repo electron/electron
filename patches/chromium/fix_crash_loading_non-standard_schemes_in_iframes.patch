@@ -23,7 +23,7 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index 2b803d24e126bc3e46fb76b0ead258251c224056..ec766b739d131ddd8f8bbb922ceebcbfcb388c92 100644
+index a33c756df6452d826456b960e6c01defec01f5fa..835371453953b8058e6e63070d3a2ce5e66beaa7 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -799,6 +799,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
@@ -40,10 +40,10 @@ index 2b803d24e126bc3e46fb76b0ead258251c224056..ec766b739d131ddd8f8bbb922ceebcbf
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index c87f1324a18fccf9742f2f568af42f20307858d0..8299185439b626c8dc59a1796a57f3a63aac1131 100644
+index 19147a610d752996d2749a047648f69761975a48..abe8c00a25967162917ecc546fc75a48559e745e 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2023,6 +2023,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2043,6 +2043,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -51,17 +51,17 @@ index c87f1324a18fccf9742f2f568af42f20307858d0..8299185439b626c8dc59a1796a57f3a6
 +  std::string protocol = url_.Protocol().Ascii();
 +  is_standard = url::IsStandard(
 +      protocol.data(), url::Component(0, static_cast<int>(protocol.size())));
+   StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-     // and used directly. It is currently supplied only for failed navigations.
-@@ -2056,6 +2060,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
-     // breaks aliasing...
-     origin = owner_document->domWindow()->GetMutableSecurityOrigin();
-     origin_calculation_debug_info_ = AtomicString("use_owner_document_origin");
+@@ -2090,6 +2094,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+     debug_info_builder.Append(", url=");
+     debug_info_builder.Append(owner_document->Url().BaseAsString());
+     debug_info_builder.Append(")");
 +  } else if (!SecurityOrigin::ShouldUseInnerURL(url_) &&
 +             !is_standard) {
-+    origin_calculation_debug_info_ = AtomicString("use_url_with_non_standard_scheme");
++    debug_info_builder.Append("use_url_with_non_standard_scheme");
 +    origin = SecurityOrigin::Create(url_);
    } else {
-     origin_calculation_debug_info_ = AtomicString("use_url_with_precursor");
+     debug_info_builder.Append("use_url_with_precursor");
      // Otherwise, create an origin that propagates precursor information

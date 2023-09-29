@@ -68,8 +68,8 @@ executors:
       version:
         description: "xcode version"
         type: enum
-        enum: ["14.3.0", "14.0.0"]
-        default: 14.3.0
+        enum: ["15.0.0", "14.0.0"]
+        default: 15.0.0
     macos:
       xcode: << parameters.version >>
     resource_class: << parameters.size >>
