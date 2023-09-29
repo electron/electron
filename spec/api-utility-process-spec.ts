@@ -5,6 +5,7 @@ import { BrowserWindow, MessageChannelMain, utilityProcess } from 'electron/main
 import { ifit } from './lib/spec-helpers';
 import { closeWindow } from './lib/window-helpers';
 import { once } from 'node:events';
+import { pathToFileURL } from 'node:url';
 
 const fixturesPath = path.resolve(__dirname, 'fixtures', 'api', 'utility-process');
 const isWindowsOnArm = process.platform === 'win32' && process.arch === 'arm64';
@@ -78,6 +79,12 @@ describe('utilityProcess module', () => {
       expect(code).to.equal(1);
     });
 
+    it('emits \'exit\' when there is uncaught exception in ESM', async () => {
+      const child = utilityProcess.fork(path.join(fixturesPath, 'exception.mjs'));
+      const [code] = await once(child, 'exit');
+      expect(code).to.equal(1);
+    });
+
     it('emits \'exit\' when process.exit is called', async () => {
       const exitCode = 2;
       const child = utilityProcess.fork(path.join(fixturesPath, 'custom-exit.js'), [`--exitCode=${exitCode}`]);
@@ -94,6 +101,23 @@ describe('utilityProcess module', () => {
       await once(child, 'spawn');
       expect(child.kill()).to.be.true();
       await once(child, 'exit');
+    });
+  });
+
+  describe('esm', () => {
+    it('is launches an mjs file', async () => {
+      const fixtureFile = path.join(fixturesPath, 'esm.mjs');
+      const child = utilityProcess.fork(fixtureFile, [], {
+        stdio: 'pipe'
+      });
+      await once(child, 'spawn');
+      expect(child.stdout).to.not.be.null();
+      let log = '';
+      child.stdout!.on('data', (chunk) => {
+        log += chunk.toString('utf8');
+      });
+      await once(child, 'exit');
+      expect(log).to.equal(pathToFileURL(fixtureFile) + '\n');
     });
   });
 
