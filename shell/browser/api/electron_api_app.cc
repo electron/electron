@@ -368,7 +368,7 @@ struct Converter<Browser::LoginItemSettings> {
     dict.Get("name", &(out->name));
     dict.Get("enabled", &(out->enabled));
 #elif BUILDFLAG(IS_MAC)
-    dict.Get("name", &(out->name));
+    dict.Get("serviceName", &(out->service_name));
     dict.Get("type", &(out->type));
 #endif
     return true;

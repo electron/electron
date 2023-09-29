@@ -50,9 +50,9 @@ bool GetFolderPath(int key, base::FilePath* result);
 
 #if BUILDFLAG(IS_MAC)
 std::string GetLoginItemEnabled(const std::string& type,
-                                const std::string& name);
+                                const std::string& service_name);
 bool SetLoginItemEnabled(const std::string& type,
-                         const std::string& name,
+                         const std::string& service_name,
                          bool enabled);
 #endif
 

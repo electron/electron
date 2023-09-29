@@ -766,6 +766,23 @@ describe('app module', () => {
         });
       });
 
+      ifit(isVenturaOrHigher)('throws when setting non-default type with no name', () => {
+        expect(() => {
+          app.setLoginItemSettings({
+            openAtLogin: true,
+            type: 'daemonService'
+          });
+        }).to.throw(/'name' is required when type is not mainAppService/);
+      });
+
+      ifit(isVenturaOrHigher)('throws when getting non-default type with no name', () => {
+        expect(() => {
+          app.getLoginItemSettings({
+            type: 'daemonService'
+          });
+        }).to.throw(/'name' is required when type is not mainAppService/);
+      });
+
       ifit(isVenturaOrHigher)('can unset a login item', () => {
         app.setLoginItemSettings({
           openAtLogin: true,

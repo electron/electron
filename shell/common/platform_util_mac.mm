@@ -243,10 +243,10 @@ void Beep() {
 }
 
 std::string GetLoginItemEnabled(const std::string& type,
-                                const std::string& name) {
+                                const std::string& service_name) {
   bool enabled = GetLoginItemEnabledDeprecated();
   if (@available(macOS 13, *)) {
-    SMAppService* service = GetServiceForType(type, name);
+    SMAppService* service = GetServiceForType(type, service_name);
     SMAppServiceStatus status = [service status];
     if (status == SMAppServiceStatusNotRegistered)
       return "not-registered";
@@ -263,7 +263,7 @@ std::string GetLoginItemEnabled(const std::string& type,
 }
 
 bool SetLoginItemEnabled(const std::string& type,
-                         const std::string& name,
+                         const std::string& service_name,
                          bool enabled) {
   if (@available(macOS 13, *)) {
 #if IS_MAS_BUILD()
@@ -274,7 +274,7 @@ bool SetLoginItemEnabled(const std::string& type,
       SMLoginItemSetEnabled((__bridge CFStringRef)identifier, false);
     }
 #endif
-    SMAppService* service = GetServiceForType(type, name);
+    SMAppService* service = GetServiceForType(type, service_name);
     NSError* error = nil;
     bool result = enabled ? [service registerAndReturnError:&error]
                           : [service unregisterAndReturnError:&error];

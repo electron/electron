@@ -21,6 +21,7 @@
 #include "chrome/browser/browser_process.h"
 #include "net/base/mac/url_conversions.h"
 #include "shell/browser/badging/badge_manager.h"
+#include "shell/browser/javascript_environment.h"
 #include "shell/browser/mac/dict_util.h"
 #include "shell/browser/mac/electron_application.h"
 #include "shell/browser/mac/electron_application_delegate.h"
@@ -378,9 +379,15 @@ void Browser::ApplyForcedRTL() {
 Browser::LoginItemSettings Browser::GetLoginItemSettings(
     const LoginItemSettings& options) {
   LoginItemSettings settings;
+  if (options.type != "mainAppService" && options.service_name.empty()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowTypeError("'name' is required when type is not mainAppService");
+    return settings;
+  }
+
 #if IS_MAS_BUILD()
   const std::string status =
-      platform_util::GetLoginItemEnabled(options.type, options.name);
+      platform_util::GetLoginItemEnabled(options.type, options.service_name);
   settings.open_at_login =
       status == "enabled" || status == "enabled-deprecated";
   if (@available(macOS 13, *))
@@ -391,7 +398,7 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
   LoginItemSettings settings_deprecated = GetLoginItemSettingsDeprecated();
   if (@available(macOS 13, *)) {
     const std::string status =
-        platform_util::GetLoginItemEnabled(options.type, options.name);
+        platform_util::GetLoginItemEnabled(options.type, options.service_name);
     if (status == "enabled-deprecated") {
       settings = settings_deprecated;
     } else {
@@ -406,8 +413,13 @@ Browser::LoginItemSettings Browser::GetLoginItemSettings(
 }
 
 void Browser::SetLoginItemSettings(LoginItemSettings settings) {
+  if (settings.type != "mainAppService" && settings.service_name.empty()) {
+    gin_helper::ErrorThrower(JavascriptEnvironment::GetIsolate())
+        .ThrowTypeError("'name' is required when type is not mainAppService");
+    return;
+  }
 #if IS_MAS_BUILD()
-  platform_util::SetLoginItemEnabled(settings.type, settings.name,
+  platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
                                      settings.open_at_login);
 #else
   const base::FilePath bundle_path = base::apple::MainBundlePath();
@@ -419,11 +431,11 @@ void Browser::SetLoginItemSettings(LoginItemSettings settings) {
     if (status == "enabled-deprecated") {
       base::mac::RemoveFromLoginItems(bundle_path);
       if (settings.open_at_login) {
-        platform_util::SetLoginItemEnabled(settings.type, settings.name,
+        platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
                                            settings.open_at_login);
       }
     } else {
-      platform_util::SetLoginItemEnabled(settings.type, settings.name,
+      platform_util::SetLoginItemEnabled(settings.type, settings.service_name,
                                          settings.open_at_login);
     }
   } else {

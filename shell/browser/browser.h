@@ -137,7 +137,7 @@ class Browser : public WindowListObserver {
 
 #if BUILDFLAG(IS_MAC)
     std::string type = "mainAppService";
-    std::string name;
+    std::string service_name;
     std::string status;
 #elif BUILDFLAG(IS_WIN)
     // used in browser::setLoginItemSettings
