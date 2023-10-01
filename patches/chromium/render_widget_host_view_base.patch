@@ -6,7 +6,7 @@ Subject: render_widget_host_view_base.patch
 ... something to do with OSR? and maybe <webview> as well? terrifying.
 
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.cc b/content/browser/renderer_host/render_widget_host_view_base.cc
-index 9dd7439e8c1c03c7dbc06045e11f73146bd087b4..1fc7bc9f735ec8820f4cd5db1ab5948f81ffa62e 100644
+index 1634c3556dc783f90f3a7527ab9f9745373b6f48..e3d2eeaa6d4af4cef87cb1dc639e0c247226092d 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.cc
 +++ b/content/browser/renderer_host/render_widget_host_view_base.cc
 @@ -695,6 +695,13 @@ bool RenderWidgetHostViewBase::ScreenRectIsUnstableForIOv2For(
@@ -24,16 +24,17 @@ index 9dd7439e8c1c03c7dbc06045e11f73146bd087b4..1fc7bc9f735ec8820f4cd5db1ab5948f
      const blink::WebMouseEvent& event,
      const ui::LatencyInfo& latency) {
 diff --git a/content/browser/renderer_host/render_widget_host_view_base.h b/content/browser/renderer_host/render_widget_host_view_base.h
-index 3b4461acc2fc65c539477dc75602e55282aaf77b..d23bb83bb2e4f0061d529b64f970acc220c8fb98 100644
+index b010d43aaeb90c766914b0c8038f7dfef064875a..7af2399116087fe4062fc5739f0ecee4f7242dc1 100644
 --- a/content/browser/renderer_host/render_widget_host_view_base.h
 +++ b/content/browser/renderer_host/render_widget_host_view_base.h
-@@ -25,8 +25,11 @@
+@@ -24,9 +24,12 @@
+ #include "components/viz/common/surfaces/surface_id.h"
  #include "components/viz/host/hit_test/hit_test_query.h"
  #include "content/browser/renderer_host/display_feature.h"
- #include "content/browser/renderer_host/event_with_latency_info.h"
 +#include "content/browser/renderer_host/visible_time_request_trigger.h"
 +#include "content/browser/web_contents/web_contents_view.h"
  #include "content/common/content_export.h"
+ #include "content/common/input/event_with_latency_info.h"
  #include "content/public/browser/render_frame_metadata_provider.h"
 +#include "content/public/browser/render_widget_host.h"
  #include "content/public/browser/render_widget_host_view.h"
