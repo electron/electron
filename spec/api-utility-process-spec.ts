@@ -487,4 +487,11 @@ describe('utilityProcess module', () => {
       await exit;
     });
   });
+
+  it('should pass the api-net-spec tests', async () => {
+    const child = utilityProcess.fork(path.join(fixturesPath, 'mocha.js'));
+    child.postMessage('spec/api-net-spec.ts');
+    const [code] = await once(child, 'exit');
+    expect(code).to.equal(0);
+  });
 });
