@@ -15,14 +15,18 @@ Fuses are the solution to this problem, at a high level they are "magic bits" in
 **Default:** Enabled
 **@electron/fuses:** `FuseV1Options.RunAsNode`
 
-The runAsNode fuse toggles whether the `ELECTRON_RUN_AS_NODE` environment variable is respected or not.  Please note that if this fuse is disabled then `process.fork` in the main process will not function as expected as it depends on this environment variable to function.
+The runAsNode fuse toggles whether the `ELECTRON_RUN_AS_NODE` environment variable is respected or not.  
+
+Note: If this fuse is disabled, `process.fork` in the main process will not function as expected as it depends on this environment variable to function.
 
 ### `cookieEncryption`
 
 **Default:** Disabled
 **@electron/fuses:** `FuseV1Options.EnableCookieEncryption`
 
-The cookieEncryption fuse toggles whether the cookie store on disk is encrypted using OS level cryptography keys.  By default the sqlite database that Chromium uses to store cookies stores the values in plaintext.  If you wish to ensure your apps cookies are encrypted in the same way Chrome does then you should enable this fuse.  Please note it is a one-way transition, if you enable this fuse existing unencrypted cookies will be encrypted-on-write but if you then disable the fuse again your cookie store will effectively be corrupt and useless.  Most apps can safely enable this fuse.
+The cookieEncryption fuse toggles whether the cookie store on disk is encrypted using OS level cryptography keys.  By default the sqlite database that Chromium uses to store cookies stores the values in plaintext.  If you wish to ensure your apps cookies are encrypted in the same way Chrome does then you should enable this fuse.  Most apps can safely enable this fuse.
+
+Note: This is a one-way transition. If you enable this fuse existing unencrypted cookies will be encrypted-on-write, but if you then disable the fuse again your cookie store will effectively be corrupt and useless.  
 
 ### `nodeOptions`
 
