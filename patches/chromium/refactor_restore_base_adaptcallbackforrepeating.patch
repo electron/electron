@@ -12,12 +12,12 @@ should be removed as soon as those have been updated. Patching because
 every instance is a FTBFS that prevents testing any one instance's fix.
 
 diff --git a/base/functional/callback_helpers.h b/base/functional/callback_helpers.h
-index a04ff2452a68096bee9673d08bfa66b2fca8e7ba..098ef69594f2450a937d658f8fa710877a04481d 100644
+index 1b44aeb4302d4ca0100e837e4551c5f83420cc6a..7570f6a85755b6760751cda22635cf509f61a8d0 100644
 --- a/base/functional/callback_helpers.h
 +++ b/base/functional/callback_helpers.h
-@@ -98,6 +98,22 @@ class OnceCallbackHolder final {
- 
- }  // namespace internal
+@@ -123,6 +123,22 @@ RepeatingCallback<void(Args...)> ForwardRepeatingCallbacks(
+                        std::move(v));
+ }
  
 +// Wraps the given OnceCallback into a RepeatingCallback that relays its
 +// invocation to the original OnceCallback on the first invocation. The
