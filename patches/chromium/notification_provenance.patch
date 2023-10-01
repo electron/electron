@@ -7,7 +7,7 @@ Pass RenderFrameHost through to PlatformNotificationService
 so Electron can identify which renderer a notification came from.
 
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.cc b/chrome/browser/notifications/platform_notification_service_impl.cc
-index 21683b9fba4414d825a32a7c12cf55b4bcc488a9..367299bdfc6d716099ff4ceafe493af4fe880bad 100644
+index 7b31b8fce0fb99baa751131b336a2842f728433a..8f230c09e465df0403c7f162f5f9161ae0085cdf 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.cc
 +++ b/chrome/browser/notifications/platform_notification_service_impl.cc
 @@ -201,6 +201,7 @@ bool PlatformNotificationServiceImpl::WasClosedProgrammatically(
@@ -19,7 +19,7 @@ index 21683b9fba4414d825a32a7c12cf55b4bcc488a9..367299bdfc6d716099ff4ceafe493af4
      const GURL& origin,
      const GURL& document_url,
 diff --git a/chrome/browser/notifications/platform_notification_service_impl.h b/chrome/browser/notifications/platform_notification_service_impl.h
-index 4ffd662e1411c8ba707cfab6970d7533246633e1..9266120342a179bb642286e617feeafb8f57d798 100644
+index 2552c32ed769482c8bbb7b7538bf59cb66dcc16d..7fda86e70ad47766211a9ff8b5ed732068f0b885 100644
 --- a/chrome/browser/notifications/platform_notification_service_impl.h
 +++ b/chrome/browser/notifications/platform_notification_service_impl.h
 @@ -57,6 +57,7 @@ class PlatformNotificationServiceImpl
@@ -92,7 +92,7 @@ index 00965c253f28bd3947255b2ab77bf3a0bb71f14a..e04a7eef94990dfb0e2fca2e116352fe
          contents_.get()->GetPrimaryMainFrame()->GetWeakDocumentPtr(),
          RenderProcessHost::NotificationServiceCreatorType::kDocument,
 diff --git a/content/browser/notifications/platform_notification_context_impl.cc b/content/browser/notifications/platform_notification_context_impl.cc
-index 9814861ab18fa88bc781f83acb602129b6f3de1f..1c5a2efc2749697aa3d38247f491eabf240c1aa5 100644
+index aaccaa3e3e43497ebd0909d55f471cf98972f27a..52e0692c5ce782d3ac433e9de443c2b63430e2ce 100644
 --- a/content/browser/notifications/platform_notification_context_impl.cc
 +++ b/content/browser/notifications/platform_notification_context_impl.cc
 @@ -268,6 +268,7 @@ void PlatformNotificationContextImpl::Shutdown() {
@@ -113,7 +113,7 @@ index 9814861ab18fa88bc781f83acb602129b6f3de1f..1c5a2efc2749697aa3d38247f491eabf
  }
  
 diff --git a/content/browser/notifications/platform_notification_context_impl.h b/content/browser/notifications/platform_notification_context_impl.h
-index d0e0d10739b5daf99435a67e18dc51df8e670e09..704f3d6c2fdd27a84d1c4e1b7bf680f62c86c2d0 100644
+index 9c9e590aab71d5b66cdd2c9a0cfc5f2d34443e84..c461c131d93d592487e319893d531bf4bdf14e39 100644
 --- a/content/browser/notifications/platform_notification_context_impl.h
 +++ b/content/browser/notifications/platform_notification_context_impl.h
 @@ -45,6 +45,7 @@ struct NotificationDatabaseData;
@@ -133,7 +133,7 @@ index d0e0d10739b5daf99435a67e18dc51df8e670e09..704f3d6c2fdd27a84d1c4e1b7bf680f6
        const GURL& document_url,
        const WeakDocumentPtr& weak_document_ptr,
 diff --git a/content/browser/renderer_host/render_process_host_impl.cc b/content/browser/renderer_host/render_process_host_impl.cc
-index d9b23d9ae9743798c561ae1c7211c66a3b7aa6c5..c966317bfe5370b3241a8042848eba6fc041df6a 100644
+index 44922d6b9f7f7a9d1d0fb9f69b044d4728593cf3..cb161217889e2daaffcf68ff438bbba395ac7b4e 100644
 --- a/content/browser/renderer_host/render_process_host_impl.cc
 +++ b/content/browser/renderer_host/render_process_host_impl.cc
 @@ -1960,7 +1960,7 @@ void RenderProcessHostImpl::CreateNotificationService(
@@ -155,7 +155,7 @@ index d9b23d9ae9743798c561ae1c7211c66a3b7aa6c5..c966317bfe5370b3241a8042848eba6f
        break;
      }
 diff --git a/content/public/browser/platform_notification_service.h b/content/public/browser/platform_notification_service.h
-index d9e36712dc3fbc6a9043e2c33660090ca2f7367b..7d910583eb22fc315eb0619febe518d5c24c0c4d 100644
+index 82db1db4175fb9f4ee7490d5a163164ef4495ecb..4f51683be14ba6ee657a290c7747969e052a88ca 100644
 --- a/content/public/browser/platform_notification_service.h
 +++ b/content/public/browser/platform_notification_service.h
 @@ -26,6 +26,8 @@ struct PlatformNotificationData;
@@ -176,7 +176,7 @@ index d9e36712dc3fbc6a9043e2c33660090ca2f7367b..7d910583eb22fc315eb0619febe518d5
        const GURL& origin,
        const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.cc b/content/test/mock_platform_notification_service.cc
-index c9a01dd2bd6e0de08c09b417c3dce5ef13adb304..ded3b477c9766a77cd8fe1c2646bcc1935ebb1ec 100644
+index 6b835ca4d0426d2412f1cff6f0bb962e0f2fd586..a48198747b80929e7d4b290e9b40b6629dbda669 100644
 --- a/content/test/mock_platform_notification_service.cc
 +++ b/content/test/mock_platform_notification_service.cc
 @@ -29,6 +29,7 @@ MockPlatformNotificationService::MockPlatformNotificationService(
@@ -188,7 +188,7 @@ index c9a01dd2bd6e0de08c09b417c3dce5ef13adb304..ded3b477c9766a77cd8fe1c2646bcc19
      const GURL& origin,
      const GURL& document_url,
 diff --git a/content/test/mock_platform_notification_service.h b/content/test/mock_platform_notification_service.h
-index 7cd457defa729855c8d7c9d873efab5389d025cd..2b8e644d54d93a9499adcc1bf5660d72a24e2f29 100644
+index 66fd1e7f1171fec33c337375a9f8f11fcc6ab27e..188d507b42544dfab7abceed24097766496086b5 100644
 --- a/content/test/mock_platform_notification_service.h
 +++ b/content/test/mock_platform_notification_service.h
 @@ -52,6 +52,7 @@ class MockPlatformNotificationService : public PlatformNotificationService {

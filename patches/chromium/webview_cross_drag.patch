@@ -8,10 +8,10 @@ This allows dragging and dropping between <webview>s.
 Originally landed in https://github.com/electron/libchromiumcontent/pull/267
 
 diff --git a/content/browser/web_contents/web_contents_view_aura.cc b/content/browser/web_contents/web_contents_view_aura.cc
-index b3c433192029755e1175ec2012c344d7f0416b3d..dc0ec4f3431fcb0858afd55602ff9fee046dea0d 100644
+index 1420a19f223cc0cd3f683a96fc0f62516690a363..1830568c52a5ce96bd36ab866ac00012ce518570 100644
 --- a/content/browser/web_contents/web_contents_view_aura.cc
 +++ b/content/browser/web_contents/web_contents_view_aura.cc
-@@ -892,10 +892,7 @@ bool WebContentsViewAura::IsValidDragTarget(
+@@ -901,10 +901,7 @@ bool WebContentsViewAura::IsValidDragTarget(
    // for the outermost view. Inner `WebContents` will have a
    // `WebContentsViewChildFrame` so when dragging between an inner
    // `WebContents` and its embedder the view IDs will be the same.
@@ -24,10 +24,10 @@ index b3c433192029755e1175ec2012c344d7f0416b3d..dc0ec4f3431fcb0858afd55602ff9fee
  
  ////////////////////////////////////////////////////////////////////////////////
 diff --git a/content/browser/web_contents/web_drag_dest_mac.mm b/content/browser/web_contents/web_drag_dest_mac.mm
-index 808e3103cd12d32b54dc80dc122746923db83138..298ad238a2d26603b2af8f9143fa5881ba09184a 100644
+index 9c49e73d58ecf5cd6fce0582e2a767d3f1ac43d9..07ca39e09bb3413bdb95c7c535b6612d18861799 100644
 --- a/content/browser/web_contents/web_drag_dest_mac.mm
 +++ b/content/browser/web_contents/web_drag_dest_mac.mm
-@@ -422,9 +422,7 @@ - (void)resetDragStartTrackers {
+@@ -427,9 +427,7 @@ - (void)resetDragStartTrackers {
  }
  
  - (bool)isValidDragTarget:(content::RenderWidgetHostImpl*)targetRWH {

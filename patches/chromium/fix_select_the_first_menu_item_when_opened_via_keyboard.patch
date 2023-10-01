@@ -145,7 +145,7 @@ index e6587d2208a13576af1831b94724a6286f0e0607..91223ef3f099e20aee5cf1d685c45d2c
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.h b/ui/views/controls/menu/menu_runner_impl_cocoa.h
-index 2056016df30982e24d4d99271f59e0edb261a16a..2876d3ccedf0e9f041d3f3310cd596de1fb7b000 100644
+index 2325534ec92430ac4effc95d370925984ce7bd4b..8b6cc1780e53f4edf579e8a62de831330ab94c49 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.h
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.h
 @@ -41,6 +41,7 @@ class VIEWS_EXPORT MenuRunnerImplCocoa : public MenuRunnerImplInterface {
@@ -157,7 +157,7 @@ index 2056016df30982e24d4d99271f59e0edb261a16a..2876d3ccedf0e9f041d3f3310cd596de
        absl::optional<gfx::RoundedCornersF> corners = absl::nullopt) override;
    void Cancel() override;
 diff --git a/ui/views/controls/menu/menu_runner_impl_cocoa.mm b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
-index f137d6f86aba7227440b06160d072fcc0578a736..45d1eaf4cd73c00e9ddd79499b351517a12958cb 100644
+index c3c80f6becee734319e374968bc00a08273f07b8..5e1bfcc6e1114c6d9dee56428b41797f447586b6 100644
 --- a/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 +++ b/ui/views/controls/menu/menu_runner_impl_cocoa.mm
 @@ -189,6 +189,7 @@

@@ -23,7 +23,7 @@ Upstream bug https://bugs.chromium.org/p/chromium/issues/detail?id=1081397.
 Upstreamed at https://chromium-review.googlesource.com/c/chromium/src/+/3856266.
 
 diff --git a/content/browser/renderer_host/navigation_request.cc b/content/browser/renderer_host/navigation_request.cc
-index a33c756df6452d826456b960e6c01defec01f5fa..835371453953b8058e6e63070d3a2ce5e66beaa7 100644
+index 3fd2f30e7cf18ee0deccb78907d596dac30c310f..62f49e166dc86fdab9b163ea58d391c60ea38415 100644
 --- a/content/browser/renderer_host/navigation_request.cc
 +++ b/content/browser/renderer_host/navigation_request.cc
 @@ -799,6 +799,12 @@ GetOriginForURLLoaderFactoryUncheckedWithDebugInfo(
@@ -40,10 +40,10 @@ index a33c756df6452d826456b960e6c01defec01f5fa..835371453953b8058e6e63070d3a2ce5
    // origin of |common_params.url| and/or |common_params.initiator_origin|.
    return std::make_pair(
 diff --git a/third_party/blink/renderer/core/loader/document_loader.cc b/third_party/blink/renderer/core/loader/document_loader.cc
-index 19147a610d752996d2749a047648f69761975a48..abe8c00a25967162917ecc546fc75a48559e745e 100644
+index de9a6d9f6921b91fb20930d61a7a4466b6642777..fe8838648bfc1fa4ad4d8d5491d3d7329de3607a 100644
 --- a/third_party/blink/renderer/core/loader/document_loader.cc
 +++ b/third_party/blink/renderer/core/loader/document_loader.cc
-@@ -2043,6 +2043,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
+@@ -2054,6 +2054,10 @@ Frame* DocumentLoader::CalculateOwnerFrame() {
  scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      Document* owner_document) {
    scoped_refptr<SecurityOrigin> origin;
@@ -54,7 +54,7 @@ index 19147a610d752996d2749a047648f69761975a48..abe8c00a25967162917ecc546fc75a48
    StringBuilder debug_info_builder;
    if (origin_to_commit_) {
      // Origin to commit is specified by the browser process, it must be taken
-@@ -2090,6 +2094,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
+@@ -2101,6 +2105,10 @@ scoped_refptr<SecurityOrigin> DocumentLoader::CalculateOrigin(
      debug_info_builder.Append(", url=");
      debug_info_builder.Append(owner_document->Url().BaseAsString());
      debug_info_builder.Append(")");
