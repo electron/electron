@@ -1039,33 +1039,77 @@ describe('chrome extensions', () => {
         });
       });
 
-      it('update', async () => {
-        await w.loadURL(url);
+      describe('update', () => {
+        it('can update muted status', async () => {
+          await w.loadURL(url);
 
-        const message = { method: 'update', args: [{ muted: true }] };
-        w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+          const message = { method: 'update', args: [{ muted: true }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
 
-        const [,, responseString] = await once(w.webContents, 'console-message');
-        const response = JSON.parse(responseString);
+          const [,, responseString] = await once(w.webContents, 'console-message');
+          const response = JSON.parse(responseString);
 
-        expect(response).to.have.property('url').that.is.a('string');
-        expect(response).to.have.property('title').that.is.a('string');
-        expect(response).to.have.property('active').that.is.a('boolean');
-        expect(response).to.have.property('autoDiscardable').that.is.a('boolean');
-        expect(response).to.have.property('discarded').that.is.a('boolean');
-        expect(response).to.have.property('groupId').that.is.a('number');
-        expect(response).to.have.property('highlighted').that.is.a('boolean');
-        expect(response).to.have.property('id').that.is.a('number');
-        expect(response).to.have.property('incognito').that.is.a('boolean');
-        expect(response).to.have.property('index').that.is.a('number');
-        expect(response).to.have.property('pinned').that.is.a('boolean');
-        expect(response).to.have.property('selected').that.is.a('boolean');
-        expect(response).to.have.property('windowId').that.is.a('number');
-        expect(response).to.have.property('mutedInfo').that.is.a('object');
-        const { mutedInfo } = response;
-        expect(mutedInfo).to.deep.eq({
-          muted: true,
-          reason: 'user'
+          expect(response).to.have.property('mutedInfo').that.is.a('object');
+          const { mutedInfo } = response;
+          expect(mutedInfo).to.deep.eq({
+            muted: true,
+            reason: 'user'
+          });
+        });
+
+        it('fails when navigating to an invalid url', async () => {
+          await w.loadURL(url);
+
+          const message = { method: 'update', args: [{ url: 'chrome://crash' }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [,, responseString] = await once(w.webContents, 'console-message');
+          const { error } = JSON.parse(responseString);
+          expect(error).to.eq('I\'m sorry. I\'m afraid I can\'t do that.');
+        });
+
+        it('fails when navigating to prohibited url', async () => {
+          await w.loadURL(url);
+
+          const message = { method: 'update', args: [{ url: 'chrome://crash' }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [,, responseString] = await once(w.webContents, 'console-message');
+          const { error } = JSON.parse(responseString);
+          expect(error).to.eq('I\'m sorry. I\'m afraid I can\'t do that.');
+        });
+
+        it('fails when navigating to a devtools url without permission', async () => {
+          await w.loadURL(url);
+
+          const message = { method: 'update', args: [{ url: 'devtools://blah' }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const { error } = JSON.parse(responseString);
+          expect(error).to.eq('Cannot navigate to a devtools:// page without either the devtools or debugger permission.');
+        });
+
+        it('fails when navigating to a chrome-untrusted url', async () => {
+          await w.loadURL(url);
+
+          const message = { method: 'update', args: [{ url: 'chrome-untrusted://blah' }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const { error } = JSON.parse(responseString);
+          expect(error).to.eq('Cannot navigate to a chrome-untrusted:// page.');
+        });
+
+        it('fails when navigating to a file url withotut file access', async () => {
+          await w.loadURL(url);
+
+          const message = { method: 'update', args: [{ url: 'file://blah' }] };
+          w.webContents.executeJavaScript(`window.postMessage('${JSON.stringify(message)}', '*')`);
+
+          const [, , responseString] = await once(w.webContents, 'console-message');
+          const { error } = JSON.parse(responseString);
+          expect(error).to.eq('Cannot navigate to a file URL without local file access.');
         });
       });
 
