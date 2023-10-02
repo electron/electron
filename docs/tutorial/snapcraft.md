@@ -91,14 +91,14 @@ version: '0.1'
 summary: Hello World Electron app
 description: |
   Simple Hello World Electron app as an example
-base: core18
+base: core22
 confinement: strict
 grade: stable
 
 apps:
   electron-packager-hello-world:
     command: electron-quick-start/electron-quick-start --no-sandbox
-    extensions: [gnome-3-34]
+    extensions: [gnome]
     plugs:
     - browser-support
     - network
@@ -235,6 +235,34 @@ apps:
     # libappindicator has readable resources.
     command: env TMPDIR=$XDG_RUNTIME_DIR PATH=/usr/local/bin:${PATH} ${SNAP}/bin/desktop-launch $SNAP/myApp/desktop
     desktop: usr/share/applications/desktop.desktop
+```
+
+## Optional: Enabling desktop capture
+
+Capturing the desktop requires PipeWire library in some Linux configurations that use
+the Wayland protocol. To bundle PipeWire with your application, ensure that the base
+snap is set to `core22` or newer. Next, create a part called `pipewire` and add it to
+the `after` section of your application:
+
+```yaml
+  pipewire:
+    plugin: nil
+    build-packages: [libpipewire-0.3-dev]
+    stage-packages: [pipewire]
+    prime:
+      - usr/lib/*/pipewire-*
+      - usr/lib/*/spa-*
+      - usr/lib/*/libpipewire*.so*
+      - usr/share/pipewire
+```
+
+Finally, configure your application's environment for PipeWire:
+
+```yaml
+    environment:
+      SPA_PLUGIN_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/spa-0.2
+      PIPEWIRE_CONFIG_NAME: $SNAP/usr/share/pipewire/pipewire.conf
+      PIPEWIRE_MODULE_DIR: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET/pipewire-0.3
 ```
 
 [snapcraft-syntax]: https://docs.snapcraft.io/build-snaps/syntax
