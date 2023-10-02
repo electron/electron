@@ -1767,8 +1767,6 @@ gin::ObjectTemplateBuilder App::GetObjectTemplateBuilder(v8::Isolate* isolate) {
 #endif
 #if BUILDFLAG(IS_MAC)
       .SetProperty("dock", &App::GetDockAPI)
-      .SetProperty("runningUnderRosettaTranslation",
-                   &App::IsRunningUnderRosettaTranslation)
 #endif
 #if BUILDFLAG(IS_MAC) || BUILDFLAG(IS_WIN)
       .SetProperty("runningUnderARM64Translation",
