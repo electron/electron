@@ -160,7 +160,7 @@ for:
       - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
       # Remove unused args from mksnapshot_args
       - ps: >-
-          Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') } | Set-Content out/Default/mksnapshot_args
+          Get-Content out/Default/default_mksnapshot_args | Where-Object { -not $_.Contains('--turbo-profiling-input') -And -not $_.Contains('builtins-pgo') -And -not $_.Contains('The gn arg use_goma=true') } | Set-Content out/Default/mksnapshot_args
       - ninja -C out/Default electron:electron_mksnapshot_zip
       - cd out\Default
       - 7z a mksnapshot.zip mksnapshot_args gen\v8\embedded.S
