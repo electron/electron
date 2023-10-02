@@ -9,6 +9,7 @@
 #include "base/logging.h"
 #include "base/process/launch.h"
 #include "base/strings/stringprintf.h"
+#include "base/strings/utf_string_conversions.h"
 #include "base/win/scoped_handle.h"
 #include "sandbox/win/src/nt_internals.h"
 #include "sandbox/win/src/win_utils.h"
@@ -108,7 +109,8 @@ StringType AddQuoteForArg(const StringType& arg) {
 }  // namespace
 
 StringType GetWaitEventName(base::ProcessId pid) {
-  return base::StringPrintf(L"%ls-%d", kWaitEventName, static_cast<int>(pid));
+  return base::UTF8ToWide(
+      base::StringPrintf("%ls-%d", kWaitEventName, static_cast<int>(pid)));
 }
 
 StringType ArgvToCommandLineString(const StringVector& argv) {
