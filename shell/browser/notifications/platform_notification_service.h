@@ -44,6 +44,9 @@ class PlatformNotificationService
   void CloseNotification(const std::string& notification_id) override;
   void GetDisplayedNotifications(
       DisplayedNotificationsCallback callback) override;
+  void GetDisplayedNotificationsForOrigin(
+      const GURL& origin,
+      DisplayedNotificationsCallback callback) override;
   int64_t ReadNextPersistentNotificationId() override;
   void RecordNotificationUkmEvent(
       const content::NotificationDatabaseData& data) override;
