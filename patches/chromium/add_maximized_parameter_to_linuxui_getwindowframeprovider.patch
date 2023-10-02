@@ -8,10 +8,10 @@ decorations in maximized mode where needed, preventing empty space caused
 by decoration shadows and rounded titlebars around the window while maximized.
 
 diff --git a/ui/gtk/gtk_ui.cc b/ui/gtk/gtk_ui.cc
-index f315a30f882c17623e1f33bcd90ff8d9ae11f4c4..b22a8d627935f5554cfb524bcf5d5d8948f38f2f 100644
+index a91b303e77f4b5b47742d12749eb70d857e0badf..284174aa697b3379863e0aa440b5d03c6b06f8e3 100644
 --- a/ui/gtk/gtk_ui.cc
 +++ b/ui/gtk/gtk_ui.cc
-@@ -517,12 +517,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
+@@ -523,12 +523,13 @@ std::unique_ptr<ui::NavButtonProvider> GtkUi::CreateNavButtonProvider() {
    return std::make_unique<gtk::NavButtonProviderGtk>();
  }
  
@@ -31,10 +31,10 @@ index f315a30f882c17623e1f33bcd90ff8d9ae11f4c4..b22a8d627935f5554cfb524bcf5d5d89
  }
  
 diff --git a/ui/gtk/gtk_ui.h b/ui/gtk/gtk_ui.h
-index c257b869f0c790f8af1f29d42e5ceb9e40344d8a..5184aa47dda70beb2f66e6227b17b632970a5a33 100644
+index 8ae3369be0b628ce94eeb067b2be9f3ace31eccb..520de739d2f6f63757c15bf738c9c09b71c2a479 100644
 --- a/ui/gtk/gtk_ui.h
 +++ b/ui/gtk/gtk_ui.h
-@@ -108,7 +108,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -109,7 +109,7 @@ class GtkUi : public ui::LinuxUiAndTheme {
    bool PreferDarkTheme() const override;
    void SetDarkTheme(bool dark) override;
    std::unique_ptr<ui::NavButtonProvider> CreateNavButtonProvider() override;
@@ -43,7 +43,7 @@ index c257b869f0c790f8af1f29d42e5ceb9e40344d8a..5184aa47dda70beb2f66e6227b17b632
  
   private:
    using TintMap = std::map<int, color_utils::HSL>;
-@@ -208,6 +208,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
+@@ -200,6 +200,8 @@ class GtkUi : public ui::LinuxUiAndTheme {
    // while Chrome is running.
    std::unique_ptr<ui::WindowFrameProvider> solid_frame_provider_;
    std::unique_ptr<ui::WindowFrameProvider> transparent_frame_provider_;

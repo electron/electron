@@ -86,10 +86,10 @@ index 7ff8785cd64c1264a88f91f7bd3292c6943f58ea..bc14ad8cab9fa3ec45bcb9f670b19897
  
    // Cut the reference from ScriptState to V8 context.
 diff --git a/third_party/blink/renderer/platform/bindings/script_state.h b/third_party/blink/renderer/platform/bindings/script_state.h
-index 7109852950cde0a6553000421faacefb39366b41..79be73cb660839d6074b11cd7491dc3d5e876345 100644
+index 8be11a1315b02747c9132bd1b9e0cb7589467db8..d75a5db82a5347bd63def93f03793de90f91c4d0 100644
 --- a/third_party/blink/renderer/platform/bindings/script_state.h
 +++ b/third_party/blink/renderer/platform/bindings/script_state.h
-@@ -178,7 +178,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+@@ -181,7 +181,12 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
    static ScriptState* MaybeFrom(v8::Local<v8::Context> context) {
      DCHECK(!context.IsEmpty());
      if (context->GetNumberOfEmbedderDataFields() <=
@@ -102,8 +102,8 @@ index 7109852950cde0a6553000421faacefb39366b41..79be73cb660839d6074b11cd7491dc3d
 +        ScriptState::kScriptStateTagPtr) {
        return nullptr;
      }
-     return From(context);
-@@ -249,9 +254,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
+     ScriptState* script_state =
+@@ -256,9 +261,15 @@ class PLATFORM_EXPORT ScriptState : public GarbageCollected<ScriptState> {
    static void SetCreateCallback(CreateCallback);
    friend class ScriptStateImpl;
  

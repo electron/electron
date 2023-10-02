@@ -1,0 +1,156 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Micha=C3=ABl=20Zasso?= <targos@protonmail.com>
+Date: Thu, 28 Sep 2023 14:50:20 +0200
+Subject: lib,test: do not hardcode Buffer.kMaxLength
+
+V8 will soon support typed arrays as large as the maximum array buffer
+length. This patch replaces hardcoded values related to
+Buffer.kMaxLength with the actual constant.
+It also fixes a test that was passing by accident.
+
+Refs: https://github.com/v8/v8/commit/44b299590083b888637c79fb5632806e607ab861
+PR-URL: https://github.com/nodejs/node/pull/49876
+Reviewed-By: Richard Lau <rlau@redhat.com>
+Reviewed-By: Luigi Pinca <luigipinca@gmail.com>
+Reviewed-By: Yagiz Nizipli <yagiz@nizipli.com>
+(cherry picked from commit a4fdb1abe0844d86b4cbfcc4051794656e7d746e)
+
+diff --git a/lib/internal/blob.js b/lib/internal/blob.js
+index a25f6cf7df23875a5cefc0a4f92a997494a313af..58d2193195d9523d3bc43054efbbe4eebb0c7b05 100644
+--- a/lib/internal/blob.js
++++ b/lib/internal/blob.js
+@@ -25,6 +25,9 @@ const {
+   FixedSizeBlobCopyJob,
+   getDataObject,
+ } = internalBinding('blob');
++const {
++  kMaxLength,
++} = internalBinding('buffer');
+ 
+ const {
+   TextDecoder,
+@@ -61,7 +64,6 @@ const {
+ } = require('internal/errors');
+ 
+ const {
+-  isUint32,
+   validateDictionary,
+ } = require('internal/validators');
+ 
+@@ -161,8 +163,8 @@ class Blob {
+       return src;
+     });
+ 
+-    if (!isUint32(length))
+-      throw new ERR_BUFFER_TOO_LARGE(0xFFFFFFFF);
++    if (length > kMaxLength)
++      throw new ERR_BUFFER_TOO_LARGE(kMaxLength);
+ 
+     this[kHandle] = _createBlob(sources_, length);
+     this[kLength] = length;
+diff --git a/test/parallel/test-blob-buffer-too-large.js b/test/parallel/test-blob-buffer-too-large.js
+index 2fd8b8754bd593a0da069044d33fcd6bba82f9c9..a9cf53b025bbff58a8d5783e4f807d79f5d68e2b 100644
+--- a/test/parallel/test-blob-buffer-too-large.js
++++ b/test/parallel/test-blob-buffer-too-large.js
+@@ -3,17 +3,17 @@
+ 
+ const common = require('../common');
+ const assert = require('assert');
+-const { Blob } = require('buffer');
++const { Blob, kMaxLength } = require('buffer');
+ 
+ if (common.isFreeBSD)
+   common.skip('Oversized buffer make the FreeBSD CI runner crash');
+ 
+ try {
+-  new Blob([new Uint8Array(0xffffffff), [1]]);
++  new Blob([new Uint8Array(kMaxLength), [1]]);
+ } catch (e) {
+   if (
+     e.message === 'Array buffer allocation failed' ||
+-    e.message === 'Invalid typed array length: 4294967295'
++    e.message === `Invalid typed array length: ${kMaxLength}`
+   ) {
+     common.skip(
+       'Insufficient memory on this platform for oversized buffer test.'
+diff --git a/test/parallel/test-buffer-alloc.js b/test/parallel/test-buffer-alloc.js
+index c6b728027057ece38c2b7fcc6bf7b18b959125d2..aad9c6bcab69e971c02281928885d94aa21c8199 100644
+--- a/test/parallel/test-buffer-alloc.js
++++ b/test/parallel/test-buffer-alloc.js
+@@ -4,13 +4,16 @@ const common = require('../common');
+ const assert = require('assert');
+ const vm = require('vm');
+ 
+-const SlowBuffer = require('buffer').SlowBuffer;
++const {
++  SlowBuffer,
++  kMaxLength,
++} = require('buffer');
+ 
+ // Verify the maximum Uint8Array size. There is no concrete limit by spec. The
+ // internal limits should be updated if this fails.
+ assert.throws(
+-  () => new Uint8Array(2 ** 32 + 1),
+-  { message: 'Invalid typed array length: 4294967297' }
++  () => new Uint8Array(kMaxLength + 1),
++  { message: `Invalid typed array length: ${kMaxLength + 1}` },
+ );
+ 
+ const b = Buffer.allocUnsafe(1024);
+diff --git a/test/parallel/test-buffer-over-max-length.js b/test/parallel/test-buffer-over-max-length.js
+index c263633d941cddc7614df7e7ec64ad9aaaa7864b..1167328131fcd59d973ccf38201f458441517636 100644
+--- a/test/parallel/test-buffer-over-max-length.js
++++ b/test/parallel/test-buffer-over-max-length.js
+@@ -13,18 +13,8 @@ const bufferMaxSizeMsg = {
+   message: /^The argument 'size' is invalid\. Received [^"]*$/
+ };
+ 
+-assert.throws(() => Buffer((-1 >>> 0) + 2), bufferMaxSizeMsg);
+-assert.throws(() => SlowBuffer((-1 >>> 0) + 2), bufferMaxSizeMsg);
+-assert.throws(() => Buffer.alloc((-1 >>> 0) + 2), bufferMaxSizeMsg);
+-assert.throws(() => Buffer.allocUnsafe((-1 >>> 0) + 2), bufferMaxSizeMsg);
+-assert.throws(() => Buffer.allocUnsafeSlow((-1 >>> 0) + 2), bufferMaxSizeMsg);
+-
+ assert.throws(() => Buffer(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => SlowBuffer(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => Buffer.alloc(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => Buffer.allocUnsafe(kMaxLength + 1), bufferMaxSizeMsg);
+ assert.throws(() => Buffer.allocUnsafeSlow(kMaxLength + 1), bufferMaxSizeMsg);
+-
+-// issue GH-4331
+-assert.throws(() => Buffer.allocUnsafe(0x100000001), bufferMaxSizeMsg);
+-assert.throws(() => Buffer.allocUnsafe(0xFFFFFFFFF), bufferMaxSizeMsg);
+diff --git a/test/parallel/test-buffer-tostring-rangeerror.js b/test/parallel/test-buffer-tostring-rangeerror.js
+index 4416effb422ac4a000eff1732cbfeeffcc567555..0ebea759b5c42be0c294093256ea3cad7034a98b 100644
+--- a/test/parallel/test-buffer-tostring-rangeerror.js
++++ b/test/parallel/test-buffer-tostring-rangeerror.js
+@@ -1,18 +1,22 @@
+ 'use strict';
+ require('../common');
+ 
+-// This test ensures that Node.js throws a RangeError when trying to convert a
+-// gigantic buffer into a string.
++// This test ensures that Node.js throws an Error when trying to convert a
++// large buffer into a string.
+ // Regression test for https://github.com/nodejs/node/issues/649.
+ 
+ const assert = require('assert');
+-const SlowBuffer = require('buffer').SlowBuffer;
++const {
++  SlowBuffer,
++  constants: {
++    MAX_STRING_LENGTH,
++  },
++} = require('buffer');
+ 
+-const len = 1422561062959;
++const len = MAX_STRING_LENGTH + 1;
+ const message = {
+-  code: 'ERR_INVALID_ARG_VALUE',
+-  name: 'RangeError',
+-  message: /^The argument 'size' is invalid\. Received [^"]*$/
++  code: 'ERR_STRING_TOO_LONG',
++  name: 'Error',
+ };
+ assert.throws(() => Buffer(len).toString('utf8'), message);
+ assert.throws(() => SlowBuffer(len).toString('utf8'), message);

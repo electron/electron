@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288fef6adb6 100644
+index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85cc5ab845 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -19,8 +19,10 @@
@@ -23,7 +23,7 @@ index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288
  #include "third_party/blink/public/common/features.h"
  #include "ui/views/view.h"
  #endif  // !BUILDFLAG(IS_ANDROID)
-@@ -316,7 +318,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
+@@ -337,7 +339,7 @@ void PictureInPictureWindowManager::CloseWindowInternal() {
    video_web_contents_observer_.reset();
    pip_window_controller_->Close(false /* should_pause_video */);
    pip_window_controller_ = nullptr;
@@ -32,7 +32,7 @@ index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288
    auto_pip_setting_helper_.reset();
  #endif  // !BUILDFLAG(IS_ANDROID)
  }
-@@ -327,8 +329,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
+@@ -348,8 +350,10 @@ void PictureInPictureWindowManager::DocumentWebContentsDestroyed() {
    // contents, so we only need to forget the controller here when user closes
    // the parent web contents with the PiP window open.
    document_web_contents_observer_.reset();
@@ -43,7 +43,7 @@ index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288
    if (pip_window_controller_)
      pip_window_controller_ = nullptr;
  }
-@@ -350,6 +354,7 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -371,6 +375,7 @@ PictureInPictureWindowManager::GetOverlayView(
      return nullptr;
    }
  
@@ -51,7 +51,7 @@ index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288
    auto* const web_contents = pip_window_controller_->GetWebContents();
  
    auto* auto_pip_tab_helper =
-@@ -372,6 +377,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -393,6 +398,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -61,7 +61,7 @@ index af52cf29d64e5abe495f41887daad21cf3018ec4..2fb50cfbd7053a5469fd7f7ea6062288
  #endif  // !BUILDFLAG(IS_ANDROID)
  
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index a3acf948f1460c31341f4f1291f5a8ad9ca85d3a..a9488cfe10f5dff1e64af1206a1f0c99ad8925f4 100644
+index 85ae9fb9f969709c35c27ac1235e5bdc48e2084a..a2adddb3ec8c72a2ff1a3739a1792868a6f89ffc 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -11,6 +11,7 @@
@@ -82,7 +82,7 @@ index a3acf948f1460c31341f4f1291f5a8ad9ca85d3a..a9488cfe10f5dff1e64af1206a1f0c99
  
  namespace views {
  class View;
-@@ -214,7 +217,9 @@ class PictureInPictureWindowManager {
+@@ -238,7 +241,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  

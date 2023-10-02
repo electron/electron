@@ -775,6 +775,7 @@ step-mksnapshot-build: &step-mksnapshot-build
       fi
       sed $SEDOPTION '/.*builtins-pgo/d' out/Default/mksnapshot_args
       sed $SEDOPTION '/--turbo-profiling-input/d' out/Default/mksnapshot_args
+      sed $SEDOPTION '/The gn arg use_goma=true .*/d' out/Default/mksnapshot_args
       if [ "`uname`" != "Darwin" ]; then
         if [ "$TARGET_ARCH" == "arm" ]; then
           electron/script/strip-binaries.py --file $PWD/out/Default/clang_x86_v8_arm/mksnapshot

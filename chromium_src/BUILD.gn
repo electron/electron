@@ -220,6 +220,7 @@ static_library("chrome") {
       "//chrome/browser/win/icon_reader_service.h",
     ]
     public_deps += [
+      "//chrome/browser/web_applications/proto",
       "//chrome/services/util_win:lib",
       "//components/webapps/common:mojo_bindings",
     ]

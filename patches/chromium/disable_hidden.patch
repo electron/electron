@@ -6,7 +6,7 @@ Subject: disable_hidden.patch
 Electron uses this to disable background throttling for hidden windows.
 
 diff --git a/content/browser/renderer_host/render_widget_host_impl.cc b/content/browser/renderer_host/render_widget_host_impl.cc
-index 1f3efcc9f982f0fe70c9080cb8fe742a5ecb6287..7bd2cdfab5e0f0cfea19f198a4f62456b1fb830e 100644
+index 7a99c04fcf5bba1eafab94bd7d2b5ee9c58d4d85..80224052d4a3c195eabeadfb0d8863a2cf31b6e2 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.cc
 +++ b/content/browser/renderer_host/render_widget_host_impl.cc
 @@ -801,6 +801,9 @@ void RenderWidgetHostImpl::WasHidden() {
@@ -20,10 +20,10 @@ index 1f3efcc9f982f0fe70c9080cb8fe742a5ecb6287..7bd2cdfab5e0f0cfea19f198a4f62456
        blink::mojom::PointerLockResult::kWrongDocument);
  
 diff --git a/content/browser/renderer_host/render_widget_host_impl.h b/content/browser/renderer_host/render_widget_host_impl.h
-index cd75eee211a8ea7242420cc1ba47784d55c3fb5d..76956dd92fcde059f2c928d604d465997c6ff4f0 100644
+index 5c042eea04022ed4e74b5b4796e60de7bbb4137e..9ba426de189921774e47e6e5b4763bae602f6532 100644
 --- a/content/browser/renderer_host/render_widget_host_impl.h
 +++ b/content/browser/renderer_host/render_widget_host_impl.h
-@@ -907,6 +907,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
+@@ -905,6 +905,8 @@ class CONTENT_EXPORT RenderWidgetHostImpl
    void UpdateBrowserControlsState(cc::BrowserControlsState constraints,
                                    cc::BrowserControlsState current,
                                    bool animate);
@@ -31,7 +31,7 @@ index cd75eee211a8ea7242420cc1ba47784d55c3fb5d..76956dd92fcde059f2c928d604d46599
 +  bool disable_hidden_ = false;
  
    void StartDragging(blink::mojom::DragDataPtr drag_data,
-                      blink::DragOperationsMask drag_operations_mask,
+                      const url::Origin& source_origin,
 diff --git a/content/browser/renderer_host/render_widget_host_view_aura.cc b/content/browser/renderer_host/render_widget_host_view_aura.cc
 index 98746fea627ab5319cd9b66e203738a270e27f17..b7d50b6286ac90ab06089f75f0b9d0b7b02bbf6c 100644
 --- a/content/browser/renderer_host/render_widget_host_view_aura.cc
