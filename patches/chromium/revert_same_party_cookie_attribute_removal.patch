@@ -113,10 +113,10 @@ index a93e67a33f5ca5c845fa48606c8255ef51c4f5c8..817785f539deaa30621b76690de0db36
        base::OnceCallback<void(net::FirstPartySetMetadata)> callback) override;
  
 diff --git a/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc b/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
-index 16e2af1a1f5a6c7209ebc8adbfaf5fcc3c7185cd..6ea0787b47e7e7c36dc178d89faf92bc6b51534b 100644
+index 6d7f753d6c6d0197e63bb77356bc437778e01304..715eb5fddeb08bdc9aa06c3e6ebff43d60013109 100644
 --- a/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
 +++ b/chrome/browser/storage_access_api/storage_access_grant_permission_context.cc
-@@ -286,6 +286,7 @@ void StorageAccessGrantPermissionContext::DecidePermission(
+@@ -301,6 +301,7 @@ void StorageAccessGrantPermissionContext::DecidePermission(
        browser_context())
        ->ComputeFirstPartySetMetadata(
            requesting_site, &embedding_site,
@@ -185,7 +185,7 @@ index dbe3c5b8a6c83c5e8d26b109f24e77b4ab2e604e..fd51ab0f749b63fda2a7848594bb616f
  }
  
 diff --git a/content/browser/devtools/protocol/network_handler.cc b/content/browser/devtools/protocol/network_handler.cc
-index 74737944f75cdc45b07ae110551ec4b2f250abc7..26a051883a10964168122f9b4ce8ac37f4efa006 100644
+index 39cf06e487c59c3f1b7d65eb2ed7b69646ce96a5..19abfd095dcf617c26878b9e047dbc1f5abbc710 100644
 --- a/content/browser/devtools/protocol/network_handler.cc
 +++ b/content/browser/devtools/protocol/network_handler.cc
 @@ -783,6 +783,11 @@ GetProtocolBlockedSetCookieReason(net::CookieInclusionStatus status) {
