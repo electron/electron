@@ -75,6 +75,7 @@ class OffScreenWebContentsView : public content::WebContentsView,
 
   // content::RenderViewHostDelegateView
   void StartDragging(const content::DropData& drop_data,
+                     const url::Origin& source_origin,
                      blink::DragOperationsMask allowed_ops,
                      const gfx::ImageSkia& image,
                      const gfx::Vector2d& cursor_offset,
