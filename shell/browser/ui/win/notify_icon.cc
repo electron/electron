@@ -102,6 +102,16 @@ void NotifyIcon::HandleMouseMoveEvent(int modifiers) {
     NotifyMouseMoved(cursorPos, modifiers);
 }
 
+void NotifyIcon::HandleMouseEntered(int modifiers) {
+  gfx::Point cursor_pos = display::Screen::GetScreen()->GetCursorScreenPoint();
+  NotifyMouseEntered(cursor_pos, modifiers);
+}
+
+void NotifyIcon::HandleMouseExited(int modifiers) {
+  gfx::Point cursor_pos = display::Screen::GetScreen()->GetCursorScreenPoint();
+  NotifyMouseExited(cursor_pos, modifiers);
+}
+
 void NotifyIcon::ResetIcon() {
   NOTIFYICONDATA icon_data;
   InitIconData(&icon_data);
