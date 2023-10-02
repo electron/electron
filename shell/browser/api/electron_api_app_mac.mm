@@ -60,17 +60,6 @@ void App::SetActivationPolicy(gin_helper::ErrorThrower thrower,
   [NSApp setActivationPolicy:activation_policy];
 }
 
-bool App::IsRunningUnderRosettaTranslation() const {
-  node::Environment* env =
-      node::Environment::GetCurrent(JavascriptEnvironment::GetIsolate());
-
-  EmitWarning(env,
-              "The app.runningUnderRosettaTranslation API is deprecated, use "
-              "app.runningUnderARM64Translation instead.",
-              "electron");
-  return IsRunningUnderARM64Translation();
-}
-
 bool App::IsRunningUnderARM64Translation() const {
   int proc_translated = 0;
   size_t size = sizeof(proc_translated);
