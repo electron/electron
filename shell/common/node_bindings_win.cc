@@ -25,7 +25,8 @@ NodeBindingsWin::NodeBindingsWin(BrowserEnvironment browser_env)
 
     if (event_loop->iocp && event_loop->iocp != INVALID_HANDLE_VALUE)
       CloseHandle(event_loop->iocp);
-    event_loop->iocp = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, 2);
+    event_loop->iocp =
+        CreateIoCompletionPort(INVALID_HANDLE_VALUE, nullptr, 0, 2);
   }
 }
 
@@ -44,7 +45,7 @@ void NodeBindingsWin::PollEvents() {
                             timeout);
 
   // Give the event back so libuv can deal with it.
-  if (overlapped != NULL)
+  if (overlapped != nullptr)
     PostQueuedCompletionStatus(event_loop->iocp, bytes, key, overlapped);
 }
 

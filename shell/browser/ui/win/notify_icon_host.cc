@@ -57,7 +57,7 @@ NotifyIconHost::NotifyIconHost() {
   base::win::InitializeWindowClass(
       kNotifyIconHostWindowClass,
       &base::win::WrappedWindowProc<NotifyIconHost::WndProcStatic>, 0, 0, 0,
-      NULL, NULL, NULL, NULL, NULL, &window_class);
+      nullptr, nullptr, nullptr, nullptr, nullptr, &window_class);
   instance_ = window_class.hInstance;
   atom_ = RegisterClassEx(&window_class);
   CHECK(atom_);
@@ -144,7 +144,7 @@ LRESULT CALLBACK NotifyIconHost::WndProc(HWND hwnd,
     }
     return TRUE;
   } else if (message == kNotifyIconMessage) {
-    NotifyIcon* win_icon = NULL;
+    NotifyIcon* win_icon = nullptr;
 
     // Find the selected status icon.
     for (NotifyIcons::const_iterator i(notify_icons_.begin());

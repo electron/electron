@@ -65,7 +65,7 @@ bool AppendFile(const JumpListItem& item, IObjectCollection* collection) {
   DCHECK(collection);
 
   CComPtr<IShellItem> file;
-  if (SUCCEEDED(SHCreateItemFromParsingName(item.path.value().c_str(), NULL,
+  if (SUCCEEDED(SHCreateItemFromParsingName(item.path.value().c_str(), nullptr,
                                             IID_PPV_ARGS(&file))))
     return SUCCEEDED(collection->AddObject(file));
 

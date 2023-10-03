@@ -4,8 +4,8 @@
 
 // This interface is for managing the global services of the application. Each
 // service is lazily created when requested the first time. The service getters
-// will return NULL if the service is not available, so callers must check for
-// this condition.
+// will return nullptr if the service is not available, so callers must check
+// for this condition.
 
 #ifndef ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
 #define ELECTRON_SHELL_BROWSER_BROWSER_PROCESS_IMPL_H_
@@ -35,7 +35,7 @@ class PrintJobManager;
 class BackgroundModeManager {};
 
 // NOT THREAD SAFE, call only from the main thread.
-// These functions shouldn't return NULL unless otherwise noted.
+// These functions shouldn't return nullptr unless otherwise noted.
 class BrowserProcessImpl : public BrowserProcess {
  public:
   BrowserProcessImpl();

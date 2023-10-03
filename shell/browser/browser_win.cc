@@ -100,8 +100,8 @@ std::wstring GetAppInfoHelperForProtocol(ASSOCSTR assoc_str, const GURL& url) {
   wchar_t out_buffer[1024];
   DWORD buffer_size = std::size(out_buffer);
   HRESULT hr =
-      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(), NULL,
-                       out_buffer, &buffer_size);
+      AssocQueryString(ASSOCF_IS_PROTOCOL, assoc_str, url_scheme.c_str(),
+                       nullptr, out_buffer, &buffer_size);
   if (FAILED(hr)) {
     DLOG(WARNING) << "AssocQueryString failed!";
     return std::wstring();
@@ -315,7 +315,7 @@ void GetApplicationInfoForProtocolUsingAssocQuery(
 
 void Browser::AddRecentDocument(const base::FilePath& path) {
   CComPtr<IShellItem> item;
-  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), NULL,
+  HRESULT hr = SHCreateItemFromParsingName(path.value().c_str(), nullptr,
                                            IID_PPV_ARGS(&item));
   if (SUCCEEDED(hr)) {
     SHARDAPPIDINFO info;

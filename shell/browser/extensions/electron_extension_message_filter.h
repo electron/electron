@@ -62,7 +62,7 @@ class ElectronExtensionMessageFilter : public content::BrowserMessageFilter {
 
   // The BrowserContext associated with our renderer process.  This should only
   // be accessed on the UI thread! Furthermore since this class is refcounted it
-  // may outlive |browser_context_|, so make sure to NULL check if in doubt;
+  // may outlive |browser_context_|, so make sure to nullptr check if in doubt;
   // async calls and the like.
   raw_ptr<content::BrowserContext> browser_context_;
 };

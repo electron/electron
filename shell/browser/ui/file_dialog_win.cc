@@ -68,9 +68,9 @@ static HRESULT GetFileNameFromShellItem(IShellItem* pShellItem,
                                         SIGDN type,
                                         LPWSTR lpstr,
                                         size_t cchLength) {
-  assert(pShellItem != NULL);
+  assert(pShellItem != nullptr);
 
-  LPWSTR lpstrName = NULL;
+  LPWSTR lpstrName = nullptr;
   HRESULT hRet = pShellItem->GetDisplayName(type, &lpstrName);
 
   if (SUCCEEDED(hRet)) {
@@ -93,7 +93,7 @@ static void SetDefaultFolder(IFileDialog* dialog,
       IsDirectory(file_path) ? file_path.value() : file_path.DirName().value();
 
   ATL::CComPtr<IShellItem> folder_item;
-  HRESULT hr = SHCreateItemFromParsingName(directory.c_str(), NULL,
+  HRESULT hr = SHCreateItemFromParsingName(directory.c_str(), nullptr,
                                            IID_PPV_ARGS(&folder_item));
   if (SUCCEEDED(hr))
     dialog->SetFolder(folder_item);
@@ -105,7 +105,7 @@ static HRESULT ShowFileDialog(IFileDialog* dialog,
       settings.parent_window
           ? static_cast<electron::NativeWindowViews*>(settings.parent_window)
                 ->GetAcceleratedWidget()
-          : NULL;
+          : nullptr;
 
   return dialog->Show(parent_window);
 }

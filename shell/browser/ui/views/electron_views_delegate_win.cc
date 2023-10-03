@@ -15,14 +15,14 @@
 namespace {
 
 bool MonitorHasAutohideTaskbarForEdge(UINT edge, HMONITOR monitor) {
-  APPBARDATA taskbar_data = {sizeof(APPBARDATA), NULL, 0, edge};
+  APPBARDATA taskbar_data = {sizeof(APPBARDATA), nullptr, 0, edge};
   taskbar_data.hWnd = ::GetForegroundWindow();
 
   // MSDN documents an ABM_GETAUTOHIDEBAREX, which supposedly takes a monitor
   // rect and returns autohide bars on that monitor.  This sounds like a good
   // idea for multi-monitor systems.  Unfortunately, it appears to not work at
-  // least some of the time (erroneously returning NULL) and there's almost no
-  // online documentation or other sample code using it that suggests ways to
+  // least some of the time (erroneously returning nullptr) and there's almost
+  // no online documentation or other sample code using it that suggests ways to
   // address this problem. We do the following:-
   // 1. Use the ABM_GETAUTOHIDEBAR message. If it works, i.e. returns a valid
   //    window we are done.
@@ -40,7 +40,7 @@ bool MonitorHasAutohideTaskbarForEdge(UINT edge, HMONITOR monitor) {
     if (!(taskbar_state & ABS_AUTOHIDE))
       return false;
 
-    new_taskbar_data.hWnd = ::FindWindow(L"Shell_TrayWnd", NULL);
+    new_taskbar_data.hWnd = ::FindWindow(L"Shell_TrayWnd", nullptr);
     if (!::IsWindow(new_taskbar_data.hWnd))
       return false;
 
@@ -103,7 +103,7 @@ namespace electron {
 
 HICON ViewsDelegate::GetDefaultWindowIcon() const {
   // Use current exe's icon as default window icon.
-  return LoadIcon(GetModuleHandle(NULL),
+  return LoadIcon(GetModuleHandle(nullptr),
                   MAKEINTRESOURCE(1 /* IDR_MAINFRAME */));
 }
 

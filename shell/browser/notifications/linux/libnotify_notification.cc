@@ -122,7 +122,7 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
 
   if (!options.tag.empty()) {
     GQuark id = g_quark_from_string(options.tag.c_str());
-    g_object_set(G_OBJECT(notification_), "id", id, NULL);
+    g_object_set(G_OBJECT(notification_), "id", id, nullptr);
   }
 
   // Always try to append notifications.

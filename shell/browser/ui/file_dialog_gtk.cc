@@ -63,7 +63,7 @@ class FileChooserDialog {
 
     if (electron::IsElectron_gtkInitialized()) {
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_native_new(
-          settings.title.c_str(), NULL, action,
+          settings.title.c_str(), nullptr, action,
           label.empty() ? nullptr : label.c_str(), nullptr));
     } else {
       const char* confirm_text = gtk_util::GetOkLabel();
@@ -75,8 +75,8 @@ class FileChooserDialog {
         confirm_text = gtk_util::GetOpenLabel();
 
       dialog_ = GTK_FILE_CHOOSER(gtk_file_chooser_dialog_new(
-          settings.title.c_str(), NULL, action, gtk_util::GetCancelLabel(),
-          GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, NULL));
+          settings.title.c_str(), nullptr, action, gtk_util::GetCancelLabel(),
+          GTK_RESPONSE_CANCEL, confirm_text, GTK_RESPONSE_ACCEPT, nullptr));
     }
 
     if (parent_) {

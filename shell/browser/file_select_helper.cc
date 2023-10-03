@@ -460,7 +460,7 @@ void FileSelectHelper::RunFileChooserOnUIThread(
           ? 1
           : 0,  // 1-based index of default extension to show.
       base::FilePath::StringType(),
-      web_contents->owner_window()->GetNativeWindow(), NULL);
+      web_contents->owner_window()->GetNativeWindow(), nullptr);
 
   select_file_types_.reset();
 }
