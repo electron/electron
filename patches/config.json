@@ -3,8 +3,6 @@
 
   "src/electron/patches/boringssl": "src/third_party/boringssl/src",
 
-  "src/electron/patches/devtools_frontend": "src/third_party/devtools-frontend/src",
-
   "src/electron/patches/ffmpeg": "src/third_party/ffmpeg",
 
   "src/electron/patches/v8":  "src/v8",
