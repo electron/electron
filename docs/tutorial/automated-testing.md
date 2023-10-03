@@ -27,27 +27,100 @@ Node.js package for testing with WebDriver. Its ecosystem also includes various 
 First you need to run the WebdriverIO starter toolkit in your project root directory:
 
 ```sh npm2yarn
-npx wdio . --yes
+npm init wdio@latest ./
 ```
 
-This installs all necessary packages for you and generates a `wdio.conf.js` configuration file.
+This starts a configuration wizard that helps you put together the right setup, installs all necessary packages for you and generates a `wdio.conf.js` configuration file. Make sure to select _"Desktop Testing - of Electron Applications"_ on one of the first questions asking _"What type of testing would you like to do?"_.
 
 #### Connect WDIO to your Electron app
 
-Update the capabilities in your configuration file to point to your Electron app binary:
+After the configuration wizard finished running your `wdio.conf.js` will look as following:
 
-```javascript title='wdio.conf.js'
-exports.config = {
+```js title='wdio.conf.js' @ts-nocheck
+import fs from 'node:fs'
+import url from 'node:url'
+import path from 'node:path'
+
+import { getBinaryPath } from 'wdio-electron-service/utils'
+
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url))
+const packageJson = JSON.parse(fs.readFileSync('./package.json').toString())
+
+export const config = {
   // ...
-  capabilities: [{
-    browserName: 'chrome',
-    'goog:chromeOptions': {
-      binary: '/path/to/your/electron/binary', // Path to your Electron binary.
-      args: [/* cli arguments */] // Optional, perhaps 'app=' + /path/to/your/app/
+  services: ['electron'],
+  capabilities: [
+    {
+      browserName: 'electron',
+      'wdio:electronServiceOptions': {
+        appBinaryPath: getBinaryPath(__dirname, productName),
+        appArgs: ['foo', 'bar=baz']
+      }
     }
-  }]
+  ]
   // ...
 }
+```
+
+#### Write your tests
+
+To interacting with elements on the screen you can use the [WebdriverIO API](https://webdriver.io/docs/api) that helps you to write concise and expressive tests. The framework provides custom "matchers" that make asserting the state of your application easy, e.g.:
+
+```js @ts-nocheck
+import { browser, $, expect } from '@wdio/globals'
+
+describe('keyboard input', () => {
+  it('should detect keyboard input', async () => {
+    await browser.keys(['y', 'o'])
+    await expect($('keypress-count')).toHaveText('YO')
+  })
+})
+```
+
+Furthermore WebdriverIO allows you to access Electron APIs to get static information about your application:
+
+```js @ts-nocheck
+import { browser, $, expect } from '@wdio/globals'
+
+describe('when the make smaller button is clicked', () => {
+  it('should decrease the window height and width by 10 pixels', async () => {
+    const boundsBefore = await browser.electron.browserWindow('getBounds')
+    expect(boundsBefore.width).toEqual(210)
+    expect(boundsBefore.height).toEqual(310)
+
+    await $('.make-smaller').click()
+    const boundsAfter = await browser.electron.browserWindow('getBounds')
+    expect(boundsAfter.width).toEqual(200)
+    expect(boundsAfter.height).toEqual(300)
+  })
+})
+```
+
+or to retrieve other Electron process information:
+
+```js @ts-nocheck
+import fs from 'node:fs'
+import path from 'node:path'
+import { browser, expect } from '@wdio/globals'
+
+const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), { encoding: 'utf-8' }))
+const { name, version } = packageJson
+
+describe('electron APIs', () => {
+  it('should retrieve app metadata through the electron API', async () => {
+    const appName = await browser.electron.app('getName')
+    expect(appName).toEqual(name)
+    const appVersion = await browser.electron.app('getVersion')
+    expect(appVersion).toEqual(version)
+  })
+
+  it('should pass args through to the launched application', async () => {
+    // custom args are set in the wdio.conf.js file as they need to be set before WDIO starts
+    const argv = await browser.electron.mainProcess('argv')
+    expect(argv).toContain('--foo')
+    expect(argv).toContain('--bar=baz')
+  })
+})
 ```
 
 #### Run your tests
@@ -57,6 +130,12 @@ To run your tests:
 ```sh
 $ npx wdio run wdio.conf.js
 ```
+
+WebdriverIO helps managing to launch and shut down the application for you.
+
+#### More Documentation
+
+Find more documentation on Mocking Electron APIs and other useful resources in the [official WebdriverIO documentation](https://webdriver.io/docs/desktop-testing/electron).
 
 ### With Selenium
 
