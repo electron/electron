@@ -2060,10 +2060,7 @@ describe('BrowserWindow module', () => {
     beforeEach(() => {
       w = new BrowserWindow({ show: false });
     });
-    afterEach(async () => {
-      await closeWindow(w);
-      w = null as unknown as BrowserWindow;
-    });
+    afterEach(closeAllWindows);
 
     describe('BrowserWindow.selectPreviousTab()', () => {
       it('does not throw', () => {
@@ -2130,6 +2127,18 @@ describe('BrowserWindow module', () => {
         expect(() => {
           w.addTabbedWindow(w);
         }).to.throw('AddTabbedWindow cannot be called by a window on itself.');
+      });
+    });
+
+    describe('BrowserWindow.tabbingIdentifier', () => {
+      it('is undefined if no tabbingIdentifier was set', () => {
+        const w = new BrowserWindow({ show: false });
+        expect(w.tabbingIdentifier).to.be.undefined('tabbingIdentifier');
+      });
+
+      it('returns the window tabbingIdentifier', () => {
+        const w = new BrowserWindow({ show: false, tabbingIdentifier: 'group1' });
+        expect(w.tabbingIdentifier).to.equal('group1');
       });
     });
   });

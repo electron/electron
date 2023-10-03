@@ -256,6 +256,7 @@ class NativeWindow : public base::SupportsUserData,
   virtual void MoveTabToNewWindow();
   virtual void ToggleTabBar();
   virtual bool AddTabbedWindow(NativeWindow* window);
+  virtual absl::optional<std::string> GetTabbingIdentifier() const;
 
   // Toggle the menu bar.
   virtual void SetAutoHideMenuBar(bool auto_hide);

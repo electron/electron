@@ -1643,6 +1643,13 @@ bool NativeWindowMac::AddTabbedWindow(NativeWindow* window) {
   return true;
 }
 
+absl::optional<std::string> NativeWindowMac::GetTabbingIdentifier() const {
+  if ([window_ tabbingMode] == NSWindowTabbingModeDisallowed)
+    return absl::nullopt;
+
+  return base::SysNSStringToUTF8([window_ tabbingIdentifier]);
+}
+
 void NativeWindowMac::SetAspectRatio(double aspect_ratio,
                                      const gfx::Size& extra_size) {
   NativeWindow::SetAspectRatio(aspect_ratio, extra_size);

@@ -198,9 +198,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   bool GetWindowButtonVisibility() const;
   void SetWindowButtonPosition(absl::optional<gfx::Point> position);
   absl::optional<gfx::Point> GetWindowButtonPosition() const;
-#endif
 
-#if BUILDFLAG(IS_MAC)
   bool IsHiddenInMissionControl();
   void SetHiddenInMissionControl(bool hidden);
 #endif
@@ -215,6 +213,7 @@ class BaseWindow : public gin_helper::TrackableObject<BaseWindow>,
   void MoveTabToNewWindow();
   void ToggleTabBar();
   void AddTabbedWindow(NativeWindow* window, gin_helper::Arguments* args);
+  v8::Local<v8::Value> GetTabbingIdentifier();
   void SetAutoHideMenuBar(bool auto_hide);
   bool IsMenuBarAutoHide();
   void SetMenuBarVisibility(bool visible);

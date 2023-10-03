@@ -475,6 +475,10 @@ events.
 
 A `Integer` property representing the unique ID of the window. Each ID is unique among all `BrowserWindow` instances of the entire Electron application.
 
+#### `win.tabbingIdentifier` _macOS_ _Readonly_
+
+A `string` (optional) property that is equal to the `tabbingIdentifier` passed to the `BrowserWindow` constructor or `undefined` if none was set.
+
 #### `win.autoHideMenuBar`
 
 A `boolean` property that determines whether the window menu bar should hide itself automatically. Once set, the menu bar will only show when users press the single `Alt` key.
