@@ -1,7 +1,7 @@
-From 309b604c4e883f549693dd05d58a3e806a537d46 Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tsuyoshi Horo <horo@chromium.org>
 Date: Fri, 29 Sep 2023 08:13:50 +0000
-Subject: [PATCH] [M114-LTS] Fix DataPipeDrainer usage in ExtensionLocalizationURLLoader
+Subject: Fix DataPipeDrainer usage in ExtensionLocalizationURLLoader
 
 There is a bug that when ExtensionLocalizationURLLoader is destructed
 by canceling the CSS requests from extensions, DataPipeProducer may
@@ -27,10 +27,9 @@ Owners-Override: Victor Gabriel Savu <vsavu@google.com>
 Reviewed-by: Victor Gabriel Savu <vsavu@google.com>
 Cr-Commit-Position: refs/branch-heads/5735@{#1611}
 Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
----
 
 diff --git a/extensions/renderer/extension_localization_throttle.cc b/extensions/renderer/extension_localization_throttle.cc
-index 382283c..65bbaf5 100644
+index 382283cea8a8a061f769dc234b67ef8b53b47517..65bbaf5a990fc86105048492e36813645a6a788c 100644
 --- a/extensions/renderer/extension_localization_throttle.cc
 +++ b/extensions/renderer/extension_localization_throttle.cc
 @@ -5,6 +5,7 @@
@@ -41,7 +40,7 @@ index 382283c..65bbaf5 100644
  #include "base/strings/string_piece.h"
  #include "base/strings/string_util.h"
  #include "content/public/renderer/render_thread.h"
-@@ -51,8 +52,7 @@
+@@ -51,8 +52,7 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
  
      data_drainer_ =
          std::make_unique<mojo::DataPipeDrainer>(this, std::move(body));
@@ -51,7 +50,7 @@ index 382283c..65bbaf5 100644
      return true;
    }
  
-@@ -134,18 +134,31 @@
+@@ -134,18 +134,31 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
        ReplaceMessages();
      }
  
@@ -91,7 +90,7 @@ index 382283c..65bbaf5 100644
      data_write_result_ = result;
      MaybeSendOnComplete();
    }
-@@ -170,7 +183,7 @@
+@@ -170,7 +183,7 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
  
    const std::string extension_id_;
    std::unique_ptr<mojo::DataPipeDrainer> data_drainer_;
@@ -100,7 +99,7 @@ index 382283c..65bbaf5 100644
    std::string data_;
  
    absl::optional<network::URLLoaderCompletionStatus> original_complete_status_;
-@@ -180,6 +193,7 @@
+@@ -180,6 +193,7 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
        this};
    mojo::Remote<network::mojom::URLLoader> source_url_loader_;
    mojo::Remote<network::mojom::URLLoaderClient> destination_url_loader_client_;
@@ -109,10 +108,10 @@ index 382283c..65bbaf5 100644
  
  }  // namespace
 diff --git a/extensions/renderer/extension_localization_throttle_unittest.cc b/extensions/renderer/extension_localization_throttle_unittest.cc
-index 7324023..221ee90 100644
+index 732402366b697e3e982fe5feb3d25cb2e726abdd..221ee9062da9ea4262a4903cf815abf82cfb5d99 100644
 --- a/extensions/renderer/extension_localization_throttle_unittest.cc
 +++ b/extensions/renderer/extension_localization_throttle_unittest.cc
-@@ -306,6 +306,37 @@
+@@ -306,6 +306,37 @@ TEST_F(ExtensionLocalizationThrottleTest, EmptyData) {
        delegate->destination_loader_client()->completion_status().error_code);
  }
  
