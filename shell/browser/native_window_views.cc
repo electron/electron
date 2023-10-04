@@ -1352,47 +1352,38 @@ void NativeWindowViews::SetMenu(ElectronMenuModel* menu_model) {
 }
 
 void NativeWindowViews::AddBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
+  if (!content_view() || !view) {
     return;
   }
 
   add_browser_view(view);
-  if (view->GetInspectableWebContentsView())
-    content_view()->AddChildView(
-        view->GetInspectableWebContentsView()->GetView());
+  if (auto* iwc_view = view->GetInspectableWebContentsView()) {
+    content_view()->AddChildView(iwc_view->GetView());
+  }
 }
 
 void NativeWindowViews::RemoveBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
+  if (!content_view() || !view) {
     return;
   }
 
-  if (view->GetInspectableWebContentsView())
-    content_view()->RemoveChildView(
-        view->GetInspectableWebContentsView()->GetView());
+  if (auto* iwc_view = view->GetInspectableWebContentsView()) {
+    content_view()->RemoveChildView(iwc_view->GetView());
+  }
   remove_browser_view(view);
 }
 
 void NativeWindowViews::SetTopBrowserView(NativeBrowserView* view) {
-  if (!content_view())
-    return;
-
-  if (!view) {
+  if (!content_view() || !view) {
     return;
   }
 
   remove_browser_view(view);
   add_browser_view(view);
 
-  if (view->GetInspectableWebContentsView())
-    content_view()->ReorderChildView(
-        view->GetInspectableWebContentsView()->GetView(), -1);
+  if (auto* iwc_view = view->GetInspectableWebContentsView()) {
+    content_view()->ReorderChildView(iwc_view->GetView(), -1);
+  }
 }
 
 void NativeWindowViews::SetParentWindow(NativeWindow* parent) {

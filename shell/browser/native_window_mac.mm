@@ -1268,13 +1268,12 @@ bool NativeWindowMac::IsFocusable() {
 }
 
 void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
   if (!view) {
-    [CATransaction commit];
     return;
   }
+
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
 
   add_browser_view(view);
   if (auto* native_view = GetNativeNSView(view)) {
@@ -1288,13 +1287,12 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
 }
 
 void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
   if (!view) {
-    [CATransaction commit];
     return;
   }
+
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
 
   if (auto* native_view = GetNativeNSView(view)) {
     [native_view removeFromSuperview];
@@ -1305,13 +1303,12 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
 }
 
 void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
-  [CATransaction begin];
-  [CATransaction setDisableActions:YES];
-
   if (!view) {
-    [CATransaction commit];
     return;
   }
+
+  [CATransaction begin];
+  [CATransaction setDisableActions:YES];
 
   remove_browser_view(view);
   add_browser_view(view);
