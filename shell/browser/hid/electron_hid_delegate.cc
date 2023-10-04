@@ -11,6 +11,7 @@
 #include "base/containers/contains.h"
 #include "chrome/common/chrome_features.h"
 #include "content/public/browser/web_contents.h"
+#include "electron/buildflags/buildflags.h"
 #include "services/device/public/cpp/hid/hid_switches.h"
 #include "shell/browser/electron_permission_manager.h"
 #include "shell/browser/hid/hid_chooser_context.h"
@@ -19,9 +20,9 @@
 #include "shell/browser/web_contents_permission_helper.h"
 #include "third_party/blink/public/common/permissions/permission_utils.h"
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/common/constants.h"
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 
 namespace {
 
@@ -128,14 +129,14 @@ bool ElectronHidDelegate::IsFidoAllowedForOrigin(
 
 bool ElectronHidDelegate::IsServiceWorkerAllowedForOrigin(
     const url::Origin& origin) {
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   // WebHID is only available on extension service workers with feature flag
   // enabled for now.
   if (base::FeatureList::IsEnabled(
           features::kEnableWebHidOnExtensionServiceWorker) &&
       origin.scheme() == extensions::kExtensionScheme)
     return true;
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   return false;
 }
 

@@ -342,6 +342,34 @@ static_library("chrome") {
         "//components/pdf/renderer",
       ]
     }
+  } else {
+    # These are required by the webRequest module.
+    sources += [
+      "//extensions/browser/api/declarative_net_request/request_action.cc",
+      "//extensions/browser/api/declarative_net_request/request_action.h",
+      "//extensions/browser/api/web_request/form_data_parser.cc",
+      "//extensions/browser/api/web_request/form_data_parser.h",
+      "//extensions/browser/api/web_request/upload_data_presenter.cc",
+      "//extensions/browser/api/web_request/upload_data_presenter.h",
+      "//extensions/browser/api/web_request/web_request_api_constants.cc",
+      "//extensions/browser/api/web_request/web_request_api_constants.h",
+      "//extensions/browser/api/web_request/web_request_info.cc",
+      "//extensions/browser/api/web_request/web_request_info.h",
+      "//extensions/browser/api/web_request/web_request_resource_type.cc",
+      "//extensions/browser/api/web_request/web_request_resource_type.h",
+      "//extensions/browser/extension_api_frame_id_map.cc",
+      "//extensions/browser/extension_api_frame_id_map.h",
+      "//extensions/browser/extension_navigation_ui_data.cc",
+      "//extensions/browser/extension_navigation_ui_data.h",
+      "//extensions/browser/extensions_browser_client.cc",
+      "//extensions/browser/extensions_browser_client.h",
+      "//extensions/browser/guest_view/web_view/web_view_renderer_state.cc",
+      "//extensions/browser/guest_view/web_view/web_view_renderer_state.h",
+    ]
+
+    public_deps += [
+      "//extensions/browser/api/declarative_net_request/flat:extension_ruleset",
+    ]
   }
 
   if (!is_mas_build) {

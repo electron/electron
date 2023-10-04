@@ -57,7 +57,7 @@
 #include "crypto/crypto_buildflags.h"
 #include "electron/buildflags/buildflags.h"
 #include "electron/shell/common/api/api.mojom.h"
-#include "extensions/browser/api/messaging/messaging_api_message_filter.h"
+#include "extensions/browser/extension_navigation_ui_data.h"
 #include "mojo/public/cpp/bindings/binder_map.h"
 #include "net/ssl/ssl_cert_request_info.h"
 #include "net/ssl/ssl_private_key.h"
@@ -114,6 +114,7 @@
 #include "shell/common/options_switches.h"
 #include "shell/common/platform_util.h"
 #include "shell/common/thread_restrictions.h"
+#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #include "third_party/blink/public/common/loader/url_loader_throttle.h"
 #include "third_party/blink/public/common/renderer_preferences/renderer_preferences.h"
 #include "third_party/blink/public/common/tokens/tokens.h"
@@ -147,6 +148,7 @@
 #include "content/public/browser/child_process_security_policy.h"
 #include "content/public/browser/file_url_loader.h"
 #include "content/public/browser/web_ui_url_loader_factory.h"
+#include "extensions/browser/api/messaging/messaging_api_message_filter.h"
 #include "extensions/browser/api/mime_handler_private/mime_handler_private.h"
 #include "extensions/browser/api/web_request/web_request_api.h"
 #include "extensions/browser/browser_context_keyed_api_factory.h"
@@ -154,7 +156,6 @@
 #include "extensions/browser/extension_host.h"
 #include "extensions/browser/extension_message_filter.h"
 #include "extensions/browser/extension_navigation_throttle.h"
-#include "extensions/browser/extension_navigation_ui_data.h"
 #include "extensions/browser/extension_prefs.h"
 #include "extensions/browser/extension_protocols.h"
 #include "extensions/browser/extension_registry.h"
@@ -172,7 +173,6 @@
 #include "shell/browser/extensions/electron_extension_message_filter.h"
 #include "shell/browser/extensions/electron_extension_system.h"
 #include "shell/browser/extensions/electron_extension_web_contents_observer.h"
-#include "third_party/blink/public/common/associated_interfaces/associated_interface_registry.h"
 #endif
 
 #if BUILDFLAG(ENABLE_PLUGINS)
@@ -1220,12 +1220,12 @@ void ElectronBrowserClient::
   protocol_registry->RegisterURLLoaderFactories(factories,
                                                 false /* allow_file_access */);
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionServiceWorkerScriptURLLoaderFactory(
           browser_context));
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
 bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
@@ -1413,9 +1413,10 @@ void ElectronBrowserClient::OverrideURLLoaderFactoryParams(
       factory_params->disable_web_security = true;
     }
   }
-
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   extensions::URLLoaderFactoryManager::OverrideURLLoaderFactoryParams(
       browser_context, origin, is_for_isolated_world, factory_params);
+#endif
 }
 
 void ElectronBrowserClient::
@@ -1473,7 +1474,7 @@ void ElectronBrowserClient::
           },
           &render_frame_host));
 #endif
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
