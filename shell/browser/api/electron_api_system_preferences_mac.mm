@@ -653,4 +653,9 @@ void SystemPreferences::SetAppLevelAppearance(gin::Arguments* args) {
   }
 }
 
+bool SystemPreferences::AccessibilityDisplayShouldReduceTransparency() {
+  return [[NSWorkspace sharedWorkspace]
+      accessibilityDisplayShouldReduceTransparency];
+}
+
 }  // namespace electron::api
