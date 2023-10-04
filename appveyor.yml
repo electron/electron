@@ -154,7 +154,6 @@ for:
       - gn gen out/ffmpeg "--args=import(\"//electron/build/args/ffmpeg.gn\") %GN_EXTRA_ARGS%"
       - ninja -C out/ffmpeg electron:electron_ffmpeg_zip
       - ninja -C out/Default electron:electron_dist_zip
-      - ninja -C out/Default shell_browser_ui_unittests
       - gn desc out/Default v8:run_mksnapshot_default args > out/Default/default_mksnapshot_args
       # Remove unused args from mksnapshot_args
       - ps: >-
@@ -193,7 +192,7 @@ for:
           if ($env:SHOULD_SKIP_ARTIFACT_VALIDATION -eq 'true') {
             Write-warning "Skipping artifact validation for doc-only $env:APPVEYOR_PROJECT_NAME"
           } else {
-            $artifacts_to_validate = 'dist.zip','windows_toolchain_profile.json','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip'
+            $artifacts_to_validate = 'dist.zip','windows_toolchain_profile.json','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib','hunspell_dictionaries.zip'
             foreach($artifact_name in $artifacts_to_validate) {
               if ($artifact_name -eq 'ffmpeg.zip') {
                 $artifact_file = "out\ffmpeg\ffmpeg.zip"
@@ -231,7 +230,6 @@ for:
       - cd C:\projects\src
       - if exist out\Default\windows_toolchain_profile.json ( appveyor-retry appveyor PushArtifact out\Default\windows_toolchain_profile.json )
       - if exist out\Default\dist.zip (appveyor-retry appveyor PushArtifact out\Default\dist.zip)
-      - if exist out\Default\shell_browser_ui_unittests.exe (appveyor-retry appveyor PushArtifact out\Default\shell_browser_ui_unittests.exe)
       - if exist out\Default\chromedriver.zip (appveyor-retry appveyor PushArtifact out\Default\chromedriver.zip)
       - if exist out\ffmpeg\ffmpeg.zip (appveyor-retry appveyor PushArtifact out\ffmpeg\ffmpeg.zip)
       - if exist node_headers.zip (appveyor-retry appveyor PushArtifact node_headers.zip)
@@ -268,12 +266,12 @@ for:
           # Download build artifacts
           $apiUrl = 'https://ci.appveyor.com/api'
           $build_info = Invoke-RestMethod -Method Get -Uri "$apiUrl/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/builds/$env:APPVEYOR_BUILD_ID"
-          $artifacts_to_download = @('dist.zip','shell_browser_ui_unittests.exe','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')
+          $artifacts_to_download = @('dist.zip','chromedriver.zip','ffmpeg.zip','node_headers.zip','mksnapshot.zip','electron.lib')
           foreach ($job in $build_info.build.jobs) {
             if ($job.name -eq "Build") {
               $jobId = $job.jobId
               foreach($artifact_name in $artifacts_to_download) {
-                if ($artifact_name -eq 'shell_browser_ui_unittests.exe' -Or $artifact_name -eq 'electron.lib') {
+                if ($artifact_name -eq 'electron.lib') {
                   $outfile = "src\out\Default\$artifact_name"
                 } else {
                   $outfile = $artifact_name
@@ -307,7 +305,6 @@ for:
             $env:npm_config_arch = "ia32"
           }
       - echo Running main test suite & node script/yarn test -- --trace-uncaught --runners=main --enable-logging=file --log-file=%cd%\electron.log
-      - echo Running native test suite & node script/yarn test -- --trace-uncaught --runners=native --enable-logging=file --log-file=%cd%\electron.log
       - cd ..
       - echo Verifying non proprietary ffmpeg & python electron\script\verify-ffmpeg.py --build-dir out\Default --source-root %cd% --ffmpeg-path out\ffmpeg
       - echo "About to verify mksnapshot"

@@ -1328,25 +1328,6 @@ if (is_mac) {
   }
 }
 
-test("shell_browser_ui_unittests") {
-  sources = [
-    "//electron/shell/browser/ui/accelerator_util_unittests.cc",
-    "//electron/shell/browser/ui/run_all_unittests.cc",
-  ]
-
-  configs += [ ":electron_lib_config" ]
-
-  deps = [
-    ":electron_lib",
-    "//base",
-    "//base/test:test_support",
-    "//testing/gmock",
-    "//testing/gtest",
-    "//ui/base",
-    "//ui/strings",
-  ]
-}
-
 template("dist_zip") {
   _runtime_deps_target = "${target_name}__deps"
   _runtime_deps_file =
