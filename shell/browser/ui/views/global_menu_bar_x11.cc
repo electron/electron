@@ -7,6 +7,7 @@
 #include <dlfcn.h>
 #include <glib-object.h>
 
+#include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
@@ -232,6 +233,13 @@ void GlobalMenuBarX11::OnWindowUnmapped() {
 
 void GlobalMenuBarX11::BuildMenuFromModel(ElectronMenuModel* model,
                                           DbusmenuMenuitem* parent) {
+  auto connect = [&](auto* sender, const char* detailed_signal, auto receiver) {
+    // Unretained() is safe since GlobalMenuBarX11 will own the
+    // ScopedGSignal.
+    signals_.emplace_back(
+        sender, detailed_signal,
+        base::BindRepeating(receiver, base::Unretained(this)));
+  };
   for (size_t i = 0; i < model->GetItemCount(); ++i) {
     DbusmenuMenuitem* item = menuitem_new();
     menuitem_property_set_bool(item, kPropertyVisible, model->IsVisibleAt(i));
@@ -250,15 +258,13 @@ void GlobalMenuBarX11::BuildMenuFromModel(ElectronMenuModel* model,
 
       if (type == ElectronMenuModel::TYPE_SUBMENU) {
         menuitem_property_set(item, kPropertyChildrenDisplay, kDisplaySubmenu);
-        g_signal_connect(item, "about-to-show", G_CALLBACK(OnSubMenuShowThunk),
-                         this);
+        connect(item, "about-to-show", &GlobalMenuBarX11::OnSubMenuShow);
       } else {
         ui::Accelerator accelerator;
         if (model->GetAcceleratorAtWithParams(i, true, &accelerator))
           RegisterAccelerator(item, accelerator);
 
-        g_signal_connect(item, "item-activated",
-                         G_CALLBACK(OnItemActivatedThunk), this);
+        connect(item, "item-activated", &GlobalMenuBarX11::OnItemActivated);
 
         if (type == ElectronMenuModel::TYPE_CHECK ||
             type == ElectronMenuModel::TYPE_RADIO) {

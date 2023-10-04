@@ -6,6 +6,7 @@
 
 #include <gtk/gtk.h>
 
+#include "base/functional/bind.h"
 #include "shell/browser/ui/gtk/menu_util.h"
 #include "ui/base/models/menu_model.h"
 
@@ -15,8 +16,9 @@ MenuGtk::MenuGtk(ui::MenuModel* model)
     : menu_model_(model), gtk_menu_(TakeGObject(gtk_menu_new())) {
   if (menu_model_) {
     BuildSubmenuFromModel(menu_model_, gtk_menu_,
-                          G_CALLBACK(OnMenuItemActivatedThunk),
-                          &block_activation_, this);
+                          base::BindRepeating(&MenuGtk::OnMenuItemActivated,
+                                              base::Unretained(this)),
+                          &block_activation_, &signals_);
     Refresh();
   }
 }

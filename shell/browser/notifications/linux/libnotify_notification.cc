@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/files/file_enumerator.h"
+#include "base/functional/bind.h"
 #include "base/logging.h"
 #include "base/strings/utf_string_conversions.h"
 #include "shell/browser/notifications/notification_delegate.h"
@@ -87,15 +88,16 @@ void LibnotifyNotification::Show(const NotificationOptions& options) {
       base::UTF16ToUTF8(options.title).c_str(),
       base::UTF16ToUTF8(options.msg).c_str(), nullptr);
 
-  g_signal_connect(notification_, "closed",
-                   G_CALLBACK(OnNotificationClosedThunk), this);
+  signal_ = ScopedGSignal(
+      notification_, "closed",
+      base::BindRepeating(&LibnotifyNotification::OnNotificationClosed,
+                          base::Unretained(this)));
 
   // NB: On Unity and on any other DE using Notify-OSD, adding a notification
   // action will cause the notification to display as a modal dialog box.
   if (NotifierSupportsActions()) {
     libnotify_loader_.notify_notification_add_action(
-        notification_, "default", "View", OnNotificationViewThunk, this,
-        nullptr);
+        notification_, "default", "View", OnNotificationView, this, nullptr);
   }
 
   NotifyUrgency urgency = NOTIFY_URGENCY_NORMAL;
@@ -175,8 +177,11 @@ void LibnotifyNotification::OnNotificationClosed(
 }
 
 void LibnotifyNotification::OnNotificationView(NotifyNotification* notification,
-                                               char* action) {
-  NotificationClicked();
+                                               char* action,
+                                               gpointer user_data) {
+  LibnotifyNotification* that = static_cast<LibnotifyNotification*>(user_data);
+  DCHECK(that);
+  that->NotificationClicked();
 }
 
 }  // namespace electron
