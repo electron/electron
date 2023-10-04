@@ -1220,12 +1220,12 @@ void ElectronBrowserClient::
   protocol_registry->RegisterURLLoaderFactories(factories,
                                                 false /* allow_file_access */);
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   factories->emplace(
       extensions::kExtensionScheme,
       extensions::CreateExtensionServiceWorkerScriptURLLoaderFactory(
           browser_context));
-#endif  // BUILDFLAG(ENABLE_EXTENSIONS)
+#endif  // BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 }
 
 bool ElectronBrowserClient::ShouldTreatURLSchemeAsFirstPartyWhenTopLevel(
@@ -1473,7 +1473,7 @@ void ElectronBrowserClient::
           },
           &render_frame_host));
 #endif
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   associated_registry.AddInterface<extensions::mojom::LocalFrameHost>(
       base::BindRepeating(
           [](content::RenderFrameHost* render_frame_host,
