@@ -145,6 +145,7 @@ class NativeWindowMac : public NativeWindow,
   void MoveTabToNewWindow() override;
   void ToggleTabBar() override;
   bool AddTabbedWindow(NativeWindow* window) override;
+  absl::optional<std::string> GetTabbingIdentifier() const override;
   void SetAspectRatio(double aspect_ratio,
                       const gfx::Size& extra_size) override;
   void PreviewFile(const std::string& path,
