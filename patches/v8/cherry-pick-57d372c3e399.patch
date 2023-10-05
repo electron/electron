@@ -1,0 +1,65 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Victor Gomes <victorgomes@chromium.org>
+Date: Tue, 12 Sep 2023 11:22:34 +0200
+Subject: Merged: [maglev] Fix wrong logic for re-checking array map in forEach
+
+The comment was correct, but the logic was wrong.
+
+In the example, the array is transitioned to dictionary mode,
+and in the next iteration, we crash when reading the next element.
+
+Fixed: chromium:1481179
+Bug: v8:7700
+
+(cherry picked from commit e7305f26458ca02b063146bb2297ca58090ddff1)
+
+Change-Id: Ic1620dd54b01cae985658af361c32cd2f6a71280
+No-try: true
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4882541
+Auto-Submit: Victor Gomes <victorgomes@chromium.org>
+Reviewed-by: Leszek Swirski <leszeks@chromium.org>
+Reviewed-by: Darius Mercadier <dmercadier@chromium.org>
+Commit-Queue: Darius Mercadier <dmercadier@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.7@{#34}
+Cr-Branched-From: fe608691065e23ae83720392bf61a59e8166bee6-refs/heads/11.7.439@{#1}
+Cr-Branched-From: aeb45525398afa173aa91fcf83eb6341c83850ea-refs/heads/main@{#89415}
+
+diff --git a/src/maglev/maglev-graph-builder.cc b/src/maglev/maglev-graph-builder.cc
+index 854078ac929435a3b96fa133c232e73ec2b73d63..abe20c562f2791f10193e053d2691fdf95924485 100644
+--- a/src/maglev/maglev-graph-builder.cc
++++ b/src/maglev/maglev-graph-builder.cc
+@@ -5891,7 +5891,7 @@ ReduceResult MaglevGraphBuilder::TryReduceArrayForEach(
+         compiler::ZoneRefSet<Map> receiver_maps_after_call =
+             receiver_maps_after_call_it->second.possible_maps;
+         recheck_maps_after_call =
+-            receiver_maps_before_call.contains(receiver_maps_after_call);
++            !receiver_maps_before_call.contains(receiver_maps_after_call);
+       }
+     }
+   }
+diff --git a/test/mjsunit/maglev/regress-1481179.js b/test/mjsunit/maglev/regress-1481179.js
+new file mode 100644
+index 0000000000000000000000000000000000000000..01cce025399ab24409c484a6be199959de21ec2c
+--- /dev/null
++++ b/test/mjsunit/maglev/regress-1481179.js
+@@ -0,0 +1,20 @@
++// Copyright 2022 the V8 project authors. All rights reserved.
++// Use of this source code is governed by a BSD-style license that can be
++// found in the LICENSE file.
++//
++// Flags: --allow-natives-syntax --maglev --no-lazy-feedback-allocation
++
++function f(e, i, a) {
++  a[65535] = 42;
++  a.e = a;
++}
++function foo() {
++  const a = [1,2];
++  a.e = 42;
++  a.forEach(f);
++}
++
++%PrepareFunctionForOptimization(foo);
++foo();
++%OptimizeMaglevOnNextCall(foo);
++foo();
