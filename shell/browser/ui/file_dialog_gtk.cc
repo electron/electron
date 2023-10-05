@@ -6,6 +6,7 @@
 #include <string>
 
 #include "base/files/file_util.h"
+#include "base/functional/bind.h"
 #include "base/functional/callback.h"
 #include "base/memory/raw_ptr.h"
 #include "base/memory/raw_ptr_exclusion.h"
@@ -17,7 +18,7 @@
 #include "shell/browser/ui/gtk_util.h"
 #include "shell/common/gin_converters/file_path_converter.h"
 #include "shell/common/thread_restrictions.h"
-#include "ui/base/glib/glib_signal.h"
+#include "ui/base/glib/scoped_gsignal.h"
 #include "ui/gtk/gtk_ui.h"    // nogncheck
 #include "ui/gtk/gtk_util.h"  // nogncheck
 
@@ -121,8 +122,10 @@ class FileChooserDialog {
     // the update-preview signal or the preview widget will just be ignored.
     if (!electron::IsElectron_gtkInitialized()) {
       preview_ = gtk_image_new();
-      g_signal_connect(dialog_, "update-preview",
-                       G_CALLBACK(OnUpdatePreviewThunk), this);
+      signals_.emplace_back(
+          dialog_, "update-preview",
+          base::BindRepeating(&FileChooserDialog::OnUpdatePreview,
+                              base::Unretained(this)));
       gtk_file_chooser_set_preview_widget(dialog_, preview_);
     }
   }
@@ -165,8 +168,10 @@ class FileChooserDialog {
   }
 
   void RunAsynchronous() {
-    g_signal_connect(dialog_, "response", G_CALLBACK(OnFileDialogResponseThunk),
-                     this);
+    signals_.emplace_back(
+        GTK_WIDGET(dialog_), "response",
+        base::BindRepeating(&FileChooserDialog::OnFileDialogResponse,
+                            base::Unretained(this)));
     if (electron::IsElectron_gtkInitialized()) {
       gtk_native_dialog_show(GTK_NATIVE_DIALOG(dialog_));
     } else {
@@ -210,11 +215,7 @@ class FileChooserDialog {
     return paths;
   }
 
-  CHROMEG_CALLBACK_1(FileChooserDialog,
-                     void,
-                     OnFileDialogResponse,
-                     GtkWidget*,
-                     int);
+  void OnFileDialogResponse(GtkWidget* widget, int response);
 
   GtkFileChooser* dialog() const { return dialog_; }
 
@@ -231,7 +232,9 @@ class FileChooserDialog {
   std::unique_ptr<gin_helper::Promise<gin_helper::Dictionary>> open_promise_;
 
   // Callback for when we update the preview for the selection.
-  CHROMEG_CALLBACK_0(FileChooserDialog, void, OnUpdatePreview, GtkFileChooser*);
+  void OnUpdatePreview(GtkFileChooser* chooser);
+
+  std::vector<ScopedGSignal> signals_;
 };
 
 void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
