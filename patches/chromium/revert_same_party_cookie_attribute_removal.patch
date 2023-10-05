@@ -185,7 +185,7 @@ index dbe3c5b8a6c83c5e8d26b109f24e77b4ab2e604e..fd51ab0f749b63fda2a7848594bb616f
  }
  
 diff --git a/content/browser/devtools/protocol/network_handler.cc b/content/browser/devtools/protocol/network_handler.cc
-index 39cf06e487c59c3f1b7d65eb2ed7b69646ce96a5..19abfd095dcf617c26878b9e047dbc1f5abbc710 100644
+index 74737944f75cdc45b07ae110551ec4b2f250abc7..26a051883a10964168122f9b4ce8ac37f4efa006 100644
 --- a/content/browser/devtools/protocol/network_handler.cc
 +++ b/content/browser/devtools/protocol/network_handler.cc
 @@ -783,6 +783,11 @@ GetProtocolBlockedSetCookieReason(net::CookieInclusionStatus status) {
@@ -385,7 +385,7 @@ index f0493cfd8456000f88f1536e908fdc8ace227a28..68a30283eda63918f14efcc4cb409711
      "http/alternative_service.h",
      "http/bidirectional_stream.cc",
 diff --git a/net/base/features.cc b/net/base/features.cc
-index 1b63eb2526cd0fd07bd68c392c93aae59decdbde..0e6d590e78989570f21e9d0c0ed7b76a7cd6aa11 100644
+index 70f79c1d3a0f1c042229914844ec84c4f994a15b..cae2bce2138fdc3f8ab3b4a9e78e5720641b92df 100644
 --- a/net/base/features.cc
 +++ b/net/base/features.cc
 @@ -247,6 +247,10 @@ BASE_FEATURE(kCookieSameSiteConsidersRedirectChain,
@@ -400,7 +400,7 @@ index 1b63eb2526cd0fd07bd68c392c93aae59decdbde..0e6d590e78989570f21e9d0c0ed7b76a
               "WaitForFirstPartySetsInit",
               base::FEATURE_ENABLED_BY_DEFAULT);
 diff --git a/net/base/features.h b/net/base/features.h
-index 3632bb20d08f19ef16784f5c769e34cf2d1e0883..8247c7dba75f746c325c97c84f829b1b5267b03b 100644
+index a5fa693d239a542da6431a5eb6023c5804a5e1d7..6dd3ad7782944bd459bb2aecc8677db115e471f2 100644
 --- a/net/base/features.h
 +++ b/net/base/features.h
 @@ -297,6 +297,12 @@ NET_EXPORT BASE_DECLARE_FEATURE(kUdpSocketPosixAlwaysUpdateBytesReceived);
