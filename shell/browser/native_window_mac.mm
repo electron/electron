@@ -483,6 +483,8 @@ void NativeWindowMac::Show() {
     return;
   }
 
+  set_wants_to_be_visible(true);
+
   // Reattach the window to the parent to actually show it.
   if (parent())
     InternalSetParentWindow(parent(), true);
@@ -514,6 +516,10 @@ void NativeWindowMac::Hide() {
     [parent()->GetNativeWindow().GetNativeNSWindow() endSheet:window_];
     return;
   }
+
+  // If the window wants to be visible and has a parent, then the parent may
+  // order it back in (in the period between orderOut: and close).
+  set_wants_to_be_visible(false);
 
   DetachChildren();
 
@@ -650,6 +656,9 @@ void NativeWindowMac::RemoveChildFromParentWindow() {
 
 void NativeWindowMac::AttachChildren() {
   for (auto* child : child_windows_) {
+    if (!static_cast<NativeWindowMac*>(child)->wants_to_be_visible())
+      continue;
+
     auto* child_nswindow = child->GetNativeWindow().GetNativeNSWindow();
     if ([child_nswindow parentWindow] == window_)
       continue;
@@ -663,8 +672,6 @@ void NativeWindowMac::AttachChildren() {
 }
 
 void NativeWindowMac::DetachChildren() {
-  DCHECK(child_windows_.size() == [[window_ childWindows] count]);
-
   // Hide all children before hiding/minimizing the window.
   // NativeWidgetNSWindowBridge::NotifyVisibilityChangeDown()
   // will DCHECK otherwise.
