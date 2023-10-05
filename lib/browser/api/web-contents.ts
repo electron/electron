@@ -665,8 +665,8 @@ WebContents.prototype._init = function () {
     ipcMain.emit(channel, event, message);
   });
 
-  this.on('crashed', (event, ...args) => {
-    app.emit('renderer-process-crashed', event, this, ...args);
+  deprecate.event(this, 'crashed', 'render-process-gone', (event: Electron.Event, details: Electron.RenderProcessGoneDetails) => {
+    return [event, details.reason === 'killed'];
   });
 
   this.on('render-process-gone', (event, details) => {
