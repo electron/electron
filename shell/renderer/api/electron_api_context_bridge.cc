@@ -573,8 +573,8 @@ v8::MaybeLocal<v8::Object> CreateProxyForAPI(
 
   {
     v8::Context::Scope destination_context_scope(destination_context);
-    gin_helper::Dictionary proxy =
-        gin::Dictionary::CreateEmpty(destination_context->GetIsolate());
+    auto proxy =
+        gin_helper::Dictionary::CreateEmpty(destination_context->GetIsolate());
     object_cache->CacheProxiedObject(api.GetHandle(), proxy.GetHandle());
     auto maybe_keys = api.GetHandle()->GetOwnPropertyNames(
         source_context, static_cast<v8::PropertyFilter>(v8::ONLY_ENUMERABLE));

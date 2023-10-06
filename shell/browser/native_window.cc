@@ -114,8 +114,8 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
     } else if (titlebar_overlay->IsObject()) {
       titlebar_overlay_ = true;
 
-      gin_helper::Dictionary titlebar_overlay_dict =
-          gin::Dictionary::CreateEmpty(options.isolate());
+      auto titlebar_overlay_dict =
+          gin_helper::Dictionary::CreateEmpty(options.isolate());
       options.Get(options::ktitleBarOverlay, &titlebar_overlay_dict);
       int height;
       if (titlebar_overlay_dict.Get(options::kOverlayHeight, &height))

@@ -448,8 +448,8 @@ v8::Local<v8::Promise> Session::ResolveHost(
               DCHECK(addrs.has_value() && !addrs->empty());
 
               v8::HandleScope handle_scope(promise.isolate());
-              gin_helper::Dictionary dict =
-                  gin::Dictionary::CreateEmpty(promise.isolate());
+              auto dict =
+                  gin_helper::Dictionary::CreateEmpty(promise.isolate());
               dict.Set("endpoints", addrs->endpoints());
               promise.Resolve(dict);
             }

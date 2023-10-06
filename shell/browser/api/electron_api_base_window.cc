@@ -1180,8 +1180,7 @@ void BaseWindow::RemoveFromParentChildWindows() {
 
 // static
 gin_helper::WrappableBase* BaseWindow::New(gin_helper::Arguments* args) {
-  gin_helper::Dictionary options =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   args->GetNext(&options);
 
   return new BaseWindow(args, options);
