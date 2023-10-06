@@ -142,8 +142,11 @@ void InspectableWebContentsViewViews::CloseDevTools() {
 
   devtools_visible_ = false;
   if (devtools_window_) {
-    inspectable_web_contents()->SaveDevToolsBounds(
-        devtools_window_->GetWindowBoundsInScreen());
+    auto save_bounds = devtools_window_->IsMinimized()
+                           ? devtools_window_->GetRestoredBounds()
+                           : devtools_window_->GetWindowBoundsInScreen();
+    inspectable_web_contents()->SaveDevToolsBounds(save_bounds);
+
     devtools_window_.reset();
     devtools_window_web_view_ = nullptr;
     devtools_window_delegate_ = nullptr;
