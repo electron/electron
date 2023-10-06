@@ -31,3 +31,4 @@ merged_compiler_check_for_read-only_property_on.patch
 shared-struct_fix_for-in_enumeration.patch
 merged_squashed_multiple_commits.patch
 cherry-pick-038530c94a06.patch
+cherry-pick-b0ad701a609a.patch

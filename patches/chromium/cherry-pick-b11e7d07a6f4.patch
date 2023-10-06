@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Lei Zhang <thestig@chromium.org>
+Date: Wed, 13 Sep 2023 23:32:40 +0000
+Subject: M117: Check for object destruction in PdfViewWebPlugin::UpdateFocus()
+
+PdfViewWebPlugin::UpdateFocus() can potentially triggers its own
+destruction. Add a check for this and bail out.
+
+(cherry picked from commit cacf485a202b342526374d444375b80a044add76)
+
+Bug: 1480184
+Change-Id: I5e7760ed541a2bffb9dd1ebeb522f10650049033
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4852346
+Reviewed-by: Tom Sepez <tsepez@chromium.org>
+Code-Coverage: findit-for-me@appspot.gserviceaccount.com <findit-for-me@appspot.gserviceaccount.com>
+Commit-Queue: Lei Zhang <thestig@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1194210}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4863395
+Bot-Commit: Rubber Stamper <rubber-stamper@appspot.gserviceaccount.com>
+Cr-Commit-Position: refs/branch-heads/5938@{#1286}
+Cr-Branched-From: 2b50cb4bcc2318034581a816714d9535dc38966d-refs/heads/main@{#1181205}
+
+diff --git a/pdf/pdf_view_web_plugin.cc b/pdf/pdf_view_web_plugin.cc
+index cdedca1425dd5be31b2d0b5220d0e050d0b0fb59..b14777df757c8c9b3e5474e7f0f73fe316bfee58 100644
+--- a/pdf/pdf_view_web_plugin.cc
++++ b/pdf/pdf_view_web_plugin.cc
+@@ -519,7 +519,13 @@ void PdfViewWebPlugin::UpdateFocus(bool focused,
+   if (has_focus_ != focused) {
+     engine_->UpdateFocus(focused);
+     client_->UpdateTextInputState();
++
++    // Make sure `this` is still alive after the UpdateSelectionBounds() call.
++    auto weak_this = weak_factory_.GetWeakPtr();
+     client_->UpdateSelectionBounds();
++    if (!weak_this) {
++      return;
++    }
+   }
+   has_focus_ = focused;
+ 
