@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: John Kleinschmidt <jkleinsc@electronjs.org>
 Date: Fri, 6 Oct 2023 14:15:20 -0400
-Subject: feat: allow passing of ObjectTemplate to  ObjectTemplateBuilder
+Subject: feat: allow passing of ObjectTemplate to ObjectTemplateBuilder
 
 https://chromium-review.googlesource.com/c/chromium/src/+/4905829 removed the
 ObjectTemplateBuilder constructor which allows passing in an ObjectTemplate.
