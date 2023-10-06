@@ -12,7 +12,7 @@ invisible state of the `viz::DisplayScheduler` owned
 by the `ui::Compositor`.
 
 diff --git a/ui/compositor/compositor.cc b/ui/compositor/compositor.cc
-index 623991465edb99ee720c8177c3511e4d025ed890..c94537af56f7de8cd15bd3b3155b79b41ea003f4 100644
+index 47eb6399f9761ee4b1abd71ce33a2a70c9aa02f5..82458063542f1c0be8384294cc696d245e181c78 100644
 --- a/ui/compositor/compositor.cc
 +++ b/ui/compositor/compositor.cc
 @@ -341,7 +341,8 @@ void Compositor::SetLayerTreeFrameSink(
@@ -54,10 +54,10 @@ index 623991465edb99ee720c8177c3511e4d025ed890..c94537af56f7de8cd15bd3b3155b79b4
 +
  }  // namespace ui
 diff --git a/ui/compositor/compositor.h b/ui/compositor/compositor.h
-index ddb28fd6f7549759df7e3b7d6b309cd982e199af..7473f3af9bc8cac8db3c30dfbc9b7140f832ac15 100644
+index 250818e9850e502a68a64fe96290cba4fed51e5f..343cd29bd5edd28c75a9785e26c32cb90ec8e1e6 100644
 --- a/ui/compositor/compositor.h
 +++ b/ui/compositor/compositor.h
-@@ -511,6 +511,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -515,6 +515,10 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
  
    const cc::LayerTreeSettings& GetLayerTreeSettings() const;
  
@@ -68,7 +68,7 @@ index ddb28fd6f7549759df7e3b7d6b309cd982e199af..7473f3af9bc8cac8db3c30dfbc9b7140
   private:
    friend class base::RefCounted<Compositor>;
    friend class TotalAnimationThroughputReporter;
-@@ -617,6 +621,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
+@@ -621,6 +625,12 @@ class COMPOSITOR_EXPORT Compositor : public base::PowerSuspendObserver,
    // See go/report-ux-metrics-at-painting for details.
    bool animation_started_ = false;
  

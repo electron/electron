@@ -9,7 +9,7 @@ to support content settings UI. The support pulls in chrome content settings
 and UI code which are not valid in the scope of Electron.
 
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
-index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85cc5ab845 100644
+index c4c878e3726b7c011ee78a4ca571890d90cb7fe9..f678d7c18c5a6b8c73f18eb22f1df11993ca08d3 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.cc
 @@ -19,8 +19,10 @@
@@ -51,7 +51,7 @@ index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85
    auto* const web_contents = pip_window_controller_->GetWebContents();
  
    auto* auto_pip_tab_helper =
-@@ -393,6 +398,8 @@ PictureInPictureWindowManager::GetOverlayView(
+@@ -399,6 +404,8 @@ PictureInPictureWindowManager::GetOverlayView(
    }
  
    return overlay_view;
@@ -61,7 +61,7 @@ index 4775cbbac9ccf5011d48df7042fbb6c8f454dec2..df9c7917391952b133d9a37fdbe61d85
  #endif  // !BUILDFLAG(IS_ANDROID)
  
 diff --git a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
-index 85ae9fb9f969709c35c27ac1235e5bdc48e2084a..a2adddb3ec8c72a2ff1a3739a1792868a6f89ffc 100644
+index e98b2c2afaecdb755526b0a28f7723c193d95047..b2569f8e7199e6f03a8753ca41c777cd8c0ccb7a 100644
 --- a/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 +++ b/chrome/browser/picture_in_picture/picture_in_picture_window_manager.h
 @@ -11,6 +11,7 @@
@@ -82,7 +82,7 @@ index 85ae9fb9f969709c35c27ac1235e5bdc48e2084a..a2adddb3ec8c72a2ff1a3739a1792868
  
  namespace views {
  class View;
-@@ -238,7 +241,9 @@ class PictureInPictureWindowManager {
+@@ -242,7 +245,9 @@ class PictureInPictureWindowManager {
  #if !BUILDFLAG(IS_ANDROID)
    std::unique_ptr<DocumentWebContentsObserver> document_web_contents_observer_;
  

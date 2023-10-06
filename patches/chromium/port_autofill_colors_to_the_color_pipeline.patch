@@ -8,10 +8,10 @@ needed in chromium but our autofill implementation uses them.  This patch can be
 our autofill implementation to work like Chromium's.
 
 diff --git a/ui/color/color_id.h b/ui/color/color_id.h
-index 7b24de2cc853d7e7bd048cf504ae26a89077ad93..7a48532940f3fc1a869a3b3eebbd608250c38315 100644
+index 7ab2a4f5a8fbdb1a93039670feca0a7f4ca58c55..4fb8917330fdca1f67f3c10b5a15be2627ec081c 100644
 --- a/ui/color/color_id.h
 +++ b/ui/color/color_id.h
-@@ -397,6 +397,10 @@
+@@ -399,6 +399,10 @@
    E_CPONLY(kColorRadioButtonForegroundUnchecked) \
    E_CPONLY(kColorRadioButtonForegroundDisabled) \
    E_CPONLY(kColorRadioButtonForegroundChecked) \
@@ -22,7 +22,7 @@ index 7b24de2cc853d7e7bd048cf504ae26a89077ad93..7a48532940f3fc1a869a3b3eebbd6082
    E_CPONLY(kColorSegmentedButtonBorder) \
    E_CPONLY(kColorSegmentedButtonFocus) \
    E_CPONLY(kColorSegmentedButtonForegroundChecked) \
-@@ -501,6 +505,7 @@
+@@ -505,6 +509,7 @@
    E_CPONLY(kColorTreeNodeForeground) \
    E_CPONLY(kColorTreeNodeForegroundSelectedFocused) \
    E_CPONLY(kColorTreeNodeForegroundSelectedUnfocused) \

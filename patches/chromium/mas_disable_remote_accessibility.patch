@@ -265,10 +265,10 @@ index ed832e00520aced33ef6341d413244fae10f8d42..905a922692cb7e522426639c083971cb
    // Used to force the NSApplication's focused accessibility element to be the
    // views::Views accessibility tree when the NSView for this is focused.
 diff --git a/ui/views/cocoa/native_widget_mac_ns_window_host.mm b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-index ff5060bbeb626822895a36fd1244559cf51aa21d..9833577e99f7166d0414de5056e3bf4acb2a44c0 100644
+index fa960b50c11ffd545f99c997cd8664eaf241cac0..6547f69264ceb6727cfc92e69c773e094832394d 100644
 --- a/ui/views/cocoa/native_widget_mac_ns_window_host.mm
 +++ b/ui/views/cocoa/native_widget_mac_ns_window_host.mm
-@@ -342,7 +342,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -343,7 +343,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
  NativeWidgetMacNSWindowHost::GetNativeViewAccessibleForNSView() const {
    if (in_process_ns_window_bridge_)
      return in_process_ns_window_bridge_->ns_view();
@@ -280,7 +280,7 @@ index ff5060bbeb626822895a36fd1244559cf51aa21d..9833577e99f7166d0414de5056e3bf4a
  }
  
  gfx::NativeViewAccessible
-@@ -357,7 +361,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
+@@ -358,7 +362,11 @@ void HandleAccelerator(const ui::Accelerator& accelerator,
      return [in_process_ns_window_bridge_->ns_view() window];
    }
  

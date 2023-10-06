@@ -6,10 +6,10 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 55479f4187323ad0f26dbbda555c0ff3093cc8d5..a9cf41bce37672d355373568b04fbda45210a6d8 100644
+index 28d2cf9be9acfeb2dc891cddd5d653a649b64f9c..fa69dcd9b94251db71f8833e476ce212adc95864 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
-@@ -1032,6 +1032,7 @@ component("base") {
+@@ -1033,6 +1033,7 @@ component("base") {
      "//build/config/compiler:prevent_unsafe_narrowing",
      "//build/config/compiler:wexit_time_destructors",
      "//build/config/compiler:wglobal_constructors",
@@ -74,10 +74,10 @@ index 3029fda279a6e2062115ac7fc7ade32e4a3aecd2..a76eb15b7498e13933331f221d8b7314
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 75d8a3fa0083a82587ba6d429286764db37ba84d..7643533c471d0ccbcc8a38dfc050bad1e41fe130 100644
+index 6dba200809c77b9286c9b3a5d0753f9e99272c95..31b21487e4623ef1a637f93bb9d25dd27d35a268 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
-@@ -51,6 +51,7 @@ source_set("browser") {
+@@ -53,6 +53,7 @@ source_set("browser") {
      "//content:content_implementation",
      "//v8:external_startup_data",
    ]
@@ -86,7 +86,7 @@ index 75d8a3fa0083a82587ba6d429286764db37ba84d..7643533c471d0ccbcc8a38dfc050bad1
    libs = []
    frameworks = []
 diff --git a/content/common/BUILD.gn b/content/common/BUILD.gn
-index 0c72e7f246f3d0b46c4902dfbe0f9ec647e47c26..bd2afdf7630f4b3f5f2b99fe8d1bd226d3c7c6e0 100644
+index 42148bd0e7f13d0135b8869b1bfc321eabdf5e30..305b3197846034b47ca1810d29f9d2a936d9d064 100644
 --- a/content/common/BUILD.gn
 +++ b/content/common/BUILD.gn
 @@ -182,6 +182,7 @@ source_set("common") {
@@ -98,10 +98,10 @@ index 0c72e7f246f3d0b46c4902dfbe0f9ec647e47c26..bd2afdf7630f4b3f5f2b99fe8d1bd226
    public_deps = [
      ":mojo_bindings",
 diff --git a/content/renderer/BUILD.gn b/content/renderer/BUILD.gn
-index 5ab406dbebe5c159c6e209f8844bf6fabd47199f..224c45b7bff3c4073c70bbd8bdc1fd1c508c37a3 100644
+index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb65e258740 100644
 --- a/content/renderer/BUILD.gn
 +++ b/content/renderer/BUILD.gn
-@@ -225,6 +225,7 @@ target(link_target_type, "renderer") {
+@@ -222,6 +222,7 @@ target(link_target_type, "renderer") {
    }
  
    configs += [ "//content:content_implementation" ]
@@ -110,7 +110,7 @@ index 5ab406dbebe5c159c6e209f8844bf6fabd47199f..224c45b7bff3c4073c70bbd8bdc1fd1c
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index e08104a1a983176406483d97f8affa0c88b33a7a..a41b409ce8f08e20375504b324df7e1e75f6684d 100644
+index 3955307bd028c059322f9512d68ac2bfacaed120..6139fdc75dd38aea86047440ac7dae4dc7284557 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -135,7 +135,7 @@ index 5cd75b5bd5dcf31b6a589f69c1086b429c533923..924b5205cd38a80db38d505d8fd9263d
      sources += [ "browser/web_test_shell_platform_delegate_mac.mm" ]
    } else if (toolkit_views && !is_castos) {
 diff --git a/device/bluetooth/BUILD.gn b/device/bluetooth/BUILD.gn
-index 003a2504dd6810160924065e3acd65e6703fdcba..d9e0c2e88d55fe82c6ae98aef0adecf01d88a4fc 100644
+index d265281b6283af9ec37883e98cbc4f1ec38dd9b8..607798f87ead74bcc9e66620aff606b721763da5 100644
 --- a/device/bluetooth/BUILD.gn
 +++ b/device/bluetooth/BUILD.gn
 @@ -242,6 +242,7 @@ component("bluetooth") {
@@ -159,7 +159,7 @@ index 090bbd6f03c5749aaf763dac9e52c776f366c33d..5143231f5b3c95f55bf12aaedf253781
    if (is_ios) {
      sources += [ "image_transport_surface_ios.mm" ]
 diff --git a/media/audio/BUILD.gn b/media/audio/BUILD.gn
-index e938775a9f4eccc31a6bc616cd25d45660d563cd..e232fff1f156844ba4c2919112f26bae9e1867c6 100644
+index 8ec2ced4e4ea53804e9ee9b3844d28ddc2a0e13c..be0507315eb0d604795d693081f9d780cd818364 100644
 --- a/media/audio/BUILD.gn
 +++ b/media/audio/BUILD.gn
 @@ -206,6 +206,7 @@ source_set("audio") {
@@ -184,10 +184,10 @@ index f36bf682ffdeaf69da34a4f9e18465dde4e3a9a3..7f1a6fb71f78855bc771ee533b1715b2
  
  # The standard API of net/dns.
 diff --git a/sandbox/mac/BUILD.gn b/sandbox/mac/BUILD.gn
-index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a98050bb3cc6 100644
+index 299a028f23314f479d2da8f914a5bdf34698d854..672dcb04dd3cf4e3cc71403f727a1dde91ad4402 100644
 --- a/sandbox/mac/BUILD.gn
 +++ b/sandbox/mac/BUILD.gn
-@@ -37,6 +37,7 @@ component("seatbelt") {
+@@ -39,6 +39,7 @@ component("seatbelt") {
    ]
    public_deps = [ "//third_party/protobuf:protobuf_lite" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -195,7 +195,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  }
  
  component("seatbelt_extension") {
-@@ -50,6 +51,7 @@ component("seatbelt_extension") {
+@@ -52,6 +53,7 @@ component("seatbelt_extension") {
    libs = [ "sandbox" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
@@ -203,7 +203,7 @@ index 5e9fc18352d1bf0939f8366d2282b49aeb307994..69dcc2cafa27b3d8bdf3fe8d0a22a980
  }
  
  component("system_services") {
-@@ -64,6 +66,7 @@ component("system_services") {
+@@ -66,6 +68,7 @@ component("system_services") {
    deps = [ ":seatbelt_export" ]
    public_deps = [ "//base" ]
    defines = [ "SEATBELT_IMPLEMENTATION" ]
