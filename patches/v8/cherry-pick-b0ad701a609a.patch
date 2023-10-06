@@ -1,0 +1,56 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Shu-yu Guo <syg@chromium.org>
+Date: Wed, 6 Sep 2023 17:36:38 -0700
+Subject: Merged: [builtins] Clear FixedArray slot in Promise builtins
+
+(cherry picked from commit f1884222ad56734e56d80f9707e0e8279af9049e)
+
+Bug: chromium:1479104
+Change-Id: Iddc16d8add4dc6bf6f55f537da44770bea6f4bc3
+Reviewed-on: https://chromium-review.googlesource.com/c/v8/v8/+/4862980
+Auto-Submit: Shu-yu Guo <syg@chromium.org>
+Reviewed-by: Adam Klein <adamk@chromium.org>
+Commit-Queue: Adam Klein <adamk@chromium.org>
+Cr-Commit-Position: refs/branch-heads/11.6@{#36}
+Cr-Branched-From: e29c028f391389a7a60ee37097e3ca9e396d6fa4-refs/heads/11.6.189@{#3}
+Cr-Branched-From: 95cbef20e2aa556a1ea75431a48b36c4de6b9934-refs/heads/main@{#88340}
+
+diff --git a/src/builtins/promise-any.tq b/src/builtins/promise-any.tq
+index 45bafac0e6b09143b69b21a7292f9ed6b9c46239..d531d57a375ba33bf11ccf698da5918f1e25f38c 100644
+--- a/src/builtins/promise-any.tq
++++ b/src/builtins/promise-any.tq
+@@ -106,9 +106,10 @@ PromiseAnyRejectElementClosure(
+   const index = identityHash - 1;
+ 
+   // 6. Let errors be F.[[Errors]].
+-  let errors = *ContextSlot(
++  let errorsRef:&FixedArray = ContextSlot(
+       context,
+       PromiseAnyRejectElementContextSlots::kPromiseAnyRejectElementErrorsSlot);
++  let errors = *errorsRef;
+ 
+   // 7. Let promiseCapability be F.[[Capability]].
+ 
+@@ -134,10 +135,7 @@ PromiseAnyRejectElementClosure(
+       IntPtrMax(SmiUntag(remainingElementsCount) - 1, index + 1);
+   if (newCapacity > errors.length_intptr) deferred {
+       errors = ExtractFixedArray(errors, 0, errors.length_intptr, newCapacity);
+-      *ContextSlot(
+-          context,
+-          PromiseAnyRejectElementContextSlots::
+-              kPromiseAnyRejectElementErrorsSlot) = errors;
++      *errorsRef = errors;
+     }
+   errors.objects[index] = value;
+ 
+@@ -155,6 +153,10 @@ PromiseAnyRejectElementClosure(
+ 
+     //   b. Set error.[[AggregateErrors]] to errors.
+     const error = ConstructAggregateError(errors);
++
++    // After this point, errors escapes to user code. Clear the slot.
++    *errorsRef = kEmptyFixedArray;
++
+     //   c. Return ? Call(promiseCapability.[[Reject]], undefined, « error »).
+     const capability = *ContextSlot(
+         context,

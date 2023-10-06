@@ -1,0 +1,151 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tsuyoshi Horo <horo@chromium.org>
+Date: Fri, 29 Sep 2023 08:13:50 +0000
+Subject: Fix DataPipeDrainer usage in ExtensionLocalizationURLLoader
+
+There is a bug that when ExtensionLocalizationURLLoader is destructed
+by canceling the CSS requests from extensions, DataPipeProducer may
+cause UAF.
+This is because DataPipeProducer is not correctly used in
+ExtensionLocalizationURLLoader. DataPipeProducer and the data must be
+kept alive until notified of completion.
+
+This CL fix this by changing ExtensionLocalizationURLLoader to keep
+DataPipeProducer and the data even if ExtensionLocalizationURLLoader
+itself is destructed.
+
+(cherry picked from commit b6e060e17ed9e46b3043a3c369fc10cbbe2245d8)
+
+Bug: 1475798
+Change-Id: I013396f2c49f4712914b917c3330b99a1be791b8
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4821086
+Commit-Queue: Tsuyoshi Horo <horo@chromium.org>
+Cr-Original-Commit-Position: refs/heads/main@{#1191115}
+Reviewed-on: https://chromium-review.googlesource.com/c/chromium/src/+/4872577
+Commit-Queue: Zakhar Voit <voit@google.com>
+Owners-Override: Victor Gabriel Savu <vsavu@google.com>
+Reviewed-by: Victor Gabriel Savu <vsavu@google.com>
+Cr-Commit-Position: refs/branch-heads/5735@{#1611}
+Cr-Branched-From: 2f562e4ddbaf79a3f3cb338b4d1bd4398d49eb67-refs/heads/main@{#1135570}
+
+diff --git a/extensions/renderer/extension_localization_throttle.cc b/extensions/renderer/extension_localization_throttle.cc
+index 382283cea8a8a061f769dc234b67ef8b53b47517..65bbaf5a990fc86105048492e36813645a6a788c 100644
+--- a/extensions/renderer/extension_localization_throttle.cc
++++ b/extensions/renderer/extension_localization_throttle.cc
+@@ -5,6 +5,7 @@
+ #include "extensions/renderer/extension_localization_throttle.h"
+ 
+ #include "base/memory/ptr_util.h"
++#include "base/memory/weak_ptr.h"
+ #include "base/strings/string_piece.h"
+ #include "base/strings/string_util.h"
+ #include "content/public/renderer/render_thread.h"
+@@ -51,8 +52,7 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
+ 
+     data_drainer_ =
+         std::make_unique<mojo::DataPipeDrainer>(this, std::move(body));
+-    data_producer_ =
+-        std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle));
++    producer_handle_ = std::move(producer_handle);
+     return true;
+   }
+ 
+@@ -134,18 +134,31 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
+       ReplaceMessages();
+     }
+ 
+-    // Safe to use Unretained(this) because `this` owns `data_producer_`.
+-    data_producer_->Write(
+-        std::make_unique<mojo::StringDataSource>(
+-            base::StringPiece(data_), mojo::StringDataSource::AsyncWritingMode::
+-                                          STRING_STAYS_VALID_UNTIL_COMPLETION),
+-        base::BindOnce(&ExtensionLocalizationURLLoader::OnDataWritten,
+-                       base::Unretained(this)));
++    auto data_producer =
++        std::make_unique<mojo::DataPipeProducer>(std::move(producer_handle_));
++    auto data = std::make_unique<std::string>(std::move(data_));
++    // To avoid unnecessary string copy, use STRING_STAYS_VALID_UNTIL_COMPLETION
++    // here, and keep the original data hold in the closure below.
++    auto source = std::make_unique<mojo::StringDataSource>(
++        *data, mojo::StringDataSource::AsyncWritingMode::
++                   STRING_STAYS_VALID_UNTIL_COMPLETION);
++    mojo::DataPipeProducer* data_producer_ptr = data_producer.get();
++    data_producer_ptr->Write(
++        std::move(source),
++        base::BindOnce(
++            [](std::unique_ptr<mojo::DataPipeProducer> data_producer,
++               std::unique_ptr<std::string> data,
++               base::OnceCallback<void(MojoResult)> on_data_written_callback,
++               MojoResult result) {
++              std::move(on_data_written_callback).Run(result);
++            },
++            std::move(data_producer), std::move(data),
++            base::BindOnce(&ExtensionLocalizationURLLoader::OnDataWritten,
++                           weak_factory_.GetWeakPtr())));
+   }
+ 
+  private:
+   void OnDataWritten(MojoResult result) {
+-    data_producer_.reset();
+     data_write_result_ = result;
+     MaybeSendOnComplete();
+   }
+@@ -170,7 +183,7 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
+ 
+   const std::string extension_id_;
+   std::unique_ptr<mojo::DataPipeDrainer> data_drainer_;
+-  std::unique_ptr<mojo::DataPipeProducer> data_producer_;
++  mojo::ScopedDataPipeProducerHandle producer_handle_;
+   std::string data_;
+ 
+   absl::optional<network::URLLoaderCompletionStatus> original_complete_status_;
+@@ -180,6 +193,7 @@ class ExtensionLocalizationURLLoader : public network::mojom::URLLoaderClient,
+       this};
+   mojo::Remote<network::mojom::URLLoader> source_url_loader_;
+   mojo::Remote<network::mojom::URLLoaderClient> destination_url_loader_client_;
++  base::WeakPtrFactory<ExtensionLocalizationURLLoader> weak_factory_{this};
+ };
+ 
+ }  // namespace
+diff --git a/extensions/renderer/extension_localization_throttle_unittest.cc b/extensions/renderer/extension_localization_throttle_unittest.cc
+index 732402366b697e3e982fe5feb3d25cb2e726abdd..221ee9062da9ea4262a4903cf815abf82cfb5d99 100644
+--- a/extensions/renderer/extension_localization_throttle_unittest.cc
++++ b/extensions/renderer/extension_localization_throttle_unittest.cc
+@@ -306,6 +306,37 @@ TEST_F(ExtensionLocalizationThrottleTest, EmptyData) {
+       delegate->destination_loader_client()->completion_status().error_code);
+ }
+ 
++// Regression test for https://crbug.com/1475798
++TEST_F(ExtensionLocalizationThrottleTest, Cancel) {
++  const GURL url("chrome-extension://some_id/test.css");
++  auto throttle =
++      ExtensionLocalizationThrottle::MaybeCreate(blink::WebURL(url));
++  ASSERT_TRUE(throttle);
++
++  auto delegate = std::make_unique<FakeDelegate>();
++  throttle->set_delegate(delegate.get());
++
++  auto response_head = network::mojom::URLResponseHead::New();
++  response_head->mime_type = "text/css";
++  bool defer = false;
++  throttle->WillProcessResponse(url, response_head.get(), &defer);
++  EXPECT_FALSE(defer);
++  EXPECT_TRUE(delegate->is_intercepted());
++  delegate->LoadResponseBody("__MSG_hello__!");
++  delegate->CompleteResponse();
++  // Run all tasks in the main thread to make DataPipeProducer::SequenceState
++  // call PostTask(&SequenceState::StartOnSequence) to a background thread.
++  base::RunLoop().RunUntilIdle();
++  // Resetting `destination_loader_remote` triggers
++  // ExtensionLocalizationURLLoader destruction.
++  delegate->destination_loader_remote().reset();
++  // Run all tasks in the main thread to destroy the
++  // ExtensionLocalizationURLLoader.
++  base::RunLoop().RunUntilIdle();
++  // Runs SequenceState::StartOnSequence in the background thread.
++  task_environment_.RunUntilIdle();
++}
++
+ TEST_F(ExtensionLocalizationThrottleTest, SourceSideError) {
+   const GURL url("chrome-extension://some_id/test.css");
+   auto throttle =
