@@ -432,6 +432,9 @@ app.exit(0);
 // @ts-expect-error Removed API
 console.log(app.runningUnderRosettaTranslation);
 
+// @ts-expect-error Removed API
+app.on('renderer-process-crashed', () => {});
+
 // auto-updater
 // https://github.com/electron/electron/blob/main/docs/api/auto-updater.md
 
@@ -1295,6 +1298,9 @@ win4.webContents.on('scroll-touch-begin', () => {});
 win4.webContents.on('scroll-touch-edge', () => {});
 // @ts-expect-error Removed API
 win4.webContents.on('scroll-touch-end', () => {});
+
+// @ts-expect-error Removed API
+win4.webContents.on('crashed', () => {});
 
 // TouchBar
 // https://github.com/electron/electron/blob/main/docs/api/touch-bar.md

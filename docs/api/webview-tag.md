@@ -986,14 +986,6 @@ ipcRenderer.on('ping', () => {
 })
 ```
 
-### Event: 'crashed' _Deprecated_
-
-Fired when the renderer process crashes or is killed.
-
-**Deprecated:** This event is superceded by the `render-process-gone` event
-which contains more information about why the render process disappeared. It
-isn't always because it crashed.
-
 ### Event: 'render-process-gone'
 
 Returns:

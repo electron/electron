@@ -460,20 +460,6 @@ win.webContents.on('will-prevent-unload', (event) => {
 
 **Note:** This will be emitted for `BrowserViews` but will _not_ be respected - this is because we have chosen not to tie the `BrowserView` lifecycle to its owning BrowserWindow should one exist per the [specification](https://developer.mozilla.org/en-US/docs/Web/API/Window/beforeunload_event).
 
-#### Event: 'crashed' _Deprecated_
-
-Returns:
-
-* `event` Event
-* `killed` boolean
-
-Emitted when the renderer process crashes or is killed.
-
-**Deprecated:** This event is superceded by the `render-process-gone` event
-which contains more information about why the render process disappeared. It
-isn't always because it crashed.  The `killed` boolean can be replaced by
-checking `reason === 'killed'` when you switch to that event.
-
 #### Event: 'render-process-gone'
 
 Returns:
