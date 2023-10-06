@@ -1,4 +1,4 @@
-import { app, ipcMain, session, webFrameMain } from 'electron/main';
+import { app, ipcMain, session, webFrameMain, deprecate } from 'electron/main';
 import type { BrowserWindowConstructorOptions, LoadURLOptions } from 'electron/main';
 
 import * as url from 'url';
@@ -10,7 +10,6 @@ import * as ipcMainUtils from '@electron/internal/browser/ipc-main-internal-util
 import { MessagePortMain } from '@electron/internal/browser/message-port-main';
 import { IPC_MESSAGES } from '@electron/internal/common/ipc-messages';
 import { IpcMainImpl } from '@electron/internal/browser/ipc-main-impl';
-import * as deprecate from '@electron/internal/common/deprecate';
 
 // session is not used here, the purpose is to make sure session is initialized
 // before the webContents module.

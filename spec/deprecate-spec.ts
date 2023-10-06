@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import * as deprecate from '../lib/common/deprecate';
+import { deprecate } from 'electron/main';
 
 describe('deprecate', () => {
   let throwing: boolean;

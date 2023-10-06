@@ -9,7 +9,7 @@ export function defineProperties (targetExports: Object, moduleList: ElectronInt
   const descriptors: PropertyDescriptorMap = {};
   for (const module of moduleList) {
     descriptors[module.name] = {
-      enumerable: true,
+      enumerable: !module.private,
       get: handleESModule(module.loader)
     };
   }
