@@ -6,7 +6,7 @@ Subject: build: only use the mas build config in the required components
 Before landing this patch should be split into the relevant MAS patches, or at least the patch this one partially reverts
 
 diff --git a/base/BUILD.gn b/base/BUILD.gn
-index 28d2cf9be9acfeb2dc891cddd5d653a649b64f9c..fa69dcd9b94251db71f8833e476ce212adc95864 100644
+index 02e4f4c996a691afd9a20f90490b64f5b8e9b52e..dc1494b4651e403a26b2d3f275825dd8890e5e3b 100644
 --- a/base/BUILD.gn
 +++ b/base/BUILD.gn
 @@ -1033,6 +1033,7 @@ component("base") {
@@ -74,7 +74,7 @@ index 3029fda279a6e2062115ac7fc7ade32e4a3aecd2..a76eb15b7498e13933331f221d8b7314
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6dba200809c77b9286c9b3a5d0753f9e99272c95..31b21487e4623ef1a637f93bb9d25dd27d35a268 100644
+index 6e59d567c747ecddf43e69642b1cd109b5f34e1a..06a6d76cff56f38333e7daf76b6760b30f07e6a7 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
