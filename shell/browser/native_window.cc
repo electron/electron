@@ -101,6 +101,11 @@ NativeWindow::NativeWindow(const gin_helper::Dictionary& options,
   options.Get(options::kTransparent, &transparent_);
   options.Get(options::kEnableLargerThanScreen, &enable_larger_than_screen_);
   options.Get(options::kTitleBarStyle, &title_bar_style_);
+#if BUILDFLAG(IS_WIN)
+  options.Get(options::kBackgroundMaterial, &background_material_);
+#elif BUILDFLAG(IS_MAC)
+  options.Get(options::kVibrancyType, &vibrancy_);
+#endif
 
   v8::Local<v8::Value> titlebar_overlay;
   if (options.Get(options::ktitleBarOverlay, &titlebar_overlay)) {
