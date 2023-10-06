@@ -114,5 +114,11 @@ for (const name of events) {
 }
 
 // Deprecation.
-deprecate.event(app, 'gpu-process-crashed', 'child-process-gone');
-deprecate.event(app, 'renderer-process-crashed', 'render-process-gone');
+deprecate.event(app, 'gpu-process-crashed', 'child-process-gone', () => {
+  // the old event is still emitted by App::OnGpuProcessCrashed()
+  return undefined;
+});
+
+deprecate.event(app, 'renderer-process-crashed', 'render-process-gone', (event: Electron.Event, webContents: Electron.WebContents, details: Electron.RenderProcessGoneDetails) => {
+  return [event, webContents, details.reason === 'killed'];
+});
