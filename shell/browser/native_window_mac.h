@@ -189,6 +189,9 @@ class NativeWindowMac : public NativeWindow,
     has_deferred_window_close_ = defer_close;
   }
 
+  void set_wants_to_be_visible(bool visible) { wants_to_be_visible_ = visible; }
+  bool wants_to_be_visible() const { return wants_to_be_visible_; }
+
   enum class VisualEffectState {
     kFollowWindow,
     kActive,
@@ -254,6 +257,10 @@ class NativeWindowMac : public NativeWindow,
   // fullscreen transition, to defer the -[NSWindow close] call until the
   // transition is complete.
   bool has_deferred_window_close_ = false;
+
+  // If true, the window is either visible, or wants to be visible but is
+  // currently hidden due to having a hidden parent.
+  bool wants_to_be_visible_ = false;
 
   NSInteger attention_request_id_ = 0;  // identifier from requestUserAttention
 
