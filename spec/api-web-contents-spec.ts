@@ -2333,13 +2333,13 @@ describe('webContents module', () => {
   describe('crashed event', () => {
     afterEach(() => deprecate.setHandler(null));
 
-    it('does not crash main process when destroying WebContents in it', async () => {
+    it('does not crash main process when destroying WebContents in it', (done) => {
       const contents = (webContents as typeof ElectronInternal.WebContents).create({ nodeIntegration: true });
-      const crashEvent = once(contents, 'render-process-gone');
-      await contents.loadURL('about:blank');
-      contents.forcefullyCrashRenderer();
-      await crashEvent;
-      contents.destroy();
+      contents.once('crashed', () => {
+        contents.destroy();
+        done();
+      });
+      contents.loadURL('about:blank').then(() => contents.forcefullyCrashRenderer());
     });
 
     it('logs a warning', async () => {
