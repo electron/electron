@@ -101,14 +101,7 @@ void FileSelectHelper::FileSelectedWithExtraInfo(
   std::vector<ui::SelectedFileInfo> files;
   files.push_back(file);
 
-#if BUILDFLAG(IS_MAC)
-  base::ThreadPool::PostTask(
-      FROM_HERE,
-      {base::MayBlock(), base::TaskShutdownBehavior::CONTINUE_ON_SHUTDOWN},
-      base::BindOnce(&FileSelectHelper::ProcessSelectedFilesMac, this, files));
-#else
-  ConvertToFileChooserFileInfoList(files);
-#endif  // BUILDFLAG(IS_MAC)
+  MultiFilesSelectedWithExtraInfo(files, params);
 }
 
 void FileSelectHelper::MultiFilesSelected(

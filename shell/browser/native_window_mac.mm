@@ -202,6 +202,14 @@ void ReorderChildWindowAbove(NSWindow* child_window, NSWindow* other_window) {
   }
 }
 
+NSView* GetNativeNSView(NativeBrowserView* view) {
+  if (auto* inspectable = view->GetInspectableWebContentsView()) {
+    return inspectable->GetNativeView().GetNativeNSView();
+  } else {
+    return nullptr;
+  }
+}
+
 }  // namespace
 
 NativeWindowMac::NativeWindowMac(const gin_helper::Dictionary& options,
@@ -1256,10 +1264,7 @@ void NativeWindowMac::AddBrowserView(NativeBrowserView* view) {
   }
 
   add_browser_view(view);
-  if (view->GetInspectableWebContentsView()) {
-    auto* native_view = view->GetInspectableWebContentsView()
-                            ->GetNativeView()
-                            .GetNativeNSView();
+  if (auto* native_view = GetNativeNSView(view)) {
     [[window_ contentView] addSubview:native_view
                            positioned:NSWindowAbove
                            relativeTo:nil];
@@ -1278,9 +1283,9 @@ void NativeWindowMac::RemoveBrowserView(NativeBrowserView* view) {
     return;
   }
 
-  if (view->GetInspectableWebContentsView())
-    [view->GetInspectableWebContentsView()->GetNativeView().GetNativeNSView()
-        removeFromSuperview];
+  if (auto* native_view = GetNativeNSView(view)) {
+    [native_view removeFromSuperview];
+  }
   remove_browser_view(view);
 
   [CATransaction commit];
@@ -1297,10 +1302,7 @@ void NativeWindowMac::SetTopBrowserView(NativeBrowserView* view) {
 
   remove_browser_view(view);
   add_browser_view(view);
-  if (view->GetInspectableWebContentsView()) {
-    auto* native_view = view->GetInspectableWebContentsView()
-                            ->GetNativeView()
-                            .GetNativeNSView();
+  if (auto* native_view = GetNativeNSView(view)) {
     [[window_ contentView] addSubview:native_view
                            positioned:NSWindowAbove
                            relativeTo:nil];
