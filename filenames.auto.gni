@@ -142,6 +142,7 @@ auto_filenames = {
   ]
 
   sandbox_bundle_deps = [
+    "lib/common/api/deprecate.ts",
     "lib/common/api/native-image.ts",
     "lib/common/define-properties.ts",
     "lib/common/ipc-messages.ts",
@@ -247,11 +248,11 @@ auto_filenames = {
     "lib/browser/parse-features-string.ts",
     "lib/browser/rpc-server.ts",
     "lib/browser/web-view-events.ts",
+    "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
     "lib/common/define-properties.ts",
-    "lib/common/deprecate.ts",
     "lib/common/init.ts",
     "lib/common/ipc-messages.ts",
     "lib/common/reset-search-paths.ts",
@@ -265,6 +266,7 @@ auto_filenames = {
   ]
 
   renderer_bundle_deps = [
+    "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
@@ -303,6 +305,7 @@ auto_filenames = {
   ]
 
   worker_bundle_deps = [
+    "lib/common/api/deprecate.ts",
     "lib/common/api/module-list.ts",
     "lib/common/api/native-image.ts",
     "lib/common/api/shell.ts",
