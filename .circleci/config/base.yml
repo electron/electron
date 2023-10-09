@@ -754,8 +754,8 @@ step-show-goma-stats: &step-show-goma-stats
     command: |
       set +e
       set +o pipefail
-      $GOMA_DIR/goma_ctl.py stat
-      $GOMA_DIR/diagnose_goma_log.py
+      python3 $GOMA_DIR/goma_ctl.py stat
+      python3 $GOMA_DIR/diagnose_goma_log.py
       true
     when: always
     background: true
