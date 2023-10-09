@@ -248,6 +248,7 @@ declare namespace NodeJS {
     // Additional events
     once(event: 'document-start', listener: () => any): this;
     once(event: 'document-end', listener: () => any): this;
+    once(event: 'document-idle', listener: () => any): this;
 
     // Additional properties
     _firstFileName?: string;

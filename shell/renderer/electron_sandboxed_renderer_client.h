@@ -42,6 +42,7 @@ class ElectronSandboxedRendererClient : public RendererClientBase {
   void RenderFrameCreated(content::RenderFrame*) override;
   void RunScriptsAtDocumentStart(content::RenderFrame* render_frame) override;
   void RunScriptsAtDocumentEnd(content::RenderFrame* render_frame) override;
+  void RunScriptsAtDocumentIdle(content::RenderFrame* render_frame) override;
 
  private:
   void EmitProcessEvent(content::RenderFrame* render_frame,

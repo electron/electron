@@ -168,6 +168,12 @@ void ElectronSandboxedRendererClient::RunScriptsAtDocumentEnd(
   EmitProcessEvent(render_frame, "document-end");
 }
 
+void ElectronSandboxedRendererClient::RunScriptsAtDocumentIdle(
+    content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentIdle(render_frame);
+  EmitProcessEvent(render_frame, "document-idle");
+}
+
 void ElectronSandboxedRendererClient::DidCreateScriptContext(
     v8::Handle<v8::Context> context,
     content::RenderFrame* render_frame) {

@@ -62,6 +62,17 @@ void ElectronRendererClient::RunScriptsAtDocumentEnd(
                           "document-end");
 }
 
+void ElectronRendererClient::RunScriptsAtDocumentIdle(
+    content::RenderFrame* render_frame) {
+  RendererClientBase::RunScriptsAtDocumentIdle(render_frame);
+  // Inform the document end phase.
+  v8::HandleScope handle_scope(v8::Isolate::GetCurrent());
+  node::Environment* env = GetEnvironment(render_frame);
+  if (env)
+    gin_helper::EmitEvent(env->isolate(), env->process_object(),
+                          "document-idle");
+}
+
 void ElectronRendererClient::UndeferLoad(content::RenderFrame* render_frame) {
   render_frame->GetWebFrame()->GetDocumentLoader()->SetDefersLoading(
       blink::LoaderFreezeMode::kNone);
