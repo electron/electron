@@ -9,11 +9,11 @@
 #include "base/containers/contains.h"
 #include "base/values.h"
 #include "content/public/common/webplugininfo.h"
-#include "extensions/buildflags/buildflags.h"
+#include "electron/buildflags/buildflags.h"
 #include "url/gurl.h"
 #include "url/origin.h"
 
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
 #include "extensions/browser/extension_registry.h"
 #include "extensions/browser/extension_util.h"
 #include "extensions/common/constants.h"
@@ -36,7 +36,7 @@ base::flat_map<std::string, std::string>
 PluginUtils::GetMimeTypeToExtensionIdMap(
     content::BrowserContext* browser_context) {
   base::flat_map<std::string, std::string> mime_type_to_extension_id_map;
-#if BUILDFLAG(ENABLE_EXTENSIONS)
+#if BUILDFLAG(ENABLE_ELECTRON_EXTENSIONS)
   std::vector<std::string> allowed_extension_ids =
       MimeTypesHandler::GetMIMETypeAllowlist();
   // Go through the white-listed extensions and try to use them to intercept
