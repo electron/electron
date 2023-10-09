@@ -2,13 +2,13 @@ type DeprecationHandler = (message: string) => void;
 
 let deprecationHandler: DeprecationHandler | null = null;
 
-function warnOnce (oldName: string, newName?: string) {
+export function warnOnce (oldName: string, newName?: string) {
   return warnOnceMessage(newName
     ? `'${oldName}' is deprecated and will be removed. Please use '${newName}' instead.`
     : `'${oldName}' is deprecated and will be removed.`);
 }
 
-function warnOnceMessage (msg: string) {
+export function warnOnceMessage (msg: string) {
   let warned = false;
   return () => {
     if (!warned && !process.noDeprecation) {
@@ -18,21 +18,21 @@ function warnOnceMessage (msg: string) {
   };
 }
 
-function setHandler (handler: DeprecationHandler | null): void {
+export function setHandler (handler: DeprecationHandler | null): void {
   deprecationHandler = handler;
 }
 
-function getHandler (): DeprecationHandler | null {
+export function getHandler (): DeprecationHandler | null {
   return deprecationHandler;
 }
 
-function warn (oldName: string, newName: string): void {
+export function warn (oldName: string, newName: string): void {
   if (!process.noDeprecation) {
     log(`'${oldName}' is deprecated. Use '${newName}' instead.`);
   }
 }
 
-function log (message: string): void {
+export function log (message: string): void {
   if (typeof deprecationHandler === 'function') {
     deprecationHandler(message);
   } else if (process.throwDeprecation) {
@@ -45,7 +45,7 @@ function log (message: string): void {
 }
 
 // remove a function with no replacement
-function removeFunction<T extends Function> (fn: T, removedName: string): T {
+export function removeFunction<T extends Function> (fn: T, removedName: string): T {
   if (!fn) { throw new Error(`'${removedName} function' is invalid or does not exist.`); }
 
   // wrap the deprecated function to warn user
@@ -57,7 +57,7 @@ function removeFunction<T extends Function> (fn: T, removedName: string): T {
 }
 
 // change the name of a function
-function renameFunction<T extends Function> (fn: T, newName: string): T {
+export function renameFunction<T extends Function> (fn: T, newName: string): T {
   const warn = warnOnce(`${fn.name} function`, `${newName} function`);
   return function (this: any) {
     warn();
@@ -66,7 +66,7 @@ function renameFunction<T extends Function> (fn: T, newName: string): T {
 }
 
 // change the name of an event
-function event (emitter: NodeJS.EventEmitter, oldName: string, newName: string, transformer: (...args: any[]) => any[] | undefined = (...args) => args) {
+export function event (emitter: NodeJS.EventEmitter, oldName: string, newName: string, transformer: (...args: any[]) => any[] | undefined = (...args) => args) {
   const warn = newName.startsWith('-') /* internal event */
     ? warnOnce(`${oldName} event`)
     : warnOnce(`${oldName} event`, `${newName} event`);
@@ -82,7 +82,7 @@ function event (emitter: NodeJS.EventEmitter, oldName: string, newName: string, 
 }
 
 // remove a property with no replacement
-function removeProperty<T extends Object, K extends (keyof T & string)>(object: T, removedName: K, onlyForValues?: any[]): T {
+export function removeProperty<T extends Object, K extends (keyof T & string)>(object: T, removedName: K, onlyForValues?: any[]): T {
   // if the property's already been removed, warn about it
   // eslint-disable-next-line no-proto
   const info = Object.getOwnPropertyDescriptor((object as any).__proto__, removedName);
@@ -113,7 +113,7 @@ function removeProperty<T extends Object, K extends (keyof T & string)>(object: 
 }
 
 // change the name of a property
-function renameProperty<T extends Object, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T {
+export function renameProperty<T extends Object, K extends (keyof T & string)>(object: T, oldName: string, newName: K): T {
   const warn = warnOnce(oldName, newName);
 
   // if the new property isn't there yet,
@@ -137,27 +137,10 @@ function renameProperty<T extends Object, K extends (keyof T & string)>(object: 
   });
 }
 
-function moveAPI<T extends Function> (fn: T, oldUsage: string, newUsage: string): T {
+export function moveAPI<T extends Function> (fn: T, oldUsage: string, newUsage: string): T {
   const warn = warnOnce(oldUsage, newUsage);
   return function (this: any) {
     warn();
     return fn.apply(this, arguments);
   } as unknown as typeof fn;
 }
-
-const deprecate: ElectronInternal.DeprecationUtil = {
-  warnOnce,
-  warnOnceMessage,
-  setHandler,
-  getHandler,
-  warn,
-  log,
-  removeFunction,
-  renameFunction,
-  event,
-  removeProperty,
-  renameProperty,
-  moveAPI
-};
-
-export default deprecate;
