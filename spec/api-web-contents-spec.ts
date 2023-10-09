@@ -431,6 +431,19 @@ describe('webContents module', () => {
       }
     });
 
+    it('fails if loadURL is called inside a non-reentrant critical section', (done) => {
+      w.webContents.once('did-fail-load', (_event, _errorCode, _errorDescription, validatedURL) => {
+        expect(validatedURL).to.contain('blank.html');
+        done();
+      });
+
+      w.webContents.once('did-start-loading', () => {
+        w.loadURL(`file://${fixturesPath}/pages/blank.html`);
+      });
+
+      w.loadURL('data:text/html,<h1>HELLO</h1>');
+    });
+
     it('sets appropriate error information on rejection', async () => {
       let err: any;
       try {
