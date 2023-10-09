@@ -64,6 +64,9 @@ class NotifyIconHost {
   // The message ID of the "TaskbarCreated" message, sent to us when we need to
   // reset our status icons.
   UINT taskbar_created_message_ = 0;
+
+  class MouseEnteredExitedDetector;
+  std::unique_ptr<MouseEnteredExitedDetector> mouse_entered_exited_detector_;
 };
 
 }  // namespace electron
