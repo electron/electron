@@ -74,7 +74,7 @@ index 3029fda279a6e2062115ac7fc7ade32e4a3aecd2..a76eb15b7498e13933331f221d8b7314
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 6e59d567c747ecddf43e69642b1cd109b5f34e1a..06a6d76cff56f38333e7daf76b6760b30f07e6a7 100644
+index 879ee979a99ef4822b82ace29bc7f7f1d9aa553d..05b42b8c453f51682327b1aaee0f74f42a16f891 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 3955307bd028c059322f9512d68ac2bfacaed120..6139fdc75dd38aea86047440ac7dae4dc7284557 100644
+index 1e419d2d9d2d03d486dcbc6845635b4c051f2e8f..0413f4d9a4d2eeea8c5068d37a80fb0f8571adbf 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -212,10 +212,10 @@ index 299a028f23314f479d2da8f914a5bdf34698d854..672dcb04dd3cf4e3cc71403f727a1dde
  
  source_set("sandbox_unittests") {
 diff --git a/third_party/blink/renderer/core/BUILD.gn b/third_party/blink/renderer/core/BUILD.gn
-index 77c1ee82fc5cca302148445fb6f2f975bb41c23e..90ab237f45e751b95b061146bb3f3f9a87763c1d 100644
+index a83252836028a777d1a836e24aa60c871220e490..62348d690d4d539651abf65f94535f1a7b22e368 100644
 --- a/third_party/blink/renderer/core/BUILD.gn
 +++ b/third_party/blink/renderer/core/BUILD.gn
-@@ -309,6 +309,7 @@ component("core") {
+@@ -311,6 +311,7 @@ component("core") {
    configs -= core_config_remove
    configs += core_config_add
    configs += [ "//v8:external_startup_data" ]
@@ -249,7 +249,7 @@ index 4e23c38763184840a393589b3f55dcabb0db8121..e4ad30d0d7acecdca3a22fe05935a340
  
      if (use_atk) {
 diff --git a/ui/base/BUILD.gn b/ui/base/BUILD.gn
-index ebdd885b00da86656bec13fb45a763ef49209d3e..614d07f318870db973f47d41f935c03f08970736 100644
+index 39a960146504ac6034fe24593006d09ff9c667ac..67d0b5c26ef4788559efc696656dc88fc5b7e637 100644
 --- a/ui/base/BUILD.gn
 +++ b/ui/base/BUILD.gn
 @@ -359,6 +359,7 @@ component("base") {
@@ -288,7 +288,7 @@ index ebd698116ef4f88c3bbaea1b02912bbeddbca34f..e096f9371607a088250e1ea72f450f85
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 3deb7d15b80319596e0be663fb0883ee27dd9d1d..017641614e530a5296599578f4ba80eece996b95 100644
+index 7495432830c521cb431a29017c734c2d327d1746..56a44e27674041543452521e8bcf8ef0c3fcbdfa 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -684,6 +684,7 @@ component("views") {
@@ -299,7 +299,7 @@ index 3deb7d15b80319596e0be663fb0883ee27dd9d1d..017641614e530a5296599578f4ba80ee
    }
  
    if (is_win) {
-@@ -1110,6 +1111,8 @@ source_set("test_support") {
+@@ -1111,6 +1112,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  
