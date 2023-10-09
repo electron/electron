@@ -258,6 +258,7 @@ using FullScreenTransitionState =
   [super windowDidMiniaturize:notification];
   is_minimized_ = true;
 
+  shell_->set_wants_to_be_visible(false);
   shell_->NotifyWindowMinimize();
 }
 
@@ -265,6 +266,7 @@ using FullScreenTransitionState =
   [super windowDidDeminiaturize:notification];
   is_minimized_ = false;
 
+  shell_->set_wants_to_be_visible(true);
   shell_->AttachChildren();
   shell_->SetWindowLevel(level_);
   shell_->NotifyWindowRestore();
