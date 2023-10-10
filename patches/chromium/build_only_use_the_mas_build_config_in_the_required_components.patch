@@ -74,7 +74,7 @@ index 3029fda279a6e2062115ac7fc7ade32e4a3aecd2..a76eb15b7498e13933331f221d8b7314
  
    if (is_win) {
 diff --git a/content/browser/BUILD.gn b/content/browser/BUILD.gn
-index 879ee979a99ef4822b82ace29bc7f7f1d9aa553d..05b42b8c453f51682327b1aaee0f74f42a16f891 100644
+index ad89a0aa9aace54f8f5a5581e7770595c1dd0538..1faa418c13dfad178b6ef367d26cfae21267aa44 100644
 --- a/content/browser/BUILD.gn
 +++ b/content/browser/BUILD.gn
 @@ -53,6 +53,7 @@ source_set("browser") {
@@ -110,7 +110,7 @@ index e38a26605e909b2728f4038403f6d111d30cffff..d27a6ec314620d33d0282c8db3741eb6
  
    public_deps = [
 diff --git a/content/test/BUILD.gn b/content/test/BUILD.gn
-index 1e419d2d9d2d03d486dcbc6845635b4c051f2e8f..0413f4d9a4d2eeea8c5068d37a80fb0f8571adbf 100644
+index b7dab977c0ae651095a3679849002de1cd544ebd..07d94075e0c46b0b6eb7f4be08ce1a5350764ea9 100644
 --- a/content/test/BUILD.gn
 +++ b/content/test/BUILD.gn
 @@ -484,6 +484,7 @@ static_library("test_support") {
@@ -288,7 +288,7 @@ index ebd698116ef4f88c3bbaea1b02912bbeddbca34f..e096f9371607a088250e1ea72f450f85
    if (is_win) {
      sources += [
 diff --git a/ui/views/BUILD.gn b/ui/views/BUILD.gn
-index 7495432830c521cb431a29017c734c2d327d1746..56a44e27674041543452521e8bcf8ef0c3fcbdfa 100644
+index d69a544d0971b776e59c0980b61961e7a0f83cac..2b4c4405911eba5f8cbb9dadb98e3b0224f1a938 100644
 --- a/ui/views/BUILD.gn
 +++ b/ui/views/BUILD.gn
 @@ -684,6 +684,7 @@ component("views") {
@@ -299,7 +299,7 @@ index 7495432830c521cb431a29017c734c2d327d1746..56a44e27674041543452521e8bcf8ef0
    }
  
    if (is_win) {
-@@ -1111,6 +1112,8 @@ source_set("test_support") {
+@@ -1113,6 +1114,8 @@ source_set("test_support") {
      "//testing/gtest",
    ]
  

@@ -12,10 +12,10 @@ upstream a more durable approach to allowing us to do this, at which
 point this patch can be removed.
 
 diff --git a/config/gni/devtools_grd_files.gni b/config/gni/devtools_grd_files.gni
-index cefcabd58f9dea787e34bf9b8106c5ff33db1ff2..28200904f1f3454efefc64c3e0fe465ac8a870cd 100644
+index ca53834dd8236cd09af6457fb6fa4bd80c21cffa..8982c07ede8e1290593fc7ba10de6302a6ba817a 100644
 --- a/config/gni/devtools_grd_files.gni
 +++ b/config/gni/devtools_grd_files.gni
-@@ -662,6 +662,7 @@ grd_files_release_sources = [
+@@ -661,6 +661,7 @@ grd_files_release_sources = [
    "front_end/ui/legacy/components/source_frame/source_frame.js",
    "front_end/ui/legacy/components/utils/utils-legacy.js",
    "front_end/ui/legacy/components/utils/utils.js",
