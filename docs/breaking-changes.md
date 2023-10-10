@@ -103,6 +103,19 @@ win.webContents.on('render-process-gone', (event, details) => { /* ... */ })
 webview.addEventListener('render-process-gone', (event) => { /* ... */ })
 ```
 
+### Deprecated: `gpu-process-crashed` event on `app`
+
+The `gpu-process-crashed` event on `app` has been deprecated.
+Use the new `child-process-gone` event instead.
+
+```js
+// Deprecated
+app.on('gpu-process-crashed', (event, killed) => { /* ... */ })
+
+// Replace with
+app.on('child-process-gone', (event, details) => { /* ... */ })
+```
+
 ## Planned Breaking API Changes (27.0)
 
 ### Removed: macOS 10.13 / 10.14 support
