@@ -6357,7 +6357,7 @@ describe('BrowserWindow module', () => {
       foregroundWindow.loadFile(path.join(__dirname, 'fixtures', 'pages', 'css-transparent.html'));
       await once(ipcMain, 'set-transparent');
 
-      await setTimeout();
+      await setTimeout(1000);
       const screenCapture = await captureScreen();
       const centerColor = getPixelColor(screenCapture, {
         x: display.size.width / 2,
@@ -6380,7 +6380,7 @@ describe('BrowserWindow module', () => {
         await once(window, 'show');
         await window.webContents.loadURL('data:text/html,<head><meta name="color-scheme" content="dark"></head>');
 
-        await setTimeout(500);
+        await setTimeout(1000);
         const screenCapture = await captureScreen();
         const centerColor = getPixelColor(screenCapture, {
           x: display.size.width / 2,
@@ -6410,6 +6410,7 @@ describe('BrowserWindow module', () => {
       w.loadURL('about:blank');
       await once(w, 'ready-to-show');
 
+      await setTimeout(1000);
       const screenCapture = await captureScreen();
       const centerColor = getPixelColor(screenCapture, {
         x: display.size.width / 2,
