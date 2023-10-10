@@ -6,9 +6,10 @@ import * as net from 'node:net';
 import * as fs from 'fs-extra';
 import * as path from 'node:path';
 import { promisify } from 'node:util';
-import { app, BrowserWindow, Menu, session, net as electronNet, WebContents, deprecate } from 'electron/main';
+import { app, BrowserWindow, Menu, session, net as electronNet, WebContents } from 'electron/main';
 import { closeWindow, closeAllWindows } from './lib/window-helpers';
 import { ifdescribe, ifit, listen, waitUntil } from './lib/spec-helpers';
+import { expectDeprecationMessages } from './lib/deprecate-helpers';
 import { once } from 'node:events';
 import split = require('split')
 
@@ -493,7 +494,6 @@ describe('app module', () => {
     let w: BrowserWindow = null as any;
 
     afterEach(() => {
-      deprecate.setHandler(null);
       closeWindow(w).then(() => { w = null as any; });
     });
 
@@ -538,16 +538,14 @@ describe('app module', () => {
       });
       await w.loadURL('about:blank');
 
-      const messages: string[] = [];
-      deprecate.setHandler(message => messages.push(message));
+      expectDeprecationMessages(async () => {
+        const emitted = once(app, 'renderer-process-crashed') as Promise<[any, WebContents, boolean]>;
+        w.webContents.executeJavaScript('process.crash()');
 
-      const emitted = once(app, 'renderer-process-crashed') as Promise<[any, WebContents, boolean]>;
-      w.webContents.executeJavaScript('process.crash()');
-
-      const [, webContents, killed] = await emitted;
-      expect(webContents).to.equal(w.webContents);
-      expect(killed).to.be.false();
-      expect(messages).to.deep.equal(['\'renderer-process-crashed event\' is deprecated and will be removed. Please use \'render-process-gone event\' instead.']);
+        const [, webContents, killed] = await emitted;
+        expect(webContents).to.equal(w.webContents);
+        expect(killed).to.be.false();
+      }, '\'renderer-process-crashed event\' is deprecated and will be removed. Please use \'render-process-gone event\' instead.');
     });
 
     // FIXME: re-enable this test on win32.

@@ -20,7 +20,7 @@ export async function expectDeprecationMessages (func: () => any, ...expected: s
     // process.emitWarning seems to need us to wait a tick
     await new Promise(process.nextTick);
     console.warn = originalWarn;
-    process.off('warning', warningListener);
+    process.off('warning' as any, warningListener);
     expect(messages).to.deep.equal(expected);
   }
 }
