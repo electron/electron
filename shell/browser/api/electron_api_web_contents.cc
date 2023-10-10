@@ -1658,8 +1658,7 @@ void WebContents::RenderFrameCreated(
   if (lifecycle_state == content::RenderFrameHost::LifecycleState::kActive) {
     v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
     v8::HandleScope handle_scope(isolate);
-    gin_helper::Dictionary details =
-        gin_helper::Dictionary::CreateEmpty(isolate);
+    auto details = gin_helper::Dictionary::CreateEmpty(isolate);
     details.SetGetter("frame", render_frame_host);
     Emit("frame-created", details);
   }
@@ -1731,7 +1730,7 @@ void WebContents::PrimaryMainFrameRenderProcessGone(
     base::TerminationStatus status) {
   v8::Isolate* isolate = JavascriptEnvironment::GetIsolate();
   v8::HandleScope handle_scope(isolate);
-  gin_helper::Dictionary details = gin_helper::Dictionary::CreateEmpty(isolate);
+  auto details = gin_helper::Dictionary::CreateEmpty(isolate);
   details.Set("reason", status);
   details.Set("exitCode", web_contents()->GetCrashedErrorCode());
   Emit("render-process-gone", details);
@@ -2529,7 +2528,7 @@ v8::Local<v8::Value> WebContents::GetWebRTCUDPPortRange(
     v8::Isolate* isolate) const {
   auto* prefs = web_contents()->GetMutableRendererPrefs();
 
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(isolate);
+  auto dict = gin_helper::Dictionary::CreateEmpty(isolate);
   dict.Set("min", static_cast<uint32_t>(prefs->webrtc_udp_min_port));
   dict.Set("max", static_cast<uint32_t>(prefs->webrtc_udp_max_port));
   return dict.GetHandle();
@@ -2907,8 +2906,7 @@ void WebContents::OnGetDeviceNameToUse(
 }
 
 void WebContents::Print(gin::Arguments* args) {
-  gin_helper::Dictionary options =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin_helper::Dictionary::CreateEmpty(args->isolate());
   base::Value::Dict settings;
 
   if (args->Length() >= 1 && !args->GetNext(&options)) {
@@ -2933,8 +2931,7 @@ void WebContents::Print(gin::Arguments* args) {
   settings.Set(printing::kSettingShouldPrintBackgrounds, print_background);
 
   // Set custom margin settings
-  gin_helper::Dictionary margins =
-      gin::Dictionary::CreateEmpty(args->isolate());
+  auto margins = gin_helper::Dictionary::CreateEmpty(args->isolate());
   if (options.Get("margins", &margins)) {
     printing::mojom::MarginType margin_type =
         printing::mojom::MarginType::kDefaultMargins;

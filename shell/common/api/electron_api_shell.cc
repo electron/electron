@@ -111,7 +111,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
   base::win::ShortcutOperation operation =
       base::win::ShortcutOperation::kCreateAlways;
   args->GetNext(&operation);
-  gin::Dictionary options = gin::Dictionary::CreateEmpty(args->isolate());
+  auto options = gin::Dictionary::CreateEmpty(args->isolate());
   if (!args->GetNext(&options)) {
     args->ThrowError();
     return false;
@@ -146,7 +146,7 @@ bool WriteShortcutLink(const base::FilePath& shortcut_path,
 v8::Local<v8::Value> ReadShortcutLink(gin_helper::ErrorThrower thrower,
                                       const base::FilePath& path) {
   using base::win::ShortcutProperties;
-  gin::Dictionary options = gin::Dictionary::CreateEmpty(thrower.isolate());
+  auto options = gin::Dictionary::CreateEmpty(thrower.isolate());
   electron::ScopedAllowBlockingForElectron allow_blocking;
   base::win::ScopedCOMInitializer com_initializer;
   base::win::ShortcutProperties properties;

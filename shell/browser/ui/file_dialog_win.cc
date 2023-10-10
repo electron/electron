@@ -220,7 +220,7 @@ void ShowOpenDialog(const DialogSettings& settings,
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
                  bool success, std::vector<base::FilePath> result) {
     v8::HandleScope handle_scope(promise.isolate());
-    gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+    auto dict = gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", !success);
     dict.Set("filePaths", result);
     promise.Resolve(dict);
@@ -269,7 +269,7 @@ void ShowSaveDialog(const DialogSettings& settings,
   auto done = [](gin_helper::Promise<gin_helper::Dictionary> promise,
                  bool success, base::FilePath result) {
     v8::HandleScope handle_scope(promise.isolate());
-    gin::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+    auto dict = gin::Dictionary::CreateEmpty(promise.isolate());
     dict.Set("canceled", !success);
     dict.Set("filePath", result);
     promise.Resolve(dict);

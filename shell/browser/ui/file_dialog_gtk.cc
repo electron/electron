@@ -246,8 +246,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
   v8::Isolate* isolate = electron::JavascriptEnvironment::GetIsolate();
   v8::HandleScope scope(isolate);
   if (save_promise_) {
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(save_promise_->isolate());
+    auto dict = gin_helper::Dictionary::CreateEmpty(save_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
       dict.Set("filePath", GetFileName());
@@ -257,8 +256,7 @@ void FileChooserDialog::OnFileDialogResponse(GtkWidget* widget, int response) {
     }
     save_promise_->Resolve(dict);
   } else if (open_promise_) {
-    gin_helper::Dictionary dict =
-        gin::Dictionary::CreateEmpty(open_promise_->isolate());
+    auto dict = gin_helper::Dictionary::CreateEmpty(open_promise_->isolate());
     if (response == GTK_RESPONSE_ACCEPT) {
       dict.Set("canceled", false);
       dict.Set("filePaths", GetFileNames());

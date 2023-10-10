@@ -231,8 +231,8 @@ NativeWindowViews::NativeWindowViews(const gin_helper::Dictionary& options,
   v8::Local<v8::Value> titlebar_overlay;
   if (options.Get(options::ktitleBarOverlay, &titlebar_overlay) &&
       titlebar_overlay->IsObject()) {
-    gin_helper::Dictionary titlebar_overlay_obj =
-        gin::Dictionary::CreateEmpty(options.isolate());
+    auto titlebar_overlay_obj =
+        gin_helper::Dictionary::CreateEmpty(options.isolate());
     options.Get(options::ktitleBarOverlay, &titlebar_overlay_obj);
 
     std::string overlay_color_string;

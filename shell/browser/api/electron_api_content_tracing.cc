@@ -152,7 +152,7 @@ void OnTraceBufferUsageAvailable(
     gin_helper::Promise<gin_helper::Dictionary> promise,
     float percent_full,
     size_t approximate_count) {
-  gin_helper::Dictionary dict = gin::Dictionary::CreateEmpty(promise.isolate());
+  auto dict = gin_helper::Dictionary::CreateEmpty(promise.isolate());
   dict.Set("percentage", percent_full);
   dict.Set("value", approximate_count);
 
