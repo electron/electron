@@ -1899,23 +1899,33 @@ void NativeWindowMac::SetForwardMouseMessages(bool forward) {
   [window_ setAcceptsMouseMovedEvents:forward];
 }
 
-gfx::Rect NativeWindowMac::GetWindowControlsOverlayRect() {
-  if (titlebar_overlay_ && buttons_proxy_ &&
-      window_button_visibility_.value_or(true)) {
+absl::optional<gfx::Rect> NativeWindowMac::GetWindowControlsOverlayRect() {
+  if (!titlebar_overlay_)
+    return absl::nullopt;
+
+  // On macOS, when in fullscreen mode, window controls (the menu bar, title
+  // bar, and toolbar) are attached to a separate NSView that slides down from
+  // the top of the screen, independent of, and overlapping the WebContents.
+  // Disable WCO when in fullscreen, because this space is inaccessible to
+  // WebContents. https://crbug.com/915110.
+  if (IsFullscreen())
+    return gfx::Rect();
+
+  if (buttons_proxy_ && window_button_visibility_.value_or(true)) {
     NSRect buttons = [buttons_proxy_ getButtonsContainerBounds];
     gfx::Rect overlay;
     overlay.set_width(GetContentSize().width() - NSWidth(buttons));
-    if ([buttons_proxy_ useCustomHeight]) {
-      overlay.set_height(titlebar_overlay_height());
-    } else {
-      overlay.set_height(NSHeight(buttons));
-    }
+    overlay.set_height([buttons_proxy_ useCustomHeight]
+                           ? titlebar_overlay_height()
+                           : NSHeight(buttons));
 
     if (!base::i18n::IsRTL())
       overlay.set_x(NSMaxX(buttons));
+
     return overlay;
   }
-  return gfx::Rect();
+
+  return absl::nullopt;
 }
 
 // static
