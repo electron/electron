@@ -429,6 +429,11 @@ win2.once('ready-to-show', () => {
 app.relaunch({ args: process.argv.slice(1).concat(['--relaunch']) });
 app.exit(0);
 
+app.configureHostResolver({ secureDnsMode: 'off' });
+
+// @ts-expect-error Invalid type value
+app.configureHostResolver({ secureDnsMode: 'foo' });
+
 // @ts-expect-error Removed API
 console.log(app.runningUnderRosettaTranslation);
 
@@ -1283,6 +1288,11 @@ win4.webContents.on('paint', (event, dirty, _image) => {
 win4.webContents.on('devtools-open-url', (event, url) => {
   console.log(url);
 });
+
+win4.webContents.insertCSS('body {}', { cssOrigin: 'user' });
+
+// @ts-expect-error Invalid type value
+win4.webContents.insertCSS('body {}', { cssOrigin: 'foo' });
 
 win4.loadURL('http://github.com');
 
