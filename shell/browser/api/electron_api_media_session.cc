@@ -78,6 +78,15 @@ struct Converter<media_session::mojom::MediaSessionAction> {
       case media_session::mojom::MediaSessionAction::kSetMute:
         action = "set-mute";
         break;
+      case media_session::mojom::MediaSessionAction::kPreviousSlide:
+        action = "previous-slide";
+        break;
+      case media_session::mojom::MediaSessionAction::kNextSlide:
+        action = "next-slide";
+        break;
+      case media_session::mojom::MediaSessionAction::kEnterAutoPictureInPicture:
+        action = "enter-auto-picture-in-picture";
+        break;
         // When adding a new value, remember to update the docs!
     }
     return gin::ConvertToV8(isolate, action);

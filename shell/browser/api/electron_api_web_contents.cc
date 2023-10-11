@@ -45,7 +45,6 @@
 #include "content/public/browser/favicon_status.h"
 #include "content/public/browser/file_select_listener.h"
 #include "content/public/browser/media_session.h"
-#include "content/public/browser/native_web_keyboard_event.h"
 #include "content/public/browser/navigation_details.h"
 #include "content/public/browser/navigation_entry.h"
 #include "content/public/browser/navigation_handle.h"

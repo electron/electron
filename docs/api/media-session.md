@@ -25,14 +25,18 @@ win.webContents.mediaSession.on(
   (event, details) => {
     // Determine media controls visibility based on available actions.
     if (details.actions.includes('play')) {
-      showPlayButtonUI()
+      // Show play button UI...
     } else {
-      hidePlayButtonUI()
+      // Show hide button UI...
     }
   }
 )
 
 let playbackState
+
+function updatePlaybackUI () {
+  // Update UI according to `playbackState`...
+}
 
 win.webContents.mediaSession.on(
   'info-changed',
@@ -40,7 +44,7 @@ win.webContents.mediaSession.on(
     // Save last known playback state.
     playbackState = details.playbackState
 
-    updatePlaybackUI(playbackState)
+    updatePlaybackUI()
   }
 )
 
@@ -62,7 +66,7 @@ Returns:
 * `event` Event
 * `details` Object
   * `actions` string[] - An array of media session actions, can
-  be `play`, `pause`, `previous-track`, `next-track`, `seek-backward`, `seek-forward`, `skip-ad`, `stop`, `seek-to`, `scrub-to`, `enter-picture-in-picture`, `exit-picture-in-picture`, `switch-audio-device`, `toggle-microphone`, `toggle-camera`, `hang-up`, `raise` or `set-mute`.
+  be `play`, `pause`, `previous-track`, `next-track`, `seek-backward`, `seek-forward`, `skip-ad`, `stop`, `seek-to`, `scrub-to`, `enter-picture-in-picture`, `exit-picture-in-picture`, `switch-audio-device`, `toggle-microphone`, `toggle-camera`, `hang-up`, `raise`, `set-mute`, `previous-slide`, `next-slide` or `enter-auto-picture-in-picture`.
 
 Emitted when media session action list has changed. This list contains the
 available actions which can be used to control the session.

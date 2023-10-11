@@ -7,7 +7,8 @@
 
 #include <vector>
 
-#include "base/callback.h"
+#include "base/functional/callback.h"
+#include "base/memory/raw_ptr.h"
 #include "base/values.h"
 #include "gin/arguments.h"
 #include "gin/handle.h"
@@ -65,7 +66,7 @@ class MediaSession : public gin::Wrappable<MediaSession>,
   void Pause();
   void Stop();
 
-  content::MediaSession* const media_session_;
+  raw_ptr<content::MediaSession> const media_session_;
 
   // Binding through which notifications are received from the MediaSession.
   mojo::Receiver<media_session::mojom::MediaSessionObserver> observer_receiver_;
