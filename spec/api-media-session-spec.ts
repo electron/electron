@@ -1,8 +1,8 @@
 import { expect } from 'chai';
-import * as path from 'path';
+import * as path from 'node:path';
+import { once } from 'node:events';
 import { BrowserWindow } from 'electron/main';
-import { closeAllWindows } from './window-helpers';
-import { emittedOnce } from './events-helpers';
+import { closeAllWindows } from './lib/window-helpers';
 
 describe('mediaSession module', () => {
   const fixtures = path.resolve(__dirname, 'fixtures');
@@ -44,8 +44,8 @@ describe('mediaSession module', () => {
   describe('"actions-changed" event', () => {
     it('emits when "play" action is registered', async () => {
       // Initial empty change
-      await emittedOnce(w.webContents.mediaSession, 'actions-changed');
-      const promise = emittedOnce(w.webContents.mediaSession, 'actions-changed');
+      await once(w.webContents.mediaSession, 'actions-changed');
+      const promise = once(w.webContents.mediaSession, 'actions-changed');
       await w.webContents.executeJavaScript('navigator.mediaSession.setActionHandler("play", () => {});');
       const [, details] = await promise;
       expect(details.actions).to.be.an('array');
@@ -55,11 +55,11 @@ describe('mediaSession module', () => {
 
   describe('"info-changed" event', () => {
     it('emits playback state changes', async () => {
-      const [, details] = await emittedOnce(w.webContents.mediaSession, 'info-changed');
+      const [, details] = await once(w.webContents.mediaSession, 'info-changed');
       expect(details).to.have.ownProperty('playbackState').that.is.a('string');
       expect(details.playbackState).to.be.equal('playing');
 
-      const pausePromise = emittedOnce(w.webContents.mediaSession, 'info-changed');
+      const pausePromise = once(w.webContents.mediaSession, 'info-changed');
       w.webContents.executeJavaScript('document.querySelector("video").pause();');
       const [, pauseDetails] = await pausePromise;
       expect(pauseDetails.playbackState).to.be.equal('paused');
