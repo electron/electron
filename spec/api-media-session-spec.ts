@@ -2,6 +2,8 @@ import { expect } from 'chai';
 import * as path from 'node:path';
 import { once } from 'node:events';
 import { BrowserWindow } from 'electron/main';
+
+import { emittedNTimes } from './lib/events-helpers';
 import { closeAllWindows } from './lib/window-helpers';
 
 describe('mediaSession module', () => {
@@ -50,6 +52,20 @@ describe('mediaSession module', () => {
       const [, details] = await promise;
       expect(details.actions).to.be.an('array');
       expect(details.actions).to.deep.equal(['play']);
+    });
+
+    it('emits when "play" action is unregistered', async () => {
+      // Initial empty change
+      await once(w.webContents.mediaSession, 'actions-changed');
+      const promise = emittedNTimes(w.webContents.mediaSession, 'actions-changed', 3);
+      await w.webContents.executeJavaScript(`
+navigator.mediaSession.setActionHandler("play", () => {});
+navigator.mediaSession.setActionHandler("pause", () => {});
+navigator.mediaSession.setActionHandler("play", null);
+`);
+      const [,, [, details]] = await promise;
+      expect(details.actions).to.be.an('array');
+      expect(details.actions).to.deep.equal(['pause']);
     });
   });
 
